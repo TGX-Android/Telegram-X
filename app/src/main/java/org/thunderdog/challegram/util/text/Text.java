@@ -132,6 +132,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   public static final int ENTITY_FLAGS_ALL = ENTITY_FLAGS_ALL_NO_COMMANDS | ENTITY_FLAG_COMMAND;
   public static final int ENTITY_FLAGS_NONE = 0;
 
+  public static final int LINE_COUNT_UNLIMITED = -1;
+
   public interface LineWidthProvider {
     int provideLineWidth (int lineIndex, int y, int defaultMaxWidth, int lineHeight);
   }

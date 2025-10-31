@@ -135,6 +135,7 @@ import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.voip.VoIPLogs;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ForceTouchView;
@@ -7731,7 +7732,8 @@ public class TdlibUi extends Handler {
           new int[] {R.id.btn_send, R.id.btn_cancel},
           new String[] {Lang.getString(R.string.SetBirthdateOk), Lang.getString(R.string.Cancel)},
           new int[] {ViewController.OptionColor.BLUE, ViewController.OptionColor.NORMAL},
-          new int[] {R.drawable.baseline_check_24, R.drawable.baseline_cancel_24}
+          new int[] {R.drawable.baseline_check_24, R.drawable.baseline_cancel_24},
+          Text.LINE_COUNT_UNLIMITED
         );
         options.setIgnoreOtherPopUps(true);
         controller.showOptions(options, (optionItemView, id) -> {

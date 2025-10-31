@@ -110,6 +110,7 @@ import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.SimpleStringItem;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.CustomTextView;
@@ -2415,12 +2416,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public final OptionItem subtitle;
     public final OptionItem[] items;
     public boolean ignoreOtherPopUps;
+    public final int maxLineCount;
 
-    public Options (CharSequence info, CharSequence header, OptionItem subtitle, OptionItem[] items) {
+    public Options (CharSequence info, CharSequence header, OptionItem subtitle, OptionItem[] items, int maxLineCount) {
       this.info = info;
       this.title = header;
       this.subtitle = subtitle;
       this.items = items;
+      this.maxLineCount = maxLineCount;
     }
 
     public void setIgnoreOtherPopUps (boolean ignoreOtherPopUps) {
@@ -2432,6 +2435,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       private CharSequence title;
       private OptionItem subtitle;
       private final List<OptionItem> items = new ArrayList<>();
+      private int maxLineCount = Text.LINE_COUNT_UNLIMITED;
 
       public Builder () {
       }
@@ -2480,21 +2484,30 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         );
       }
 
+      public Builder maxLineCount (int maxLineCount) {
+        this.maxLineCount = maxLineCount;
+        return this;
+      }
+
       public int itemCount () {
         return items.size();
       }
 
       public Options build () {
-        return new Options(info, title, subtitle, items.toArray(new OptionItem[0]));
+        return new Options(info, title, subtitle, items.toArray(new OptionItem[0]), maxLineCount);
       }
     }
   }
 
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
-    return showOptions(getOptions(info, ids, titles, colors, icons), delegate, forcedTheme);
+    return showOptions(info, ids, titles, colors, icons, Text.LINE_COUNT_UNLIMITED, delegate, forcedTheme);
   }
 
-  public final Options getOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
+  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, int maxLineCount, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+    return showOptions(getOptions(info, ids, titles, colors, icons, maxLineCount), delegate, forcedTheme);
+  }
+
+  public final Options getOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, int maxLineCount) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem.Builder()
@@ -2504,7 +2517,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         .icon(icons != null ? icons[i] : 0)
         .build();
     }
-    return new Options(info, null, null, items);
+    return new Options(info, null, null, items, maxLineCount);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
@@ -2534,7 +2547,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       optionsWrap.setSubtitle(options.subtitle);
     }
 
-    optionsWrap.setInfo(this, tdlib(), options.info, false);
+    optionsWrap.setInfo(this, tdlib(), options.info, false, options.maxLineCount);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
 
     ShadowView shadowView = new ShadowView(context);
@@ -2601,7 +2614,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     int onBuildPopUp (PopupLayout popupLayout, OptionsLayout optionsLayout);
   }
 
-  public final PopupLayout showPopup (CharSequence title, boolean isTitle, @NonNull PopUpBuilder popUpBuilder, @Nullable ThemeDelegate forcedTheme) {
+  public final PopupLayout showPopup (CharSequence title, boolean isTitle, int maxLineCount, @NonNull PopUpBuilder popUpBuilder, @Nullable ThemeDelegate forcedTheme) {
     final PopupLayout popupLayout = new PopupLayout(context);
     popupLayout.setTag(this);
     popupLayout.init(true);
@@ -2610,7 +2623,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     int totalHeight = 0;
 
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
-    optionsWrap.setInfo(this, tdlib(), title, isTitle);
+    optionsWrap.setInfo(this, tdlib(), title, isTitle, maxLineCount);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
     totalHeight += optionsWrap.getTextHeight();
 
@@ -2629,7 +2642,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showText (CharSequence title, CharSequence text, TextEntity[] entities, @Nullable ThemeDelegate forcedTheme) {
-    return showPopup(title, true, (popupLayout, optionsLayout) -> {
+    return showPopup(title, true, Text.LINE_COUNT_UNLIMITED, (popupLayout, optionsLayout) -> {
       CustomTextView textView = new CustomTextView(context, tdlib);
       textView.setPadding(Screen.dp(16f), Screen.dp(12f), Screen.dp(16f), Screen.dp(16f));
       textView.setTextColorId(ColorId.text);
@@ -2815,7 +2828,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showDateTimePicker (Tdlib tdlib, CharSequence title, @StringRes int todayRes, @StringRes int tomorrowRes, @StringRes int futureRes, final RunnableLong callback, final @Nullable ThemeDelegate forcedTheme) {
-    return showPopup(title, true, (popupLayout, optionsWrap) -> {
+    return showPopup(title, true, Text.LINE_COUNT_UNLIMITED, (popupLayout, optionsWrap) -> {
       int contentHeight = 0;
       int pickerHeight = InfiniteRecyclerView.getItemHeight() * 5;
 

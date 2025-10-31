@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -378,12 +379,12 @@ public class TextEntityCustom extends TextEntity {
       if (linkType == LINK_TYPE_NONE || StringUtils.isEmpty(link) || ((linkType == LINK_TYPE_ANCHOR || linkType == LINK_TYPE_REFERENCE) && (openParameters == null || StringUtils.isEmpty(openParameters.refererUrl)))) {
         if (isMonospace()) {
           String content = text.getText().substring(getStart(), getEnd());
-          context.showOptions(content, new int[] {R.id.btn_copyText}, new String[] {Lang.getString(R.string.Copy)}, null, new int[] {R.drawable.baseline_content_copy_24}, (itemView, id) -> {
+          context.showOptions(content, new int[] {R.id.btn_copyText}, new String[] {Lang.getString(R.string.Copy)}, null, new int[] {R.drawable.baseline_content_copy_24}, Config.MAX_COPY_TEXT_LINE_COUNT, (itemView, id) -> {
             if (id == R.id.btn_copyText) {
               UI.copyText(content, R.string.CopiedText);
             }
             return true;
-          });
+          }, null);
           return true;
         }
         return false;

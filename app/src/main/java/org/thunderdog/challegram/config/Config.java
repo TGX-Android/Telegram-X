@@ -150,6 +150,8 @@ public class Config {
   public static final boolean CAMERA_ALLOW_SNAPSHOTS = false; // true;
   public static final boolean CAMERA_X_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
+  public static final int MAX_COPY_TEXT_LINE_COUNT = 12;
+
   public static final boolean CROP_USE_REGION_READER = true;
   public static final boolean CROP_ENABLED = true;
   public static final boolean MODERN_VIDEO_TRANSCODING_ENABLED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;

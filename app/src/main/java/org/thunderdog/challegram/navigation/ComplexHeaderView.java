@@ -38,6 +38,7 @@ import org.thunderdog.challegram.component.chat.ChatHeaderView;
 import org.thunderdog.challegram.component.sticker.StickerPreviewView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -1097,6 +1098,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     final ViewController.Options.Builder builder = new ViewController.Options.Builder();
 
     builder.info(Lang.boldify(title));
+    builder.maxLineCount(Config.MAX_COPY_TEXT_LINE_COUNT);
     builder.item(new ViewController.OptionItem(R.id.btn_copyText, Lang.getString(R.string.CopyDisplayName), ViewController.OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
 
     final String username = chatId != 0 ? tdlib.chatUsername(chatId) : null;
@@ -1358,7 +1360,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     }
 
     OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
-    optionsLayout.setInfo(null, null, false);
+    optionsLayout.setInfo(null, null, false, Text.LINE_COUNT_UNLIMITED);
 
     final long[] sets = new long[]{ sticker.setId };
 
