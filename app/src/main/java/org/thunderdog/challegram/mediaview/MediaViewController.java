@@ -3528,15 +3528,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     int thumbsDistance = (Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT)) * (inForceEditMode() ? 0 : 1);
     float offsetDistance = (float) measureBottomWrapHeight() * dismissFactor - getKeyboardOffset();
     float maxY = 0;
-    int appliedBottomPadding = emojiShown ? 0 : this.appliedBottomPadding;
     if (bottomWrap != null) {
-      float y = offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor) - appliedBottomPadding;
+      float y = offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor);
       bottomWrap.setTranslationY(y);
       maxY = Math.max(0, y);
     }
     if (thumbsRecyclerView != null) {
       float dy = ((float) thumbsDistance * Math.max((1f - thumbsFactor), dismissFactor));
-      float y = offsetDistance + dy - appliedBottomPadding;
+      float y = offsetDistance + dy;
       thumbsRecyclerView.setTranslationY(y);
       maxY = Math.max(0, y);
     }
@@ -5385,15 +5384,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return bottomInnerMargin;
   }
 
-  private int appliedBottomPadding;
-
-  private void setAppliedBottomPadding (int padding) {
-    if (this.appliedBottomPadding != padding) {
-      this.appliedBottomPadding = padding;
-      checkBottomWrapY();
-    }
-  }
-
   private int topOffset;
 
   private void setTopOffset (int topOffset) {
@@ -5460,9 +5450,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (changed) {
         int offsetBottom = getSectionBottomOffset(currentSection);
         mediaView.setNavigationalOffsets(0, 0, offsetBottom);
-        if (canRunFullscreen() && mode != MODE_SECRET) {
-          setAppliedBottomPadding(offsetBottom);
-        }
       }
       mediaView.layoutCells();
     }
