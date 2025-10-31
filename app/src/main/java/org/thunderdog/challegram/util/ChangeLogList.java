@@ -151,5 +151,5 @@ public class ChangeLogList {
   private static final int APP_RELEASE_VERSION_2024_MAY = 1717; // Replace media messages, files captions, birthdates, dozens of changes. 10 May, 2024: https://telegra.ph/Telegram-X-05-10
   private static final int APP_RELEASE_VERSION_2024_JUNE = 1730; // Chat folders. 10 June, 2024: https://telegra.ph/Telegram-X-06-08
   private static final int APP_RELEASE_VERSION_2025_JUNE = 1752; // https://github.com/TGX-Android/Telegram-X/releases/tag/v0.27.10.1752
-  private static final int APP_RELEASE_VERSION_2025_SEPTEMBER = 1763; // https://github.com/TGX-Android/Telegram-X/releases/tag/v0.27.10.1763
+  private static final int APP_RELEASE_VERSION_2025_OCTOBER = 1771; // https://github.com/TGX-Android/Telegram-X/releases/tag/v0.28.1.1771
 }
