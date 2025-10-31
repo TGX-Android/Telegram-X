@@ -23,6 +23,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -74,10 +75,12 @@ public class DoneButton extends CircleButton implements RootFrameLayout.InsetsCh
   @Override
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
-    rootFrameLayout = Views.findAncestor(this, RootFrameLayout.class, true);
-    if (rootFrameLayout != null) {
-      rootFrameLayout.addInsetsChangeListener(this);
-      Views.setBottomMargin(this, Screen.dp(16f) - Screen.dp(4f) + rootFrameLayout.getSystemInsets().bottom);
+    if (Settings.instance().useEdgeToEdge()) {
+      rootFrameLayout = Views.findAncestor(this, RootFrameLayout.class, true);
+      if (rootFrameLayout != null) {
+        rootFrameLayout.addInsetsChangeListener(this);
+        Views.setBottomMargin(this, Screen.dp(16f) - Screen.dp(4f) + rootFrameLayout.getSystemInsets().bottom);
+      }
     }
   }
 
