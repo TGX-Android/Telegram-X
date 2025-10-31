@@ -6446,6 +6446,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (inTopicId == null && inChatId == message.message.chatId) {
         inTopicId = message.message.topicId;
       }
+      if (inTopicId != null && inTopicId.getConstructor() == TdApi.MessageTopicSavedMessages.CONSTRUCTOR) {
+        inTopicId = null;
+      }
       return new ReplyInfo(tdlib, message, quote, checklistTaskId, inChatId, inTopicId);
     }
 
