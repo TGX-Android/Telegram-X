@@ -41,7 +41,7 @@ repositories {
 dependencies {
   compileOnly(gradleApi())
   implementation("com.android.tools.build:gradle:8.13.0")
-  implementation("com.google.gms:google-services:4.4.3")
+  implementation("com.google.gms:google-services:4.4.4")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.21")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
