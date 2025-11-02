@@ -27,21 +27,24 @@ import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import tgx.td.JSON;
+import tgx.bridge.PushReceiverBridge;
 
 public final class FirebaseListenerService extends FirebaseMessagingService {
   @Override
   public void onNewToken (@NonNull String newToken) {
-    UI.initApp(getApplicationContext());
-    TDLib.Tag.notifications("onNewToken %s, sending to all accounts", newToken);
-    TdlibManager.instance().runWithWakeLock(manager -> {
-      manager.setDeviceToken(new TdApi.DeviceTokenFirebaseCloudMessaging(newToken, true));
-    });
+    PushReceiverBridge.onNewToken(this, new TdApi.DeviceTokenFirebaseCloudMessaging(newToken, true));
+  }
+
+  @Override
+  public void onMessageReceived (@NonNull RemoteMessage remoteMessage) {
+    final Map<String, Object> payload = makePayload(remoteMessage);
+    final long sentTime = remoteMessage.getSentTime();
+    final int ttl = remoteMessage.getTtl();
+    PushReceiverBridge.onMessageReceived(this, payload, sentTime, ttl);
   }
 
   @Override
@@ -51,21 +54,9 @@ public final class FirebaseListenerService extends FirebaseMessagingService {
     TdlibManager.makeSync(getApplicationContext(), TdlibAccount.NO_ID, TdlibManager.SYNC_CAUSE_DELETED_MESSAGES, 0, !TdlibManager.inUiThread(), 0);
   }
 
-  @Override
-  public void onMessageReceived (@NonNull RemoteMessage remoteMessage) {
-    UI.initApp(getApplicationContext());
-
-    final String payload = makePayload(remoteMessage);
-    final long sentTime = remoteMessage.getSentTime();
-    final long pushId = Settings.instance().newPushId();
-
-    PushProcessor pushProcessor = new PushProcessor(this);
-    pushProcessor.processPush(pushId, payload, sentTime, remoteMessage.getTtl());
-  }
-
   // Utils
 
-  private static String makePayload (final RemoteMessage remoteMessage) {
+  private static Map<String, Object> makePayload (final RemoteMessage remoteMessage) {
     Map<String, Object> payload = new HashMap<>();
     payload.put("google.sent_time", remoteMessage.getSentTime());
     RemoteMessage.Notification notification = remoteMessage.getNotification();
@@ -86,6 +77,6 @@ public final class FirebaseListenerService extends FirebaseMessagingService {
     if (data != null) {
       payload.putAll(data);
     }
-    return JSON.stringify(payload);
+    return payload;
   }
 }

@@ -1,3 +1,5 @@
+apply(from = "properties.gradle.kts")
+
 pluginManagement {
   repositories {
     google()
@@ -12,6 +14,9 @@ dependencyResolutionManagement {
     google()
     mavenCentral()
     maven(url = "https://jitpack.io")
+    if (extra["huawei"] == true) {
+      maven(url = "https://developer.huawei.com/repo/")
+    }
   }
 }
 
@@ -23,6 +28,9 @@ include(
   ":vkryl:android",
   ":vkryl:leveldb",
   ":vkryl:core",
+
+  ":extension:bridge",
+  ":extension:${extra["extension"]}",
 
   ":app"
 )

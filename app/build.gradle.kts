@@ -57,6 +57,10 @@ data class PullRequest (
   )
 }
 
+apply(from = "${rootProject.projectDir}/properties.gradle.kts")
+val extensionName = extra["extension"] as String
+val isHuawei = extra["huawei"] == true
+
 android {
   namespace = "org.thunderdog.challegram"
 
@@ -287,7 +291,11 @@ android {
       create(variant.flavor) {
         dimension = "abi"
         versionCode = (abi + 1)
-        minSdk = variant.minSdkVersion
+        minSdk = if (isHuawei) {
+          maxOf(variant.minSdkVersion, Config.MIN_SDK_VERSION_HUAWEI)
+        } else {
+          variant.minSdkVersion
+        }
         val ndkVersionKey = if (variant.is64Bit) {
           "version.ndk_primary"
         } else {
@@ -376,6 +384,7 @@ gradle.projectsEvaluated {
 }
 
 dependencies {
+  implementation(project(":extension:${extensionName}"))
   // TDLib: https://github.com/tdlib/td/blob/master/CHANGELOG.md
   implementation(project(":tdlib"))
   implementation(project(":vkryl:core"))
