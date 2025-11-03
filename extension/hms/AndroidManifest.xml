@@ -13,4 +13,10 @@
     </service>
   </application>
 
+  <queries>
+    <intent>
+      <action android:name="com.huawei.hms.core.aidlservice" />
+    </intent>
+  </queries>
+
 </manifest>
