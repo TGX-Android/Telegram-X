@@ -13,11 +13,14 @@ fun readProperties (fileName: String): Properties = Properties().apply {
   } else {
     File("${rootProject.projectDir}/${fileName}")
   }
-  if (!file.exists()) {
-    error(file.absolutePath)
-  }
   val f = file.canonicalFile
-  if (f.exists()) f.inputStream().use { load(it) }
+  if (!f.exists()) {
+    error(f.absolutePath)
+  } else {
+    f.inputStream().use {
+      load(it)
+    }
+  }
 }
 
 fun resolveGradleProperty(name: String): String? {

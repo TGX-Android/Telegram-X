@@ -520,7 +520,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
               break;
           }
         } else if (itemId == R.id.btn_secret_pushConfig) {
-          String configuration = TdlibNotificationUtils.getTokenRetriever().getConfiguration();
+          String configuration = TdlibNotificationUtils.getDeviceTokenRetriever().getConfiguration();
           view.setData(!StringUtils.isEmpty(configuration) ? configuration : "Unavailable");
         } else if (itemId == R.id.btn_secret_appFingerprint) {
           view.setData(U.getApkFingerprint("SHA1"));
@@ -1183,7 +1183,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         UI.copyText(toHumanRepresentation(tdlib.context().getToken()), R.string.CopiedText);
       }
     } else if (viewId == R.id.btn_secret_pushConfig) {
-      String configuration = TdlibNotificationUtils.getTokenRetriever().getConfiguration();
+      String configuration = TdlibNotificationUtils.getDeviceTokenRetriever().getConfiguration();
       if (!StringUtils.isEmpty(configuration)) {
         UI.copyText(configuration, R.string.CopiedText);
       }

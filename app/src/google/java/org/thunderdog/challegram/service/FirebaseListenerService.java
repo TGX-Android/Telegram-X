@@ -31,12 +31,12 @@ import org.thunderdog.challegram.tool.UI;
 import java.util.HashMap;
 import java.util.Map;
 
-import tgx.bridge.PushReceiverBridge;
+import tgx.bridge.PushManagerBridge;
 
 public final class FirebaseListenerService extends FirebaseMessagingService {
   @Override
   public void onNewToken (@NonNull String newToken) {
-    PushReceiverBridge.onNewToken(this, new TdApi.DeviceTokenFirebaseCloudMessaging(newToken, true));
+    PushManagerBridge.onNewToken(this, new TdApi.DeviceTokenFirebaseCloudMessaging(newToken, true));
   }
 
   @Override
@@ -44,7 +44,7 @@ public final class FirebaseListenerService extends FirebaseMessagingService {
     final Map<String, Object> payload = makePayload(remoteMessage);
     final long sentTime = remoteMessage.getSentTime();
     final int ttl = remoteMessage.getTtl();
-    PushReceiverBridge.onMessageReceived(this, payload, sentTime, ttl);
+    PushManagerBridge.onMessageReceived(this, payload, sentTime, ttl);
   }
 
   @Override

@@ -59,7 +59,7 @@ data class PullRequest (
 
 apply(from = "${rootProject.projectDir}/properties.gradle.kts")
 val extensionName = extra["extension"] as String
-val isHuawei = extra["huawei"] == true
+val isHuaweiBuild = extra["huawei"] == true
 
 android {
   namespace = "org.thunderdog.challegram"
@@ -67,6 +67,8 @@ android {
   defaultConfig {
     val jniVersion = versions.getProperty("version.jni")
     val leveldbVersion = versions.getProperty("version.leveldb")
+
+    buildConfigString("TGX_EXTENSION", extensionName)
 
     buildConfigString("JNI_VERSION", jniVersion)
     buildConfigString("LEVELDB_VERSION", leveldbVersion)
@@ -291,7 +293,7 @@ android {
       create(variant.flavor) {
         dimension = "abi"
         versionCode = (abi + 1)
-        minSdk = if (isHuawei) {
+        minSdk = if (isHuaweiBuild) {
           maxOf(variant.minSdkVersion, Config.MIN_SDK_VERSION_HUAWEI)
         } else {
           variant.minSdkVersion
@@ -325,7 +327,7 @@ android {
     val versionCodeOverride = versionCode * 1000 + abi * 10
     val versionNameOverride = "${versionName}.${defaultConfig.versionCode}${if (extra.has("app_version_suffix")) extra["app_version_suffix"] else ""}-${abiVariant.displayName}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (buildType.isDebuggable) "-debug" else ""}"
     val outputFileNamePrefix = properties.getProperty("app.file", projectName.replace(" ", "-").replace("#", ""))
-    val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
+    val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}${if (extensionName != "none") "-${extensionName}" else ""}"
 
     buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
     buildConfigField("int", "ABI", abi.toString())
@@ -465,4 +467,7 @@ dependencies {
 
 if (!isExperimentalBuild) {
   apply(plugin = "com.google.gms.google-services")
+  if (isHuaweiBuild) {
+    apply(plugin = "com.huawei.agconnect")
+  }
 }

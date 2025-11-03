@@ -75,7 +75,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.RingtoneItem;
 import org.thunderdog.challegram.util.SimpleStringItem;
 import org.thunderdog.challegram.util.StringList;
-import org.thunderdog.challegram.util.TokenRetriever;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
@@ -96,6 +95,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import tgx.bridge.DeviceTokenRetriever;
 import tgx.td.ChatId;
 import tgx.td.Td;
 
@@ -1400,8 +1400,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     Throwable fullError = tdlib.context().getTokenFullError();
     String error = tdlib.context().getTokenError();
     if (!StringUtils.isEmpty(error) || fullError != null) {
-      TokenRetriever retriever = TdlibNotificationUtils.getTokenRetriever();
-      String report = "#" + retriever.getName() + "_error";
+      DeviceTokenRetriever retriever = TdlibNotificationUtils.getDeviceTokenRetriever();
+      String report = "#" + retriever.name + "_error";
       if (!StringUtils.isEmpty(error)) {
         report += " " + error;
       }

@@ -14,26 +14,47 @@
  */
 package org.thunderdog.challegram
 
+import android.content.Context
 import androidx.multidex.MultiDexApplication
 import androidx.work.Configuration
 import com.google.firebase.messaging.FirebaseMessaging
+import org.thunderdog.challegram.push.FirebaseDeviceTokenRetriever
 import org.thunderdog.challegram.service.PushHandler
+import org.thunderdog.challegram.telegram.TdlibNotificationUtils
 import org.thunderdog.challegram.tool.UI
-import tgx.bridge.PushReceiverBridge
+import tgx.bridge.DeviceTokenRetriever
+import tgx.bridge.PushManagerBridge
+import tgx.bridge.DeviceTokenRetrieverFactory
 import tgx.extension.TelegramXExtension
 
 class BaseApplication : MultiDexApplication(), Configuration.Provider {
   override fun onCreate() {
     super.onCreate()
 
-    PushReceiverBridge.registerReceiver(PushHandler())
+    var googlePlayServicesAvailable = U.isGooglePlayServicesAvailable(applicationContext)
+    if (BuildConfig.DEBUG && TelegramXExtension.name == "hms") {
+      // Test HMS
+      googlePlayServicesAvailable = false
+    }
+    PushManagerBridge.initialize(
+
+      PushHandler(),
+      object : DeviceTokenRetrieverFactory {
+        override fun onCreateNewTokenRetriever(context: Context): DeviceTokenRetriever =
+          TelegramXExtension.createNewTokenRetriever(context, googlePlayServicesAvailable).takeIf {
+            !BuildConfig.EXPERIMENTAL
+          } ?:
+          FirebaseDeviceTokenRetriever()
+      }
+    )
+
     UI.initApp(applicationContext)
 
-    val googlePlayServicesAvailable = U.isGooglePlayServicesAvailable(applicationContext)
-
-    TelegramXExtension.configure(this, googlePlayServicesAvailable)
-    if (TelegramXExtension.shouldDisableFirebaseMessaging(googlePlayServicesAvailable)) {
-      FirebaseMessaging.getInstance().isAutoInitEnabled = false
+    if (!BuildConfig.EXPERIMENTAL) {
+      TelegramXExtension.configure(this, TdlibNotificationUtils.getDeviceTokenRetriever())
+      if (!TdlibNotificationUtils.isFirebaseTokenRetriever()) {
+        FirebaseMessaging.getInstance().isAutoInitEnabled = false
+      }
     }
   }
 

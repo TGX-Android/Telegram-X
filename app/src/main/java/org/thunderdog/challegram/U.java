@@ -2540,6 +2540,7 @@ public class U {
     String appLocale = Lang.locale().toString();
     String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
+      (!"none".equals(BuildConfig.TGX_EXTENSION) ? "Extension: " + BuildConfig.TGX_EXTENSION + "\n" : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
       "tgcalls: TGX-Android/tgcalls@" + BuildConfig.TGCALLS_COMMIT + "\n" +
       "WebRTC: TGX-Android/webrtc@" + BuildConfig.WEBRTC_COMMIT + "\n" +

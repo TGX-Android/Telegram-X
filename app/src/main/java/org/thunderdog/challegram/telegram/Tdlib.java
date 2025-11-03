@@ -667,36 +667,31 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     long[] availableUserIds = context.availableUserIds(instanceMode);
     long[] otherUserIds = ArrayUtils.removeElement(availableUserIds, Arrays.binarySearch(availableUserIds, myUserId));
     if (TdlibSettingsManager.checkRegisteredDeviceToken(id(), myUserId, deviceToken, otherUserIds, false)) {
-      Log.i(Log.TAG_FCM, "Device token already registered. accountId:%d", accountId);
+      TDLib.Tag.notifications("Device token already registered. accountId:%d", accountId);
       context.setDeviceRegistered(accountId, true);
       U.run(onDone);
       return;
     }
-    Log.i(Log.TAG_FCM, "Registering device token... accountId:%d", accountId);
+    TDLib.Tag.notifications("Registering device token... accountId:%d", accountId);
     context.setDeviceRegistered(accountId, false);
     incrementReferenceCount(REFERENCE_TYPE_JOB);
-    client().send(new TdApi.RegisterDevice(deviceToken, otherUserIds), result -> {
-      switch (result.getConstructor()) {
-        case TdApi.PushReceiverId.CONSTRUCTOR:
-          Log.i(Log.TAG_FCM, "Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
-          Settings.instance().putNotificationReceiverId(((TdApi.PushReceiverId) result).id, accountId);
-          TdlibSettingsManager.setRegisteredDevice(accountId, myUserId, deviceToken, otherUserIds);
-          context().setDeviceRegistered(accountId, true);
-          context().unregisterDevices(instanceMode, accountId, availableUserIds);
+    send(new TdApi.RegisterDevice(deviceToken, otherUserIds), (pushReceiverId, error) -> {
+      if (pushReceiverId != null) {
+        TDLib.Tag.notifications("Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
+        Settings.instance().putNotificationReceiverId(pushReceiverId.id, accountId);
+        TdlibSettingsManager.setRegisteredDevice(accountId, myUserId, deviceToken, otherUserIds);
+        context().setDeviceRegistered(accountId, true);
+        context().unregisterDevices(instanceMode, accountId, availableUserIds);
+        U.run(onDone);
+      } else {
+        int seconds = Math.max(5, TD.getFloodErrorSeconds(error.code, error.message, 5));
+        if (seconds > 60 && isDebugInstance()) {
+          TDLib.Tag.notifications("Unable to register device token, flood is %d seconds, ignoring: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
+          context.setDeviceRegistered(accountId, true);
           U.run(onDone);
-          break;
-        case TdApi.Error.CONSTRUCTOR: {
-          TdApi.Error error = (TdApi.Error) result;
-          int seconds = Math.max(5, TD.getFloodErrorSeconds(error.code, error.message, 5));
-          if (seconds > 60 && isDebugInstance()) {
-            Log.e("Unable to register device token, flood is %d seconds, ignoring: %s, accountId:%d", seconds, TD.toErrorString(result), accountId);
-            context.setDeviceRegistered(accountId, true);
-            U.run(onDone);
-          } else {
-            Log.e("Unable to register device token, retrying in %d seconds: %s, accountId:%d", seconds, TD.toErrorString(result), accountId);
-            client().send(new TdApi.SetAlarm(seconds), ignored -> checkDeviceTokenImpl(onDone));
-          }
-          break;
+        } else {
+          TDLib.Tag.notifications("Unable to register device token, retrying in %d seconds: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
+          client().send(new TdApi.SetAlarm(seconds), ignored -> checkDeviceTokenImpl(onDone));
         }
       }
       decrementReferenceCount(REFERENCE_TYPE_JOB);
@@ -5903,7 +5898,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (deviceToken != null && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
         state = TdlibManager.TokenState.OK;
       }
-      String tokenProvider = TdlibNotificationUtils.getTokenRetriever().getName();
+      String tokenProvider = TdlibNotificationUtils.getDeviceTokenRetriever().name;
       String error = context().getTokenError();
       switch (state) {
         case TdlibManager.TokenState.ERROR: {
@@ -5926,7 +5921,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
             case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR: {
               tokenOrEndpoint = ((TdApi.DeviceTokenHuaweiPush) deviceToken).token;
               final String huaweiTokenPrefix = "huawei://";
-              if (tokenOrEndpoint.startsWith(huaweiTokenPrefix)) {
+              if (!tokenOrEndpoint.startsWith(huaweiTokenPrefix)) {
                 tokenOrEndpoint = huaweiTokenPrefix + tokenOrEndpoint;
               }
               break;

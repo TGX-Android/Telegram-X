@@ -2,13 +2,12 @@ package tgx.extension.hms
 
 import com.huawei.hms.push.HmsMessageService
 import com.huawei.hms.push.RemoteMessage
-import org.drinkless.tdlib.TdApi
-import tgx.bridge.PushReceiverBridge
+import org.drinkless.tdlib.TdApi.DeviceTokenHuaweiPush
+import tgx.bridge.PushManagerBridge
 
 class HuaweiPushListenerService : HmsMessageService() {
-  override fun onNewToken(token: String) {
-    PushReceiverBridge.onNewToken(this, TdApi.DeviceTokenHuaweiPush(token, true))
-  }
+  override fun onNewToken(token: String) =
+    PushManagerBridge.onNewToken(this, DeviceTokenHuaweiPush(token, true))
 
   override fun onMessageReceived(remoteMessage: RemoteMessage) {
     val payload = mutableMapOf<String, Any>()
@@ -16,6 +15,6 @@ class HuaweiPushListenerService : HmsMessageService() {
     payload["huawei.sent_time"] = remoteMessage.sentTime
     payload["p"] = remoteMessage.data
 
-    PushReceiverBridge.onMessageReceived(this, payload, remoteMessage.sentTime, remoteMessage.ttl)
+    PushManagerBridge.onMessageReceived(this, payload, remoteMessage.sentTime, remoteMessage.ttl)
   }
 }
