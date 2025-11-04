@@ -85,6 +85,9 @@ open class ModulePlugin : Plugin<Project> {
     val dontObfuscate = isExampleBuild || properties.getProperty("app.dontobfuscate", "false") == "true"
     val forceOptimize = properties.getProperty("app.forceoptimize") == "true"
     val appExtension = getOrSample("tgx.extension")
+    if (appExtension != "none" && appExtension != "hms") {
+      error("Unknown tgx.extension: $appExtension")
+    }
     val isHuaweiBuild = appExtension == "hms"
 
     project.extra.set("experimental", isExperimentalBuild)
