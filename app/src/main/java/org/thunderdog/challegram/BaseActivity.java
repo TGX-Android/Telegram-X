@@ -821,7 +821,7 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   @Override
   public final boolean onKeyUp (int keyCode, KeyEvent event) {
     if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P && !backKeyDownReceived) {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU && !backKeyDownReceived) {
         getOnBackPressedDispatcher().onBackPressed();
         return true;
       }
