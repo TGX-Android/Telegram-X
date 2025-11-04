@@ -74,7 +74,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
   private static final Rect tmpRect = new Rect();
 
   public static int normalizeSpeed (int speed) {
-    return MathUtils.fromTo(speed, MIN_SPEED, MAX_SPEED);
+    return MathUtils.clamp(speed, MIN_SPEED, MAX_SPEED);
   }
 
   private static final int BUTTONS_COUNT = 6;
