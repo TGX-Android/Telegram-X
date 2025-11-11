@@ -35,7 +35,7 @@ object PushManagerBridge {
     manager!!.onMessageReceived(service, payload, sentTime, ttl)
 
   @JvmStatic fun log(format: String, vararg args: Any) =
-    manager!!.log(format, args)
+    manager!!.log(format, *args)
 
   @JvmStatic fun error(format: String, t: Throwable?) =
     manager!!.error(format, t)
