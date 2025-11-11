@@ -15,7 +15,6 @@ package tgx.gradle.task
 import groovy.util.Node
 import groovy.util.NodeList
 import groovy.xml.XmlParser
-import okhttp3.internal.toHexString
 import org.gradle.api.tasks.TaskAction
 import tgx.gradle.config.tdlibArrayEqualTypes
 import tgx.gradle.config.tdlibEqualTypes
@@ -962,7 +961,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       val crc32 = CRC32()
       crc32.update(hashSrc.toByteArray())
 
-      val hashCode = crc32.value.toHexString()
+      val hashCode = crc32.value.toHexString().replace(Regex("^0+"), "")
       if (!hashCodes.add(hashCode))
         error("hashCode collision for ${typeName}")
       val stubMethodName = "assert${typeName}_${hashCode}";

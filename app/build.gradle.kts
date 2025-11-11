@@ -442,7 +442,7 @@ dependencies {
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
   compileOnly("org.checkerframework:checker-qual:3.51.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
-  implementation("com.squareup.okhttp3:okhttp:4.12.0")
+  implementation("com.squareup.okhttp3:okhttp:4.12.0") // 5.x+ requires minSdkVersion 21
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
   implementation("me.leolin:ShortcutBadger:1.1.22@aar")
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
