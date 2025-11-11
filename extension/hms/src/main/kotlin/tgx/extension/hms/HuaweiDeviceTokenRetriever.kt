@@ -3,7 +3,9 @@ package tgx.extension.hms
 import android.content.Context
 import com.huawei.hms.aaid.HmsInstanceId
 import com.huawei.hms.push.HmsMessaging
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.drinkless.tdlib.TdApi.DeviceTokenHuaweiPush
 import tgx.bridge.DeviceTokenRetriever
 import tgx.bridge.PushManagerBridge
@@ -28,9 +30,8 @@ class HuaweiDeviceTokenRetriever(val appId: String) : DeviceTokenRetriever("hms"
     }
   }
 
-  @OptIn(DelicateCoroutinesApi::class)
   override fun fetchDeviceToken(context: Context, listener: TokenRetrieverListener) {
-    GlobalScope.launch {
+    PushManagerBridge.applicationScope.launch {
       withContext(Dispatchers.IO) {
         try {
           PushManagerBridge.log("HMS: requesting token...")

@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
   implementation("androidx.core:core-ktx:${LibraryVersions.ANDROIDX_CORE}")
+  api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${LibraryVersions.COROUTINES}")
   implementation(project(":tdlib"))
 }
 

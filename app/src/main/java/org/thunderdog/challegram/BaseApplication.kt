@@ -18,6 +18,8 @@ import android.content.Context
 import androidx.multidex.MultiDexApplication
 import androidx.work.Configuration
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
 import org.thunderdog.challegram.push.FirebaseDeviceTokenRetriever
 import org.thunderdog.challegram.service.PushHandler
 import org.thunderdog.challegram.telegram.TdlibNotificationUtils
@@ -28,8 +30,11 @@ import tgx.bridge.DeviceTokenRetrieverFactory
 import tgx.extension.TelegramXExtension
 
 class BaseApplication : MultiDexApplication(), Configuration.Provider {
+  private lateinit var scope: CoroutineScope
+
   override fun onCreate() {
     super.onCreate()
+    scope = MainScope()
 
     var googlePlayServicesAvailable = U.isGooglePlayServicesAvailable(applicationContext)
     if (BuildConfig.DEBUG && TelegramXExtension.name == "hms") {
@@ -37,6 +42,7 @@ class BaseApplication : MultiDexApplication(), Configuration.Provider {
       googlePlayServicesAvailable = false
     }
     PushManagerBridge.initialize(
+      scope,
 
       PushHandler(),
       object : DeviceTokenRetrieverFactory {

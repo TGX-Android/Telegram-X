@@ -35,6 +35,7 @@ object LibraryVersions {
   const val ANDROIDX_MEDIA = "1.4.1" // "1.5.0"+ requires minSdk 21+
   const val ANDROIDX_CAMERA = "1.4.2"
   const val HUAWEI_SERVICES = "6.13.0.300"
+  const val COROUTINES = "1.10.2"
 }
 
 class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
