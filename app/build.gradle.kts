@@ -325,9 +325,26 @@ android {
     val versionCode = defaultConfig.versionCode ?: fatal("null")
 
     val versionCodeOverride = versionCode * 1000 + abi * 10
-    val versionNameOverride = "${versionName}.${defaultConfig.versionCode}${if (extra.has("app_version_suffix")) extra["app_version_suffix"] else ""}${if (extensionName != "none") "-$extensionName" else ""}${if (abiVariant.displayName != "universal" || extensionName == "none") "-${abiVariant.displayName}" else ""}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (buildType.isDebuggable) "-debug" else ""}"
-    val outputFileNamePrefix = properties.getProperty("app.file", projectName.replace(" ", "-").replace("#", ""))
-    val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
+    val versionNameOverride = StringBuilder("${versionName}.${defaultConfig.versionCode}").apply {
+      if (extra.has("app_version_suffix")) {
+        append(extra["app_version_suffix"])
+      }
+      if (extensionName != "none") {
+        append("-$extensionName")
+      }
+      if (abiVariant.displayName != "universal" || extensionName == "none") {
+        append("-${abiVariant.displayName}")
+      }
+      if (extra.has("app_name_suffix")) {
+        append("-${extra["app_name_suffix"]}")
+      }
+      if (buildType.isDebuggable) {
+        append("-debug")
+      }
+    }.toString()
+    val defaultFileNamePrefix = projectName.replace(" ", "-").replace("#", "")
+    val outputFileNamePrefix = properties.getProperty("app.file", defaultFileNamePrefix)
+    val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace(Regex("-universal(?=-|$)"), "")}"
 
     buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
     buildConfigField("int", "ABI", abi.toString())

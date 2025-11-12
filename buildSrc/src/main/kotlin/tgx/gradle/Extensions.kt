@@ -14,6 +14,7 @@ package tgx.gradle
 
 import com.android.build.api.dsl.ApplicationBaseFlavor
 import com.android.build.api.dsl.VariantDimension
+import tgx.gradle.task.wrapInDoubleQuotes
 
 fun ApplicationBaseFlavor.buildConfigInt (name: String, value: Int) =
   this.buildConfigField("int", name, value.toString())
@@ -22,18 +23,10 @@ fun ApplicationBaseFlavor.buildConfigLong (name: String, value: Long) =
 fun ApplicationBaseFlavor.buildConfigBool (name: String, value: Boolean) =
   this.buildConfigField("boolean", name, value.toString())
 fun ApplicationBaseFlavor.buildConfigString (name: String, value: String?) =
-  this.buildConfigField("String", name, if (value != null) {
-    "\"$value\""
-  } else {
-    "null"
-  })
+  this.buildConfigField("String", name, value?.wrapInDoubleQuotes() ?: "null")
 fun VariantDimension.buildConfigInt (name: String, value: Int) =
   this.buildConfigField("int", name, value.toString())
 fun VariantDimension.buildConfigLong (name: String, value: Long) =
   this.buildConfigField("long", name, value.toString())
 fun VariantDimension.buildConfigString (name: String, value: String?) =
-  this.buildConfigField("String", name, if (value != null) {
-    "\"$value\""
-  } else {
-    "null"
-  })
+  this.buildConfigField("String", name, value?.wrapInDoubleQuotes() ?: "null")

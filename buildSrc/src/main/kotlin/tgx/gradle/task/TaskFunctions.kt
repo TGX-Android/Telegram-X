@@ -211,7 +211,7 @@ fun String.normalizeArgbHex(): String {
       return "ff${hex.lowercase(Locale.US)}"
     }
     8 -> {
-      return hex.substring(6, 8).lowercase(Locale.US) + hex.substring(0, 6).lowercase(Locale.US)
+      return hex.substring(6, 8).lowercase(Locale.US) + hex.take(6).lowercase(Locale.US)
     }
     else -> error("Invalid color: $this")
   }
@@ -244,3 +244,5 @@ fun String.unwrapDoubleQuotes(): String {
     error("Not wrapped: \"${this}\"")
   return this.substring(1, this.length - 1).replace("\\\"", "\"")
 }
+
+fun String.wrapInDoubleQuotes(): String = "\"$this\""
