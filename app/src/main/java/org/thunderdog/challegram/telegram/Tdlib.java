@@ -7446,6 +7446,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
 
     listeners.updateMessageContent(update);
+    context.global().notifyUpdateMessageContent(this, update);
 
     switch (update.newContent.getConstructor()) {
       case TdApi.MessageLocation.CONSTRUCTOR: {
@@ -8566,6 +8567,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       haveActiveCalls = !activeCalls.isEmpty();
     }
     setHaveActiveCalls(haveActiveCalls);
+    context.global().onUpdateCall(this, update);
 
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_UPDATE_CALL, update));
     listeners.updateCall(update);
@@ -8578,6 +8580,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateGroupCall (TdApi.UpdateGroupCall update) {
+    context.global().onUpdateGroupCall(this, update);
     listeners.updateGroupCall(update);
   }
 
