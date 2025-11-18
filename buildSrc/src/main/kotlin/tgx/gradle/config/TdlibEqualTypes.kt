@@ -19,6 +19,16 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   TdlibType("WebAppOpenMode"),
   TdlibType("ReplyMarkup"),
 
+  TdlibType("GroupCall"),
+  TdlibType("GroupCallRecentSpeaker"),
+
+  TdlibType("Call"),
+  TdlibType("CallState"),
+  TdlibType("CallDiscardReason"),
+  TdlibType("CallProtocol"),
+  TdlibType("CallServer"),
+  TdlibType("CallServerType"),
+
   TdlibType("RemoteFile"),
   TdlibType("LocalFile"),
 
