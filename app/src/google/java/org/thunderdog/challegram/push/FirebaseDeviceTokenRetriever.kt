@@ -7,12 +7,16 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 import me.vkryl.core.isEmpty
 import org.drinkless.tdlib.TdApi.DeviceTokenFirebaseCloudMessaging
+import org.thunderdog.challegram.U
 import tgx.bridge.DeviceTokenRetriever
 import tgx.bridge.PushManagerBridge
 import tgx.bridge.TokenRetrieverListener
 import java.util.regex.Pattern
 
 class FirebaseDeviceTokenRetriever : DeviceTokenRetriever("firebase") {
+  override fun isAvailable(context: Context): Boolean =
+    U.isGooglePlayServicesAvailable(context)
+
   override fun performInitialization(context: Context): Boolean {
     try {
       PushManagerBridge.log("FirebaseApp is initializing...")

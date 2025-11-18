@@ -2,6 +2,8 @@ package tgx.extension.hms
 
 import android.content.Context
 import com.huawei.hms.aaid.HmsInstanceId
+import com.huawei.hms.api.ConnectionResult
+import com.huawei.hms.api.HuaweiApiAvailability
 import com.huawei.hms.push.HmsMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,6 +15,8 @@ import tgx.bridge.TokenRetrieverListener
 
 
 class HuaweiDeviceTokenRetriever(val appId: String) : DeviceTokenRetriever("hms") {
+  override fun isAvailable(context: Context): Boolean =
+    HuaweiApiAvailability.getInstance().isHuaweiMobileNoticeAvailable(context) == ConnectionResult.SUCCESS
 
   override fun performInitialization(context: Context): Boolean {
     PushManagerBridge.log("HMS: initializing...")

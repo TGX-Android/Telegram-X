@@ -283,8 +283,8 @@ public class SettingsController extends ViewController<Void> implements
         return R.string.NotificationsErrorBlockedCategory;
       case TdlibNotificationManager.Status.DISABLED_SYNC:
       case TdlibNotificationManager.Status.DISABLED_APP_SYNC:
-      case TdlibNotificationManager.Status.FIREBASE_MISSING:
-      case TdlibNotificationManager.Status.FIREBASE_ERROR:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_MISSING:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_ERROR:
         return R.string.NotificationsErrorBackground;
       case TdlibNotificationManager.Status.INTERNAL_ERROR: {
         this.problematicChatId = tdlib.settings().getLastNotificationProblematicChat();

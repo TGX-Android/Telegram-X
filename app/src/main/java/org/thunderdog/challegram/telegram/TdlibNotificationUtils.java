@@ -257,10 +257,6 @@ public class TdlibNotificationUtils {
     return deviceTokenRetriever.initialize(UI.getAppContext());
   }
 
-  public static boolean isFirebaseTokenRetriever () {
-    return getDeviceTokenRetriever() instanceof FirebaseDeviceTokenRetriever;
-  }
-
   public static @NonNull DeviceTokenRetriever getDeviceTokenRetriever () {
     if (deviceTokenRetriever == null) {
       initialize();

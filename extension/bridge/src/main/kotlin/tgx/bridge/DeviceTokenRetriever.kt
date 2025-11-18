@@ -32,6 +32,10 @@ abstract class DeviceTokenRetriever(
   }
 
   open val configuration: String = ""
+  abstract fun isAvailable(context: Context): Boolean
   protected abstract fun performInitialization(context: Context): Boolean
   protected abstract fun fetchDeviceToken(context: Context, listener: TokenRetrieverListener)
 }
+
+fun DeviceTokenRetriever?.isAvailable(context: Context) =
+  this?.isAvailable(context) ?: false
