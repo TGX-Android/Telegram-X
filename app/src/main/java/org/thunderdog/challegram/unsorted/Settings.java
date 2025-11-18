@@ -434,6 +434,7 @@ public class Settings {
   public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
   public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
   public static final long EXPERIMENT_FLAG_NO_EDGE_TO_EDGE = 1 << 3;
+  public static final long EXPERIMENT_FLAG_FORCE_ALTERNATIVE_PUSH_SERVICE = 1 << 4;
 
   public static final long REMOVED_EXPERIMENT_FLAG_ENABLE_FOLDERS = 1 << 1;
 

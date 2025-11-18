@@ -24,6 +24,7 @@ import org.thunderdog.challegram.push.FirebaseDeviceTokenRetriever
 import org.thunderdog.challegram.service.PushHandler
 import org.thunderdog.challegram.telegram.TdlibNotificationUtils
 import org.thunderdog.challegram.tool.UI
+import org.thunderdog.challegram.unsorted.Settings
 import tgx.bridge.DeviceTokenRetriever
 import tgx.bridge.DeviceTokenRetrieverFactory
 import tgx.bridge.PushManagerBridge
@@ -38,20 +39,21 @@ class BaseApplication : MultiDexApplication(), Configuration.Provider {
     super.onCreate()
     scope = MainScope()
 
-    val defaultTokenRetriever = FirebaseDeviceTokenRetriever().takeIf {
-      // Force test extension in debug builds.
-      !(BuildConfig.DEBUG && TelegramXExtension.isNotEmpty())
-    }
     PushManagerBridge.initialize(
       scope,
 
       PushHandler(),
       object : DeviceTokenRetrieverFactory {
-        override fun onCreateNewTokenRetriever(context: Context): DeviceTokenRetriever =
-          TelegramXExtension.createNewTokenRetriever(context, defaultTokenRetriever).takeIf {
-            !BuildConfig.EXPERIMENTAL
-          } ?:
-          FirebaseDeviceTokenRetriever()
+        override fun onCreateNewTokenRetriever(context: Context): DeviceTokenRetriever {
+          val defaultTokenRetriever = FirebaseDeviceTokenRetriever()
+          val tokenRetriever = TelegramXExtension.createNewTokenRetriever(context)
+          return tokenRetriever?.takeIf {
+            !BuildConfig.EXPERIMENTAL && (
+              Settings.instance().isExperimentEnabled(Settings.EXPERIMENT_FLAG_FORCE_ALTERNATIVE_PUSH_SERVICE) ||
+              !defaultTokenRetriever.isAvailable(applicationContext)
+            )
+          } ?: defaultTokenRetriever
+        }
       }
     )
 

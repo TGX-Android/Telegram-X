@@ -5316,7 +5316,10 @@
   <string name="Experiment_PeerIdsInfo">Show API identifiers of users and chats in their profiles</string>
 
   <string name="Experiment_NoEdgeToEdge">Disable Edge to Edge</string>
-  <string name="Experiment_NoEdgeToEdgeInfo">Edge to Edge support on Android 11–14 is not tested, issues are expected. Use this setting to compare behavior without edge-to-edge mode.</string>
+  <string name="Experiment_NoEdgeToEdgeInfo">Use this setting to compare behavior without edge-to-edge mode on Android 11–14.</string>
+
+  <string name="Experiment_ForceAltPushService">Force alternative Push Services</string>
+  <string name="Experiment_ForceAltPushServiceInfo">Prefer alternative push services provider, even if Google Play Services are installed and available. Restart application manually to apply changes.</string>
 
   <string name="PeerId">Peer ID</string>
   <string name="UserId">User ID</string>

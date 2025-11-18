@@ -81,6 +81,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.unit.ByteUnit;
+import tgx.extension.TelegramXExtension;
 import tgx.td.ChatPosition;
 import tgx.td.Td;
 
@@ -498,7 +499,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         } else if (itemId == R.id.btn_switchRtl) {
           view.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
         } else if (itemId == R.id.btn_toggleNewSetting) {
-          handleSettingClick(view, adapter);
+          updateSettingView(view, item, isUpdate);
         } else if (itemId == R.id.btn_experiment) {
           view.getToggler().setRadioEnabled(Settings.instance().isExperimentEnabled(item.getLongValue()), isUpdate);
         } else if (itemId == R.id.btn_secret_pushToken) {
@@ -762,6 +763,15 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_NoEdgeToEdge).setLongValue(Settings.EXPERIMENT_FLAG_NO_EDGE_TO_EDGE));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_NoEdgeToEdgeInfo));
+        }
+
+        if (TelegramXExtension.INSTANCE.isNotEmpty()) {
+          if (!items.isEmpty()) {
+            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          }
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_ForceAltPushService).setLongValue(Settings.EXPERIMENT_FLAG_FORCE_ALTERNATIVE_PUSH_SERVICE));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_ForceAltPushServiceInfo));
         }
 
         if (items.isEmpty()) {
