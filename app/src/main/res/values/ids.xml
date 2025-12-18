@@ -1233,6 +1233,7 @@
   <item type="id" name="btn_toggleAggressiveAntiSpam" />
   <item type="id" name="btn_toggleHideMembers" />
   <item type="id" name="btn_toggleForum" />
+  <item type="id" name="btn_toggleForumTabs" />
   <item type="id" name="btn_reportFalsePositive" />
 
   <item type="id" name="btn_approveChatRequest" />
