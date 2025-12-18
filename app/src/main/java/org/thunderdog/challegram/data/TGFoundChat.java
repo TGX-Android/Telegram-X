@@ -360,7 +360,18 @@ public class TGFoundChat {
   }
 
   public int getUnreadCount () {
-    return (flags & FLAG_NO_UNREAD) != 0 ? 0 : chat != null ? (chat.unreadCount > 0 ? chat.unreadCount : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0) : 0;
+    if ((flags & FLAG_NO_UNREAD) != 0 || chat == null) {
+      return 0;
+    }
+    if (tdlib.isForum(chat.id)) {
+      int unreadTopics = tdlib.forumUnreadTopicCount(chat.id);
+      if (unreadTopics == -1) {
+        tdlib.fetchForumUnreadTopicCount(chat.id, null);
+        return chat.unreadCount > 0 ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
+      }
+      return unreadTopics > 0 ? unreadTopics : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
+    }
+    return chat.unreadCount > 0 ? chat.unreadCount : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
   }
 
   private void setTitleImpl (String title, @Nullable TdApi.Chat chat) {

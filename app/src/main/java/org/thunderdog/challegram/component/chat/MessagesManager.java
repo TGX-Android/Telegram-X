@@ -601,7 +601,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     loader.setSearchParameters(query, sender, filter);
     adapter.setChatType(chat.type);
     if (filter != null && Td.isPinnedFilter(filter)) {
-      initPinned(chat.id, 1, 1);
+      initPinned(chat.id, null, 1, 1);
     }
     if (highlightMessageId != null) {
       loadFromMessage(highlightMessageId, highlightMode, true);
@@ -692,8 +692,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private void initPinned (long chatId, int initialLoadCount, int loadCount) {
-    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, null, null, null, new TdApi.SearchMessagesFilterPinned());
+  private void initPinned (long chatId, @Nullable TdApi.MessageTopic topicId, int initialLoadCount, int loadCount) {
+    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, topicId, null, null, new TdApi.SearchMessagesFilterPinned());
     this.pinnedMessages.addMaxMessageIdListener(pinnedMessageAvailabilityChangeListener);
     this.pinnedMessages.addChangeListener(new MessageListManager.ChangeListener() {
       @Override
@@ -718,7 +718,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       // readOneShot = true;
     }
     if (chat.id != 0 && messageThread == null && !areScheduled && needPinnedMessages) {
-      initPinned(chat.id, 10, 50);
+      initPinned(chat.id, topicId, 10, 50);
     } else {
       this.pinnedMessages = null;
     }
@@ -781,6 +781,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       @Override
       public boolean needForceRead (TdlibMessageViewer.Viewport viewport) {
+        // For forum topics opened at first unread position, don't force-read on initial load
+        // to avoid marking all visible messages as read on the server
+        TdApi.MessageTopic topicId = loader.getTopicId();
+        if (topicId != null && topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+          // Only force-read after user has scrolled
+          return canRead() && wasScrollByUser;
+        }
         return canRead();
       }
 
@@ -1838,8 +1845,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case MessagesLoader.SPECIAL_MODE_SEARCH:
         return;
     }
-    TdApi.MessageTopic topicId = loader.getMessageTopicId();
-    if (!Td.matchesTopic(message.getMessageTopicId(), topicId)) {
+    // Check both messageThread topic (for comment threads) and forum topicId (for forum tabs)
+    TdApi.MessageTopic messageThreadTopicId = loader.getMessageTopicId();
+    TdApi.MessageTopic forumTopicId = loader.getTopicId();
+    TdApi.MessageTopic effectiveTopicId = messageThreadTopicId != null ? messageThreadTopicId : forumTopicId;
+    if (!Td.matchesTopic(message.getMessageTopicId(), effectiveTopicId)) {
       return;
     }
     ThreadInfo messageThread = loader.getMessageThread();

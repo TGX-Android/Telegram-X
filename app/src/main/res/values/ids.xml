@@ -174,6 +174,8 @@
   <item type="id" name="controller_emojiMedia" />
   <item type="id" name="controller_contacts" />
   <item type="id" name="controller_chats" />
+  <item type="id" name="controller_forumTopics" />
+  <item type="id" name="controller_forumTopicTabs" />
   <item type="id" name="controller_main" />
   <item type="id" name="controller_call_list" />
   <item type="id" name="controller_call" />
@@ -372,6 +374,15 @@
   <item type="id" name="btn_markFolderAsRead" />
   <item type="id" name="btn_addChatToFolder" />
   <item type="id" name="btn_removeChatFromFolder" />
+  <item type="id" name="btn_pinTopic" />
+  <item type="id" name="btn_unpinTopic" />
+  <item type="id" name="btn_closeTopic" />
+  <item type="id" name="btn_reopenTopic" />
+  <item type="id" name="btn_editTopic" />
+  <item type="id" name="btn_deleteTopic" />
+  <item type="id" name="btn_createTopic" />
+  <item type="id" name="btn_viewAsChat" />
+  <item type="id" name="btn_viewAsTopics" />
   <item type="id" name="btn_members" />
   <item type="id" name="btn_membersReading" />
   <item type="id" name="btn_membersWriting" />
@@ -1221,6 +1232,7 @@
 
   <item type="id" name="btn_toggleAggressiveAntiSpam" />
   <item type="id" name="btn_toggleHideMembers" />
+  <item type="id" name="btn_toggleForum" />
   <item type="id" name="btn_reportFalsePositive" />
 
   <item type="id" name="btn_approveChatRequest" />
