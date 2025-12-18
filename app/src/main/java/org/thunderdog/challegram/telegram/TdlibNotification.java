@@ -156,6 +156,16 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     return notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR ? ((TdApi.NotificationTypeNewMessage) notification.type).message : null;
   }
 
+  public long findForumTopicId () {
+    TdApi.Message message = findMessage();
+    if (message != null && message.topicId != null) {
+      if (message.topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+        return ((TdApi.MessageTopicForum) message.topicId).forumTopicId;
+      }
+    }
+    return 0;
+  }
+
   public boolean canMergeWith (@Nullable TdlibNotification n) {
     if (n != null && notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR && n.notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR) {
       TdApi.Message m = ((TdApi.NotificationTypeNewMessage) notification.type).message;
