@@ -186,6 +186,7 @@ Full stories feature implementation for Telegram-X with complete feature parity.
 | | | Topic actions in tabs mode (mute, close, pin, edit via 3 dots menu)
 | | | Fix: New messages appearing in wrong topic tab (updateNewMessage topic filtering)
 | | | Fix: Topic mention/reaction counters not updating (onForumTopicUpdated extended)
+| | | Fix: Chat list preview showing "Topic created" for non-forum service messages (switch fallthrough bug)
 
 ## Implementation Notes
 

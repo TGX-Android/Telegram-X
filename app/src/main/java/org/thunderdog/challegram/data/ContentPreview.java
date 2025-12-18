@@ -719,6 +719,7 @@ public class ContentPreview {
       case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
+        break;
 
       // Forum topic service messages
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR: {
