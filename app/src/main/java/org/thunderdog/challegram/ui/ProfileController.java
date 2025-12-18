@@ -1943,7 +1943,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           itemId == R.id.btn_toggleJoinByRequest ||
           itemId == R.id.btn_toggleAggressiveAntiSpam ||
           itemId == R.id.btn_toggleHideMembers ||
-          itemId == R.id.btn_toggleForum) {
+          itemId == R.id.btn_toggleForum ||
+          itemId == R.id.btn_toggleForumTabs) {
           view.getToggler().setRadioEnabled(item.isSelected(), isUpdate);
         }
         if (item.getViewType() == ListItem.TYPE_RADIO_SETTING) {
@@ -3323,7 +3324,57 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (supergroup != null && TD.isCreator(supergroup.status)) {
       boolean newValue = baseAdapter.toggleView(v);
       toggleForumItem.setSelected(newValue);
+      // Dynamically show/hide tabs toggle
+      if (newValue) {
+        // Forum enabled - show tabs toggle
+        int insertIndex = baseAdapter.indexOfView(toggleForumItem);
+        if (insertIndex != -1 && toggleForumTabsItem != null) {
+          baseAdapter.addItems(insertIndex + 1,
+            new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+            toggleForumTabsItem
+          );
+          // Update description to show tabs layout info
+          updateForumDescription(true);
+        }
+      } else {
+        // Forum disabled - hide tabs toggle
+        int deleteIndex = baseAdapter.indexOfView(toggleForumTabsItem);
+        if (deleteIndex != -1) {
+          baseAdapter.removeRange(deleteIndex - 1, 2);
+          // Reset tabs toggle
+          if (toggleForumTabsItem != null) {
+            toggleForumTabsItem.setSelected(false);
+          }
+          // Update description to show forum disabled info
+          updateForumDescription(false);
+        }
+      }
       checkDoneButton();
+    }
+  }
+
+  private void toggleForumTabs (View v) {
+    // Only owner can toggle forum tabs mode
+    if (supergroup != null && TD.isCreator(supergroup.status) && toggleForumTabsItem != null) {
+      boolean newValue = baseAdapter.toggleView(v);
+      toggleForumTabsItem.setSelected(newValue);
+      checkDoneButton();
+    }
+  }
+
+  private void updateForumDescription (boolean isForumEnabled) {
+    // Find the description item and update its text
+    int count = baseAdapter.getItemCount();
+    for (int i = 0; i < count; i++) {
+      ListItem item = baseAdapter.getItem(i);
+      if (item != null && item.getViewType() == ListItem.TYPE_DESCRIPTION) {
+        int stringId = item.getStringResource();
+        if (stringId == R.string.EnableTopicsDesc || stringId == R.string.TopicsLayoutTabsDesc) {
+          item.setString(isForumEnabled ? R.string.TopicsLayoutTabsDesc : R.string.EnableTopicsDesc);
+          baseAdapter.updateValuedSettingByPosition(i);
+          break;
+        }
+      }
     }
   }
 
@@ -3691,7 +3742,22 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private boolean hasForumChanges () {
     boolean originalValue = supergroup != null && supergroup.isForum;
-    return toggleForumItem != null && originalValue != toggleForumItem.isSelected();
+    boolean forumChanged = toggleForumItem != null && originalValue != toggleForumItem.isSelected();
+    // Also trigger if tabs layout changed (while forum is enabled)
+    return forumChanged || hasForumTabsChanges();
+  }
+
+  private boolean hasForumTabsChanges () {
+    if (toggleForumTabsItem == null || supergroup == null || !supergroup.isForum) {
+      return false;
+    }
+    // Only consider changes if forum will be enabled (either already enabled or being enabled)
+    boolean willBeForumEnabled = toggleForumItem != null ? toggleForumItem.isSelected() : supergroup.isForum;
+    if (!willBeForumEnabled) {
+      return false; // Tabs changes don't matter if forum is being disabled
+    }
+    boolean originalValue = supergroup.hasForumTabs;
+    return originalValue != toggleForumTabsItem.isSelected();
   }
 
   private boolean hasTtlChanges () {
@@ -3802,8 +3868,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (hasForumChanges) {
       boolean isForum = toggleForumItem.isSelected();
-      // When enabling forum, use default tabs setting (false). When disabling, hasForumTabs is ignored.
-      changes.add(new TdApi.ToggleSupergroupIsForum(ChatId.toSupergroupId(chat.id), isForum, false));
+      // Pass current tabs selection when forum is enabled, false when disabled
+      boolean hasForumTabs = isForum && toggleForumTabsItem != null && toggleForumTabsItem.isSelected();
+      changes.add(new TdApi.ToggleSupergroupIsForum(ChatId.toSupergroupId(chat.id), isForum, hasForumTabs));
     }
 
     if (hasSignMessagesChanges || hasShowAuthorsChanges) {
@@ -3914,7 +3981,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private ListItem slowModeItem, slowModeDescItem;
-  private ListItem aggressiveAntiSpamItem, hideMembersItem, toggleForumItem,
+  private ListItem aggressiveAntiSpamItem, hideMembersItem, toggleForumItem, toggleForumTabsItem,
     toggleJoinByRequestItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem;
   private ListItem ttlItem, ttlDescItem;
 
@@ -4120,10 +4187,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     // Forum toggle - only for supergroup owners without linked chat (discussion group)
     if (supergroup != null && !supergroup.isChannel && TD.isCreator(supergroup.status) && !supergroup.hasLinkedChat) {
       boolean isForum = supergroup.isForum;
+      boolean hasForumTabs = supergroup.hasForumTabs;
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(toggleForumItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleForum, 0, R.string.EnableTopics, isForum));
+      // Always create the tabs toggle item (for dynamic show/hide), but only add to list if forum is enabled
+      toggleForumTabsItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleForumTabs, 0, R.string.TopicsLayoutTabs, hasForumTabs);
+      if (isForum) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(toggleForumTabsItem);
+      }
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.EnableTopicsDesc));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, isForum ? R.string.TopicsLayoutTabsDesc : R.string.EnableTopicsDesc));
     }
 
     if (tdlib.canEditSlowMode(chat.id)) {
@@ -4269,6 +4343,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void processEditContentChanged (TdApi.Supergroup updatedSupergroup) {
     boolean wasForumChanged = this.supergroup != null && this.supergroup.isForum != updatedSupergroup.isForum;
+    boolean wasForumTabsChanged = this.supergroup != null && this.supergroup.isForum && updatedSupergroup.isForum
+        && this.supergroup.hasForumTabs != updatedSupergroup.hasForumTabs;
     this.supergroup = updatedSupergroup;
     checkCanToggleJoinByRequest();
     baseAdapter.updateValuedSettingById(R.id.btn_toggleProtection);
@@ -4288,8 +4364,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     }
 
-    // When forum mode changes, navigate back and reopen the chat
-    if (wasForumChanged && chat != null) {
+    // When forum mode or tabs layout changes, navigate back and reopen the chat
+    if ((wasForumChanged || wasForumTabsChanged) && chat != null) {
       navigateBack();
       tdlib.ui().post(() -> {
         if (!isDestroyed()) {
@@ -4951,6 +5027,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       toggleHideMembers(v);
     } else if (viewId == R.id.btn_toggleForum) {
       toggleForum(v);
+    } else if (viewId == R.id.btn_toggleForumTabs) {
+      toggleForumTabs(v);
     } else if (viewId == R.id.btn_toggleProtection) {
       toggleContentProtection(v);
     } else if (viewId == R.id.btn_toggleJoinByRequest) {

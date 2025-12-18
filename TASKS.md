@@ -49,6 +49,12 @@
 | | | Fix: New messages appearing in wrong topic tab (updateNewMessage topic filtering)
 | | | Fix: Topic mention/reaction counters not updating (onForumTopicUpdated extended)
 | | | Fix: Chat list preview showing "Topic created" for non-forum service messages (switch fallthrough bug)
+| | | Create topic option in tabs mode (ForumTopicTabsController - via 3 dots menu)
+| | | Permission checks for topic actions UI (hide create/edit/pin/close/delete based on user rights)
+| | | Group Info access from tabs mode (ForumTopicTabsController - admin-only menu option)
+| | | Forum layout toggle (tabs vs list) in ProfileController (ToggleSupergroupIsForum with hasForumTabs)
+| | | Fix: Forum layout toggle instant apply (wasForumTabsChanged check in processEditContentChanged)
+| | | Fix: Visual flash when entering forum tabs (LoadingController placeholder instead of MessagesController)
 
 ## Implementation Notes
 

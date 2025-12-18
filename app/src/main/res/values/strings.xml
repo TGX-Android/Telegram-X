@@ -2296,6 +2296,9 @@
   <string name="TopicNameHint">Enter topic name</string>
   <string name="EnableTopics">Topics</string>
   <string name="EnableTopicsDesc">Enable topics to organize discussions in this group. Only the group owner can toggle this setting.</string>
+  <string name="TopicsLayoutTabs">Show as Tabs</string>
+  <string name="TopicsLayoutTabsDesc">When enabled, topics will be displayed as horizontal tabs at the top of the chat instead of a list.</string>
+  <string name="TabInfo">Group Info</string>
   <string name="TopicWasCreated">Topic created</string>
   <string name="TopicWasRenamed">Topic renamed to %1$s</string>
   <string name="TopicIconChanged">Topic icon changed</string>

@@ -15,7 +15,9 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
@@ -35,6 +37,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.ViewPager;
 
 import java.util.ArrayList;
@@ -197,13 +200,8 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
   }
 
   private ViewController<?> createEmptyController (Context context) {
-    // Return an empty controller as placeholder while loading
-    MessagesController controller = new MessagesController(context, tdlib);
-    MessagesController.Arguments args = new MessagesController.Arguments(
-      tdlib, null, chat, null, null, null
-    );
-    controller.setArguments(args);
-    return controller;
+    // Return a loading controller with centered progress spinner while topics load
+    return new LoadingController(context, tdlib);
   }
 
   @Override
@@ -299,40 +297,59 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
       IntList icons = new IntList(6);
       StringList strings = new StringList(6);
 
+      boolean canManage = canManageTopics();
+
       // Topic-specific options (only if we have a valid topic)
       if (topic != null) {
-        // Notifications
+        // Notifications (always available for members)
         boolean isMuted = topic.notificationSettings != null && topic.notificationSettings.muteFor > 0;
         ids.append(R.id.btn_notifications);
         icons.append(isMuted ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24);
         strings.append(isMuted ? R.string.Unmute : R.string.Mute);
 
-        // Close/Reopen
-        if (topic.info.isClosed) {
-          ids.append(R.id.btn_reopenTopic);
-          icons.append(R.drawable.baseline_lock_24);
-          strings.append(R.string.ReopenTopic);
-        } else {
-          ids.append(R.id.btn_closeTopic);
-          icons.append(R.drawable.baseline_lock_24);
-          strings.append(R.string.CloseTopic);
-        }
+        // Admin-only actions
+        if (canManage) {
+          // Close/Reopen
+          if (topic.info.isClosed) {
+            ids.append(R.id.btn_reopenTopic);
+            icons.append(R.drawable.baseline_lock_24);
+            strings.append(R.string.ReopenTopic);
+          } else {
+            ids.append(R.id.btn_closeTopic);
+            icons.append(R.drawable.baseline_lock_24);
+            strings.append(R.string.CloseTopic);
+          }
 
-        // Pin/Unpin
-        if (topic.isPinned) {
-          ids.append(R.id.btn_unpinTopic);
-          icons.append(R.drawable.deproko_baseline_pin_undo_24);
-          strings.append(R.string.UnpinTopic);
-        } else {
-          ids.append(R.id.btn_pinTopic);
-          icons.append(R.drawable.deproko_baseline_pin_24);
-          strings.append(R.string.PinTopic);
-        }
+          // Pin/Unpin
+          if (topic.isPinned) {
+            ids.append(R.id.btn_unpinTopic);
+            icons.append(R.drawable.deproko_baseline_pin_undo_24);
+            strings.append(R.string.UnpinTopic);
+          } else {
+            ids.append(R.id.btn_pinTopic);
+            icons.append(R.drawable.deproko_baseline_pin_24);
+            strings.append(R.string.PinTopic);
+          }
 
-        // Edit
-        ids.append(R.id.btn_editTopic);
-        icons.append(R.drawable.baseline_edit_24);
-        strings.append(R.string.EditTopic);
+          // Edit
+          ids.append(R.id.btn_editTopic);
+          icons.append(R.drawable.baseline_edit_24);
+          strings.append(R.string.EditTopic);
+        }
+      }
+
+      // Create topic option (only if user has permission)
+      if (canCreateTopics()) {
+        ids.append(R.id.btn_createTopic);
+        icons.append(R.drawable.baseline_add_24);
+        strings.append(R.string.NewTopic);
+      }
+
+      // Group info option (admin only)
+      if (canManage) {
+        ids.append(R.id.btn_chatSettings);
+        icons.append(R.drawable.baseline_info_24);
+        strings.append(R.string.TabInfo);
       }
 
       // View as chat option (always available)
@@ -348,7 +365,14 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
   public void onMoreItemPressed (int id) {
     TdApi.ForumTopic topic = getCurrentTopic();
 
-    if (id == R.id.btn_viewAsChat) {
+    if (id == R.id.btn_createTopic) {
+      showCreateTopicDialog();
+    } else if (id == R.id.btn_chatSettings) {
+      // Open chat profile/settings
+      ProfileController profileController = new ProfileController(context, tdlib);
+      profileController.setArguments(new ProfileController.Args(chat, null, false));
+      navigateTo(profileController);
+    } else if (id == R.id.btn_viewAsChat) {
       // Set viewAsTopics to false and open as unified chat
       tdlib.client().send(new TdApi.ToggleChatViewAsTopics(chatId, false), result -> {
         if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
@@ -527,8 +551,126 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
     });
   }
 
+  private void showCreateTopicDialog () {
+    openInputAlert(
+      Lang.getString(R.string.NewTopic),
+      Lang.getString(R.string.TopicNameHint),
+      R.string.Done,
+      R.string.Cancel,
+      null,
+      (inputView, result) -> {
+        String name = result.trim();
+        if (name.isEmpty()) {
+          inputView.setInErrorState(true);
+          return false;
+        }
+        if (name.length() > 128) {
+          inputView.setInErrorState(true);
+          return false;
+        }
+        createTopic(name);
+        return true;
+      },
+      true
+    );
+  }
+
+  private void createTopic (String name) {
+    // Standard topic colors from Telegram
+    int[] topicColors = {
+      0x6FB9F0, // Blue
+      0xFFD67E, // Yellow
+      0xCB86DB, // Purple
+      0x8EEE98, // Green
+      0xFF93B2, // Pink
+      0xFB6F5F  // Red
+    };
+    // Pick a random color
+    int color = topicColors[(int) (Math.random() * topicColors.length)];
+
+    TdApi.ForumTopicIcon icon = new TdApi.ForumTopicIcon(color, 0);
+
+    tdlib.client().send(new TdApi.CreateForumTopic(chatId, name, false, icon), result -> {
+      UI.post(() -> {
+        if (result.getConstructor() == TdApi.ForumTopicInfo.CONSTRUCTOR) {
+          // Reload topics to show the new one
+          loadTopics();
+        } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          UI.showError(result);
+        }
+      });
+    });
+  }
+
   @Override
   public void destroy () {
     super.destroy();
+  }
+
+  // Permission checks for topic actions
+  private boolean canCreateTopics () {
+    TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
+    if (status == null) return false;
+
+    switch (status.getConstructor()) {
+      case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+        return true;
+      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canManageTopics;
+      case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+      case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
+        // Check chat-level permissions
+        return chat != null && chat.permissions != null && chat.permissions.canCreateTopics;
+      default:
+        return false;
+    }
+  }
+
+  private boolean canManageTopics () {
+    TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
+    if (status == null) return false;
+
+    switch (status.getConstructor()) {
+      case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+        return true;
+      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canManageTopics;
+      default:
+        return false;
+    }
+  }
+
+  // Loading placeholder controller shown while topics are being loaded
+  private static class LoadingController extends ViewController<Void> {
+    public LoadingController (Context context, Tdlib tdlib) {
+      super(context, tdlib);
+    }
+
+    @Override
+    public int getId () {
+      return 0;
+    }
+
+    @Override
+    protected View onCreateView (Context context) {
+      // Create a centered progress spinner
+      FrameLayoutFix container = new FrameLayoutFix(context);
+      container.setLayoutParams(new ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.MATCH_PARENT
+      ));
+
+      ProgressComponentView progressView = new ProgressComponentView(context);
+      progressView.initLarge(1f);
+      FrameLayoutFix.LayoutParams lp = new FrameLayoutFix.LayoutParams(
+        Screen.dp(48f),
+        Screen.dp(48f),
+        Gravity.CENTER
+      );
+      progressView.setLayoutParams(lp);
+
+      container.addView(progressView);
+      return container;
+    }
   }
 }

@@ -290,6 +290,8 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
     createTopicButton.setLayoutParams(fabParams);
     addThemeInvalidateListener(createTopicButton);
     contentView.addView(createTopicButton);
+    // Hide FAB if user can't create topics
+    createTopicButton.setVisibility(canCreateTopics() ? View.VISIBLE : View.GONE);
 
     loadTopics();
 
@@ -462,51 +464,57 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
     IntList colors = new IntList(5);
     ArrayList<String> strings = new ArrayList<>();
 
-    // Pin/Unpin
-    if (topic.isPinned) {
-      ids.append(R.id.btn_unpinTopic);
-      icons.append(R.drawable.deproko_baseline_pin_undo_24);
-      colors.append(OptionColor.NORMAL);
-      strings.add(Lang.getString(R.string.UnpinTopic));
-    } else {
-      ids.append(R.id.btn_pinTopic);
-      icons.append(R.drawable.deproko_baseline_pin_24);
-      colors.append(OptionColor.NORMAL);
-      strings.add(Lang.getString(R.string.PinTopic));
+    boolean canManage = canManageTopics();
+
+    // Admin-only: Pin/Unpin
+    if (canManage) {
+      if (topic.isPinned) {
+        ids.append(R.id.btn_unpinTopic);
+        icons.append(R.drawable.deproko_baseline_pin_undo_24);
+        colors.append(OptionColor.NORMAL);
+        strings.add(Lang.getString(R.string.UnpinTopic));
+      } else {
+        ids.append(R.id.btn_pinTopic);
+        icons.append(R.drawable.deproko_baseline_pin_24);
+        colors.append(OptionColor.NORMAL);
+        strings.add(Lang.getString(R.string.PinTopic));
+      }
+
+      // Admin-only: Close/Reopen
+      if (topic.info.isClosed) {
+        ids.append(R.id.btn_reopenTopic);
+        icons.append(R.drawable.baseline_lock_24);
+        colors.append(OptionColor.NORMAL);
+        strings.add(Lang.getString(R.string.ReopenTopic));
+      } else {
+        ids.append(R.id.btn_closeTopic);
+        icons.append(R.drawable.baseline_lock_24);
+        colors.append(OptionColor.NORMAL);
+        strings.add(Lang.getString(R.string.CloseTopic));
+      }
     }
 
-    // Close/Reopen
-    if (topic.info.isClosed) {
-      ids.append(R.id.btn_reopenTopic);
-      icons.append(R.drawable.baseline_lock_24);
-      colors.append(OptionColor.NORMAL);
-      strings.add(Lang.getString(R.string.ReopenTopic));
-    } else {
-      ids.append(R.id.btn_closeTopic);
-      icons.append(R.drawable.baseline_lock_24);
-      colors.append(OptionColor.NORMAL);
-      strings.add(Lang.getString(R.string.CloseTopic));
-    }
-
-    // Notifications
+    // Notifications (always available for members)
     boolean isMuted = topic.notificationSettings != null && topic.notificationSettings.muteFor > 0;
     ids.append(R.id.btn_notifications);
     icons.append(isMuted ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24);
     colors.append(OptionColor.NORMAL);
     strings.add(Lang.getString(isMuted ? R.string.Unmute : R.string.Mute));
 
-    // Edit
-    ids.append(R.id.btn_editTopic);
-    icons.append(R.drawable.baseline_edit_24);
-    colors.append(OptionColor.NORMAL);
-    strings.add(Lang.getString(R.string.EditTopic));
+    // Admin-only: Edit
+    if (canManage) {
+      ids.append(R.id.btn_editTopic);
+      icons.append(R.drawable.baseline_edit_24);
+      colors.append(OptionColor.NORMAL);
+      strings.add(Lang.getString(R.string.EditTopic));
 
-    // Delete
-    if (!topic.info.isGeneral) {
-      ids.append(R.id.btn_deleteTopic);
-      icons.append(R.drawable.baseline_delete_24);
-      colors.append(OptionColor.RED);
-      strings.add(Lang.getString(R.string.DeleteTopic));
+      // Admin-only: Delete
+      if (!topic.info.isGeneral) {
+        ids.append(R.id.btn_deleteTopic);
+        icons.append(R.drawable.baseline_delete_24);
+        colors.append(OptionColor.RED);
+        strings.add(Lang.getString(R.string.DeleteTopic));
+      }
     }
 
     showOptions(topic.info.name, ids.get(), strings.toArray(new String[0]), colors.get(), icons.get(), (itemView, id) -> {
@@ -811,6 +819,39 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
           }
         }
       });
+    }
+  }
+
+  // Permission checks for topic actions
+  private boolean canCreateTopics () {
+    TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
+    if (status == null) return false;
+
+    switch (status.getConstructor()) {
+      case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+        return true;
+      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canManageTopics;
+      case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+      case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
+        // Check chat-level permissions
+        return chat != null && chat.permissions != null && chat.permissions.canCreateTopics;
+      default:
+        return false;
+    }
+  }
+
+  private boolean canManageTopics () {
+    TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
+    if (status == null) return false;
+
+    switch (status.getConstructor()) {
+      case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+        return true;
+      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canManageTopics;
+      default:
+        return false;
     }
   }
 
