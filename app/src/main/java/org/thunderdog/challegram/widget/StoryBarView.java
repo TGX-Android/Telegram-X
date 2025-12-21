@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -62,10 +63,14 @@ public class StoryBarView extends RecyclerView {
   private static final int RING_GAP_DP = 2;
   private static final int BAR_HEIGHT_DP = 100;
 
+  private static final int VIEW_TYPE_ADD_STORY = 0;
+  private static final int VIEW_TYPE_STORY = 1;
+
   private final Tdlib tdlib;
   private final StoryBarAdapter adapter;
   private final List<TdApi.ChatActiveStories> activeStoriesList = new ArrayList<>();
   private @Nullable StoryClickListener clickListener;
+  private boolean canPostStory = false;
 
   public interface StoryClickListener {
     void onStoryClick (long chatId, int storyId, List<TdApi.ChatActiveStories> allStories, int position);
@@ -100,38 +105,90 @@ public class StoryBarView extends RecyclerView {
     setVisibility(shouldShow() ? VISIBLE : GONE);
   }
 
+  public void setCanPostStory (boolean canPost) {
+    if (this.canPostStory != canPost) {
+      this.canPostStory = canPost;
+      adapter.notifyDataSetChanged();
+      setVisibility(shouldShow() ? VISIBLE : GONE);
+    }
+  }
+
   public boolean shouldShow () {
     if (Settings.instance().hideStories()) {
       return false;
     }
-    return !activeStoriesList.isEmpty();
+    return canPostStory || !activeStoriesList.isEmpty();
+  }
+
+  private boolean hasAddButton () {
+    return canPostStory;
   }
 
   public int getBarHeight () {
     return shouldShow() ? Screen.dp(BAR_HEIGHT_DP) : 0;
   }
 
-  private class StoryBarAdapter extends RecyclerView.Adapter<StoryItemViewHolder> {
+  private class StoryBarAdapter extends RecyclerView.Adapter<ViewHolder> {
+
+    @Override
+    public int getItemViewType (int position) {
+      if (hasAddButton() && position == 0) {
+        return VIEW_TYPE_ADD_STORY;
+      }
+      return VIEW_TYPE_STORY;
+    }
 
     @NonNull
     @Override
-    public StoryItemViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-      StoryAvatarItemView itemView = new StoryAvatarItemView(getContext(), tdlib);
-      itemView.setLayoutParams(new LayoutParams(Screen.dp(ITEM_SIZE_DP), ViewGroup.LayoutParams.MATCH_PARENT));
-      return new StoryItemViewHolder(itemView);
+    public ViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
+      if (viewType == VIEW_TYPE_ADD_STORY) {
+        AddStoryItemView itemView = new AddStoryItemView(getContext(), tdlib);
+        itemView.setLayoutParams(new LayoutParams(Screen.dp(ITEM_SIZE_DP), ViewGroup.LayoutParams.MATCH_PARENT));
+        return new AddStoryViewHolder(itemView);
+      } else {
+        StoryAvatarItemView itemView = new StoryAvatarItemView(getContext(), tdlib);
+        itemView.setLayoutParams(new LayoutParams(Screen.dp(ITEM_SIZE_DP), ViewGroup.LayoutParams.MATCH_PARENT));
+        return new StoryItemViewHolder(itemView);
+      }
     }
 
     @Override
-    public void onBindViewHolder (@NonNull StoryItemViewHolder holder, int position) {
-      if (position < activeStoriesList.size()) {
-        TdApi.ChatActiveStories activeStories = activeStoriesList.get(position);
-        holder.bind(activeStories, position);
+    public void onBindViewHolder (@NonNull ViewHolder holder, int position) {
+      if (holder instanceof AddStoryViewHolder) {
+        ((AddStoryViewHolder) holder).bind();
+      } else if (holder instanceof StoryItemViewHolder) {
+        int storyIndex = hasAddButton() ? position - 1 : position;
+        if (storyIndex >= 0 && storyIndex < activeStoriesList.size()) {
+          TdApi.ChatActiveStories activeStories = activeStoriesList.get(storyIndex);
+          ((StoryItemViewHolder) holder).bind(activeStories, storyIndex);
+        }
       }
     }
 
     @Override
     public int getItemCount () {
-      return activeStoriesList.size();
+      int count = activeStoriesList.size();
+      if (hasAddButton()) {
+        count++;
+      }
+      return count;
+    }
+  }
+
+  private class AddStoryViewHolder extends ViewHolder {
+    private final AddStoryItemView itemView;
+
+    public AddStoryViewHolder (@NonNull AddStoryItemView itemView) {
+      super(itemView);
+      this.itemView = itemView;
+    }
+
+    public void bind () {
+      itemView.setOnClickListener(v -> {
+        if (clickListener != null) {
+          clickListener.onAddStoryClick();
+        }
+      });
     }
   }
 
@@ -310,6 +367,118 @@ public class StoryBarView extends RecyclerView {
         centerY + ringRadius
       );
 
+      canvas.drawOval(ringRect, ringPaint);
+    }
+  }
+
+  /**
+   * "Add Story" item view with plus icon and gradient ring
+   */
+  public static class AddStoryItemView extends FrameLayoutFix {
+
+    private final Tdlib tdlib;
+    private final ImageView addIcon;
+    private final TextView nameView;
+    private final Paint ringPaint;
+    private final Paint bgPaint;
+    private final RectF ringRect;
+
+    // Gradient colors for add story ring (same as unread)
+    private static final int[] GRADIENT_COLORS = {
+      0xFF7B68EE, // Medium slate blue
+      0xFF00CED1, // Dark turquoise
+      0xFF00FA9A  // Medium spring green
+    };
+
+    public AddStoryItemView (@NonNull Context context, Tdlib tdlib) {
+      super(context);
+      this.tdlib = tdlib;
+
+      setWillNotDraw(false);
+
+      ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      ringPaint.setStyle(Paint.Style.STROKE);
+      ringPaint.setStrokeWidth(Screen.dp(RING_WIDTH_DP));
+      ringRect = new RectF();
+
+      bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      bgPaint.setColor(Theme.fillingColor());
+
+      // Plus icon in center
+      addIcon = new ImageView(context);
+      addIcon.setImageResource(R.drawable.baseline_add_24);
+      addIcon.setColorFilter(Theme.iconColor());
+      addIcon.setScaleType(ImageView.ScaleType.CENTER);
+      int avatarSize = Screen.dp(AVATAR_SIZE_DP);
+      LayoutParams iconParams = new LayoutParams(avatarSize, avatarSize);
+      iconParams.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
+      iconParams.topMargin = Screen.dp(8);
+      addIcon.setLayoutParams(iconParams);
+      addView(addIcon);
+
+      // "Add Story" text below
+      nameView = new TextView(context);
+      nameView.setText(R.string.AddStory);
+      nameView.setTextSize(11);
+      nameView.setTextColor(Theme.textAccentColor());
+      nameView.setTypeface(Fonts.getRobotoRegular());
+      nameView.setGravity(Gravity.CENTER);
+      nameView.setSingleLine(true);
+      nameView.setMaxLines(1);
+      nameView.setEllipsize(android.text.TextUtils.TruncateAt.END);
+      LayoutParams nameParams = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+      nameParams.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
+      nameParams.bottomMargin = Screen.dp(4);
+      nameParams.leftMargin = Screen.dp(2);
+      nameParams.rightMargin = Screen.dp(2);
+      nameView.setLayoutParams(nameParams);
+      addView(nameView);
+    }
+
+    private void updateRingGradient () {
+      int width = getWidth();
+      int height = getHeight();
+      if (width > 0 && height > 0) {
+        LinearGradient gradient = new LinearGradient(
+          0, 0, width, height,
+          GRADIENT_COLORS,
+          null,
+          Shader.TileMode.CLAMP
+        );
+        ringPaint.setShader(gradient);
+      }
+    }
+
+    @Override
+    protected void onSizeChanged (int w, int h, int oldw, int oldh) {
+      super.onSizeChanged(w, h, oldw, oldh);
+      updateRingGradient();
+    }
+
+    @Override
+    protected void onDraw (Canvas canvas) {
+      super.onDraw(canvas);
+
+      // Draw ring around icon area
+      int centerX = getWidth() / 2;
+      int avatarTopMargin = Screen.dp(8);
+      int avatarSize = Screen.dp(AVATAR_SIZE_DP);
+      int centerY = avatarTopMargin + avatarSize / 2;
+
+      float ringRadius = avatarSize / 2f + Screen.dp(RING_GAP_DP) + Screen.dp(RING_WIDTH_DP) / 2f;
+
+      ringRect.set(
+        centerX - ringRadius,
+        centerY - ringRadius,
+        centerX + ringRadius,
+        centerY + ringRadius
+      );
+
+      // Draw background circle
+      float bgRadius = avatarSize / 2f;
+      canvas.drawCircle(centerX, centerY, bgRadius, bgPaint);
+
+      // Draw gradient ring
       canvas.drawOval(ringRect, ringPaint);
     }
   }

@@ -608,15 +608,16 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         }
         @Override
         public void onAddStoryClick () {
-          // TODO: implement add story
+          StoryComposeController.open(ChatsController.this);
         }
       });
       contentView.addView(storyBarView);
       // Add top padding to chatsView so it scrolls under the story bar
       chatsView.setPadding(chatsView.getPaddingLeft(), storyBarView.getBarHeight(), chatsView.getPaddingRight(), chatsView.getPaddingBottom());
       chatsView.setClipToPadding(false);
-      // Load active stories
+      // Load active stories and check if user can post stories
       loadActiveStories();
+      checkCanPostStory();
     }
 
     Views.setScrollBarPosition(chatsView);
@@ -3182,6 +3183,21 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         if (storyBarView != null) {
           // Start with empty list - stories will be populated via TDLib updates
           storyBarView.setActiveStories(new ArrayList<>());
+        }
+      });
+    });
+  }
+
+  private void checkCanPostStory () {
+    if (storyBarView == null) {
+      return;
+    }
+    long chatId = tdlib.selfChatId();
+    tdlib.client().send(new TdApi.CanPostStory(chatId), result -> {
+      runOnUiThreadOptional(() -> {
+        if (storyBarView != null) {
+          boolean canPost = result.getConstructor() == TdApi.CanPostStoryResultOk.CONSTRUCTOR;
+          storyBarView.setCanPostStory(canPost);
         }
       });
     });

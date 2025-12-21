@@ -25,9 +25,14 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -125,6 +130,11 @@ public class StoryViewController extends ViewController<StoryViewController.Args
   private StoryContentView storyContentView;
   private StoryProgressView storyProgressView;
   private StoryHeaderView storyHeaderView;
+  private StoryReplyInputView storyReplyInputView;
+
+  // Double-tap detection for reactions
+  private long lastTapTime;
+  private static final long DOUBLE_TAP_TIMEOUT = 300;
 
   // Animation
   private FactorAnimator revealAnimator;
@@ -196,15 +206,28 @@ public class StoryViewController extends ViewController<StoryViewController.Args
                 resumeProgress();
               }
             } else {
-              // Handle tap for navigation
+              // Handle tap for navigation or double-tap for reaction
+              long now = System.currentTimeMillis();
               float x = event.getX();
               float width = getMeasuredWidth();
-              if (x < width * 0.3f) {
-                navigatePrevious();
-              } else if (x > width * 0.7f) {
-                navigateNext();
+              float centerWidth = width * 0.4f;
+              float centerStart = (width - centerWidth) / 2f;
+              boolean isInCenter = x >= centerStart && x <= centerStart + centerWidth;
+
+              if (isInCenter && now - lastTapTime < DOUBLE_TAP_TIMEOUT) {
+                // Double tap in center - send heart reaction
+                sendHeartReaction();
+                lastTapTime = 0; // Reset to prevent triple-tap
               } else {
-                resumeProgress();
+                // Single tap - navigate
+                if (x < width * 0.3f) {
+                  navigatePrevious();
+                } else if (x > width * 0.7f) {
+                  navigateNext();
+                } else {
+                  resumeProgress();
+                }
+                lastTapTime = now;
               }
             }
             return true;
@@ -251,6 +274,17 @@ public class StoryViewController extends ViewController<StoryViewController.Args
     closeParams.rightMargin = Screen.dp(8f);
     closeButton.setLayoutParams(closeParams);
     contentView.addView(closeButton);
+
+    // Reply input at bottom
+    storyReplyInputView = new StoryReplyInputView(context);
+    FrameLayoutFix.LayoutParams replyParams = FrameLayoutFix.newParams(
+      ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f),
+      Gravity.BOTTOM);
+    replyParams.leftMargin = Screen.dp(8f);
+    replyParams.rightMargin = Screen.dp(8f);
+    replyParams.bottomMargin = Screen.dp(16f);
+    storyReplyInputView.setLayoutParams(replyParams);
+    contentView.addView(storyReplyInputView);
 
     // Load story
     if (currentStory != null) {
@@ -473,6 +507,53 @@ public class StoryViewController extends ViewController<StoryViewController.Args
     }
     // No more stories, close viewer
     close();
+  }
+
+  // Reactions
+  private void sendHeartReaction () {
+    if (currentStory == null) return;
+    TdApi.ReactionTypeEmoji heartReaction = new TdApi.ReactionTypeEmoji("❤");
+    tdlib.client().send(new TdApi.SetStoryReaction(currentChatId, currentStoryId, heartReaction, false), result -> {
+      UI.post(() -> {
+        if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+          UI.showToast("❤", Toast.LENGTH_SHORT);
+        }
+      });
+    });
+  }
+
+  private void sendReply (String text) {
+    if (currentStory == null || text == null || text.trim().isEmpty()) return;
+
+    // Send message to the story poster as a reply to their story
+    TdApi.InputMessageText inputMessage = new TdApi.InputMessageText(
+      new TdApi.FormattedText(text.trim(), null),
+      null, // linkPreviewOptions
+      false // clearDraft
+    );
+
+    TdApi.MessageReplyToStory replyTo = new TdApi.MessageReplyToStory(currentChatId, currentStoryId);
+
+    tdlib.client().send(new TdApi.SendMessage(
+      currentChatId,
+      0, // messageThreadId
+      replyTo,
+      null, // options
+      null, // replyMarkup
+      inputMessage
+    ), result -> {
+      UI.post(() -> {
+        if (result.getConstructor() == TdApi.Message.CONSTRUCTOR) {
+          UI.showToast(R.string.ReplySent, Toast.LENGTH_SHORT);
+          if (storyReplyInputView != null) {
+            storyReplyInputView.clearInput();
+          }
+        } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          TdApi.Error error = (TdApi.Error) result;
+          UI.showToast(error.message, Toast.LENGTH_LONG);
+        }
+      });
+    });
   }
 
   // PopupLayout.AnimatedPopupProvider
@@ -706,6 +787,82 @@ public class StoryViewController extends ViewController<StoryViewController.Args
       avatarView.setChat(tdlib, chat);
       nameView.setText(chat.title);
       timeView.setText(Lang.timeOrDateShort(date, java.util.concurrent.TimeUnit.SECONDS));
+    }
+  }
+
+  private class StoryReplyInputView extends FrameLayout {
+    private EditText editText;
+    private ImageView sendButton;
+    private ImageView heartButton;
+
+    public StoryReplyInputView (Context context) {
+      super(context);
+
+      // Semi-transparent background
+      setBackgroundColor(ColorUtils.alphaColor(0.5f, Color.BLACK));
+      setPadding(Screen.dp(12f), Screen.dp(8f), Screen.dp(8f), Screen.dp(8f));
+
+      // Heart reaction button on left
+      heartButton = new ImageView(context);
+      heartButton.setImageResource(R.drawable.baseline_favorite_border_24);
+      heartButton.setColorFilter(Color.WHITE);
+      heartButton.setOnClickListener(v -> sendHeartReaction());
+      heartButton.setPadding(Screen.dp(8f), Screen.dp(8f), Screen.dp(8f), Screen.dp(8f));
+      LayoutParams heartParams = new LayoutParams(Screen.dp(40f), Screen.dp(40f));
+      heartParams.gravity = Gravity.LEFT | Gravity.CENTER_VERTICAL;
+      addView(heartButton, heartParams);
+
+      // Send button on right
+      sendButton = new ImageView(context);
+      sendButton.setImageResource(R.drawable.baseline_send_24);
+      sendButton.setColorFilter(Color.WHITE);
+      sendButton.setOnClickListener(v -> {
+        String text = editText.getText().toString();
+        if (!text.trim().isEmpty()) {
+          sendReply(text);
+        }
+      });
+      sendButton.setPadding(Screen.dp(8f), Screen.dp(8f), Screen.dp(8f), Screen.dp(8f));
+      LayoutParams sendParams = new LayoutParams(Screen.dp(40f), Screen.dp(40f));
+      sendParams.gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
+      addView(sendButton, sendParams);
+
+      // EditText in center
+      editText = new EditText(context);
+      editText.setHint(R.string.ReplyToStory);
+      editText.setHintTextColor(ColorUtils.alphaColor(0.5f, Color.WHITE));
+      editText.setTextColor(Color.WHITE);
+      editText.setTextSize(14f);
+      editText.setBackgroundColor(Color.TRANSPARENT);
+      editText.setSingleLine(true);
+      editText.setImeOptions(EditorInfo.IME_ACTION_SEND);
+      editText.setOnEditorActionListener((v, actionId, event) -> {
+        if (actionId == EditorInfo.IME_ACTION_SEND) {
+          String text = editText.getText().toString();
+          if (!text.trim().isEmpty()) {
+            sendReply(text);
+          }
+          return true;
+        }
+        return false;
+      });
+      editText.setOnFocusChangeListener((v, hasFocus) -> {
+        if (hasFocus) {
+          pauseProgress();
+        } else {
+          resumeProgress();
+        }
+      });
+      LayoutParams editParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+      editParams.leftMargin = Screen.dp(48f);
+      editParams.rightMargin = Screen.dp(48f);
+      editParams.gravity = Gravity.CENTER_VERTICAL;
+      addView(editText, editParams);
+    }
+
+    public void clearInput () {
+      editText.setText("");
+      editText.clearFocus();
     }
   }
 }
