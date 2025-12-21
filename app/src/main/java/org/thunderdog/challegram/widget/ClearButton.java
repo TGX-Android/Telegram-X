@@ -18,6 +18,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -44,6 +45,12 @@ public class ClearButton extends HeaderButton {
   private final int lineRadius = (int) ((float) lineHeight * .5f);
 
   private final Paint paint;
+  private final RectF arcBounds = new RectF();
+
+  // Progress spinner state
+  private boolean inProgress;
+  private float progressAngle;
+  private ValueAnimator progressAnimator;
 
   public ClearButton (Context context) {
     super(context);
@@ -147,7 +154,40 @@ public class ClearButton extends HeaderButton {
   }
 
   public void setInProgress (boolean inProgress) {
-    // TODO
+    if (this.inProgress == inProgress) {
+      return;
+    }
+    this.inProgress = inProgress;
+    if (inProgress) {
+      startProgressAnimation();
+    } else {
+      stopProgressAnimation();
+    }
+    invalidate();
+  }
+
+  private void startProgressAnimation () {
+    if (progressAnimator != null) {
+      progressAnimator.cancel();
+    }
+    progressAnimator = ValueAnimator.ofFloat(0f, 360f);
+    progressAnimator.setDuration(800L);
+    progressAnimator.setRepeatCount(ValueAnimator.INFINITE);
+    progressAnimator.setRepeatMode(ValueAnimator.RESTART);
+    progressAnimator.setInterpolator(AnimatorUtils.LINEAR_INTERPOLATOR);
+    progressAnimator.addUpdateListener(animation -> {
+      progressAngle = (float) animation.getAnimatedValue();
+      invalidate();
+    });
+    progressAnimator.start();
+  }
+
+  private void stopProgressAnimation () {
+    if (progressAnimator != null) {
+      progressAnimator.cancel();
+      progressAnimator = null;
+    }
+    progressAngle = 0f;
   }
 
   @SuppressWarnings ("ConstantConditions")
@@ -156,27 +196,39 @@ public class ClearButton extends HeaderButton {
     if (colorId != 0) {
       paint.setColor(Theme.getColor(colorId));
     }
-    if (factor > 0f && totalHeight > 0) {
-      switch (ANIMATION_MODE) {
-        case ANIMATION_MODE_SCALE: {
-          paint.setAlpha((int) (255f * Math.min(1f, factor)));
-          int d = (int) ((float) lineHeight * .5f * factor);
-          c.drawLine(cx - d, cy - d, cx + d, cy + d, paint);
-          c.drawLine(cx + d, cy - d, cx - d, cy + d, paint);
-          break;
-        }
-        case ANIMATION_MODE_CROSS: {
-          DrawAlgorithms.drawAnimatedCross(c, cx, cy, factor, 0xffffffff, lineHeight);
-          break;
-        }
-        case ANIMATION_MODE_ROTATE: {
-          c.save();
-          c.rotate((Lang.rtl() ? -90 : 90f) * (1f - factor), cx, cy);
-          int d = (int) ((float) lineHeight * .5f * factor);
-          c.drawLine(cx - d, cy - d, cx + d, cy + d, paint);
-          c.drawLine(cx + d, cy - d, cx - d, cy + d, paint);
-          c.restore();
-          break;
+    if (totalHeight > 0) {
+      // Draw spinning arc when in progress
+      if (inProgress) {
+        int radius = lineRadius;
+        arcBounds.set(cx - radius, cy - radius, cx + radius, cy + radius);
+        paint.setStyle(Paint.Style.STROKE);
+        c.drawArc(arcBounds, progressAngle, 270f, false, paint);
+        return;
+      }
+
+      // Draw X button
+      if (factor > 0f) {
+        switch (ANIMATION_MODE) {
+          case ANIMATION_MODE_SCALE: {
+            paint.setAlpha((int) (255f * Math.min(1f, factor)));
+            int d = (int) ((float) lineHeight * .5f * factor);
+            c.drawLine(cx - d, cy - d, cx + d, cy + d, paint);
+            c.drawLine(cx + d, cy - d, cx - d, cy + d, paint);
+            break;
+          }
+          case ANIMATION_MODE_CROSS: {
+            DrawAlgorithms.drawAnimatedCross(c, cx, cy, factor, 0xffffffff, lineHeight);
+            break;
+          }
+          case ANIMATION_MODE_ROTATE: {
+            c.save();
+            c.rotate((Lang.rtl() ? -90 : 90f) * (1f - factor), cx, cy);
+            int d = (int) ((float) lineHeight * .5f * factor);
+            c.drawLine(cx - d, cy - d, cx + d, cy + d, paint);
+            c.drawLine(cx + d, cy - d, cx - d, cy + d, paint);
+            c.restore();
+            break;
+          }
         }
       }
     }
