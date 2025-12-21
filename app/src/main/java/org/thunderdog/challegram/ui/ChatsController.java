@@ -110,6 +110,7 @@ import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.JoinedUsersView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.ShadowView;
+import org.thunderdog.challegram.widget.StoryBarView;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -169,6 +170,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   private @Nullable ProgressComponentView spinnerView;
   private @Nullable ChatsRecyclerView chatsView;
   private ChatsAdapter adapter;
+  private @Nullable StoryBarView storyBarView;
 
   private @Nullable Poller<TdApi.Chats> chatFolderNewChatsPoller;
 
@@ -594,6 +596,28 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       chatsView.setTotalRes(filter.getTotalStringRes());
     tdlib.ui().attachViewportToRecyclerView(chatsViewport, chatsView);
     contentView.addView(chatsView);
+
+    // Add story bar for main chat list (only if stories are not hidden)
+    if (isBaseController() && filter == null && chatList().getConstructor() == TdApi.ChatListMain.CONSTRUCTOR && !Settings.instance().hideStories()) {
+      storyBarView = new StoryBarView(context, tdlib);
+      storyBarView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, storyBarView.getBarHeight()));
+      storyBarView.setClickListener(new StoryBarView.StoryClickListener() {
+        @Override
+        public void onStoryClick (long chatId, int storyId, List<TdApi.ChatActiveStories> allStories, int position) {
+          tdlib.ui().openStory(ChatsController.this, chatId, storyId, null);
+        }
+        @Override
+        public void onAddStoryClick () {
+          // TODO: implement add story
+        }
+      });
+      contentView.addView(storyBarView);
+      // Add top padding to chatsView so it scrolls under the story bar
+      chatsView.setPadding(chatsView.getPaddingLeft(), storyBarView.getBarHeight(), chatsView.getPaddingRight(), chatsView.getPaddingBottom());
+      chatsView.setClipToPadding(false);
+      // Load active stories
+      loadActiveStories();
+    }
 
     Views.setScrollBarPosition(chatsView);
 
@@ -3143,5 +3167,23 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
     }
     return false;
+  }
+
+  // Story bar loading
+  private void loadActiveStories () {
+    if (storyBarView == null) {
+      return;
+    }
+    // Load active stories from the main story list
+    tdlib.client().send(new TdApi.LoadActiveStories(new TdApi.StoryListMain()), result -> {
+      // The stories will be delivered via updateChatActiveStories updates
+      // For now, we start with an empty list and will update as stories load
+      runOnUiThreadOptional(() -> {
+        if (storyBarView != null) {
+          // Start with empty list - stories will be populated via TDLib updates
+          storyBarView.setActiveStories(new ArrayList<>());
+        }
+      });
+    });
   }
 }

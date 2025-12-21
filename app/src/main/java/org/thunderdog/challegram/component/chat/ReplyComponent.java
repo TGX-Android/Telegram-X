@@ -33,6 +33,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
@@ -703,7 +704,87 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   // private boolean isPrivate;
 
   private void setStory (TdApi.Story story, boolean forceRequestImage, boolean forceLocal) {
-    // TODO
+    if (story == null) {
+      return;
+    }
+
+    // Create media preview from story content
+    MediaPreview mediaPreview = newStoryMediaPreview(story);
+
+    // Create content preview
+    ContentPreview contentPreview;
+    if (story.caption != null && story.caption.text != null && !story.caption.text.isEmpty()) {
+      contentPreview = new ContentPreview(null, 0, story.caption.text, false);
+    } else {
+      contentPreview = new ContentPreview(null, R.string.Story);
+    }
+
+    // Handle origin (story poster)
+    sender = new TdApi.MessageSenderChat(story.posterChatId);
+    senderName = null;
+
+    String title = computeTitleText(null);
+
+    if (Thread.currentThread() == Background.instance().thread() || forceLocal) {
+      this.content = new ContentPreview(translatedText, contentPreview);
+      setTitleImpl(title);
+      this.mediaPreview = mediaPreview;
+      buildLayout();
+      invalidate(forceRequestImage || !isMessageComponent() || mediaPreview != null);
+    } else {
+      setContent(title, contentPreview, mediaPreview, false);
+    }
+  }
+
+  private MediaPreview newStoryMediaPreview (TdApi.Story story) {
+    if (story.content == null) {
+      return null;
+    }
+
+    TdApi.Thumbnail thumbnail = null;
+    TdApi.Minithumbnail miniThumbnail = null;
+
+    switch (story.content.getConstructor()) {
+      case TdApi.StoryContentPhoto.CONSTRUCTOR: {
+        TdApi.StoryContentPhoto photo = (TdApi.StoryContentPhoto) story.content;
+        if (photo.photo != null && photo.photo.sizes != null && photo.photo.sizes.length > 0) {
+          TdApi.PhotoSize smallest = Td.findSmallest(photo.photo.sizes);
+          if (smallest != null) {
+            thumbnail = TD.toThumbnail(smallest);
+          }
+          miniThumbnail = photo.photo.minithumbnail;
+        }
+        break;
+      }
+      case TdApi.StoryContentVideo.CONSTRUCTOR: {
+        TdApi.StoryContentVideo video = (TdApi.StoryContentVideo) story.content;
+        if (video.video != null) {
+          thumbnail = video.video.thumbnail;
+          miniThumbnail = video.video.minithumbnail;
+        }
+        break;
+      }
+    }
+
+    if (thumbnail == null && miniThumbnail == null) {
+      return null;
+    }
+
+    ImageFile previewFile = null;
+    ImageFile miniThumbnailFile = null;
+
+    if (thumbnail != null) {
+      previewFile = new ImageFile(tdlib, thumbnail.file);
+      previewFile.setSize(ChatView.getDefaultAvatarCacheSize());
+      previewFile.setScaleType(ImageFile.CENTER_CROP);
+    }
+
+    if (miniThumbnail != null) {
+      miniThumbnailFile = new ImageFileLocal(miniThumbnail);
+      miniThumbnailFile.setScaleType(ImageFile.CENTER_CROP);
+    }
+
+    return new MediaPreview(miniThumbnailFile, previewFile, null, false, false);
   }
 
   private String computeTitleText (String defaultText) {

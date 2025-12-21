@@ -2534,6 +2534,11 @@
   <string name="RingtoneCustom">Custom</string>
   <string name="IncognitoKeyboard">Incognito Keyboard</string>
   <string name="IncognitoKeyboardInfo">Request keyboard to not update any personalized data such as typing history and personalized language model based on what you type in Secret Chats.\n\nBe aware that this setting is not a guarantee, and some IMEs may not respect it.</string>
+  <string name="HideStories">Hide stories</string>
+  <string name="HideStoriesInfo">Completely hide stories from the app. Stories shared in messages will still be displayed.</string>
+  <string name="Story">Story</string>
+  <string name="SharedStory">%1$s shared a story</string>
+  <string name="SharedStoryExpired">Story expired</string>
   <string name="FailureMessageText">This message could not be displayed because of an error. We are very sorry for that.\n\nPlease copy the scary error details below and submit them to @tgandroidtests so we can investigate the issue. Thank you!</string>
   <string name="PrivacyCallsP2PTitle2">Peer-to-Peer in Calls</string>
   <string name="PeerToPeerInfo">Disabling peer-to-peer will relay all calls through Telegram servers to avoid revealing your IP address, but may decrease audio quality.</string>
