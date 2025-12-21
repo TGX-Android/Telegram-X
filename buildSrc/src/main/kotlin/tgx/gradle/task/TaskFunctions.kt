@@ -12,13 +12,13 @@
  */
 package tgx.gradle.task
 
+import tgx.gradle.fatal
 import java.io.File
 import java.io.FileOutputStream
 import java.io.Writer
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
 import java.util.*
-import tgx.gradle.fatal
 
 fun isWindowsHost(): Boolean {
   return System.getProperty("os.name").startsWith("Windows")

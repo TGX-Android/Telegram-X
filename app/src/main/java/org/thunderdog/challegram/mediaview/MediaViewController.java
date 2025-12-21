@@ -50,13 +50,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.media3.common.MediaLibraryInfo;
+import androidx.media3.common.PlaybackException;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -138,6 +142,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SetSenderController;
 import org.thunderdog.challegram.ui.ShareController;
+import org.thunderdog.challegram.ui.TextController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -3384,6 +3389,30 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       videoAnimator.forceFactor(factor);
     }
     setVideoFactor(factor);
+  }
+
+  @Override
+  public boolean onDisplayError (@NonNull PlaybackException error, @Nullable MediaItem item) {
+    boolean isGif = item != null && item.isGifType();
+    String info = Lang.getString(U.isUnsupportedFormat(error) ? (isGif ? R.string.GifPlaybackUnsupported : R.string.VideoPlaybackUnsupported) : (isGif ? R.string.GifPlaybackError : R.string.VideoPlaybackError));
+    showOptions(info, new int[]{R.id.btn_view, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ViewVideoError), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_bug_report_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      if (id == R.id.btn_view) {
+        forceClose();
+        TextController c = new TextController(context, tdlib);
+
+        String log =
+          Log.toPreviewString(error) +
+          "\n\n" +
+          U.getUsefulMetadata(tdlib) +
+          "\n\n" +
+          Log.toString(error, true);
+
+        c.setArguments(TextController.Arguments.fromRawText(Lang.getString(R.string.VideoErrorLog), log, "text/plain"));
+        context.navigation().navigateTo(c);
+      }
+      return true;
+    }, getForcedTheme());
+    return true;
   }
 
   @Override

@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 apply(from = "properties.gradle.kts")
 
 pluginManagement {

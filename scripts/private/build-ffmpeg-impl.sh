@@ -8,8 +8,8 @@ function build_one {
   fi
   validate_dir "$ANDROID_NDK_ROOT"
 
-  LIBVPX_INCLUDE_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/include"
-  LIBVPX_LIB_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/lib"
+  LIBVPX_INCLUDE_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/$PLATFORM/include"
+  LIBVPX_LIB_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/$PLATFORM/lib"
 
   validate_dir "$LIBVPX_INCLUDE_DIR"
   validate_dir "$LIBVPX_LIB_DIR"
@@ -35,7 +35,7 @@ function build_one {
   rm -f config.h
   make clean || true
 
-  echo "Configuring ffmpeg... CPU: ${CPU}, NDK: ${ANDROID_NDK_ROOT}"
+  echo "Configuring ffmpeg: ${PLATFORM} ${FLAVOR} (${ANDROID_API}), NDK: ${ANDROID_NDK_ROOT}"
 
   ./configure \
   --nm="${NM}" \
@@ -143,40 +143,68 @@ validate_dir "$PREBUILT"
 validate_dir "$SYSROOT"
 
 # arm64-v8a
-ANDROID_API=21
-LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/aarch64-linux-android
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=$CC
-AS=$CC
 ARCH=aarch64
 CPU=armv8-a
-FLAVOR=arm64-v8a
-PREFIX=./build/$FLAVOR
+PLATFORM=arm64-v8a
 ADDITIONAL_CONFIGURE_FLAG="--enable-optimizations --disable-x86asm"
 OPTIMIZE_CFLAGS=""
 EXTRA_LIBS="-lunwind"
 EXTRA_LDFLAGS=""
 # FIXME ADDITIONAL_CONFIGURE_FLAG="--enable-neon --enable-optimizations"
-build_one
 
-# x86_64
-ANDROID_API=21
-LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
-CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android
+# latest-arm64
+FLAVOR="latest"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=23
+LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
 CC=${CROSS_PREFIX}${ANDROID_API}-clang
 CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
 LD=$CC
 AS=$CC
+build_one
+
+# lollipop-arm64
+FLAVOR="lollipop"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=21
+LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
+CC=${CROSS_PREFIX}${ANDROID_API}-clang
+CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+LD=$CC
+AS=$CC
+build_one
+
+# x86_64
+CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android
 ARCH=x86_64
 CPU=x86_64
-FLAVOR=x86_64
-PREFIX=./build/$FLAVOR
+PLATFORM=x86_64
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm --disable-x86asm"
 OPTIMIZE_CFLAGS=""
 EXTRA_LIBS="-lunwind"
 EXTRA_LDFLAGS=""
+
+# latest-x64
+FLAVOR="latest"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=23
+LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
+CC=${CROSS_PREFIX}${ANDROID_API}-clang
+CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+LD=$CC
+AS=$CC
+build_one
+
+# lollipop-x64
+FLAVOR="lollipop"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=21
+LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
+CC=${CROSS_PREFIX}${ANDROID_API}-clang
+CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+LD=$CC
+AS=$CC
 build_one
 
 # 32-bit, minSdk 16
@@ -189,16 +217,10 @@ validate_dir "$PREBUILT"
 validate_dir "$SYSROOT"
 
 # armeabi-v7a
-ANDROID_API=16
-LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/arm-linux-androideabi
-CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
-CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
-AS=$CC
 ARCH=arm
 CPU=armv7-a
-FLAVOR=armv7-a
-PREFIX=./build/$FLAVOR
+PLATFORM=armv7-a
 ADDITIONAL_CONFIGURE_FLAG="--enable-neon --disable-x86asm"
 OPTIMIZE_CFLAGS="-marm -march=$CPU -mfloat-abi=softfp"
 if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
@@ -212,19 +234,42 @@ else
   EXTRA_LDFLAGS=""
   EXTRA_LIBS="-lgcc"
 fi
+
+# latest-arm32
+FLAVOR="latest"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=23
+LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
+CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
+CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
+AS=$CC
+build_one
+
+# lollipop-arm32
+FLAVOR="lollipop"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=21
+LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
+CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
+CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
+AS=$CC
+build_one
+
+# legacy-arm32
+FLAVOR="legacy"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=16
+LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
+CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
+CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
+AS=$CC
 build_one
 
 # x86
-ANDROID_API=16
-LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/i686-linux-android
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-AS=$CC
 ARCH=x86
 CPU=i686
-FLAVOR=i686
-PREFIX=./build/$FLAVOR
+PLATFORM=i686
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm --disable-x86asm"
 OPTIMIZE_CFLAGS="-march=$CPU"
 if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
@@ -238,16 +283,35 @@ else
   EXTRA_LDFLAGS=""
   EXTRA_LIBS="-lgcc"
 fi
+
+# latest-x86
+FLAVOR="latest"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=23
+LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
+CC=${CROSS_PREFIX}${ANDROID_API}-clang
+CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+AS=$CC
 build_one
 
-# Copy headers to all platform-specific folders
-cp libavformat/dv.h build/arm64-v8a/include/libavformat/dv.h
-cp libavformat/isom.h build/arm64-v8a/include/libavformat/isom.h
-cp libavformat/dv.h build/armv7-a/include/libavformat/dv.h
-cp libavformat/isom.h build/armv7-a/include/libavformat/isom.h
-cp libavformat/dv.h build/i686/include/libavformat/dv.h
-cp libavformat/isom.h build/i686/include/libavformat/isom.h
-cp libavformat/dv.h build/x86_64/include/libavformat/dv.h
-cp libavformat/isom.h build/x86_64/include/libavformat/isom.h
+# lollipop-x86
+FLAVOR="lollipop"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=21
+LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
+CC=${CROSS_PREFIX}${ANDROID_API}-clang
+CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+AS=$CC
+build_one
+
+# legacy-x86
+FLAVOR="legacy"
+PREFIX=./build/$FLAVOR/$PLATFORM
+ANDROID_API=16
+LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
+CC=${CROSS_PREFIX}${ANDROID_API}-clang
+CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+AS=$CC
+build_one
 
 popd

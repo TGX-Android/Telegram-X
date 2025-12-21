@@ -31,8 +31,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
-import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
-
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
@@ -3226,6 +3224,8 @@ public class Settings {
   }
 
   public static class VideoLimit {
+    public static final int BITRATE_UNKNOWN = -1;
+
     public final @NonNull VideoSize size;
     public final int fps;
     public final long bitrate;
@@ -3235,7 +3235,7 @@ public class Settings {
     }
 
     public VideoLimit (VideoSize size, int fps) {
-      this(size, fps, DefaultVideoStrategy.BITRATE_UNKNOWN);
+      this(size, fps, BITRATE_UNKNOWN);
     }
 
     public VideoLimit (@NonNull VideoSize size, int fps, long bitrate) {
@@ -3252,7 +3252,7 @@ public class Settings {
       return
         size.isDefault() &&
           fps == DEFAULT_FRAME_RATE &&
-          bitrate == DefaultVideoStrategy.BITRATE_UNKNOWN;
+          bitrate == BITRATE_UNKNOWN;
     }
 
     @Override
@@ -3288,11 +3288,11 @@ public class Settings {
       if (data != null && data.length > 0) {
         this.size = new VideoSize(data[0], data.length > 1 ? data[1] : data[0]);
         this.fps = data.length > 2 ? data[2] : DEFAULT_FRAME_RATE;
-        this.bitrate = data.length > 3 ? (long) BitUnit.KBIT.toBits(data[3]) : DefaultVideoStrategy.BITRATE_UNKNOWN;
+        this.bitrate = data.length > 3 ? (long) BitUnit.KBIT.toBits(data[3]) : BITRATE_UNKNOWN;
       } else {
         this.size = new VideoSize(DEFAULT_VIDEO_LIMIT);
         this.fps = DEFAULT_FRAME_RATE;
-        this.bitrate = DefaultVideoStrategy.BITRATE_UNKNOWN;
+        this.bitrate = BITRATE_UNKNOWN;
       }
     }
 

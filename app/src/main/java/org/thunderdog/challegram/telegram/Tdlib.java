@@ -5962,6 +5962,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       params.put("data", fingerprint);
     }
     params.put("tz_offset", timeZoneOffset);
+    params.put("recaptcha", BuildConfig.RECAPTCHA_VERSION);
 
     Map<String, Object> git = new LinkedHashMap<>();
     git.put("remote", BuildConfig.REMOTE_URL.replaceAll("^(https?://)?github\\.com/", ""));

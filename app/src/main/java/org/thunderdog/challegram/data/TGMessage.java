@@ -8480,7 +8480,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     b.append("\n");
 
-    Log.toStringBuilder(error, 2, b);
+    Log.toStringBuilder(error, 2, true, b);
 
     logEntity.length = b.length() - logEntity.offset;
 

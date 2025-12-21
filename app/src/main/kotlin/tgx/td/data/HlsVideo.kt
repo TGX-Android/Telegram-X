@@ -13,6 +13,7 @@
 package tgx.td.data
 
 import android.net.Uri
+import android.os.Build
 import me.vkryl.core.parseLong
 import org.drinkless.tdlib.TdApi.AlternativeVideo
 import org.drinkless.tdlib.TdApi.Video
@@ -57,11 +58,15 @@ data class HlsVideo(
 ) {
   @JvmField val id: Int = video.video.id
 
-  fun findVideoByStreamId (streamId: Long): AlternativeVideo {
-    return this.alternativeVideos.firstOrNull { alternativeVideo ->
+  fun findVideoByStreamId (streamId: Long): AlternativeVideo =
+    this.alternativeVideos.firstOrNull { alternativeVideo ->
       alternativeVideo.id == streamId
     }!!
-  }
+
+  fun hasSupportedCodecs(): Boolean =
+    alternativeVideos.firstOrNull {
+      it.isSupported(false)
+    } != null
 
   fun findVideoFileIdByStreamId (streamId: Long): Int =
     findVideoByStreamId(streamId).video.id
@@ -74,22 +79,40 @@ data class HlsVideo(
       parseLong(uri.schemeSpecificPart)
   }
 
+  fun AlternativeVideo.isSupported(failOnUnknownCodec: Boolean): Boolean =
+    when (this.codec) {
+      // https://developer.android.com/media/platform/supported-formats
+      "av1", "av01" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q // TODO: bundle av1?
+      "h264" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
+      else -> if (failOnUnknownCodec) {
+        error("Unexpected codec: $codec")
+      } else {
+        true
+      }
+    }
+
   fun AlternativeVideo.appendTo(b: StringBuilder) {
     val bandwidth: Int = if (this@HlsVideo.video.duration != 0) {
       (video.size.toDouble() / this@HlsVideo.video.duration.toDouble()).toInt() * 8
     } else {
       1000000
     }
-    // TODO: ,CODECS="${codec}"
-    b.append("#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${width}x${height}\n")
+    b.append("#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${width}x${height},CODECS=\"${codec}\"\n")
     b.append("${HlsPath(this)}\n")
   }
 
-  fun multivariantPlaylistData (): String {
+  fun multivariantPlaylistData(failOnUnknownCodec: Boolean): String {
     val playlist = StringBuilder()
     playlist.append("#EXTM3U\n")
+    var videoCount = 0
     for (alternativeVideo in alternativeVideos) {
-      alternativeVideo.appendTo(playlist)
+      if (alternativeVideo.isSupported(failOnUnknownCodec)) {
+        alternativeVideo.appendTo(playlist)
+        videoCount++
+      }
+    }
+    if (videoCount == 0 && alternativeVideos.isNotEmpty()) {
+      error("None of codecs supported: ${alternativeVideos.joinToString { it.codec }}")
     }
     playlist.append("#EXT-X-ENDLIST\n")
     return playlist.toString()

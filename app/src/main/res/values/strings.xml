@@ -2494,9 +2494,11 @@
   <string name="ClearDrawing">Clear drawing</string>
   <string name="RoundVideoPlaybackError">Failed to play video message, see logs for details.</string>
   <string name="VideoPlaybackError">Failed to play video, see logs for details.</string>
+  <string name="VideoErrorLog">Error log</string>
   <string name="VideoPlaybackUnsupported">Video format is not supported.</string>
   <string name="GifPlaybackError">Failed to play GIF, see logs for details.</string>
   <string name="GifPlaybackUnsupported">GIF format is not supported.</string>
+  <string name="ViewVideoError">See logs</string>
   <string name="AudioPlaybackError">Failed to play audio, see logs for details.</string>
   <string name="AudioPlaybackUnsupported">Audio format is not supported.</string>
   <string name="CloudDownload">Download %1$s</string>

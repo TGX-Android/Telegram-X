@@ -217,7 +217,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
       if (cameraQrBridge == null) {
         cameraQrBridge = new CameraQrBridge(this);
       }
-      imageAnalyzer.setAnalyzer(cameraQrBridge.backgroundExecutor, proxy -> cameraQrBridge.processImage(proxy));
+      imageAnalyzer.setAnalyzer(cameraQrBridge.getBackgroundExecutor(), proxy -> cameraQrBridge.processImage(proxy));
     } else {
       imageAnalyzer = null;
     }

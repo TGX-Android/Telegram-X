@@ -53,13 +53,13 @@
 // JNI references for SimpleOutputBuffer class.
 static jmethodID outputBufferInit;
 
-/*jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+extern "C" jint opus_jni_OnLoad(JavaVM* vm, void* reserved) {
   JNIEnv* env;
   if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
     return -1;
   }
   return JNI_VERSION_1_6;
-}*/
+}
 
 static const int kBytesPerIntPcmSample = 2;
 static const int kBytesPerFloatSample = 4;

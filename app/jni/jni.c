@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <inttypes.h>
 #include <time.h>
+#include <androidx-media/jni.h>
 
 #include "utils.h"
 
@@ -47,6 +48,10 @@ jint JNI_OnLoad (JavaVM *vm, void *reserved) {
   /*if (gifvideoOnJNILoad(vm, env) == -1) {
       return -1;
   }*/
+
+  ffmpeg_jni_OnLoad(vm, env);
+  opus_jni_OnLoad(vm, env);
+  vpx_jni_OnLoad(vm, env);
 
   return JNI_VERSION_1_6;
 }

@@ -14,29 +14,84 @@
 // File with static configuration, that is meant to be adjusted only once
 
 import tgx.gradle.fatal
+import tgx.gradle.getLongOrThrow
+import tgx.gradle.getOrThrow
+import tgx.gradle.plugin.Keystore
+import java.util.*
 
 object Config {
-  const val PRIMARY_SDK_VERSION = 21
   const val MIN_SDK_VERSION = 16
   const val MIN_SDK_VERSION_HUAWEI = 17
   val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_21
-  val ANDROIDX_MEDIA_EXTENSIONS = arrayOf("decoder_ffmpeg", "decoder_flac", "decoder_opus", "decoder_vp9")
+  val ANDROIDX_MEDIA_EXTENSIONS = arrayOf(
+    "decoder_ffmpeg",
+    "decoder_flac",
+    "decoder_opus",
+    "decoder_vp9"
+  )
   val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
 
   // FIXME(ndK): As of 16.08.2025, NDK team didn't release an update for r23's c++_shared.so with 16 KB ELF alignment
-  val SHARED_STL = false
+  const val SHARED_STL = false
 }
 
-object LibraryVersions {
-  const val MULTIDEX = "2.0.1"
-  const val DESUGAR = "2.1.5"
-  const val ANDROIDX_CORE = "1.12.0" // 1.13.0+ requires minSdk 19+
-  const val ANNOTATIONS = "1.9.1"
-  const val ANDROIDX_MEDIA = "1.4.1" // "1.5.0"+ requires minSdk 21+
-  const val ANDROIDX_CAMERA = "1.4.2"
-  const val HUAWEI_SERVICES = "6.13.0.300"
-  const val COROUTINES = "1.10.2"
+data class PullRequest (
+  val id: Long,
+  val commitShort: String,
+  val commitLong: String,
+  val commitDate: Long,
+  val author: String
+) {
+  constructor(id: Long, properties: Properties) : this(
+    id,
+    properties.getOrThrow("pr.$id.commit_short"),
+    properties.getOrThrow("pr.$id.commit_long"),
+    properties.getLongOrThrow("pr.$id.date"),
+    properties.getOrThrow("pr.$id.author")
+  )
 }
+
+data class ApplicationConfig(
+  val applicationName: String,
+  val applicationId: String,
+  val extension: String,
+  val sourceCodeUrl: String,
+
+  val applicationVersion: Int,
+  val majorVersion: Int,
+
+  val isExperimentalBuild: Boolean,
+  val isHuaweiBuild: Boolean,
+  val forceOptimize: Boolean,
+  val doNotObfuscate: Boolean,
+
+  val compileSdkVersion: Int,
+  val targetSdkVersion: Int,
+  val buildToolsVersion: String,
+
+  val legacyNdkVersion: String,
+  val primaryNdkVersion: String,
+
+  val nativeLibraryVersion: String,
+  val leveldbVersion: String,
+  val emojiVersion: Int,
+
+  val telegramApiId: Int,
+  val telegramApiHash: String,
+  val safetyNetToken: String?,
+  val appDownloadUrl: String?,
+  val googlePlayUrl: String?,
+  val galaxyStoreUrl: String?,
+  val huaweiAppGalleryUrl: String?,
+  val amazonAppStoreUrl: String?,
+
+  val pullRequests: List<PullRequest>,
+
+  val outputFileNamePrefix: String,
+  val creationDateMillis: Long,
+
+  val keystore: Keystore?
+)
 
 class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
   init {
@@ -58,11 +113,11 @@ class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), va
       return true
     }
 
-  val minSdkVersion: Int
+  val minSdk: Int
     get() = if (is64Bit) {
-      Config.PRIMARY_SDK_VERSION
+      21
     } else {
-      Config.MIN_SDK_VERSION
+      16
     }
 }
 
@@ -80,6 +135,37 @@ object Abi {
     Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
     Pair(X86, AbiVariant("x86", "x86")),
     Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64"))
+  )
+}
+
+data class SdkVariant(
+  val minSdk: Int = Config.MIN_SDK_VERSION,
+  val maxSdk: Int? = null,
+  val flavor: String,
+  val displayName: String? = flavor
+)
+
+object Sdk {
+  const val LEGACY = 0
+  const val LOLLIPOP = 1
+  const val LATEST = 2
+
+  val VARIANTS = mapOf(
+    Pair(LEGACY, SdkVariant(
+      flavor = "legacy",
+      minSdk = 16,
+      maxSdk = 20
+    )),
+    Pair(LOLLIPOP, SdkVariant(
+      flavor = "lollipop",
+      minSdk = 21,
+      maxSdk = 22
+    )),
+    Pair(LATEST, SdkVariant(
+      flavor = "latest",
+      minSdk = 23,
+      displayName = null
+    ))
   )
 }
 

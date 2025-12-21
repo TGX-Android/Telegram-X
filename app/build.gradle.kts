@@ -6,9 +6,10 @@ import tgx.gradle.task.*
 import java.util.*
 
 plugins {
-  id("com.android.application")
-  id("module-plugin")
-  id("cmake-plugin")
+  id(libs.plugins.android.application.get().pluginId)
+  alias(libs.plugins.kotlin.android)
+  id("tgx-config")
+  id("tgx-module")
 }
 
 val generateResourcesAndThemes by tasks.registering(GenerateResourcesAndThemesTask::class) {
@@ -36,56 +37,56 @@ val checkEmojiKeyboard by tasks.registering(CheckEmojiKeyboardTask::class) {
   description = "Checks that all supported emoji can be entered from the keyboard"
 }
 
-val isExperimentalBuild = extra["experimental"] as Boolean? ?: false
-val properties = extra["properties"] as Properties
-val projectName = extra["app_name"] as String
-val versions = extra["versions"] as Properties
+val config = extra["config"] as ApplicationConfig
 
-data class PullRequest (
-  val id: Long,
-  val commitShort: String,
-  val commitLong: String,
-  val commitDate: Long,
-  val author: String
-) {
-  constructor(id: Long, properties: Properties) : this(
-    id,
-    properties.getOrThrow("pr.$id.commit_short"),
-    properties.getOrThrow("pr.$id.commit_long"),
-    properties.getLongOrThrow("pr.$id.date"),
-    properties.getOrThrow("pr.$id.author")
-  )
-}
-
-apply(from = "${rootProject.projectDir}/properties.gradle.kts")
-val extensionName = extra["extension"] as String
-val isHuaweiBuild = extra["huawei"] == true
-
+//noinspection WrongGradleMethod
 android {
   namespace = "org.thunderdog.challegram"
 
+  lint {
+    disable += "MissingTranslation"
+    checkDependencies = true
+  }
+
+  externalNativeBuild {
+    cmake {
+      path("jni/CMakeLists.txt")
+    }
+  }
+
   defaultConfig {
-    val jniVersion = versions.getProperty("version.jni")
-    val leveldbVersion = versions.getProperty("version.leveldb")
+    applicationId = config.applicationId
+    targetSdk = config.targetSdkVersion
+    multiDexEnabled = true
 
-    buildConfigString("TGX_EXTENSION", extensionName)
+    buildConfigString("PROJECT_NAME", config.applicationName)
+    buildConfigBool("SHARED_STL", Config.SHARED_STL)
+    buildConfigString("SAFETYNET_API_KEY", config.safetyNetToken)
 
-    buildConfigString("JNI_VERSION", jniVersion)
-    buildConfigString("LEVELDB_VERSION", leveldbVersion)
+    buildConfigString("DOWNLOAD_URL", config.appDownloadUrl)
+    buildConfigString("GOOGLE_PLAY_URL", config.googlePlayUrl)
+    buildConfigString("GALAXY_STORE_URL", config.galaxyStoreUrl)
+    buildConfigString("HUAWEI_APPGALLERY_URL", config.huaweiAppGalleryUrl)
+    buildConfigString("AMAZON_APPSTORE_URL", config.amazonAppStoreUrl)
+
+    buildConfigString("TGX_EXTENSION", config.extension)
+
+    buildConfigString("JNI_VERSION", config.nativeLibraryVersion)
+    buildConfigString("LEVELDB_VERSION", config.leveldbVersion)
 
     buildConfigString("TDLIB_REMOTE_URL", "https://github.com/tdlib/td")
 
-    buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())
+    buildConfigField("boolean", "EXPERIMENTAL", config.isExperimentalBuild.toString())
 
-    buildConfigInt("TARGET_SDK_INT", versions.getIntOrThrow("version.sdk_target"))
+    buildConfigInt("TARGET_SDK_INT", config.targetSdkVersion)
 
-    buildConfigInt("TELEGRAM_API_ID", properties.getIntOrThrow("telegram.api_id"))
-    buildConfigString("TELEGRAM_API_HASH", properties.getOrThrow("telegram.api_hash"))
+    buildConfigInt("TELEGRAM_API_ID", config.telegramApiId)
+    buildConfigString("TELEGRAM_API_HASH", config.telegramApiHash)
 
     buildConfigString("TELEGRAM_RESOURCES_CHANNEL", Telegram.RESOURCES_CHANNEL)
     buildConfigString("TELEGRAM_UPDATES_CHANNEL", Telegram.UPDATES_CHANNEL)
 
-    buildConfigInt("EMOJI_VERSION", versions.getIntOrThrow("version.emoji"))
+    buildConfigInt("EMOJI_VERSION", config.emojiVersion)
     buildConfigString("EMOJI_BUILTIN_ID", Emoji.BUILTIN_ID)
 
     buildConfigString("LANGUAGE_PACK", Telegram.LANGUAGE_PACK)
@@ -146,10 +147,6 @@ android {
       fatal("TDLib not found!")
     }
 
-    val pullRequests: List<PullRequest> = properties.getProperty("pr.ids", "").split(',').filter { it.matches(Regex("^[0-9]+$")) }.map {
-      PullRequest(it.toLong(), properties)
-    }.sortedBy { it.id }
-
     buildConfigString("OPENSSL_VERSION", openSslVersion)
     buildConfigString("OPENSSL_VERSION_FULL", openSslVersionFull)
     buildConfigString("TDLIB_VERSION", tdlibVersion)
@@ -159,35 +156,38 @@ android {
     }
     val tgxGit = tgxGitVersionProvider.get()
 
+    val sourcesUrl = config.sourceCodeUrl.takeIf {
+      it.isNotEmpty()
+    } ?: tgxGit.remoteUrl
     buildConfigString("REMOTE_URL", tgxGit.remoteUrl)
     buildConfigString("COMMIT_URL", tgxGit.commitUrl)
     buildConfigString("COMMIT", tgxGit.commitHashShort)
     buildConfigString("COMMIT_FULL", tgxGit.commitHashLong)
     buildConfigLong("COMMIT_DATE", tgxGit.commitDate)
-    buildConfigString("SOURCES_URL", properties.getProperty("app.sources_url", tgxGit.remoteUrl))
+    buildConfigString("SOURCES_URL", sourcesUrl)
 
     buildConfigField("long[]", "PULL_REQUEST_ID", "{${
-      pullRequests.joinToString(", ") { it.id.toString() }
+      config.pullRequests.joinToString(", ") { it.id.toString() }
     }}")
     buildConfigField("long[]", "PULL_REQUEST_COMMIT_DATE", "{${
-      pullRequests.joinToString(", ") { it.commitDate.toString() }
+      config.pullRequests.joinToString(", ") { it.commitDate.toString() }
     }}")
     buildConfigField("String[]", "PULL_REQUEST_COMMIT", "{${
-      pullRequests.joinToString(", ") { "\"${it.commitShort}\"" }
+      config.pullRequests.joinToString(", ") { "\"${it.commitShort}\"" }
     }}")
     buildConfigField("String[]", "PULL_REQUEST_COMMIT_FULL", "{${
-      pullRequests.joinToString(", ") { "\"${it.commitLong}\"" }
+      config.pullRequests.joinToString(", ") { "\"${it.commitLong}\"" }
     }}")
     buildConfigField("String[]", "PULL_REQUEST_URL", "{${
-      pullRequests.joinToString(", ") { "\"${tgxGit.remoteUrl}/pull/${it.id}/files/${it.commitLong}\"" }
+      config.pullRequests.joinToString(", ") { "\"${tgxGit.remoteUrl}/pull/${it.id}/files/${it.commitLong}\"" }
     }}")
     buildConfigField("String[]", "PULL_REQUEST_AUTHOR", "{${
-      pullRequests.joinToString(", ") { "\"${it.author}\"" }
+      config.pullRequests.joinToString(", ") { "\"${it.author}\"" }
     }}")
 
     // WebRTC version
 
-    val webrtcGit =providers.of(GitVersionValueSource::class) {
+    val webrtcGit = providers.of(GitVersionValueSource::class) {
       parameters.module = layout.projectDirectory.dir("jni/third_party/webrtc")
     }.get()
     buildConfigString("WEBRTC_COMMIT", webrtcGit.commitHashShort)
@@ -219,21 +219,17 @@ android {
 
     // Set application version
 
-    val appVersionOverride = properties.getProperty("app.version", "0").toInt()
-    val appVersion = if (appVersionOverride > 0) appVersionOverride else versions.getOrThrow("version.app").toInt()
-    val majorVersion = versions.getOrThrow("version.major").toInt()
-
     val timeZone = TimeZone.getTimeZone("UTC")
     val then = Calendar.getInstance(timeZone)
-    then.timeInMillis = versions.getOrThrow("version.creation").toLong()
+    then.timeInMillis = config.creationDateMillis
     val now = Calendar.getInstance(timeZone)
     now.timeInMillis = tgxGit.commitDate * 1000L
     if (now.timeInMillis < then.timeInMillis)
       fatal("Invalid commit time!")
     val minorVersion = monthYears(now, then)
 
-    versionCode = appVersion
-    versionName = "${majorVersion}.${minorVersion}"
+    versionCode = config.applicationVersion
+    versionName = "${config.majorVersion}.${minorVersion}"
   }
 
   // TODO: needs performance tests. Must be used once custom icon sets will be available
@@ -248,9 +244,6 @@ android {
       "./jni/third_party/webrtc/sdk/android/src/java",
       "../thirdparty/WebRTC/src/java"
     )
-    Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
-      java.srcDirs("../thirdparty/androidx-media/libraries/${extension}/src/main/java")
-    }
   }
 
   lint {
@@ -262,56 +255,118 @@ android {
     buildConfig = true
   }
 
-  buildTypes {
-    release {
-      arrayOf(
-        "exoplayer",
-        "common",
-        "transformer",
-        "extractor",
-        "muxer",
-        "decoder",
-        "container",
-        "datasource",
-        "database",
-        "effect"
-      ).plus(Config.ANDROIDX_MEDIA_EXTENSIONS).forEach { extension ->
-        val proguardFile = file(
-          "../thirdparty/androidx-media/libraries/${extension}/proguard-rules.txt"
+  flavorDimensions += arrayOf("SDK", "ABI")
+  androidComponents.beforeVariants { variantBuilder ->
+    val sdkFlavor = variantBuilder.productFlavors.first { it.first == "SDK" }.second
+    val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
+    val abiFlavor = variantBuilder.productFlavors.first { it.first == "ABI" }.second
+    val abiVariant = Abi.VARIANTS.values.first { it.flavor == abiFlavor }
+    if (sdkVariant.maxSdk != null) {
+      variantBuilder.maxSdk = sdkVariant.maxSdk
+    }
+    variantBuilder.enable = sdkVariant.minSdk >= abiVariant.minSdk &&
+      !(abiVariant.flavor == "universal" && sdkVariant.flavor == "legacy") &&
+      (variantBuilder.buildType != "debug" || sdkVariant.flavor == "legacy" || (abiVariant.flavor == "x86" || abiVariant.flavor == "x64" || abiVariant.flavor == "universal"))
+  }
+  productFlavors {
+    Sdk.VARIANTS.forEach { (sdk, variant) ->
+      create(variant.flavor) {
+        dimension = "SDK"
+        versionCode = (sdk + 1)
+        isDefault = sdk == Sdk.LATEST
+
+        val actualMinSdk = if (config.isHuaweiBuild) {
+          maxOf(variant.minSdk, Config.MIN_SDK_VERSION_HUAWEI)
+        } else {
+          variant.minSdk
+        }
+        val selectedMinSdk = maxOf(variant.minSdk, actualMinSdk)
+        minSdk = selectedMinSdk
+        if (selectedMinSdk < 21) {
+          proguardFile("proguard-r8-bug-android-4.x-workaround.pro")
+        }
+
+        val flags = listOf(
+          "-w",
+          "-Werror=return-type",
+          "-ferror-limit=0",
+          "-fno-exceptions",
+
+          "-O3",
+          "-finline-functions"
         )
-        if (proguardFile.exists()) {
-          project.logger.lifecycle("Applying ${proguardFile.path}")
-          proguardFile(proguardFile)
+        externalNativeBuild.cmake {
+          arguments(
+            "-DANDROID_PLATFORM=android-${selectedMinSdk}",
+            "-DTGX_FLAVOR=${variant.flavor}",
+            "-DANDROID_STL=${if (Config.SHARED_STL) "c++_shared" else "c++_static"}",
+            "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
+            "-DCMAKE_SKIP_RPATH=ON",
+            "-DCMAKE_C_VISIBILITY_PRESET=hidden",
+            "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
+            "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
+            "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
+            "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}"
+          )
+        }
+
+        sourceSets.getByName(variant.flavor) {
+          Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
+            java.srcDirs("../thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/src/main/java")
+          }
+          if (variant.flavor != "legacy") {
+            kotlin.srcDirs("./src/modern/kotlin")
+          }
+        }
+
+        Sdk.VARIANTS.forEach { (subSdk, subVariant) ->
+          buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", sdk == subSdk)
+        }
+
+        var extraProguardFileCount = 0
+
+        arrayOf(
+          "exoplayer",
+          "common",
+          "transformer",
+          "extractor",
+          "muxer",
+          "decoder",
+          "container",
+          "datasource",
+          "database",
+          "effect"
+        ).plus(Config.ANDROIDX_MEDIA_EXTENSIONS).forEach { extension ->
+          val proguardFile = file(
+            "../thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/proguard-rules.txt"
+          )
+          if (proguardFile.exists()) {
+            extraProguardFileCount++
+            proguardFile(proguardFile)
+          }
+        }
+
+        if (extraProguardFileCount > 0) {
+          project.logger.lifecycle("[proguard]: Applied $extraProguardFileCount extra proguard files for \"${variant.flavor}\" flavor")
         }
       }
     }
-  }
 
-  flavorDimensions.add("abi")
-  productFlavors {
     Abi.VARIANTS.forEach { (abi, variant) ->
       create(variant.flavor) {
-        dimension = "abi"
+        dimension = "ABI"
         versionCode = (abi + 1)
-        minSdk = if (isHuaweiBuild) {
-          maxOf(variant.minSdkVersion, Config.MIN_SDK_VERSION_HUAWEI)
-        } else {
-          variant.minSdkVersion
-        }
-        val ndkVersionKey = if (variant.is64Bit) {
-          "version.ndk_primary"
-        } else {
-          "version.ndk_legacy"
-        }
         isDefault = abi == 0
-        if (variant.minSdkVersion < Config.PRIMARY_SDK_VERSION) {
-          proguardFile("proguard-r8-bug-android-4.x-workaround.pro")
+        ndkVersion = if (variant.is64Bit) {
+          config.primaryNdkVersion
+        } else {
+          config.legacyNdkVersion
         }
-        ndkVersion = versions.getProperty(ndkVersionKey)
         ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
         buildConfigString("NDK_VERSION", ndkVersion)
-        buildConfigBool("WEBP_ENABLED", true) // variant.minSdkVersion < 19
-        ndk.abiFilters.clear()
+        buildConfigBool("WEBP_ENABLED", true) // variant.minSdk < 19
+        if (ndk.abiFilters.isNotEmpty())
+          error(ndk.abiFilters.joinToString())
         ndk.abiFilters.addAll(variant.filters)
         externalNativeBuild.ndkBuild.abiFilters(*variant.filters)
         externalNativeBuild.cmake.abiFilters(*variant.filters)
@@ -320,19 +375,34 @@ android {
   }
 
   applicationVariants.configureEach {
-    val abi = (productFlavors[0].versionCode ?: fatal("null")) - 1
+    val abiFlavor = productFlavors.first { it.dimension == "ABI" }
+    val abi = (abiFlavor.versionCode ?: fatal("null")) - 1
     val abiVariant = Abi.VARIANTS[abi] ?: fatal("null")
     val versionCode = defaultConfig.versionCode ?: fatal("null")
 
-    val versionCodeOverride = versionCode * 1000 + abi * 10
+    val sdkFlavor = productFlavors.first { it.dimension == "SDK" }
+    val sdk = (sdkFlavor.versionCode ?: fatal("null")) - 1
+    val sdkVariant = Sdk.VARIANTS[sdk] ?: fatal("null")
+
+    val recaptchaVersion = when (sdkVariant.flavor) {
+      "legacy" -> libs.google.recaptcha.legacy
+      "lollipop" -> libs.google.recaptcha.lollipop
+      "latest" -> libs.google.recaptcha.latest
+      else -> error(sdkVariant.flavor)
+    }.get().version!!
+
+    val versionCodeOverride = versionCode * 1000 + if (buildType.name != "debug") (sdk * 100 + abi) else 0
     val versionNameOverride = StringBuilder("${versionName}.${defaultConfig.versionCode}").apply {
       if (extra.has("app_version_suffix")) {
         append(extra["app_version_suffix"])
       }
-      if (extensionName != "none") {
-        append("-$extensionName")
+      if (config.extension != "none") {
+        append("-${config.extension}")
       }
-      if (abiVariant.displayName != "universal" || extensionName == "none") {
+      if (!sdkVariant.displayName.isNullOrEmpty()) {
+        append("-${sdkVariant.displayName}")
+      }
+      if (abiVariant.displayName != "universal" || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
         append("-${abiVariant.displayName}")
       }
       if (extra.has("app_name_suffix")) {
@@ -342,13 +412,14 @@ android {
         append("-debug")
       }
     }.toString()
-    val defaultFileNamePrefix = projectName.replace(" ", "-").replace("#", "")
-    val outputFileNamePrefix = properties.getProperty("app.file", defaultFileNamePrefix)
-    val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace(Regex("-universal(?=-|$)"), "")}"
+
+    val fileName = "${config.outputFileNamePrefix}-${versionNameOverride.replace(Regex("-universal(?=-|$)"), "")}"
 
     buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
     buildConfigField("int", "ABI", abi.toString())
     buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${versionName}.${defaultConfig.versionCode}\"")
+    buildConfigField("String", "RECAPTCHA_VERSION", "\"${recaptchaVersion}\"")
+    buildConfigField("boolean", "INAPP_UPDATES_AVAILABLE", (sdkVariant.flavor == "latest").toString())
 
     outputs.map { it as ApkVariantOutputImpl }.forEach { output ->
       output.versionCodeOverride = versionCodeOverride
@@ -384,7 +455,7 @@ android {
 }
 
 gradle.projectsEvaluated {
-  tasks.named("preBuild").configure {
+  tasks.preBuild.configure {
     dependsOn(
       generateResourcesAndThemes,
       checkEmojiKeyboard,
@@ -392,18 +463,18 @@ gradle.projectsEvaluated {
       updateExceptions,
     )
   }
-  Abi.VARIANTS.forEach { (_, variant) ->
-    tasks.named("pre${variant.flavor[0].uppercaseChar() + variant.flavor.substring(1)}ReleaseBuild") {
-      dependsOn(updateLanguages)
-      if (!isExperimentalBuild) {
-        dependsOn(validateApiTokens)
-      }
+  tasks.named {
+    it.startsWith("pre") && it.endsWith("ReleaseBuild")
+  }.configureEach {
+    dependsOn(updateLanguages)
+    if (!config.isExperimentalBuild) {
+      dependsOn(validateApiTokens)
     }
   }
 }
 
 dependencies {
-  implementation(project(":extension:${extensionName}"))
+  implementation(project(":extension:${config.extension}"))
   // TDLib: https://github.com/tdlib/td/blob/master/CHANGELOG.md
   implementation(project(":tdlib"))
   implementation(project(":vkryl:core"))
@@ -411,80 +482,181 @@ dependencies {
   implementation(project(":vkryl:android"))
   implementation(project(":vkryl:td"))
   // AndroidX: https://developer.android.com/jetpack/androidx/versions
-  implementation("androidx.activity:activity:1.8.2") // 1.9.0+ requires minSdkVersion 19
-  implementation("androidx.biometric:biometric:1.1.0")
-  implementation("androidx.palette:palette:1.0.0")
-  implementation("androidx.recyclerview:recyclerview:1.3.2") // 1.4.0+ requires minSdkVersion 21
-  implementation("androidx.constraintlayout:constraintlayout:2.1.4") // 2.2.0+ requires minSdkVersion 21
-  implementation("androidx.viewpager:viewpager:1.0.0") // 1.1.0+ requires minSdkVersion 21
-  implementation("androidx.work:work-runtime:2.9.1")
-  implementation("androidx.browser:browser:1.5.0") // 1.7.0+ requires minSdkVersion 19
-  implementation("androidx.exifinterface:exifinterface:1.3.7")
-  implementation("androidx.collection:collection:1.4.5")
-  implementation("androidx.interpolator:interpolator:1.0.0")
-  implementation("androidx.gridlayout:gridlayout:1.0.0")
+  flavorImplementation(
+    libs.androidx.activity.legacy,
+    libs.androidx.activity.lollipop,
+    libs.androidx.activity.latest
+  )
+  flavorImplementation(
+    libs.androidx.gridlayout.legacy,
+    libs.androidx.gridlayout.latest
+  )
+  flavorImplementation(
+    libs.androidx.recyclerview.legacy,
+    libs.androidx.recyclerview.latest
+  )
+  flavorImplementation(
+    libs.androidx.constraintlayout.legacy,
+    libs.androidx.constraintlayout.latest
+  )
+  flavorImplementation(
+    libs.androidx.viewpager.legacy,
+    libs.androidx.viewpager.latest
+  )
+  flavorImplementation(
+    libs.androidx.browser.legacy,
+    libs.androidx.browser.latest
+  )
+  flavorImplementation(
+    libs.androidx.work.runtime.legacy,
+    libs.androidx.work.runtime.lollipop,
+    libs.androidx.work.runtime.latest
+  )
+  flavorImplementation(
+    libs.androidx.exifinterface.legacy,
+    libs.androidx.exifinterface.latest
+  )
+  implementation(libs.androidx.biometric)
+  implementation(libs.androidx.palette)
+  implementation(libs.androidx.collection)
+  implementation(libs.androidx.interpolator)
   // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
-  implementation("androidx.camera:camera-camera2:${LibraryVersions.ANDROIDX_CAMERA}")
-  implementation("androidx.camera:camera-video:${LibraryVersions.ANDROIDX_CAMERA}")
-  implementation("androidx.camera:camera-lifecycle:${LibraryVersions.ANDROIDX_CAMERA}")
-  implementation("androidx.camera:camera-view:${LibraryVersions.ANDROIDX_CAMERA}")
+  flavorImplementation(
+    libs.androidx.camera.camera2.legacy,
+    libs.androidx.camera.camera2.legacy,
+    libs.androidx.camera.camera2.latest
+  )
+  flavorImplementation(
+    libs.androidx.camera.video.legacy,
+    libs.androidx.camera.video.legacy,
+    libs.androidx.camera.video.latest
+  )
+  flavorImplementation(
+    libs.androidx.camera.lifecycle.legacy,
+    libs.androidx.camera.lifecycle.legacy,
+    libs.androidx.camera.lifecycle.latest
+  )
+  flavorImplementation(
+    libs.androidx.camera.view.legacy,
+    libs.androidx.camera.view.legacy,
+    libs.androidx.camera.view.latest
+  )
   // Google Play Services: https://developers.google.com/android/guides/releases
-  implementation("com.google.android.gms:play-services-base:17.6.0")
-  implementation("com.google.android.gms:play-services-basement:17.6.0")
-  implementation("com.google.android.gms:play-services-maps:17.0.1")
-  implementation("com.google.android.gms:play-services-location:18.0.0")
-  implementation("com.google.android.gms:play-services-mlkit-barcode-scanning:16.2.1")
-  implementation("com.google.android.gms:play-services-safetynet:18.0.1")
+  flavorImplementation(
+    libs.google.play.services.base.legacy,
+    libs.google.play.services.base.lollipop,
+    libs.google.play.services.base.latest
+  )
+  flavorImplementation(
+    libs.google.play.services.basement.legacy,
+    libs.google.play.services.basement.lollipop,
+    libs.google.play.services.basement.latest
+  )
+  flavorImplementation(
+    libs.google.play.services.maps.legacy,
+    libs.google.play.services.maps.latest
+  )
+  flavorImplementation(
+    libs.google.play.services.location.legacy,
+    libs.google.play.services.location.latest
+  )
+  flavorImplementation(
+    libs.google.play.services.safetynet.legacy,
+    libs.google.play.services.safetynet.latest
+  )
+  // ML Kit: https://developers.google.com/ml-kit/release-notes
+  flavorImplementation(
+    libs.google.play.services.mlkit.barcode.scanning.legacy,
+    libs.google.play.services.mlkit.barcode.scanning.latest
+  )
+  flavorImplementation(
+    libs.google.mlkit.language.id.legacy,
+    libs.google.mlkit.language.id.latest
+  )
   // Firebase: https://firebase.google.com/support/release-notes/android
-  implementation("com.google.firebase:firebase-messaging:22.0.0") {
+  flavorImplementation(
+    libs.google.firebase.messaging.legacy,
+    libs.google.firebase.messaging.lollipop,
+    libs.google.firebase.messaging.latest
+  ) {
     exclude(group = "com.google.firebase", module = "firebase-core")
     exclude(group = "com.google.firebase", module = "firebase-analytics")
     exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
   }
-  // implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
   // Play Integrity: https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/release-notes
-  implementation("com.google.android.play:integrity:1.3.0") // 1.4.0+ requires minSdkVersion 21
+  flavorImplementation(
+    libs.google.play.integrity.legacy,
+    libs.google.play.integrity.lollipop,
+    libs.google.play.integrity.latest
+  )
   // ReCaptcha: https://cloud.google.com/recaptcha/docs/release-notes
-  implementation("com.google.android.recaptcha:recaptcha:18.4.0") // 18.5.0+ requires minSdkVersion 21
-  // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
-  implementation("com.google.android.play:app-update:2.1.0")
+  flavorImplementation(
+    libs.google.recaptcha.legacy,
+    libs.google.recaptcha.lollipop,
+    libs.google.recaptcha.latest
+  )
   // AndroidX/media: https://github.com/androidx/media/blob/release/RELEASENOTES.md
-  implementation("androidx.media3:media3-exoplayer:${LibraryVersions.ANDROIDX_MEDIA}")
-  implementation("androidx.media3:media3-transformer:${LibraryVersions.ANDROIDX_MEDIA}")
-  implementation("androidx.media3:media3-effect:${LibraryVersions.ANDROIDX_MEDIA}")
-  implementation("androidx.media3:media3-common:${LibraryVersions.ANDROIDX_MEDIA}")
-  implementation("androidx.media3:media3-exoplayer-hls:${LibraryVersions.ANDROIDX_MEDIA}")
-  // 17.x version requires minSdk 19 or higher
-  implementation("com.google.mlkit:language-id:17.0.6")
+  flavorImplementation(
+    libs.androidx.media.common.legacy,
+    libs.androidx.media.common.lollipop,
+    libs.androidx.media.common.latest
+  )
+  flavorImplementation(
+    libs.androidx.media.transformer.legacy,
+    libs.androidx.media.transformer.lollipop,
+    libs.androidx.media.transformer.latest
+  )
+  flavorImplementation(
+    libs.androidx.media.effect.legacy,
+    libs.androidx.media.effect.lollipop,
+    libs.androidx.media.effect.latest
+  )
+  flavorImplementation(
+    libs.androidx.media.exoplayer.legacy,
+    libs.androidx.media.exoplayer.lollipop,
+    libs.androidx.media.exoplayer.latest
+  )
+  flavorImplementation(
+    libs.androidx.media.exoplayer.hls.legacy,
+    libs.androidx.media.exoplayer.hls.lollipop,
+    libs.androidx.media.exoplayer.hls.latest
+  )
+  latestImplementation(libs.androidx.media.inspector.latest)
+  // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
+  implementation(libs.google.play.app.update)
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly("org.checkerframework:checker-qual:3.51.0")
+  compileOnly(libs.checkerframework)
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
-  implementation("com.squareup.okhttp3:okhttp:4.12.0") // 5.x+ requires minSdkVersion 21
+  flavorImplementation(
+    libs.okhttp.legacy,
+    libs.okhttp.latest
+  )
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
-  implementation("me.leolin:ShortcutBadger:1.1.22@aar")
+  implementation(libs.shortcutbadger) {
+    artifact { type = "aar" }
+  }
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
-  implementation("com.getkeepsafe.relinker:relinker:1.4.5")
+  implementation(libs.relinker)
   // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/main/README.md
-  implementation("nl.dionsegijn:konfetti-xml:2.0.5")
+  implementation(libs.konfetti)
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
-  implementation("com.github.natario1:Transcoder:ba8f098c94")
+  legacyImplementation(libs.transcoder)
   // https://github.com/mikereedell/sunrisesunsetlib-java
-  implementation("com.luckycatlabs:SunriseSunsetCalculator:1.2")
+  implementation(libs.sunriseSunsetCalculator)
 
   // ZXing: https://github.com/zxing/zxing/blob/master/CHANGES
-  implementation("com.google.zxing:core:3.5.3")
+  implementation(libs.google.zxing.core)
 
   // subsampling-scale-image-view: https://github.com/davemorrissey/subsampling-scale-image-view
-  implementation("com.davemorrissey.labs:subsampling-scale-image-view-androidx:3.10.0")
+  implementation(libs.subsamplingScaleImageView)
 
-  // TODO: upgrade to "com.googlecode.mp4parser:isoparser:1.1.22" or latest
   // mp4parser: https://github.com/sannies/mp4parser/releases
-  implementation("com.googlecode.mp4parser:isoparser:1.0.6")
+  implementation(libs.mp4parser.isoparser)
 }
 
-if (!isExperimentalBuild) {
-  apply(plugin = "com.google.gms.google-services")
-  if (isHuaweiBuild) {
-    apply(plugin = "com.huawei.agconnect")
+if (!config.isExperimentalBuild) {
+  apply(plugin = libs.plugins.google.services.get().pluginId)
+  if (config.isHuaweiBuild) {
+    apply(plugin = libs.huawei.agconnect.get().group)
   }
 }

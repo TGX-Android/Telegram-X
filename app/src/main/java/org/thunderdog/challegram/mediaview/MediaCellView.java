@@ -29,11 +29,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.CancellationSignal;
 import androidx.core.view.GestureDetectorCompat;
+import androidx.media3.common.PlaybackException;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
@@ -42,6 +44,7 @@ import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -1906,6 +1909,9 @@ public class MediaCellView extends ViewGroup implements
   // Video
 
   public interface Callback {
+    default boolean onDisplayError (@NonNull PlaybackException error, @Nullable MediaItem item) {
+      return false;
+    }
     void onCanSeekChanged (MediaItem item, boolean canSeek);
     void onSeekProgress (MediaItem item, long now, long duration, float progress);
     void onPlayPause (MediaItem item, boolean isPlaying);
@@ -2033,7 +2039,12 @@ public class MediaCellView extends ViewGroup implements
     if (playerView == null) {
       videoParentView = new CellVideoView(getContext());
       videoParentView.setLayoutParams(FrameLayoutFix.newParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-      playerView = new VideoPlayerView(getContext(), videoParentView, 0, enableCropping);
+      playerView = new VideoPlayerView(getContext(), videoParentView, 0, enableCropping, (error, item) -> {
+        if (callback == null || !callback.onDisplayError(error, item)) {
+          boolean isGif = item != null && item.isGifType();
+          UI.showToast(U.isUnsupportedFormat(error) ? (isGif ? R.string.GifPlaybackUnsupported : R.string.VideoPlaybackUnsupported) : (isGif ? R.string.GifPlaybackError : R.string.VideoPlaybackError), Toast.LENGTH_SHORT);
+        }
+      });
       playerView.forceLooping(forceTouchMode);
       playerView.setCallback(this);
       hideStaticView = true;
