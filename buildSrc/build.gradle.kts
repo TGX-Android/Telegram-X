@@ -4,8 +4,6 @@ plugins {
   `kotlin-dsl`
 }
 
-apply(from = "${rootDir.parentFile}/properties.gradle.kts")
-
 java {
   toolchain {
     languageVersion = JavaLanguageVersion.of(21)
@@ -24,37 +22,30 @@ kotlin {
 
 gradlePlugin {
   plugins {
-    register("module-plugin") {
-      id = "module-plugin"
+    register("tgx-config") {
+      id = "tgx-config"
+      implementationClass = "tgx.gradle.plugin.ConfigurationPlugin"
+    }
+    register("tgx-module") {
+      id = "tgx-module"
       implementationClass = "tgx.gradle.plugin.ModulePlugin"
     }
-    register("cmake-plugin") {
-      id = "cmake-plugin"
-      implementationClass = "tgx.gradle.plugin.CMakePlugin"
-    }
-  }
-}
-
-repositories {
-  google()
-  mavenCentral()
-  if (extra["huawei"] == true) {
-    maven(url = "https://developer.huawei.com/repo/")
   }
 }
 
 dependencies {
+  // https://github.com/gradle/gradle/issues/15383#issuecomment-779893192
+  implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
+
   compileOnly(gradleApi())
-  implementation("com.android.tools.build:gradle:8.13.1")
-  implementation("com.google.gms:google-services:4.4.4")
-  implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.21")
-  implementation("com.squareup.okhttp3:okhttp:5.3.0")
-  implementation("com.squareup.okhttp3:logging-interceptor:5.3.0")
-  implementation("com.beust:klaxon:5.6")
+  implementation(libs.android.gradle.plugin)
+  implementation(libs.okhttp.latest)
+  implementation(libs.klaxon)
 }
 
+apply(from = "${rootDir.parentFile}/properties.gradle.kts")
 if (extra["huawei"] == true) {
   dependencies {
-    implementation("com.huawei.agconnect:agcp:1.9.3.302")
+    implementation(libs.huawei.agconnect)
   }
 }

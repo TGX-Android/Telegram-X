@@ -21,12 +21,12 @@ import groovy.xml.XmlParser
 import groovy.xml.XmlUtil
 import okhttp3.*
 import org.gradle.api.tasks.TaskAction
+import tgx.gradle.fatal
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.contracts.ExperimentalContracts
 import kotlin.system.measureTimeMillis
-import tgx.gradle.fatal
 
 open class FetchLanguagesTask : BaseTask() {
   data class Languages (

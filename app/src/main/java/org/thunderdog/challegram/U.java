@@ -84,8 +84,10 @@ import androidx.core.os.EnvironmentCompat;
 import androidx.exifinterface.media.ExifInterface;
 import androidx.media3.common.C;
 import androidx.media3.common.Format;
+import androidx.media3.common.MediaLibraryInfo;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
+import androidx.media3.common.util.Clock;
 import androidx.media3.common.util.TimestampAdjuster;
 import androidx.media3.datasource.ByteArrayDataSource;
 import androidx.media3.datasource.DataSource;
@@ -95,6 +97,8 @@ import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlaybackException;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.RenderersFactory;
+import androidx.media3.exoplayer.analytics.AnalyticsCollector;
+import androidx.media3.exoplayer.analytics.DefaultAnalyticsCollector;
 import androidx.media3.exoplayer.analytics.PlayerId;
 import androidx.media3.exoplayer.hls.DefaultHlsExtractorFactory;
 import androidx.media3.exoplayer.hls.HlsExtractorFactory;
@@ -105,6 +109,7 @@ import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.exoplayer.source.UnrecognizedInputFormatException;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.exoplayer.util.EventLogger;
 import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.extractor.ExtractorInput;
 import androidx.recyclerview.widget.RecyclerView;
@@ -737,13 +742,25 @@ public class U {
     // new AdaptiveVideoTrackSelection.Factory(new DefaultBandwidthMeter())
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
-    final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
+    final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ?
+      DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER :
+      DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
     final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
     final MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
-    return new ExoPlayer.Builder(context, renderersFactory, mediaSourceFactory)
+    final AnalyticsCollector analyticsCollector;
+    if (BuildConfig.DEBUG) {
+      analyticsCollector = new DefaultAnalyticsCollector(Clock.DEFAULT);
+      analyticsCollector.addListener(new EventLogger("ExoPlayerImpl"));
+    } else {
+      analyticsCollector = null;
+    }
+    ExoPlayer.Builder b = new ExoPlayer.Builder(context, renderersFactory, mediaSourceFactory)
       .setTrackSelector(new DefaultTrackSelector(context))
-      .setLoadControl(new DefaultLoadControl())
-      .build();
+      .setLoadControl(new DefaultLoadControl());
+    if (analyticsCollector != null) {
+      b.setAnalyticsCollector(analyticsCollector);
+    }
+    return b.build();
   }
 
   public static boolean isUnsupportedFormat (PlaybackException e) {
@@ -802,7 +819,9 @@ public class U {
       @Override
       public DataSource redirectDataSource (Uri uri) {
         if (uri.equals(manifestUri)) {
-          String playlistData = hlsVideo.multivariantPlaylistData();
+          String playlistData = hlsVideo.multivariantPlaylistData(
+            BuildConfig.DEBUG
+          );
           return new ByteArrayDataSource(playlistData.getBytes());
         }
         return null;
@@ -815,7 +834,8 @@ public class U {
       .createMediaSource(newMediaItem(manifestUri));
   }
 
-  @NonNull private static HlsExtractorFactory newHlsExtractorFactory (@NonNull HlsVideo hlsVideo) {
+  @NonNull
+  private static HlsExtractorFactory newHlsExtractorFactory (@NonNull HlsVideo hlsVideo) {
     DefaultHlsExtractorFactory defaultHlsExtractorFactory = new DefaultHlsExtractorFactory();
     return new HlsExtractorFactory() {
       @Override
@@ -2541,8 +2561,11 @@ public class U {
     String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
       (!"none".equals(BuildConfig.TGX_EXTENSION) ? "Extension: " + BuildConfig.TGX_EXTENSION + "\n" : "") +
+      (!BuildConfig.LATEST_FLAVOR ? ("flavor: " + BuildConfig.FLAVOR_SDK + "\n") : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
+      "androidx-media3: " + MediaLibraryInfo.VERSION + " [" + MediaLibraryInfo.registeredModules().replaceAll("(?<=^| )media3\\.", "") + "]\n" +
       "tgcalls: TGX-Android/tgcalls@" + BuildConfig.TGCALLS_COMMIT + "\n" +
+      "Recaptcha: " + BuildConfig.RECAPTCHA_VERSION + "\n" +
       "WebRTC: TGX-Android/webrtc@" + BuildConfig.WEBRTC_COMMIT + "\n" +
       "Android: " + SdkVersion.getPrettyName() + " (" + Build.VERSION.SDK_INT + ")" + "\n" +
       "Device: " + Build.MANUFACTURER + " " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +

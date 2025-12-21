@@ -13,8 +13,8 @@
 package tgx.gradle.task
 
 import com.beust.klaxon.Klaxon
-import tgx.gradle.fatal
 import org.gradle.api.tasks.TaskAction
+import tgx.gradle.fatal
 import java.io.File
 import java.util.*
 import kotlin.contracts.ExperimentalContracts
@@ -205,7 +205,6 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     val supportedArray = supportedFile.getArray("DATA")
 
     val displayingArray = displayingFile.getArray("DATA_COLORED").replace("EmojiCode.DATA[1]", "[]")
-
     val supported = try {
       Klaxon().parseArray<List<String>>(supportedArray)!!
     } catch (e: Throwable) {

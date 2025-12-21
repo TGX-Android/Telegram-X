@@ -1,5 +1,6 @@
 package tgx.gradle.data
 
+import App
 import tgx.gradle.task.camelCaseToUpperCase
 import tgx.gradle.task.normalizeArgbHex
 import tgx.gradle.task.unwrapDoubleQuotes

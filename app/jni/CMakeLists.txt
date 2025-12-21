@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 project(tgx VERSION 1.0.0 LANGUAGES C CXX)
+message("${CMAKE_PROJECT_NAME} platform: ${ANDROID_PLATFORM} flavor: ${TGX_FLAVOR}")
 
 # == Include ==
 
@@ -25,8 +26,15 @@ set(ENABLE_TG_CALLS yes)
 #endif()
 set(USE_WEBP yes)
 
+if (NOT ${TGX_FLAVOR} MATCHES "legacy|lollipop|latest")
+  message(FATAL_ERROR "Unknown flavor: ${TGX_FLAVOR}")
+endif()
+
 if (${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
   set(FFMPEG_ABI ${ANDROID_ABI})
+  if (${TGX_FLAVOR} MATCHES "legacy")
+    message(FATAL_ERROR "Invalid combination: ${TGX_FLAVOR} ${ANDROID_ABI}")
+  endif()
 elseif(${ANDROID_ABI} STREQUAL "x86")
   set(FFMPEG_ABI "i686")
 elseif(${ANDROID_ABI} STREQUAL "armeabi-v7a")
@@ -34,7 +42,8 @@ elseif(${ANDROID_ABI} STREQUAL "armeabi-v7a")
 else()
   message(FATAL_ERROR "Unknown abi: ${ANDROID_ABI}")
 endif()
-set(FFMPEG_DIR "${THIRDPARTY_DIR}/ffmpeg/build/${FFMPEG_ABI}")
+set(FFMPEG_SRC_DIR "${THIRDPARTY_DIR}/ffmpeg")
+set(FFMPEG_DIR "${FFMPEG_SRC_DIR}/build/${TGX_FLAVOR}/${FFMPEG_ABI}")
 set(FFMPEG_LIBS
   swresample
   avformat
@@ -44,7 +53,7 @@ set(FFMPEG_LIBS
   avutil
 )
 
-set(VPX_DIR "${THIRDPARTY_DIR}/libvpx/build/${FFMPEG_ABI}")
+set(VPX_DIR "${THIRDPARTY_DIR}/libvpx/build/${TGX_FLAVOR}/${FFMPEG_ABI}")
 set(VPX_LIB_PATH "${VPX_DIR}/lib/libvpx.a")
 
 # == Constants ==
@@ -57,8 +66,8 @@ else()
 endif()
 
 message(STATUS "Building native library... \
-        CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} \
-        IS_ARM_FAMILY: ${IS_ARM_FAMILY}")
+  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} \
+  IS_ARM_FAMILY: ${IS_ARM_FAMILY}")
 
 # == CMake global settings ==
 
@@ -186,7 +195,10 @@ endif()
 foreach(FFMPEG_LIB IN LISTS FFMPEG_LIBS)
   add_library(${FFMPEG_LIB} STATIC IMPORTED)
   set_target_properties(${FFMPEG_LIB} PROPERTIES IMPORTED_LOCATION "${FFMPEG_DIR}/lib/lib${FFMPEG_LIB}.a")
-  target_include_directories(${FFMPEG_LIB} INTERFACE "${FFMPEG_DIR}/include")
+  target_include_directories(${FFMPEG_LIB} INTERFACE
+    "${FFMPEG_DIR}/include"
+    "${FFMPEG_SRC_DIR}"
+  )
 endforeach()
 
 # == Target ==
@@ -208,17 +220,17 @@ add_library(${NATIVE_LIB} SHARED
   gif.cpp
   views.c
 
-  "${THIRDPARTY_DIR}/androidx-media/opus_jni.cc"
-  "${THIRDPARTY_DIR}/androidx-media/flac_jni.cc"
-  "${THIRDPARTY_DIR}/androidx-media/flac_parser.cc"
-  "${THIRDPARTY_DIR}/androidx-media/ffmpeg_jni.cc"
-  "${THIRDPARTY_DIR}/androidx-media/vpx_jni.cc"
+  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/opus_jni.cc"
+  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/flac_jni.cc"
+  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/flac_parser.cc"
+  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/ffmpeg_jni.cc"
+  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/vpx_jni.cc"
 
   bridge.cpp
 )
 target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
-  "${THIRDPARTY_DIR}/androidx-media"
+  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}"
 
   "${THIRDPARTY_DIR}"
   .

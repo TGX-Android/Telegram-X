@@ -1,9 +1,9 @@
 package tgx.app
 
 import android.app.Application
-import com.google.android.recaptcha.Recaptcha
 import com.google.android.recaptcha.RecaptchaTasksClient
 import org.thunderdog.challegram.telegram.Tdlib
+import tgx.flavor.getRecaptchaTasksClient
 
 private typealias Callback = (RecaptchaTasksClient?, Exception?) -> Unit
 
@@ -26,7 +26,7 @@ class RecaptchaContext(
     recaptchaSiteKey.takeIf {
       it.isNotEmpty()
     }?.let { siteKey ->
-      Recaptcha.getTasksClient(application, siteKey)
+      getRecaptchaTasksClient(application, siteKey)
         .addOnSuccessListener {
           client = it
           executeScheduledTasks()
