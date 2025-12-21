@@ -206,6 +206,7 @@ Full stories feature implementation for Telegram-X with complete feature parity.
 | | | Topic filter dialog with proper icons (TopicIconModifier with colored circles + custom emoji)
 | | | Fix: Settings popup Done/Cancel buttons ripple effect (use ?android:attr/colorControlHighlight for theme-adaptive ripple)
 | | | Message search loading indicator (ClearButton spinner in search bar instead of centered ProgressComponentView)
+| | | Fix: Topic filter dialog icon positioning (LEFT_OFFSET_DP 68→18dp to place icons in left padding area)
 
 ## Implementation Notes
 
