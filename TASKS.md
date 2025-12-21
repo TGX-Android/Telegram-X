@@ -193,6 +193,19 @@ Full stories feature implementation for Telegram-X with complete feature parity.
 | | | Forum layout toggle (tabs vs list) in ProfileController (ToggleSupergroupIsForum with hasForumTabs)
 | | | Fix: Forum layout toggle instant apply (wasForumTabsChanged check in processEditContentChanged)
 | | | Fix: Visual flash when entering forum tabs (LoadingController placeholder instead of MessagesController)
+| | | Fix: External forum toggle detection (onSupergroupUpdated handler for non-admin users)
+| | | Change topic icon feature (GetForumTopicDefaultIcons + EditForumTopic with iconCustomEmojiId)
+| | | Fix: Muted topic notifications (client-side filter in TdlibNotificationHelper.updateGroup)
+| | | Fix: Closed topic input disabled (isTopicClosedForUser check in MessagesController.updateBottomBar)
+| | | Search messages in topics (toggle Topics/Messages search in ForumTopicsController)
+| | | Flat message search results with sender avatar and topic icon in corner (ForumTopicView)
+| | | Message search pagination (infinite scroll with nextFromMessageId in ForumTopicsController)
+| | | Filter message search results by topic (FAB button with multi-select checkboxes)
+| | | Fix: Preserve search results when navigating back from topic (allowLeavingSearchMode override)
+| | | Fix: Topic filter missing old messages (multi-page preloading + auto-retry)
+| | | Topic filter dialog with proper icons (TopicIconModifier with colored circles + custom emoji)
+| | | Fix: Settings popup Done/Cancel buttons ripple effect (use ?android:attr/colorControlHighlight for theme-adaptive ripple)
+| | | Message search loading indicator (ClearButton spinner in search bar instead of centered ProgressComponentView)
 
 ## Implementation Notes
 
@@ -200,6 +213,7 @@ Full stories feature implementation for Telegram-X with complete feature parity.
 - `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicsController.java` - Main controller for forum topics list
 - `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicView.java` - Custom view for topic items
 - `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicTabsController.java` - ViewPager-based tabs controller for forum topics (used when hasForumTabs is enabled)
+- `app/src/main/java/org/thunderdog/challegram/util/TopicIconModifier.java` - DrawModifier for rendering topic icons (colored circles + custom emoji) in list items
 
 ### Files Modified
 - `app/src/main/java/org/thunderdog/challegram/telegram/TdlibUi.java` - Added forum navigation hook (lines 2117-2134)
@@ -239,6 +253,7 @@ Running on emulator (Medium_Phone_API_36.1). Each topic now shows only its own m
 - `SetForumTopicNotificationSettings` - Per-topic mute/unmute (long-press menu in ForumTopicsController)
 - `ToggleSupergroupIsForum` - Enable/disable forum topics mode (toggle in ProfileController group settings)
 - `ToggleChatViewAsTopics` - Toggle between topics view and unified chat view (more menu in ForumTopicsController)
+- `SearchChatMessages` - Search messages in forum chat, group by topicId for message search mode
 
 ### Future Enhancements (TODO)
 - [x] Tabs layout support (`hasForumTabs`) - Show topics as horizontal tabs when admin enables "Tabs" layout
