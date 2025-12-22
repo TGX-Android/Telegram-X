@@ -315,7 +315,12 @@ android {
             java.srcDirs("../thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/src/main/java")
           }
           if (variant.flavor != "legacy") {
-            kotlin.srcDirs("./src/modern/kotlin")
+            kotlin.srcDirs("./src/postLegacy/kotlin")
+            java.srcDirs("./src/postLegacy/java")
+          }
+          if (variant.flavor != "latest") {
+            kotlin.srcDirs("./src/preLatest/kotlin")
+            java.srcDirs("./src/preLatest/java")
           }
         }
 
@@ -636,7 +641,7 @@ dependencies {
     artifact { type = "aar" }
   }
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
-  implementation(libs.relinker)
+  preLatestImplementation(libs.relinker)
   // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/main/README.md
   implementation(libs.konfetti)
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md

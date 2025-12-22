@@ -55,6 +55,18 @@ fun DependencyHandlerScope.latestImplementation(
 ) =
   this.flavorImplementation("latest", dependency, dependencyConfiguration)
 
+fun DependencyHandlerScope.preLatestImplementation(
+  dependency: Provider<MinimalExternalModuleDependency>,
+  dependencyConfiguration: Action<ExternalModuleDependency>? = null
+) =
+  this.flavorImplementation(dependency, dependency, null, dependencyConfiguration)
+
+fun DependencyHandlerScope.postLegacyImplementation(
+  dependency: Provider<MinimalExternalModuleDependency>,
+  dependencyConfiguration: Action<ExternalModuleDependency>? = null
+) =
+  this.flavorImplementation(null, dependency, dependency, dependencyConfiguration)
+
 fun DependencyHandlerScope.flavorImplementation(
   flavor: String,
   dependency: Provider<MinimalExternalModuleDependency>?,
