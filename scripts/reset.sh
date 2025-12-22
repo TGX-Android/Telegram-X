@@ -44,4 +44,7 @@ git reset --hard
 popd > /dev/null
 
 echo "Resetting androidx-media..."
-(test -d "$THIRDPARTY_LIBRARIES/androidx-media" && rm -rf "$THIRDPARTY_LIBRARIES/androidx-media") || true
+flavors=( legacy lollipop latest )
+for FLAVOR in ${flavors[@]}; do
+  (test -d "$THIRDPARTY_LIBRARIES/androidx-media/$FLAVOR" && rm -rf "$THIRDPARTY_LIBRARIES/androidx-media/$FLAVOR") || true
+done
