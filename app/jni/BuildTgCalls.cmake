@@ -67,8 +67,6 @@ add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/v2/SignalingEncryption.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/SignalingConnection.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/SignalingSctpConnection.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/SignalingKcpConnection.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/ikcp.cpp"
 )
 
 target_include_directories(tgcalls PRIVATE
