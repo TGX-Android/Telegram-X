@@ -498,6 +498,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private int[] favoriteStickerIds;
   private int unreadTrendingStickerSetsCount;
+  private long[] trustedMiniAppBotUserIds;
+  private TdApi.GroupCallMessageLevel[] groupCallMessageLevels;
 
   private @Mode int instanceMode;
   private boolean instancePaused;
@@ -4743,7 +4745,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_52d0a6e8();
+        Td.assertMessageContent_e0365d1c();
         break;
     }
 
@@ -4827,7 +4829,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_52d0a6e8();
+      Td.assertMessageContent_e0365d1c();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -8596,8 +8598,31 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
-  private void updateGroupCallNewMessage (TdApi.UpdateGroupCallNewMessage update) {
-    listeners.updateGroupCallNewMessage(update);
+  private void updateNewGroupCallMessage (TdApi.UpdateNewGroupCallMessage update) {
+    listeners.updateNewGroupCallMessage(update);
+  }
+
+  @TdlibThread
+  private void updateNewGroupCallPaidReaction (TdApi.UpdateNewGroupCallPaidReaction update) {
+    listeners.updateNewGroupCallPaidReaction(update);
+  }
+
+  @TdlibThread
+  private void updateGroupCallMessageLevels (TdApi.UpdateGroupCallMessageLevels update) {
+    synchronized (dataLock) {
+      this.groupCallMessageLevels = update.levels;
+    }
+    listeners.updateGroupCallMessageLevels(update);
+  }
+
+  @TdlibThread
+  private void updateGroupCallMessageSendFailed (TdApi.UpdateGroupCallMessageSendFailed update) {
+    listeners.updateGroupCallMessageSendFailed(update);
+  }
+
+  @TdlibThread
+  private void updateGroupCallMessagesDeleted (TdApi.UpdateGroupCallMessagesDeleted update) {
+    listeners.updateGroupCallMessagesDeleted(update);
   }
 
   @TdlibThread
@@ -9521,6 +9546,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     listeners.updateTrendingStickerSets(update, unreadCount);
   }
 
+  private void updateTrustedMiniAppBots (TdApi.UpdateTrustedMiniAppBots update) {
+    synchronized (dataLock) {
+      this.trustedMiniAppBotUserIds = update.botUserIds;
+    }
+    listeners.updateTrustedMiniAppBots(update);
+  }
+
   private void updateSavedAnimations (TdApi.UpdateSavedAnimations update) {
     listeners.updateSavedAnimations(update);
   }
@@ -9933,10 +9965,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateGroupCall((TdApi.UpdateGroupCall) update);
         break;
       }
-      case TdApi.UpdateGroupCallNewMessage.CONSTRUCTOR: {
-        updateGroupCallNewMessage((TdApi.UpdateGroupCallNewMessage) update);
+      case TdApi.UpdateNewGroupCallMessage.CONSTRUCTOR: {
+        updateNewGroupCallMessage((TdApi.UpdateNewGroupCallMessage) update);
         break;
       }
+      case TdApi.UpdateNewGroupCallPaidReaction.CONSTRUCTOR: {
+        updateNewGroupCallPaidReaction((TdApi.UpdateNewGroupCallPaidReaction) update);
+        break;
+      }
+      case TdApi.UpdateGroupCallMessageLevels.CONSTRUCTOR: {
+        updateGroupCallMessageLevels((TdApi.UpdateGroupCallMessageLevels) update);
+        break;
+      }
+      case TdApi.UpdateGroupCallMessageSendFailed.CONSTRUCTOR: {
+        updateGroupCallMessageSendFailed((TdApi.UpdateGroupCallMessageSendFailed) update);
+        break;
+      }
+      case TdApi.UpdateGroupCallMessagesDeleted.CONSTRUCTOR: {
+        updateGroupCallMessagesDeleted((TdApi.UpdateGroupCallMessagesDeleted) update);
+        break;
+      }
+
       case TdApi.UpdateGroupCallVerificationState.CONSTRUCTOR: {
         updateGroupCallVerificationState((TdApi.UpdateGroupCallVerificationState) update);
         break;
@@ -10157,6 +10206,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateTrendingStickerSets((TdApi.UpdateTrendingStickerSets) update);
         break;
       }
+      case TdApi.UpdateTrustedMiniAppBots.CONSTRUCTOR: {
+        updateTrustedMiniAppBots((TdApi.UpdateTrustedMiniAppBots) update);
+        break;
+      }
       case TdApi.UpdateSavedAnimations.CONSTRUCTOR: {
         updateSavedAnimations((TdApi.UpdateSavedAnimations) update);
         break;
@@ -10240,6 +10293,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
 
+
+      case TdApi.UpdatePendingTextMessage.CONSTRUCTOR:
+      case TdApi.UpdateLiveStoryTopDonors.CONSTRUCTOR:
+      case TdApi.UpdateGiftAuctionState.CONSTRUCTOR:
+      case TdApi.UpdateActiveGiftAuctions.CONSTRUCTOR:
+        break;
+
       // for bots only.
       case TdApi.UpdateNewChatJoinRequest.CONSTRUCTOR:
       case TdApi.UpdateNewCustomEvent.CONSTRUCTOR:
@@ -10266,7 +10326,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_850f929d();
+        Td.assertUpdate_3a0802b2();
         throw Td.unsupported(update);
       }
     }
@@ -11239,6 +11299,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageGiftedTon.CONSTRUCTOR:
         case TdApi.MessageGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+        case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+        case TdApi.MessageUpgradedGiftPurchaseOfferDeclined.CONSTRUCTOR:
         case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
         case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
         case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
@@ -11276,7 +11338,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_52d0a6e8();
+          Td.assertMessageContent_e0365d1c();
           throw Td.unsupported(message.content);
       }
     }
@@ -11685,11 +11747,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     switch (action.getConstructor()) {
       case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
       case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:
-      case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR: {
+      case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
+      case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR: {
         return true;
       }
       default: {
-        Td.assertSuggestedAction_c92fb71c();
+        Td.assertSuggestedAction_a78df4c9();
         break;
       }
     }
@@ -11751,7 +11814,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     ResolvableProblem.NOTIFICATIONS,
     ResolvableProblem.CHECK_PASSWORD,
     ResolvableProblem.CHECK_PHONE_NUMBER,
-    ResolvableProblem.SET_BIRTHDATE
+    ResolvableProblem.SET_BIRTHDATE,
+    ResolvableProblem.SET_LOGIN_EMAIL
   })
   public @interface ResolvableProblem {
     int
@@ -11760,7 +11824,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       NOTIFICATIONS = 2,
       CHECK_PASSWORD = 3,
       CHECK_PHONE_NUMBER = 4,
-      SET_BIRTHDATE = 5;
+      SET_BIRTHDATE = 5,
+      SET_LOGIN_EMAIL = 6;
   }
 
   @ResolvableProblem
@@ -11781,8 +11846,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           return ResolvableProblem.CHECK_PHONE_NUMBER;
         case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
           return ResolvableProblem.SET_BIRTHDATE;
+        case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR:
+          return ResolvableProblem.SET_LOGIN_EMAIL;
         default:
-          Td.assertSuggestedAction_c92fb71c();
+          Td.assertSuggestedAction_a78df4c9();
           throw Td.unsupported(singleAction);
       }
     }

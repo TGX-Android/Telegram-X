@@ -111,6 +111,11 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
 
   TdlibType("ChatFolderName", isExperimental = true),
 
+  TdlibType("Gift"),
+  TdlibType("GiftAuction"),
+  TdlibType("GiftPurchaseLimits"),
+  TdlibType("GiftBackground"),
+
   TdlibType("UpgradedGift", isExperimental = true),
   TdlibType("UpgradedGiftColors"),
   TdlibType("UpgradedGiftModel"),

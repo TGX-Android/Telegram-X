@@ -1582,6 +1582,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
@@ -1591,7 +1593,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         return false;
 
       default:
-        Td.assertInternalLinkType_eaa9fead();
+        Td.assertInternalLinkType_fbab3129();
         return true;
     }
   }

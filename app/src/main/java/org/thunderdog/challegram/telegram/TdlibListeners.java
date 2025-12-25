@@ -1140,11 +1140,43 @@ public class TdlibListeners {
     );
   }
 
-  // updateGroupCallNewMessage
+  // updateNewGroupCallMessage
 
-  void updateGroupCallNewMessage (TdApi.UpdateGroupCallNewMessage update) {
+  void updateNewGroupCallMessage (TdApi.UpdateNewGroupCallMessage update) {
     runGroupCallUpdate(update.groupCallId, listener ->
-      listener.onGroupCallNewMessage(update.groupCallId, update.senderId, update.text)
+      listener.onNewGroupCallMessage(update.groupCallId, update.message)
+    );
+  }
+
+  // updateNewGroupCallPaidReaction
+
+  void updateNewGroupCallPaidReaction (TdApi.UpdateNewGroupCallPaidReaction update) {
+    runGroupCallUpdate(update.groupCallId, listener ->
+      listener.onNewGroupCallPaidReaction(update.groupCallId, update.senderId, update.starCount)
+    );
+  }
+
+  // updateGroupCallMessageLevels
+
+  void updateGroupCallMessageLevels (TdApi.UpdateGroupCallMessageLevels update) {
+    runUpdate(optionListeners, listener ->
+      listener.onGroupCallMessageLevelsUpdated(update.levels)
+    );
+  }
+
+  // updateGroupCallMessageSendFailed
+
+  void updateGroupCallMessageSendFailed (TdApi.UpdateGroupCallMessageSendFailed update) {
+    runGroupCallUpdate(update.groupCallId, listener ->
+      listener.onGroupCallMessageSendFailed(update.groupCallId, update.messageId, update.error)
+    );
+  }
+
+  // updateGroupCallMessagesDeleted
+
+  void updateGroupCallMessagesDeleted (TdApi.UpdateGroupCallMessagesDeleted update) {
+    runGroupCallUpdate(update.groupCallId, listener ->
+      listener.onGroupCallMessagesDeleted(update.groupCallId, update.messageIds)
     );
   }
 
@@ -1560,6 +1592,14 @@ public class TdlibListeners {
   void updateTrendingStickerSets (TdApi.UpdateTrendingStickerSets update, int unreadCount) {
     runUpdate(stickersListeners, listener ->
       listener.onTrendingStickersUpdated(update.stickerType, update.stickerSets, unreadCount)
+    );
+  }
+
+  // updateTrustedMiniAppBots
+
+  void updateTrustedMiniAppBots (TdApi.UpdateTrustedMiniAppBots update) {
+    runUpdate(optionListeners, listener ->
+      listener.onTrustedMiniAppBotsUpdated(update.botUserIds)
     );
   }
 

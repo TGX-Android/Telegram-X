@@ -486,6 +486,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
             case TdApi.MessageGift.CONSTRUCTOR:
             case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+            case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+            case TdApi.MessageUpgradedGiftPurchaseOfferDeclined.CONSTRUCTOR:
             case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
             case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
             case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
@@ -498,7 +500,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_52d0a6e8();
+              Td.assertMessageContent_e0365d1c();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
