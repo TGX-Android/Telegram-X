@@ -57,6 +57,14 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.AvatarPickerManager;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
+import org.thunderdog.challegram.mediaview.MediaSpoilerSendDelegate;
+import org.thunderdog.challegram.mediaview.MediaViewDelegate;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
+import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.ui.camera.CameraController;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -678,6 +686,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     }
 
+    // Add "Create Story" option for channels if user can post stories
+    if (mode == Mode.CHANNEL && supergroup != null && canPostStories()) {
+      ids.append(R.id.more_btn_createStory);
+      strings.append(R.string.CreateStory);
+    }
+
     if (!tdlib.isDirectMessagesChat(getChatId()) && (mode == Mode.SUPERGROUP || mode == Mode.GROUP)) {
       if (!canManageChat()) {
         ids.append(R.id.more_btn_viewAdmins);
@@ -783,6 +797,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           manageChat();
         } else if (id == R.id.more_btn_viewStats) {
           openStats();
+        } else if (id == R.id.more_btn_createStory) {
+          openStoryCompose();
         } else if (id == R.id.more_btn_editDescription) {
           editDescription(false);
           return;
@@ -4341,6 +4357,119 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         return TD.isCreator(group.status);
     }
     return false;
+  }
+
+  private boolean canPostStories () {
+    if (supergroup == null || supergroup.status == null) {
+      return false;
+    }
+    switch (supergroup.status.getConstructor()) {
+      case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+        return true;
+      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+        return ((TdApi.ChatMemberStatusAdministrator) supergroup.status).rights.canPostStories;
+    }
+    return false;
+  }
+
+  private void openStoryCompose () {
+    if (chat == null) return;
+    final long channelChatId = chat.id;
+
+    // Check if channel can post stories (boost level check)
+    tdlib.client().send(new TdApi.CanPostStory(channelChatId), result -> {
+      UI.post(() -> {
+        if (result.getConstructor() == TdApi.CanPostStoryResultOk.CONSTRUCTOR) {
+          // Can post story, open camera
+          openStoryComposeFromCamera(channelChatId);
+        } else if (result.getConstructor() == TdApi.CanPostStoryResultBoostNeeded.CONSTRUCTOR) {
+          // Channel needs more boosts
+          UI.showToast(R.string.StoryBoostNeeded, Toast.LENGTH_LONG);
+        } else if (result.getConstructor() == TdApi.CanPostStoryResultActiveStoryLimitExceeded.CONSTRUCTOR ||
+                   result.getConstructor() == TdApi.CanPostStoryResultWeeklyLimitExceeded.CONSTRUCTOR ||
+                   result.getConstructor() == TdApi.CanPostStoryResultMonthlyLimitExceeded.CONSTRUCTOR) {
+          // Story limit exceeded
+          UI.showToast(R.string.StoryLimitExceeded, Toast.LENGTH_LONG);
+        } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          // Error
+          UI.showToast(R.string.StoryPostError, Toast.LENGTH_LONG);
+        }
+      });
+    });
+  }
+
+  private void openStoryComposeFromCamera (final long channelChatId) {
+    CameraOpenOptions options = new CameraOpenOptions()
+      .mode(CameraController.MODE_MAIN)
+      .ignoreAnchor(true)
+      .allowSystem(false)
+      .optionalMicrophone(true)
+      .setMediaEditorDelegates(
+        new MediaViewDelegate() {
+          @Override
+          public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
+            return null;
+          }
+
+          @Override
+          public void setMediaItemVisible (int index, MediaItem item, boolean isVisible) {
+          }
+        },
+        new MediaSelectDelegate() {
+          @Override
+          public boolean isMediaItemSelected (int index, MediaItem item) {
+            return false;
+          }
+
+          @Override
+          public void setMediaItemSelected (int index, MediaItem item, boolean isSelected) {
+          }
+
+          @Override
+          public int getSelectedMediaCount () {
+            return 0;
+          }
+
+          @Override
+          public boolean canDisableMarkdown () {
+            return false;
+          }
+
+          @Override
+          public long getOutputChatId () {
+            return 0;
+          }
+
+          @Override
+          public ArrayList<ImageFile> getSelectedMediaItems (boolean copy) {
+            return null;
+          }
+        },
+        new MediaSpoilerSendDelegate() {
+          @Override
+          public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
+            if (images != null && !images.isEmpty()) {
+              ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
+              boolean isVideo = galleryFile.isVideo();
+              String filePath = galleryFile.getFilePath();
+              context().forceCloseCamera();
+              UI.post(() -> {
+                openStoryPreview(galleryFile, isVideo, channelChatId);
+              }, 350L);
+            }
+            return true;
+          }
+        }
+      );
+    openInAppCamera(options);
+  }
+
+  private void openStoryPreview (ImageGalleryFile file, boolean isVideo, long channelChatId) {
+    String filePath = file.getFilePath();
+    double videoDuration = isVideo ? file.getVideoDuration(false) : 0;
+    StoryPreviewController controller = new StoryPreviewController(context, tdlib);
+    controller.setArguments(new StoryPreviewController.Args(filePath, isVideo, videoDuration, channelChatId));
+    navigateTo(controller);
   }
 
   public boolean canAddAnyKindOfMembers () {

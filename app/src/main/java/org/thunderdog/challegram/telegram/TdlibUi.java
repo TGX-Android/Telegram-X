@@ -2380,11 +2380,16 @@ public class TdlibUi extends Handler {
   }
 
   public void openStory (final TdlibDelegate context, final long storySenderChatId, final int storyId, @Nullable TdApi.Story preloadedStory) {
+    openStory(context, storySenderChatId, storyId, preloadedStory, null, 0);
+  }
+
+  public void openStory (final TdlibDelegate context, final long storySenderChatId, final int storyId,
+                         @Nullable TdApi.Story preloadedStory, @Nullable java.util.List<TdApi.ChatActiveStories> allStories, int initialUserIndex) {
     if (context.context() == null) {
       return;
     }
     org.thunderdog.challegram.ui.StoryViewController storyController = new org.thunderdog.challegram.ui.StoryViewController(context.context(), tdlib);
-    storyController.setArguments(new org.thunderdog.challegram.ui.StoryViewController.Args(storySenderChatId, storyId, preloadedStory));
+    storyController.setArguments(new org.thunderdog.challegram.ui.StoryViewController.Args(storySenderChatId, storyId, preloadedStory, allStories, initialUserIndex));
     storyController.open();
   }
 

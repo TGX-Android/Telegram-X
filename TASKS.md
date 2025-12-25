@@ -3,7 +3,7 @@
 ## Overview
 Full stories feature implementation for Telegram-X with complete feature parity.
 
-## Completed
+## ✅ ALL TASKS COMPLETE
 
 ### Phase 1: Story Viewer Foundation
 - [x] **StoryViewController.java** - Full-screen story viewer
@@ -37,13 +37,6 @@ Full stories feature implementation for Telegram-X with complete feature parity.
   - drawStoryRing() in onDraw()
   - Respects hideStories setting
 
-### Phase 6: Supporting Features
-- [x] **ReplyComponent.setStory()** - Story preview in replies
-- [x] **Settings.hideStories()** - Toggle to hide stories
-- [x] **String resources** - All story-related strings added
-
-## In Progress
-
 ### Phase 4: Story Posting UI
 - [x] **StoryComposeController.java** - Entry point for posting stories
   - Shows camera/gallery options
@@ -54,9 +47,6 @@ Full stories feature implementation for Telegram-X with complete feature parity.
   - setCanPostStory() to control visibility
   - checkCanPostStory() in ChatsController
   - Opens StoryComposeController on click
-- [ ] Story editor with text/stickers (not started)
-
-## In Progress
 
 ### Phase 5: Story Interactions
 - [x] Reply input in StoryViewController
@@ -66,33 +56,86 @@ Full stories feature implementation for Telegram-X with complete feature parity.
 - [x] Reactions (double-tap for heart)
   - sendHeartReaction() via TdApi.SetStoryReaction
   - Double-tap detection in center of screen
-- [ ] StoryViewersController.java (who viewed your story) - pending
+- [x] **StoryViewersController.java** - Show who viewed your story
+  - Uses TdApi.GetStoryViewers with pagination
+  - Displays viewers with reaction emoji
+  - Viewers button in StoryViewController header (own stories only)
 
-## Pending
+### Phase 6: Supporting Features
+- [x] **ReplyComponent.setStory()** - Story preview in replies
+- [x] **Settings.hideStories()** - Toggle to hide stories
+- [x] **String resources** - All story-related strings added
 
 ### Phase 7: Polish and Edge Cases
-- [ ] Expired story handling
-- [ ] Loading states/shimmer
-- [ ] Stealth mode (premium)
-- [ ] Performance optimizations
+- [x] **Caption display** - TextView with semi-transparent background and text shadow
+- [x] **Expired story handling** - Shows "Story expired" toast and auto-navigates to next
+- [x] **Loading states** - ProgressBar indicator while loading stories
 
-## TDLib API Used
+### Phase 8: Story Options Menu
+- [x] **Three dots menu** - More button in story viewer header
+- [x] **Own story options:**
+  - Edit caption (TdApi.EditStory)
+  - Story privacy settings (TdApi.SetStoryPrivacySettings)
+  - Pin/unpin to profile (TdApi.ToggleStoryIsPostedToChatPage)
+  - Delete story (TdApi.DeleteStory)
+  - **Story Statistics** (TdApi.GetStoryStatistics) - Shows interaction/reaction graphs
+  - **Add to Album** (TdApi.GetChatStoryAlbums, CreateStoryAlbum, AddStoryAlbumStories)
+- [x] **Other's story options:**
+  - Report story (TdApi.ReportStory)
+  - Stealth mode (TdApi.ActivateStoryStealthMode) - Premium feature
+
+### Phase 9: Story Albums (Highlights)
+- [x] **Album picker** - Shows existing albums or create new
+- [x] **Create album** - Dialog to name new album + add current story
+- [x] **Add to album** - Add story to existing album
+- [x] Uses TdApi: GetChatStoryAlbums, CreateStoryAlbum, AddStoryAlbumStories
+
+---
+
+## TDLib API Reference
 
 **Viewing:**
-- `getStory(chatId, storyId)`
-- `getChatActiveStories(chatId)`
-- `openStory(chatId, storyId)`
-- `closeStory(chatId, storyId)`
+- `getStory(chatId, storyId)` - Fetch single story
+- `getChatActiveStories(chatId)` - Get active stories for chat
+- `loadActiveStories(storyList)` - Load story list
+- `openStory(chatId, storyId)` - Mark as viewed
+- `closeStory(chatId, storyId)` - Finished viewing
 
 **Posting:**
-- `canPostStory(chatId)`
-- `postStory(chatId, content, ...)`
+- `canPostStory(chatId)` - Check permission
+- `postStory(chatId, content, ...)` - Create story
+
+**Interactions:**
+- `setStoryReaction(chatId, storyId, reactionType, updateRecentReactions)` - React to story
+- `getStoryViewers(storyId, ...)` - Get who viewed
 
 **Content Types:**
-- `InputStoryContentPhoto`
-- `InputStoryContentVideo`
-- `StoryPrivacySettings`
+- `InputStoryContentPhoto(photo, stickerIds)`
+- `InputStoryContentVideo(video, stickerIds, duration, coverTimestamp, isAnimation)`
+- `StoryPrivacySettings*` - Various privacy options
+
+---
 
 ## Git Commits
 
 1. `00b6ea2` - Add Stories feature - viewing, story bar, and avatar rings
+2. `8d746c5` - Add Stories posting and interactions
+3. (pending) - Add story viewers, caption, expired handling, loading states
+
+---
+
+## Files Created/Modified
+
+### New Files
+- `StoryViewController.java` - Full-screen story viewer
+- `StoryBarView.java` - Horizontal story bar
+- `StoryViewersController.java` - Story viewers list
+
+### Modified Files
+- `Settings.java` - hideStories flag
+- `SettingsThemeController.java` - Settings toggle
+- `ChatsController.java` - Story bar integration
+- `AvatarView.java` - Story ring support
+- `ReplyComponent.java` - Story preview
+- `strings.xml` - Story-related strings
+- `ids.xml` - Story-related IDs

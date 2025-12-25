@@ -108,6 +108,7 @@
   <item type="id" name="more_btn_report" />
   <item type="id" name="more_btn_markAsUnread" />
   <item type="id" name="more_btn_openReadReceipts" />
+  <item type="id" name="more_btn_createStory" />
 
   <item type="id" name="login_phone" />
   <item type="id" name="login_code" />
@@ -221,6 +222,31 @@
   <item type="id" name="controller_giftDialog" />
   <item type="id" name="controller_storyView" />
   <item type="id" name="controller_storyCompose" />
+  <item type="id" name="controller_storyViewers" />
+  <item type="id" name="storyViewer" />
+  <item type="id" name="btn_deleteStory" />
+  <item type="id" name="btn_reportStory" />
+  <item type="id" name="btn_stealthMode" />
+  <item type="id" name="btn_editStoryCaption" />
+  <item type="id" name="btn_storyPrivacy" />
+  <item type="id" name="btn_saveToProfile" />
+  <item type="id" name="btn_privacyEveryone" />
+  <item type="id" name="btn_privacyContacts" />
+  <item type="id" name="btn_privacyCloseFriends" />
+  <item type="id" name="btn_storyStatistics" />
+  <item type="id" name="btn_addToAlbum" />
+  <item type="id" name="btn_createAlbum" />
+  <item type="id" name="btn_storyDuration" />
+  <item type="id" name="btn_storySaveToProfile" />
+  <item type="id" name="btn_privacySelected" />
+  <item type="id" name="btn_duration6h" />
+  <item type="id" name="btn_duration12h" />
+  <item type="id" name="btn_duration24h" />
+  <item type="id" name="btn_duration48h" />
+  <item type="id" name="storyPreview" />
+  <item type="id" name="input_caption" />
+  <item type="id" name="btn_storyCamera" />
+  <item type="id" name="btn_storyGallery" />
 
   <item type="id" name="controller_code" />
   <item type="id" name="controller_name" />

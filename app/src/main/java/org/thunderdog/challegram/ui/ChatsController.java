@@ -44,6 +44,16 @@ import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
+import org.thunderdog.challegram.component.attach.MediaLayout;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
+import org.thunderdog.challegram.mediaview.MediaSpoilerSendDelegate;
+import org.thunderdog.challegram.mediaview.MediaViewDelegate;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
+import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.ui.camera.CameraController;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.dialogs.ChatsAdapter;
@@ -93,7 +103,10 @@ import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.telegram.SortedList;
+import org.thunderdog.challegram.telegram.StoryList;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -145,7 +158,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   TdlibContactManager.Listener, FactorAnimator.Target,
   ForceTouchView.PreviewDelegate, LiveLocationHelper.Callback,
   BaseView.LongPressInterceptor, TdlibCache.UserStatusChangeListener,
-  Settings.ChatListModeChangeListener, CounterChangeListener,
+  Settings.ChatListModeChangeListener, Settings.SettingsChangeListener, CounterChangeListener,
   TdlibSettingsManager.PreferenceChangeListener, SelectDelegate, MoreDelegate, DateChangeListener, ChatFolderListener {
 
   private static final int NO_CHAT_FOLDER_ID = 0;
@@ -171,6 +184,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   private @Nullable ChatsRecyclerView chatsView;
   private ChatsAdapter adapter;
   private @Nullable StoryBarView storyBarView;
+  private int storyBarScrollOffset = 0;
 
   private @Nullable Poller<TdApi.Chats> chatFolderNewChatsPoller;
 
@@ -241,6 +255,14 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       this.pickerDelegate = args.pickerDelegate;
       this.chatList = args.chatList != null ? args.chatList : ChatPosition.CHAT_LIST_MAIN;
       this.needMessagesSearch = args.needMessagesSearch;
+    }
+  }
+
+  @Override
+  public void onThemeColorsChanged (boolean areTemp, @Nullable ColorState state) {
+    super.onThemeColorsChanged(areTemp, state);
+    if (!areTemp && storyBarView != null) {
+      storyBarView.updateColors();
     }
   }
 
@@ -600,21 +622,42 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     // Add story bar for main chat list (only if stories are not hidden)
     if (isBaseController() && filter == null && chatList().getConstructor() == TdApi.ChatListMain.CONSTRUCTOR && !Settings.instance().hideStories()) {
       storyBarView = new StoryBarView(context, tdlib);
-      storyBarView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, storyBarView.getBarHeight()));
+      storyBarView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, StoryBarView.getFixedBarHeight()));
       storyBarView.setClickListener(new StoryBarView.StoryClickListener() {
         @Override
         public void onStoryClick (long chatId, int storyId, List<TdApi.ChatActiveStories> allStories, int position) {
-          tdlib.ui().openStory(ChatsController.this, chatId, storyId, null);
+          tdlib.ui().openStory(ChatsController.this, chatId, storyId, null, allStories, position);
         }
         @Override
         public void onAddStoryClick () {
-          StoryComposeController.open(ChatsController.this);
+          openStoryCompose();
+        }
+      });
+      storyBarView.setVisibilityChangeListener(visible -> {
+        int topPadding = visible ? StoryBarView.getFixedBarHeight() : 0;
+        chatsView.setPadding(chatsView.getPaddingLeft(), topPadding, chatsView.getPaddingRight(), chatsView.getPaddingBottom());
+        // Reset translation when visibility changes
+        if (storyBarView != null) {
+          storyBarView.setTranslationY(0);
+          storyBarScrollOffset = 0;
         }
       });
       contentView.addView(storyBarView);
-      // Add top padding to chatsView so it scrolls under the story bar
-      chatsView.setPadding(chatsView.getPaddingLeft(), storyBarView.getBarHeight(), chatsView.getPaddingRight(), chatsView.getPaddingBottom());
+      // Start with no padding - will be updated when stories load
       chatsView.setClipToPadding(false);
+
+      // Add scroll listener to make story bar scroll with the list
+      chatsView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        @Override
+        public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+          if (storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
+            int barHeight = StoryBarView.getFixedBarHeight();
+            storyBarScrollOffset = Math.max(0, Math.min(barHeight, storyBarScrollOffset + dy));
+            storyBarView.setTranslationY(-storyBarScrollOffset);
+          }
+        }
+      });
+
       // Load active stories and check if user can post stories
       loadActiveStories();
       checkCanPostStory();
@@ -634,6 +677,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     tdlib.cache().subscribeForGlobalUpdates(this);
 
     Settings.instance().addChatListModeListener(this);
+    Settings.instance().addNewSettingsListener(this);
     TGLegacyManager.instance().addEmojiListener(this);
     tdlib.context().dateManager().addListener(this);
     tdlib.listeners().addChatFolderListener(chatFolderId(), this);
@@ -871,6 +915,76 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     if (adapter != null) {
       adapter.checkChatListMode();
     }
+  }
+
+  @Override
+  public void onSettingsChanged (long newSettings, long oldSettings) {
+    // Check if HIDE_STORIES flag changed
+    boolean hideStoriesChanged = (newSettings & Settings.SETTING_FLAG_HIDE_STORIES) != (oldSettings & Settings.SETTING_FLAG_HIDE_STORIES);
+    if (!hideStoriesChanged) {
+      return;
+    }
+    boolean shouldHideStories = (newSettings & Settings.SETTING_FLAG_HIDE_STORIES) != 0;
+    updateStoryBarVisibility(!shouldHideStories);
+  }
+
+  private void updateStoryBarVisibility (boolean visible) {
+    if (!isBaseController() || filter != null || chatList().getConstructor() != TdApi.ChatListMain.CONSTRUCTOR) {
+      return;
+    }
+    runOnUiThreadOptional(() -> {
+      if (visible && storyBarView == null && contentView != null) {
+        // Create story bar
+        storyBarView = new StoryBarView(context(), tdlib);
+        storyBarView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, StoryBarView.getFixedBarHeight()));
+        storyBarView.setClickListener(new StoryBarView.StoryClickListener() {
+          @Override
+          public void onStoryClick (long chatId, int storyId, List<TdApi.ChatActiveStories> allStories, int position) {
+            tdlib.ui().openStory(ChatsController.this, chatId, storyId, null, allStories, position);
+          }
+          @Override
+          public void onAddStoryClick () {
+            openStoryCompose();
+          }
+        });
+        storyBarView.setVisibilityChangeListener(barVisible -> {
+          if (chatsView != null) {
+            int topPadding = barVisible ? StoryBarView.getFixedBarHeight() : 0;
+            chatsView.setPadding(chatsView.getPaddingLeft(), topPadding, chatsView.getPaddingRight(), chatsView.getPaddingBottom());
+          }
+          // Reset translation when visibility changes
+          if (storyBarView != null) {
+            storyBarView.setTranslationY(0);
+            storyBarScrollOffset = 0;
+          }
+        });
+        contentView.addView(storyBarView);
+        if (chatsView != null) {
+          chatsView.setClipToPadding(false);
+          // Add scroll listener to make story bar scroll with the list
+          chatsView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+              if (storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
+                int barHeight = StoryBarView.getFixedBarHeight();
+                storyBarScrollOffset = Math.max(0, Math.min(barHeight, storyBarScrollOffset + dy));
+                storyBarView.setTranslationY(-storyBarScrollOffset);
+              }
+            }
+          });
+        }
+        loadActiveStories();
+        checkCanPostStory();
+      } else if (!visible && storyBarView != null && contentView != null) {
+        // Remove story bar
+        contentView.removeView(storyBarView);
+        storyBarView = null;
+        storyBarScrollOffset = 0;
+        if (chatsView != null) {
+          chatsView.setPadding(chatsView.getPaddingLeft(), 0, chatsView.getPaddingRight(), chatsView.getPaddingBottom());
+        }
+      }
+    });
   }
 
   public boolean isLaunching () {
@@ -2727,6 +2841,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
     }
     Settings.instance().removeChatListModeListener(this);
+    Settings.instance().removeNewSettingsListener(this);
     tdlib.settings().removeUserPreferenceChangeListener(this);
     tdlib.listeners().unsubscribeFromGlobalUpdates(this);
     tdlib.cache().unsubscribeFromGlobalUpdates(this);
@@ -3171,18 +3286,34 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   // Story bar loading
+  private @Nullable SortedList.ListListener<TdApi.ChatActiveStories> storyListListener;
+
   private void loadActiveStories () {
     if (storyBarView == null) {
       return;
     }
-    // Load active stories from the main story list
-    tdlib.client().send(new TdApi.LoadActiveStories(new TdApi.StoryListMain()), result -> {
-      // The stories will be delivered via updateChatActiveStories updates
-      // For now, we start with an empty list and will update as stories load
+    // Get the main story list and subscribe to updates
+    StoryList storyList = tdlib.getStoryList(new TdApi.StoryListMain());
+    storyListListener = new SortedList.ListListener<TdApi.ChatActiveStories>() {
+      @Override
+      public void onListChanged (SortedList<TdApi.ChatActiveStories> list) {
+        updateStoryBar(list);
+      }
+    };
+    storyList.initializeList(null, storyListListener, stories -> {
       runOnUiThreadOptional(() -> {
         if (storyBarView != null) {
-          // Start with empty list - stories will be populated via TDLib updates
-          storyBarView.setActiveStories(new ArrayList<>());
+          storyBarView.setActiveStories(stories);
+        }
+      });
+    }, 20, null);
+  }
+
+  private void updateStoryBar (SortedList<TdApi.ChatActiveStories> list) {
+    list.getList(null, stories -> {
+      runOnUiThreadOptional(() -> {
+        if (storyBarView != null) {
+          storyBarView.setActiveStories(stories);
         }
       });
     });
@@ -3201,5 +3332,156 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         }
       });
     });
+  }
+
+  private boolean openingStoryCompose;
+
+  private void openStoryCompose () {
+    // Show Camera/Gallery choice dialog
+    showOptions(
+      Lang.getString(R.string.AddStory),
+      new int[] {R.id.btn_storyCamera, R.id.btn_storyGallery},
+      new String[] {Lang.getString(R.string.AddStoryCamera), Lang.getString(R.string.AddStoryGallery)},
+      null,
+      new int[] {R.drawable.baseline_camera_alt_24, R.drawable.baseline_image_24},
+      (itemView, id) -> {
+        if (id == R.id.btn_storyCamera) {
+          openStoryComposeFromCamera();
+        } else if (id == R.id.btn_storyGallery) {
+          openStoryComposeFromGallery(false, false);
+        }
+        return true;
+      }
+    );
+  }
+
+  private void openStoryComposeFromCamera () {
+    CameraOpenOptions options = new CameraOpenOptions()
+      .mode(CameraController.MODE_MAIN)
+      .ignoreAnchor(true)
+      .allowSystem(false)
+      .optionalMicrophone(true)
+      .setMediaEditorDelegates(
+        // MediaViewDelegate - for positioning
+        new MediaViewDelegate() {
+          @Override
+          public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
+            return null;
+          }
+
+          @Override
+          public void setMediaItemVisible (int index, MediaItem item, boolean isVisible) {
+          }
+        },
+        // MediaSelectDelegate - selection state
+        new MediaSelectDelegate() {
+          @Override
+          public boolean isMediaItemSelected (int index, MediaItem item) {
+            return false;
+          }
+
+          @Override
+          public void setMediaItemSelected (int index, MediaItem item, boolean isSelected) {
+          }
+
+          @Override
+          public int getSelectedMediaCount () {
+            return 0;
+          }
+
+          @Override
+          public boolean canDisableMarkdown () {
+            return false;
+          }
+
+          @Override
+          public long getOutputChatId () {
+            return 0;
+          }
+
+          @Override
+          public ArrayList<ImageFile> getSelectedMediaItems (boolean copy) {
+            return null;
+          }
+        },
+        // MediaSendDelegate - handles "send" action
+        new MediaSpoilerSendDelegate() {
+          @Override
+          public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
+            android.util.Log.d("StoryCompose", "sendSelectedItems called, images=" + (images != null ? images.size() : "null"));
+            if (images != null && !images.isEmpty()) {
+              ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
+              boolean isVideo = galleryFile.isVideo();
+              String filePath = galleryFile.getFilePath();
+              android.util.Log.d("StoryCompose", "Processing: isVideo=" + isVideo + ", filePath=" + filePath);
+              context().forceCloseCamera();
+              // Delay navigation to allow camera close animation to finish
+              UI.post(() -> {
+                android.util.Log.d("StoryCompose", "Attempting navigation, isStackLocked=" + isStackLocked());
+                openStoryPreview(galleryFile, isVideo);
+              }, 350L);
+            }
+            return true;
+          }
+        }
+      );
+    openInAppCamera(options);
+  }
+
+  private void openStoryComposeFromGallery (boolean ignorePermissionRequest, boolean noMedia) {
+    if (openingStoryCompose) {
+      return;
+    }
+
+    if (!ignorePermissionRequest && context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> {
+      openStoryComposeFromGallery(true, grantType == Permissions.GrantResult.NONE);
+    })) {
+      return;
+    }
+
+    final MediaLayout mediaLayout = new MediaLayout(this);
+    mediaLayout.init(MediaLayout.MODE_GALLERY, null);
+    mediaLayout.setCallback(new MediaLayout.MediaGalleryCallback() {
+      @Override
+      public void onSendVideo (ImageGalleryFile file, boolean isFirst) {
+        if (!isFirst) return;
+        openStoryPreview(file, true);
+      }
+
+      @Override
+      public void onSendPhoto (ImageGalleryFile file, boolean isFirst) {
+        if (!isFirst) return;
+        openStoryPreview(file, false);
+      }
+    });
+    if (noMedia) {
+      mediaLayout.setNoMediaAccess();
+    }
+
+    openingStoryCompose = true;
+    mediaLayout.preload(() -> {
+      if (isFocused() && !isDestroyed()) {
+        mediaLayout.show();
+      }
+      openingStoryCompose = false;
+    }, 300L);
+  }
+
+  private void openStoryPreview (ImageGalleryFile file, boolean isVideo) {
+    String filePath = file.getFilePath();
+    double videoDuration = isVideo ? file.getVideoDuration(false) : 0;
+    android.util.Log.d("StoryCompose", "openStoryPreview: filePath=" + filePath + ", isVideo=" + isVideo);
+    StoryPreviewController controller = new StoryPreviewController(context, tdlib);
+    controller.setArguments(new StoryPreviewController.Args(filePath, isVideo, videoDuration));
+    // ChatsController is inside MainController's tab system, so use parentController to navigate
+    android.util.Log.d("StoryCompose", "parentController=" + (parentController != null ? parentController.getClass().getSimpleName() : "null"));
+    if (parentController != null) {
+      parentController.navigateTo(controller);
+      android.util.Log.d("StoryCompose", "parentController.navigateTo called");
+    } else {
+      // Fallback to context navigation
+      context().navigation().navigateTo(controller);
+      android.util.Log.d("StoryCompose", "context.navigation.navigateTo called");
+    }
   }
 }

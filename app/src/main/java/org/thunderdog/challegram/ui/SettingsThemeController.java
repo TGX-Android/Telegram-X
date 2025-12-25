@@ -646,6 +646,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_audioCompression, 0, R.string.CompressAudio));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.HideStories).setLongId(Settings.SETTING_FLAG_HIDE_STORIES));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.StoryQuickReactions).setLongId(Settings.SETTING_FLAG_STORY_QUICK_REACTIONS));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
       tdlib.getTesterLevel(testerLevel -> runOnUiThreadOptional(() -> {

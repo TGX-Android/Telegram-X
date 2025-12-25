@@ -70,11 +70,25 @@ public class StoryBarView extends RecyclerView {
   private final StoryBarAdapter adapter;
   private final List<TdApi.ChatActiveStories> activeStoriesList = new ArrayList<>();
   private @Nullable StoryClickListener clickListener;
+  private @Nullable VisibilityChangeListener visibilityChangeListener;
   private boolean canPostStory = false;
+
+  /**
+   * Updates colors when theme changes
+   */
+  public void updateColors () {
+    setBackgroundColor(Theme.fillingColor());
+    // Refresh all child views by notifying adapter
+    adapter.notifyDataSetChanged();
+  }
 
   public interface StoryClickListener {
     void onStoryClick (long chatId, int storyId, List<TdApi.ChatActiveStories> allStories, int position);
     void onAddStoryClick ();
+  }
+
+  public interface VisibilityChangeListener {
+    void onStoryBarVisibilityChanged (boolean visible);
   }
 
   public StoryBarView (@NonNull Context context, Tdlib tdlib) {
@@ -86,12 +100,22 @@ public class StoryBarView extends RecyclerView {
     setClipToPadding(false);
     setPadding(Screen.dp(8), Screen.dp(8), Screen.dp(8), Screen.dp(8));
 
+    // Set solid background to prevent chat list from showing through
+    setBackgroundColor(Theme.fillingColor());
+
+    // Start hidden - will become visible when stories load or canPostStory is set
+    setVisibility(GONE);
+
     adapter = new StoryBarAdapter();
     setAdapter(adapter);
   }
 
   public void setClickListener (@Nullable StoryClickListener listener) {
     this.clickListener = listener;
+  }
+
+  public void setVisibilityChangeListener (@Nullable VisibilityChangeListener listener) {
+    this.visibilityChangeListener = listener;
   }
 
   public void setActiveStories (List<TdApi.ChatActiveStories> stories) {
@@ -102,14 +126,30 @@ public class StoryBarView extends RecyclerView {
     adapter.notifyDataSetChanged();
 
     // Show/hide based on content and settings
-    setVisibility(shouldShow() ? VISIBLE : GONE);
+    updateVisibility();
+
+    // Force redraw to ensure items render correctly
+    post(this::invalidate);
   }
 
   public void setCanPostStory (boolean canPost) {
     if (this.canPostStory != canPost) {
       this.canPostStory = canPost;
       adapter.notifyDataSetChanged();
-      setVisibility(shouldShow() ? VISIBLE : GONE);
+      updateVisibility();
+      // Force redraw to ensure items render correctly
+      post(this::invalidate);
+    }
+  }
+
+  private void updateVisibility () {
+    boolean visible = shouldShow();
+    int newVisibility = visible ? VISIBLE : GONE;
+    if (getVisibility() != newVisibility) {
+      setVisibility(newVisibility);
+      if (visibilityChangeListener != null) {
+        visibilityChangeListener.onStoryBarVisibilityChanged(visible);
+      }
     }
   }
 
@@ -126,6 +166,10 @@ public class StoryBarView extends RecyclerView {
 
   public int getBarHeight () {
     return shouldShow() ? Screen.dp(BAR_HEIGHT_DP) : 0;
+  }
+
+  public static int getFixedBarHeight () {
+    return Screen.dp(BAR_HEIGHT_DP);
   }
 
   private class StoryBarAdapter extends RecyclerView.Adapter<ViewHolder> {
@@ -184,6 +228,7 @@ public class StoryBarView extends RecyclerView {
     }
 
     public void bind () {
+      itemView.updateColors();
       itemView.setOnClickListener(v -> {
         if (clickListener != null) {
           clickListener.onAddStoryClick();
@@ -201,6 +246,7 @@ public class StoryBarView extends RecyclerView {
     }
 
     public void bind (TdApi.ChatActiveStories activeStories, int position) {
+      itemView.updateColors();
       itemView.setActiveStories(activeStories);
       itemView.setOnClickListener(v -> {
         if (clickListener != null && activeStories.stories.length > 0) {
@@ -270,7 +316,6 @@ public class StoryBarView extends RecyclerView {
       // Name below avatar
       nameView = new TextView(context);
       nameView.setTextSize(11);
-      nameView.setTextColor(Theme.textAccentColor());
       nameView.setTypeface(Fonts.getRobotoRegular());
       nameView.setGravity(Gravity.CENTER);
       nameView.setSingleLine(true);
@@ -283,6 +328,13 @@ public class StoryBarView extends RecyclerView {
       nameParams.rightMargin = Screen.dp(2);
       nameView.setLayoutParams(nameParams);
       addView(nameView);
+
+      // Apply current theme colors
+      updateColors();
+    }
+
+    public void updateColors () {
+      nameView.setTextColor(Theme.textAccentColor());
     }
 
     public void setActiveStories (@Nullable TdApi.ChatActiveStories activeStories) {
@@ -344,11 +396,23 @@ public class StoryBarView extends RecyclerView {
     }
 
     @Override
+    protected void onAttachedToWindow () {
+      super.onAttachedToWindow();
+      // Force redraw after attachment to ensure ring renders
+      post(this::invalidate);
+    }
+
+    @Override
     protected void onDraw (Canvas canvas) {
       super.onDraw(canvas);
 
       if (activeStories == null || activeStories.stories.length == 0) {
         return;
+      }
+
+      // Ensure gradient is initialized (may not be set if view was bound before layout)
+      if (hasUnread && ringPaint.getShader() == null) {
+        updateRingGradient();
       }
 
       // Draw ring around avatar
@@ -402,12 +466,10 @@ public class StoryBarView extends RecyclerView {
       ringRect = new RectF();
 
       bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-      bgPaint.setColor(Theme.fillingColor());
 
       // Plus icon in center
       addIcon = new ImageView(context);
       addIcon.setImageResource(R.drawable.baseline_add_24);
-      addIcon.setColorFilter(Theme.iconColor());
       addIcon.setScaleType(ImageView.ScaleType.CENTER);
       int avatarSize = Screen.dp(AVATAR_SIZE_DP);
       LayoutParams iconParams = new LayoutParams(avatarSize, avatarSize);
@@ -420,7 +482,6 @@ public class StoryBarView extends RecyclerView {
       nameView = new TextView(context);
       nameView.setText(R.string.AddStory);
       nameView.setTextSize(11);
-      nameView.setTextColor(Theme.textAccentColor());
       nameView.setTypeface(Fonts.getRobotoRegular());
       nameView.setGravity(Gravity.CENTER);
       nameView.setSingleLine(true);
@@ -433,6 +494,16 @@ public class StoryBarView extends RecyclerView {
       nameParams.rightMargin = Screen.dp(2);
       nameView.setLayoutParams(nameParams);
       addView(nameView);
+
+      // Apply current theme colors
+      updateColors();
+    }
+
+    public void updateColors () {
+      bgPaint.setColor(Theme.fillingColor());
+      addIcon.setColorFilter(Theme.iconColor());
+      nameView.setTextColor(Theme.textAccentColor());
+      invalidate();
     }
 
     private void updateRingGradient () {
@@ -456,8 +527,20 @@ public class StoryBarView extends RecyclerView {
     }
 
     @Override
+    protected void onAttachedToWindow () {
+      super.onAttachedToWindow();
+      // Force redraw after attachment to ensure ring renders
+      post(this::invalidate);
+    }
+
+    @Override
     protected void onDraw (Canvas canvas) {
       super.onDraw(canvas);
+
+      // Ensure gradient is initialized (may not be set if view was bound before layout)
+      if (ringPaint.getShader() == null) {
+        updateRingGradient();
+      }
 
       // Draw ring around icon area
       int centerX = getWidth() / 2;
