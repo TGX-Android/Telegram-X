@@ -94,8 +94,10 @@ struct VideoInfo {
 
   ~VideoInfo () {
     if (video_dec_ctx) {
+#if LIBAVFORMAT_VERSION_MAJOR < 59
       avcodec_close(video_dec_ctx);
-      video_dec_ctx = nullptr;
+#endif
+      avcodec_free_context(&video_dec_ctx);
     }
     if (fmt_ctx) {
       avformat_close_input(&fmt_ctx);
