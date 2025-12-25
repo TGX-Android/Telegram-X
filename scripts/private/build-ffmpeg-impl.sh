@@ -76,13 +76,11 @@ function build_one {
   --disable-network \
   --disable-zlib \
   --disable-avdevice \
-  --disable-postproc \
   --disable-debug \
   --disable-programs \
   --disable-network \
   --disable-ffplay \
   --disable-ffprobe \
-  --disable-postproc \
   --disable-avdevice \
   \
   --enable-runtime-cpudetect \
