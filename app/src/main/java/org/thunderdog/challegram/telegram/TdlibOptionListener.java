@@ -30,4 +30,6 @@ public interface TdlibOptionListener {
   default void onArchiveAndMuteChatsFromUnknownUsersEnabled (boolean enabled) { }
   default void onAccentColorsChanged (TdApi.AccentColor[] colors, int[] availableAccentColorIds) { }
   default void onProfileAccentColorsChanged (boolean listChanged) { }
+  default void onTrustedMiniAppBotsUpdated (long[] botUserIds)                        { }
+  default void onGroupCallMessageLevelsUpdated (TdApi.GroupCallMessageLevel[] levels) { }
 }

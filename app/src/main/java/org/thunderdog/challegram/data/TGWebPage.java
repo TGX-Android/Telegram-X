@@ -260,6 +260,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeStoryAlbum.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
@@ -267,11 +268,12 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
           break;
 
         default: {
-          Td.assertLinkPreviewType_4868cb55();
+          Td.assertLinkPreviewType_a9a3ffcd();
           if (BuildConfig.DEBUG) {
             Tracer.onTdlibHandlerError(new UnsupportedOperationException(type.toString()));
           }

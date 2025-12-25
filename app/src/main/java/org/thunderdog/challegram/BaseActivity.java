@@ -239,6 +239,8 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
           return new ClickBait(R.drawable.baseline_sim_card_alert_14, true);
         case Tdlib.ResolvableProblem.SET_BIRTHDATE:
           return new ClickBait(R.drawable.baseline_cake_variant_14, false);
+        case Tdlib.ResolvableProblem.SET_LOGIN_EMAIL:
+          return new ClickBait(R.drawable.baseline_alternate_email_14, false);
       }
     }
     return null;

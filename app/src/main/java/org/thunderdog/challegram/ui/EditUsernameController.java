@@ -133,7 +133,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     } else {
       usernames = tdlib.myUserUsernames();
     }
-    sourceUsernames = usernames != null ? usernames : new TdApi.Usernames(new String[0], new String[0], "");
+    sourceUsernames = usernames != null ? usernames : new TdApi.Usernames(new String[0], new String[0], "", new String[0]);
     activeUsernames = new LinkedHashSet<>();
     Collections.addAll(activeUsernames, sourceUsernames.activeUsernames);
     if (TEST_MULTI_USERNAMES_UI) {

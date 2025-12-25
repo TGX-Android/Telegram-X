@@ -548,8 +548,11 @@ public class SettingsController extends ViewController<Void> implements
             case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
               view.setText(obtainWrapper(Lang.getString(R.string.ReminderSetBirthdateText), action.getConstructor()));
               break;
+            case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR:
+              view.setText(obtainWrapper(Lang.getString(R.string.ReminderSetLoginEmailText), action.getConstructor()));
+              break;
             default:
-              Td.assertSuggestedAction_c92fb71c();
+              Td.assertSuggestedAction_a78df4c9();
               throw Td.unsupported(action);
           }
         } else if (itemId == R.id.btn_birthdate) {
@@ -868,8 +871,11 @@ public class SettingsController extends ViewController<Void> implements
       case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
         item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_cake_variant_24, R.string.ReminderSetBirthdate);
         break;
+      case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR:
+        item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_alternate_email_24, R.string.ReminderSetLoginEmail);
+        break;
       default:
-        Td.assertSuggestedAction_c92fb71c();
+        Td.assertSuggestedAction_a78df4c9();
         throw Td.unsupported(action);
     }
     item
@@ -1015,7 +1021,7 @@ public class SettingsController extends ViewController<Void> implements
   private boolean setUsername (@Nullable TdApi.User myUser) {
     TdApi.Usernames usernames = myUser != null ? myUser.usernames : null;
     if (myUser != null && usernames == null) {
-      usernames = new TdApi.Usernames(new String[0], new String[0], "");
+      usernames = new TdApi.Usernames(new String[0], new String[0], "", new String[0]);
     }
     if ((myUsernames == null && usernames != null) || (myUsernames != null && !Td.equalsTo(myUsernames, usernames))) {
       this.myUsernames = usernames;
@@ -1294,8 +1300,12 @@ public class SettingsController extends ViewController<Void> implements
         tdlib.ui().openBirthdateEditor(this, suggestionView, TdlibUi.BirthdateOpenOrigin.SUGGESTED_ACTION);
         return;
       }
+      case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR: {
+        tdlib.ui().editLoginEmail(this);
+        return;
+      }
       default: {
-        Td.assertSuggestedAction_c92fb71c();
+        Td.assertSuggestedAction_a78df4c9();
         throw Td.unsupported(suggestedAction);
       }
     }

@@ -3833,6 +3833,17 @@
   <string name="PrivacyPhotoEverybodyExcept">Everybody (%1$s) can see your profile photo</string>
   <string name="PrivacyPhotoTitle">Profile Photos</string>
 
+  <string name="PrivacyAudioExceptionOn">Visible</string>
+  <string name="PrivacyAudioExceptionOff">Hidden</string>
+  <string name="PrivacyAudioExceptionContacts">Visible only for contacts</string>
+  <string name="PrivacyAudioNobody">Nobody can see your saved music</string>
+  <string name="PrivacyAudioNobodyExcept">Nobody (%1$s) can see your saved music</string>
+  <string name="PrivacyAudioContacts">Only contacts can see your saved music</string>
+  <string name="PrivacyAudioContactsExcept">Only contacts (%1$s) can see your saved music</string>
+  <string name="PrivacyAudioEverybody">Everybody can see your saved music</string>
+  <string name="PrivacyAudioEverybodyExcept">Everybody (%1$s) can see your saved music</string>
+  <string name="PrivacyAudioTitle">Saved Music</string>
+
   <string name="PrivacyVoiceVideoNobody">Nobody can send you voice messages</string>
   <string name="PrivacyVoiceVideoNobodyExcept">Nobody (%1$s) can send you voice messages</string>
   <string name="PrivacyVoiceVideoContacts">Only contacts can send you voice messages</string>
@@ -3885,6 +3896,9 @@
 
   <string name="WhoCanSeePhoto">Who can see your profile photo?</string>
   <string name="WhoCanSeePhotoInfo">You can restrict who can see your profile photo with granular precision.</string>
+
+  <string name="WhoCanSeeAudio">Who can see your saved music?</string>
+  <string name="WhoCanSeeAudioInfo">You can restrict who can see your saved music with granular precision.</string>
 
   <string name="format_chatAndError">%1$s: %2$s</string>
 
@@ -4434,6 +4448,7 @@
   <string name="PrivacyDefaultXChats_other">Default for %1$s chats</string>
 
   <string name="EditPrivacyPhoto">Profile Photos</string>
+  <string name="EditPrivacyAudio">Saved Music</string>
   <string name="EditPrivacyStatus">Last Seen &amp; Online</string>
   <string name="EditPrivacyPhoneNumber">Phone Number</string>
   <string name="EditPrivacyBio">Bio</string>
@@ -4798,6 +4813,9 @@
   <string name="ReminderSetBirthdate">Let people know when you\'re celebrating</string>
   <string name="ReminderSetBirthdateText">Add your birthday</string>
   <string name="ReminderSetBirthdateHide">Hide Suggestion</string>
+  <string name="ReminderSetLoginEmail">Set login email</string>
+  <string name="ReminderSetLoginEmailText">Ensure you can receive login codes</string>
+  <string name="ReminderSetLoginEmailHide">Hide Suggestion</string>
   <string name="ReminderActionLearnMore">Learn More</string>
   <string name="ReminderActionChangePhoneNumber">Change Phone Number</string>
   <string name="ReminderActionVerifyPassword">Verify Password</string>

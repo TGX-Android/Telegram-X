@@ -1532,6 +1532,14 @@ public class TD {
         everybodyExceptRes = R.string.PrivacyPhotoEverybodyExcept;
         everybodyRes = R.string.PrivacyPhotoEverybody;
         break;
+      case TdApi.UserPrivacySettingShowProfileAudio.CONSTRUCTOR:
+        nobodyExceptRes = R.string.PrivacyAudioNobodyExcept;
+        nobodyRes = R.string.PrivacyAudioNobody;
+        contactsExceptRes = R.string.PrivacyAudioContactsExcept;
+        contactsRes = R.string.PrivacyAudioContacts;
+        everybodyExceptRes = R.string.PrivacyAudioEverybodyExcept;
+        everybodyRes = R.string.PrivacyAudioEverybody;
+        break;
       case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
         nobodyExceptRes = R.string.PrivacyVoiceVideoNobodyExcept;
         nobodyRes = R.string.PrivacyVoiceVideoNobody;
@@ -1557,7 +1565,7 @@ public class TD {
         everybodyRes = R.string.PrivacyNoFeeEverybody;
         break;
       default:
-        Td.assertUserPrivacySetting_6bbb3d7e();
+        Td.assertUserPrivacySetting_a60188bf();
         throw new UnsupportedOperationException(Integer.toString(privacyKey));
     }
 
@@ -2126,7 +2134,7 @@ public class TD {
       null,
       false, false, false,
       null, false, false,
-      null, false, false,
+      null, null,
       false, 0, false,
       new TdApi.UserTypeRegular(),
       null,
@@ -5365,7 +5373,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_52d0a6e8();
+        Td.assertMessageContent_e0365d1c();
         break;
     }
     return false;

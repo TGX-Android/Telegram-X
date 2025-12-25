@@ -160,6 +160,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     TdApi.UserPrivacySetting[] privacySettings = new TdApi.UserPrivacySetting[] {
       new TdApi.UserPrivacySettingShowStatus(),
       new TdApi.UserPrivacySettingShowProfilePhoto(),
+      new TdApi.UserPrivacySettingShowProfileAudio(),
       new TdApi.UserPrivacySettingShowBirthdate(),
       new TdApi.UserPrivacySettingShowBio(),
       new TdApi.UserPrivacySettingShowPhoneNumber(),
@@ -503,20 +504,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       }
     } else if (id == R.id.btn_loginEmail) {
       if (passwordState != null && !StringUtils.isEmpty(passwordState.loginEmailAddressPattern)) {
-        showOptions(new Options.Builder()
-          .title(passwordState.loginEmailAddressPattern) // TODO(spoiler): replace `*` with the spoiler effect
-          .info(Lang.getMarkdownString(this, R.string.ChangeEmailPromptText))
-          .item(new OptionItem.Builder().id(R.id.btn_changeEmail).name(R.string.ChangeEmailPromptButton).icon(R.drawable.baseline_edit_24).build())
-          .cancelItem()
-          .build(), (optionView, optionId) -> {
-            if (optionId == R.id.btn_changeEmail) {
-              PasswordController controller = new PasswordController(context, tdlib);
-              controller.setArguments(new PasswordController.Args(PasswordController.MODE_LOGIN_EMAIL_CHANGE, passwordState));
-              navigateTo(controller);
-            }
-            return true;
-          }
-        );
+        tdlib.ui().editLoginEmail(this, passwordState);
       }
     } else if (id == R.id.btn_accountTTL) {
       int days = accountTtl != null ? accountTtl.days : 0;
