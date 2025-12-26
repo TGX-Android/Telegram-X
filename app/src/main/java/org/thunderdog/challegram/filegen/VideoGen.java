@@ -428,7 +428,9 @@ public class VideoGen {
       .setRemoveAudio(info.needMute());
 
     List<Effect> videoEffects = new ArrayList<>();
-    videoEffects.add(FrameDropEffect.createDefaultFrameDropEffect(outputVideoFrameRate));
+    if (outputVideoFrameRate != inputVideoFrameRate) {
+      videoEffects.add(FrameDropEffect.createDefaultFrameDropEffect(outputVideoFrameRate));
+    }
     if (outputHeightLimit > 0) {
       videoEffects.add(Presentation.createForHeight(outputHeightLimit));
     }
