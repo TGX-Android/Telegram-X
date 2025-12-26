@@ -32,6 +32,7 @@ pushd "$THIRDPARTY_LIBRARIES/libvpx"
 # the function itself
 
 configure_abi() {
+  CPUFEATURES_DIR="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/sources/android/cpufeatures"
   CFLAGS_="-DANDROID -fpic -fpie"
   LDFLAGS_=""
   case ${FLAVOR} in
@@ -50,10 +51,19 @@ configure_abi() {
       ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_PRIMARY
       TARGET="arm64-android-gcc"
       NDK_ABIARCH="aarch64-linux-android"
-      CFLAGS="${CFLAGS_} -O3 -march=armv8-a"
+      CFLAGS="${CFLAGS_} -O3 -march=armv8-a -I${CPUFEATURES_DIR}"
       LDFLAGS="${LDFLAGS_}"
       ASFLAGS=""
       CPU=arm64-v8a
+    ;;
+	  armeabi-v7a)
+      ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
+      TARGET="armv7-android-gcc --enable-neon --disable-neon-asm"
+      NDK_ABIARCH="armv7a-linux-androideabi"
+      CFLAGS="${CFLAGS_} -Os -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__ -I${CPUFEATURES_DIR}"
+      LDFLAGS="${LDFLAGS_}"
+      ASFLAGS=""
+      CPU=armv7-a
     ;;
     x86_64)
       ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_PRIMARY
@@ -63,16 +73,6 @@ configure_abi() {
       LDFLAGS=""
       ASFLAGS="-D__ANDROID__"
       CPU=x86_64
-    ;;
-	  armeabi-v7a)
-      ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
-      TARGET="armv7-android-gcc --enable-neon --disable-neon-asm"
-      NDK_ABIARCH="armv7a-linux-androideabi"
-      CPUFEATURES_DIR="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/sources/android/cpufeatures"
-      CFLAGS="${CFLAGS_} -Os -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__ -I${CPUFEATURES_DIR}"
-      LDFLAGS="${LDFLAGS_}"
-      ASFLAGS=""
-      CPU=armv7-a
     ;;
     x86)
       ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
@@ -134,9 +134,10 @@ configure_make() {
 
   make clean || echo -e "[info] running configure for the first time"
 
-  CPU_DETECT="--disable-runtime-cpu-detect"
-  if [[ $1 =~ x86.* || $1 =~ arm64-v8a ]]; then
+  if [[ $ABI == "arm64-v8a" || $ABI == "armeabi-v7a" ]]; then
     CPU_DETECT="--enable-runtime-cpu-detect"
+  else
+    CPU_DETECT="--disable-runtime-cpu-detect"
   fi
 
   ./configure \
@@ -164,7 +165,7 @@ configure_make() {
   make -j"$CPU_COUNT" install
 }
 
-for ABI in armeabi-v7a arm64-v8a x86 x86_64 ; do
+for ABI in arm64-v8a armeabi-v7a x86_64 x86 ; do
   for FLAVOR in latest lollipop legacy ; do
     if [[ "$FLAVOR" != "legacy" || $ABI == "armeabi-v7a" || $ABI == "x86" ]]; then
       echo -e "${STYLE_INFO}- libvpx build start: ${ABI} ${FLAVOR}${STYLE_END}"
