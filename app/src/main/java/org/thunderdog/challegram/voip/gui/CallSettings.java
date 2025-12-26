@@ -23,7 +23,7 @@ import org.thunderdog.challegram.service.TGCallService;
 import org.thunderdog.challegram.telegram.Tdlib;
 
 public class CallSettings {
-  public static final int SPEAKER_MODE_NONE = 0;
+  public static final int SPEAKER_MODE_EARPIECE = 0;
   public static final int SPEAKER_MODE_SPEAKER_DEFAULT = 1;
   public static final int SPEAKER_MODE_BLUETOOTH = 2;
   public static final int SPEAKER_MODE_SPEAKER = 3;
@@ -71,7 +71,7 @@ public class CallSettings {
   }
 
   public boolean isSpeakerModeEnabled () {
-    return speakerMode != SPEAKER_MODE_NONE;
+    return speakerMode != SPEAKER_MODE_EARPIECE;
   }
 
   public void toggleSpeakerMode (ViewController<?> controller) {
@@ -85,7 +85,7 @@ public class CallSettings {
         if (id == R.id.btn_routingBluetooth) {
           setSpeakerMode(SPEAKER_MODE_BLUETOOTH);
         } else if (id == R.id.btn_routingEarpiece) {
-          setSpeakerMode(SPEAKER_MODE_NONE);
+          setSpeakerMode(SPEAKER_MODE_EARPIECE);
         } else if (id == R.id.btn_routingSpeaker) {
           setSpeakerMode(SPEAKER_MODE_SPEAKER);
         }
@@ -93,6 +93,6 @@ public class CallSettings {
       });
       return;
     }
-    setSpeakerMode(isSpeakerModeEnabled() ? SPEAKER_MODE_NONE : SPEAKER_MODE_SPEAKER_DEFAULT);
+    setSpeakerMode(isSpeakerModeEnabled() ? SPEAKER_MODE_EARPIECE : SPEAKER_MODE_SPEAKER_DEFAULT);
   }
 }
