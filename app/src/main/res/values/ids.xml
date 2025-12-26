@@ -549,6 +549,13 @@
   <item type="id" name="btn_restartTdlib" />
   <item type="id" name="btn_chatSettings" />
   <item type="id" name="btn_devices" />
+  <item type="id" name="btn_premium" />
+  <item type="id" name="btn_premiumOption" />
+  <item type="id" name="btn_paymentCard" />
+  <item type="id" name="btn_paymentSavedCard" />
+  <item type="id" name="btn_paymentSubmit" />
+  <item type="id" name="controller_premium" />
+  <item type="id" name="controller_paymentForm" />
   <item type="id" name="btn_notificationSettings" />
   <item type="id" name="btn_privacySettings" />
   <item type="id" name="btn_languageSettings" />
