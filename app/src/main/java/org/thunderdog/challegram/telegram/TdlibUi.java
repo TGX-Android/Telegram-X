@@ -101,6 +101,8 @@ import org.thunderdog.challegram.ui.EditNameController;
 import org.thunderdog.challegram.ui.EditProxyController;
 import org.thunderdog.challegram.ui.EditRightsController;
 import org.thunderdog.challegram.ui.EditUsernameController;
+import org.thunderdog.challegram.ui.ForumTopicTabsController;
+import org.thunderdog.challegram.ui.ForumTopicsController;
 import org.thunderdog.challegram.ui.InstantViewController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MainController;
@@ -2111,6 +2113,44 @@ public class TdlibUi extends Handler {
       openChatProfile(context, chat, messageThread, urlOpenParameters);
       params.onDone();
       return;
+    }
+
+    // Check if this is a forum chat that should be viewed as topics
+    if (tdlib.isForum(chat.id) && messageThread == null && messageTopicId == null) {
+      // Check if forum has tabs layout enabled
+      long supergroupId = ChatId.toSupergroupId(chat.id);
+      TdApi.Supergroup supergroup = supergroupId != 0 ? tdlib.cache().supergroup(supergroupId) : null;
+      boolean hasForumTabs = supergroup != null && supergroup.hasForumTabs;
+
+      // For forum chats, always show topics view by default (matching official Telegram behavior)
+      // Users can still use "View as chat" option to temporarily switch to unified view
+      if (true) {
+        ViewController<?> forumController;
+        if (hasForumTabs) {
+          ForumTopicTabsController tabsController = new ForumTopicTabsController(context.context(), context.tdlib());
+          tabsController.setArguments(new ForumTopicTabsController.Arguments(chat));
+          forumController = tabsController;
+        } else {
+          ForumTopicsController listController = new ForumTopicsController(context.context(), context.tdlib());
+          listController.setArguments(new ForumTopicsController.Arguments(chat));
+          forumController = listController;
+        }
+
+        NavigationController nav = context.context().navigation();
+        if (nav.isEmpty()) {
+          nav.initController(forumController);
+          MainController c = new MainController(context.context(), context.tdlib());
+          c.getValue();
+          nav.getStack().insert(c, 0);
+        } else {
+          nav.navigateTo(forumController);
+        }
+        if (params != null) {
+          params.onDone();
+        }
+        return;
+      }
+      // If not hasForumTabs and not viewAsTopics, fall through to open as unified chat
     }
 
     if ((options & CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT) != 0) {

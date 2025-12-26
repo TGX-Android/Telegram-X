@@ -2280,6 +2280,35 @@
   <string name="EventLogForumTopicUnhidden">%1$s made topic %2$s visible</string>
   <string name="EventLogForumTopicUnhiddenYou">You made topic %1$s visible</string>
 
+  <!-- Forum Topics UI -->
+  <string name="Topics">Topics</string>
+  <string name="NoTopics">No topics yet</string>
+  <string name="LoadingTopics">Loading topics…</string>
+  <string name="PinTopic">Pin Topic</string>
+  <string name="UnpinTopic">Unpin Topic</string>
+  <string name="CloseTopic">Close Topic</string>
+  <string name="ReopenTopic">Reopen Topic</string>
+  <string name="EditTopic">Edit Topic</string>
+  <string name="DeleteTopic">Delete Topic</string>
+  <string name="DeleteTopicConfirm">Are you sure you want to delete topic **%1$s**? All messages in this topic will be deleted.</string>
+  <string name="NewTopic">New Topic</string>
+  <string name="TopicName">Topic name</string>
+  <string name="TopicNameHint">Enter topic name</string>
+  <string name="EnableTopics">Topics</string>
+  <string name="EnableTopicsDesc">Enable topics to organize discussions in this group. Only the group owner can toggle this setting.</string>
+  <string name="TopicsLayoutTabs">Show as Tabs</string>
+  <string name="TopicsLayoutTabsDesc">When enabled, topics will be displayed as horizontal tabs at the top of the chat instead of a list.</string>
+  <string name="TabInfo">Group Info</string>
+  <string name="TopicWasCreated">Topic created</string>
+  <string name="TopicWasRenamed">Topic renamed to %1$s</string>
+  <string name="TopicIconChanged">Topic icon changed</string>
+  <string name="TopicWasClosed">Topic closed</string>
+  <string name="TopicWasReopened">Topic reopened</string>
+  <string name="GeneralTopicWasHidden">General topic hidden</string>
+  <string name="GeneralTopicWasShown">General topic shown</string>
+  <string name="ViewAsChat">View as chat</string>
+  <string name="ViewAsTopics">View as topics</string>
+
   <string name="EventLogMutedNewParticipants">%1$s muted new video chat participants</string>
   <string name="EventLogUnmutedNewParticipants">%1$s allowed new video chat participants to speak</string>
   <string name="EventLogMutedNewParticipantsYou">You muted new video chat participants</string>

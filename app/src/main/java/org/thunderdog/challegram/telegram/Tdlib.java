@@ -437,6 +437,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final SparseIntArray storyListChatCount = new SparseIntArray();
   private final SparseArrayCompat<StoryList> storyLists = new SparseArrayCompat<>();
   private final HashMap<String, TdApi.ForumTopicInfo> forumTopicInfos = new HashMap<>();
+  private final HashMap<Long, Integer> forumUnreadTopicCounts = new HashMap<>();
+  private final HashMap<Long, List<TdApi.ForumTopic>> forumTopicsCache = new HashMap<>();
   private final HashMap<String, TdlibChatList> chatLists = new HashMap<>();
   private final StickerSet
     animatedTgxEmoji = new StickerSet(AnimatedEmojiListener.TYPE_TGX, "AnimatedTgxEmojies", false),
@@ -3333,6 +3335,94 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public boolean isForum (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isForum;
+  }
+
+  /**
+   * Returns the cached unread topic count for a forum chat.
+   * @return unread topic count, or -1 if not yet loaded
+   */
+  public int forumUnreadTopicCount (long chatId) {
+    synchronized (dataLock) {
+      Integer count = forumUnreadTopicCounts.get(chatId);
+      return count != null ? count : -1;
+    }
+  }
+
+  /**
+   * Fetches forum topics and updates the unread topic count cache.
+   * @param chatId The forum chat ID
+   * @param callback Called on UI thread when complete (may be null)
+   */
+  public void fetchForumUnreadTopicCount (long chatId, @Nullable Runnable callback) {
+    if (!isForum(chatId)) {
+      if (callback != null) {
+        ui().post(callback);
+      }
+      return;
+    }
+    client().send(new TdApi.GetForumTopics(chatId, "", 0, 0, 0, 100), result -> {
+      if (result.getConstructor() == TdApi.ForumTopics.CONSTRUCTOR) {
+        TdApi.ForumTopics topics = (TdApi.ForumTopics) result;
+        int unreadCount = 0;
+        for (TdApi.ForumTopic topic : topics.topics) {
+          // Exclude hidden topics (like the hidden General topic)
+          if (topic.unreadCount > 0 && !topic.info.isHidden) {
+            unreadCount++;
+          }
+        }
+        synchronized (dataLock) {
+          forumUnreadTopicCounts.put(chatId, unreadCount);
+          forumTopicsCache.put(chatId, new java.util.ArrayList<>(java.util.Arrays.asList(topics.topics)));
+        }
+        listeners().updateForumUnreadTopicCount(chatId, unreadCount);
+      }
+      if (callback != null) {
+        ui().post(callback);
+      }
+    });
+  }
+
+  /**
+   * Updates the cached unread topic count when a topic's unread state changes.
+   * Called when we get fresh topic data via GetForumTopic.
+   */
+  public void updateForumTopicUnreadCount (long chatId, int topicId, int newUnreadCount) {
+    synchronized (dataLock) {
+      List<TdApi.ForumTopic> topics = forumTopicsCache.get(chatId);
+      if (topics != null) {
+        int oldUnreadTopics = 0;
+        int newUnreadTopics = 0;
+        boolean found = false;
+        for (int i = 0; i < topics.size(); i++) {
+          TdApi.ForumTopic topic = topics.get(i);
+          if (topic.info.forumTopicId == topicId) {
+            found = true;
+            if (topic.unreadCount > 0) oldUnreadTopics++;
+            if (newUnreadCount > 0) newUnreadTopics++;
+            topic.unreadCount = newUnreadCount;
+          } else {
+            if (topic.unreadCount > 0) {
+              oldUnreadTopics++;
+              newUnreadTopics++;
+            }
+          }
+        }
+        if (found) {
+          // Recalculate total unread topics (exclude hidden topics)
+          int totalUnread = 0;
+          for (TdApi.ForumTopic topic : topics) {
+            if (topic.unreadCount > 0 && !topic.info.isHidden) {
+              totalUnread++;
+            }
+          }
+          Integer oldCount = forumUnreadTopicCounts.get(chatId);
+          if (oldCount == null || oldCount != totalUnread) {
+            forumUnreadTopicCounts.put(chatId, totalUnread);
+            listeners().updateForumUnreadTopicCount(chatId, totalUnread);
+          }
+        }
+      }
+    }
   }
 
   public @Nullable TdApi.BlockList chatBlockList (TdApi.Chat chat) {

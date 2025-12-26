@@ -1147,22 +1147,38 @@ public final class TGMessageService extends TGMessageServiceImpl {
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicCreated forumTopicCreated) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() ->
+      getText(R.string.TopicWasCreated)
+    );
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicEdited forumTopicEdited) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    if (forumTopicEdited.name != null && !forumTopicEdited.name.isEmpty()) {
+      String newName = forumTopicEdited.name;
+      setTextCreator(() ->
+        getText(R.string.TopicWasRenamed, new BoldArgument(newName))
+      );
+    } else {
+      // Icon was edited (no name change)
+      setTextCreator(() ->
+        getText(R.string.TopicIconChanged)
+      );
+    }
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicIsClosedToggled forumTopicIsClosedToggled) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() ->
+      getText(forumTopicIsClosedToggled.isClosed ? R.string.TopicWasClosed : R.string.TopicWasReopened)
+    );
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicIsHiddenToggled forumTopicIsHiddenToggled) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() ->
+      getText(forumTopicIsHiddenToggled.isHidden ? R.string.GeneralTopicWasHidden : R.string.GeneralTopicWasShown)
+    );
   }
 
   private void setUnsupportedTextCreator () {

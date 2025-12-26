@@ -1123,6 +1123,24 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         if (contentTitle == null) {
           contentTitle = chat.title;
         }
+        // Add forum topic name to title if all notifications are from same topic
+        long commonTopicId = 0;
+        boolean sameTopicId = true;
+        for (TdlibNotification notification : notifications) {
+          long topicId = notification.findForumTopicId();
+          if (commonTopicId == 0) {
+            commonTopicId = topicId;
+          } else if (commonTopicId != topicId) {
+            sameTopicId = false;
+            break;
+          }
+        }
+        if (sameTopicId && commonTopicId != 0) {
+          TdApi.ForumTopicInfo topicInfo = tdlib.forumTopicInfo(chat.id, commonTopicId);
+          if (topicInfo != null && !StringUtils.isEmpty(topicInfo.name)) {
+            contentTitle = contentTitle + " > " + topicInfo.name;
+          }
+        }
       } else {
         contentTitle = BuildConfig.PROJECT_NAME;
       }

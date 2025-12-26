@@ -91,6 +91,10 @@ public class ChatHeaderView extends ComplexHeaderView {
   }
 
   public void setChat (Tdlib tdlib, TdApi.Chat chat, @Nullable ThreadInfo messageThread) {
+    setChat(tdlib, chat, messageThread, null);
+  }
+
+  public void setChat (Tdlib tdlib, TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.ForumTopic forumTopic) {
     this.tdlib = tdlib;
 
     if (chat == null) {
@@ -104,7 +108,14 @@ public class ChatHeaderView extends ComplexHeaderView {
     setShowFake(tdlib.chatFake(chat));
     setShowMute(tdlib.chatNeedsMuteIcon(chat));
     setShowLock(ChatId.isSecret(chat.id));
-    if (messageThread != null) {
+    if (forumTopic != null) {
+      // Forum topic: show topic name as title, chat name as subtitle
+      setEmojiStatus(null);
+      setText(forumTopic.info.name, !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.chatTitle(chat));
+      setExpandedSubtitle(null);
+      setUseRedHighlight(false);
+      attachChatStatus(chat.id, new TdApi.MessageTopicForum(forumTopic.info.forumTopicId));
+    } else if (messageThread != null) {
       setEmojiStatus(null);
       setText(messageThread.chatHeaderTitle(), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : messageThread.chatHeaderSubtitle());
       setExpandedSubtitle(null);
