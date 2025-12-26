@@ -16,6 +16,25 @@ fun setLegacyTranscoderLogLevel(ignored: Int) {
   // Intentionally do nothing
 }
 
+private fun MediaFormat.getInt(key: String, defaultValue: Int = 0): Int {
+  if (!containsKey(key)) {
+    return defaultValue
+  }
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    return getNumber(key)?.toInt() ?: defaultValue
+  }
+  try {
+    return getFloat(key).toInt()
+  } catch (_: Exception) { }
+  try {
+    return getLong(key).toInt()
+  } catch (_: Exception) { }
+  try {
+    return getInteger(key)
+  } catch (_: Exception) { }
+  return defaultValue
+}
+
 fun getVideoFrameRate(context: Context, sourcePath: String): Int {
   val extractor = MediaExtractor(context)
   try {
@@ -26,7 +45,7 @@ fun getVideoFrameRate(context: Context, sourcePath: String): Int {
     }
     for (i in 0 until extractor.trackCount) {
       val format = extractor.getTrackFormat(i)
-      val frameRate = format.getInteger(MediaFormat.KEY_FRAME_RATE)
+      val frameRate = format.getInt(MediaFormat.KEY_FRAME_RATE)
       if (frameRate > 0) {
         return frameRate
       }
