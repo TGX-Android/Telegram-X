@@ -1,10 +1,13 @@
 package org.thunderdog.challegram.ui;
 
+import android.app.Activity;
 import android.content.Context;
 import android.view.View;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.billing.BillingConfig;
+import org.thunderdog.challegram.billing.BillingManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
@@ -53,7 +56,32 @@ public class WaitForPremiumController extends RecyclerViewController<TdApi.Autho
   @Override
   public void onClick (View v) {
     if (v.getId() == R.id.btn_buyPremium) {
-      UI.openUrl("https://telegram.org/");
+      launchPremiumPurchase();
     }
+  }
+
+  private void launchPremiumPurchase () {
+    BillingManager billingManager = BillingManager.getInstance();
+
+    if (!billingManager.isBillingAvailable()) {
+      // Fall back to invoice billing if Google Play is unavailable
+      if (BillingConfig.USE_INVOICE_FALLBACK) {
+        UI.openUrl("https://telegram.org/");
+      }
+      return;
+    }
+
+    Context ctx = context();
+    if (!(ctx instanceof Activity)) {
+      if (BillingConfig.USE_INVOICE_FALLBACK) {
+        UI.openUrl("https://telegram.org/");
+      }
+      return;
+    }
+
+    Activity activity = (Activity) ctx;
+    billingManager.launchPremiumPurchase(activity, tdlib, () -> {
+      // Purchase was canceled, do nothing - user can try again
+    });
   }
 }

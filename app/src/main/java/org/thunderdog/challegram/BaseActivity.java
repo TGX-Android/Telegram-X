@@ -134,6 +134,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ActivityPermissionResult;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.KonfettiBuilder;
+import org.thunderdog.challegram.billing.BillingManager;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.BaseRootLayout;
 import org.thunderdog.challegram.widget.DragDropLayout;
@@ -489,6 +490,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
     setActivityState(UI.State.RESUMED);
     TdlibManager.instance().watchDog().onActivityCreate(this);
     Passcode.instance().checkAutoLock();
+
+    // Initialize billing for Premium purchases
+    BillingManager.getInstance().initialize();
 
     try {
       super.onCreate(savedInstanceState);
