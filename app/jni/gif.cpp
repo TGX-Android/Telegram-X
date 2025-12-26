@@ -98,6 +98,7 @@ struct VideoInfo {
       avcodec_close(video_dec_ctx);
 #endif
       avcodec_free_context(&video_dec_ctx);
+      video_dec_ctx = nullptr;
     }
     if (fmt_ctx) {
       avformat_close_input(&fmt_ctx);
