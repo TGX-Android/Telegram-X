@@ -1819,6 +1819,11 @@ public class TdlibUi extends Handler {
       return this;
     }
 
+    public ChatOpenParameters messageTopic (TdApi.MessageTopic topicId) {
+      this.messageTopicId = topicId;
+      return this;
+    }
+
     public ChatOpenParameters passcodeUnlocked () {
       this.options |= CHAT_OPTION_PASSCODE_UNLOCKED;
       return this;
@@ -1889,6 +1894,10 @@ public class TdlibUi extends Handler {
     public ChatOpenParameters foundMessage (String query, TdApi.Message message) {
       this.foundMessage = new MessageId(message.chatId, message.id);
       this.searchQuery = query;
+      // If message is in a forum topic, set the topic ID
+      if (message.topicId != null && message.topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+        this.messageTopicId = message.topicId;
+      }
       return highlightMessage(foundMessage);
     }
 
@@ -2122,9 +2131,9 @@ public class TdlibUi extends Handler {
       TdApi.Supergroup supergroup = supergroupId != 0 ? tdlib.cache().supergroup(supergroupId) : null;
       boolean hasForumTabs = supergroup != null && supergroup.hasForumTabs;
 
-      // For forum chats, always show topics view by default (matching official Telegram behavior)
-      // Users can still use "View as chat" option to temporarily switch to unified view
-      if (true) {
+      // Show topics view if viewAsTopics is true (default for forums)
+      // Users can use "View as chat" option to switch to unified view (sets viewAsTopics to false)
+      if (chat.viewAsTopics) {
         ViewController<?> forumController;
         if (hasForumTabs) {
           ForumTopicTabsController tabsController = new ForumTopicTabsController(context.context(), context.tdlib());
@@ -2551,8 +2560,15 @@ public class TdlibUi extends Handler {
             openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
           }
         });
+      } else if (messageLink.topicId != null && messageLink.topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+        // Handle forum topic links - open the message within the specific topic
+        openChat(context, messageLink.chatId, new ChatOpenParameters()
+          .keepStack()
+          .highlightMessage(messageId)
+          .ensureHighlightAvailable()
+          .messageTopic(messageLink.topicId)
+          .urlOpenParameters(openParameters));
       } else {
-        // TODO: properly handle messageLink.topicId
         openMessage(context, messageLink.chatId, messageId, openParameters);
       }
     } else {
