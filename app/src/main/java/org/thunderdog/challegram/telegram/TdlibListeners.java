@@ -1289,7 +1289,7 @@ public class TdlibListeners {
 
   void updateForumTopic (TdApi.UpdateForumTopic update) {
     runForumUpdate(update.chatId, update.forumTopicId, listener ->
-      listener.onForumTopicUpdated(update.chatId, update.forumTopicId, update.isPinned, update.lastReadInboxMessageId, update.lastReadOutboxMessageId, update.unreadMentionCount, update.unreadReactionCount, update.notificationSettings)
+      listener.onForumTopicUpdated(update.chatId, update.forumTopicId, update.isPinned, update.lastReadInboxMessageId, update.lastReadOutboxMessageId, update.unreadMentionCount, update.unreadReactionCount, update.notificationSettings, update.draftMessage)
     );
   }
 

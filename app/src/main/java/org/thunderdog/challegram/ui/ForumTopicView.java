@@ -18,6 +18,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -40,10 +41,14 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
+import org.thunderdog.challegram.telegram.TdlibStatusManager;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
@@ -52,8 +57,9 @@ import org.thunderdog.challegram.widget.BaseView;
 import me.vkryl.core.StringUtils;
 import tgx.td.Td;
 
-public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watcher {
+public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watcher, TdlibStatusManager.HelperTarget {
   private static TextPaint titlePaint;
+  private static TextPaint senderPaint;
   private static TextPaint previewPaint;
   private static TextPaint timePaint;
   private static Paint iconPaint;
@@ -62,10 +68,19 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
   private TdApi.ForumTopic topic;
 
   private String titleText;
+  private String senderText;
   private String previewText;
   private String timeText;
   private Counter unreadCounter;
+  private Counter reactionsCounter;
+  private boolean isMuted;
   private String highlightQuery;
+
+  // Message status for outgoing messages
+  private boolean isSending;
+  private boolean isOutgoing;
+  private boolean isMessageUnread;
+  private boolean showingDraft;
 
   // Icon loading
   private long customEmojiId;
@@ -74,6 +89,10 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
   private ImageFile imageFile;
   private GifFile gifFile;
   private final ComplexReceiver iconReceiver;
+
+  // Typing status
+  private TdlibStatusManager.Helper statusHelper;
+  private boolean isAttached;
 
   private static final int PADDING_LEFT = 72;
   private static final int PADDING_RIGHT = 16;
@@ -96,8 +115,14 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       titlePaint.setColor(Theme.textAccentColor());
       ThemeManager.addThemeListener(titlePaint, ColorId.text);
 
+      senderPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+      senderPaint.setTextSize(Screen.dp(15f));
+      senderPaint.setTypeface(Fonts.getRobotoRegular());
+      senderPaint.setColor(Theme.textAccentColor());
+      ThemeManager.addThemeListener(senderPaint, ColorId.text);
+
       previewPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
-      previewPaint.setTextSize(Screen.dp(14f));
+      previewPaint.setTextSize(Screen.dp(15f));
       previewPaint.setTypeface(Fonts.getRobotoRegular());
       previewPaint.setColor(Theme.textDecentColor());
       ThemeManager.addThemeListener(previewPaint, ColorId.textLight);
@@ -114,10 +139,18 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
 
   public void attach () {
     iconReceiver.attach();
+    isAttached = true;
+    if (statusHelper != null && topic != null) {
+      statusHelper.attachToChat(topic.info.chatId, new TdApi.MessageTopicForum(topic.info.forumTopicId));
+    }
   }
 
   public void detach () {
     iconReceiver.detach();
+    isAttached = false;
+    if (statusHelper != null) {
+      statusHelper.detachFromAnyChat();
+    }
   }
 
   public void destroy () {
@@ -125,6 +158,32 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
     if (customEmojiId != 0 && customEmoji == null && tdlib != null) {
       tdlib.emoji().forgetWatcher(customEmojiId, this);
     }
+    if (statusHelper != null) {
+      statusHelper.detachFromAnyChat();
+    }
+  }
+
+  // TdlibStatusManager.HelperTarget implementation
+
+  @Override
+  public void layoutChatAction () {
+    // Typing text layout is handled in onDraw
+    invalidate();
+  }
+
+  @Override
+  public void invalidateTypingPart (boolean onlyIcon) {
+    invalidate();
+  }
+
+  @Override
+  public boolean canLoop () {
+    return isAttached;
+  }
+
+  @Override
+  public boolean canAnimate () {
+    return isAttached;
   }
 
   public void setTopic (Tdlib tdlib, TdApi.ForumTopic topic) {
@@ -135,6 +194,15 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
     this.tdlib = tdlib;
     this.topic = topic;
     this.highlightQuery = highlightQuery;
+
+    // Initialize status helper for typing status
+    if (statusHelper == null) {
+      statusHelper = new TdlibStatusManager.Helper(context(), tdlib, this, null);
+    }
+    // Attach to this topic for typing status
+    if (isAttached) {
+      statusHelper.attachToChat(topic.info.chatId, new TdApi.MessageTopicForum(topic.info.forumTopicId));
+    }
 
     // Build title
     this.titleText = topic.info.name;
@@ -150,34 +218,91 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       this.titleText = "\uD83D\uDD07 " + titleText; // Muted speaker emoji
     }
 
-    // Build preview text from last message
-    if (topic.lastMessage != null) {
+    // Check if we should show draft (draft exists with text input)
+    boolean hasDraft = topic.draftMessage != null &&
+      topic.draftMessage.inputMessageText != null &&
+      topic.draftMessage.inputMessageText.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR;
+
+    if (hasDraft) {
+      // Show draft preview
+      this.showingDraft = true;
+      TdApi.InputMessageText inputText = (TdApi.InputMessageText) topic.draftMessage.inputMessageText;
+      String draftText = inputText.text != null && !StringUtils.isEmpty(inputText.text.text) ?
+        inputText.text.text : "";
+      this.senderText = Lang.getString(R.string.Draft);
+      this.previewText = draftText;
+      this.timeText = Lang.timeOrDateShort(topic.draftMessage.date, java.util.concurrent.TimeUnit.SECONDS);
+      this.isOutgoing = false;
+      this.isSending = false;
+      this.isMessageUnread = false;
+    } else if (topic.lastMessage != null) {
+      // Build preview text from last message
+      this.showingDraft = false;
       ContentPreview preview = ContentPreview.getChatListPreview(tdlib, topic.info.chatId, topic.lastMessage, true);
-      if (preview != null) {
-        this.previewText = preview.buildText(false);
+      String messageText = preview != null ? preview.buildText(false) : "";
+
+      // Sender name on separate line (like 3-line chat list mode)
+      if (topic.lastMessage.isOutgoing) {
+        this.senderText = Lang.getString(R.string.FromYou);
       } else {
-        this.previewText = "";
+        String senderName = tdlib.senderName(topic.lastMessage, false, false);
+        this.senderText = !StringUtils.isEmpty(senderName) ? senderName : "";
       }
+      this.previewText = messageText;
       this.timeText = Lang.timeOrDateShort(topic.lastMessage.date, java.util.concurrent.TimeUnit.SECONDS);
+
+      // Calculate message status for outgoing messages
+      this.isOutgoing = topic.lastMessage.isOutgoing;
+      this.isSending = tdlib.messageSending(topic.lastMessage);
+      // Message is unread if message ID > last read outbox message ID
+      this.isMessageUnread = topic.lastMessage.id > topic.lastReadOutboxMessageId;
     } else {
+      this.showingDraft = false;
+      this.senderText = "";
       this.previewText = "";
       this.timeText = "";
+      this.isOutgoing = false;
+      this.isSending = false;
+      this.isMessageUnread = false;
     }
 
-    // Unread counter
+    // Check muted state
+    this.isMuted = topic.notificationSettings != null && topic.notificationSettings.muteFor > 0;
+
+    // Unread counter - pass muted state for proper badge coloring
     if (topic.unreadCount > 0) {
       if (unreadCounter == null) {
-        unreadCounter = new Counter.Builder().build();
+        unreadCounter = new Counter.Builder().callback(this).build();
       }
-      unreadCounter.setCount(topic.unreadCount, topic.unreadMentionCount > 0, false);
+      unreadCounter.setCount(topic.unreadCount, isMuted, false);
     } else {
       unreadCounter = null;
+    }
+
+    // Reactions counter - show if there are unread reactions
+    if (topic.unreadReactionCount > 0) {
+      if (reactionsCounter == null) {
+        reactionsCounter = new Counter.Builder()
+          .drawable(R.drawable.baseline_favorite_14, 14f, 0f, Gravity.CENTER)
+          .callback(this)
+          .build();
+      }
+      reactionsCounter.setCount(topic.unreadReactionCount, isMuted, false);
+    } else {
+      reactionsCounter = null;
     }
 
     // Load topic icon
     loadTopicIcon();
 
     invalidate();
+  }
+
+  /**
+   * Sets the topic view to display a message search result.
+   */
+  public void setMessageSearchResult (Tdlib tdlib, TdApi.ForumTopic topic, TdApi.Message foundMessage, String highlightQuery) {
+    setTopic(tdlib, topic, highlightQuery);
   }
 
   private void loadTopicIcon () {
@@ -309,13 +434,32 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
 
     // Draw time on the right
     float timeWidth = 0;
+    float statusIconWidth = 0;
     if (!StringUtils.isEmpty(timeText)) {
       timeWidth = timePaint.measureText(timeText);
       canvas.drawText(timeText, textRight - timeWidth, Screen.dp(28f), timePaint);
+
+      // Draw status icon for outgoing messages (to the left of time)
+      if (isOutgoing) {
+        float iconY = Screen.dp(28f);
+        if (isSending) {
+          // Clock icon for sending messages
+          int iconX = (int) (textRight - timeWidth - Screen.dp(4f) - Screen.dp(Icons.CLOCK_SHIFT_X) - Screen.dp(10f));
+          Drawables.draw(canvas, Icons.getClockIcon(ColorId.iconLight), iconX, iconY - Screen.dp(Icons.CLOCK_SHIFT_Y) - Screen.dp(10f), Paints.getIconLightPorterDuffPaint());
+          statusIconWidth = Screen.dp(14f);
+        } else {
+          // Single tick for sent, double tick for read
+          int iconX = (int) (textRight - timeWidth - Screen.dp(4f) - Screen.dp(Icons.TICKS_SHIFT_X) - Screen.dp(14f));
+          Drawable tickIcon = isMessageUnread ? Icons.getSingleTick(ColorId.ticks) : Icons.getDoubleTick(ColorId.ticks);
+          Paint tickPaint = isMessageUnread ? Paints.getTicksPaint() : Paints.getTicksReadPaint();
+          Drawables.draw(canvas, tickIcon, iconX, iconY - Screen.dp(Icons.TICKS_SHIFT_Y) - Screen.dp(10f), tickPaint);
+          statusIconWidth = Screen.dp(18f);
+        }
+      }
     }
 
     // Draw title with optional highlighting
-    int titleRight = (int) (textRight - timeWidth - Screen.dp(8f));
+    int titleRight = (int) (textRight - timeWidth - statusIconWidth - Screen.dp(8f));
     if (!StringUtils.isEmpty(titleText)) {
       String ellipsizedTitle = TextUtils.ellipsize(titleText, titlePaint, titleRight - textLeft, TextUtils.TruncateAt.END).toString();
       float titleY = Screen.dp(28f);
@@ -328,17 +472,64 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       }
     }
 
-    // Draw preview text
+    // Draw counters on the right side
     int previewRight = textRight;
+    float counterCenterY = height / 2 + Screen.dp(12f);
+
+    // Draw unread counter (rightmost)
     if (unreadCounter != null) {
       float counterWidth = unreadCounter.getWidth();
       previewRight -= (int) (counterWidth + Screen.dp(8f));
-      unreadCounter.draw(canvas, textRight - counterWidth / 2, height / 2 + Screen.dp(8f), Gravity.CENTER, 1f);
+      unreadCounter.draw(canvas, textRight - counterWidth / 2, counterCenterY, Gravity.CENTER, 1f);
+      textRight -= (int) (counterWidth + Screen.dp(4f));
     }
 
-    if (!StringUtils.isEmpty(previewText)) {
-      String ellipsizedPreview = TextUtils.ellipsize(previewText, previewPaint, previewRight - textLeft, TextUtils.TruncateAt.END).toString();
-      canvas.drawText(ellipsizedPreview, textLeft, Screen.dp(50f), previewPaint);
+    // Draw reactions counter (to the left of unread counter)
+    if (reactionsCounter != null) {
+      float counterWidth = reactionsCounter.getWidth();
+      previewRight -= (int) (counterWidth + Screen.dp(4f));
+      int textColorId = isMuted ? ColorId.badgeMutedText : ColorId.badgeText;
+      reactionsCounter.draw(canvas, textRight - counterWidth / 2, counterCenterY, Gravity.CENTER, 1f, this, textColorId);
+      textRight -= (int) (counterWidth + Screen.dp(4f));
+    }
+
+    // Check if we should show typing status instead of sender/preview text
+    TdlibStatusManager.ChatState typingState = statusHelper != null ? statusHelper.drawingState() : null;
+    float senderY = Screen.dp(46f);  // Row 2: Sender name
+    float previewY = Screen.dp(64f); // Row 3: Message preview
+
+    if (typingState != null) {
+      // Draw typing status on row 2 (sender position)
+      String typingText = statusHelper.fullText();
+      if (!StringUtils.isEmpty(typingText)) {
+        float textCenterY = senderY - Screen.dp(6f);
+        // Draw typing animation icon
+        int iconWidth = DrawAlgorithms.drawStatus(canvas, typingState, textLeft, textCenterY, Theme.getColor(ColorId.textLight), this, ColorId.textLight);
+        // Draw typing text
+        String ellipsizedTyping = TextUtils.ellipsize(typingText, senderPaint, previewRight - textLeft - iconWidth, TextUtils.TruncateAt.END).toString();
+        canvas.drawText(ellipsizedTyping, textLeft + iconWidth, senderY, senderPaint);
+      }
+    } else {
+      // Row 2: Draw sender name (white/accent color)
+      if (!StringUtils.isEmpty(senderText)) {
+        if (showingDraft) {
+          // Draw "Draft" in red
+          int savedColor = senderPaint.getColor();
+          senderPaint.setColor(Theme.textRedColor());
+          String ellipsizedSender = TextUtils.ellipsize(senderText, senderPaint, previewRight - textLeft, TextUtils.TruncateAt.END).toString();
+          canvas.drawText(ellipsizedSender, textLeft, senderY, senderPaint);
+          senderPaint.setColor(savedColor);
+        } else {
+          String ellipsizedSender = TextUtils.ellipsize(senderText, senderPaint, previewRight - textLeft, TextUtils.TruncateAt.END).toString();
+          canvas.drawText(ellipsizedSender, textLeft, senderY, senderPaint);
+        }
+      }
+
+      // Row 3: Draw message preview (gray/light color)
+      if (!StringUtils.isEmpty(previewText)) {
+        String ellipsizedPreview = TextUtils.ellipsize(previewText, previewPaint, previewRight - textLeft, TextUtils.TruncateAt.END).toString();
+        canvas.drawText(ellipsizedPreview, textLeft, previewY, previewPaint);
+      }
     }
 
     // Draw separator line at bottom
@@ -383,17 +574,25 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
   }
 
   private void drawLetterIcon (Canvas canvas, int centerX, int centerY) {
-    if (!StringUtils.isEmpty(topic.info.name)) {
-      String firstLetter = topic.info.name.substring(0, 1).toUpperCase();
-      TextPaint letterPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-      letterPaint.setColor(0xFFFFFFFF);
-      letterPaint.setTextSize(Screen.dp(20f));
-      letterPaint.setTypeface(Fonts.getRobotoMedium());
-      letterPaint.setTextAlign(Paint.Align.CENTER);
-      Paint.FontMetrics fm = letterPaint.getFontMetrics();
-      float textY = centerY - (fm.ascent + fm.descent) / 2;
-      canvas.drawText(firstLetter, centerX, textY, letterPaint);
+    // For General topic (id = 1), show hash symbol "#" instead of letter
+    // This matches Telegram for Android (TGA) behavior
+    String displayChar;
+    if (topic.info.forumTopicId == 1) {
+      displayChar = "#";
+    } else if (!StringUtils.isEmpty(topic.info.name)) {
+      displayChar = topic.info.name.substring(0, 1).toUpperCase();
+    } else {
+      return;
     }
+
+    TextPaint letterPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    letterPaint.setColor(0xFFFFFFFF);
+    letterPaint.setTextSize(Screen.dp(20f));
+    letterPaint.setTypeface(Fonts.getRobotoMedium());
+    letterPaint.setTextAlign(Paint.Align.CENTER);
+    Paint.FontMetrics fm = letterPaint.getFontMetrics();
+    float textY = centerY - (fm.ascent + fm.descent) / 2;
+    canvas.drawText(displayChar, centerX, textY, letterPaint);
   }
 
   private int getTopicColor (int colorValue) {

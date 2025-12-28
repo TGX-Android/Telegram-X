@@ -10902,7 +10902,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onForumTopicUpdated (long chatId, long messageThreadId, boolean isPinned, long lastReadInboxMessageId, long lastReadOutboxMessageId, int unreadMentionCount, int unreadReactionCount, TdApi.ChatNotificationSettings notificationSettings) {
+  public void onForumTopicUpdated (long chatId, long messageThreadId, boolean isPinned, long lastReadInboxMessageId, long lastReadOutboxMessageId, int unreadMentionCount, int unreadReactionCount, TdApi.ChatNotificationSettings notificationSettings, TdApi.DraftMessage draftMessage) {
     tdlib.ui().post(() -> {
       if (forumTopic == null || getChatId() != chatId || forumTopic.info.forumTopicId != messageThreadId) {
         return;
@@ -10916,6 +10916,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       forumTopic.unreadReactionCount = unreadReactionCount;
       if (notificationSettings != null) {
         forumTopic.notificationSettings = notificationSettings;
+      }
+      // Update draft message (topic-scoped)
+      forumTopic.draftMessage = draftMessage;
+      // Also update the messageThread if present so TGMessage.isUnread() works correctly
+      if (messageThread != null) {
+        messageThread.updateReadInbox(lastReadInboxMessageId);
+        messageThread.updateReadOutbox(lastReadOutboxMessageId);
       }
       // Calculate new unread count
       if (lastReadInboxMessageId > oldLastReadInboxMessageId) {

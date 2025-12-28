@@ -3425,6 +3425,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  /**
+   * Returns cached forum topics for the given chat, or null if not cached.
+   * Use this to show topics instantly while refreshing from network.
+   */
+  public @Nullable List<TdApi.ForumTopic> getCachedForumTopics (long chatId) {
+    synchronized (dataLock) {
+      List<TdApi.ForumTopic> cached = forumTopicsCache.get(chatId);
+      return cached != null ? new java.util.ArrayList<>(cached) : null;
+    }
+  }
+
+  /**
+   * Updates the forum topics cache with fresh data.
+   */
+  public void updateForumTopicsCache (long chatId, List<TdApi.ForumTopic> topics) {
+    synchronized (dataLock) {
+      forumTopicsCache.put(chatId, new java.util.ArrayList<>(topics));
+    }
+  }
+
   public @Nullable TdApi.BlockList chatBlockList (TdApi.Chat chat) {
     return chat != null ? chatBlockList(chat.id) : null;
   }

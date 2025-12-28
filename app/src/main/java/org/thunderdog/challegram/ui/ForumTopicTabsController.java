@@ -102,8 +102,8 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
 
   @Override
   protected int getMenuButtonsWidth () {
-    // Width for the more button (3 dots) + search button
-    return Screen.dp(56f * 2);
+    // Width for the more button (3 dots)
+    return Screen.dp(56f);
   }
 
   @Override
@@ -120,6 +120,16 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
     if (isLoading) return;
     isLoading = true;
 
+    // First, try to show cached topics immediately for instant display
+    java.util.List<TdApi.ForumTopic> cachedTopics = tdlib.getCachedForumTopics(chatId);
+    if (cachedTopics != null && !cachedTopics.isEmpty()) {
+      topics.clear();
+      topics.addAll(cachedTopics);
+      // Rebuild the pager with cached topics immediately
+      notifyPagerItemPositionsChanged();
+    }
+
+    // Then refresh from network in background
     tdlib.client().send(new TdApi.GetForumTopics(chatId, "", 0, 0L, 0, 100), result -> {
       if (result.getConstructor() == TdApi.ForumTopics.CONSTRUCTOR) {
         TdApi.ForumTopics forumTopics = (TdApi.ForumTopics) result;
@@ -129,6 +139,8 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
             topics.add(topic);
           }
           hasMore = forumTopics.nextOffsetForumTopicId != 0;
+          // Update cache
+          tdlib.updateForumTopicsCache(chatId, topics);
           isLoading = false;
 
           // Rebuild the pager with topics
@@ -269,7 +281,6 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_search) {
       header.addMoreButton(menu, this);
-      header.addSearchButton(menu, this);
     } else if (id == R.id.menu_clear) {
       header.addClearButton(menu, this);
     }
@@ -286,16 +297,19 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    if (id == R.id.menu_btn_search) {
-      openSearchMode();
-    } else if (id == R.id.menu_btn_clear) {
+    if (id == R.id.menu_btn_clear) {
       clearSearchInput();
     } else if (id == R.id.menu_btn_more) {
       TdApi.ForumTopic topic = getCurrentTopic();
 
-      IntList ids = new IntList(6);
-      IntList icons = new IntList(6);
-      StringList strings = new StringList(6);
+      IntList ids = new IntList(8);
+      IntList icons = new IntList(8);
+      StringList strings = new StringList(8);
+
+      // Search option
+      ids.append(R.id.menu_btn_search);
+      icons.append(R.drawable.baseline_search_24);
+      strings.append(R.string.Search);
 
       boolean canManage = canManageTopics();
 
@@ -352,6 +366,11 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
         strings.append(R.string.TabInfo);
       }
 
+      // View as topics list option (switch to ForumTopicsController)
+      ids.append(R.id.btn_viewAsTopics);
+      icons.append(R.drawable.baseline_format_list_bulleted_type_24);
+      strings.append(R.string.ViewAsTopics);
+
       // View as chat option (always available)
       ids.append(R.id.btn_viewAsChat);
       icons.append(R.drawable.baseline_chat_bubble_24);
@@ -365,13 +384,27 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
   public void onMoreItemPressed (int id) {
     TdApi.ForumTopic topic = getCurrentTopic();
 
-    if (id == R.id.btn_createTopic) {
+    if (id == R.id.menu_btn_search) {
+      // Switch to ForumTopicsController which has full search functionality
+      ForumTopicsController listController = new ForumTopicsController(context, tdlib);
+      listController.setArguments(new ForumTopicsController.Arguments(chat));
+      navigateTo(listController);
+    } else if (id == R.id.btn_createTopic) {
       showCreateTopicDialog();
     } else if (id == R.id.btn_chatSettings) {
       // Open chat profile/settings
       ProfileController profileController = new ProfileController(context, tdlib);
       profileController.setArguments(new ProfileController.Args(chat, null, false));
       navigateTo(profileController);
+    } else if (id == R.id.btn_viewAsTopics) {
+      // Switch to topics list view (ForumTopicsController)
+      ForumTopicsController listController = new ForumTopicsController(context, tdlib);
+      listController.setArguments(new ForumTopicsController.Arguments(chat));
+      // Navigate and remove this controller from stack
+      listController.addOneShotFocusListener(() -> {
+        listController.destroyStackItemAt(listController.stackSize() - 2);
+      });
+      navigateTo(listController);
     } else if (id == R.id.btn_viewAsChat) {
       // Set viewAsTopics to false and open as unified chat
       tdlib.client().send(new TdApi.ToggleChatViewAsTopics(chatId, false), result -> {

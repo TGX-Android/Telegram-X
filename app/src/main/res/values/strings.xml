@@ -2308,6 +2308,12 @@
   <string name="GeneralTopicWasShown">General topic shown</string>
   <string name="ViewAsChat">View as chat</string>
   <string name="ViewAsTopics">View as topics</string>
+  <string name="ViewAsTabs">View as tabs</string>
+  <string name="FilterByTopic">Filter by topic</string>
+  <string name="SearchForMessages">Search for messages</string>
+  <string name="NoMessagesFound">No messages found</string>
+  <string name="ChangeTopicIcon">Change Topic Icon</string>
+  <string name="ResetTopicIcon">Reset Topic Icon</string>
 
   <string name="EventLogMutedNewParticipants">%1$s muted new video chat participants</string>
   <string name="EventLogUnmutedNewParticipants">%1$s allowed new video chat participants to speak</string>
