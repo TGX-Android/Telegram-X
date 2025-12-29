@@ -212,8 +212,8 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
     if (topic.isPinned) {
       this.titleText = "\uD83D\uDCCC " + titleText; // Pin emoji
     }
-    // Check if muted
-    boolean isMuted = topic.notificationSettings != null && topic.notificationSettings.muteFor > 0;
+    // Check if muted (respects useDefaultMuteFor and parent chat settings)
+    boolean isMuted = tdlib.forumTopicNeedsMuteIcon(topic.info.chatId, topic);
     if (isMuted) {
       this.titleText = "\uD83D\uDD07 " + titleText; // Muted speaker emoji
     }
@@ -266,8 +266,8 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       this.isMessageUnread = false;
     }
 
-    // Check muted state
-    this.isMuted = topic.notificationSettings != null && topic.notificationSettings.muteFor > 0;
+    // Check muted state (respects useDefaultMuteFor and parent chat settings)
+    this.isMuted = tdlib.forumTopicNeedsMuteIcon(topic.info.chatId, topic);
 
     // Unread counter - pass muted state for proper badge coloring
     if (topic.unreadCount > 0) {

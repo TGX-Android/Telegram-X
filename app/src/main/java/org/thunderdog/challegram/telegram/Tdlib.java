@@ -3736,6 +3736,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return chat != null && TD.needMuteIcon(chat.notificationSettings, scopeNotificationSettings(chat.id));
   }
 
+  public boolean forumTopicNeedsMuteIcon (long chatId, TdApi.ForumTopic topic) {
+    if (topic == null || topic.notificationSettings == null) {
+      return chatNeedsMuteIcon(chatId);
+    }
+    if (topic.notificationSettings.useDefaultMuteFor) {
+      // Topic inherits from parent chat notification settings
+      return chatNeedsMuteIcon(chatId);
+    }
+    return topic.notificationSettings.muteFor > 0;
+  }
+
   public boolean chatNotificationsEnabled (long chatId) {
     return chatNotificationsEnabled(chat(chatId));
   }
