@@ -1488,16 +1488,32 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
     if (topicIndex < 0) return; // Topic not found in list
 
     final int foundIndex = topicIndex;
+    // Capture the draft from callback - it may be more recent than server data
+    final TdApi.DraftMessage callbackDraft = draftMessage;
 
     if (needFetchUnreadCount) {
       // Fetch fresh topic info to get accurate unread count
       tdlib.client().send(new TdApi.GetForumTopic(chatId, (int) messageThreadId), result -> {
         if (result.getConstructor() == TdApi.ForumTopic.CONSTRUCTOR) {
           TdApi.ForumTopic freshTopic = (TdApi.ForumTopic) result;
+          // Always use draft from callback - it's more recent than fetched server data
+          // (callbackDraft can be null if draft was cleared, which we should respect)
+          freshTopic.draftMessage = callbackDraft;
+          // Update Tdlib cache so chat list badge updates correctly
+          tdlib.updateForumTopicUnreadCount(chatId, (int) messageThreadId, freshTopic.unreadCount);
           UI.post(() -> {
             if (topics != null && foundIndex < topics.size() &&
                 topics.get(foundIndex).info.forumTopicId == messageThreadId) {
               topics.set(foundIndex, freshTopic);
+              // Also update in allTopics if present
+              if (allTopics != null) {
+                for (int i = 0; i < allTopics.size(); i++) {
+                  if (allTopics.get(i).info.forumTopicId == messageThreadId) {
+                    allTopics.set(i, freshTopic);
+                    break;
+                  }
+                }
+              }
               if (adapter != null) {
                 adapter.notifyItemChanged(foundIndex);
               }

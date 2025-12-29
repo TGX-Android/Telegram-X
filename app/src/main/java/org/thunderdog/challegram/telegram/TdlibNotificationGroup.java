@@ -131,6 +131,15 @@ public class TdlibNotificationGroup implements Iterable<TdlibNotification> {
     return 0;
   }
 
+  public long findForumTopicId () {
+    for (TdlibNotification notification : this) {
+      long topicId = notification.findForumTopicId();
+      if (topicId != 0)
+        return topicId;
+    }
+    return 0;
+  }
+
   public int firstNotificationId () {
     return !notifications.isEmpty() ? notifications.get(0).getId() : 0;
   }

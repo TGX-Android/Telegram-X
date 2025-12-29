@@ -2081,7 +2081,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           for (int i = 0; i < topics.topics.length; i++) {
             TdApi.ForumTopic topic = topics.topics[i];
             titles[i] = topic.info.name;
-            ids[i] = (int) topic.info.forumTopicId;
+            ids[i] = topic.info.forumTopicId;
           }
           showOptions(tdlib.chatTitle(chatId), ids, titles, (itemView, id) -> {
             selectedForumTopics.put(chatId, (long) id);
@@ -2093,6 +2093,24 @@ public class ShareController extends TelegramViewController<ShareController.Args
         runOnUiThreadOptional(() -> selectedForumTopics.put(chatId, 1L));
       }
     });
+  }
+
+  private String getTopicColorEmoji (int colorValue) {
+    // Map topic colors to colored circle emojis
+    if (colorValue == 0) return "\uD83D\uDFE6"; // Default blue
+    // Normalize color (remove alpha if present)
+    int color = colorValue & 0x00FFFFFF;
+    // Map to closest emoji based on RGB values
+    int r = (color >> 16) & 0xFF;
+    int g = (color >> 8) & 0xFF;
+    int b = color & 0xFF;
+    // Simple heuristic based on dominant color
+    if (r > 200 && g < 150 && b < 150) return "\uD83D\uDD34"; // Red
+    if (r > 200 && g > 180 && b < 150) return "\uD83D\uDFE1"; // Yellow
+    if (r > 180 && g < 150 && b > 180) return "\uD83D\uDFE3"; // Purple
+    if (r < 150 && g > 200 && b < 150) return "\uD83D\uDFE2"; // Green
+    if (r > 200 && g > 100 && b > 150) return "\uD83D\uDFE0"; // Orange (for pink)
+    return "\uD83D\uDFE6"; // Blue (default)
   }
 
   private static final boolean OPEN_KEYBOARD_WITH_AUTOSCROLL = false;

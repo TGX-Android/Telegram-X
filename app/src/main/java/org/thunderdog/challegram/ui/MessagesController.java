@@ -10923,6 +10923,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (messageThread != null) {
         messageThread.updateReadInbox(lastReadInboxMessageId);
         messageThread.updateReadOutbox(lastReadOutboxMessageId);
+        // Update message views to show read receipts (double ticks)
+        manager.updateChatReadOutbox(lastReadOutboxMessageId);
       }
       // Calculate new unread count
       if (lastReadInboxMessageId > oldLastReadInboxMessageId) {
