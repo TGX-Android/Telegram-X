@@ -109,18 +109,26 @@ public class ChatHeaderView extends ComplexHeaderView implements TdlibEmojiManag
     }
 
     int size = Screen.dp(40f); // Avatar size
-    if (sticker.fullType instanceof TdApi.StickerFullTypeRegular) {
-      topicImageFile = new ImageFile(tdlib, sticker.sticker);
-      topicImageFile.setSize(size);
-      topicImageFile.setScaleType(ImageFile.CENTER_CROP);
-      topicGifFile = null;
-      topicIconReceiver.getImageReceiver(0).requestFile(topicImageFile);
-    } else {
-      topicGifFile = new GifFile(tdlib, sticker);
-      topicGifFile.setOptimizationMode(GifFile.OptimizationMode.EMOJI);
-      topicGifFile.setRequestedSize(size);
-      topicImageFile = null;
-      topicIconReceiver.getGifReceiver(0).requestFile(topicGifFile);
+    // Check sticker format to determine file type
+    // WebP stickers use ImageFile, TGS and WEBM use GifFile
+    switch (sticker.format.getConstructor()) {
+      case TdApi.StickerFormatWebp.CONSTRUCTOR: {
+        topicImageFile = new ImageFile(tdlib, sticker.sticker);
+        topicImageFile.setSize(size);
+        topicImageFile.setScaleType(ImageFile.CENTER_CROP);
+        topicGifFile = null;
+        topicIconReceiver.getImageReceiver(0).requestFile(topicImageFile);
+        break;
+      }
+      case TdApi.StickerFormatTgs.CONSTRUCTOR:
+      case TdApi.StickerFormatWebm.CONSTRUCTOR: {
+        topicGifFile = new GifFile(tdlib, sticker);
+        topicGifFile.setOptimizationMode(GifFile.OptimizationMode.EMOJI);
+        topicGifFile.setRequestedSize(size);
+        topicImageFile = null;
+        topicIconReceiver.getGifReceiver(0).requestFile(topicGifFile);
+        break;
+      }
     }
   }
 

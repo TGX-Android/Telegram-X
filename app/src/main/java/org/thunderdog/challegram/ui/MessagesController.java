@@ -2818,6 +2818,26 @@ public class MessagesController extends ViewController<MessagesController.Argume
       updateForcedSubtitle(); // must be called before calling headerCell.setChat
       headerCell.setCallback(areScheduled ? null : this);
     }
+
+    // Load forum topic if we have a messageTopicId but no forumTopic
+    // This happens when opening a message via link in a forum
+    if (forumTopic == null && messageTopicId != null &&
+        messageTopicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+      long forumTopicId = ((TdApi.MessageTopicForum) messageTopicId).messageThreadId;
+      tdlib.client().send(new TdApi.GetForumTopic(chat.id, (int) forumTopicId), result -> {
+        if (result.getConstructor() == TdApi.ForumTopic.CONSTRUCTOR) {
+          runOnUiThreadOptional(() -> {
+            forumTopic = (TdApi.ForumTopic) result;
+            // Update header with loaded topic
+            TdApi.Chat hChat = messageThread != null ? tdlib.chatSync(messageThread.getContextChatId()) : null;
+            headerCell.setChat(tdlib, hChat != null ? hChat : chat, messageThread, forumTopic);
+            // Update unread counts
+            updateCounters(true);
+          });
+        }
+      });
+    }
+
     TdApi.Chat headerChat = messageThread != null ? tdlib.chatSync(messageThread.getContextChatId()) : null;
     headerCell.setChat(tdlib, headerChat != null ? headerChat : chat, messageThread, forumTopic);
 

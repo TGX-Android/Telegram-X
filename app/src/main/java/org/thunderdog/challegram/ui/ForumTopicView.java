@@ -280,10 +280,11 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
     }
 
     // Reactions counter - show if there are unread reactions
+    // Using same pattern as TGChat: baseline_favorite_14 icon at 16f size
     if (topic.unreadReactionCount > 0) {
       if (reactionsCounter == null) {
         reactionsCounter = new Counter.Builder()
-          .drawable(R.drawable.baseline_favorite_14, 14f, 0f, Gravity.CENTER)
+          .drawable(R.drawable.baseline_favorite_14, 16f, 0f, Gravity.CENTER)
           .callback(this)
           .build();
       }
