@@ -4,12 +4,16 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.tool.Drawables;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
@@ -603,11 +607,22 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     TdApi.Message message = parent.getOldestMessage();
     boolean hasReaction = !hasReaction(reactionType);
     if (hasReaction) {
-      tdlib.client().send(new TdApi.AddMessageReaction(parent.getChatId(), message.id, reactionType, isBig, updateRecentReactions), handler);
+      // Paid reactions require different API
+      if (reactionType.getConstructor() == TdApi.ReactionTypePaid.CONSTRUCTOR) {
+        // Send paid reaction with 1 star by default (can be extended with UI for star count)
+        tdlib.client().send(new TdApi.AddPendingPaidMessageReaction(parent.getChatId(), message.id, 1, null), handler);
+      } else {
+        tdlib.client().send(new TdApi.AddMessageReaction(parent.getChatId(), message.id, reactionType, isBig, updateRecentReactions), handler);
+      }
     } else {
       tdlib.client().send(new TdApi.RemoveMessageReaction(parent.getChatId(), message.id, reactionType), handler);
     }
     return hasReaction;
+  }
+
+  public void addPaidReaction (long starCount, Client.ResultHandler handler) {
+    TdApi.Message message = parent.getOldestMessage();
+    tdlib.client().send(new TdApi.AddPendingPaidMessageReaction(parent.getChatId(), message.id, starCount, null), handler);
   }
 
   public static class MessageReactionEntry implements TextColorSet, FactorAnimator.Target {
@@ -629,6 +644,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     private final float staticAnimationFileScale;
     private final ImageFile staticImageFile;
     private final float staticImageFileScale;
+    @Nullable private final Drawable paidReactionDrawable;      // Star icon for paid reactions
 
     private final MessageReactionsDelegate delegate;
 
@@ -654,6 +670,20 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       } else {
         this.avatars = null;
       }
+
+      // Handle paid reactions with star icon
+      if (reaction.isPaid()) {
+        this.paidReactionDrawable = Drawables.get(R.drawable.baseline_star_24);
+        this.animation = null;
+        this.animationScale = 1f;
+        this.staticAnimationFile = null;
+        this.staticAnimationFileScale = 1f;
+        this.staticImageFile = null;
+        this.staticImageFileScale = 1f;
+        return;
+      }
+
+      this.paidReactionDrawable = null;
 
       TGStickerObj stickerObj = reactionObj.newCenterAnimationSicker();
       animation = stickerObj.getFullAnimation();
@@ -942,6 +972,14 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     private boolean inAnimation;
 
     private void drawReceiver (Canvas c, int l, int t, int r, int b, float alpha) {
+      // Draw star icon for paid reactions
+      if (paidReactionDrawable != null) {
+        paidReactionDrawable.setBounds(l, t, r, b);
+        paidReactionDrawable.setAlpha((int) (alpha * 255));
+        Drawables.draw(c, paidReactionDrawable, l, t, Paints.getPorterDuffPaint(Theme.getColor(ColorId.text)));
+        return;
+      }
+
       Receiver receiver = inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
       float scale = inAnimation ? animationScale : staticAnimationFile != null ? staticAnimationFileScale : staticImageFileScale;
       if (receiver != null) {

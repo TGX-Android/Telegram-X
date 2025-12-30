@@ -401,6 +401,7 @@
   <item type="id" name="btn_viewAsChat" />
   <item type="id" name="btn_viewAsTopics" />
   <item type="id" name="btn_viewAsTabs" />
+  <item type="id" name="btn_viewForum" />
   <item type="id" name="btn_members" />
   <item type="id" name="btn_membersReading" />
   <item type="id" name="btn_membersWriting" />

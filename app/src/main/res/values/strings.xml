@@ -2392,6 +2392,7 @@
   <string name="ViewAsChat">View as chat</string>
   <string name="ViewAsTopics">View as topics</string>
   <string name="ViewAsTabs">View as tabs</string>
+  <string name="ViewForum">View forum</string>
   <string name="FilterByTopic">Filter by topic</string>
   <string name="SearchForMessages">Search for messages</string>
   <string name="NoMessagesFound">No messages found</string>

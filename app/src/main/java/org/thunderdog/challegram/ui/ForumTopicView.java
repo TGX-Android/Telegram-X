@@ -52,6 +52,9 @@ import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.Highlight;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.BaseView;
 
 import me.vkryl.core.StringUtils;
@@ -68,8 +71,12 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
   private TdApi.ForumTopic topic;
 
   private String titleText;
+  private Text displayTitle;
   private String senderText;
+  private Text displaySender;
   private String previewText;
+  private TdApi.FormattedText previewFormattedText;
+  private Text displayPreview;
   private String timeText;
   private Counter unreadCounter;
   private Counter reactionsCounter;
@@ -231,6 +238,8 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
         inputText.text.text : "";
       this.senderText = Lang.getString(R.string.Draft);
       this.previewText = draftText;
+      // Get FormattedText from draft for custom emoji rendering
+      this.previewFormattedText = inputText.text;
       this.timeText = Lang.timeOrDateShort(topic.draftMessage.date, java.util.concurrent.TimeUnit.SECONDS);
       this.isOutgoing = false;
       this.isSending = false;
@@ -240,6 +249,8 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       this.showingDraft = false;
       ContentPreview preview = ContentPreview.getChatListPreview(tdlib, topic.info.chatId, topic.lastMessage, true);
       String messageText = preview != null ? preview.buildText(false) : "";
+      // Get FormattedText for proper custom emoji rendering
+      this.previewFormattedText = preview != null ? preview.buildFormattedText(false) : null;
 
       // Sender name on separate line (like 3-line chat list mode)
       if (topic.lastMessage.isOutgoing) {
@@ -260,6 +271,7 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       this.showingDraft = false;
       this.senderText = "";
       this.previewText = "";
+      this.previewFormattedText = null;
       this.timeText = "";
       this.isOutgoing = false;
       this.isSending = false;
@@ -296,7 +308,93 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
     // Load topic icon
     loadTopicIcon();
 
+    // Build text layouts
+    buildTextLayouts();
+
     invalidate();
+  }
+
+  private int lastMeasuredWidth;
+
+  @Override
+  protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    int width = getMeasuredWidth();
+    if (lastMeasuredWidth != width) {
+      lastMeasuredWidth = width;
+      buildTextLayouts();
+    }
+  }
+
+  private void buildTextLayouts () {
+    int width = getMeasuredWidth();
+    if (width <= 0 || topic == null) {
+      displayTitle = null;
+      displaySender = null;
+      displayPreview = null;
+      return;
+    }
+
+    int textLeft = Screen.dp(PADDING_LEFT);
+    int textRight = width - Screen.dp(PADDING_RIGHT);
+    int availWidth = textRight - textLeft;
+
+    // Build title Text with emoji support (4-parameter constructor for String)
+    if (!StringUtils.isEmpty(titleText)) {
+      Highlight highlight = !StringUtils.isEmpty(highlightQuery) ? Highlight.valueOf(titleText, highlightQuery) : null;
+      displayTitle = new Text.Builder(
+        titleText,
+        availWidth,
+        Paints.robotoStyleProvider(16f),
+        TextColorSets.Regular.NORMAL
+      ).singleLine()
+       .highlight(highlight)
+       .allBold()
+       .ignoreNewLines()
+       .build();
+    } else {
+      displayTitle = null;
+    }
+
+    // Build sender Text with emoji support (4-parameter constructor for String)
+    if (!StringUtils.isEmpty(senderText)) {
+      displaySender = new Text.Builder(
+        senderText,
+        availWidth,
+        Paints.robotoStyleProvider(15f),
+        showingDraft ? TextColorSets.Regular.NEGATIVE : TextColorSets.Regular.NORMAL
+      ).singleLine()
+       .ignoreNewLines()
+       .build();
+    } else {
+      displaySender = null;
+    }
+
+    // Build preview Text with emoji support (use FormattedText for custom emoji)
+    if (previewFormattedText != null && !StringUtils.isEmpty(previewFormattedText.text)) {
+      displayPreview = new Text.Builder(
+        tdlib,
+        previewFormattedText,
+        null, // urlOpenParameters
+        availWidth,
+        Paints.robotoStyleProvider(15f),
+        TextColorSets.Regular.LIGHT,
+        null // textMediaListener - could add for custom emoji loading
+      ).singleLine()
+       .ignoreNewLines()
+       .build();
+    } else if (!StringUtils.isEmpty(previewText)) {
+      displayPreview = new Text.Builder(
+        previewText,
+        availWidth,
+        Paints.robotoStyleProvider(15f),
+        TextColorSets.Regular.LIGHT
+      ).singleLine()
+       .ignoreNewLines()
+       .build();
+    } else {
+      displayPreview = null;
+    }
   }
 
   /**
@@ -459,18 +557,11 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       }
     }
 
-    // Draw title with optional highlighting
+    // Draw title with emoji support
     int titleRight = (int) (textRight - timeWidth - statusIconWidth - Screen.dp(8f));
-    if (!StringUtils.isEmpty(titleText)) {
-      String ellipsizedTitle = TextUtils.ellipsize(titleText, titlePaint, titleRight - textLeft, TextUtils.TruncateAt.END).toString();
-      float titleY = Screen.dp(28f);
-
-      if (!StringUtils.isEmpty(highlightQuery)) {
-        // Draw title with highlight
-        drawHighlightedText(canvas, ellipsizedTitle, textLeft, titleY, titlePaint, highlightQuery);
-      } else {
-        canvas.drawText(ellipsizedTitle, textLeft, titleY, titlePaint);
-      }
+    if (displayTitle != null) {
+      int titleY = Screen.dp(12f);
+      displayTitle.draw(canvas, textLeft, titleY);
     }
 
     // Draw counters on the right side
@@ -511,25 +602,18 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
         canvas.drawText(ellipsizedTyping, textLeft + iconWidth, senderY, senderPaint);
       }
     } else {
-      // Row 2: Draw sender name (white/accent color)
-      if (!StringUtils.isEmpty(senderText)) {
-        if (showingDraft) {
-          // Draw "Draft" in red
-          int savedColor = senderPaint.getColor();
-          senderPaint.setColor(Theme.textRedColor());
-          String ellipsizedSender = TextUtils.ellipsize(senderText, senderPaint, previewRight - textLeft, TextUtils.TruncateAt.END).toString();
-          canvas.drawText(ellipsizedSender, textLeft, senderY, senderPaint);
-          senderPaint.setColor(savedColor);
-        } else {
-          String ellipsizedSender = TextUtils.ellipsize(senderText, senderPaint, previewRight - textLeft, TextUtils.TruncateAt.END).toString();
-          canvas.drawText(ellipsizedSender, textLeft, senderY, senderPaint);
-        }
+      // Row 2: Draw sender name with emoji support
+      if (displaySender != null) {
+        // Convert baseline to top position (senderY is baseline at 46dp, top is ~34dp)
+        int senderTop = (int) senderY - Screen.dp(12f);
+        displaySender.draw(canvas, textLeft, senderTop);
       }
 
-      // Row 3: Draw message preview (gray/light color)
-      if (!StringUtils.isEmpty(previewText)) {
-        String ellipsizedPreview = TextUtils.ellipsize(previewText, previewPaint, previewRight - textLeft, TextUtils.TruncateAt.END).toString();
-        canvas.drawText(ellipsizedPreview, textLeft, previewY, previewPaint);
+      // Row 3: Draw message preview with emoji support
+      if (displayPreview != null) {
+        // Convert baseline to top position (previewY is baseline at 64dp, top is ~52dp)
+        int previewTop = (int) previewY - Screen.dp(12f);
+        displayPreview.draw(canvas, textLeft, previewTop);
       }
     }
 

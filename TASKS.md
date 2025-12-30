@@ -207,6 +207,11 @@ Full stories feature implementation for Telegram-X with complete feature parity.
 | | | Fix: Settings popup Done/Cancel buttons ripple effect (use ?android:attr/colorControlHighlight for theme-adaptive ripple)
 | | | Message search loading indicator (ClearButton spinner in search bar instead of centered ProgressComponentView)
 | | | Fix: Topic filter dialog icon positioning (LEFT_OFFSET_DP 68→18dp to place icons in left padding area)
+| | | Fix: ForumTopicView emoji rendering (use Text class instead of canvas.drawText for proper emoji support)
+| | | Star/Paid reactions support (TdExt.kt, TGStickerObj, TGReaction, TGReactions, Tdlib.java)
+| | | Fix: Premium bot crash on Buy button (TGInlineKeyboard null check + payment form handling)
+| | | Fix: Windows file lock issue (kotlin.compiler.execution.strategy=in-process in gradle.properties)
+| | | View Forum navigation from topic (btn_viewForum menu option when viewing topic via message link)
 
 ## Implementation Notes
 
@@ -236,6 +241,19 @@ Full stories feature implementation for Telegram-X with complete feature parity.
 - `app/src/main/java/org/thunderdog/challegram/component/chat/ChatHeaderView.java` - Added forum topic header support (topic name as title, chat name as subtitle)
 - `app/src/main/java/org/thunderdog/challegram/ui/ProfileController.java` - Added forum toggle for supergroup owners (ToggleSupergroupIsForum)
 - `app/src/main/java/org/thunderdog/challegram/telegram/ForumTopicInfoListener.java` - Extended onForumTopicUpdated to include unreadMentionCount and unreadReactionCount
+- `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicView.java` - Updated to use Text class with FormattedText for proper emoji rendering (custom emoji support)
+- `app/src/main/kotlin/tgx/td/TdExt.kt` - Enabled paid reactions (isUnsupported returns false)
+- `app/src/main/java/org/thunderdog/challegram/component/sticker/TGStickerObj.java` - Added makePaidReactionStar() factory method
+- `app/src/main/java/org/thunderdog/challegram/data/TGReaction.java` - Added paid reaction constructor and initializePaid() method
+- `app/src/main/java/org/thunderdog/challegram/data/TGReactions.java` - Added paid reaction drawable support
+- `app/src/main/java/org/thunderdog/challegram/data/TGInlineKeyboard.java` - Fixed MessageInvoice cast crash, implemented Buy button handler
+- `app/src/main/java/org/thunderdog/challegram/telegram/TdlibUi.java` - Added openPaymentForm() and stars payment methods
+- `gradle.properties` - Added `kotlin.compiler.execution.strategy=in-process` to fix Windows file lock issue
+
+### Windows Build Fix
+The Kotlin compiler daemon was causing persistent "user-mapped section open" errors on Windows. The Kotlin daemon uses memory-mapped files for caching compiled code, and when builds fail or are interrupted, these locks aren't properly released.
+
+**Solution**: Added `kotlin.compiler.execution.strategy=in-process` to `gradle.properties`. This runs the Kotlin compiler in the same JVM as Gradle instead of a separate daemon process, avoiding the memory-mapped file locking issues.
 
 ### Current Status: Build Successful + Tested
 - arm64 APK: `app/build/outputs/apk/arm64/debug/TGX-Example-0.28.2.1778-arm64-v8a-debug.apk`

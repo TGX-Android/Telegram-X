@@ -67,6 +67,13 @@ public class TGStickerObj {
     return o;
   }
 
+  public static TGStickerObj makePaidReactionStar (Tdlib tdlib) {
+    TGStickerObj o = new TGStickerObj(tdlib, null, null, new TdApi.StickerTypeCustomEmoji());
+    o.reactionType = new TdApi.ReactionTypePaid();
+    o.isDefaultPremiumStar = true; // Reuse the same star icon
+    return o;
+  }
+
 
   public TGStickerObj setDisplayScale (float scale) {
     this.displayScale = scale;

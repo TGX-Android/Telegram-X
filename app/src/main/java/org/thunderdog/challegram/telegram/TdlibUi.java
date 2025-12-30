@@ -112,6 +112,7 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.PasscodeController;
 import org.thunderdog.challegram.ui.PasscodeSetupController;
 import org.thunderdog.challegram.ui.PasswordController;
+import org.thunderdog.challegram.ui.PaymentFormController;
 import org.thunderdog.challegram.ui.PhoneController;
 import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
@@ -7933,5 +7934,50 @@ public class TdlibUi extends Handler {
         act.run();
       }
     }
+  }
+
+  // Payment
+
+  public void openPaymentForm (ViewController<?> context, TdApi.PaymentForm paymentForm, TdApi.InputInvoice inputInvoice) {
+    if (paymentForm.type instanceof TdApi.PaymentFormTypeRegular) {
+      PaymentFormController formController = new PaymentFormController(context.context(), tdlib);
+      formController.setArguments(new PaymentFormController.Args(paymentForm, inputInvoice, 0));
+      context.navigateTo(formController);
+    } else if (paymentForm.type instanceof TdApi.PaymentFormTypeStars) {
+      TdApi.PaymentFormTypeStars starsType = (TdApi.PaymentFormTypeStars) paymentForm.type;
+      showStarsPaymentConfirmation(context, paymentForm, inputInvoice, starsType.starCount);
+    } else {
+      UI.showToast(R.string.PaymentUnsupportedType, Toast.LENGTH_SHORT);
+    }
+  }
+
+  private void showStarsPaymentConfirmation (ViewController<?> context, TdApi.PaymentForm paymentForm, TdApi.InputInvoice inputInvoice, long starCount) {
+    String message = Lang.getString(R.string.StarsPayConfirmMessage, starCount);
+    context.showOptions(
+      message,
+      new int[] { R.id.btn_done, R.id.btn_cancel },
+      new String[] { Lang.getString(R.string.StarsPayConfirm, starCount), Lang.getString(R.string.Cancel) },
+      new int[] { ViewController.OptionColor.BLUE, ViewController.OptionColor.NORMAL },
+      new int[] { R.drawable.baseline_star_24, R.drawable.baseline_cancel_24 },
+      (view, optionId) -> {
+        if (optionId == R.id.btn_done) {
+          sendStarsPayment(paymentForm, inputInvoice);
+        }
+        return true;
+      }
+    );
+  }
+
+  private void sendStarsPayment (TdApi.PaymentForm paymentForm, TdApi.InputInvoice inputInvoice) {
+    UI.showToast(R.string.PaymentProcessing, Toast.LENGTH_SHORT);
+    tdlib.send(new TdApi.SendPaymentForm(inputInvoice, paymentForm.id, "", "", null, 0), (result, error) -> {
+      UI.post(() -> {
+        if (error != null) {
+          UI.showToast(Lang.getString(R.string.StarsPaymentFailed, TD.toErrorString(error)), Toast.LENGTH_SHORT);
+        } else {
+          UI.showToast(R.string.StarsPaymentSuccess, Toast.LENGTH_SHORT);
+        }
+      });
+    });
   }
 }
