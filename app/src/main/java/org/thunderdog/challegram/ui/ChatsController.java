@@ -652,8 +652,50 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
           if (storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
             int barHeight = StoryBarView.getFixedBarHeight();
-            storyBarScrollOffset = Math.max(0, Math.min(barHeight, storyBarScrollOffset + dy));
+            // Check if at the top of the list
+            boolean atTop = !recyclerView.canScrollVertically(-1);
+            // Also check using layout manager for more reliable detection
+            RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
+            if (lm instanceof LinearLayoutManager) {
+              int firstPos = ((LinearLayoutManager) lm).findFirstCompletelyVisibleItemPosition();
+              if (firstPos == 0) {
+                atTop = true;
+              }
+            }
+            if (atTop) {
+              storyBarScrollOffset = 0;
+            } else {
+              storyBarScrollOffset = Math.max(0, Math.min(barHeight, storyBarScrollOffset + dy));
+            }
             storyBarView.setTranslationY(-storyBarScrollOffset);
+          }
+        }
+
+        @Override
+        public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+          // When scrolling stops, snap the bar to fully visible or hidden
+          if (newState == RecyclerView.SCROLL_STATE_IDLE && storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
+            int barHeight = StoryBarView.getFixedBarHeight();
+            // Also check if at top when scroll stops
+            boolean atTop = !recyclerView.canScrollVertically(-1);
+            RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
+            if (lm instanceof LinearLayoutManager) {
+              int firstPos = ((LinearLayoutManager) lm).findFirstCompletelyVisibleItemPosition();
+              if (firstPos == 0) {
+                atTop = true;
+              }
+            }
+            if (atTop) {
+              storyBarScrollOffset = 0;
+              storyBarView.animate().translationY(0).setDuration(150).start();
+            } else {
+              // If more than half visible, show fully; otherwise hide fully
+              int targetOffset = storyBarScrollOffset < barHeight / 2 ? 0 : barHeight;
+              if (storyBarScrollOffset != targetOffset) {
+                storyBarScrollOffset = targetOffset;
+                storyBarView.animate().translationY(-targetOffset).setDuration(150).start();
+              }
+            }
           }
         }
       });
@@ -967,8 +1009,50 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
               if (storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
                 int barHeight = StoryBarView.getFixedBarHeight();
-                storyBarScrollOffset = Math.max(0, Math.min(barHeight, storyBarScrollOffset + dy));
+                // Check if at the top of the list
+                boolean atTop = !recyclerView.canScrollVertically(-1);
+                // Also check using layout manager for more reliable detection
+                RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
+                if (lm instanceof LinearLayoutManager) {
+                  int firstPos = ((LinearLayoutManager) lm).findFirstCompletelyVisibleItemPosition();
+                  if (firstPos == 0) {
+                    atTop = true;
+                  }
+                }
+                if (atTop) {
+                  storyBarScrollOffset = 0;
+                } else {
+                  storyBarScrollOffset = Math.max(0, Math.min(barHeight, storyBarScrollOffset + dy));
+                }
                 storyBarView.setTranslationY(-storyBarScrollOffset);
+              }
+            }
+
+            @Override
+            public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+              // When scrolling stops, snap the bar to fully visible or hidden
+              if (newState == RecyclerView.SCROLL_STATE_IDLE && storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
+                int barHeight = StoryBarView.getFixedBarHeight();
+                // Also check if at top when scroll stops
+                boolean atTop = !recyclerView.canScrollVertically(-1);
+                RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
+                if (lm instanceof LinearLayoutManager) {
+                  int firstPos = ((LinearLayoutManager) lm).findFirstCompletelyVisibleItemPosition();
+                  if (firstPos == 0) {
+                    atTop = true;
+                  }
+                }
+                if (atTop) {
+                  storyBarScrollOffset = 0;
+                  storyBarView.animate().translationY(0).setDuration(150).start();
+                } else {
+                  // If more than half visible, show fully; otherwise hide fully
+                  int targetOffset = storyBarScrollOffset < barHeight / 2 ? 0 : barHeight;
+                  if (storyBarScrollOffset != targetOffset) {
+                    storyBarScrollOffset = targetOffset;
+                    storyBarView.animate().translationY(-targetOffset).setDuration(150).start();
+                  }
+                }
               }
             }
           });
@@ -3321,6 +3405,14 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   private void checkCanPostStory () {
     if (storyBarView == null) {
+      return;
+    }
+    long myUserId = tdlib.myUserId();
+    if (myUserId == 0) {
+      // User not loaded yet, retry later
+      tdlib.awaitMyUserOrUnauthorizedState(() -> {
+        executeOnUiThreadOptional(this::checkCanPostStory);
+      });
       return;
     }
     long chatId = tdlib.selfChatId();
