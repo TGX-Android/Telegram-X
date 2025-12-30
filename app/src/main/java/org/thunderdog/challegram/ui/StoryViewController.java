@@ -28,8 +28,6 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -48,11 +46,9 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 
 import tgx.td.Td;
-import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -60,12 +56,9 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
-import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.navigation.HeaderView;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -590,10 +583,23 @@ public class StoryViewController extends ViewController<StoryViewController.Args
       }
     }
 
+    // Show/hide reply input based on story type
+    // Channel stories don't support direct replies (would need linked discussion group)
+    boolean isChannelStory = tdlib.isChannel(currentChatId);
+    if (storyReplyInputView != null) {
+      storyReplyInputView.setVisibility(isChannelStory ? View.GONE : View.VISIBLE);
+    }
+
     // Display caption if present
     if (story.caption != null && story.caption.text != null && !story.caption.text.isEmpty()) {
       captionView.setText(story.caption.text);
       captionView.setVisibility(View.VISIBLE);
+      // Adjust caption bottom margin based on reply input visibility
+      FrameLayoutFix.LayoutParams captionParams = (FrameLayoutFix.LayoutParams) captionView.getLayoutParams();
+      captionParams.bottomMargin = isChannelStory
+        ? Screen.dp(16f) + navigationBarHeight  // No reply input, less margin
+        : Screen.dp(80f) + navigationBarHeight; // Above reply input
+      captionView.setLayoutParams(captionParams);
     } else {
       captionView.setVisibility(View.GONE);
     }
@@ -1004,7 +1010,7 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           updateHeartButtonState();
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+          UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
         }
         resumeProgress();
       });
@@ -1049,7 +1055,7 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           UI.showToast(toastMessage, Toast.LENGTH_SHORT);
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+          UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
         }
       });
     });
@@ -1126,6 +1132,9 @@ public class StoryViewController extends ViewController<StoryViewController.Args
     closeStory();
     releasePlayer();
     setRootView(null);
+    if (storyContentView != null) {
+      storyContentView.destroy();
+    }
   }
 
   // RootFrameLayout.InsetsChangeListener - register/unregister with RootFrameLayout
@@ -1375,13 +1384,13 @@ public class StoryViewController extends ViewController<StoryViewController.Args
       if (currentStoryId <= 0) return;
       pauseProgress();
       
-      tdlib.client().send(new TdApi.GetStoryInteractions(currentStoryId, null, false, false, false, "", 50), result -> {
+      tdlib.client().send(new TdApi.GetStoryInteractions(currentStoryId, "", false, false, false, "", 50), result -> {
         UI.post(() -> {
           if (result.getConstructor() == TdApi.StoryInteractions.CONSTRUCTOR) {
             TdApi.StoryInteractions interactions = (TdApi.StoryInteractions) result;
             if (interactions.interactions.length > 0) {
               StringBuilder viewers = new StringBuilder();
-              viewers.append("Story Viewers (").append(interactions.totalCount).append("):\n");
+              viewers.append(Lang.getString(R.string.StoryViewersTitle, interactions.totalCount)).append(":\n");
               for (int i = 0; i < Math.min(interactions.interactions.length, 10); i++) {
                 TdApi.StoryInteraction interaction = interactions.interactions[i];
                 TdApi.Chat viewerChat = tdlib.chat(Td.getSenderId(interaction.actorId));
@@ -1390,15 +1399,15 @@ public class StoryViewController extends ViewController<StoryViewController.Args
                 }
               }
               if (interactions.interactions.length > 10) {
-                viewers.append("... and ").append(interactions.interactions.length - 10).append(" more");
+                viewers.append(Lang.getString(R.string.ViewersAndMore, interactions.interactions.length - 10));
               }
               UI.showToast(viewers.toString(), Toast.LENGTH_LONG);
             } else {
-              UI.showToast("No viewers yet", Toast.LENGTH_SHORT);
+              UI.showToast(R.string.NoViewersYet, Toast.LENGTH_SHORT);
             }
           } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
             TdApi.Error error = (TdApi.Error) result;
-            UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+            UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
           }
           resumeProgress();
         });
@@ -1421,7 +1430,10 @@ public class StoryViewController extends ViewController<StoryViewController.Args
     boolean canShare = currentStory.canBeForwarded;
     boolean canToggleProfile = currentStory.canToggleIsPostedToChatPage;
     boolean canGetStats = currentStory.canGetStatistics;
-    boolean isOwnStory = currentChatId == tdlib.myUserId();
+    boolean isChannelStory = tdlib.isChannel(currentChatId);
+    // Check if this is "own" story: personal story or channel story posted by this admin
+    // canEdit is true only if the user can manage this story (personal OR channel admin who posted it)
+    boolean isOwnStory = currentChatId == tdlib.selfChatId() || canEdit;
 
     java.util.ArrayList<Integer> ids = new java.util.ArrayList<>();
     java.util.ArrayList<String> strings = new java.util.ArrayList<>();
@@ -1443,10 +1455,13 @@ public class StoryViewController extends ViewController<StoryViewController.Args
       colors.add(OptionColor.NORMAL);
       icons.add(R.drawable.baseline_edit_24);
 
-      ids.add(R.id.btn_storyPrivacy);
-      strings.add(Lang.getString(R.string.StoryPrivacy));
-      colors.add(OptionColor.NORMAL);
-      icons.add(R.drawable.baseline_lock_24);
+      // Privacy option only for personal stories (channel stories don't have privacy settings)
+      if (!isChannelStory) {
+        ids.add(R.id.btn_storyPrivacy);
+        strings.add(Lang.getString(R.string.StoryPrivacy));
+        colors.add(OptionColor.NORMAL);
+        icons.add(R.drawable.baseline_lock_24);
+      }
     }
 
     // Statistics option (if available)
@@ -1562,26 +1577,125 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           close();
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+          UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
         }
       });
     });
   }
 
   private void reportStory () {
-    if (currentStory == null) return;
+    reportStoryWithOption(new byte[0], "");
+  }
 
-    // Use empty optionId for initial report request - server will return available options
-    tdlib.client().send(new TdApi.ReportStory(currentChatId, currentStoryId, new byte[0], ""), result -> {
+  private void reportStoryWithOption (byte[] optionId, String text) {
+    if (currentStory == null) {
+      resumeProgress();
+      return;
+    }
+
+    tdlib.client().send(new TdApi.ReportStory(currentChatId, currentStoryId, optionId, text), result -> {
       runOnUiThreadOptional(() -> {
-        if (result.getConstructor() == TdApi.ReportStoryResultOk.CONSTRUCTOR) {
-          UI.showToast(R.string.StoryReported, Toast.LENGTH_SHORT);
-        } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+        switch (result.getConstructor()) {
+          case TdApi.ReportStoryResultOk.CONSTRUCTOR: {
+            UI.showToast(R.string.StoryReported, Toast.LENGTH_SHORT);
+            resumeProgress();
+            break;
+          }
+          case TdApi.ReportStoryResultOptionRequired.CONSTRUCTOR: {
+            TdApi.ReportStoryResultOptionRequired optionRequired = (TdApi.ReportStoryResultOptionRequired) result;
+            showReportOptionsDialog(optionRequired.title, optionRequired.options);
+            break;
+          }
+          case TdApi.ReportStoryResultTextRequired.CONSTRUCTOR: {
+            TdApi.ReportStoryResultTextRequired textRequired = (TdApi.ReportStoryResultTextRequired) result;
+            showReportTextDialog(textRequired.optionId, textRequired.isOptional);
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            TdApi.Error error = (TdApi.Error) result;
+            UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
+            resumeProgress();
+            break;
+          }
         }
       });
     });
+  }
+
+  private void showReportOptionsDialog (String title, TdApi.ReportOption[] options) {
+    java.util.ArrayList<Integer> ids = new java.util.ArrayList<>();
+    java.util.ArrayList<String> strings = new java.util.ArrayList<>();
+    java.util.ArrayList<Integer> colors = new java.util.ArrayList<>();
+    java.util.ArrayList<Integer> icons = new java.util.ArrayList<>();
+
+    // Store options for callback
+    final TdApi.ReportOption[] reportOptions = options;
+
+    for (int i = 0; i < options.length; i++) {
+      ids.add(i);
+      strings.add(options[i].text);
+      colors.add(OptionColor.NORMAL);
+      icons.add(0);
+    }
+
+    // Cancel option
+    ids.add(-1);
+    strings.add(Lang.getString(R.string.Cancel));
+    colors.add(OptionColor.NORMAL);
+    icons.add(R.drawable.baseline_cancel_24);
+
+    showOptions(
+      title,
+      ids.stream().mapToInt(i -> i).toArray(),
+      strings.toArray(new String[0]),
+      colors.stream().mapToInt(i -> i).toArray(),
+      icons.stream().mapToInt(i -> i).toArray(),
+      (itemView, id) -> {
+        if (id >= 0 && id < reportOptions.length) {
+          reportStoryWithOption(reportOptions[id].id, "");
+        } else {
+          resumeProgress();
+        }
+        return true;
+      }
+    );
+  }
+
+  private void showReportTextDialog (byte[] optionId, boolean isOptional) {
+    android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(context());
+    builder.setTitle(Lang.getString(R.string.ReportDetails));
+
+    final android.widget.EditText input = new android.widget.EditText(context());
+    input.setHint(Lang.getString(R.string.ReportDetailsHint));
+    input.setMaxLines(5);
+    int padding = Screen.dp(16f);
+    android.widget.FrameLayout container = new android.widget.FrameLayout(context());
+    android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(
+      android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+      android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
+    );
+    params.leftMargin = padding;
+    params.rightMargin = padding;
+    input.setLayoutParams(params);
+    container.addView(input);
+    builder.setView(container);
+
+    final byte[] finalOptionId = optionId;
+    builder.setPositiveButton(Lang.getString(R.string.Report), (dialog, which) -> {
+      String text = input.getText().toString();
+      reportStoryWithOption(finalOptionId, text);
+    });
+
+    if (isOptional) {
+      builder.setNeutralButton(Lang.getString(R.string.Skip), (dialog, which) -> {
+        reportStoryWithOption(finalOptionId, "");
+      });
+    }
+
+    builder.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> resumeProgress());
+    builder.setOnCancelListener(dialog -> resumeProgress());
+
+    builder.show();
   }
 
   private void shareStory () {
@@ -1628,7 +1742,7 @@ public class StoryViewController extends ViewController<StoryViewController.Args
               UI.showToast(R.string.StealthModeAlreadyActive, Toast.LENGTH_SHORT);
             }
           } else {
-            UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+            UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
           }
         }
       });
@@ -1719,7 +1833,7 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           }
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+          UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
         }
         resumeProgress();
       });
@@ -1770,7 +1884,7 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           UI.showToast(R.string.StoryPrivacyUpdated, Toast.LENGTH_SHORT);
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+          UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
         }
         resumeProgress();
       });
@@ -1791,7 +1905,7 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           UI.showToast(newState ? R.string.StorySavedToProfile : R.string.StoryRemovedFromProfile, Toast.LENGTH_SHORT);
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+          UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
         }
         resumeProgress();
       });
@@ -1816,7 +1930,7 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           if (error.message.contains("PREMIUM")) {
             UI.showToast(R.string.StoryStatisticsPremiumRequired, Toast.LENGTH_SHORT);
           } else {
-            UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+            UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
           }
           resumeProgress();
         }
@@ -1857,16 +1971,16 @@ public class StoryViewController extends ViewController<StoryViewController.Args
     switch (graph.getConstructor()) {
       case TdApi.StatisticalGraphData.CONSTRUCTOR: {
         TdApi.StatisticalGraphData data = (TdApi.StatisticalGraphData) graph;
-        sb.append("Data available: ").append(data.jsonData.length()).append(" bytes\n");
+        sb.append(Lang.getString(R.string.StoryGraphDataAvailable, data.jsonData.length())).append("\n");
         break;
       }
       case TdApi.StatisticalGraphAsync.CONSTRUCTOR: {
-        sb.append("Loading...\n");
+        sb.append(Lang.getString(R.string.StoryGraphLoading)).append("\n");
         break;
       }
       case TdApi.StatisticalGraphError.CONSTRUCTOR: {
         TdApi.StatisticalGraphError error = (TdApi.StatisticalGraphError) graph;
-        sb.append("Error: ").append(error.errorMessage).append("\n");
+        sb.append(Lang.getString(R.string.StoryGraphError, error.errorMessage)).append("\n");
         break;
       }
     }
@@ -1887,14 +2001,20 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           showAlbumPickerDialog(albums.albums);
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+          UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
           resumeProgress();
         }
       });
     });
   }
 
+  // Store albums for picker callback (album IDs could collide with R.id values)
+  private TdApi.StoryAlbum[] pickerAlbums;
+  private static final int ALBUM_ID_OFFSET = 0x7F000000; // Offset to avoid R.id collision
+
   private void showAlbumPickerDialog (TdApi.StoryAlbum[] albums) {
+    this.pickerAlbums = albums;
+
     java.util.ArrayList<Integer> ids = new java.util.ArrayList<>();
     java.util.ArrayList<String> strings = new java.util.ArrayList<>();
     java.util.ArrayList<Integer> colors = new java.util.ArrayList<>();
@@ -1906,10 +2026,10 @@ public class StoryViewController extends ViewController<StoryViewController.Args
     colors.add(OptionColor.BLUE);
     icons.add(R.drawable.baseline_add_24);
 
-    // Add existing albums
-    for (TdApi.StoryAlbum album : albums) {
-      ids.add(album.id);
-      strings.add(album.name);
+    // Add existing albums with offset to avoid R.id collision
+    for (int i = 0; i < albums.length; i++) {
+      ids.add(ALBUM_ID_OFFSET + i);
+      strings.add(albums[i].name);
       colors.add(OptionColor.NORMAL);
       icons.add(R.drawable.baseline_bookmark_24);
     }
@@ -1929,8 +2049,11 @@ public class StoryViewController extends ViewController<StoryViewController.Args
       (itemView, id) -> {
         if (id == R.id.btn_createAlbum) {
           showCreateAlbumDialog();
-        } else if (id != R.id.btn_cancel) {
-          addToAlbum(id);
+        } else if (id >= ALBUM_ID_OFFSET && pickerAlbums != null) {
+          int index = id - ALBUM_ID_OFFSET;
+          if (index < pickerAlbums.length) {
+            addToAlbum(pickerAlbums[index].id);
+          }
         } else {
           resumeProgress();
         }
@@ -1984,7 +2107,7 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           UI.showToast(R.string.AlbumCreated, Toast.LENGTH_SHORT);
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+          UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
         }
         resumeProgress();
       });
@@ -2004,7 +2127,7 @@ public class StoryViewController extends ViewController<StoryViewController.Args
           UI.showToast(R.string.StoryAddedToAlbum, Toast.LENGTH_SHORT);
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          UI.showToast("Error: " + error.message, Toast.LENGTH_SHORT);
+          UI.showToast(Lang.getString(R.string.StoryError, error.message), Toast.LENGTH_SHORT);
         }
         resumeProgress();
       });

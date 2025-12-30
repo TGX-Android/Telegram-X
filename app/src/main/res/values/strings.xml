@@ -2562,6 +2562,8 @@
   <string name="RemoveReaction">Remove Reaction</string>
   <string name="ReportStory">Report Story</string>
   <string name="StoryReported">Story reported</string>
+  <string name="ReportDetails">Report Details</string>
+  <string name="ReportDetailsHint">Please provide additional details (optional)</string>
   <string name="StealthMode">Stealth Mode</string>
   <string name="StealthModeActivated">Stealth mode activated for 25 minutes</string>
   <string name="StealthModePremiumRequired">Stealth Mode is available for Telegram Premium subscribers</string>
@@ -2607,6 +2609,16 @@
   <string name="AddStoryGallery">Gallery</string>
   <string name="StoryAddCaption">Add a caption…</string>
   <string name="NoAlbumsYet">No albums yet</string>
+  <string name="StoryViewersTitle">Story Viewers (%1$d)</string>
+  <string name="NoViewersYet">No viewers yet</string>
+  <string name="StoryGraphDataAvailable">Data available: %1$d bytes</string>
+  <string name="StoryGraphLoading">Loading…</string>
+  <string name="StoryGraphError">Error: %1$s</string>
+  <string name="StoryError">Error: %1$s</string>
+  <string name="ViewersAndMore">… and %1$d more</string>
+  <string name="StorySelectUsersRequired">Please select at least one person</string>
+  <string name="StoryFileNotFound">File not found: %1$s</string>
+  <string name="StoryUnexpectedError">Unexpected error posting story</string>
   <string name="Create">Create</string>
   <string name="FailureMessageText">This message could not be displayed because of an error. We are very sorry for that.\n\nPlease copy the scary error details below and submit them to @tgandroidtests so we can investigate the issue. Thank you!</string>
   <string name="PrivacyCallsP2PTitle2">Peer-to-Peer in Calls</string>

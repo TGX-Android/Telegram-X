@@ -34,20 +34,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
-import org.thunderdog.challegram.loader.AvatarReceiver;
-import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibCache;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Views;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -250,13 +242,13 @@ public class StoryBarView extends RecyclerView {
       itemView.setActiveStories(activeStories);
       itemView.setOnClickListener(v -> {
         if (clickListener != null && activeStories.stories.length > 0) {
-          // Find the first unread story, or the last one if all are read
+          // Find the first unread story (storyId > maxReadStoryId), or use first story if all read
           int storyIndex = 0;
           for (int i = 0; i < activeStories.stories.length; i++) {
-            // StoryInfo doesn't have isViewed field - need to check differently
-            // For now, just use the first story
-            storyIndex = 0;
-            break;
+            if (activeStories.stories[i].storyId > activeStories.maxReadStoryId) {
+              storyIndex = i;
+              break;
+            }
           }
           clickListener.onStoryClick(
             activeStories.chatId,
@@ -344,12 +336,8 @@ public class StoryBarView extends RecyclerView {
         TdApi.Chat chat = tdlib.chat(activeStories.chatId);
         if (chat != null) {
           avatarView.setChat(tdlib, chat);
-          String name = tdlib.chatTitle(chat);
-          // Truncate name if too long
-          if (name.length() > 10) {
-            name = name.substring(0, 9) + "...";
-          }
-          nameView.setText(name);
+          // Name truncation handled by TextView's ellipsize
+          nameView.setText(tdlib.chatTitle(chat));
         }
 
         // Check if there are unread stories
@@ -422,7 +410,6 @@ public class StoryBarView extends RecyclerView {
       int centerY = avatarTopMargin + avatarSize / 2;
 
       float ringRadius = avatarSize / 2f + Screen.dp(RING_GAP_DP) + Screen.dp(RING_WIDTH_DP) / 2f;
-      float strokeHalf = Screen.dp(RING_WIDTH_DP) / 2f;
 
       ringRect.set(
         centerX - ringRadius,

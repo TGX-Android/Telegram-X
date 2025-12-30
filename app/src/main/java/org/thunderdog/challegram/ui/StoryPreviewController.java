@@ -14,6 +14,8 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.util.Log;
+
+import org.thunderdog.challegram.BuildConfig;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -86,6 +88,11 @@ public class StoryPreviewController extends RecyclerViewController<StoryPreviewC
     super(context, tdlib);
   }
 
+  private boolean isChannelStory () {
+    Args args = getArguments();
+    return args != null && args.targetChatId != 0 && tdlib.isChannel(args.targetChatId);
+  }
+
   @Override
   public int getId () {
     return R.id.controller_storyCompose;
@@ -139,16 +146,19 @@ public class StoryPreviewController extends RecyclerViewController<StoryPreviewC
 
   private void buildCells () {
     List<ListItem> items = new ArrayList<>();
+    boolean isChannel = isChannelStory();
 
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.StoryPosting));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
-    // Privacy setting
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_storyPrivacy,
-        R.drawable.baseline_visibility_24, R.string.StoryPrivacy));
+    // Privacy setting - only for personal stories (channels don't have privacy settings)
+    if (!isChannel) {
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_storyPrivacy,
+          R.drawable.baseline_visibility_24, R.string.StoryPrivacy));
 
-    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    }
 
     // Duration setting
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_storyDuration,
@@ -240,7 +250,9 @@ public class StoryPreviewController extends RecyclerViewController<StoryPreviewC
       }
     }
     selectedUserIds = userIds.get();
-    Log.d(TAG, "Selected " + selectedUserIds.length + " users for story privacy");
+    if (BuildConfig.DEBUG) {
+      Log.d(TAG, "Selected " + selectedUserIds.length + " users for story privacy");
+    }
     // Update the privacy text to show count
     if (adapter != null) {
       adapter.updateValuedSettingById(R.id.btn_storyPrivacy);
@@ -342,11 +354,13 @@ public class StoryPreviewController extends RecyclerViewController<StoryPreviewC
     String filePath = args.filePath;
     boolean isVideo = args.isVideo;
 
-    Log.d(TAG, "postStory: filePath=" + filePath + ", isVideo=" + isVideo);
+    if (BuildConfig.DEBUG) {
+      Log.d(TAG, "postStory: filePath=" + filePath + ", isVideo=" + isVideo);
+    }
 
     // Validate selected users if PRIVACY_SELECTED is chosen
     if (selectedPrivacy == PRIVACY_SELECTED && selectedUserIds.length == 0) {
-      UI.showToast("Please select at least one person", Toast.LENGTH_SHORT);
+      UI.showToast(R.string.StorySelectUsersRequired, Toast.LENGTH_SHORT);
       openContactPicker();
       return;
     }
@@ -354,42 +368,57 @@ public class StoryPreviewController extends RecyclerViewController<StoryPreviewC
     // Check if file exists
     java.io.File file = new java.io.File(filePath);
     if (!file.exists()) {
-      Log.e(TAG, "postStory: File does not exist: " + filePath);
-      UI.showToast("File not found: " + filePath, Toast.LENGTH_LONG);
+      if (BuildConfig.DEBUG) {
+        Log.e(TAG, "postStory: File does not exist: " + filePath);
+      }
+      UI.showToast(Lang.getString(R.string.StoryFileNotFound, filePath), Toast.LENGTH_LONG);
       return;
     }
-    Log.d(TAG, "postStory: File exists, size=" + file.length() + " bytes");
+    if (BuildConfig.DEBUG) {
+      Log.d(TAG, "postStory: File exists, size=" + file.length() + " bytes");
+    }
 
     TdApi.InputStoryContent content;
 
     if (isVideo) {
-      Log.d(TAG, "postStory: Creating video content, duration=" + args.videoDuration);
+      if (BuildConfig.DEBUG) {
+        Log.d(TAG, "postStory: Creating video content, duration=" + args.videoDuration);
+      }
       TdApi.InputFile inputFile = new TdApi.InputFileLocal(filePath);
       content = new TdApi.InputStoryContentVideo(inputFile, new int[0], args.videoDuration, 0.0, false);
     } else {
-      Log.d(TAG, "postStory: Creating photo content with processing");
+      if (BuildConfig.DEBUG) {
+        Log.d(TAG, "postStory: Creating photo content with processing");
+      }
       // Use PhotoGenerationInfo to trigger proper image processing/resizing
       // Stories require 1080x1920 (9:16), so use 1920 as resolution limit
       long lastModified = file.lastModified();
       TdApi.InputFile inputFile = PhotoGenerationInfo.newFile(filePath, 0, lastModified, false, 1920);
-      Log.d(TAG, "postStory: Created InputFileGenerated for photo processing");
+      if (BuildConfig.DEBUG) {
+        Log.d(TAG, "postStory: Created InputFileGenerated for photo processing");
+      }
       content = new TdApi.InputStoryContentPhoto(inputFile, new int[0]);
     }
 
-    // Use targetChatId for channel stories, otherwise myUserId for personal stories
-    long chatId = args.targetChatId != 0 ? args.targetChatId : tdlib.myUserId();
-    TdApi.StoryPrivacySettings privacy = buildPrivacySettings();
+    // Use targetChatId for channel stories, otherwise selfChatId for personal stories
+    long chatId = args.targetChatId != 0 ? args.targetChatId : tdlib.selfChatId();
+    // Privacy settings only apply to personal stories, not channel stories
+    TdApi.StoryPrivacySettings privacy = isChannelStory() ? null : buildPrivacySettings();
 
     // For non-premium users, force 24h duration
     int duration = selectedDuration;
     if (!tdlib.hasPremium() && duration != DURATION_24H) {
-      Log.w(TAG, "postStory: Non-premium user, forcing 24h duration");
+      if (BuildConfig.DEBUG) {
+        Log.w(TAG, "postStory: Non-premium user, forcing 24h duration");
+      }
       duration = DURATION_24H;
     }
 
-    Log.d(TAG, "postStory: chatId=" + chatId + ", duration=" + duration + ", saveToProfile=" + saveToProfile);
-    if (selectedPrivacy == PRIVACY_SELECTED) {
-      Log.d(TAG, "postStory: Privacy=SELECTED, userIds=" + java.util.Arrays.toString(selectedUserIds));
+    if (BuildConfig.DEBUG) {
+      Log.d(TAG, "postStory: chatId=" + chatId + ", duration=" + duration + ", saveToProfile=" + saveToProfile);
+      if (selectedPrivacy == PRIVACY_SELECTED) {
+        Log.d(TAG, "postStory: Privacy=SELECTED, userIds=" + java.util.Arrays.toString(selectedUserIds));
+      }
     }
 
     UI.showToast(R.string.StoryPosting, Toast.LENGTH_SHORT);
@@ -407,20 +436,28 @@ public class StoryPreviewController extends RecyclerViewController<StoryPreviewC
       saveToProfile,
       false  // protectContent
     ), result -> {
-      Log.d(TAG, "postStory: Result constructor=" + result.getConstructor());
+      if (BuildConfig.DEBUG) {
+        Log.d(TAG, "postStory: Result constructor=" + result.getConstructor());
+      }
       runOnUiThreadOptional(() -> {
         if (result.getConstructor() == TdApi.Story.CONSTRUCTOR) {
           TdApi.Story story = (TdApi.Story) result;
-          Log.d(TAG, "postStory: Success! storyId=" + story.id);
+          if (BuildConfig.DEBUG) {
+            Log.d(TAG, "postStory: Success! storyId=" + story.id);
+          }
           UI.showToast(R.string.StoryPosted, Toast.LENGTH_SHORT);
           navigateBack();
         } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           TdApi.Error error = (TdApi.Error) result;
-          Log.e(TAG, "postStory: Error code=" + error.code + ", message=" + error.message);
+          if (BuildConfig.DEBUG) {
+            Log.e(TAG, "postStory: Error code=" + error.code + ", message=" + error.message);
+          }
           UI.showToast(Lang.getString(R.string.StoryPostError) + ": " + error.message, Toast.LENGTH_LONG);
         } else {
-          Log.e(TAG, "postStory: Unexpected result type: " + result.getConstructor());
-          UI.showToast("Unexpected error posting story", Toast.LENGTH_LONG);
+          if (BuildConfig.DEBUG) {
+            Log.e(TAG, "postStory: Unexpected result type: " + result.getConstructor());
+          }
+          UI.showToast(R.string.StoryUnexpectedError, Toast.LENGTH_LONG);
         }
       });
     });
