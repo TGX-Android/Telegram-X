@@ -43,6 +43,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.StoryBarView;
 import org.thunderdog.challegram.widget.SuggestedChatsView;
 
 public class ChatsViewHolder extends RecyclerView.ViewHolder {
@@ -58,6 +59,8 @@ public class ChatsViewHolder extends RecyclerView.ViewHolder {
         return SettingHolder.measureHeightForType(ListItem.TYPE_LIST_INFO_VIEW);
       case ChatsAdapter.VIEW_TYPE_SUGGESTED_CHATS:
         return Screen.dp(SuggestedChatsView.DEFAULT_HEIGHT_DP);
+      case ChatsAdapter.VIEW_TYPE_STORY_BAR:
+        return StoryBarView.getFixedBarHeight();
       default:
         throw new IllegalArgumentException("viewType = " + viewType);
     }
@@ -133,6 +136,17 @@ public class ChatsViewHolder extends RecyclerView.ViewHolder {
         view.setId(R.id.btn_chatsSuggestion);
         view.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         view.setOnClickListener(parentController);
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new ChatsViewHolder(view);
+      }
+      case ChatsAdapter.VIEW_TYPE_STORY_BAR: {
+        StoryBarView view = new StoryBarView(context, tdlib);
+        view.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, StoryBarView.getFixedBarHeight()));
+        if (parentController != null) {
+          parentController.setStoryBarViewFromAdapter(view);
+        }
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(view);
         }

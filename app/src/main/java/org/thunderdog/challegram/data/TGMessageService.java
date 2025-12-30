@@ -70,6 +70,45 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageUsersShared usersShared) {
+    super(context, msg);
+    setTextCreator(() -> {
+      int count = usersShared.users != null ? usersShared.users.length : 0;
+      if (count == 1) {
+        TdApi.SharedUser sharedUser = usersShared.users[0];
+        // firstName/lastName are only filled for bots, so get from cache
+        String name = tdlib.cache().userName(sharedUser.userId);
+        if (StringUtils.isEmpty(name)) {
+          name = TD.getUserName(sharedUser.firstName, sharedUser.lastName);
+        }
+        if (StringUtils.isEmpty(name)) {
+          name = "User";
+        }
+        return getText(R.string.YouSharedUser, new BoldArgument(name));
+      } else {
+        return getPlural(R.string.YouSharedUsers, count);
+      }
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatShared chatShared) {
+    super(context, msg);
+    setTextCreator(() -> {
+      // title is only filled for bots, so get from cache
+      String title = null;
+      if (chatShared.chat != null) {
+        title = tdlib.chatTitle(chatShared.chat.chatId);
+        if (StringUtils.isEmpty(title)) {
+          title = chatShared.chat.title;
+        }
+      }
+      if (StringUtils.isEmpty(title)) {
+        title = "Chat";
+      }
+      return getText(R.string.YouSharedChat, new BoldArgument(title));
+    });
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageGiftedPremium giftedPremium) {
     super(context, msg);
     String amount = CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount);

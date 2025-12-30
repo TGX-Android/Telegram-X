@@ -8283,6 +8283,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageContactRegistered.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageContactRegistered) content);
         }
+        case TdApi.MessageUsersShared.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageUsersShared) content);
+        }
+        case TdApi.MessageChatShared.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatShared) content);
+        }
         case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatChangePhoto) content);
         }
@@ -8373,6 +8379,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
           return new TGMessageGift(context, msg, (TdApi.MessagePremiumGiftCode) content);
         }
+        case TdApi.MessageGift.CONSTRUCTOR: {
+          return new TGMessageGiftRegular(context, msg, (TdApi.MessageGift) content);
+        }
         case TdApi.MessageGiveawayWinners.CONSTRUCTOR: {
           return new TGMessageGiveawayWinners(context, msg, (TdApi.MessageGiveawayWinners) content);
         }
@@ -8390,11 +8399,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageChatSetBackground.CONSTRUCTOR:
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
         case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
-        case TdApi.MessageUsersShared.CONSTRUCTOR:
-        case TdApi.MessageChatShared.CONSTRUCTOR:
         case TdApi.MessagePaidMedia.CONSTRUCTOR:
         case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
-        case TdApi.MessageGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
         case TdApi.MessageUpgradedGiftPurchaseOfferDeclined.CONSTRUCTOR:

@@ -3800,10 +3800,18 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
       case TdApi.InternalLinkTypeMainWebApp.CONSTRUCTOR:
 
-      case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
-
       case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR: {
+        showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+        break;
+      }
+
+      case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeInvoice invoice = (TdApi.InternalLinkTypeInvoice) linkType;
+        openPaymentForm(context, invoice.invoiceName, openParameters, after);
+        break;
+      }
+
       case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR: {
         TdApi.InternalLinkTypeBuyStars buyStars = (TdApi.InternalLinkTypeBuyStars) linkType;
         SettingsStarsController starsController = new SettingsStarsController(context.context(), tdlib);
@@ -7976,6 +7984,30 @@ public class TdlibUi extends Handler {
           UI.showToast(Lang.getString(R.string.StarsPaymentFailed, TD.toErrorString(error)), Toast.LENGTH_SHORT);
         } else {
           UI.showToast(R.string.StarsPaymentSuccess, Toast.LENGTH_SHORT);
+        }
+      });
+    });
+  }
+
+  public void openPaymentForm (TdlibDelegate context, String invoiceName, @Nullable UrlOpenParameters openParameters, @Nullable RunnableBool after) {
+    UI.showToast(R.string.LoadingPaymentForm, Toast.LENGTH_SHORT);
+    TdApi.InputInvoiceName inputInvoice = new TdApi.InputInvoiceName(invoiceName);
+    tdlib.send(new TdApi.GetPaymentForm(inputInvoice, null), (result, error) -> {
+      UI.post(() -> {
+        if (error != null) {
+          UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+          if (after != null) {
+            after.runWithBool(false);
+          }
+        } else {
+          TdApi.PaymentForm paymentForm = (TdApi.PaymentForm) result;
+          ViewController<?> controller = context.context().navigation().getCurrentStackItem();
+          if (controller != null) {
+            openPaymentForm(controller, paymentForm, inputInvoice);
+          }
+          if (after != null) {
+            after.runWithBool(true);
+          }
         }
       });
     });

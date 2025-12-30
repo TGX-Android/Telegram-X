@@ -7790,6 +7790,71 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  private TdApi.KeyboardButtonTypeRequestUsers pendingRequestUsers;
+  private long pendingRequestUsersMessageId;
+  private boolean pendingRequestUsersOneTime;
+
+  @Override
+  public void onRequestUsers (final boolean oneTime, TdApi.KeyboardButtonTypeRequestUsers requestUsers) {
+    if (chat == null || commandsMessageId == 0) return;
+
+    pendingRequestUsers = requestUsers;
+    pendingRequestUsersMessageId = commandsMessageId;
+    pendingRequestUsersOneTime = oneTime;
+
+    ContactsController c = new ContactsController(context, tdlib);
+    c.initWithMode(ContactsController.MODE_PICK);
+    c.setArguments(new ContactsController.Args(new SenderPickerDelegate() {
+      @Override
+      public boolean onSenderPick (ContactsController context, View view, TdApi.MessageSender senderId) {
+        long userId = Td.getSenderId(senderId);
+        if (userId != 0) {
+          shareUsersWithBot(new long[] { userId });
+        }
+        return true;
+      }
+
+      @Override
+      public boolean allowGlobalSearch () {
+        return true;
+      }
+    }));
+    navigateTo(c);
+  }
+
+  private void shareUsersWithBot (long[] userIds) {
+    if (chat == null || pendingRequestUsers == null) return;
+
+    // Store user name before sending to show in toast
+    final String userName = userIds.length == 1 ? tdlib.cache().userName(userIds[0]) : null;
+
+    tdlib.send(new TdApi.ShareUsersWithBot(chat.id, pendingRequestUsersMessageId, pendingRequestUsers.id, userIds, false), (result, error) -> {
+      UI.post(() -> {
+        if (error != null) {
+          UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+        } else {
+          // Show confirmation toast with user name
+          if (userIds.length == 1 && !StringUtils.isEmpty(userName)) {
+            UI.showToast(Lang.getString(R.string.YouSharedUser, userName), Toast.LENGTH_SHORT);
+          } else if (userIds.length > 1) {
+            UI.showToast(Lang.plural(R.string.YouSharedUsers, userIds.length), Toast.LENGTH_SHORT);
+          }
+          if (pendingRequestUsersOneTime) {
+            onDestroyCommandKeyboard();
+          }
+        }
+        pendingRequestUsers = null;
+        pendingRequestUsersMessageId = 0;
+      });
+    });
+  }
+
+  @Override
+  public void onRequestChat (final boolean oneTime, TdApi.KeyboardButtonTypeRequestChat requestChat) {
+    // Chat picker not yet implemented - show toast
+    UI.showToast(R.string.InternalUrlUnsupported, Toast.LENGTH_SHORT);
+  }
+
   private GoogleApiClient googleClient;
 
   private void closeGoogleClient () {

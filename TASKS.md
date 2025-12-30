@@ -212,6 +212,42 @@ Full stories feature implementation for Telegram-X with complete feature parity.
 | | | Fix: Premium bot crash on Buy button (TGInlineKeyboard null check + payment form handling)
 | | | Fix: Windows file lock issue (kotlin.compiler.execution.strategy=in-process in gradle.properties)
 | | | View Forum navigation from topic (btn_viewForum menu option when viewing topic via message link)
+| | | Stories Settings screen (SettingsStoriesController - new settings section)
+| | | Customizable story ring colors (StoryColorPickerController - 1-3 color gradient picker)
+| | | Optional "Add Story" button border (SETTING_FLAG_SHOW_ADD_STORY_BORDER)
+| | | Story bar as RecyclerView item (scrolls with chat list instead of overlay)
+
+## Stories Settings Implementation
+
+### New Files
+- `app/src/main/java/org/thunderdog/challegram/ui/SettingsStoriesController.java` - Main stories settings screen with Visibility, Appearance, Behavior sections
+- `app/src/main/java/org/thunderdog/challegram/ui/StoryColorPickerController.java` - Color picker for story ring gradient (1-3 colors, visual HSV picker, live preview)
+
+### Modified Files (Stories Settings)
+- `app/src/main/java/org/thunderdog/challegram/unsorted/Settings.java` - Added SETTING_FLAG_SHOW_ADD_STORY_BORDER, getStoryRingColors(), setStoryRingColors(), DEFAULT_STORY_RING_COLORS
+- `app/src/main/java/org/thunderdog/challegram/ui/SettingsController.java` - Added Stories menu item
+- `app/src/main/java/org/thunderdog/challegram/ui/SettingsThemeController.java` - Removed story settings (moved to new screen)
+- `app/src/main/java/org/thunderdog/challegram/widget/StoryBarView.java` - Uses Settings for border toggle and ring colors
+- `app/src/main/java/org/thunderdog/challegram/widget/AvatarView.java` - Uses Settings for ring colors
+- `app/src/main/res/values/strings.xml` - Added StoriesSettings, Appearance, Behavior, etc.
+- `app/src/main/res/values/ids.xml` - Added story settings IDs
+
+### Story Bar as List Item (scrolls with chat list)
+
+Refactored story bar from overlay to RecyclerView item so it scrolls naturally with the chat list.
+
+#### Modified Files
+- `app/src/main/java/org/thunderdog/challegram/component/dialogs/ChatsAdapter.java`:
+  - Added VIEW_TYPE_STORY_BAR = 4
+  - Added hasStoryBar(), setShowStoryBar(), setActiveStories(), setCanPostStory() methods
+  - Updated getItemCount(), getItemViewType(), position calculation methods
+- `app/src/main/java/org/thunderdog/challegram/component/dialogs/ChatsViewHolder.java`:
+  - Added VIEW_TYPE_STORY_BAR case in measureHeightForType() and create()
+- `app/src/main/java/org/thunderdog/challegram/ui/ChatsController.java`:
+  - Added setStoryBarViewFromAdapter() to receive view from adapter
+  - Replaced overlay creation with adapter.setShowStoryBar(true)
+  - Removed padding updates and scroll translation logic
+  - Updated loadActiveStories(), checkCanPostStory() to use adapter methods
 
 ## Implementation Notes
 
@@ -279,3 +315,107 @@ Running on emulator (Medium_Phone_API_36.1). Each topic now shows only its own m
 - [x] User typing in topics - Show typing indicator per-topic instead of per-chat
 
 All major forum topics features have been implemented.
+
+---
+
+## Bug Fixes
+
+### InternalLinkTypeInvoice Crash Fix
+Fixed ClassCastException when opening invoice links. The crash occurred because `InternalLinkTypeInvoice` was falling through to `InternalLinkTypeBuyStars` case in the switch statement, causing an invalid cast.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/telegram/TdlibUi.java`:
+  - Separated `InternalLinkTypeInvoice` from `InternalLinkTypeBuyStars` cases
+  - Added new `openPaymentForm(TdlibDelegate, String invoiceName, ...)` method
+  - Invoice links now properly open payment forms via `GetPaymentForm` API
+
+### MessageGift Support
+Added support for the `MessageGift` message type which was previously showing as "Unsupported message".
+
+**Files Created:**
+- `app/src/main/java/org/thunderdog/challegram/data/TGMessageGiftRegular.java` - Handler for regular gift messages (extends TGMessageGiveawayBase)
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/data/TGMessage.java`:
+  - Added case for `MessageGift.CONSTRUCTOR` → `TGMessageGiftRegular`
+  - Removed `MessageGift` from unsupported message types list
+- `app/src/main/res/values/strings.xml` - Added gift-related strings:
+  - GiftReceived, GiftSent, GiftConverted, GiftUpgraded, GiftRefunded
+  - ViewGift, xGiftValue, xGiftCanBeSold
+
+### Visual HSV Color Picker
+Replaced hex keyboard input with visual HSV color picker for story ring color customization.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/StoryColorPickerController.java`:
+  - Added `ColorPickerPopupView` inner class with:
+    - Saturation/Value gradient square
+    - Hue rainbow bar
+    - Color preview circle
+    - Cancel/Done buttons
+  - Touch handling for dragging color selection
+
+### Choose Gift Recipient Button Fix
+Fixed "Choose Gift Recipient" keyboard button (and similar bot buttons) doing nothing on click.
+
+**Root Cause:** `CommandKeyboardLayout.onClick` was missing handlers for `KeyboardButtonTypeRequestUsers` and `KeyboardButtonTypeRequestChat` button types.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/component/chat/CommandKeyboardLayout.java`:
+  - Added cases for `KeyboardButtonTypeRequestUsers` and `KeyboardButtonTypeRequestChat`
+  - Added `onRequestUsers()` and `onRequestChat()` to `Callback` interface
+- `app/src/main/java/org/thunderdog/challegram/ui/MessagesController.java`:
+  - Implemented `onRequestUsers()` - opens contact picker, then calls `ShareUsersWithBot` API
+  - Implemented `onRequestChat()` - shows "not yet supported" (chat picker not implemented)
+
+**TDLib Function Used:**
+- `ShareUsersWithBot(chatId, messageId, buttonId, sharedUserIds, onlyCheck)` - shares selected users with the bot after pressing a `KeyboardButtonTypeRequestUsers` button
+
+### Contact Picker Navigation Fix
+Fixed contact picker not navigating back after selecting a contact for "Choose Gift Recipient" button.
+
+**Root Cause:** `ContactsController.onFoundChatClick()` wasn't calling `navigateBack()` after delegate callback.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/ContactsController.java`:
+  - Added `navigateBack()` call after `delegate.onSenderPick()` returns true
+
+### MessageUsersShared / MessageChatShared Support
+Added support for `MessageUsersShared` and `MessageChatShared` service message types which were showing as "Unsupported message".
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/data/TGMessageService.java`:
+  - Added constructor for `MessageUsersShared` - shows "You shared [user name]"
+  - Added constructor for `MessageChatShared` - shows "You shared [chat name]"
+- `app/src/main/java/org/thunderdog/challegram/data/TGMessage.java`:
+  - Added cases for `MessageUsersShared` and `MessageChatShared`
+  - Removed from unsupported message types list
+- `app/src/main/res/values/strings.xml`:
+  - Added `YouSharedUser`, `YouSharedUsers`, `YouSharedChat` strings
+
+### User Sharing Confirmation Toast
+Added toast notification when sharing user with bot to provide UX feedback.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/MessagesController.java`:
+  - Added toast showing "You shared [user name]" after successful ShareUsersWithBot call
+
+### Payment Card Input Validation & Formatting
+Fixed payment card input fields lacking proper validation and formatting.
+
+**Issues Fixed:**
+- Card number, expiry, CVC fields now show numeric keyboard
+- Card number auto-formats as `XXXX XXXX XXXX XXXX`
+- Expiry date auto-formats as `MM/YY`
+- CVC limited to 3-4 digits
+- Card holder shows text keyboard with auto-capitalization
+- Cannot type letters/symbols in numeric fields
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/PaymentFormController.java`:
+  - Added imports for `Editable`, `InputFilter`, `InputType`, `TextWatcher`
+  - Overrode `modifyEditText()` in adapter to configure each field:
+    - Card number: `TYPE_CLASS_PHONE` + custom filter (digits/spaces) + formatting TextWatcher
+    - Expiry: `TYPE_CLASS_PHONE` + custom filter (digits/slash) + formatting TextWatcher
+    - CVC: `TYPE_CLASS_NUMBER` + max length 4
+    - Card holder: `TYPE_CLASS_TEXT | TYPE_TEXT_FLAG_CAP_CHARACTERS`

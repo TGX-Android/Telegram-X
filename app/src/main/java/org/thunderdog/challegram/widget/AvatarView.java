@@ -63,12 +63,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
   private static final int RING_WIDTH_DP = 2;
   private static final int RING_GAP_DP = 2;
 
-  // Story ring gradient colors
-  private static final int[] STORY_GRADIENT_COLORS = {
-    0xFF7B68EE, // Medium slate blue
-    0xFF00CED1, // Dark turquoise
-    0xFF00FA9A  // Medium spring green
-  };
+  // Story ring colors
   private static final int STORY_READ_COLOR = 0xFFAAAAAA;
 
   private int flags;
@@ -426,9 +421,10 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       int width = getWidth();
       int height = getHeight();
       if (width > 0 && height > 0) {
+        int[] colors = Settings.instance().getStoryRingColors();
         LinearGradient gradient = new LinearGradient(
           0, 0, width, height,
-          STORY_GRADIENT_COLORS,
+          colors,
           null,
           Shader.TileMode.CLAMP
         );

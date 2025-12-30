@@ -184,7 +184,30 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   private @Nullable ChatsRecyclerView chatsView;
   private ChatsAdapter adapter;
   private @Nullable StoryBarView storyBarView;
-  private int storyBarScrollOffset = 0;
+
+  /**
+   * Called by ChatsViewHolder when it creates a StoryBarView.
+   * Sets up the click listener and stores the reference.
+   */
+  public void setStoryBarViewFromAdapter (StoryBarView view) {
+    this.storyBarView = view;
+    if (view != null) {
+      view.setClickListener(new StoryBarView.StoryClickListener() {
+        @Override
+        public void onStoryClick (long chatId, int storyId, List<TdApi.ChatActiveStories> allStories, int position) {
+          tdlib.ui().openStory(ChatsController.this, chatId, storyId, null, allStories, position);
+        }
+        @Override
+        public void onAddStoryClick () {
+          openStoryCompose();
+        }
+      });
+      // Update with current data if available
+      if (adapter != null) {
+        adapter.setStoryBarView(view);
+      }
+    }
+  }
 
   private @Nullable Poller<TdApi.Chats> chatFolderNewChatsPoller;
 
@@ -621,84 +644,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
     // Add story bar for main chat list (only if stories are not hidden)
     if (isBaseController() && filter == null && chatList().getConstructor() == TdApi.ChatListMain.CONSTRUCTOR && !Settings.instance().hideStories()) {
-      storyBarView = new StoryBarView(context, tdlib);
-      storyBarView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, StoryBarView.getFixedBarHeight()));
-      storyBarView.setClickListener(new StoryBarView.StoryClickListener() {
-        @Override
-        public void onStoryClick (long chatId, int storyId, List<TdApi.ChatActiveStories> allStories, int position) {
-          tdlib.ui().openStory(ChatsController.this, chatId, storyId, null, allStories, position);
-        }
-        @Override
-        public void onAddStoryClick () {
-          openStoryCompose();
-        }
-      });
-      storyBarView.setVisibilityChangeListener(visible -> {
-        int topPadding = visible ? StoryBarView.getFixedBarHeight() : 0;
-        chatsView.setPadding(chatsView.getPaddingLeft(), topPadding, chatsView.getPaddingRight(), chatsView.getPaddingBottom());
-        // Reset translation when visibility changes
-        if (storyBarView != null) {
-          storyBarView.setTranslationY(0);
-          storyBarScrollOffset = 0;
-        }
-      });
-      contentView.addView(storyBarView);
-      // Start with no padding - will be updated when stories load
-      chatsView.setClipToPadding(false);
-
-      // Add scroll listener to make story bar scroll with the list
-      chatsView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-        @Override
-        public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-          if (storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
-            int barHeight = StoryBarView.getFixedBarHeight();
-            // Check if at the top of the list
-            boolean atTop = !recyclerView.canScrollVertically(-1);
-            // Also check using layout manager for more reliable detection
-            RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
-            if (lm instanceof LinearLayoutManager) {
-              int firstPos = ((LinearLayoutManager) lm).findFirstCompletelyVisibleItemPosition();
-              if (firstPos == 0) {
-                atTop = true;
-              }
-            }
-            if (atTop) {
-              storyBarScrollOffset = 0;
-            } else {
-              storyBarScrollOffset = Math.max(0, Math.min(barHeight, storyBarScrollOffset + dy));
-            }
-            storyBarView.setTranslationY(-storyBarScrollOffset);
-          }
-        }
-
-        @Override
-        public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
-          // When scrolling stops, snap the bar to fully visible or hidden
-          if (newState == RecyclerView.SCROLL_STATE_IDLE && storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
-            int barHeight = StoryBarView.getFixedBarHeight();
-            // Also check if at top when scroll stops
-            boolean atTop = !recyclerView.canScrollVertically(-1);
-            RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
-            if (lm instanceof LinearLayoutManager) {
-              int firstPos = ((LinearLayoutManager) lm).findFirstCompletelyVisibleItemPosition();
-              if (firstPos == 0) {
-                atTop = true;
-              }
-            }
-            if (atTop) {
-              storyBarScrollOffset = 0;
-              storyBarView.animate().translationY(0).setDuration(150).start();
-            } else {
-              // If more than half visible, show fully; otherwise hide fully
-              int targetOffset = storyBarScrollOffset < barHeight / 2 ? 0 : barHeight;
-              if (storyBarScrollOffset != targetOffset) {
-                storyBarScrollOffset = targetOffset;
-                storyBarView.animate().translationY(-targetOffset).setDuration(150).start();
-              }
-            }
-          }
-        }
-      });
+      // Enable story bar in adapter - it will create the view as a list item
+      adapter.setShowStoryBar(true);
 
       // Load active stories and check if user can post stories
       loadActiveStories();
@@ -975,97 +922,15 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       return;
     }
     runOnUiThreadOptional(() -> {
-      if (visible && storyBarView == null && contentView != null) {
-        // Create story bar
-        storyBarView = new StoryBarView(context(), tdlib);
-        storyBarView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, StoryBarView.getFixedBarHeight()));
-        storyBarView.setClickListener(new StoryBarView.StoryClickListener() {
-          @Override
-          public void onStoryClick (long chatId, int storyId, List<TdApi.ChatActiveStories> allStories, int position) {
-            tdlib.ui().openStory(ChatsController.this, chatId, storyId, null, allStories, position);
-          }
-          @Override
-          public void onAddStoryClick () {
-            openStoryCompose();
-          }
-        });
-        storyBarView.setVisibilityChangeListener(barVisible -> {
-          if (chatsView != null) {
-            int topPadding = barVisible ? StoryBarView.getFixedBarHeight() : 0;
-            chatsView.setPadding(chatsView.getPaddingLeft(), topPadding, chatsView.getPaddingRight(), chatsView.getPaddingBottom());
-          }
-          // Reset translation when visibility changes
-          if (storyBarView != null) {
-            storyBarView.setTranslationY(0);
-            storyBarScrollOffset = 0;
-          }
-        });
-        contentView.addView(storyBarView);
-        if (chatsView != null) {
-          chatsView.setClipToPadding(false);
-          // Add scroll listener to make story bar scroll with the list
-          chatsView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-              if (storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
-                int barHeight = StoryBarView.getFixedBarHeight();
-                // Check if at the top of the list
-                boolean atTop = !recyclerView.canScrollVertically(-1);
-                // Also check using layout manager for more reliable detection
-                RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
-                if (lm instanceof LinearLayoutManager) {
-                  int firstPos = ((LinearLayoutManager) lm).findFirstCompletelyVisibleItemPosition();
-                  if (firstPos == 0) {
-                    atTop = true;
-                  }
-                }
-                if (atTop) {
-                  storyBarScrollOffset = 0;
-                } else {
-                  storyBarScrollOffset = Math.max(0, Math.min(barHeight, storyBarScrollOffset + dy));
-                }
-                storyBarView.setTranslationY(-storyBarScrollOffset);
-              }
-            }
-
-            @Override
-            public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
-              // When scrolling stops, snap the bar to fully visible or hidden
-              if (newState == RecyclerView.SCROLL_STATE_IDLE && storyBarView != null && storyBarView.getVisibility() == View.VISIBLE) {
-                int barHeight = StoryBarView.getFixedBarHeight();
-                // Also check if at top when scroll stops
-                boolean atTop = !recyclerView.canScrollVertically(-1);
-                RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
-                if (lm instanceof LinearLayoutManager) {
-                  int firstPos = ((LinearLayoutManager) lm).findFirstCompletelyVisibleItemPosition();
-                  if (firstPos == 0) {
-                    atTop = true;
-                  }
-                }
-                if (atTop) {
-                  storyBarScrollOffset = 0;
-                  storyBarView.animate().translationY(0).setDuration(150).start();
-                } else {
-                  // If more than half visible, show fully; otherwise hide fully
-                  int targetOffset = storyBarScrollOffset < barHeight / 2 ? 0 : barHeight;
-                  if (storyBarScrollOffset != targetOffset) {
-                    storyBarScrollOffset = targetOffset;
-                    storyBarView.animate().translationY(-targetOffset).setDuration(150).start();
-                  }
-                }
-              }
-            }
-          });
-        }
-        loadActiveStories();
-        checkCanPostStory();
-      } else if (!visible && storyBarView != null && contentView != null) {
-        // Remove story bar
-        contentView.removeView(storyBarView);
-        storyBarView = null;
-        storyBarScrollOffset = 0;
-        if (chatsView != null) {
-          chatsView.setPadding(chatsView.getPaddingLeft(), 0, chatsView.getPaddingRight(), chatsView.getPaddingBottom());
+      if (adapter != null) {
+        boolean currentlyVisible = adapter.hasStoryBar();
+        if (visible && !currentlyVisible) {
+          adapter.setShowStoryBar(true);
+          loadActiveStories();
+          checkCanPostStory();
+        } else if (!visible && currentlyVisible) {
+          adapter.setShowStoryBar(false);
+          storyBarView = null;
         }
       }
     });
@@ -3382,7 +3247,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   private @Nullable SortedList.ListListener<TdApi.ChatActiveStories> storyListListener;
 
   private void loadActiveStories () {
-    if (storyBarView == null) {
+    if (adapter == null || !adapter.hasStoryBar()) {
       return;
     }
     // Get the main story list and subscribe to updates
@@ -3395,8 +3260,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     };
     storyList.initializeList(null, storyListListener, stories -> {
       runOnUiThreadOptional(() -> {
-        if (storyBarView != null) {
-          storyBarView.setActiveStories(stories);
+        if (adapter != null) {
+          adapter.setActiveStories(stories);
         }
       });
     }, 20, null);
@@ -3405,15 +3270,15 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   private void updateStoryBar (SortedList<TdApi.ChatActiveStories> list) {
     list.getList(null, stories -> {
       runOnUiThreadOptional(() -> {
-        if (storyBarView != null) {
-          storyBarView.setActiveStories(stories);
+        if (adapter != null) {
+          adapter.setActiveStories(stories);
         }
       });
     });
   }
 
   private void checkCanPostStory () {
-    if (storyBarView == null) {
+    if (adapter == null || !adapter.hasStoryBar()) {
       return;
     }
     long myUserId = tdlib.myUserId();
@@ -3427,9 +3292,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     long chatId = tdlib.selfChatId();
     tdlib.client().send(new TdApi.CanPostStory(chatId), result -> {
       runOnUiThreadOptional(() -> {
-        if (storyBarView != null) {
+        if (adapter != null) {
           boolean canPost = result.getConstructor() == TdApi.CanPostStoryResultOk.CONSTRUCTOR;
-          storyBarView.setCanPostStory(canPost);
+          adapter.setCanPostStory(canPost);
         }
       });
     });

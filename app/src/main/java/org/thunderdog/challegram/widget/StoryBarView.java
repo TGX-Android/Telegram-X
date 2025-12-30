@@ -275,13 +275,6 @@ public class StoryBarView extends RecyclerView {
     private @Nullable TdApi.ChatActiveStories activeStories;
     private boolean hasUnread = false;
 
-    // Gradient colors for unread ring
-    private static final int[] GRADIENT_COLORS = {
-      0xFF7B68EE, // Medium slate blue
-      0xFF00CED1, // Dark turquoise
-      0xFF00FA9A  // Medium spring green
-    };
-
     // Gray for read ring
     private static final int READ_RING_COLOR = 0xFFAAAAAA;
 
@@ -363,9 +356,10 @@ public class StoryBarView extends RecyclerView {
         int width = getWidth();
         int height = getHeight();
         if (width > 0 && height > 0) {
+          int[] colors = Settings.instance().getStoryRingColors();
           LinearGradient gradient = new LinearGradient(
             0, 0, width, height,
-            GRADIENT_COLORS,
+            colors,
             null,
             Shader.TileMode.CLAMP
           );
@@ -434,13 +428,6 @@ public class StoryBarView extends RecyclerView {
     private final Paint bgPaint;
     private final RectF ringRect;
 
-    // Gradient colors for add story ring (same as unread)
-    private static final int[] GRADIENT_COLORS = {
-      0xFF7B68EE, // Medium slate blue
-      0xFF00CED1, // Dark turquoise
-      0xFF00FA9A  // Medium spring green
-    };
-
     public AddStoryItemView (@NonNull Context context, Tdlib tdlib) {
       super(context);
       this.tdlib = tdlib;
@@ -497,9 +484,10 @@ public class StoryBarView extends RecyclerView {
       int width = getWidth();
       int height = getHeight();
       if (width > 0 && height > 0) {
+        int[] colors = Settings.instance().getStoryRingColors();
         LinearGradient gradient = new LinearGradient(
           0, 0, width, height,
-          GRADIENT_COLORS,
+          colors,
           null,
           Shader.TileMode.CLAMP
         );
@@ -524,32 +512,33 @@ public class StoryBarView extends RecyclerView {
     protected void onDraw (Canvas canvas) {
       super.onDraw(canvas);
 
-      // Ensure gradient is initialized (may not be set if view was bound before layout)
-      if (ringPaint.getShader() == null) {
-        updateRingGradient();
-      }
-
-      // Draw ring around icon area
       int centerX = getWidth() / 2;
       int avatarTopMargin = Screen.dp(8);
       int avatarSize = Screen.dp(AVATAR_SIZE_DP);
       int centerY = avatarTopMargin + avatarSize / 2;
 
-      float ringRadius = avatarSize / 2f + Screen.dp(RING_GAP_DP) + Screen.dp(RING_WIDTH_DP) / 2f;
-
-      ringRect.set(
-        centerX - ringRadius,
-        centerY - ringRadius,
-        centerX + ringRadius,
-        centerY + ringRadius
-      );
-
       // Draw background circle
       float bgRadius = avatarSize / 2f;
       canvas.drawCircle(centerX, centerY, bgRadius, bgPaint);
 
-      // Draw gradient ring
-      canvas.drawOval(ringRect, ringPaint);
+      // Draw gradient ring only if border is enabled in settings
+      if (Settings.instance().showAddStoryBorder()) {
+        // Ensure gradient is initialized (may not be set if view was bound before layout)
+        if (ringPaint.getShader() == null) {
+          updateRingGradient();
+        }
+
+        float ringRadius = avatarSize / 2f + Screen.dp(RING_GAP_DP) + Screen.dp(RING_WIDTH_DP) / 2f;
+
+        ringRect.set(
+          centerX - ringRadius,
+          centerY - ringRadius,
+          centerX + ringRadius,
+          centerY + ringRadius
+        );
+
+        canvas.drawOval(ringRect, ringPaint);
+      }
     }
   }
 }

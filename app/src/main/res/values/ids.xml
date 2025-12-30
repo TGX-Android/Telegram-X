@@ -124,6 +124,8 @@
   <item type="id" name="edit_proxy_secret" />
 
   <item type="id" name="controller_msgTranslate" />
+  <item type="id" name="controller_storiesSettings" />
+  <item type="id" name="controller_storyColorPicker" />
   <item type="id" name="controller_simplePager" />
   <item type="id" name="controller_logOut" />
   <item type="id" name="controller_editLanguage" />
@@ -402,6 +404,14 @@
   <item type="id" name="btn_viewAsTopics" />
   <item type="id" name="btn_viewAsTabs" />
   <item type="id" name="btn_viewForum" />
+  <item type="id" name="btn_storiesSettings" />
+  <item type="id" name="btn_showAddStoryBorder" />
+  <item type="id" name="btn_storyRingColors" />
+  <item type="id" name="btn_addStoryColor" />
+  <item type="id" name="btn_resetStoryColors" />
+  <item type="id" name="btn_storyColor" />
+  <item type="id" name="preview" />
+  <item type="id" name="data_color" />
   <item type="id" name="btn_members" />
   <item type="id" name="btn_membersReading" />
   <item type="id" name="btn_membersWriting" />

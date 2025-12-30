@@ -649,6 +649,8 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_privacySettings, R.drawable.baseline_lock_24, R.string.PrivacySettings));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_storiesSettings, R.drawable.baseline_camera_alt_24, R.string.StoriesSettings));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_stickerSettingsAndEmoji, R.drawable.deproko_baseline_stickers_filled_24, R.string.StickersAndEmoji));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_themeSettings, R.drawable.baseline_palette_24, R.string.ThemeSettings));
@@ -1236,6 +1238,8 @@ public class SettingsController extends ViewController<Void> implements
       navigateTo(new SettingsDataController(context, tdlib));
     } else if (viewId == R.id.btn_privacySettings) {
       navigateTo(new SettingsPrivacyController(context, tdlib));
+    } else if (viewId == R.id.btn_storiesSettings) {
+      navigateTo(new SettingsStoriesController(context, tdlib));
     } else if (viewId == R.id.btn_help) {
       supportOpen = tdlib.ui().openSupport(this);
     } else if (viewId == R.id.btn_stickerSettingsAndEmoji) {

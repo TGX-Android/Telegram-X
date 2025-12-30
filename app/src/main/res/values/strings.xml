@@ -2657,6 +2657,20 @@
   <string name="HideStoriesInfo">Completely hide stories from the app. Stories shared in messages will still be displayed.</string>
   <string name="StoryQuickReactions">Quick Reactions</string>
   <string name="StoryQuickReactionsInfo">Show quick reaction row instead of full picker when reacting to stories.</string>
+  <string name="StoriesSettings">Stories</string>
+  <string name="Visibility">Visibility</string>
+  <string name="Appearance">Appearance</string>
+  <string name="Behavior">Behavior</string>
+  <string name="SolidColor">Solid color</string>
+  <string name="ShowAddStoryBorder">Show \"Add Story\" border</string>
+  <string name="ShowAddStoryBorderInfo">Display gradient ring around the \"Add Story\" button.</string>
+  <string name="StoryRingColors">Story ring colors</string>
+  <string name="StoryRingColorsDesc">Customize the gradient colors for story rings</string>
+  <string name="AddColor">Add color</string>
+  <string name="ResetToDefault">Reset to default</string>
+  <string name="StoryRingPreview">Preview</string>
+  <string name="EnterHexColor">Enter hex color (e.g. FF5733)</string>
+  <string name="xColorN">Color %1$d</string>
   <string name="Story">Story</string>
   <string name="SharedStory">%1$s shared a story</string>
   <string name="SharedStoryExpired">Story expired</string>
@@ -5670,7 +5684,21 @@
   <string name="GiftLinkShareDesc">You can also %1$s to a friend as a gift.</string>
   <string name="GiftLinkShareDesc_SendThisLink">send this link</string>
 
+  <string name="GiftReceived">Gift Received</string>
+  <string name="GiftSent">Gift Sent</string>
+  <string name="GiftConverted">Gift Converted</string>
+  <string name="GiftUpgraded">Gift Upgraded</string>
+  <string name="GiftRefunded">Gift Refunded</string>
+  <string name="ViewGift">View Gift</string>
+  <string name="xGiftValue_one">Worth %1$s Telegram Star</string>
+  <string name="xGiftValue_other">Worth %1$s Telegram Stars</string>
+  <string name="xGiftCanBeSold_one">Can be converted to %1$s Star</string>
+  <string name="xGiftCanBeSold_other">Can be converted to %1$s Stars</string>
 
+  <string name="YouSharedUser">You shared **%1$s**</string>
+  <string name="YouSharedUsers_one">You shared **%1$s user**</string>
+  <string name="YouSharedUsers_other">You shared **%1$s users**</string>
+  <string name="YouSharedChat">You shared **%1$s**</string>
 
   <!-- Giveaway show more popup -->
   <string name="GiveawaySponsors_one">%2$s and %1$s more channel</string>

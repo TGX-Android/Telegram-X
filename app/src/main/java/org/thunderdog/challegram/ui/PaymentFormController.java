@@ -13,7 +13,12 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.text.Editable;
+import android.text.InputFilter;
+import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import org.drinkless.tdlib.TdApi;
@@ -89,6 +94,10 @@ public class PaymentFormController extends RecyclerViewController<PaymentFormCon
     return R.id.controller_paymentForm;
   }
 
+  // Text watchers to prevent recursive calls
+  private boolean isFormattingCardNumber = false;
+  private boolean isFormattingExpiry = false;
+
   @Override
   protected void onCreateView(Context context, CustomRecyclerView recyclerView) {
     Args args = getArgumentsStrict();
@@ -104,6 +113,106 @@ public class PaymentFormController extends RecyclerViewController<PaymentFormCon
           if (creds != null) {
             view.setData(creds.title);
           }
+        }
+      }
+
+      @Override
+      protected void modifyEditText(ListItem item, ViewGroup parent, MaterialEditTextGroup editText) {
+        if (item == cardNumberItem) {
+          // Use TYPE_CLASS_PHONE to show numeric keyboard but allow spaces
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_PHONE);
+          // Custom filter: allow digits and spaces, max 19 chars (16 digits + 3 spaces)
+          editText.getEditText().setFilters(new InputFilter[] {
+            (source, start, end, dest, dstart, dend) -> {
+              StringBuilder filtered = new StringBuilder();
+              for (int i = start; i < end; i++) {
+                char c = source.charAt(i);
+                if (Character.isDigit(c) || c == ' ') {
+                  filtered.append(c);
+                }
+              }
+              return filtered.length() == end - start ? null : filtered.toString();
+            },
+            new InputFilter.LengthFilter(19)
+          });
+          editText.getEditText().addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+              if (isFormattingCardNumber) return;
+              isFormattingCardNumber = true;
+
+              // Remove all non-digits
+              String text = s.toString().replaceAll("[^\\d]", "");
+              // Format as XXXX XXXX XXXX XXXX
+              StringBuilder formatted = new StringBuilder();
+              for (int i = 0; i < text.length() && i < 16; i++) {
+                if (i > 0 && i % 4 == 0) {
+                  formatted.append(' ');
+                }
+                formatted.append(text.charAt(i));
+              }
+              if (!s.toString().equals(formatted.toString())) {
+                s.replace(0, s.length(), formatted.toString());
+              }
+              isFormattingCardNumber = false;
+            }
+          });
+        } else if (item == cardExpiryItem) {
+          // Use TYPE_CLASS_PHONE to show numeric keyboard but allow slash
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_PHONE);
+          // Custom filter: allow digits and slash, max 5 chars (MM/YY)
+          editText.getEditText().setFilters(new InputFilter[] {
+            (source, start, end, dest, dstart, dend) -> {
+              StringBuilder filtered = new StringBuilder();
+              for (int i = start; i < end; i++) {
+                char c = source.charAt(i);
+                if (Character.isDigit(c) || c == '/') {
+                  filtered.append(c);
+                }
+              }
+              return filtered.length() == end - start ? null : filtered.toString();
+            },
+            new InputFilter.LengthFilter(5)
+          });
+          editText.getEditText().addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+              if (isFormattingExpiry) return;
+              isFormattingExpiry = true;
+
+              // Remove all non-digits
+              String text = s.toString().replaceAll("[^\\d]", "");
+              // Format as MM/YY
+              StringBuilder formatted = new StringBuilder();
+              for (int i = 0; i < text.length() && i < 4; i++) {
+                if (i == 2) {
+                  formatted.append('/');
+                }
+                formatted.append(text.charAt(i));
+              }
+              if (!s.toString().equals(formatted.toString())) {
+                s.replace(0, s.length(), formatted.toString());
+              }
+              isFormattingExpiry = false;
+            }
+          });
+        } else if (item == cardCvcItem) {
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
+          editText.getEditText().setFilters(new InputFilter[] { new InputFilter.LengthFilter(4) }); // 3-4 digits for CVV/CVC
+        } else if (item == cardHolderItem) {
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
         }
       }
     };

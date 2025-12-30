@@ -508,7 +508,9 @@ public class ContactsController extends TelegramViewController<ContactsControlle
   @Override
   protected boolean onFoundChatClick (View view, TGFoundChat chat) {
     if (delegate != null) {
-      delegate.onSenderPick(this, view, pickedSenderId = chat.getSenderId());
+      if (delegate.onSenderPick(this, view, pickedSenderId = chat.getSenderId())) {
+        navigateBack();
+      }
       return true;
     }
     if (canSelectContacts()) {
