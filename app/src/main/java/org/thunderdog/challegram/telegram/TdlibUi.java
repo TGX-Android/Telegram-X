@@ -127,6 +127,7 @@ import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsPrivacyKeyController;
 import org.thunderdog.challegram.ui.SettingsProxyController;
 import org.thunderdog.challegram.ui.SettingsSessionsController;
+import org.thunderdog.challegram.ui.SettingsStarsController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
 import org.thunderdog.challegram.ui.SettingsWebsitesController;
 import org.thunderdog.challegram.ui.ShareController;
@@ -3802,14 +3803,27 @@ public class TdlibUi extends Handler {
 
       case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeBuyStars buyStars = (TdApi.InternalLinkTypeBuyStars) linkType;
+        SettingsStarsController starsController = new SettingsStarsController(context.context(), tdlib);
+        starsController.setArguments(new SettingsStarsController.Args(buyStars.starCount, buyStars.purpose));
+        context.context().navigation().navigateTo(starsController);
+        break;
+      }
+
+      case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR: {
+        SettingsStarsController starsController = new SettingsStarsController(context.context(), tdlib);
+        starsController.setArguments(new SettingsStarsController.Args());
+        context.context().navigation().navigateTo(starsController);
+        break;
+      }
+
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
       case TdApi.InternalLinkTypeMyToncoins.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {

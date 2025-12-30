@@ -13,7 +13,9 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.text.method.LinkMovementMethod;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.drinkless.tdlib.TdApi;
@@ -28,6 +30,7 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.core.CurrencyUtils;
 import me.vkryl.core.StringUtils;
 
 /**
@@ -38,7 +41,6 @@ public class SettingsPremiumController extends RecyclerViewController<Void> impl
 
   private SettingsAdapter adapter;
   private TdApi.PremiumState premiumState;
-  private boolean isLoading = true;
 
   public SettingsPremiumController(Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -58,13 +60,20 @@ public class SettingsPremiumController extends RecyclerViewController<Void> impl
   protected void onCreateView(Context context, CustomRecyclerView recyclerView) {
     adapter = new SettingsAdapter(this) {
       @Override
+      protected void modifyDescription(ListItem item, TextView textView) {
+        if (item.getId() == R.id.btn_premiumDescription) {
+          textView.setMovementMethod(LinkMovementMethod.getInstance());
+        }
+      }
+
+      @Override
       protected void setValuedSetting(ListItem item, SettingView view, boolean isUpdate) {
         final int itemId = item.getId();
         if (itemId == R.id.btn_premiumOption) {
           TdApi.PremiumStatePaymentOption option = (TdApi.PremiumStatePaymentOption) item.getData();
           if (option != null && option.paymentOption != null) {
             String price = formatPrice(option.paymentOption.currency, option.paymentOption.amount);
-            String duration = Lang.plural(R.string.Months, option.paymentOption.monthCount);
+            String duration = Lang.plural(R.string.xMonths, option.paymentOption.monthCount);
             if (option.paymentOption.discountPercentage > 0) {
               view.setData(Lang.getString(R.string.format_premiumOptionDiscount, price, duration, option.paymentOption.discountPercentage));
             } else {
@@ -96,7 +105,6 @@ public class SettingsPremiumController extends RecyclerViewController<Void> impl
   private void fetchPremiumState() {
     tdlib.send(new TdApi.GetPremiumState(), (result, error) -> {
       runOnUiThreadOptional(() -> {
-        isLoading = false;
         if (error != null) {
           showError(TD.toErrorString(error));
         } else {
@@ -123,9 +131,10 @@ public class SettingsPremiumController extends RecyclerViewController<Void> impl
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.TelegramPremium));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
-    // Premium status
+    // Premium status - format with clickable entities
     if (premiumState.state != null && !StringUtils.isEmpty(premiumState.state.text)) {
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, premiumState.state.text));
+      CharSequence formattedText = TD.formatString(this, premiumState.state.text, premiumState.state.entities, null, null);
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_premiumDescription, 0, formattedText));
     } else {
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.PremiumDescription));
     }
@@ -143,7 +152,7 @@ public class SettingsPremiumController extends RecyclerViewController<Void> impl
         }
         first = false;
 
-        String title = Lang.plural(R.string.PremiumMonths, option.paymentOption.monthCount);
+        String title = Lang.plural(R.string.xMonths, option.paymentOption.monthCount);
         if (option.isCurrent) {
           title = title + " " + Lang.getString(R.string.PremiumCurrent);
         }
@@ -234,15 +243,45 @@ public class SettingsPremiumController extends RecyclerViewController<Void> impl
       controller.setArguments(new PaymentFormController.Args(paymentForm, inputInvoice, monthCount));
       navigateTo(controller);
     } else if (paymentForm.type instanceof TdApi.PaymentFormTypeStars) {
-      UI.showToast(R.string.PaymentStarsNotSupported, Toast.LENGTH_SHORT);
+      TdApi.PaymentFormTypeStars starsType = (TdApi.PaymentFormTypeStars) paymentForm.type;
+      showStarsPaymentConfirmation(paymentForm, inputInvoice, starsType.starCount);
     } else {
       UI.showToast(R.string.PaymentUnknownType, Toast.LENGTH_SHORT);
     }
   }
 
   private String formatPrice(String currency, long amount) {
-    // Convert smallest units to main currency units
-    double price = amount / 100.0;
-    return String.format("%s %.2f", currency, price);
+    return CurrencyUtils.buildAmount(currency, amount);
+  }
+
+  private void showStarsPaymentConfirmation(TdApi.PaymentForm paymentForm, TdApi.InputInvoice inputInvoice, long starCount) {
+    String message = Lang.getString(R.string.StarsPayConfirmMessage, starCount);
+    showOptions(
+      message,
+      new int[] { R.id.btn_done, R.id.btn_cancel },
+      new String[] { Lang.getString(R.string.StarsPayConfirm, starCount), Lang.getString(R.string.Cancel) },
+      new int[] { OptionColor.BLUE, OptionColor.NORMAL },
+      new int[] { R.drawable.baseline_star_24, R.drawable.baseline_cancel_24 },
+      (view, optionId) -> {
+        if (optionId == R.id.btn_done) {
+          sendStarsPayment(paymentForm, inputInvoice);
+        }
+        return true;
+      }
+    );
+  }
+
+  private void sendStarsPayment(TdApi.PaymentForm paymentForm, TdApi.InputInvoice inputInvoice) {
+    UI.showToast(R.string.PaymentProcessing, Toast.LENGTH_SHORT);
+    tdlib.send(new TdApi.SendPaymentForm(inputInvoice, paymentForm.id, "", "", null, 0), (result, error) -> {
+      runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showToast(Lang.getString(R.string.StarsPaymentFailed, TD.toErrorString(error)), Toast.LENGTH_SHORT);
+        } else {
+          UI.showToast(R.string.StarsPaymentSuccess, Toast.LENGTH_SHORT);
+        }
+      });
+    });
   }
 }
+
