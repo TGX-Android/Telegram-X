@@ -122,3 +122,171 @@ Running on emulator (Medium_Phone_API_36.1). Each topic now shows only its own m
 - [x] User typing in topics - Show typing indicator per-topic instead of per-chat
 
 All major forum topics features have been implemented.
+
+---
+
+## Bug Fixes
+
+### InternalLinkTypeInvoice Crash Fix
+Fixed ClassCastException when opening invoice links. The crash occurred because `InternalLinkTypeInvoice` was falling through to `InternalLinkTypeBuyStars` case in the switch statement, causing an invalid cast.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/telegram/TdlibUi.java`:
+  - Separated `InternalLinkTypeInvoice` from `InternalLinkTypeBuyStars` cases
+  - Added new `openPaymentForm(TdlibDelegate, String invoiceName, ...)` method
+  - Invoice links now properly open payment forms via `GetPaymentForm` API
+
+### MessageGift Support
+Added support for the `MessageGift` message type which was previously showing as "Unsupported message".
+
+**Files Created:**
+- `app/src/main/java/org/thunderdog/challegram/data/TGMessageGiftRegular.java` - Handler for regular gift messages (extends TGMessageGiveawayBase)
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/data/TGMessage.java`:
+  - Added case for `MessageGift.CONSTRUCTOR` → `TGMessageGiftRegular`
+  - Removed `MessageGift` from unsupported message types list
+- `app/src/main/res/values/strings.xml` - Added gift-related strings:
+  - GiftReceived, GiftSent, GiftConverted, GiftUpgraded, GiftRefunded
+  - ViewGift, xGiftValue, xGiftCanBeSold
+
+### Visual HSV Color Picker
+Replaced hex keyboard input with visual HSV color picker for story ring color customization.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/StoryColorPickerController.java`:
+  - Added `ColorPickerPopupView` inner class with:
+    - Saturation/Value gradient square
+    - Hue rainbow bar
+    - Color preview circle
+    - Cancel/Done buttons
+  - Touch handling for dragging color selection
+
+### Choose Gift Recipient Button Fix
+Fixed "Choose Gift Recipient" keyboard button (and similar bot buttons) doing nothing on click.
+
+**Root Cause:** `CommandKeyboardLayout.onClick` was missing handlers for `KeyboardButtonTypeRequestUsers` and `KeyboardButtonTypeRequestChat` button types.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/component/chat/CommandKeyboardLayout.java`:
+  - Added cases for `KeyboardButtonTypeRequestUsers` and `KeyboardButtonTypeRequestChat`
+  - Added `onRequestUsers()` and `onRequestChat()` to `Callback` interface
+- `app/src/main/java/org/thunderdog/challegram/ui/MessagesController.java`:
+  - Implemented `onRequestUsers()` - opens contact picker, then calls `ShareUsersWithBot` API
+  - Implemented `onRequestChat()` - shows "not yet supported" (chat picker not implemented)
+
+**TDLib Function Used:**
+- `ShareUsersWithBot(chatId, messageId, buttonId, sharedUserIds, onlyCheck)` - shares selected users with the bot after pressing a `KeyboardButtonTypeRequestUsers` button
+
+### Contact Picker Navigation Fix
+Fixed contact picker not navigating back after selecting a contact for "Choose Gift Recipient" button.
+
+**Root Cause:** `ContactsController.onFoundChatClick()` wasn't calling `navigateBack()` after delegate callback.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/ContactsController.java`:
+  - Added `navigateBack()` call after `delegate.onSenderPick()` returns true
+
+### MessageUsersShared / MessageChatShared Support
+Added support for `MessageUsersShared` and `MessageChatShared` service message types which were showing as "Unsupported message".
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/data/TGMessageService.java`:
+  - Added constructor for `MessageUsersShared` - shows "You shared [user name]"
+  - Added constructor for `MessageChatShared` - shows "You shared [chat name]"
+- `app/src/main/java/org/thunderdog/challegram/data/TGMessage.java`:
+  - Added cases for `MessageUsersShared` and `MessageChatShared`
+  - Removed from unsupported message types list
+- `app/src/main/res/values/strings.xml`:
+  - Added `YouSharedUser`, `YouSharedUsers`, `YouSharedChat` strings
+
+### User Sharing Confirmation Toast
+Added toast notification when sharing user with bot to provide UX feedback.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/MessagesController.java`:
+  - Added toast showing "You shared [user name]" after successful ShareUsersWithBot call
+
+### Payment Card Input Validation & Formatting
+Fixed payment card input fields lacking proper validation and formatting.
+
+**Issues Fixed:**
+- Card number, expiry, CVC fields now show numeric keyboard
+- Card number auto-formats as `XXXX XXXX XXXX XXXX`
+- Expiry date auto-formats as `MM/YY`
+- CVC limited to 3-4 digits
+- Card holder shows text keyboard with auto-capitalization
+- Cannot type letters/symbols in numeric fields
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/PaymentFormController.java`:
+  - Added imports for `Editable`, `InputFilter`, `InputType`, `TextWatcher`
+  - Overrode `modifyEditText()` in adapter to configure each field:
+    - Card number: `TYPE_CLASS_PHONE` + custom filter (digits/spaces) + formatting TextWatcher
+    - Expiry: `TYPE_CLASS_PHONE` + custom filter (digits/slash) + formatting TextWatcher
+    - CVC: `TYPE_CLASS_NUMBER` + max length 4
+    - Card holder: `TYPE_CLASS_TEXT | TYPE_TEXT_FLAG_CAP_CHARACTERS`
+
+### Paid Reaction Crash Fix
+Fixed crash when opening reactions selector with paid (star) reactions.
+
+**Root Cause:** `TGReaction.newCenterAnimationSicker()` and `newStaticIconSicker()` didn't handle paid reactions - they fell through to code that accessed null `customReaction` field.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/data/TGReaction.java`:
+  - Added `isPaid` check to `newStaticIconSicker()` - returns cached or new paid star sticker
+  - Added `isPaid` check to `newCenterAnimationSicker()` - returns cached or new paid star sticker
+
+### Archive Pin/Unpin Overlap with Stories Fix
+Fixed archive row scroll handling using hardcoded positions that didn't account for story bar.
+
+**Root Cause:** The archive collapse/expand scroll listener used hardcoded positions (0, 1) assuming archive was always at position 0. With story bar at position 0, archive is at position 1, causing incorrect scroll behavior and visual overlap.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/ChatsController.java`:
+  - Updated `onScrollStateChanged` to use dynamic `archivePosition` from `adapter.getArchiveItemPosition()`
+  - Updated `onScrolled` to check against dynamic archive position instead of hardcoded 0
+  - Updated `getLiveLocationPosition()` to account for story bar offset
+  - Fixed ItemDecoration to not apply negative collapse offset when story bar is present
+  - Changed story bar loading to only add to adapter when content is available
+  - Added `scrollToPosition(0)` when story bar is first added to ensure visibility on app start
+- `app/src/main/java/org/thunderdog/challegram/widget/StoryBarView.java`:
+  - Changed initial visibility from GONE to VISIBLE (adapter now controls presence)
+  - Removed GONE state from updateVisibility() - adapter handles add/remove
+
+### Paid Reaction Empty Icon Fix
+Fixed paid/star reactions showing as empty (no icon visible) on channels.
+
+**Root Cause:** `StickerSmallView.setSticker()` didn't handle stickers with `isDefaultPremiumStar()` flag. When a paid reaction sticker was set, `getImage()` and `getPreviewAnimation()` returned null (no actual sticker file), so nothing was drawn.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/component/sticker/StickerSmallView.java`:
+  - Added check for `sticker.isDefaultPremiumStar()` in `setSticker()`
+  - When true, sets `premiumStarDrawable` from `R.drawable.baseline_premium_star_28`
+  - Clears `premiumStarDrawable` for normal stickers to avoid stale state
+- `app/src/main/java/org/thunderdog/challegram/data/TD.java`:
+  - Added error translation for "BALANCE_TOO_LOW" and "not enough stars" → `PaidReactionInsufficientStars`
+- `app/src/main/res/values/strings.xml`:
+  - Added `PaidReactionInsufficientStars` string with user-friendly message
+
+### ForumTopicView Custom Emoji Crash Fix
+Fixed crash when opening forum topics with custom emoji in message preview.
+
+**Root Cause:** `ForumTopicView.buildTextLayouts()` was passing `FormattedText` (which may contain custom emoji) to `Text.Builder` without a `TextMediaListener`. When `Text.newOrExistingMedia()` is called without a listener, it throws `IllegalStateException`.
+
+**Solution:** Implemented proper custom emoji support in ForumTopicView:
+- Made ForumTopicView implement `Text.TextMediaListener`
+- Added `textMediaReceiver` (ComplexReceiver) for loading custom emoji
+- Pass `this` as textMediaListener when building Text with FormattedText
+- Call `requestTextMedia()` after building displayPreview
+- Pass textMediaReceiver to `displayPreview.draw()` for rendering custom emoji
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicView.java`:
+  - Implemented `Text.TextMediaListener` interface
+  - Added `textMediaReceiver` field initialized in constructor
+  - Added `onInvalidateTextMedia()` callback for view invalidation
+  - Added `requestTextMedia()` helper method
+  - Updated `buildTextLayouts()` to pass `this` as listener
+  - Updated `displayPreview.draw()` to pass textMediaReceiver
+  - Updated attach/detach/destroy to handle textMediaReceiver lifecycle
