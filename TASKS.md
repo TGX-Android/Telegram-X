@@ -419,3 +419,13 @@ Fixed payment card input fields lacking proper validation and formatting.
     - Expiry: `TYPE_CLASS_PHONE` + custom filter (digits/slash) + formatting TextWatcher
     - CVC: `TYPE_CLASS_NUMBER` + max length 4
     - Card holder: `TYPE_CLASS_TEXT | TYPE_TEXT_FLAG_CAP_CHARACTERS`
+
+### Paid Reaction Crash Fix
+Fixed crash when opening reactions selector with paid (star) reactions.
+
+**Root Cause:** `TGReaction.newCenterAnimationSicker()` and `newStaticIconSicker()` didn't handle paid reactions - they fell through to code that accessed null `customReaction` field.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/data/TGReaction.java`:
+  - Added `isPaid` check to `newStaticIconSicker()` - returns cached or new paid star sticker
+  - Added `isPaid` check to `newCenterAnimationSicker()` - returns cached or new paid star sticker

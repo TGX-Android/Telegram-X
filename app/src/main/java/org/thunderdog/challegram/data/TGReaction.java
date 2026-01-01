@@ -199,6 +199,10 @@ public class TGReaction {
   }
 
   private TGStickerObj newStaticIconSicker () {
+    if (isPaid) {
+      // Return cached paid star or create new one
+      return _staticIconSicker != null ? _staticIconSicker : TGStickerObj.makePaidReactionStar(tdlib);
+    }
     if (emojiReaction != null) {
       return new TGStickerObj(tdlib, emojiReaction.staticIcon, emojiReaction.emoji, emojiReaction.staticIcon.fullType).setReactionType(type).setDisplayScale(.5f);
     } else {
@@ -231,6 +235,10 @@ public class TGReaction {
   }
 
   public TGStickerObj newCenterAnimationSicker () {
+    if (isPaid) {
+      // Return cached paid star or create new one
+      return _centerAnimationSicker != null ? _centerAnimationSicker : TGStickerObj.makePaidReactionStar(tdlib);
+    }
     if (emojiReaction != null && emojiReaction.centerAnimation != null && !Config.TEST_STATIC_REACTIONS) {
       return new TGStickerObj(tdlib, emojiReaction.centerAnimation, emojiReaction.emoji, emojiReaction.centerAnimation.fullType).setReactionType(type);
     }
