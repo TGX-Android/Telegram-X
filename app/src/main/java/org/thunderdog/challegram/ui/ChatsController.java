@@ -695,22 +695,24 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         chatsView.addOnScrollListener(new RecyclerView.OnScrollListener() {
           @Override
           public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+            int archivePosition = adapter.getArchiveItemPosition();
+            int firstChatPosition = archivePosition != -1 ? archivePosition + 1 : adapter.getFirstChatItemPosition();
             if (hideArchive && archiveCollapsed && chatScrollState == RecyclerView.SCROLL_STATE_IDLE && newState != RecyclerView.SCROLL_STATE_IDLE) {
               LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
               int firstVisiblePosition = manager.findFirstVisibleItemPosition();
-              if (firstVisiblePosition == 1) {
-                View view = manager.findViewByPosition(1);
+              if (firstVisiblePosition == firstChatPosition) {
+                View view = manager.findViewByPosition(firstChatPosition);
                 if (view != null && manager.getDecoratedTop(view) == 0) {
                   setArchiveCollapsed(false);
                 }
               }
             }
             chatScrollState = newState;
-            if (hideArchive) {
+            if (hideArchive && archivePosition != -1) {
               if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                 LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
                 int firstVisiblePosition = manager.findFirstVisibleItemPosition();
-                if (firstVisiblePosition == 0) {
+                if (firstVisiblePosition == archivePosition) {
                   setArchiveCollapsed(false);
                   View view = manager.findViewByPosition(firstVisiblePosition);
                   int top = view != null ? -manager.getDecoratedTop(view) : 0;
@@ -720,7 +722,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
                   } else {
                     onScrollToTopRequested();
                   }
-                } else if (firstVisiblePosition == 1) {
+                } else if (firstVisiblePosition == firstChatPosition) {
                   View view = manager.findViewByPosition(firstVisiblePosition);
                   setArchiveCollapsed(view == null || manager.getDecoratedTop(view) < 0);
                 } else {
@@ -732,7 +734,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
           @Override
           public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-            if (hideArchive && !archiveCollapsed && chatScrollState == RecyclerView.SCROLL_STATE_SETTLING && dy > 0 && ((LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition() > 0) {
+            int archivePosition = adapter.getArchiveItemPosition();
+            if (hideArchive && !archiveCollapsed && chatScrollState == RecyclerView.SCROLL_STATE_SETTLING && dy > 0 && archivePosition != -1 && ((LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition() > archivePosition) {
               setArchiveCollapsed(true);
             }
           }
@@ -995,13 +998,14 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   public int getLiveLocationPosition () {
+    int offset = adapter.hasStoryBar() ? 1 : 0;
     if (adapter.hasSuggestedChats()) {
-      return 0;
+      return offset;
     }
     if (adapter.hasChats()) {
       return adapter.getFirstChatItemPosition() + (adapter.hasArchive() ? 1 : 0);
     }
-    return 0;
+    return offset;
   }
 
   @Override

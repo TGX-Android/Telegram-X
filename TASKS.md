@@ -429,3 +429,14 @@ Fixed crash when opening reactions selector with paid (star) reactions.
 - `app/src/main/java/org/thunderdog/challegram/data/TGReaction.java`:
   - Added `isPaid` check to `newStaticIconSicker()` - returns cached or new paid star sticker
   - Added `isPaid` check to `newCenterAnimationSicker()` - returns cached or new paid star sticker
+
+### Archive Pin/Unpin Overlap with Stories Fix
+Fixed archive row scroll handling using hardcoded positions that didn't account for story bar.
+
+**Root Cause:** The archive collapse/expand scroll listener used hardcoded positions (0, 1) assuming archive was always at position 0. With story bar at position 0, archive is at position 1, causing incorrect scroll behavior and visual overlap.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/ChatsController.java`:
+  - Updated `onScrollStateChanged` to use dynamic `archivePosition` from `adapter.getArchiveItemPosition()`
+  - Updated `onScrolled` to check against dynamic archive position instead of hardcoded 0
+  - Updated `getLiveLocationPosition()` to account for story bar offset
