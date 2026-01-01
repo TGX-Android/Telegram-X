@@ -440,3 +440,9 @@ Fixed archive row scroll handling using hardcoded positions that didn't account 
   - Updated `onScrollStateChanged` to use dynamic `archivePosition` from `adapter.getArchiveItemPosition()`
   - Updated `onScrolled` to check against dynamic archive position instead of hardcoded 0
   - Updated `getLiveLocationPosition()` to account for story bar offset
+  - Fixed ItemDecoration to not apply negative collapse offset when story bar is present
+  - Changed story bar loading to only add to adapter when content is available
+  - Added `scrollToPosition(0)` when story bar is first added to ensure visibility on app start
+- `app/src/main/java/org/thunderdog/challegram/widget/StoryBarView.java`:
+  - Changed initial visibility from GONE to VISIBLE (adapter now controls presence)
+  - Removed GONE state from updateVisibility() - adapter handles add/remove
