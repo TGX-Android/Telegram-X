@@ -55,12 +55,13 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.widget.BaseView;
 
 import me.vkryl.core.StringUtils;
 import tgx.td.Td;
 
-public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watcher, TdlibStatusManager.HelperTarget {
+public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watcher, TdlibStatusManager.HelperTarget, Text.TextMediaListener {
   private static TextPaint titlePaint;
   private static TextPaint senderPaint;
   private static TextPaint previewPaint;
@@ -97,6 +98,9 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
   private GifFile gifFile;
   private final ComplexReceiver iconReceiver;
 
+  // Text media (custom emoji in preview)
+  private final ComplexReceiver textMediaReceiver;
+
   // Typing status
   private TdlibStatusManager.Helper statusHelper;
   private boolean isAttached;
@@ -112,6 +116,7 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
     RippleSupport.setTransparentSelector(this);
     initPaints();
     iconReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
+    textMediaReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
   }
 
   private static void initPaints () {
@@ -146,6 +151,7 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
 
   public void attach () {
     iconReceiver.attach();
+    textMediaReceiver.attach();
     isAttached = true;
     if (statusHelper != null && topic != null) {
       statusHelper.attachToChat(topic.info.chatId, new TdApi.MessageTopicForum(topic.info.forumTopicId));
@@ -154,6 +160,7 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
 
   public void detach () {
     iconReceiver.detach();
+    textMediaReceiver.detach();
     isAttached = false;
     if (statusHelper != null) {
       statusHelper.detachFromAnyChat();
@@ -162,6 +169,7 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
 
   public void destroy () {
     iconReceiver.performDestroy();
+    textMediaReceiver.performDestroy();
     if (customEmojiId != 0 && customEmoji == null && tdlib != null) {
       tdlib.emoji().forgetWatcher(customEmojiId, this);
     }
@@ -370,7 +378,7 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       displaySender = null;
     }
 
-    // Build preview Text with emoji support (use FormattedText for custom emoji)
+    // Build preview Text with custom emoji support
     if (previewFormattedText != null && !StringUtils.isEmpty(previewFormattedText.text)) {
       displayPreview = new Text.Builder(
         tdlib,
@@ -379,7 +387,7 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
         availWidth,
         Paints.robotoStyleProvider(15f),
         TextColorSets.Regular.LIGHT,
-        null // textMediaListener - could add for custom emoji loading
+        this // textMediaListener for custom emoji loading
       ).singleLine()
        .ignoreNewLines()
        .build();
@@ -395,6 +403,9 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
     } else {
       displayPreview = null;
     }
+
+    // Request text media for custom emoji
+    requestTextMedia();
   }
 
   /**
@@ -609,11 +620,11 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
         displaySender.draw(canvas, textLeft, senderTop);
       }
 
-      // Row 3: Draw message preview with emoji support
+      // Row 3: Draw message preview with custom emoji support
       if (displayPreview != null) {
         // Convert baseline to top position (previewY is baseline at 64dp, top is ~52dp)
         int previewTop = (int) previewY - Screen.dp(12f);
-        displayPreview.draw(canvas, textLeft, previewTop);
+        displayPreview.draw(canvas, textLeft, previewTop, null, 1f, textMediaReceiver);
       }
     }
 
@@ -755,6 +766,23 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
     if (matchEnd < text.length()) {
       String afterMatch = text.substring(matchEnd);
       canvas.drawText(afterMatch, x, y, paint);
+    }
+  }
+
+  // Text.TextMediaListener implementation
+  @Override
+  public void onInvalidateTextMedia (Text text, @Nullable TextMedia specificMedia) {
+    if (text == displayPreview) {
+      invalidate();
+    }
+  }
+
+  private void requestTextMedia () {
+    if (displayPreview != null && displayPreview.hasMedia()) {
+      textMediaReceiver.clear();
+      displayPreview.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
     }
   }
 }

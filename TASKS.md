@@ -461,3 +461,25 @@ Fixed paid/star reactions showing as empty (no icon visible) on channels.
   - Added error translation for "BALANCE_TOO_LOW" and "not enough stars" → `PaidReactionInsufficientStars`
 - `app/src/main/res/values/strings.xml`:
   - Added `PaidReactionInsufficientStars` string with user-friendly message
+
+### ForumTopicView Custom Emoji Crash Fix
+Fixed crash when opening forum topics with custom emoji in message preview.
+
+**Root Cause:** `ForumTopicView.buildTextLayouts()` was passing `FormattedText` (which may contain custom emoji) to `Text.Builder` without a `TextMediaListener`. When `Text.newOrExistingMedia()` is called without a listener, it throws `IllegalStateException`.
+
+**Solution:** Implemented proper custom emoji support in ForumTopicView:
+- Made ForumTopicView implement `Text.TextMediaListener`
+- Added `textMediaReceiver` (ComplexReceiver) for loading custom emoji
+- Pass `this` as textMediaListener when building Text with FormattedText
+- Call `requestTextMedia()` after building displayPreview
+- Pass textMediaReceiver to `displayPreview.draw()` for rendering custom emoji
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicView.java`:
+  - Implemented `Text.TextMediaListener` interface
+  - Added `textMediaReceiver` field initialized in constructor
+  - Added `onInvalidateTextMedia()` callback for view invalidation
+  - Added `requestTextMedia()` helper method
+  - Updated `buildTextLayouts()` to pass `this` as listener
+  - Updated `displayPreview.draw()` to pass textMediaReceiver
+  - Updated attach/detach/destroy to handle textMediaReceiver lifecycle
