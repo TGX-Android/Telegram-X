@@ -153,6 +153,7 @@
   <string name="StarsPaymentSuccess">Payment successful!</string>
   <string name="StarsPaymentFailed">Payment failed: %1$s</string>
   <string name="StarsInsufficientBalance">Insufficient Stars balance. You need %1$s more Stars.</string>
+  <string name="PaidReactionInsufficientStars">You don\'t have enough Stars for this reaction. Buy Stars in Settings.</string>
   <string name="StarTransactions">Transaction History</string>
   <string name="NoStarTransactions">No transactions yet</string>
   <string name="xStars_one">%1$d Star</string>

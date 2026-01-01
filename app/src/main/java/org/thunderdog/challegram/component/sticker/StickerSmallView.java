@@ -98,6 +98,15 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Sti
     this.sticker = sticker;
     this.isAnimation = sticker != null && sticker.isAnimated();
     resetStickerState();
+    // Handle paid reactions (premium star icon)
+    if (sticker != null && sticker.isDefaultPremiumStar()) {
+      premiumStarDrawable = Drawables.get(R.drawable.baseline_premium_star_28);
+      contour = null;
+      imageReceiver.requestFile(null);
+      gifReceiver.requestFile(null);
+      return;
+    }
+    premiumStarDrawable = null;
     ImageFile imageFile = sticker != null && !sticker.isEmpty() ? sticker.getImage() : null;
     GifFile gifFile = sticker != null && !sticker.isEmpty() ? sticker.getPreviewAnimation() : null;
     if ((sticker == null || sticker.isEmpty()) && imageFile != null) {

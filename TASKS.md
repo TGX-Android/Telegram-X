@@ -446,3 +446,18 @@ Fixed archive row scroll handling using hardcoded positions that didn't account 
 - `app/src/main/java/org/thunderdog/challegram/widget/StoryBarView.java`:
   - Changed initial visibility from GONE to VISIBLE (adapter now controls presence)
   - Removed GONE state from updateVisibility() - adapter handles add/remove
+
+### Paid Reaction Empty Icon Fix
+Fixed paid/star reactions showing as empty (no icon visible) on channels.
+
+**Root Cause:** `StickerSmallView.setSticker()` didn't handle stickers with `isDefaultPremiumStar()` flag. When a paid reaction sticker was set, `getImage()` and `getPreviewAnimation()` returned null (no actual sticker file), so nothing was drawn.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/component/sticker/StickerSmallView.java`:
+  - Added check for `sticker.isDefaultPremiumStar()` in `setSticker()`
+  - When true, sets `premiumStarDrawable` from `R.drawable.baseline_premium_star_28`
+  - Clears `premiumStarDrawable` for normal stickers to avoid stale state
+- `app/src/main/java/org/thunderdog/challegram/data/TD.java`:
+  - Added error translation for "BALANCE_TOO_LOW" and "not enough stars" → `PaidReactionInsufficientStars`
+- `app/src/main/res/values/strings.xml`:
+  - Added `PaidReactionInsufficientStars` string with user-friendly message
