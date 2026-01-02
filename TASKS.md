@@ -484,6 +484,18 @@ Fixed crash when opening forum topics with custom emoji in message preview.
   - Updated `displayPreview.draw()` to pass textMediaReceiver
   - Updated attach/detach/destroy to handle textMediaReceiver lifecycle
 
+### Forum Preview Swipe-Up Fix
+Fixed long-pressing forum chat in chat list and swiping up opening old chat interface instead of ForumTopicsController.
+
+**Root Cause:** `BaseView.openChatPreviewAsync()` always created `MessagesController` for preview, even for forums.
+
+**Solution:** Added check for forum chats - skip preview and fall through to normal long-press menu behavior.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/widget/BaseView.java`:
+  - Added `tdlib.isForum(chat.id)` check in `onLongPressRequestedAt()`
+  - Forums now skip preview mode
+
 ### Star Reaction Icon Size Fix
 Fixed star icon in reaction bubbles being too large (overflowing its border).
 
