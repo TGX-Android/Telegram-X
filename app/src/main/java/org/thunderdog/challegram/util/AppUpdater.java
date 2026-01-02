@@ -169,7 +169,6 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   public void checkForUpdates () {
     if (state == State.NONE) {
-      setState(State.CHECKING);
       if (preferTelegramChannelFlow()) {
         checkForTelegramChannelUpdates();
       } else {
@@ -217,7 +216,8 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   private void checkForGooglePlayUpdates () {
     if (googlePlayUpdateManager == null)
-      throw new IllegalStateException();
+      return;
+    setState(State.CHECKING);
     googlePlayUpdateManager.getAppUpdateInfo().addOnSuccessListener(updateInfo -> {
       this.googlePlayUpdateInfo = updateInfo;
       int installStatus = updateInfo.installStatus();
@@ -322,6 +322,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   }
 
   private void checkForTelegramChannelUpdates () {
+    setState(State.CHECKING);
     Tdlib tdlib = context.hasTdlib() ? context.currentTdlib() : null;
     if (tdlib == null || tdlib.context().inRecoveryMode() || !tdlib.isAuthorized()) {
       onUpdateUnavailable();
