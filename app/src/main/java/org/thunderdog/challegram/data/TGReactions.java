@@ -942,6 +942,15 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     private boolean inAnimation;
 
     private void drawReceiver (Canvas c, int l, int t, int r, int b, float alpha) {
+      // Draw star icon for paid reactions
+      if (paidReactionDrawable != null) {
+        paidReactionDrawable.setBounds(l, t, r, b);
+        paidReactionDrawable.setAlpha((int) (alpha * 255));
+        paidReactionDrawable.setColorFilter(Paints.getPorterDuffPaint(Theme.getColor(ColorId.iconActive)).getColorFilter());
+        paidReactionDrawable.draw(c);
+        return;
+      }
+
       Receiver receiver = inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
       float scale = inAnimation ? animationScale : staticAnimationFile != null ? staticAnimationFileScale : staticImageFileScale;
       if (receiver != null) {
