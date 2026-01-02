@@ -976,7 +976,8 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       if (paidReactionDrawable != null) {
         paidReactionDrawable.setBounds(l, t, r, b);
         paidReactionDrawable.setAlpha((int) (alpha * 255));
-        Drawables.draw(c, paidReactionDrawable, l, t, Paints.getPorterDuffPaint(Theme.getColor(ColorId.text)));
+        paidReactionDrawable.setColorFilter(Paints.getPorterDuffPaint(Theme.getColor(ColorId.iconActive)).getColorFilter());
+        paidReactionDrawable.draw(c);
         return;
       }
 

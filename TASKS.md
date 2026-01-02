@@ -483,3 +483,14 @@ Fixed crash when opening forum topics with custom emoji in message preview.
   - Updated `buildTextLayouts()` to pass `this` as listener
   - Updated `displayPreview.draw()` to pass textMediaReceiver
   - Updated attach/detach/destroy to handle textMediaReceiver lifecycle
+
+### Star Reaction Icon Size Fix
+Fixed star icon in reaction bubbles being too large (overflowing its border).
+
+**Root Cause:** `Drawables.draw()` ignores `setBounds()` and draws at the drawable's intrinsic size. The star was drawn at 24dp regardless of the reaction bubble bounds.
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/data/TGReactions.java`:
+  - Changed `drawReceiver()` to use `drawable.draw(canvas)` directly instead of `Drawables.draw()`
+  - Now properly respects the bounds set with `setBounds(l, t, r, b)`
+  - Star icon scales to fit the reaction bubble correctly
