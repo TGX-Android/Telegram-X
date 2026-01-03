@@ -328,6 +328,18 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     return baseNotificationId + (/*category_count*/ TdlibNotificationGroup.MAX_CATEGORY + 1) + groupId;
   }
 
+  /**
+   * Generate a unique notification ID for a specific forum topic within a group.
+   * Uses a hash-based approach to avoid ID collisions.
+   */
+  public int getNotificationIdForTopicView (int groupId, long topicId) {
+    // Combine groupId with topicId hash to generate unique ID
+    // Use a large offset to avoid collisions with regular group IDs
+    int topicHash = Long.hashCode(topicId) & 0x7FFFFFFF; // Ensure positive
+    int topicOffset = (topicHash % 100000) + 100000; // Range: 100000-199999
+    return baseNotificationId + (TdlibNotificationGroup.MAX_CATEGORY + 1) + groupId * 200000 + topicOffset;
+  }
+
   public boolean isEmpty () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long accountUserId = tdlib.myUserId(true);

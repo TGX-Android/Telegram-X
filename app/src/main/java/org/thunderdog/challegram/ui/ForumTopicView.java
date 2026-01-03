@@ -265,8 +265,11 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       // Calculate message status for outgoing messages
       this.isOutgoing = topic.lastMessage.isOutgoing;
       this.isSending = tdlib.messageSending(topic.lastMessage);
-      // Message is unread if message ID > last read outbox message ID
-      this.isMessageUnread = topic.lastMessage.id > topic.lastReadOutboxMessageId;
+      // Message is unread if message ID > relevant last read message ID
+      // For outgoing: compare with lastReadOutboxMessageId (whether recipient read it)
+      // For incoming: compare with lastReadInboxMessageId (whether we read it)
+      long relevantReadId = this.isOutgoing ? topic.lastReadOutboxMessageId : topic.lastReadInboxMessageId;
+      this.isMessageUnread = topic.lastMessage.id > relevantReadId;
     } else {
       this.showingDraft = false;
       this.senderText = "";
