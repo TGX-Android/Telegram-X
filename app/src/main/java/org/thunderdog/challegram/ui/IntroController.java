@@ -206,7 +206,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
   }
 
   public static boolean isIntroAttemptedButFailed () {
-    if (!BuildConfig.DEBUG && Settings.instance().isIntroAttempted()) {
+    if (Settings.instance().isIntroAttempted()) {
       Log.w("Not showing intro controller, because it has failed once");
       return true;
     }
