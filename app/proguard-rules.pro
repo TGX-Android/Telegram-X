@@ -45,8 +45,15 @@
 # Keep sync services
 -keep class org.thunderdog.challegram.sync.**
 
+# https://github.com/androidx/media/issues/2535
+-keep class androidx.media3.transformer.ExoPlayerAssetLoader$Factory { *; }
+
 # https://developers.google.com/ml-kit/known-issues#android_issues
 -keep class com.google.mlkit.nl.languageid.internal.LanguageIdentificationJni { *; }
+-keep class com.google.mlkit.nl.languageid.internal.ThickLanguageIdentifier { *; }
+-keepclasseswithmembernames class com.google.mlkit.nl.languageid.internal.LanguageIdentificationJni {
+  native <methods>;
+}
 
 # == THIRDPARTY ==
 
