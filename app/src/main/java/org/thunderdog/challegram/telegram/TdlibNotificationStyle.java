@@ -235,7 +235,161 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   public static final int DISPLAY_STATE_OK = 3;
 
   protected final int displayChildNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @NonNull TdlibNotificationGroup group, TdlibNotificationSettings settings, boolean isRebuild) {
+    // Check if this is a forum chat with multiple topics - display each topic separately
+    long chatId = group.getChatId();
+    if (tdlib.isForum(chatId) && group.hasMultipleForumTopics()) {
+      List<TdlibNotificationGroup.TopicView> topicViews = group.splitByForumTopics();
+      int result = DISPLAY_STATE_HIDDEN;
+      for (TdlibNotificationGroup.TopicView topicView : topicViews) {
+        int topicResult = displayTopicNotification(manager, context, helper, badgeCount, allowPreview, topicView, settings, isRebuild);
+        if (topicResult == DISPLAY_STATE_OK) {
+          result = DISPLAY_STATE_OK;
+        }
+      }
+      // Cancel the original group notification since we're showing per-topic ones
+      manager.cancel(helper.getNotificationIdForGroup(group.getId()));
+      return result;
+    }
     return displayChildNotification(manager, context, helper, badgeCount, allowPreview, group, settings, helper.getNotificationIdForGroup(group.getId()), false, isRebuild);
+  }
+
+  /**
+   * Display notification for a specific forum topic.
+   */
+  protected final int displayTopicNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @NonNull TdlibNotificationGroup.TopicView topicView, TdlibNotificationSettings settings, boolean isRebuild) {
+    if (!allowPreview || topicView.isEmpty()) {
+      int notificationId = helper.getNotificationIdForTopicView(topicView.getId(), topicView.getTopicId());
+      manager.cancel(notificationId);
+      return DISPLAY_STATE_HIDDEN;
+    }
+
+    int visualSize = topicView.visualSize();
+    if (visualSize == 0) {
+      int notificationId = helper.getNotificationIdForTopicView(topicView.getId(), topicView.getTopicId());
+      manager.cancel(notificationId);
+      return DISPLAY_STATE_HIDDEN;
+    }
+
+    if (!tdlib.account().allowNotifications()) {
+      int notificationId = helper.getNotificationIdForTopicView(topicView.getId(), topicView.getTopicId());
+      manager.cancel(notificationId);
+      return DISPLAY_STATE_POSTPONED;
+    }
+
+    final long chatId = topicView.getChatId();
+    final long topicId = topicView.getTopicId();
+    final TdApi.Chat chat = tdlib.chatSync(chatId, CHAT_MAX_DELAY);
+    if (chat == null) {
+      return DISPLAY_STATE_FAIL;
+    }
+
+    // Get topic name
+    TdApi.ForumTopicInfo topicInfo = tdlib.forumTopicInfo(chatId, topicId);
+    String topicName = topicInfo != null ? topicInfo.name : "Topic";
+    final String chatTitle = tdlib.chatTitle(chat);
+
+    final int category = topicView.getCategory();
+    int notificationId = helper.getNotificationIdForTopicView(topicView.getId(), topicId);
+
+    String channelId = null;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      android.app.NotificationChannel channel;
+      try {
+        channel = (android.app.NotificationChannel) tdlib.notifications().getSystemChannel(topicView.parent());
+      } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+        channel = null;
+      }
+      if (channel == null) {
+        return DISPLAY_STATE_FAIL;
+      }
+      channelId = channel.getId();
+    }
+
+    final TdlibNotification singleNotification = visualSize == 1 ? topicView.lastNotification() : null;
+    final TdlibNotification lastNotification = topicView.lastNotification();
+    if (lastNotification == null) {
+      return DISPLAY_STATE_FAIL;
+    }
+
+    final boolean onlyPinned = topicView.isOnlyPinned();
+    final boolean onlyScheduled = topicView.isOnlyScheduled();
+    final boolean onlySilent = topicView.isOnlyInitiallySilent();
+    final boolean isChannel = tdlib.isChannelChat(chat);
+
+    // Build title with topic name: "Chat Name › Topic Name"
+    CharSequence visualChatTitle = chatTitle + " › " + topicName;
+    if (topicView.getTotalCount() > 1) {
+      visualChatTitle = Lang.getCharSequence(R.string.format_notificationTitleShort, visualChatTitle, Lang.plural(topicView.isMention() ? R.string.mentionCount : R.string.messagesCount, topicView.getTotalCount()));
+    }
+
+    // Build messaging style using the existing helper
+    boolean needPreview = helper.needPreview(topicView.parent());
+    NotificationCompat.MessagingStyle messagingStyle = newMessagingStyle(tdlib.notifications(), chat, topicView.getTotalCount(), topicView.isMention(), onlyPinned, onlyScheduled, onlySilent, false);
+    // Override conversation title with topic-specific one
+    messagingStyle.setConversationTitle(visualChatTitle);
+    messagingStyle.setGroupConversation(true);
+
+    StringBuilder textBuilder = new StringBuilder();
+    boolean[] hasCustomText = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? new boolean[1] : null;
+    boolean usePreview = needPreview && tdlib.notifications().isShowPreviewEnabled(chatId, topicView.isMention());
+
+    for (TdlibNotification notification : topicView) {
+      CharSequence preview;
+      if (usePreview) {
+        preview = notification.getTextRepresentation(tdlib, topicView.isMention() && onlyPinned, true, hasCustomText);
+      } else {
+        preview = Lang.getString(R.string.YouHaveNewMessage);
+      }
+      Person person = buildPerson(tdlib.notifications(), chat, notification, onlyScheduled, onlySilent, false);
+      addMessage(messagingStyle, preview, person, chat, notification, MEDIA_LOAD_TIMEOUT, false, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent(), onlyPinned);
+      if (textBuilder.length() > 0) {
+        textBuilder.append('\n');
+      }
+      textBuilder.append(preview);
+    }
+
+    final String textContent = textBuilder.toString();
+    final CharSequence tickerText = getTickerText(tdlib, helper, allowPreview, chat, lastNotification, true, topicView.singleSenderId() != 0, hasCustomText);
+
+    final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), topicView.findTargetMessageId(), topicId);
+
+    NotificationCompat.Builder builder;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      builder = new NotificationCompat.Builder(UI.getAppContext(), channelId);
+      boolean needNotification = settings != null;
+      builder.setOnlyAlertOnce(!needNotification);
+      builder.setGroupAlertBehavior(needNotification ? NotificationCompat.GROUP_ALERT_CHILDREN : NotificationCompat.GROUP_ALERT_SUMMARY);
+    } else {
+      builder = new NotificationCompat.Builder(UI.getAppContext());
+    }
+
+    builder
+      .setContentTitle(visualChatTitle)
+      .setSmallIcon(R.mipmap.app_notification)
+      .setContentText(textContent)
+      .setTicker(tickerText)
+      .setAutoCancel(Config.NOTIFICATION_AUTO_CANCEL)
+      .setSortKey(makeSortKey(lastNotification, false))
+      .setWhen(TimeUnit.SECONDS.toMillis(lastNotification.getDate()))
+      .setStyle(messagingStyle)
+      .setContentIntent(contentIntent);
+
+    builder.setGroup(makeGroupKey(tdlib, category) + "_forum_" + chatId);
+    builder.setGroupSummary(false);
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      builder.setCategory(NotificationCompat.CATEGORY_MESSAGE);
+      builder.setColor(tdlib.accountColor(chatId));
+    }
+
+    try {
+      Notification notification = builder.build();
+      manager.notify(notificationId, notification);
+      return DISPLAY_STATE_OK;
+    } catch (Throwable t) {
+      Log.e("Unable to display topic notification", t);
+      return DISPLAY_STATE_FAIL;
+    }
   }
 
   private static final long CHAT_MAX_DELAY = 200;
