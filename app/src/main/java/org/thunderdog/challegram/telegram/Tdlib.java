@@ -10654,18 +10654,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void findUpdateFile (@NonNull RunnableData<UpdateFileInfo> onDone) {
-    final String abi = U.getCpuAbi();
-    final String hashtag;
-    switch (abi) {
-      case "armeabi-v7a": hashtag = "arm32"; break;
-      case "arm64-v8a": hashtag = "arm64"; break;
-      case "x86": hashtag = "x86"; break;
-      case "x86_64": case "x64": hashtag = "x64"; break;
-      default: {
-        onDone.runWithData(null);
-        return;
-      }
+    final String abiFlavor = U.getPreferredAbiFlavor();
+    if (abiFlavor == null) {
+      onDone.runWithData(null);
+      return;
     }
+    final String hashtag;
+    if (!BuildConfig.LATEST_FLAVOR) {
+      hashtag = abiFlavor + StringUtils.ucfirst(BuildConfig.FLAVOR_SDK);
+    } else {
+      hashtag = abiFlavor;
+    }
+    final String query = "#apk " +
+      (Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS) ? "" : "#stable ") +
+      "#" + hashtag;
     clientHolder().updates.findResource(message -> {
       if (message != null && Td.isDocument(message.content)) {
         TdApi.Document document = ((TdApi.MessageDocument) message.content).document;
@@ -10698,9 +10700,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         }
         onDone.runWithData(ok ? new UpdateFileInfo(document, buildNo, version, commit) : null);
       }
-    }, "#apk " + (
-      Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS) ? "" : "#stable "
-    ) + "#" + hashtag, BuildConfig.COMMIT_DATE);
+    }, query, BuildConfig.COMMIT_DATE);
   }
 
   public <T extends Settings.CloudSetting> void fetchCloudSettings (@NonNull RunnableData<List<T>> callback, String requiredHashtag, @NonNull Future<T> currentSettingProvider, @NonNull Future<T> builtinItemProvider, @NonNull WrapperProvider<T, TdApi.Message> instanceProvider) {

@@ -424,7 +424,6 @@ android {
     buildConfigField("int", "ABI", abi.toString())
     buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${versionName}.${defaultConfig.versionCode}\"")
     buildConfigField("String", "RECAPTCHA_VERSION", "\"${recaptchaVersion}\"")
-    buildConfigField("boolean", "INAPP_UPDATES_AVAILABLE", (sdkVariant.flavor == "latest").toString())
 
     outputs.map { it as ApkVariantOutputImpl }.forEach { output ->
       output.versionCodeOverride = versionCodeOverride
