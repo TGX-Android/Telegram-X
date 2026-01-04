@@ -360,6 +360,8 @@ public class Settings {
   private static final String KEY_QUICK_REACTIONS = "quick_reactions";
   private static final String KEY_BIG_REACTIONS_IN_CHANNELS = "big_reactions_in_channels";
   private static final String KEY_BIG_REACTIONS_IN_CHATS = "big_reactions_in_chats";
+  private static final String KEY_BIG_REACTIONS_IN_DMS = "big_reactions_in_dms";
+  private static final String KEY_SHOW_ATTACH_WHILE_TYPING = "show_attach_while_typing";
 
   private static final String KEY_WALLPAPER_PREFIX = "wallpaper";
   private static final String KEY_WALLPAPER_CUSTOM = "_custom";
@@ -6905,6 +6907,22 @@ public class Settings {
 
   public boolean getBigReactionsInChats () {
     return getBoolean(KEY_BIG_REACTIONS_IN_CHATS, true);
+  }
+
+  public void setBigReactionsInDMs (boolean inDMs) {
+    pmc.putBoolean(KEY_BIG_REACTIONS_IN_DMS, inDMs);
+  }
+
+  public boolean getBigReactionsInDMs () {
+    return getBoolean(KEY_BIG_REACTIONS_IN_DMS, false);
+  }
+
+  public void setShowAttachWhileTyping (boolean show) {
+    pmc.putBoolean(KEY_SHOW_ATTACH_WHILE_TYPING, show);
+  }
+
+  public boolean getShowAttachWhileTyping () {
+    return getBoolean(KEY_SHOW_ATTACH_WHILE_TYPING, false);
   }
 
   public void markEmojiPackInstalled (EmojiPack emojiPack) {

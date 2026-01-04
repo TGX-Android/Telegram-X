@@ -9784,7 +9784,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void hideAttachButtons () {
-    attachButtons.setVisibility(View.INVISIBLE);
+    // Keep attach buttons visible when setting is enabled
+    if (Settings.instance().getShowAttachWhileTyping()) {
+      attachButtons.setVisibility(View.VISIBLE);
+    } else {
+      attachButtons.setVisibility(View.INVISIBLE);
+    }
     messageSenderButton.setVisibility(View.INVISIBLE);
   }
 
@@ -9819,10 +9824,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
       sendButton.setScaleX(scale1);
       sendButton.setScaleY(scale1);
 
-      float scale2 = 1f - scale;
-      attachButtons.setAlpha(1f - factor);
-      attachButtons.setScaleX(scale2);
-      attachButtons.setScaleY(scale2);
+      // Keep attach buttons visible when setting is enabled
+      if (Settings.instance().getShowAttachWhileTyping()) {
+        attachButtons.setAlpha(1f);
+        attachButtons.setScaleX(1f);
+        attachButtons.setScaleY(1f);
+      } else {
+        float scale2 = 1f - scale;
+        attachButtons.setAlpha(1f - factor);
+        attachButtons.setScaleX(scale2);
+        attachButtons.setScaleY(scale2);
+      }
       messageSenderButton.setSendFactor(sendFactor);
 
       if (tooltipInfo != null && tooltipInfo.isVisible()) {
