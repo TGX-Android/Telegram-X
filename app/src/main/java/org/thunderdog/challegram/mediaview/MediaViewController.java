@@ -232,6 +232,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     public final MediaSendDelegate sendDelegate;
     public final MediaStack stack;
     public String caption;
+    public TdApi.FormattedText initialCaption;
     private boolean noLoadMore;
     private String customSubtitle;
 
@@ -268,6 +269,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     public Args setCustomSubtitle (String subtitle) {
       this.customSubtitle = subtitle;
+      return this;
+    }
+
+    public Args setInitialCaption (TdApi.FormattedText initialCaption) {
+      this.initialCaption = initialCaption;
       return this;
     }
 
@@ -9166,6 +9172,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     captionView.setSelectionChangeListener(this);
     this.captionView = captionView;
     this.inputView = captionView;
+
+    // Apply initial caption from args if available
+    Args currentArgs = getArgumentsStrict();
+    if (currentArgs != null && currentArgs.initialCaption != null && !Td.isEmpty(currentArgs.initialCaption)) {
+      ignoreCaptionUpdate = true;
+      captionView.setInput(TD.toCharSequence(currentArgs.initialCaption), true, false);
+      stack.getCurrent().setCaption(currentArgs.initialCaption);
+    }
 
     captionDoneButton = new ImageView(context);
     captionDoneButton.setId(R.id.btn_caption_done);

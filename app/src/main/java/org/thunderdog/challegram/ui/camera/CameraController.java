@@ -1550,6 +1550,8 @@ public class CameraController extends ViewController<Void> implements CameraDele
       }, stack, m != null && m.areScheduledOnly()).setAvatarPickerMode(avatarPickerMode);
       if (m != null) {
         args.setReceiverChatId(m.getChatId());
+        // Let MessagesController inject initial caption from input field
+        m.modifyMediaArguments(file, args);
       }
       c.setArguments(args);
       c.forceCameraAnimationType(true);

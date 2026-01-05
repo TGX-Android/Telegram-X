@@ -962,6 +962,20 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
+  private int extraRightPadding = 0;
+
+  public void setExtraRightPadding (int extraPadding) {
+    if (this.extraRightPadding != extraPadding) {
+      this.extraRightPadding = extraPadding;
+      final int verticalPadding = Screen.dp(12f);
+      if (Lang.rtl()) {
+        setPadding(Screen.dp(55f) + extraPadding, verticalPadding, Screen.dp(60f), verticalPadding);
+      } else {
+        setPadding(Screen.dp(60f), verticalPadding, Screen.dp(55f) + extraPadding, verticalPadding);
+      }
+    }
+  }
+
   private boolean needSendByEnter () {
     return Settings.instance().needSendByEnter() && !isSettingText && controller != null && controller.inSimpleSendMode();
   }

@@ -781,7 +781,12 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public MediaViewController.Args prepareMediaViewArguments (MediaViewController.Args args) {
     if (mediaViewControllerArgumentsEditor != null) {
-      return mediaViewControllerArgumentsEditor.edit(args);
+      args = mediaViewControllerArgumentsEditor.edit(args);
+    }
+
+    // Inject caption from input field if attach-while-typing is enabled
+    if (target != null && Settings.instance().getShowAttachWhileTyping() && target.hasInputText()) {
+      args.setInitialCaption(target.getInputCaption());
     }
 
     return args;

@@ -8132,7 +8132,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Silent mode
 
   public int getHorizontalInputPadding () {
-    return attachButtons.getVisibleChildrenWidth() + (canSelectSender() ? Screen.dp(47) : 0);
+    int padding = attachButtons.getVisibleChildrenWidth() + (canSelectSender() ? Screen.dp(47) : 0);
+    // Add send button width when it's visible and attach buttons are also staying visible
+    boolean anyButtonStaysVisible = Settings.instance().getShowCameraWhileTyping() ||
+                                    Settings.instance().getShowAttachWhileTyping() ||
+                                    Settings.instance().getShowVoiceWhileTyping();
+    if (anyButtonStaysVisible && sendShown.getValue()) {
+      padding += Screen.dp(55f);
+    }
+    return padding;
   }
 
   private void updateSilentButton (boolean visible) {
@@ -9784,8 +9792,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void hideAttachButtons () {
-    // Keep attach buttons visible when setting is enabled
-    if (Settings.instance().getShowAttachWhileTyping()) {
+    // Keep attach buttons visible when any button setting is enabled
+    boolean anyButtonVisible = Settings.instance().getShowCameraWhileTyping() ||
+                               Settings.instance().getShowAttachWhileTyping() ||
+                               Settings.instance().getShowVoiceWhileTyping();
+    if (anyButtonVisible) {
       attachButtons.setVisibility(View.VISIBLE);
     } else {
       attachButtons.setVisibility(View.INVISIBLE);
@@ -9824,21 +9835,91 @@ public class MessagesController extends ViewController<MessagesController.Argume
       sendButton.setScaleX(scale1);
       sendButton.setScaleY(scale1);
 
-      // Keep attach buttons visible when setting is enabled
-      if (Settings.instance().getShowAttachWhileTyping()) {
+      // Handle individual attach buttons based on settings
+      boolean showCamera = Settings.instance().getShowCameraWhileTyping();
+      boolean showAttach = Settings.instance().getShowAttachWhileTyping();
+      boolean showVoice = Settings.instance().getShowVoiceWhileTyping();
+      boolean anyButtonVisible = showCamera || showAttach || showVoice;
+
+      if (anyButtonVisible) {
+        // Shift attach buttons left to make room for send button (55dp)
+        float translateX = Screen.dp(55f) * factor;
+        attachButtons.setTranslationX(Lang.rtl() ? translateX : -translateX);
         attachButtons.setAlpha(1f);
         attachButtons.setScaleX(1f);
         attachButtons.setScaleY(1f);
+
+        // Handle button visibility: enabled buttons stay visible, disabled ones fade/hide
+        if (cameraButton != null) {
+          if (showCamera) {
+            cameraButton.setVisibility(View.VISIBLE);
+            cameraButton.setAlpha(1f);
+            cameraButton.setScaleX(1f);
+            cameraButton.setScaleY(1f);
+          } else {
+            // Fade out disabled buttons, hide at full send, restore on text delete
+            cameraButton.setVisibility(factor >= 1f ? View.GONE : View.VISIBLE);
+            cameraButton.setAlpha(1f - factor);
+            cameraButton.setScaleX(1f - scale);
+            cameraButton.setScaleY(1f - scale);
+          }
+        }
+        if (mediaButton != null) {
+          if (showAttach) {
+            mediaButton.setVisibility(View.VISIBLE);
+            mediaButton.setAlpha(1f);
+            mediaButton.setScaleX(1f);
+            mediaButton.setScaleY(1f);
+          } else {
+            mediaButton.setVisibility(factor >= 1f ? View.GONE : View.VISIBLE);
+            mediaButton.setAlpha(1f - factor);
+            mediaButton.setScaleX(1f - scale);
+            mediaButton.setScaleY(1f - scale);
+          }
+        }
+        if (recordButton != null) {
+          if (showVoice) {
+            recordButton.setVisibility(View.VISIBLE);
+            recordButton.setAlpha(1f);
+            recordButton.setScaleX(1f);
+            recordButton.setScaleY(1f);
+          } else {
+            recordButton.setVisibility(factor >= 1f ? View.GONE : View.VISIBLE);
+            recordButton.setAlpha(1f - factor);
+            recordButton.setScaleX(1f - scale);
+            recordButton.setScaleY(1f - scale);
+          }
+        }
       } else {
+        // Restore all buttons when not typing
+        if (cameraButton != null) cameraButton.setVisibility(View.VISIBLE);
+        if (mediaButton != null) mediaButton.setVisibility(View.VISIBLE);
+        if (recordButton != null) recordButton.setVisibility(View.VISIBLE);
+
         float scale2 = 1f - scale;
         attachButtons.setAlpha(1f - factor);
         attachButtons.setScaleX(scale2);
         attachButtons.setScaleY(scale2);
+        attachButtons.setTranslationX(0);
       }
       messageSenderButton.setSendFactor(sendFactor);
 
       if (tooltipInfo != null && tooltipInfo.isVisible()) {
         tooltipInfo.reposition();
+      }
+
+      // Update input view padding dynamically based on actual visible buttons width
+      if (inputView != null) {
+        if (anyButtonVisible) {
+          // Get actual width of visible attach buttons + send button width (55dp)
+          int buttonsWidth = attachButtons.getVisibleChildrenWidth() + Screen.dp(55f);
+          // Subtract base padding (55dp) that InputView already has
+          int extraPadding = (int) ((buttonsWidth - Screen.dp(55f)) * factor);
+          inputView.setExtraRightPadding(extraPadding);
+        } else {
+          inputView.setExtraRightPadding(0);
+        }
+        inputView.checkPlaceholderWidth();
       }
     }
   }
@@ -10489,6 +10570,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       );
       final boolean isSecret = isSecretChat();
 
+      // Get caption from input text if camera button setting is enabled
+      final TdApi.FormattedText caption;
+      if (Settings.instance().getShowCameraWhileTyping() && inputView != null && inputView.getText().length() > 0) {
+        caption = inputView.getOutputText(true);
+        clearInputAfterMediaSend();
+      } else {
+        caption = null;
+      }
+
       Media.instance().post(() -> {
         BitmapFactory.Options opts = ImageReader.getImageSize(path);
         int orientation = U.getExifOrientation(path);
@@ -10504,7 +10594,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           height = sampledHeight;
         }
         TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(path, U.getRotationForExifOrientation(orientation));
-        TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, null, false, selfDestructType, false), isSecret);
+        TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, false, selfDestructType, false), isSecret);
         tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, photo);
       });
     }
@@ -10605,6 +10695,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.client().send(function, tdlib.messageHandler());
       }
     });
+
+    // Clear input if attach button setting is enabled and we had text
+    if (Settings.instance().getShowAttachWhileTyping()) {
+      clearInputAfterMediaSend();
+    }
 
     return true;
   }
@@ -10797,6 +10892,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (c instanceof MediaCollectorDelegate) {
         ((MediaCollectorDelegate) c).modifyMediaArguments(cause, args);
       }
+    }
+
+    // Set initial caption from input if attach button setting is enabled
+    // Don't clear here - will clear when media is actually sent
+    if (Settings.instance().getShowAttachWhileTyping() && inputView != null && inputView.getText().length() > 0) {
+      args.setInitialCaption(inputView.getOutputText(true));
+    }
+  }
+
+  // Helper methods for caption support with attach buttons
+  public boolean hasInputText () {
+    return inputView != null && inputView.getText().length() > 0;
+  }
+
+  public TdApi.FormattedText getInputCaption () {
+    if (inputView != null && inputView.getText().length() > 0) {
+      return inputView.getOutputText(true);
+    }
+    return null;
+  }
+
+  public void clearInputAfterMediaSend () {
+    if (inputView != null) {
+      UI.post(() -> {
+        if (inputView != null) {
+          inputView.setInput("", true, false);
+        }
+      });
     }
   }
 

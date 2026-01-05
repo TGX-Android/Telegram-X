@@ -114,8 +114,12 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
           }
         } else if (itemId == R.id.btn_useBigEmoji) {
           v.getToggler().setRadioEnabled(Settings.instance().useBigEmoji(), isUpdate);
+        } else if (itemId == R.id.btn_showCameraWhileTyping) {
+          v.getToggler().setRadioEnabled(Settings.instance().getShowCameraWhileTyping(), isUpdate);
         } else if (itemId == R.id.btn_showAttachWhileTyping) {
           v.getToggler().setRadioEnabled(Settings.instance().getShowAttachWhileTyping(), isUpdate);
+        } else if (itemId == R.id.btn_showVoiceWhileTyping) {
+          v.getToggler().setRadioEnabled(Settings.instance().getShowVoiceWhileTyping(), isUpdate);
         } else if (itemId == R.id.btn_toggleNewSetting) {
           boolean value = Settings.instance().getNewSetting(item.getLongId());
           if (item.getBoolValue())
@@ -210,11 +214,15 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.DynamicStickerPackOrder).setLongId(Settings.SETTING_FLAG_DYNAMIC_ORDER_STICKER_PACKS));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.DynamicStickerPackOrderHint));
-    items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Input));
+    items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.InputWhileTyping));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InputWhileTypingInfo));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_showCameraWhileTyping, 0, R.string.ShowCameraWhileTyping));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_showAttachWhileTyping, 0, R.string.ShowAttachWhileTyping));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_showVoiceWhileTyping, 0, R.string.ShowVoiceWhileTyping));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ShowAttachWhileTypingInfo));
     TGLegacyManager.instance().addEmojiListener(this);
 
     adapter.setItems(items, true);
@@ -297,8 +305,12 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
       showStickerOptions(true);
     } else if (viewId == R.id.btn_avatarsInReactions) {
       showReactionAvatarsOptions();
+    } else if (viewId == R.id.btn_showCameraWhileTyping) {
+      Settings.instance().setShowCameraWhileTyping(adapter.toggleView(v));
     } else if (viewId == R.id.btn_showAttachWhileTyping) {
       Settings.instance().setShowAttachWhileTyping(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_showVoiceWhileTyping) {
+      Settings.instance().setShowVoiceWhileTyping(adapter.toggleView(v));
     }
   }
 

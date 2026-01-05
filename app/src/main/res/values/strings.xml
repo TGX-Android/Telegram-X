@@ -2056,8 +2056,11 @@
   <string name="BigReactionsChats">Chats</string>
   <string name="BigReactionsChannels">Channels</string>
   <string name="BigReactionsNone">None</string>
-  <string name="ShowAttachWhileTyping">Show attach button while typing</string>
-  <string name="ShowAttachWhileTypingInfo">Keep the attach button visible when you\'re typing a message</string>
+  <string name="ShowCameraWhileTyping">Camera button</string>
+  <string name="ShowAttachWhileTyping">Attach button</string>
+  <string name="ShowVoiceWhileTyping">Voice button</string>
+  <string name="InputWhileTyping">Show while typing</string>
+  <string name="InputWhileTypingInfo">Select which buttons remain visible when you\'re typing a message. Sending media will use your text as caption.</string>
   <string name="Input">Input</string>
   <string name="ChannelReactionsAnonymous">Reactions in channels are anonymous</string>
 

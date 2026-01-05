@@ -1762,6 +1762,15 @@ public class RecordAudioVideoController implements
 
   private void sendAudioNote (TdApi.InputMessageVoiceNote voiceNote, TdApi.MessageSendOptions initialSendOptions) {
     if (hasValidOutputTarget()) {
+      // Get caption from input if voice button setting is enabled
+      boolean useCaption = Settings.instance().getShowVoiceWhileTyping();
+      TdApi.FormattedText caption = null;
+      if (useCaption && targetController.hasInputText()) {
+        caption = targetController.getInputCaption();
+        voiceNote.caption = caption;
+      }
+      final TdApi.FormattedText finalCaption = caption;
+
       targetController.pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         long chatId = targetController.getChatId();
         MessagesController.ReplyInfo replyInfo = targetController.obtainReplyTo();
@@ -1773,6 +1782,11 @@ public class RecordAudioVideoController implements
           targetController.obtainSilentMode()
         );
         tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, voiceNote, null);
+
+        // Clear input after send if caption was used
+        if (finalCaption != null) {
+          targetController.clearInputAfterMediaSend();
+        }
       });
     }
 
