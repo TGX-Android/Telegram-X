@@ -396,7 +396,7 @@ android {
       else -> error(sdkVariant.flavor)
     }.get().version!!
 
-    val versionCodeOverride = versionCode * 1000 + if (buildType.name != "debug") (sdk * 100 + abi) else 0
+    val versionCodeOverride = versionCode * 1000 + if (!buildType.isDebuggable) (sdk * 100 + abi) else 0
     val versionNameOverride = StringBuilder("${versionName}.${defaultConfig.versionCode}").apply {
       if (extra.has("app_version_suffix")) {
         append(extra["app_version_suffix"])
