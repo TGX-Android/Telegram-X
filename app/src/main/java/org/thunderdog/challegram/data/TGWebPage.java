@@ -635,7 +635,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       String host = uri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");
       String webPageHost = webPageUri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");
 
-      return StringUtils.equalsOrBothEmpty(host, webPageHost) && StringUtils.equalsOrBothEmpty(uri.getPath(), webPageUri.getPath());
+      return
+        StringUtils.equalsOrBothEmpty(host, webPageHost) &&
+        StringUtils.equalsOrBothEmpty(uri.getPath(), webPageUri.getPath()) &&
+        StringUtils.equalsOrBothEmpty(uri.getQuery(), webPageUri.getQuery());
     } catch (Throwable t) {
       Log.i("Invalid url", t);
     }
