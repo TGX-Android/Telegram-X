@@ -6,6 +6,7 @@ ksp = "2.3.4"
 desugaring = "2.1.5"
 
 kotlinx-coroutines = "1.10.2"
+kotlinx-serialization = "1.9.0"
 
 androidx-core-legacy = "1.12.0" # 1.13.0+ requires minSdk 19
 androidx-core-latest = "1.17.0"
@@ -89,8 +90,6 @@ google-services-plugin = "4.4.4"
 huawei-agcp = "1.9.3.302"
 huawei-hms = "6.13.0.300"
 
-klaxon = "5.6"
-
 okhttp-legacy = "4.12.0" # 5.x+ requires minSdk 21
 okhttp-latest = "5.3.2"
 
@@ -111,6 +110,7 @@ androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "andr
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "androidx-biometric" }
@@ -230,8 +230,6 @@ transcoder = { module = "com.github.natario1:Transcoder", version.ref = "transco
 sunriseSunsetCalculator = { module = "com.luckycatlabs:SunriseSunsetCalculator", version.ref = "sunrise-sunset-calculator" }
 subsamplingScaleImageView = { module = "com.davemorrissey.labs:subsampling-scale-image-view-androidx", version.ref = "subsampling-scale-image-view" }
 mp4parser-isoparser = { module = "com.googlecode.mp4parser:isoparser", version.ref = "mp4parser-isoparser" }
-
-klaxon = { module = "com.beust:klaxon", version.ref = "klaxon" }
 
 checkerframework = { module = "org.checkerframework:checker-qual", version.ref = "checkerframework" }
 

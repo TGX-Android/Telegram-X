@@ -40,7 +40,7 @@ dependencies {
   compileOnly(gradleApi())
   implementation(libs.android.gradle.plugin)
   implementation(libs.okhttp.latest)
-  implementation(libs.klaxon)
+  implementation(libs.kotlinx.serialization.json)
 }
 
 apply(from = "${rootDir.parentFile}/properties.gradle.kts")
