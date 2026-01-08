@@ -68,6 +68,21 @@
 | | | Topic filter dialog with proper icons (TopicIconModifier with colored circles + custom emoji)
 | | | Fix: Settings popup Done/Cancel buttons ripple effect (use ?android:attr/colorControlHighlight for theme-adaptive ripple)
 | | | Message search loading indicator (ClearButton spinner in search bar instead of centered ProgressComponentView)
+| | | Fix: Topic filter dialog icon positioning (LEFT_OFFSET_DP 68→18dp to place icons in left padding area)
+| | | Fix: ForumTopicView emoji rendering (use Text class instead of canvas.drawText for proper emoji support)
+| | | Fix: ForumTopicView icon-based indicators (mute/lock icons instead of emoji prefixes)
+| | | Fix: ForumTopicView text width calculation (prevent overlap with time/counters)
+| | | Fix: ForumTopicsController header margin (prevent title overlap with menu buttons)
+| | | Fix: Forums with tabs always open in tabs view (TdlibUi.java hasForumTabs condition)
+| | | Fix: View as chat navigation (direct MessagesController instead of openChat)
+| | | Star/Paid reactions support (TdExt.kt, TGStickerObj, TGReaction, TGReactions, Tdlib.java)
+| | | Fix: Premium bot crash on Buy button (TGInlineKeyboard null check + payment form handling)
+| | | Fix: Windows file lock issue (kotlin.compiler.execution.strategy=in-process in gradle.properties)
+| | | View Forum navigation from topic (btn_viewForum menu option when viewing topic via message link)
+| | | Stories Settings screen (SettingsStoriesController - new settings section)
+| | | Customizable story ring colors (StoryColorPickerController - 1-3 color gradient picker)
+| | | Optional "Add Story" button border (SETTING_FLAG_SHOW_ADD_STORY_BORDER)
+| | | Story bar as RecyclerView item (scrolls with chat list instead of overlay)
 
 ## Implementation Notes
 
@@ -313,3 +328,33 @@ Fixed star icon in reaction bubbles being too large (overflowing its border).
   - Changed `drawReceiver()` to use `drawable.draw(canvas)` directly instead of `Drawables.draw()`
   - Now properly respects the bounds set with `setBounds(l, t, r, b)`
   - Star icon scales to fit the reaction bubble correctly
+
+### Forum Topic UI Improvements (from logopek/reX)
+Applied topic-related fixes from https://github.com/logopek/reX repository.
+
+**Changes Applied:**
+
+1. **TdlibUi.java - Forums with tabs always open in tabs view**
+   - Changed condition from `chat.viewAsTopics` to `chat.viewAsTopics || hasForumTabs`
+   - Forums with tabs layout now correctly open in tabs mode by default
+
+2. **ForumTopicView.java - Icon-based indicators instead of emojis**
+   - Removed emoji prefixes from topic title (🔒, 📌, 🔕)
+   - Added mute icon (deproko_baseline_notifications_off_24) drawn after title text (14dp, 4dp gap)
+   - Added lock icon (deproko_baseline_lock_24) where counter normally is when topic is closed and has no unread (18dp)
+   - Improved text width calculation to reserve space for time, status icons, counters, and mute icon
+   - Prevents text overlap with icons/counters on right side
+
+3. **ForumTopicsController.java - Header margin fix**
+   - Added `headerCell.setInnerMargins(56dp, 104dp)` to prevent chat title overlapping menu buttons
+   - Right margin: 48dp (more button) + 48dp (search button) + 8dp (padding) = 104dp
+
+4. **ForumTopicsController.java - View as chat navigation fix**
+   - Changed "View as chat" to create MessagesController directly instead of using openChat()
+   - Prevents forum from re-opening in tabs mode after switching to unified view
+   - Uses focus listener to remove ForumTopicsController from navigation stack
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/telegram/TdlibUi.java` (line 2139)
+- `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicView.java` (lines 222-223, 329-359, 563-623)
+- `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicsController.java` (lines 599-601, 708-724)

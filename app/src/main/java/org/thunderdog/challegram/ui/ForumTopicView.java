@@ -215,19 +215,8 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       statusHelper.attachToChat(topic.info.chatId, new TdApi.MessageTopicForum(topic.info.forumTopicId));
     }
 
-    // Build title
+    // Build title (no emoji prefixes - icons are drawn separately)
     this.titleText = topic.info.name;
-    if (topic.info.isClosed) {
-      this.titleText = "\uD83D\uDD12 " + titleText; // Lock emoji
-    }
-    if (topic.isPinned) {
-      this.titleText = "\uD83D\uDCCC " + titleText; // Pin emoji
-    }
-    // Check if muted (respects useDefaultMuteFor and parent chat settings)
-    boolean isMuted = tdlib.forumTopicNeedsMuteIcon(topic.info.chatId, topic);
-    if (isMuted) {
-      this.titleText = "\uD83D\uDD07 " + titleText; // Muted speaker emoji
-    }
 
     // Check if we should show draft (draft exists with text input)
     boolean hasDraft = topic.draftMessage != null &&
@@ -336,7 +325,26 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
 
     int textLeft = Screen.dp(PADDING_LEFT);
     int textRight = width - Screen.dp(PADDING_RIGHT);
-    int availWidth = textRight - textLeft;
+
+    // Calculate reserved right width to prevent text overlap with time/status/counters
+    int reservedRightWidth = Screen.dp(12f); // Base padding
+    if (!StringUtils.isEmpty(timeText)) {
+      reservedRightWidth += (int) timePaint.measureText(timeText);
+    }
+    if (isOutgoing) {
+      reservedRightWidth += Screen.dp(22f); // Status icon width
+    }
+    if (unreadCounter != null) {
+      reservedRightWidth += (int) unreadCounter.getWidth() + Screen.dp(4f);
+    }
+    if (reactionsCounter != null) {
+      reservedRightWidth += (int) reactionsCounter.getWidth() + Screen.dp(4f);
+    }
+    if (isMuted) {
+      reservedRightWidth += Screen.dp(18f); // Mute icon space
+    }
+
+    int availWidth = textRight - textLeft - reservedRightWidth;
 
     // Build title Text with emoji support (4-parameter constructor for String)
     if (!StringUtils.isEmpty(titleText)) {
@@ -559,23 +567,50 @@ public class ForumTopicView extends BaseView implements TdlibEmojiManager.Watche
       }
     }
 
-    // Draw title with optional highlighting
-    int titleRight = (int) (textRight - timeWidth - statusIconWidth - Screen.dp(8f));
-    if (!StringUtils.isEmpty(titleText)) {
-      String ellipsizedTitle = TextUtils.ellipsize(titleText, titlePaint, titleRight - textLeft, TextUtils.TruncateAt.END).toString();
-      float titleY = Screen.dp(28f);
+    // Calculate right offset for icons that appear after title
+    float rightOffset = timeWidth + statusIconWidth + Screen.dp(8f);
+    if (isMuted) {
+      rightOffset += Screen.dp(18f); // Space for mute icon
+    }
 
-      if (!StringUtils.isEmpty(highlightQuery)) {
-        // Draw title with highlight
-        drawHighlightedText(canvas, ellipsizedTitle, textLeft, titleY, titlePaint, highlightQuery);
-      } else {
-        canvas.drawText(ellipsizedTitle, textLeft, titleY, titlePaint);
+    // Draw title with emoji support
+    int titleRight = (int) (textRight - rightOffset);
+    if (displayTitle != null) {
+      int titleY = Screen.dp(12f);
+      displayTitle.draw(canvas, textLeft, titleY);
+
+      // Draw mute icon right after title text
+      if (isMuted && displayTitle.getWidth() > 0) {
+        int muteIconX = textLeft + displayTitle.getWidth() + Screen.dp(4f);
+        int muteIconY = titleY - Screen.dp(1f);
+        Drawable muteIcon = Drawables.get(getResources(), R.drawable.deproko_baseline_notifications_off_24);
+        if (muteIcon != null) {
+          int muteIconSize = Screen.dp(14f);
+          muteIcon.setBounds(muteIconX, muteIconY, muteIconX + muteIconSize, muteIconY + muteIconSize);
+          muteIcon.setColorFilter(Theme.getColor(ColorId.iconLight), android.graphics.PorterDuff.Mode.SRC_IN);
+          muteIcon.draw(canvas);
+        }
       }
     }
 
     // Draw counters on the right side
     int previewRight = textRight;
     float counterCenterY = height / 2 + Screen.dp(12f);
+
+    // Draw lock icon if topic is closed and has no unread messages
+    boolean showLockIcon = topic.info.isClosed && (unreadCounter == null || topic.unreadCount == 0);
+    if (showLockIcon) {
+      int lockIconSize = Screen.dp(18f);
+      int lockIconX = textRight - lockIconSize;
+      int lockIconY = (int) counterCenterY - lockIconSize / 2;
+      Drawable lockIcon = Drawables.get(getResources(), R.drawable.deproko_baseline_lock_24);
+      if (lockIcon != null) {
+        lockIcon.setBounds(lockIconX, lockIconY, lockIconX + lockIconSize, lockIconY + lockIconSize);
+        lockIcon.setColorFilter(Theme.getColor(ColorId.iconLight), android.graphics.PorterDuff.Mode.SRC_IN);
+        lockIcon.draw(canvas);
+      }
+      previewRight -= (int) (lockIconSize + Screen.dp(4f));
+    }
 
     // Draw unread counter (rightmost)
     if (unreadCounter != null) {
