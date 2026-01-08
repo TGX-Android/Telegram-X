@@ -596,6 +596,9 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
     // Create header view for clickable chat header
     headerCell = new ChatHeaderView(context, tdlib, this);
     headerCell.setCallback(this);
+    // Set inner margins to prevent title overlap with menu buttons
+    // Right margin: 48dp (more button) + 48dp (search button) + 8dp (padding) = 104dp
+    headerCell.setInnerMargins(Screen.dp(56f), Screen.dp(104f));
     if (chat != null) {
       headerCell.setChat(tdlib, chat, null, null);
     }
@@ -707,8 +710,14 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
       tdlib.client().send(new TdApi.ToggleChatViewAsTopics(chatId, false), result -> {
         if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
           tdlib.ui().post(() -> {
-            // Open chat in unified mode - this replaces current controller properly
-            tdlib.ui().openChat(this, chat, new TdlibUi.ChatOpenParameters().removeDuplicates());
+            // Create MessagesController directly to prevent re-opening in tabs mode
+            MessagesController messagesController = new MessagesController(context, tdlib);
+            messagesController.setArguments(new MessagesController.Arguments(null, chat, null, null, null, 0, null));
+            // Remove this controller from stack after transition
+            messagesController.addOneShotFocusListener(() -> {
+              messagesController.destroyStackItemAt(messagesController.stackSize() - 2);
+            });
+            navigateTo(messagesController);
           });
         }
       });
