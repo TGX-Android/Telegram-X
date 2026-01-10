@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@android:id/copy"
+        android:icon="@drawable/baseline_content_copy_24"
+        android:title="@android:string/copy"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@id/menu_btn_create_quote"
+        android:icon="@drawable/baseline_format_quote_close_24"
+        android:title="@string/TextFormatQuote"
+        app:showAsAction="always" />
+
+   <item
+        android:id="@id/menu_btn_quote_in_other_chat"
+        android:icon="@drawable/baseline_chat_bubble_24"
+        android:title="@string/QuoteInOtherChat"
+        app:showAsAction="always" />
+</menu>

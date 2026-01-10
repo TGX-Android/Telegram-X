@@ -76,6 +76,10 @@ public class TextPart {
     this.end = end;
   }
 
+  public String getText () {
+    return line;
+  }
+
   public void setLineIndex (int lineIndex, int paragraphIndex) {
     this.lineIndex = lineIndex;
     this.paragraphIndex = paragraphIndex;

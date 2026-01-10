@@ -5920,4 +5920,7 @@
   <string name="SavedMessagesTagLabelHint">Enter a label for this tag (up to 12 characters)</string>
   <string name="SavedMessagesTagLabelPremiumRequired">Tag labels require a **Telegram Premium** subscription.</string>
 
+  <string name="ReplyInOtherChat">Reply in other chat</string>
+  <string name="QuoteInOtherChat">Quote in other chat</string>
+
 </resources>

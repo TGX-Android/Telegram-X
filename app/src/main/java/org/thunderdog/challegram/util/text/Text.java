@@ -51,6 +51,7 @@ import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
@@ -269,6 +270,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   private int builtInEmojiCount, customEmojiCount;
   private Map<String, TextMedia> media;
   private @Nullable TextEntity[] entities;
+
+  // Quote highlight
+  private int quoteHighlightStart = -1;
+  private int quoteHighlightEnd = -1;
+  private float quoteHighlightAlpha = 0f;
 
   @Nullable public TextEntity[] getEntities () {
     return entities;
@@ -2436,6 +2442,61 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     c.restore();
   }
 
+  private void drawQuoteHighlight(Canvas c, int startX, int endX, int endXBottomPadding, int startY, boolean center, float alpha) {
+    if (quoteHighlightStart == -1 || quoteHighlightEnd == -1 || quoteHighlightStart >= quoteHighlightEnd) return;
+
+    // Use system text selection highlight color with alpha
+    int baseColor = Theme.getColor(ColorId.textSelectionHighlight);
+    int color = ColorUtils.alphaColor(alpha, baseColor);
+    Paint paint = new Paint();
+    paint.setColor(color);
+
+    for (TextPart part : parts) {
+      // Полностью пропускаем части вне диапазона
+      if (part.getEnd() <= quoteHighlightStart || part.getStart() >= quoteHighlightEnd) continue;
+
+      // Определяем пересечение
+      int pStart = Math.max(part.getStart(), quoteHighlightStart);
+      int pEnd = Math.min(part.getEnd(), quoteHighlightEnd);
+
+      String text = part.getText();
+      if (text == null) continue;
+
+      // part.getText() возвращает полную строку, а part.getStart()/getEnd() - индексы в ней
+      // pStart и pEnd - абсолютные индексы в полной строке
+      int partStart = part.getStart();
+      int partEnd = part.getEnd();
+
+      // Защита от выхода за границы
+      if (pStart < 0) pStart = 0;
+      if (pEnd > text.length()) pEnd = text.length();
+      if (pStart >= pEnd) continue;
+      if (partStart < 0) partStart = 0;
+      if (partEnd > text.length()) partEnd = text.length();
+
+      TextPaint textPaint = getTextPaint(part.getEntity());
+
+      // Меряем от начала части до начала выделения, затем ширину выделения
+      float startOffset = textPaint.measureText(text, partStart, pStart);
+      float selectionWidth = textPaint.measureText(text, pStart, pEnd);
+
+      int partDrawX;
+      if (center) {
+        int width = getLineWidth(part.getLineIndex());
+        int cx = startX + maxWidth / 2;
+        partDrawX = part.makeX(cx - width / 2, cx + width / 2, 0);
+      } else {
+        partDrawX = part.makeX(startX, endX, endXBottomPadding);
+      }
+
+      float drawX = partDrawX + startOffset;
+      float drawY = startY + part.getY() + getPartVerticalOffset(part);
+      float height = getPartHeight(part);
+
+      // Добавляем микро-отступ ширины (0.5dp), чтобы визуально перекрыть стыки символов
+      c.drawRect(drawX, drawY, drawX + selectionWidth + (selectionWidth > 0 ? 1 : 0), drawY + height, paint);
+    }
+  }
   private int lastStartX, lastEndX, lastEndXBottomPadding, lastStartY;
 
   public void beginDrawBatch (@Nullable ComplexReceiver receiver, int externalBatchId) {
@@ -2597,6 +2658,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       }
     }
     drawPressHighlight(c, startX, endX, endXBottomPadding, startY, center, pressHighlight, alpha, defaultTheme);
+    drawQuoteHighlight(c, startX, endX, endXBottomPadding, startY, center, alpha);
 
     if ((textFlags & FLAG_HAS_SPOILERS) != 0) {
       if (spoilers == null) {
@@ -2716,6 +2778,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     default boolean onUrlClick (View view, String link, boolean promptUser, @NonNull TdlibUi.UrlOpenParameters openParameters) { return false; }
     default boolean onAnchorClick (View view, String anchor) { return false; }
     default boolean onReferenceClick (View view, String name, String referenceAnchorName, @NonNull TdlibUi.UrlOpenParameters openParameters) { return false; }
+    // Long press on text (not on entities) - for quote selection
+    default boolean onLongPress (View view, Text text) { return false; }
   }
 
   public boolean highlightPart (int index, boolean onlyClickable) {
@@ -2819,6 +2883,174 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   @Nullable
   private PressHighlight pressHighlight;
   private int touchX, touchY;
+
+  // Quote highlight public methods
+  public void setQuoteHighlight (int charStart, int charEnd, float alpha) {
+    this.quoteHighlightStart = charStart;
+    this.quoteHighlightEnd = charEnd;
+    this.quoteHighlightAlpha = alpha;
+  }
+
+  public void clearQuoteHighlight () {
+    this.quoteHighlightStart = -1;
+    this.quoteHighlightEnd = -1;
+  }
+
+  // Get character index at coordinates (for text selection)
+  public int getCharIndexAt(float x, float y) {
+    if (parts == null || parts.isEmpty()) return -1;
+
+    TextPart bestPart = null;
+    float minDy = Float.MAX_VALUE;
+    float minDx = Float.MAX_VALUE;
+
+    for (TextPart part : parts) {
+      int partY = part.getY();
+      int partH = getLineHeight(part.getLineIndex());
+
+      // Проверяем дистанцию до центра строки по вертикали
+      float centerY = partY + partH / 2f;
+      float dy = Math.abs(y - centerY);
+
+      // Если это самая близкая по вертикали строка (с порогом)
+      if (dy < minDy) {
+        minDy = dy;
+        minDx = Float.MAX_VALUE; // Сбрасываем лучший X для новой лучшей строки
+        bestPart = part;
+      }
+
+      // Если мы на той же самой лучшей строке, ищем ближайшую часть по горизонтали
+      if (Math.abs(dy - minDy) < 1.0f) { // float equals check
+        float centerX = part.getX() + part.getWidth() / 2f;
+        float dx = Math.abs(x - centerX);
+        if (dx < minDx) {
+          minDx = dx;
+          bestPart = part;
+        }
+      }
+    }
+
+    if (bestPart != null) {
+      // Мы нашли лучшую часть текста. Теперь ищем индекс внутри неё.
+      float localX = x - bestPart.getX();
+
+      // Если кликнули левее части -> начало части
+      if (localX <= 0) return bestPart.getStart();
+      // Если кликнули правее части -> конец части
+      if (localX >= bestPart.getWidth()) return bestPart.getEnd();
+
+      // Клик внутри
+      String text = bestPart.getText();
+      if (text == null) return bestPart.getStart();
+
+      TextPaint paint = getTextPaint(bestPart.getEntity());
+      int indexInPart = paint.breakText(text, true, localX, null);
+      return bestPart.getStart() + indexInPart;
+    }
+
+    return -1;
+  }
+
+  /**
+   * Similar to getCharIndexAt, but uses screen coordinates with makeX logic for RTL/margins.
+   * Used for text selection dragging.
+   */
+  public int getCharIndexAtScreen(float x, float y, int startX, int endX, int endXBottomPadding, int startY) {
+    if (parts == null || parts.isEmpty()) return -1;
+
+    // Преобразуем экранную Y в локальную
+    float localY = y - startY;
+
+    final boolean center = (textFlags & FLAG_ALIGN_CENTER) != 0;
+
+    TextPart bestPart = null;
+    float minDy = Float.MAX_VALUE;
+    float minDx = Float.MAX_VALUE;
+
+    for (TextPart part : parts) {
+      int partY = part.getY() + getPartVerticalOffset(part);
+      int partH = getPartHeight(part);
+
+      // Проверяем дистанцию до центра строки по вертикали
+      float centerY = partY + partH / 2f;
+      float dy = Math.abs(localY - centerY);
+
+      // Если это самая близкая по вертикали строка
+      if (dy < minDy) {
+        minDy = dy;
+        minDx = Float.MAX_VALUE;
+        bestPart = part;
+      }
+
+      // Если мы на той же самой лучшей строке, ищем ближайшую часть по горизонтали
+      if (Math.abs(dy - minDy) < 1.0f) {
+        int partDrawX;
+        if (center) {
+          int lineWidth = getLineWidth(part.getLineIndex());
+          int cx = startX + maxWidth / 2;
+          partDrawX = part.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+        } else {
+          partDrawX = part.makeX(startX, endX, endXBottomPadding);
+        }
+        float centerX = partDrawX + part.getWidth() / 2f;
+        float dx = Math.abs(x - centerX);
+        if (dx < minDx) {
+          minDx = dx;
+          bestPart = part;
+        }
+      }
+    }
+
+    if (bestPart != null) {
+      int partDrawX;
+      if (center) {
+        int lineWidth = getLineWidth(bestPart.getLineIndex());
+        int cx = startX + maxWidth / 2;
+        partDrawX = bestPart.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+      } else {
+        partDrawX = bestPart.makeX(startX, endX, endXBottomPadding);
+      }
+      float localX = x - partDrawX;
+
+      if (localX <= 0) return bestPart.getStart();
+      if (localX >= bestPart.getWidth()) return bestPart.getEnd();
+
+      String text = bestPart.getText();
+      if (text == null) return bestPart.getStart();
+
+      int partStart = bestPart.getStart();
+      int partEnd = bestPart.getEnd();
+      if (partStart < 0) partStart = 0;
+      if (partEnd > text.length()) partEnd = text.length();
+      if (partStart >= partEnd) return partStart;
+
+      TextPaint paint = getTextPaint(bestPart.getEntity());
+      // breakText с start/end параметрами для правильного измерения подстроки
+      int charsCount = paint.breakText(text, partStart, partEnd, true, localX, null);
+      return partStart + charsCount;
+    }
+
+    return -1;
+  }
+
+  private int getCharIndexInPart(TextPart part, float localX) {
+    String text = part.getText();
+    if (text == null || text.isEmpty()) return part.getStart();
+
+    int partStart = part.getStart();
+    int partEnd = part.getEnd();
+    if (partStart < 0) partStart = 0;
+    if (partEnd > text.length()) partEnd = text.length();
+    if (partStart >= partEnd) return partStart;
+
+    TextPaint paint = getTextPaint(part.getEntity());
+    // breakText с start/end параметрами для правильного измерения подстроки
+    int charsCount = paint.breakText(text, partStart, partEnd, true, localX, null);
+    return partStart + charsCount;
+  }
+  public void clearQuoteHighlightAlpha () {
+    this.quoteHighlightAlpha = 0f;
+  }
 
   public void setViewProvider (ViewProvider viewProvider) {
     this.viewProvider = viewProvider;
@@ -3046,6 +3278,17 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
   public boolean performLongPress (final View view) {
     final ClickCallback callback = longPressTargetCallback;
+
+    // IMPORTANT: First check if callback wants to handle this
+    // This allows TGMessageText to intercept long press for quote selection
+    if (callback != null && !StringUtils.isEmpty(originalText)) {
+      android.util.Log.d("Text", "Checking callback.onLongPress first");
+      if (callback.onLongPress(view, this)) {
+        android.util.Log.d("Text", "Callback handled long press, cancelling touch");
+        cancelTouch();
+        return true;
+      }
+    }
 
     if (pressedQuote != null) {
       final QuoteBackground quote = pressedQuote;
@@ -3545,5 +3788,175 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       }
       currentY += Screen.dp(offsetDp);
     }
+  }
+
+  public boolean getCursorCoordinates(int charIndex, Rect outRect) {
+    if (parts == null || parts.isEmpty()) return false;
+
+    int maxLen = originalText.length();
+    charIndex = Math.max(0, Math.min(charIndex, maxLen));
+
+    for (int i = 0; i < parts.size(); i++) {
+      TextPart part = parts.get(i);
+
+      // Проверяем, попадает ли индекс в этот кусок.
+      // <= part.getEnd() важно, чтобы найти позицию "после последнего символа" в этой части
+      if (charIndex >= part.getStart() && charIndex <= part.getEnd()) {
+
+        // ЛОГИКА ПЕРЕНОСА СТРОКИ:
+        // Если мы находимся в самом конце части (index == part.getEnd()),
+        // и эта часть НЕ последняя в своей визуальной строке, то курсор должен
+        // рисоваться в начале СЛЕДУЮЩЕЙ части (чтобы перепрыгнуть через пробел/стык).
+        // Но если это конец строки, курсор остается здесь.
+
+        boolean isEndOfPart = (charIndex == part.getEnd());
+        boolean hasNextPart = (i < parts.size() - 1);
+
+        if (isEndOfPart && hasNextPart) {
+          TextPart nextPart = parts.get(i + 1);
+          // Если следующая часть на ТОЙ ЖЕ строке, передаем управление ей (continue),
+          // тогда курсор нарисуется в её начале.
+          if (nextPart.getLineIndex() == part.getLineIndex()) {
+            continue;
+          }
+          // А если следующая часть на НОВОЙ строке, то мы остаемся здесь,
+          // и рисуем курсор в конце текущей строки.
+        }
+
+        String text = part.getText();
+        float width = 0;
+        if (text != null) {
+          int partStart = part.getStart();
+          // Защита от выхода за границы
+          if (partStart < 0) partStart = 0;
+          if (partStart > text.length()) partStart = text.length();
+          if (charIndex < partStart) charIndex = partStart;
+          if (charIndex > text.length()) charIndex = text.length();
+
+          TextPaint paint = getTextPaint(part.getEntity());
+          // Меряем от начала части до позиции курсора
+          width = paint.measureText(text, partStart, charIndex);
+        }
+
+        int x = part.getX() + (int)width;
+        int y = part.getY() + getPartVerticalOffset(part);
+        int h = getPartHeight(part);
+
+        outRect.set(x, y, x + 1, y + h);
+        return true;
+      }
+    }
+
+    // Fallback: Если индекс равен длине текста (самый конец), и цикл не сработал
+    if (charIndex == maxLen) {
+      TextPart last = parts.get(parts.size() - 1);
+      int x = last.getX() + (int)last.getWidth();
+      int y = last.getY() + getPartVerticalOffset(last);
+      int h = getPartHeight(last);
+      outRect.set(x, y, x + 1, y + h);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Similar to getCursorCoordinates, but returns screen coordinates using the same logic
+   * as drawing (part.makeX). Needed for text selection handles to align with highlight.
+   */
+  public boolean getCursorScreenCoordinates(int charIndex, int startX, int endX, int endXBottomPadding, int startY, Rect outRect) {
+    if (parts == null || parts.isEmpty()) return false;
+
+    int maxLen = originalText.length();
+    charIndex = Math.max(0, Math.min(charIndex, maxLen));
+
+    final boolean center = (textFlags & FLAG_ALIGN_CENTER) != 0;
+
+    for (int i = 0; i < parts.size(); i++) {
+      TextPart part = parts.get(i);
+
+      if (charIndex >= part.getStart() && charIndex <= part.getEnd()) {
+        boolean isEndOfPart = (charIndex == part.getEnd());
+        boolean hasNextPart = (i < parts.size() - 1);
+
+        if (isEndOfPart && hasNextPart) {
+          TextPart nextPart = parts.get(i + 1);
+          if (nextPart.getLineIndex() == part.getLineIndex()) {
+            continue;
+          }
+        }
+
+        String text = part.getText();
+        float width = 0;
+        if (text != null) {
+          int partStart = part.getStart();
+          // Защита от выхода за границы
+          if (partStart < 0) partStart = 0;
+          if (partStart > text.length()) partStart = text.length();
+          if (charIndex < partStart) charIndex = partStart;
+          if (charIndex > text.length()) charIndex = text.length();
+
+          TextPaint paint = getTextPaint(part.getEntity());
+          // Меряем от начала части до позиции курсора
+          width = paint.measureText(text, partStart, charIndex);
+        }
+
+        // Use makeX instead of getX to properly handle RTL, margins, etc.
+        // Same logic as in drawQuoteHighlight
+        int partDrawX;
+        if (center) {
+          int lineWidth = getLineWidth(part.getLineIndex());
+          int cx = startX + maxWidth / 2;
+          partDrawX = part.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+        } else {
+          partDrawX = part.makeX(startX, endX, endXBottomPadding);
+        }
+
+        int x = partDrawX + (int)width;
+        int y = startY + part.getY() + getPartVerticalOffset(part);
+        int h = getPartHeight(part);
+
+        outRect.set(x, y, x + 1, y + h);
+        return true;
+      }
+    }
+
+    // Fallback
+    if (charIndex == maxLen) {
+      TextPart last = parts.get(parts.size() - 1);
+      int partDrawX;
+      if (center) {
+        int lineWidth = getLineWidth(last.getLineIndex());
+        int cx = startX + maxWidth / 2;
+        partDrawX = last.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+      } else {
+        partDrawX = last.makeX(startX, endX, endXBottomPadding);
+      }
+      int x = partDrawX + (int)last.getWidth();
+      int y = startY + last.getY() + getPartVerticalOffset(last);
+      int h = getPartHeight(last);
+      outRect.set(x, y, x + 1, y + h);
+      return true;
+    }
+
+    return false;
+  }
+
+  public boolean contains(float x, float y) {
+    if (parts == null || parts.isEmpty()) return false;
+
+    for (TextPart part : parts) {
+      int partY = part.getY();
+      int partH = getLineHeight(part.getLineIndex());
+
+      // Строгая проверка по вертикали
+      if (y >= partY && y < partY + partH) {
+        // Строгая проверка по горизонтали
+        if (x >= part.getX() && x <= part.getX() + part.getWidth()) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

@@ -54,6 +54,9 @@
   <item type="id" name="menu_btn_archive" />
   <item type="id" name="menu_btn_help" />
   <item type="id" name="menu_btn_reply" />
+  <item type="id" name="menu_btn_quote" />
+  <item type="id" name="menu_btn_create_quote" />
+  <item type="id" name="menu_btn_quote_in_other_chat" />
   <item type="id" name="menu_btn_report" />
   <item type="id" name="menu_btn_pinUnpin" />
   <item type="id" name="menu_btn_muteUnmute" />

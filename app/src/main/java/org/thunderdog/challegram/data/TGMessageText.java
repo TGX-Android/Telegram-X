@@ -23,6 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
@@ -43,6 +44,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextSelectionHelper;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import me.vkryl.android.AnimatorUtils;
@@ -57,6 +59,14 @@ import tgx.td.Td;
 public class TGMessageText extends TGMessage {
   private TdApi.FormattedText text;
   private final VariableFloat lastLineWidth = new VariableFloat(0f);
+  private org.thunderdog.challegram.util.text.TextSelectionHelper textSelectionHelper;
+  private boolean isCheckingWrapper;
+
+  // Text highlight for quotes
+  private boolean hasTextHighlight;
+  private int highlightCharStart;
+  private int highlightCharEnd;
+  private float highlightAlpha;
   private final ReplaceAnimator<TextWrapper> visibleText = new ReplaceAnimator<>(new ReplaceAnimator.Callback() {
     @Override
     public void onItemChanged (ReplaceAnimator<?> animator) {
@@ -285,7 +295,7 @@ public class TGMessageText extends TGMessage {
           .setHighlightText(getHighlightedText(Highlight.Pool.KEY_TEXT, text.text))
           .setClickCallback(clickCallback());
       }
-      wrapper.addTextFlags(Text.FLAG_BIG_EMOJI);
+      wrapper.addTextFlags(Text.FLAG_BIG_EMOJI | Text.FLAG_CUSTOM_LONG_PRESS);
       if (useBubbles()) {
         wrapper.addTextFlags(Text.FLAG_ADJUST_TO_CURRENT_WIDTH);
       }
@@ -553,6 +563,32 @@ public class TGMessageText extends TGMessage {
       int linkPreviewX = Lang.rtl() ? startX + maxWidth - linkPreview.getWidth() : startX;
       linkPreview.draw(view, c, linkPreviewX, linkPreviewY, preview, receiver, alpha, textMediaReceiver);
     }
+
+    // Draw text selection highlight and handles if active
+    if (textSelectionHelper != null && isTextSelectionActive && effectiveWrapper != null) {
+      org.thunderdog.challegram.util.text.Text textObj = effectiveWrapper.getCurrent();
+      if (textObj != null) {
+        // Вычисляем правильную позицию текста с учетом linkPreviewAboveText
+        int actualTextY;
+        if (linkPreviewAboveText == 0f || linkPreview == null) {
+          actualTextY = topTextY;
+        } else if (linkPreviewAboveText == 1f) {
+          actualTextY = bottomTextY;
+        } else {
+          // Во время анимации используем интерполированную позицию
+          actualTextY = (int) (topTextY * (1f - linkPreviewAboveText) + bottomTextY * linkPreviewAboveText);
+        }
+
+        // Обновляем layoutOffset перед отрисовкой (с учетом всех параметров для правильной работы RTL и margins)
+        final int startXRtl = getStartXRtl(effectiveWrapper, startX, maxWidth);
+        textSelectionHelper.setLayoutOffset(startX, actualTextY, startXRtl, endXPadding);
+
+        // Draw selection highlight
+        textSelectionHelper.drawSelection(c, textObj, startX, actualTextY, alpha);
+        // Draw selection handles
+        textSelectionHelper.drawHandles(c, textObj, startX, actualTextY);
+      }
+    }
   }
 
   @Override
@@ -664,24 +700,152 @@ public class TGMessageText extends TGMessage {
   }
 
   @Override
-  public boolean performLongPress (View view, float x, float y) {
-    boolean res = super.performLongPress(view, x, y);
+  public boolean processTextSelection (View view, float x, float y) {
+    Log.d("TGMessageText", "performLongPress");
+    if (isCheckingWrapper) {
+      return false;
+    }
+    Log.d("TGMessageText", "performLongPress called at x=" + x + ", y=" + y);
+
+    if (isCurrentMessageSelected() && canTextSelection()) {
+      manager.controller().unselectMessage(this.getMessage().id, this);
+      manager.controller().finishSelectMode(-1);
+      showQuoteActionMode(view, x, y);
+      return true;
+    }
+
     TextWrapper wrapper = effectiveWrapper;
-    return (wrapper != null && wrapper.performLongPress(view)) || (linkPreview != null && linkPreview.performLongPress(view, this)) || res;
+
+    boolean inSelect = inSelectionMode();
+    boolean shouldCheckWrapper = !inSelect;
+    if (shouldCheckWrapper && wrapper != null) {
+      isCheckingWrapper = true;
+      try {
+        if (wrapper.performLongPress(view)) {
+          return true;
+        }
+      } finally {
+        isCheckingWrapper = false;
+      }
+    }
+    if (linkPreview != null && linkPreview.performLongPress(view, this)) {
+      return true;
+    }
+    return super.performLongPress(view, x, y);
   }
 
+
+
+
+
+
+
+
+
+  private void showQuoteActionMode(View view, float touchX, float touchY) {
+    if (effectiveWrapper == null) return;
+    org.thunderdog.challegram.util.text.Text textObj = effectiveWrapper.getCurrent();
+    if (textObj == null) return;
+
+    if (textSelectionHelper != null) textSelectionHelper.finish();
+
+    textSelectionHelper = new org.thunderdog.challegram.util.text.TextSelectionHelper(textObj, this.text);
+
+    int contentX = getContentX();
+    int contentY = getContentY() + getTextTopOffset();
+    if (getParsedLinkPreview() != null && linkPreviewAboveText.getFloatValue() > 0.5f) {
+      contentY = getWebY() + getParsedLinkPreview().getHeight() + Screen.dp(8f);
+    }
+
+    final int endXPadding = Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth();
+    final int startXRtl = getStartXRtl(effectiveWrapper, contentX, getContentWidth());
+    textSelectionHelper.setLayoutOffset(contentX, contentY, startXRtl, endXPadding);
+
+    int charIndex = textObj.getCharIndexAt(touchX - contentX, touchY - contentY);
+    String str = text.text;
+    int start = charIndex;
+    int end = charIndex;
+
+    int maxLen = str.length();
+    if (start >= 0 && start <= maxLen) {
+      while (start > 0 && start <= maxLen && Character.isLetterOrDigit(str.charAt(start - 1))) start--;
+      while (end < maxLen && Character.isLetterOrDigit(str.charAt(end))) end++;
+    } else {
+      start = 0; end = maxLen;
+    }
+    if (start == end) { start = 0; end = maxLen; }
+    registerAsActiveSelection();
+    textSelectionHelper.setSelection(start, end);
+
+    textSelectionHelper.showActionMode(view, new TextSelectionHelper.QuoteCallback() {
+              @Override
+              public void onQuoteCreated(TdApi.FormattedText text, int utf16Position) {
+                  TdApi.InputTextQuote quote = new TdApi.InputTextQuote(text, utf16Position);
+                  if (manager != null && manager.controller() != null) {
+                    getMessageWithProperties(messageWithProps -> {
+                      manager.controller().showReply(messageWithProps, quote, 0, true, true);
+                    });
+                  }
+                  finishTextSelection();
+              }
+
+              @Override
+              public void onQuoteInOtherChatCreated(TdApi.FormattedText text, int utf16Position) {
+                TdApi.InputTextQuote quote = new TdApi.InputTextQuote(text, utf16Position);
+                if (manager != null && manager.controller() != null) {
+                  manager.controller().replyMessageInOtherChat(msg, quote);
+                }
+                finishTextSelection();
+              }
+            },
+            this::finishTextSelection
+    );
+    isTextSelectionActive = true;
+    view.invalidate();
+  }
   @Override
   protected void onMessageContainerDestroyed () {
     visibleText.clear(false);
     if (linkPreview != null) {
       linkPreview.performDestroy();
     }
+    // Clean up text selection to prevent memory leak
+    if (textSelectionHelper != null) {
+      textSelectionHelper.finish();
+      textSelectionHelper = null;
+    }
+    isTextSelectionActive = false;
+    unregisterAsActiveSelection();
   }
 
   // private int touchX, touchY;
 
   @Override
   public boolean onTouchEvent (MessageView view, MotionEvent e) {
+    // Handle text selection touch events first
+    if (textSelectionHelper != null && isTextSelectionActive) {
+      // Обновляем layoutOffset для правильной обработки touch events
+      int contentX = getContentX();
+      int contentY = getContentY() + getTextTopOffset();
+
+      // Учитываем linkPreview, если он есть и находится выше текста
+      float linkPreviewAboveTextValue = linkPreviewAboveText.getFloatValue();
+      if (linkPreview != null && linkPreviewAboveTextValue > 0f) {
+        int topTextY = contentY;
+        int bottomTextY = getWebY() + linkPreview.getHeight() + Screen.dp(6f) + Screen.dp(2f);
+        contentY = (int) (topTextY * (1f - linkPreviewAboveTextValue) + bottomTextY * linkPreviewAboveTextValue);
+      }
+
+      // Вычисляем параметры для правильной работы с RTL и margins
+      final int endXPadding = Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth();
+      final int startXRtl = effectiveWrapper != null ? getStartXRtl(effectiveWrapper, contentX, getContentWidth()) : contentX;
+      textSelectionHelper.setLayoutOffset(contentX, contentY, startXRtl, endXPadding);
+
+      if (textSelectionHelper.onTouchEvent(view, e)) {
+        return true;
+      }
+    }
+
     if (super.onTouchEvent(view, e)) {
       return true;
     }
@@ -707,5 +871,95 @@ public class TGMessageText extends TGMessage {
     rebuildAndUpdateContent();
     invalidateTextMediaReceiver();
     super.setTranslationResult(text);
+  }
+
+
+  // Text highlight for quoted fragments
+  @Override
+  public void setTextHighlight(int utf16Position, int utf16Length) {
+    if (text == null || text.text == null || effectiveWrapper == null) {
+      return;
+    }
+
+    // Convert UTF-16 position to Java char index
+    String messageText = text.text;
+    int charStart = convertUtf16ToCharIndex(messageText, utf16Position);
+    int charEnd = convertUtf16ToCharIndex(messageText, utf16Position + utf16Length);
+
+    this.highlightCharStart = charStart;
+    this.highlightCharEnd = charEnd;
+    this.hasTextHighlight = true;
+
+    // Apply highlight to Text object
+    org.thunderdog.challegram.util.text.Text textObj = effectiveWrapper.getCurrent();
+    if (textObj != null) {
+      textObj.setQuoteHighlight(charStart, charEnd, 1f);
+    }
+
+    // Start animation
+    animateHighlight();
+  }
+
+  private void animateHighlight() {
+    android.animation.ValueAnimator animator = android.animation.ValueAnimator.ofFloat(0f, 1f, 0f);
+    animator.setDuration(2000); // 2 seconds total
+    animator.addUpdateListener(animation -> {
+      highlightAlpha = (float) animation.getAnimatedValue();
+
+      // Update Text object highlight alpha
+      if (effectiveWrapper != null) {
+        org.thunderdog.challegram.util.text.Text textObj = effectiveWrapper.getCurrent();
+        if (textObj != null) {
+          textObj.setQuoteHighlight(highlightCharStart, highlightCharEnd, highlightAlpha);
+        }
+      }
+
+      invalidate();
+    });
+    animator.addListener(new android.animation.AnimatorListenerAdapter() {
+      @Override
+      public void onAnimationEnd(android.animation.Animator animation) {
+        hasTextHighlight = false;
+
+        // Clear highlight from Text object
+        if (effectiveWrapper != null) {
+          org.thunderdog.challegram.util.text.Text textObj = effectiveWrapper.getCurrent();
+          if (textObj != null) {
+            textObj.clearQuoteHighlight();
+          }
+        }
+
+        invalidate();
+      }
+    });
+    animator.start();
+  }
+
+  private int convertUtf16ToCharIndex(String text, int utf16Position) {
+    if (utf16Position == 0) {
+      return 0;
+    }
+
+    int charIndex = 0;
+    int utf16Count = 0;
+
+    while (charIndex < text.length() && utf16Count < utf16Position) {
+      int codePoint = text.codePointAt(charIndex);
+      int charCount = Character.charCount(codePoint);
+      charIndex += charCount;
+      utf16Count += charCount;
+    }
+
+    return Math.min(charIndex, text.length());
+  }
+
+  @Override
+  public void finishTextSelection() {
+    if (textSelectionHelper != null) {
+      textSelectionHelper.finish();
+      textSelectionHelper = null;
+    }
+    isTextSelectionActive = false;
+    super.finishTextSelection();
   }
 }
