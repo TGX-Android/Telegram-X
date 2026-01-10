@@ -159,7 +159,7 @@ public class Config {
 
   public static final boolean IN_APP_BROWSER_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1;
 
-  public static final boolean VIDEO_PLAYER_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+  public static final boolean VIDEO_PLAYER_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
   public static final boolean HLS_VIDEO_ENABLED = VIDEO_PLAYER_AVAILABLE;
 
   public static final boolean FORCE_TOUCH_ENABLED = true;
