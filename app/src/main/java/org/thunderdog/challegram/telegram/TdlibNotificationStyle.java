@@ -580,7 +580,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final String textContent = textBuilder.toString();
     final CharSequence tickerText = getTickerText(tdlib, helper, allowPreview, chat, lastNotification, true, group.singleSenderId() != 0, hasCustomText);
 
-    final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), group.findTargetMessageId());
+    final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), group.findTargetMessageId(), group.findForumTopicId());
 
     boolean needGroupLogic = true; // !isSummary || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && settings == null);
 
@@ -1122,6 +1122,24 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         }
         if (contentTitle == null) {
           contentTitle = chat.title;
+        }
+        // Add forum topic name to title if all notifications are from same topic
+        long commonTopicId = 0;
+        boolean sameTopicId = true;
+        for (TdlibNotification notification : notifications) {
+          long topicId = notification.findForumTopicId();
+          if (commonTopicId == 0) {
+            commonTopicId = topicId;
+          } else if (commonTopicId != topicId) {
+            sameTopicId = false;
+            break;
+          }
+        }
+        if (sameTopicId && commonTopicId != 0) {
+          TdApi.ForumTopicInfo topicInfo = tdlib.forumTopicInfo(chat.id, commonTopicId);
+          if (topicInfo != null && !StringUtils.isEmpty(topicInfo.name)) {
+            contentTitle = contentTitle + " > " + topicInfo.name;
+          }
         }
       } else {
         contentTitle = BuildConfig.PROJECT_NAME;
