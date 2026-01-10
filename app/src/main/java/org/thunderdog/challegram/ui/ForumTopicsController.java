@@ -1756,6 +1756,13 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
   }
 
   @Override
+  public void onMessageSendSucceeded (TdApi.Message message, long oldMessageId) {
+    // When a message send succeeds, the message now has topicId populated
+    // Re-route to onNewMessage to update the topic list
+    onNewMessage(message);
+  }
+
+  @Override
   public void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
     if (chatId != this.chatId) return;
 

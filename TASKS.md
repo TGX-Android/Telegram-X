@@ -541,3 +541,45 @@ Applied topic-related fixes from https://github.com/logopek/reX repository.
 - `app/src/main/java/org/thunderdog/challegram/telegram/TdlibUi.java` (line 2139)
 - `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicView.java` (lines 222-223, 329-359, 563-623)
 - `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicsController.java` (lines 599-601, 708-724)
+
+### Forum Topic List Not Updating After Sending Reply
+Fixed topic list not showing latest message after sending a reply in a forum topic. The reply would be sent successfully (visible inside the topic), but returning to the topic list wouldn't show the updated preview.
+
+**Root Cause:** When a user sends a message to a forum topic:
+1. `updateNewMessage` fires with a pending message where `message.topicId` is null
+2. `ForumTopicsController.onNewMessage()` checks `if (topicId == 0) return;` and exits early
+3. When message send succeeds, `updateMessageSendSucceeded` fires with the completed message (which has `topicId` populated)
+4. `ForumTopicsController` didn't implement `onMessageSendSucceeded()`, so the topic list was never updated
+
+**Solution:** Implement `onMessageSendSucceeded` in `ForumTopicsController` that routes to `onNewMessage()` with the completed message (which now has `topicId` properly populated).
+
+**Files Modified:**
+- `app/src/main/java/org/thunderdog/challegram/ui/ForumTopicsController.java`:
+  - Added `onMessageSendSucceeded(TdApi.Message message, long oldMessageId)` override
+  - Routes to `onNewMessage(message)` to update the topic list
+
+---
+
+## DevOps & Tooling
+
+### MantisBT MCP Server Integration
+Created MCP server for integrating with MantisBT bug tracker at https://bugtracker.hikaro.space
+
+**Files Created:**
+- `C:\Users\japananimetime\mcp-servers\mantisbt\package.json` - Node.js package configuration
+- `C:\Users\japananimetime\mcp-servers\mantisbt\index.js` - MCP server with MantisBT REST API integration
+- `C:\Users\japananimetime\mcp-servers\mantisbt\README.md` - Setup documentation
+- `F:\Telegram-X\.mcp.json` - MCP server configuration for this project
+
+**Available MCP Tools:**
+- `mantis_list_projects` - List all projects
+- `mantis_get_project` - Get project details
+- `mantis_list_issues` - List issues with filters
+- `mantis_get_issue` - Get issue details
+- `mantis_create_issue` - Create new issue
+- `mantis_update_issue` - Update existing issue
+- `mantis_add_note` - Add comment to issue
+- `mantis_delete_issue` - Delete issue
+- `mantis_list_users` - List users
+- `mantis_get_config` - Get MantisBT configuration
+- `mantis_list_filters` - List saved filters
