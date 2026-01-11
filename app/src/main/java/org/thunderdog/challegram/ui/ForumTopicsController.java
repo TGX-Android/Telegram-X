@@ -42,6 +42,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
@@ -697,6 +698,8 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
   @Override
   public void onMoreItemPressed (int id) {
     if (id == R.id.btn_viewAsTabs) {
+      // Save preference for tabs view
+      tdlib.settings().setForumViewPreference(chatId, TdlibSettingsManager.FORUM_VIEW_TABS);
       // Switch to tabs view (ForumTopicTabsController)
       ForumTopicTabsController tabsController = new ForumTopicTabsController(context, tdlib);
       tabsController.setArguments(new ForumTopicTabsController.Arguments(chat));
