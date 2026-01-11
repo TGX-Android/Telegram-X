@@ -5907,4 +5907,6 @@
   <string name="RestrictedContent">Restricted Content</string>
   <string name="SensitiveContent">Sensitive Content</string>
 
+  <string name="ProfileNote">Note</string>
+
 </resources>
