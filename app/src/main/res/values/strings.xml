@@ -5916,4 +5916,8 @@
 
   <string name="ProfileNote">Note</string>
 
+  <string name="SavedMessagesTagLabel">Tag Label</string>
+  <string name="SavedMessagesTagLabelHint">Enter a label for this tag (up to 12 characters)</string>
+  <string name="SavedMessagesTagLabelPremiumRequired">Tag labels require a **Telegram Premium** subscription.</string>
+
 </resources>

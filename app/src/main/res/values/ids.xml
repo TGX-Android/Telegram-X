@@ -220,6 +220,7 @@
   <item type="id" name="controller_editUsername" />
   <item type="id" name="controller_editBio" />
   <item type="id" name="controller_editDescription" />
+  <item type="id" name="controller_editSavedMessagesTagLabel" />
   <item type="id" name="controller_createPoll" />
   <item type="id" name="controller_chatJoinRequests" />
   <item type="id" name="controller_messageSeen" />

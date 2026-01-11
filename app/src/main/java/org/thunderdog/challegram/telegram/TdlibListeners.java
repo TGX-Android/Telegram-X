@@ -61,6 +61,7 @@ public class TdlibListeners {
   final ReferenceList<DownloadsListUpdateListener> downloadsListListener;
 
   final ReferenceList<AnimatedEmojiListener> animatedEmojiListeners;
+  final ReferenceList<SavedMessagesTagsListener> savedMessagesTagsListeners;
 
   final ReferenceLongMap<MessageListener> messageChatListeners;
   final ReferenceLongMap<MessageEditListener> messageEditChatListeners;
@@ -102,6 +103,7 @@ public class TdlibListeners {
     this.downloadsListListener = new ReferenceList<>(true);
 
     this.animatedEmojiListeners = new ReferenceList<>(true);
+    this.savedMessagesTagsListeners = new ReferenceList<>(true);
 
     this.reactionLoadListeners = new ReferenceMap<>(true);
 
@@ -166,6 +168,9 @@ public class TdlibListeners {
       if (globalListener instanceof AnimatedEmojiListener) {
         animatedEmojiListeners.add((AnimatedEmojiListener) globalListener);
       }
+      if (globalListener instanceof SavedMessagesTagsListener) {
+        savedMessagesTagsListeners.add((SavedMessagesTagsListener) globalListener);
+      }
       if (globalListener instanceof PrivacySettingsListener) {
         privacySettingsListeners.add((PrivacySettingsListener) globalListener);
       }
@@ -213,6 +218,9 @@ public class TdlibListeners {
       }
       if (globalListener instanceof AnimatedEmojiListener) {
         animatedEmojiListeners.remove((AnimatedEmojiListener) globalListener);
+      }
+      if (globalListener instanceof SavedMessagesTagsListener) {
+        savedMessagesTagsListeners.remove((SavedMessagesTagsListener) globalListener);
       }
       if (globalListener instanceof PrivacySettingsListener) {
         privacySettingsListeners.remove((PrivacySettingsListener) globalListener);
@@ -362,6 +370,16 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromAnimatedEmojiUpdates (AnimatedEmojiListener listener) {
     animatedEmojiListeners.remove(listener);
+  }
+
+  @AnyThread
+  public void subscribeToSavedMessagesTagsUpdates (SavedMessagesTagsListener listener) {
+    savedMessagesTagsListeners.add(listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromSavedMessagesTagsUpdates (SavedMessagesTagsListener listener) {
+    savedMessagesTagsListeners.remove(listener);
   }
 
   @AnyThread
@@ -800,6 +818,14 @@ public class TdlibListeners {
   public void notifyAnimatedEmojiListeners (int type) {
     runUpdate(animatedEmojiListeners, listener ->
       listener.onAnimatedEmojiChanged(type)
+    );
+  }
+
+  // updateSavedMessagesTags
+
+  void updateSavedMessagesTags (TdApi.UpdateSavedMessagesTags update) {
+    runUpdate(savedMessagesTagsListeners, listener ->
+      listener.onSavedMessagesTagsUpdated(update.savedMessagesTopicId, update.tags)
     );
   }
 

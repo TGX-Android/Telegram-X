@@ -143,6 +143,7 @@ import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageSticker;
+import org.thunderdog.challegram.data.TGSavedMessagesTags;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
@@ -196,6 +197,7 @@ import org.thunderdog.challegram.telegram.MessageListManager;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.RightId;
+import org.thunderdog.challegram.telegram.SavedMessagesTagsListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -247,6 +249,7 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
+import org.thunderdog.challegram.widget.SavedMessagesTagsBarView;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.ShadowView;
@@ -311,7 +314,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
   HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener, InputView.SelectionChangeListener,
-  VoiceVideoButtonView.RestrictionListener {
+  VoiceVideoButtonView.RestrictionListener, SavedMessagesTagsListener {
 
   private boolean reuseEnabled;
   private boolean destroyInstance;
@@ -331,6 +334,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private ChatHeaderView headerCell;
   private DoubleHeaderView headerDoubleCell;
+
+  private @Nullable SavedMessagesTagsBarView savedMessagesTagsBar;
+  private @Nullable TGSavedMessagesTags savedMessagesTags;
 
   private MessagesLayout contentView;
   private LinearLayout bottomWrap;
@@ -734,6 +740,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     manager.modifyRecycler(context, messagesView, messagesManager);
+
+    // Saved Messages Tags Bar (shown only in Saved Messages)
+    if (previewMode == PREVIEW_MODE_NONE && !isInForceTouchMode()) {
+      savedMessagesTagsBar = new SavedMessagesTagsBarView(context, tdlib);
+      savedMessagesTagsBar.setVisibility(View.GONE); // Initially hidden, shown when in Saved Messages
+      savedMessagesTagsBar.setTagSelectionListener(tag -> {
+        if (manager != null) {
+          manager.setSavedMessagesTagFilter(tag);
+          if (tag == null) {
+            // Clear filter and reload
+            manager.loadFromStart();
+          }
+        }
+      });
+      savedMessagesTagsBar.setTagLongPressListener(tag -> {
+        // Open tag label editor (Premium feature)
+        SavedMessagesTagEditController c = new SavedMessagesTagEditController(context, tdlib);
+        c.setArguments(new SavedMessagesTagEditController.Arguments(tag, (reactionType, newLabel) -> {
+          // Refresh tags on label change
+          loadSavedMessagesTags();
+        }));
+        navigateTo(c);
+      });
+      params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+      params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+      savedMessagesTagsBar.setLayoutParams(params);
+      addThemeInvalidateListener(savedMessagesTagsBar);
+    }
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0);
     params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -1460,6 +1494,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     contentView.addView(bottomWrap);
     contentView.addView(messagesView);
     contentView.addView(bottomShadowView);
+    if (savedMessagesTagsBar != null) {
+      contentView.addView(savedMessagesTagsBar);
+    }
 
     contentView.addView(topBar);
     contentView.addView(bottomBar);
@@ -11040,6 +11077,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (messageThread != null) {
       messageThread.addListener(this);
     }
+    // Subscribe to saved messages tags updates
+    if (isSelfChat()) {
+      tdlib.listeners().subscribeToSavedMessagesTagsUpdates(this);
+      loadSavedMessagesTags();
+    }
     if (getChatId() == chatId) {
       switch (chat.type.getConstructor()) {
         case TdApi.ChatTypePrivate.CONSTRUCTOR: {
@@ -11075,6 +11117,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (messageThread != null) {
       messageThread.removeListener(this);
     }
+    // Unsubscribe from saved messages tags updates
+    if (isSelfChat()) {
+      tdlib.listeners().unsubscribeFromSavedMessagesTagsUpdates(this);
+    }
     if (getChatId() == chatId) {
       switch (chat.type.getConstructor()) {
         case TdApi.ChatTypePrivate.CONSTRUCTOR: {
@@ -11097,6 +11143,44 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
     }
+  }
+
+  // Saved Messages Tags
+
+  private void loadSavedMessagesTags () {
+    if (!isSelfChat()) return;
+    long topicId = 0; // 0 = global tags for Saved Messages
+    tdlib.getSavedMessagesTags(topicId, result -> {
+      if (result.getConstructor() == TdApi.SavedMessagesTags.CONSTRUCTOR) {
+        TdApi.SavedMessagesTags tags = (TdApi.SavedMessagesTags) result;
+        runOnUiThreadOptional(() -> {
+          if (savedMessagesTags == null) {
+            savedMessagesTags = new TGSavedMessagesTags(tdlib, topicId, tags);
+          } else {
+            savedMessagesTags.setTags(tags);
+          }
+          if (savedMessagesTagsBar != null) {
+            savedMessagesTagsBar.setTags(savedMessagesTags);
+            savedMessagesTagsBar.setVisibility(savedMessagesTags.isEmpty() ? View.GONE : View.VISIBLE);
+          }
+        });
+      }
+    });
+  }
+
+  @Override
+  public void onSavedMessagesTagsUpdated (long savedMessagesTopicId, TdApi.SavedMessagesTags tags) {
+    runOnUiThreadOptional(() -> {
+      if (savedMessagesTags == null) {
+        savedMessagesTags = new TGSavedMessagesTags(tdlib, savedMessagesTopicId, tags);
+      } else {
+        savedMessagesTags.setTags(tags);
+      }
+      if (savedMessagesTagsBar != null) {
+        savedMessagesTagsBar.setTags(savedMessagesTags);
+        savedMessagesTagsBar.setVisibility(savedMessagesTags.isEmpty() ? View.GONE : View.VISIBLE);
+      }
+    });
   }
 
   @Override

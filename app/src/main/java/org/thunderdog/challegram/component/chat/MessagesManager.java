@@ -625,6 +625,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return loader.getSpecialMode() == MessagesLoader.SPECIAL_MODE_SEARCH;
   }
 
+  public boolean isSavedMessagesTagMode () {
+    return loader.getSpecialMode() == MessagesLoader.SPECIAL_MODE_SAVED_MESSAGES_TAG;
+  }
+
+  public void setSavedMessagesTagFilter (@Nullable TdApi.ReactionType tag) {
+    loader.setSavedMessagesTagFilter(tag);
+    if (tag != null) {
+      loadFromStart();
+    }
+  }
+
   public void openEventLog (TdApi.Chat chat) {
     loader.setChat(chat, null, null, MessagesLoader.SPECIAL_MODE_EVENT_LOG, null);
     adapter.setChatType(chat.type);

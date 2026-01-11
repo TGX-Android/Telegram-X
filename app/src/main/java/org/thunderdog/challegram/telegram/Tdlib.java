@@ -475,6 +475,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private int storyStealthModeActiveUntilDate, storyStealthModeCooldownUntilDate;
 
+  private @Nullable TdApi.SavedMessagesTags savedMessagesTags;
+
   private String languagePackId;
   private String suggestedLanguagePackId;
   private TdApi.LanguagePackInfo suggestedLanguagePackInfo;
@@ -2908,6 +2910,56 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public TdApi.Chat selfChat () {
     return chat(selfChatId());
+  }
+
+  // Saved Messages Tags
+
+  /**
+   * Get cached saved messages tags.
+   * @return Cached tags or null if not yet loaded
+   */
+  public @Nullable TdApi.SavedMessagesTags getSavedMessagesTags () {
+    synchronized (dataLock) {
+      return savedMessagesTags;
+    }
+  }
+
+  /**
+   * Get the label for a reaction type if it's a saved messages tag with a label.
+   * @param reactionType The reaction type to look up
+   * @return The label if found, null otherwise
+   */
+  public @Nullable String getSavedMessagesTagLabel (TdApi.ReactionType reactionType) {
+    TdApi.SavedMessagesTags tags = getSavedMessagesTags();
+    if (tags != null && tags.tags != null) {
+      String key = TD.makeReactionKey(reactionType);
+      for (TdApi.SavedMessagesTag tag : tags.tags) {
+        if (TD.makeReactionKey(tag.tag).equals(key)) {
+          return tag.label != null && !tag.label.isEmpty() ? tag.label : null;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Fetch saved messages tags from TDLib.
+   * @param savedMessagesTopicId The topic ID (0 for global)
+   * @param callback Callback for the result
+   */
+  public void getSavedMessagesTags (long savedMessagesTopicId, Client.ResultHandler callback) {
+    client().send(new TdApi.GetSavedMessagesTags(savedMessagesTopicId), callback);
+  }
+
+  /**
+   * Set a custom label for a saved messages tag.
+   * Requires Premium.
+   * @param tag The reaction type to label
+   * @param label The label (0-12 characters)
+   * @param callback Callback for the result
+   */
+  public void setSavedMessagesTagLabel (TdApi.ReactionType tag, String label, Client.ResultHandler callback) {
+    client().send(new TdApi.SetSavedMessagesTagLabel(tag, label), callback);
   }
 
   public boolean canClearHistory (long chatId) {
@@ -7727,7 +7779,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateSavedMessagesTags (TdApi.UpdateSavedMessagesTags update) {
-
+    // Update cache
+    synchronized (dataLock) {
+      savedMessagesTags = update.tags;
+    }
+    // Notify listeners
+    listeners.updateSavedMessagesTags(update);
   }
 
   // Updates: SHORTCUTS

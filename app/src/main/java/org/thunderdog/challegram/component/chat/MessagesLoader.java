@@ -98,8 +98,10 @@ public class MessagesLoader implements Client.ResultHandler {
   public static final int SPECIAL_MODE_SEARCH = 2;
   public static final int SPECIAL_MODE_RESTRICTED = 3;
   public static final int SPECIAL_MODE_SCHEDULED = 4;
+  public static final int SPECIAL_MODE_SAVED_MESSAGES_TAG = 5;
 
   private int specialMode;
+  private @Nullable TdApi.ReactionType savedMessagesTagFilter;
 
   private String searchQuery;
   private TdApi.MessageSender searchSender;
@@ -208,6 +210,34 @@ public class MessagesLoader implements Client.ResultHandler {
     this.searchFilter = filter;
     this.lastSearchNextOffset = null;
     this.lastSearchNextFromMessageId = 0;
+  }
+
+  /**
+   * Set Saved Messages tag filter.
+   * @param tag The reaction type to filter by, or null to clear filter
+   */
+  public void setSavedMessagesTagFilter (@Nullable TdApi.ReactionType tag) {
+    this.savedMessagesTagFilter = tag;
+    if (tag != null) {
+      this.specialMode = SPECIAL_MODE_SAVED_MESSAGES_TAG;
+    } else if (this.specialMode == SPECIAL_MODE_SAVED_MESSAGES_TAG) {
+      this.specialMode = SPECIAL_MODE_NONE;
+    }
+  }
+
+  /**
+   * @return The current Saved Messages tag filter, or null if none
+   */
+  @Nullable
+  public TdApi.ReactionType getSavedMessagesTagFilter () {
+    return savedMessagesTagFilter;
+  }
+
+  /**
+   * @return Whether a tag filter is currently active
+   */
+  public boolean hasSavedMessagesTagFilter () {
+    return savedMessagesTagFilter != null;
   }
 
   public int getSpecialMode () {
@@ -1141,6 +1171,14 @@ public class MessagesLoader implements Client.ResultHandler {
           loadingAllowMoreBottom = loadingAllowMoreTop = loadingLocal = allowMoreBottom = allowMoreTop = onlyLocal = false;
           Log.ensureReturnType(TdApi.GetChatScheduledMessages.class, TdApi.Messages.class);
           function = new TdApi.GetChatScheduledMessages(sourceChatId);
+          break;
+        case SPECIAL_MODE_SAVED_MESSAGES_TAG:
+          loadingLocal = false;
+          Log.ensureReturnType(TdApi.SearchSavedMessages.class, TdApi.FoundChatMessages.class);
+          // savedMessagesTopicId is 0 for global Saved Messages
+          long savedMessagesTopicId = topicId != null && topicId.getConstructor() == TdApi.MessageTopicSavedMessages.CONSTRUCTOR
+            ? ((TdApi.MessageTopicSavedMessages) topicId).savedMessagesTopicId : 0;
+          function = new TdApi.SearchSavedMessages(savedMessagesTopicId, savedMessagesTagFilter, "", (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit);
           break;
         default:
           if (hasSearchFilter()) {

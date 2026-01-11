@@ -150,6 +150,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       }
       MessageReactionEntry entry = getMessageReactionEntry(reactionObj);
       entry.setMessageReaction(reaction);
+      entry.setTagMode(tdlib, reactions.areTags);
       reactionsListEntry.add(entry);
       if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
         tdlib.listeners().removeReactionLoadListener(reactionKey, this);
@@ -233,6 +234,13 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
   @Nullable
   public TdApi.MessageReactions getReactions () {
     return reactions;
+  }
+
+  /**
+   * Check if these reactions are actually tags (in Saved Messages)
+   */
+  public boolean isTagMode () {
+    return reactions != null && reactions.areTags;
   }
 
   public Set<String> getChosen () {
@@ -948,7 +956,15 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       boolean hasSenders = senders != null && senders.length > 0;
       int countToDisplay = count - (hasSenders ? senders.length: 0);
       int value = countToDisplay > 0 ? BitwiseUtils.setFlag(countToDisplay, 1 << 30, hasSenders): 0;
-      String text = hasSenders ? "+" + Strings.buildCounter(countToDisplay): Strings.buildCounter(countToDisplay);
+
+      String text;
+      if (isTagMode && tagLabel != null && !tagLabel.isEmpty()) {
+        // In tag mode with label, show the label instead of count
+        text = tagLabel;
+        value = 1; // Need non-zero value for visibility
+      } else {
+        text = hasSenders ? "+" + Strings.buildCounter(countToDisplay): Strings.buildCounter(countToDisplay);
+      }
 
       counter.setCount(value, !chosen, text, animated);
       avatars.setSenders(senders, animated);
@@ -970,6 +986,8 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     private TdApi.MessageReaction messageReaction;
     private boolean isHidden;
     private boolean inAnimation;
+    private @Nullable String tagLabel;
+    private boolean isTagMode;
 
     private void drawReceiver (Canvas c, int l, int t, int r, int b, float alpha) {
       // Draw star icon for paid reactions
@@ -1067,6 +1085,34 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
     public void setMessageReaction (TdApi.MessageReaction messageReaction) {
       this.messageReaction = messageReaction;
+    }
+
+    /**
+     * Set tag mode and fetch the tag label from Tdlib
+     */
+    public void setTagMode (Tdlib tdlib, boolean isTagMode) {
+      this.isTagMode = isTagMode;
+      if (isTagMode) {
+        // Try to get the tag label from Tdlib cache
+        this.tagLabel = tdlib.getSavedMessagesTagLabel(reactionType);
+      } else {
+        this.tagLabel = null;
+      }
+    }
+
+    /**
+     * @return Whether this reaction is being displayed as a tag
+     */
+    public boolean isTagMode () {
+      return isTagMode;
+    }
+
+    /**
+     * @return The tag label if set, null otherwise
+     */
+    @Nullable
+    public String getTagLabel () {
+      return tagLabel;
     }
 
     public TdApi.MessageReaction getMessageReaction () {
