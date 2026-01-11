@@ -14,12 +14,23 @@
  */
 package org.thunderdog.challegram.ui;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.app.Activity;
 import android.content.Context;
+import android.animation.LayoutTransition;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Canvas;
 import android.graphics.RectF;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.media.projection.MediaProjectionManager;
+import android.os.Build;
 import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -38,14 +49,22 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.pytgcalls.ntgcalls.AndroidUtils;
+import org.pytgcalls.ntgcalls.devices.JavaVideoCapturerModule;
+import org.pytgcalls.ntgcalls.media.SourceState;
+import org.pytgcalls.ntgcalls.media.StreamDevice;
+import org.pytgcalls.ntgcallsx.VoIPFloatingLayout;
+import org.pytgcalls.ntgcallsx.VoIPTextureView;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.service.TGCallService;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -70,6 +89,13 @@ import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.EmojiTextView;
 import org.thunderdog.challegram.widget.TextView;
 import org.thunderdog.challegram.widget.voip.CallControlsLayout;
+import org.webrtc.JavaI420Buffer;
+import org.webrtc.RendererCommon;
+import org.webrtc.TextureViewRenderer;
+import org.webrtc.VideoFrame;
+
+import java.util.ArrayList;
+import java.util.function.Function;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ScrimUtil;
@@ -82,8 +108,9 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 
-public class CallController extends ViewController<CallController.Arguments> implements TdlibCache.UserDataChangeListener, TdlibCache.CallStateChangeListener, View.OnClickListener, FactorAnimator.Target, Runnable, CallControlsLayout.CallControlCallback, Screen.StatusBarHeightChangeListener {
+public class CallController extends ViewController<CallController.Arguments> implements TdlibCache.UserDataChangeListener, TdlibCache.CallStateChangeListener, View.OnClickListener, FactorAnimator.Target, Runnable, CallControlsLayout.CallControlCallback, Screen.StatusBarHeightChangeListener, ActivityResultHandler {
   private static final boolean DEBUG_FADE_BRANDING = true;
+  private static final int SCREEN_CAPTURE_REQUEST_CODE = 1001;
 
   private static class ButtonView extends View implements FactorAnimator.Target {
     private Drawable icon;
@@ -219,6 +246,9 @@ public class CallController extends ViewController<CallController.Arguments> imp
   private LinearLayout brandWrap;
   private TextView debugView;
   private CallStrengthView strengthView;
+  private TextureViewRenderer callingUserMiniTextureRenderer;
+  private VoIPFloatingLayout callingUserMiniFloatingLayout, currentUserCameraFloatingLayout;
+  private VoIPTextureView currentUserTextureView, callingUserTextureView;
 
   private static class CallStrengthView extends View {
     private final ViewHandler handler;
@@ -271,8 +301,9 @@ public class CallController extends ViewController<CallController.Arguments> imp
   private TextView emojiViewSmall, emojiViewBig, emojiViewHint;
   private CallControlsLayout callControlsLayout;
 
-  private FrameLayoutFix buttonWrap;
-  private ButtonView muteButtonView, speakerButtonView;
+  private LinearLayout buttonWrap;
+  private ButtonView muteButtonView, speakerButtonView, videoButtonView, flipCameraButtonView;
+  private LinearLayout videoButtonContainer, flipCameraButtonContainer, messageButtonContainer, otherOptionsContainer, speakerButtonContainer;
 
   private float lastHeaderFactor;
 
@@ -394,6 +425,74 @@ public class CallController extends ViewController<CallController.Arguments> imp
     avatarView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     contentView.addView(avatarView);
 
+    callingUserTextureView = new VoIPTextureView(context, false, true, false);
+    callingUserTextureView.renderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
+    callingUserTextureView.renderer.setEnableHardwareScaler(true);
+    callingUserTextureView.renderer.setRotateTextureWithScreen(true);
+    callingUserTextureView.scaleType = VoIPTextureView.SCALE_TYPE_FIT;
+    callingUserTextureView.setVisibility(View.GONE);
+    contentView.addView(callingUserTextureView);
+
+    currentUserCameraFloatingLayout = new VoIPFloatingLayout(context);
+    currentUserCameraFloatingLayout.setDelegate((progress, value) -> currentUserTextureView.setScreenShareMiniProgress(progress, value));
+    currentUserCameraFloatingLayout.setRelativePosition(1f, 1f);
+    currentUserCameraFloatingLayout.setVisibility(View.GONE);
+    currentUserCameraFloatingLayout.setTag(VoIPFloatingLayout.STATE_GONE);
+    currentUserCameraFloatingLayout.setOnTapListener(view -> {
+      if (callSettings == null) {
+        callSettings = new CallSettings(tdlib, call.id);
+      }
+      if (callSettings.getRemoteCameraState() != VoIPFloatingLayout.STATE_GONE && callSettings.getLocalCameraState() == VoIPFloatingLayout.STATE_FLOATING) {
+        callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
+        callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_FLOATING);
+        currentUserCameraFloatingLayout.saveRelativePosition();
+        callingUserMiniFloatingLayout.saveRelativePosition();
+        callingUserMiniFloatingLayout.setRelativePosition(currentUserCameraFloatingLayout);
+        showFloatingLayout(true);
+        showMiniFloatingLayout(true);
+        currentUserCameraFloatingLayout.restoreRelativePosition();
+        callingUserMiniFloatingLayout.restoreRelativePosition();
+      }
+    });
+
+    currentUserTextureView = new VoIPTextureView(context, true, false);
+    currentUserTextureView.renderer.setUseCameraRotation(true);
+    currentUserCameraFloatingLayout.addView(currentUserTextureView);
+    contentView.addView(currentUserCameraFloatingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+    callingUserMiniFloatingLayout = new VoIPFloatingLayout(context);
+    callingUserMiniFloatingLayout.alwaysFloating = true;
+    callingUserMiniFloatingLayout.setRelativePosition(1f, 1f);
+    callingUserMiniFloatingLayout.setFloatingMode(true, false);
+    callingUserMiniFloatingLayout.setVisibility(View.GONE);
+    callingUserMiniFloatingLayout.setOnTapListener(view -> {
+      if (callSettings == null) {
+        callSettings = new CallSettings(tdlib, call.id);
+      }
+      if (callSettings.getRemoteCameraState() != VoIPFloatingLayout.STATE_GONE && callSettings.getLocalCameraState() == VoIPFloatingLayout.STATE_FULLSCREEN) {
+        callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FLOATING);
+        callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
+        currentUserCameraFloatingLayout.saveRelativePosition();
+        callingUserMiniFloatingLayout.saveRelativePosition();
+        currentUserCameraFloatingLayout.setRelativePosition(callingUserMiniFloatingLayout);
+        showFloatingLayout(true);
+        showMiniFloatingLayout(true);
+        currentUserCameraFloatingLayout.restoreRelativePosition();
+        callingUserMiniFloatingLayout.restoreRelativePosition();
+      }
+    });
+
+    callingUserMiniTextureRenderer = new TextureViewRenderer(context);
+    callingUserMiniTextureRenderer.setEnableHardwareScaler(true);
+    callingUserMiniTextureRenderer.setFpsReduction(30);
+    callingUserMiniTextureRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
+
+    View backgroundView = new View(context);
+    backgroundView.setBackgroundColor(0xff1b1f23);
+    callingUserMiniFloatingLayout.addView(backgroundView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    callingUserMiniFloatingLayout.addView(callingUserMiniTextureRenderer, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+
+    contentView.addView(callingUserMiniFloatingLayout);
     FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
     // Top-left corner
@@ -602,30 +701,90 @@ public class CallController extends ViewController<CallController.Arguments> imp
 
     // Call settings buttons
 
+    LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(Screen.dp(72f), Screen.dp(72f));
+
+    ButtonView otherOptions = new ButtonView(context);
+    otherOptions.setId(R.id.btn_other_options);
+    otherOptions.setOnClickListener(this);
+    otherOptions.setIcon(R.drawable.baseline_more_vert_24);
+    otherOptions.setLayoutParams(buttonParams);
+
     muteButtonView = new ButtonView(context);
     muteButtonView.setId(R.id.btn_mute);
     muteButtonView.setOnClickListener(this);
     muteButtonView.setIcon(R.drawable.baseline_mic_24);
     muteButtonView.setNeedCross(true);
-    muteButtonView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(72f), Screen.dp(72f), Gravity.LEFT | Gravity.BOTTOM));
+    muteButtonView.setLayoutParams(buttonParams);
 
     ButtonView messageButtonView = new ButtonView(context);
     messageButtonView.setId(R.id.btn_openChat);
     messageButtonView.setOnClickListener(this);
+    messageButtonView.setVisibility(View.VISIBLE);
     messageButtonView.setIcon(R.drawable.baseline_chat_bubble_24);
     messageButtonView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(72f), Screen.dp(72f), Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM));
+
+    muteButtonView = new ButtonView(context);
+    muteButtonView.setId(R.id.btn_mute);
+    muteButtonView.setOnClickListener(this);
+    muteButtonView.setIcon(R.drawable.baseline_mic_24);
+    muteButtonView.setNeedCross(true);
+    muteButtonView.setLayoutParams(buttonParams);
 
     speakerButtonView = new ButtonView(context);
     speakerButtonView.setId(R.id.btn_speaker);
     speakerButtonView.setOnClickListener(this);
     speakerButtonView.setIcon(R.drawable.baseline_volume_up_24);
-    speakerButtonView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(72f), Screen.dp(72f), Gravity.RIGHT | Gravity.BOTTOM));
+    speakerButtonView.setLayoutParams(buttonParams);
 
-    buttonWrap = new FrameLayoutFix(context);
-    buttonWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(76f), Gravity.BOTTOM));
-    buttonWrap.addView(muteButtonView);
-    buttonWrap.addView(messageButtonView);
-    buttonWrap.addView(speakerButtonView);
+    videoButtonView = new ButtonView(context);
+    videoButtonView.setId(R.id.btn_camera);
+    videoButtonView.setOnClickListener(this);
+    videoButtonView.setIcon(R.drawable.baseline_videocam_24);
+    videoButtonView.setLayoutParams(buttonParams);
+
+    flipCameraButtonView = new ButtonView(context);
+    flipCameraButtonView.setId(R.id.btn_flip_camera);
+    flipCameraButtonView.setOnClickListener(this);
+    flipCameraButtonView.setIcon(R.drawable.baseline_camera_front_24);
+    flipCameraButtonView.setLayoutParams(buttonParams);
+
+    Function<ButtonView, LinearLayout> wrapButton = (ButtonView buttonView) -> {
+      LinearLayout buttonWrap = new LinearLayout(context);
+      buttonWrap.setOrientation(LinearLayout.HORIZONTAL);
+      buttonWrap.setGravity(Gravity.CENTER);
+      buttonWrap.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+      buttonWrap.addView(buttonView);
+      return buttonWrap;
+    };
+
+    videoButtonContainer = wrapButton.apply(videoButtonView);
+    videoButtonContainer.setVisibility(View.GONE);
+
+    messageButtonContainer = wrapButton.apply(messageButtonView);
+    otherOptionsContainer = wrapButton.apply(otherOptions);
+    otherOptionsContainer.setVisibility(View.GONE);
+
+    flipCameraButtonContainer = wrapButton.apply(flipCameraButtonView);
+    flipCameraButtonContainer.setVisibility(View.GONE);
+
+    speakerButtonContainer = wrapButton.apply(speakerButtonView);
+
+    buttonWrap = new LinearLayout(context);
+    LayoutTransition layoutTransition = new LayoutTransition();
+    layoutTransition.enableTransitionType(LayoutTransition.APPEARING);
+    layoutTransition.enableTransitionType(LayoutTransition.DISAPPEARING);
+    layoutTransition.setDuration(LayoutTransition.APPEARING, 300);
+    layoutTransition.setDuration(LayoutTransition.DISAPPEARING, 300);
+    buttonWrap.setLayoutTransition(layoutTransition);
+
+    buttonWrap.setGravity(Gravity.CENTER);
+    buttonWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(76f), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+    buttonWrap.addView(otherOptionsContainer);
+    buttonWrap.addView(videoButtonContainer);
+    buttonWrap.addView(flipCameraButtonContainer);
+    buttonWrap.addView(speakerButtonContainer);
+    buttonWrap.addView(messageButtonContainer);
+    buttonWrap.addView(wrapButton.apply(muteButtonView));
     Views.setPaddingBottom(buttonWrap, extraBottomInset);
     Drawable drawable = ScrimUtil.makeCubicGradientScrimDrawable(0xff000000, 2, Gravity.BOTTOM, false);
     drawable.setAlpha((int) (255f * .3f));
@@ -654,11 +813,33 @@ public class CallController extends ViewController<CallController.Arguments> imp
     if (callSettings != null) {
       muteButtonView.setIsActive(callSettings.isMicMuted(), false);
       speakerButtonView.setIsActive(callSettings.isSpeakerModeEnabled(), false);
+      if (callSettings.isScreenSharing()) {
+        videoButtonView.setIcon(R.drawable.baseline_share_arrow_24);
+      }
+      videoButtonView.setIsActive((callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE || callSettings.isScreenSharing()), false);
+      flipCameraButtonView.setIsActive(!callSettings.isCameraFrontFacing(), false);
+      flipCameraButtonView.setIcon(callSettings != null && !callSettings.isCameraFrontFacing() ? R.drawable.baseline_camera_rear_24 : R.drawable.baseline_camera_front_24);
+      if (callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE) {
+        currentUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+      }
+      if (callSettings.isCameraSharing()) {
+        speakerButtonContainer.setVisibility(View.GONE);
+        flipCameraButtonContainer.setVisibility(View.VISIBLE);
+      }
+      if (callSettings.getRemoteCameraState() != VoIPFloatingLayout.STATE_GONE) {
+        callingUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+        callingUserMiniTextureRenderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+        callingUserTextureView.setVisibility(View.VISIBLE);
+      }
+      currentUserTextureView.renderer.setMirror(callSettings.isCameraFrontFacing() && callSettings.isCameraSharing());
+      currentUserTextureView.setIsCamera(callSettings.isCameraSharing());
+      currentUserTextureView.setIsScreencast(callSettings.isScreenSharing());
+      showFloatingLayout(false);
+      showMiniFloatingLayout(false);
     }
 
     return contentView;
   }
-
 
   private void setTexts () {
     if (emojiStatusHelper != null) {
@@ -815,6 +996,10 @@ public class CallController extends ViewController<CallController.Arguments> imp
   @Override
   public void onClick (View v) {
     final int viewId = v.getId();
+    handleMenuClick(viewId);
+  }
+
+  public void handleMenuClick (int viewId) {
     if (viewId == R.id.btn_emoji) {
       if (isEmojiVisible) {
         setEmojiExpanded(true);
@@ -824,10 +1009,8 @@ public class CallController extends ViewController<CallController.Arguments> imp
         if (callSettings == null) {
           callSettings = new CallSettings(tdlib, call.id);
         }
-        callSettings.setMicMuted(((ButtonView) v).toggleActive());
+        callSettings.setMicMuted(!callSettings.isMicMuted());
       }
-    } else if (viewId == R.id.btn_openChat) {
-      tdlib.ui().openPrivateChat(this, call.userId, null);
     } else if (viewId == R.id.btn_speaker) {
       if (!TD.isFinished(call)) {
         if (callSettings == null) {
@@ -839,7 +1022,242 @@ public class CallController extends ViewController<CallController.Arguments> imp
           callSettings.toggleSpeakerMode(this);
         }
       }
+    } else if (viewId == R.id.btn_camera) {
+      if (!TD.isFinished(call)) {
+        if (callSettings == null) {
+          callSettings = new CallSettings(tdlib, call.id);
+        }
+        callSettings.setLocalCameraState(callSettings.getLocalCameraState() == VoIPFloatingLayout.STATE_GONE ? callSettings.getAvailableLocalCameraState(): VoIPFloatingLayout.STATE_GONE);
+        if (callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE) {
+          currentUserTextureView.renderer.setMirror(callSettings.isCameraFrontFacing());
+          currentUserTextureView.setIsCamera(true);
+          currentUserTextureView.setIsScreencast(false);
+          currentUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+        } else {
+          currentUserTextureView.stopCapturing();
+        }
+
+        if (callSettings.isScreenSharing()) {
+          callSettings.setScreenSharing(false);
+          videoButtonView.setIcon(R.drawable.baseline_videocam_24);
+          otherOptionsContainer.setVisibility(View.VISIBLE);
+          messageButtonContainer.setVisibility(View.GONE);
+        } else {
+          callSettings.setCameraSharing(!callSettings.isCameraSharing());
+          flipCameraButtonContainer.setVisibility(callSettings.isCameraSharing() ? View.VISIBLE : View.GONE);
+          speakerButtonContainer.setVisibility(callSettings.isCameraSharing() ? View.GONE : View.VISIBLE);
+        }
+        showFloatingLayout(true);
+      }
+    } else if (viewId == R.id.btn_other_options) {
+      if (navigationController != null) {
+        if (callSettings == null) {
+          callSettings = new CallSettings(tdlib, call.id);
+        }
+        ArrayList<Integer> ids = new ArrayList<>();
+        ArrayList<String> titles = new ArrayList<>();
+        ArrayList<Integer> icons = new ArrayList<>();
+        if (canShowScreenSharing()) {
+          ids.add(R.id.btn_screenCapture);
+          titles.add("Screen Sharing");
+          icons.add(R.drawable.baseline_share_arrow_24);
+        }
+        ids.add(R.id.btn_openChat);
+        titles.add("Send Message");
+        icons.add(R.drawable.baseline_chat_bubble_24);
+        if (callSettings.isCameraSharing()) {
+          ids.add(R.id.btn_speaker);
+          switch (callSettings.getSpeakerMode()) {
+            case CallSettings.SPEAKER_MODE_NONE:
+              titles.add(Lang.getString(R.string.VoipAudioRoutingEarpiece));
+              icons.add(R.drawable.baseline_phone_in_talk_24);
+              break;
+            case CallSettings.SPEAKER_MODE_SPEAKER:
+            case CallSettings.SPEAKER_MODE_SPEAKER_DEFAULT:
+              titles.add(Lang.getString(R.string.VoipAudioRoutingSpeaker));
+              icons.add(R.drawable.baseline_volume_up_24);
+              break;
+            case CallSettings.SPEAKER_MODE_BLUETOOTH:
+              titles.add(Lang.getString(R.string.VoipAudioRoutingBluetooth));
+              icons.add(R.drawable.baseline_bluetooth_24);
+              break;
+          }
+        }
+        showOptions(null, ids.stream().mapToInt(Integer::intValue).toArray(), titles.toArray(new String[0]), null, icons.stream().mapToInt(Integer::intValue).toArray(), (itemView, id) -> {
+          handleMenuClick(id);
+          return true;
+        });
+      }
+    } else if (viewId == R.id.btn_openChat) {
+      tdlib.ui().openPrivateChat(this, call.userId, null);
+    } else if (viewId == R.id.btn_flip_camera) {
+      if (!TD.isFinished(call)) {
+        if (callSettings == null) {
+          callSettings = new CallSettings(tdlib, call.id);
+        }
+        callSettings.setCameraFrontFacing(!callSettings.isCameraFrontFacing());
+        currentUserTextureView.showWaitFrame();
+        currentUserTextureView.renderer.setMirror(callSettings.isCameraFrontFacing());
+      }
+    } else if (viewId == R.id.btn_screenCapture) {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+        return;
+      }
+      MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) UI.getContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+      UI.startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), SCREEN_CAPTURE_REQUEST_CODE);
     }
+  }
+
+  private boolean canShowScreenSharing() {
+    TGCallService service = TGCallService.currentInstance();
+    return Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP && !callSettings.isCameraSharing() && !callSettings.isScreenSharing() && service != null && service.isVideoSupported();
+  }
+
+  @Override
+  public void onActivityResult (int requestCode, int resultCode, Intent data) {
+    if (requestCode == SCREEN_CAPTURE_REQUEST_CODE) {
+      if (resultCode == Activity.RESULT_OK && !callSettings.isCameraSharing()) {
+        JavaVideoCapturerModule.setMediaProjectionPermissionResult(data);
+        if (callSettings == null) {
+          callSettings = new CallSettings(tdlib, call.id);
+        }
+        callSettings.setScreenSharing(true);
+        videoButtonView.setIcon(R.drawable.baseline_share_arrow_24);
+        videoButtonView.setIsActive(true, true);
+        callSettings.setLocalCameraState(callSettings.getAvailableLocalCameraState());
+        otherOptionsContainer.setVisibility(View.GONE);
+        messageButtonContainer.setVisibility(View.VISIBLE);
+        currentUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+        currentUserTextureView.setIsCamera(false);
+        currentUserTextureView.setIsScreencast(true);
+        showFloatingLayout(true);
+      }
+    }
+  }
+
+
+  private void showMiniFloatingLayout(boolean animated) {
+    var state = callSettings.getRemoteCameraState();
+    if (state == VoIPFloatingLayout.STATE_FLOATING) {
+      callingUserMiniFloatingLayout.setIsActive(true);
+      if (animated) {
+        if (callingUserMiniFloatingLayout.getVisibility() != View.VISIBLE) {
+          callingUserMiniFloatingLayout.setVisibility(View.VISIBLE);
+          callingUserMiniFloatingLayout.setAlpha(0f);
+          callingUserMiniFloatingLayout.setScaleX(0.5f);
+          callingUserMiniFloatingLayout.setScaleY(0.5f);
+        }
+        callingUserMiniFloatingLayout.animate().setListener(null).cancel();
+        callingUserMiniFloatingLayout.isAppearing = true;
+        callingUserMiniFloatingLayout.animate()
+          .alpha(1f).scaleX(1f).scaleY(1f)
+          .setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).setStartDelay(150)
+          .withEndAction(() -> {
+            callingUserMiniFloatingLayout.isAppearing = false;
+            callingUserMiniFloatingLayout.invalidate();
+          }).start();
+      } else {
+        callingUserMiniFloatingLayout.setAlpha(1f);
+        callingUserMiniFloatingLayout.setScaleX(1f);
+        callingUserMiniFloatingLayout.setScaleY(1f);
+        callingUserMiniFloatingLayout.setVisibility(View.VISIBLE);
+      }
+      callingUserMiniFloatingLayout.setTag(1);
+    } else if (state == VoIPFloatingLayout.STATE_FULLSCREEN) {
+      callingUserMiniFloatingLayout.setIsActive(false);
+      if (animated) {
+        callingUserMiniFloatingLayout.animate().alpha(0).scaleX(0.5f).scaleY(0.5f).setListener(new AnimatorListenerAdapter() {
+          @Override
+          public void onAnimationEnd(Animator animation) {
+            if (callingUserMiniFloatingLayout.getTag() == null) {
+              callingUserMiniFloatingLayout.setVisibility(View.GONE);
+            }
+          }
+        }).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+      } else {
+        callingUserMiniFloatingLayout.setVisibility(View.GONE);
+      }
+      callingUserMiniFloatingLayout.setTag(null);
+    }
+  }
+
+  private Animator cameraShowingAnimator;
+  private void showFloatingLayout(boolean animated) {
+    var state = callSettings.getLocalCameraState();
+    if (!animated && cameraShowingAnimator != null) {
+      cameraShowingAnimator.removeAllListeners();
+      cameraShowingAnimator.cancel();
+    }
+    if (state == VoIPFloatingLayout.STATE_GONE) {
+      if (animated) {
+        if (currentUserCameraFloatingLayout.getTag() != null && (int) currentUserCameraFloatingLayout.getTag() != VoIPFloatingLayout.STATE_GONE) {
+          if (cameraShowingAnimator != null) {
+            cameraShowingAnimator.removeAllListeners();
+            cameraShowingAnimator.cancel();
+          }
+          AnimatorSet animatorSet = new AnimatorSet();
+          animatorSet.playTogether(
+            ObjectAnimator.ofFloat(currentUserCameraFloatingLayout, View.ALPHA, currentUserCameraFloatingLayout.getAlpha(), 0)
+          );
+          if (currentUserCameraFloatingLayout.getTag() != null && (int) currentUserCameraFloatingLayout.getTag() == VoIPFloatingLayout.STATE_FLOATING) {
+            animatorSet.playTogether(
+              ObjectAnimator.ofFloat(currentUserCameraFloatingLayout, View.SCALE_X, currentUserCameraFloatingLayout.getScaleX(), 0.7f),
+              ObjectAnimator.ofFloat(currentUserCameraFloatingLayout, View.SCALE_Y, currentUserCameraFloatingLayout.getScaleX(), 0.7f)
+            );
+          }
+          cameraShowingAnimator = animatorSet;
+          cameraShowingAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+              currentUserCameraFloatingLayout.setTranslationX(0);
+              currentUserCameraFloatingLayout.setTranslationY(0);
+              currentUserCameraFloatingLayout.setScaleY(1f);
+              currentUserCameraFloatingLayout.setScaleX(1f);
+              currentUserCameraFloatingLayout.setVisibility(View.GONE);
+            }
+          });
+          cameraShowingAnimator.setDuration(250).setInterpolator(CubicBezierInterpolator.DEFAULT);
+          cameraShowingAnimator.setStartDelay(50);
+          cameraShowingAnimator.start();
+        }
+      } else {
+        currentUserCameraFloatingLayout.setVisibility(View.GONE);
+      }
+    } else {
+      boolean switchToFloatAnimated = animated;
+      if (currentUserCameraFloatingLayout.getTag() == null || (int) currentUserCameraFloatingLayout.getTag() == VoIPFloatingLayout.STATE_GONE) {
+        switchToFloatAnimated = false;
+      }
+      if (animated) {
+        if (currentUserCameraFloatingLayout.getTag() != null && (int) currentUserCameraFloatingLayout.getTag() == VoIPFloatingLayout.STATE_GONE) {
+          if (currentUserCameraFloatingLayout.getVisibility() == View.GONE) {
+            currentUserCameraFloatingLayout.setAlpha(0f);
+            currentUserCameraFloatingLayout.setScaleX(0.7f);
+            currentUserCameraFloatingLayout.setScaleY(0.7f);
+            currentUserCameraFloatingLayout.setVisibility(View.VISIBLE);
+          }
+          if (cameraShowingAnimator != null) {
+            cameraShowingAnimator.removeAllListeners();
+            cameraShowingAnimator.cancel();
+          }
+          AnimatorSet animatorSet = new AnimatorSet();
+          animatorSet.playTogether(
+            ObjectAnimator.ofFloat(currentUserCameraFloatingLayout, View.ALPHA, 0.0f, 1f),
+            ObjectAnimator.ofFloat(currentUserCameraFloatingLayout, View.SCALE_X, 0.7f, 1f),
+            ObjectAnimator.ofFloat(currentUserCameraFloatingLayout, View.SCALE_Y, 0.7f, 1f)
+          );
+          cameraShowingAnimator = animatorSet;
+          cameraShowingAnimator.setDuration(150).start();
+        }
+      } else {
+        currentUserCameraFloatingLayout.setVisibility(View.VISIBLE);
+      }
+      if ((currentUserCameraFloatingLayout.getTag() == null || (int) currentUserCameraFloatingLayout.getTag() != VoIPFloatingLayout.STATE_FLOATING) && currentUserCameraFloatingLayout.relativePositionToSetX < 0) {
+        currentUserCameraFloatingLayout.setRelativePosition(1f, 1f);
+      }
+      currentUserCameraFloatingLayout.setFloatingMode(state == VoIPFloatingLayout.STATE_FLOATING, switchToFloatAnimated);
+    }
+    currentUserCameraFloatingLayout.setTag(state);
   }
 
   @Override
@@ -965,6 +1383,67 @@ public class CallController extends ViewController<CallController.Arguments> imp
     }
     stateView.setText(str.toUpperCase());
     setButtonsVisible(!TD.isFinished(call) && !(call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR && !call.isOutgoing), isFocused());
+    if (call.state.getConstructor() == TdApi.CallStateReady.CONSTRUCTOR && !TD.isFinished(call)) {
+      AndroidUtils.runOnUIThread(() -> {
+        TGCallService service = TGCallService.currentInstance();
+        if (service != null) {
+          if (callSettings == null) {
+            callSettings = new CallSettings(tdlib, call.id);
+          }
+          service.setRemoteSourceChangeCallback((chatId, remoteSource) -> AndroidUtils.runOnUIThread(() -> {
+            if (remoteSource.device == StreamDevice.CAMERA || remoteSource.device == StreamDevice.SCREEN) {
+              var currentUserActive = callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE;
+              if (remoteSource.state == SourceState.ACTIVE) {
+                callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
+                callingUserTextureView.setVisibility(View.VISIBLE);
+                callingUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+                callingUserMiniTextureRenderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+                if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FLOATING);
+              } else if (remoteSource.state == SourceState.INACTIVE) {
+                callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_GONE);
+                callingUserTextureView.setVisibility(View.GONE);
+                callingUserTextureView.stopCapturing();
+                callingUserMiniTextureRenderer.release();
+                if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
+              }
+              if (currentUserActive) showFloatingLayout(true);
+              showMiniFloatingLayout(true);
+            }
+          }));
+          service.setFrameCallback((chatId, userId, streamMode, streamDevice, bytes, frameData) -> {
+            var isVideo = streamDevice == StreamDevice.CAMERA || streamDevice == StreamDevice.SCREEN;
+            if (isVideo) {
+              int ySize = frameData.width * frameData.height;
+              int uvSize = ySize / 4;
+              var i420Buffer = JavaI420Buffer.allocate(frameData.width, frameData.height);
+              i420Buffer.getDataY().put(bytes, 0, ySize).flip();
+              i420Buffer.getDataU().put(bytes, ySize, uvSize).flip();
+              i420Buffer.getDataV().put(bytes, ySize + uvSize, uvSize).flip();
+              VideoFrame frame = new VideoFrame(i420Buffer, frameData.rotation, System.nanoTime());
+
+              switch (streamMode) {
+                case CAPTURE:
+                  if (callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE) {
+                    currentUserTextureView.onFrame(frame);
+                  }
+                  break;
+                case PLAYBACK:
+                  switch (callSettings.getRemoteCameraState()) {
+                    case VoIPFloatingLayout.STATE_FULLSCREEN:
+                      callingUserTextureView.onFrame(frame);
+                      break;
+                    case VoIPFloatingLayout.STATE_FLOATING:
+                      callingUserMiniTextureRenderer.onFrame(frame);
+                      break;
+                  }
+                  break;
+              }
+              i420Buffer.release();
+            }
+          });
+        }
+      });
+    }
     updateEmoji();
     updateFlashing();
     updateCallStrength();
@@ -992,13 +1471,21 @@ public class CallController extends ViewController<CallController.Arguments> imp
     if (buttonWrap != null) {
       muteButtonView.setIsActive(callSettings != null && callSettings.isMicMuted(), isFocused());
       speakerButtonView.setIsActive(callSettings != null && callSettings.isSpeakerModeEnabled(), isFocused());
+      videoButtonView.setIsActive(callSettings != null && callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE, isFocused());
+      flipCameraButtonView.setIsActive(callSettings != null && !callSettings.isCameraFrontFacing(), isFocused());
+      flipCameraButtonView.setIcon(callSettings != null && !callSettings.isCameraFrontFacing() ? R.drawable.baseline_camera_rear_24 : R.drawable.baseline_camera_front_24);
     }
   }
 
   private void updateEmoji () {
     boolean emojiVisible = (call.state.getConstructor() == TdApi.CallStateReady.CONSTRUCTOR);
     if (emojiVisible && StringUtils.isEmpty(emojiViewSmall.getText())) {
-
+      TGCallService service = TGCallService.currentInstance();
+      if (service != null && service.isVideoSupported()) {
+        videoButtonContainer.setVisibility(View.VISIBLE);
+      }
+      otherOptionsContainer.setVisibility(View.VISIBLE);
+      messageButtonContainer.setVisibility(View.GONE);
       TdApi.CallStateReady ready = (TdApi.CallStateReady) call.state;
 
       StringBuilder b = new StringBuilder();
