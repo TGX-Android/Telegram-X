@@ -77,6 +77,7 @@ android {
     buildConfigString("TDLIB_REMOTE_URL", "https://github.com/tdlib/td")
 
     buildConfigField("boolean", "EXPERIMENTAL", config.isExperimentalBuild.toString())
+    buildConfigField("boolean", "USE_NTGCALLS", config.useNTgCalls.toString())
 
     buildConfigInt("TARGET_SDK_INT", config.targetSdkVersion)
 
@@ -486,6 +487,10 @@ dependencies {
   implementation(project(":vkryl:leveldb"))
   implementation(project(":vkryl:android"))
   implementation(project(":vkryl:td"))
+  // NTgCalls: https://github.com/pytgcalls/ntgcalls
+  if (config.useNTgCalls) {
+    implementation("io.github.pytgcalls:ntgcalls:2.0.6")
+  }
   // AndroidX: https://developer.android.com/jetpack/androidx/versions
   flavorImplementation(
     libs.androidx.activity.legacy,

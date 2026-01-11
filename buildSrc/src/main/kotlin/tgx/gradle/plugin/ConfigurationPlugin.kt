@@ -73,6 +73,7 @@ open class ConfigurationPlugin : Plugin<Project> {
       error("Unknown tgx.extension: $appExtension")
     }
     val isHuaweiBuild = appExtension == "hms"
+    val useNTgCalls = properties.getProperty("app.ntgcalls", "false") == "true"
 
     val versions = loadProperties("version.properties")
 
@@ -126,6 +127,7 @@ open class ConfigurationPlugin : Plugin<Project> {
       majorVersion,
       isExperimentalBuild,
       isHuaweiBuild,
+      useNTgCalls,
       forceOptimize,
       doNotObfuscate,
       compileSdkVersion,

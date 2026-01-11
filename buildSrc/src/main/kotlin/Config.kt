@@ -62,6 +62,7 @@ data class ApplicationConfig(
 
   val isExperimentalBuild: Boolean,
   val isHuaweiBuild: Boolean,
+  val useNTgCalls: Boolean,
   val forceOptimize: Boolean,
   val doNotObfuscate: Boolean,
 
