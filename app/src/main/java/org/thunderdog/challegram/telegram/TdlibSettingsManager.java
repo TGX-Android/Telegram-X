@@ -69,6 +69,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   private static final String DISMISS_MESSAGE_PREFIX = "dismiss_pinned_";
   private static final String DISMISS_REQUESTS_PREFIX = "dismiss_requests_";
+  private static final String FORUM_VIEW_PREFERENCE_PREFIX = "forum_view_";
 
   private static final String NOTIFICATION_GROUP_DATA_PREFIX = "notification_gdata_";
   private static final String NOTIFICATION_DATA_PREFIX = "notification_data_";
@@ -175,6 +176,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     Settings.instance().removeScrollPositions(accountId, editor);
     String dismissPrefix = key(DISMISS_MESSAGE_PREFIX, accountId);
     String dismissReqPrefix = key(DISMISS_REQUESTS_PREFIX, accountId);
+    String forumViewPrefix = key(FORUM_VIEW_PREFERENCE_PREFIX, accountId);
     String notificationGroupDataPrefix = key(NOTIFICATION_GROUP_DATA_PREFIX, accountId);
     String notificationDataPrefix = key(NOTIFICATION_DATA_PREFIX, accountId);
     String conversionPrefix = key(CONVERSION_PREFIX, accountId);
@@ -183,6 +185,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     Settings.instance().removeByAnyPrefix(new String[] {
       dismissPrefix,
       dismissReqPrefix,
+      forumViewPrefix,
       notificationGroupDataPrefix,
       notificationDataPrefix,
       conversionPrefix,
@@ -286,6 +289,23 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public boolean isRequestsDismissed (long chatId, TdApi.ChatJoinRequestsInfo pendingInfo) {
     return pendingInfo == null || Arrays.equals(Settings.instance().getLongArray(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId), pendingInfo.userIds);
+  }
+
+  // Forum view preference: true = tabs, false = topics list
+  // This is used when forum has hasForumTabs enabled to remember user's choice
+  public static final int FORUM_VIEW_TABS = 1;
+  public static final int FORUM_VIEW_TOPICS = 2;
+
+  public void setForumViewPreference (long chatId, int viewPreference) {
+    Settings.instance().putInt(key(FORUM_VIEW_PREFERENCE_PREFIX, tdlib.id()) + chatId, viewPreference);
+  }
+
+  public int getForumViewPreference (long chatId) {
+    return Settings.instance().getInt(key(FORUM_VIEW_PREFERENCE_PREFIX, tdlib.id()) + chatId, 0);
+  }
+
+  public boolean hasForumViewPreference (long chatId) {
+    return getForumViewPreference(chatId) != 0;
   }
 
   public boolean forcePlainModeInChannels () {

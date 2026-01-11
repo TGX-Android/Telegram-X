@@ -2136,7 +2136,12 @@ public class TdlibUi extends Handler {
       // Users can use "View as chat" option to switch to unified view (sets viewAsTopics to false)
       if (chat.viewAsTopics || hasForumTabs) {
         ViewController<?> forumController;
-        if (hasForumTabs) {
+        // Check user's saved preference for forum view (tabs vs topics list)
+        int viewPreference = tdlib.settings().getForumViewPreference(chat.id);
+        boolean preferTabs = hasForumTabs && viewPreference != TdlibSettingsManager.FORUM_VIEW_TOPICS;
+        boolean preferTopics = !hasForumTabs || viewPreference == TdlibSettingsManager.FORUM_VIEW_TOPICS;
+
+        if (preferTabs) {
           ForumTopicTabsController tabsController = new ForumTopicTabsController(context.context(), context.tdlib());
           tabsController.setArguments(new ForumTopicTabsController.Arguments(chat));
           forumController = tabsController;
