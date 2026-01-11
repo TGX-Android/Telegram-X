@@ -166,6 +166,21 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     return 0;
   }
 
+  /**
+   * Check if this notification is from a muted forum topic.
+   */
+  public boolean isFromMutedForumTopic (Tdlib tdlib) {
+    TdApi.Message message = findMessage();
+    if (message == null) {
+      return false;
+    }
+    long topicId = findForumTopicId();
+    if (topicId == 0) {
+      return false;
+    }
+    return tdlib.isForumTopicMuted(message.chatId, topicId);
+  }
+
   public boolean canMergeWith (@Nullable TdlibNotification n) {
     if (n != null && notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR && n.notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR) {
       TdApi.Message m = ((TdApi.NotificationTypeNewMessage) notification.type).message;
