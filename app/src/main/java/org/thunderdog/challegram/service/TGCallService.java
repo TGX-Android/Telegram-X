@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.service;
 
+import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -52,6 +53,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import org.drinkless.tdlib.TdApi;
 import io.github.pytgcalls.FrameCallback;
@@ -192,6 +194,19 @@ public class TGCallService extends Service implements
   private PowerManager.WakeLock cpuWakelock;
   private BluetoothAdapter btAdapter;
 
+  /**
+   * Check if Bluetooth permission is granted.
+   * On Android 12+ (API 31+), BLUETOOTH_CONNECT is required.
+   * On older versions, BLUETOOTH permission is sufficient.
+   */
+  private boolean hasBluetoothPermission () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      return ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
+          == android.content.pm.PackageManager.PERMISSION_GRANTED;
+    }
+    return true; // Legacy BLUETOOTH permission is granted at install time
+  }
+
   private boolean isProximityNear, isHeadsetPlugged;
 
   public void setFrameCallback(FrameCallback callback) {
@@ -325,7 +340,10 @@ public class TGCallService extends Service implements
       }
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-
+        // Android 12+ requires BLUETOOTH_CONNECT runtime permission
+        if (hasBluetoothPermission() && am.isBluetoothScoAvailableOffCall()) {
+          btAdapter = BluetoothAdapter.getDefaultAdapter();
+        }
       } else {
         btAdapter = am.isBluetoothScoAvailableOffCall() ? BluetoothAdapter.getDefaultAdapter() : null;
       }
@@ -356,8 +374,7 @@ public class TGCallService extends Service implements
         am.addOnCommunicationDeviceChangedListener(Executors.newSingleThreadExecutor(), (AudioManager.OnCommunicationDeviceChangedListener) communicationDeviceChangedListener);
         notifyAudioSettingsChanged();
       } else {
-        if (btAdapter != null && btAdapter.isEnabled()) {
-          //noinspection MissingPermission
+        if (btAdapter != null && btAdapter.isEnabled() && hasBluetoothPermission()) {
           int headsetState = btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET);
           updateBluetoothHeadsetState(headsetState == BluetoothProfile.STATE_CONNECTED);
           if (headsetState == BluetoothProfile.STATE_CONNECTED) {
