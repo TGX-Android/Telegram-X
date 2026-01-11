@@ -42,6 +42,7 @@ import org.thunderdog.challegram.util.text.Letters;
 
 import me.vkryl.core.StringUtils;
 import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class ChatHeaderView extends ComplexHeaderView implements TdlibEmojiManager.Watcher {
   public interface Callback {

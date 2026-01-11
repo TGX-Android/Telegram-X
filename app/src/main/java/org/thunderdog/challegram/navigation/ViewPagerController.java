@@ -848,7 +848,12 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     @NonNull
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
       ViewController<?> c = prepareViewController(reversePosition(position));
-      container.addView(c.getValue());
+      View view = c.getValue();
+      // Remove view from its current parent if it has one (can happen when reusing cached controllers)
+      if (view.getParent() != null) {
+        ((ViewGroup) view.getParent()).removeView(view);
+      }
+      container.addView(view);
       c.setBottomInset(parent.extraBottomInset, parent.extraBottomInsetWithoutIme);
       attachedControllers.add(c);
       parent.updateControllerState(c, position);

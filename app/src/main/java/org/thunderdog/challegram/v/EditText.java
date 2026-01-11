@@ -122,6 +122,20 @@ public class EditText extends android.widget.EditText {
     }
   }
 
+  /**
+   * Clears composing spans (suggestion/autocomplete state) before programmatic text modifications.
+   * This prevents crashes when Android's suggestion popup tries to update with stale positions
+   * after text has been modified programmatically.
+   *
+   * Call this before any programmatic text changes (insert, replace, delete).
+   */
+  public void clearComposingText () {
+    Editable text = getText();
+    if (text != null) {
+      BaseInputConnection.removeComposingSpans(text);
+    }
+  }
+
   protected boolean onKeyboardBackPress () {
     return false;
   }

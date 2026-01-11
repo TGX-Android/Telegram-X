@@ -1140,6 +1140,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     TextSelection selection = getTextSelection();
     if (selection == null || !isEnabled())
       return;
+    clearComposingText(); // Prevent suggestion popup crash
     int after = selection.start + emoji.length();
     SpannableString s = new SpannableString(emoji);
     s.setSpan(Emoji.instance().newSpan(emoji, null), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -1167,6 +1168,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     TextSelection selection = getTextSelection();
     if (selection == null || !isEnabled())
       return;
+    clearComposingText(); // Prevent suggestion popup crash
 
     final String emoji = TD.stickerEmoji(stickerObj);
     final Editable editable = getText();
@@ -1427,6 +1429,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
 
+    clearComposingText(); // Prevent suggestion popup crash
     Editable editable = getText();
     SpannableStringBuilder b = new SpannableStringBuilder(editable);
     CharSequence within = resultHashtag + " ";
@@ -1441,6 +1444,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
 
+    clearComposingText(); // Prevent suggestion popup crash
     Editable editable = getText();
     SpannableStringBuilder b = new SpannableStringBuilder(editable);
     CharSequence within = editable.length() == suggestion.getTargetEnd() && suggestion.getTargetStart() == 0 ? resultEmoji : resultEmoji + " ";
@@ -1456,6 +1460,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
 
+    clearComposingText(); // Prevent suggestion popup crash
     Editable editable = getText();
     SpannableStringBuilder b = new SpannableStringBuilder(editable);
     CharSequence within;
