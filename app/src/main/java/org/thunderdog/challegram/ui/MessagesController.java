@@ -310,7 +310,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   RecordAudioVideoController.RecordStateListeners,
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
-  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener, InputView.SelectionChangeListener {
+  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener, InputView.SelectionChangeListener,
+  VoiceVideoButtonView.RestrictionListener {
 
   private boolean reuseEnabled;
   private boolean destroyInstance;
@@ -1223,6 +1224,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     recordButton = new VoiceVideoButtonView(context);
     recordButton.setPadding(0, 0, Screen.dp(2f), 0);
     recordButton.setHasTouchControls(true);
+    recordButton.setRestrictionListener(this);
     addThemeInvalidateListener(recordButton);
     recordButton.setLayoutParams(lp);
 
@@ -3221,6 +3223,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (messageSenderButton != null) {
       messageSenderButton.setInSlowMode(tdlib.inSlowMode(getChatId()));
     }
+    if (recordButton != null) {
+      boolean voiceRestricted = tdlib.getVoiceVideoRestrictionText(chat, false) != null;
+      boolean videoRestricted = tdlib.getVoiceVideoRestrictionText(chat, true) != null;
+      recordButton.setRestricted(voiceRestricted, videoRestricted);
+    }
     if (isUpdate) {
       updateInputHint();
     }
@@ -3369,6 +3376,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onRecordAudioVideoError (boolean preferVideoMode) {
     if (!sendShown.getValue()) {
       showBottomHint(preferVideoMode ? R.string.HoldToVideo : R.string.HoldToAudio);
+    }
+  }
+
+  @Override
+  public void onVoiceVideoRestricted (View view, boolean isVideoMode) {
+    CharSequence restrictionText = tdlib.getVoiceVideoRestrictionText(chat, isVideoMode);
+    if (restrictionText != null) {
+      showBottomHint(restrictionText, true);
     }
   }
 

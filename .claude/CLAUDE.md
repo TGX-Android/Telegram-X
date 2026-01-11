@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Workflow
+
+**Always push to fork, not origin:**
+```bash
+git push fork <branch-name>
+# NOT: git push origin
+```
+
 ## Build Commands
 
 ```bash
@@ -93,14 +101,35 @@ Color definitions: `app/src/main/other/themes/colors-and-properties.xml`
 - Use `Lang.getString()`, `Lang.plural()`, `Lang.getRelativeDate()`
 - Translations managed via translations.telegram.org (not local files)
 
-## Task Tracking
+## Issue Tracking (MantisBT)
 
-**Always track work in `TASKS.md`** at project root:
-1. Add tasks under appropriate section
-2. Update status as work progresses
-3. Document files created/modified
-4. Include TDLib functions used for API changes
-5. Document bug fixes with root cause and solution
+**Use MantisBT for all task/issue tracking.** Project ID: 1 (Telegram X)
+
+### Workflow:
+1. **Before starting work:** Check MantisBT for assigned issues or pick from unassigned
+2. **When starting:** Update issue status to "assigned" and assign to yourself
+3. **During work:** Add notes with progress updates if work spans multiple sessions
+4. **When done:** Add implementation summary note with:
+   - Files modified
+   - Key changes made
+   - TDLib functions used (if applicable)
+5. **After testing:** Update status to "resolved" with resolution "fixed"
+
+### Categories:
+- General, Interface, Purchases, Stories, Topics
+
+**Note:** Categories can only be created via web UI (API limitation). If a bug doesn't fit any existing category, inform the user so they can create a new one.
+
+### Issue Statuses:
+- `new` → Unreviewed
+- `assigned` → Being worked on
+- `resolved` → Fix implemented, awaiting verification
+- `closed` → Verified and complete
+
+### Proactive Behavior:
+- When user mentions a bug or feature, check if MantisBT issue exists
+- Create new issues for discovered bugs during development
+- Link commits to issues in notes when applicable
 
 ## TDLib Integration
 

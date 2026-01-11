@@ -9,18 +9,18 @@ import android.view.WindowManager;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.pytgcalls.ntgcalls.CallNetworkState;
-import org.pytgcalls.ntgcalls.FrameCallback;
-import org.pytgcalls.ntgcalls.NTgCalls;
-import org.pytgcalls.ntgcalls.RemoteSourceChangeCallback;
-import org.pytgcalls.ntgcalls.exceptions.ConnectionException;
-import org.pytgcalls.ntgcalls.exceptions.ConnectionNotFoundException;
-import org.pytgcalls.ntgcalls.media.AudioDescription;
-import org.pytgcalls.ntgcalls.media.MediaDescription;
-import org.pytgcalls.ntgcalls.media.MediaSource;
-import org.pytgcalls.ntgcalls.media.StreamMode;
-import org.pytgcalls.ntgcalls.media.VideoDescription;
-import org.pytgcalls.ntgcalls.p2p.RTCServer;
+import io.github.pytgcalls.FrameCallback;
+import io.github.pytgcalls.NetworkInfo;
+import io.github.pytgcalls.NTgCalls;
+import io.github.pytgcalls.RemoteSourceChangeCallback;
+import io.github.pytgcalls.exceptions.ConnectionException;
+import io.github.pytgcalls.exceptions.ConnectionNotFoundException;
+import io.github.pytgcalls.media.AudioDescription;
+import io.github.pytgcalls.media.MediaDescription;
+import io.github.pytgcalls.media.MediaSource;
+import io.github.pytgcalls.media.StreamMode;
+import io.github.pytgcalls.media.VideoDescription;
+import io.github.pytgcalls.p2p.RTCServer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
@@ -49,38 +49,28 @@ public class NTgCallsInterface implements CallInterface {
     this.call = call;
     ntgcalls = new NTgCalls();
     ntgcalls.setSignalingDataCallback((callId, data) -> listener.onSignallingDataEmitted(data));
-    ntgcalls.setConnectionChangeCallback((chatId, callNetworkState) -> {
-      if (callNetworkState.state == CallNetworkState.State.CONNECTED) {
+    ntgcalls.setConnectionChangeCallback((chatId, networkInfo) -> {
+      if (networkInfo.state == NetworkInfo.State.CONNECTED) {
          listener.onConnectionStateChanged(null, CallState.ESTABLISHED);
-      } else if (callNetworkState.state != CallNetworkState.State.CONNECTING) {
+      } else if (networkInfo.state != NetworkInfo.State.CONNECTING) {
          listener.onConnectionStateChanged(null, CallState.FAILED);
       }
     });
     micDescription = new AudioDescription(
       MediaSource.DEVICE,
-      NTgCalls.getMediaDevices().audio.get(0).metadata,
+      NTgCalls.getMediaDevices().microphone.get(0).metadata,
       48000,
-      16,
       2
     );
-    ntgcalls.createP2PCall(
-      CALL_ID,
-      new MediaDescription(
-        micDescription,
-        null,
-        null,
-        null
-      )
-    );
+    ntgcalls.createP2PCall(CALL_ID);
     ntgcalls.setStreamSources(
       CALL_ID,
       StreamMode.PLAYBACK,
       new MediaDescription(
         new AudioDescription(
           MediaSource.DEVICE,
-          NTgCalls.getMediaDevices().audio.get(1).metadata,
+          NTgCalls.getMediaDevices().speaker.get(0).metadata,
           48000,
-          16,
           2
         ),
         null,
@@ -190,7 +180,7 @@ public class NTgCallsInterface implements CallInterface {
   public void setCameraEnabled (boolean enabled, boolean front) {
     try {
       if (enabled) {
-        String cameraId = NTgCalls.getMediaDevices().video.get(front ? 1 : 0).metadata;
+        String cameraId = NTgCalls.getMediaDevices().camera.get(front ? 1 : 0).metadata;
         ntgcalls.setStreamSources(
           CALL_ID,
           StreamMode.CAPTURE,

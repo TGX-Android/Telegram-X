@@ -26,7 +26,7 @@ import androidx.media3.decoder.flac.FlacLibrary;
 import androidx.media3.decoder.opus.OpusLibrary;
 import androidx.media3.decoder.vp9.VpxLibrary;
 
-import org.pytgcalls.ntgcalls.NTgCalls;
+import io.github.pytgcalls.NTgCalls;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.voip.VoIPController;
 import org.webrtc.SoftwareVideoEncoderFactory;

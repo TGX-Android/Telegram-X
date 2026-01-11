@@ -49,10 +49,13 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.pytgcalls.ntgcalls.AndroidUtils;
-import org.pytgcalls.ntgcalls.devices.JavaVideoCapturerModule;
-import org.pytgcalls.ntgcalls.media.SourceState;
-import org.pytgcalls.ntgcalls.media.StreamDevice;
+import io.github.pytgcalls.AndroidUtils;
+import io.github.pytgcalls.devices.JavaVideoCapturerModule;
+import io.github.pytgcalls.media.Frame;
+import io.github.pytgcalls.media.FrameData;
+import io.github.pytgcalls.media.StreamDevice;
+import io.github.pytgcalls.media.StreamMode;
+import io.github.pytgcalls.media.StreamStatus;
 import org.pytgcalls.ntgcallsx.VoIPFloatingLayout;
 import org.pytgcalls.ntgcallsx.VoIPTextureView;
 import org.thunderdog.challegram.BaseActivity;
@@ -95,6 +98,7 @@ import org.webrtc.TextureViewRenderer;
 import org.webrtc.VideoFrame;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 import me.vkryl.android.AnimatorUtils;
@@ -1068,7 +1072,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
         if (callSettings.isCameraSharing()) {
           ids.add(R.id.btn_speaker);
           switch (callSettings.getSpeakerMode()) {
-            case CallSettings.SPEAKER_MODE_NONE:
+            case CallSettings.SPEAKER_MODE_EARPIECE:
               titles.add(Lang.getString(R.string.VoipAudioRoutingEarpiece));
               icons.add(R.drawable.baseline_phone_in_talk_24);
               break;
@@ -1393,13 +1397,13 @@ public class CallController extends ViewController<CallController.Arguments> imp
           service.setRemoteSourceChangeCallback((chatId, remoteSource) -> AndroidUtils.runOnUIThread(() -> {
             if (remoteSource.device == StreamDevice.CAMERA || remoteSource.device == StreamDevice.SCREEN) {
               var currentUserActive = callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE;
-              if (remoteSource.state == SourceState.ACTIVE) {
+              if (remoteSource.state == StreamStatus.ACTIVE) {
                 callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
                 callingUserTextureView.setVisibility(View.VISIBLE);
                 callingUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
                 callingUserMiniTextureRenderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
                 if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FLOATING);
-              } else if (remoteSource.state == SourceState.INACTIVE) {
+              } else if (remoteSource.state == StreamStatus.PAUSED) {
                 callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_GONE);
                 callingUserTextureView.setVisibility(View.GONE);
                 callingUserTextureView.stopCapturing();
@@ -1410,35 +1414,39 @@ public class CallController extends ViewController<CallController.Arguments> imp
               showMiniFloatingLayout(true);
             }
           }));
-          service.setFrameCallback((chatId, userId, streamMode, streamDevice, bytes, frameData) -> {
+          service.setFrameCallback((chatId, streamMode, streamDevice, frames) -> {
             var isVideo = streamDevice == StreamDevice.CAMERA || streamDevice == StreamDevice.SCREEN;
             if (isVideo) {
-              int ySize = frameData.width * frameData.height;
-              int uvSize = ySize / 4;
-              var i420Buffer = JavaI420Buffer.allocate(frameData.width, frameData.height);
-              i420Buffer.getDataY().put(bytes, 0, ySize).flip();
-              i420Buffer.getDataU().put(bytes, ySize, uvSize).flip();
-              i420Buffer.getDataV().put(bytes, ySize + uvSize, uvSize).flip();
-              VideoFrame frame = new VideoFrame(i420Buffer, frameData.rotation, System.nanoTime());
+              for (Frame frame : frames) {
+                byte[] bytes = frame.data;
+                FrameData frameData = frame.frameData;
+                int ySize = frameData.width * frameData.height;
+                int uvSize = ySize / 4;
+                var i420Buffer = JavaI420Buffer.allocate(frameData.width, frameData.height);
+                i420Buffer.getDataY().put(bytes, 0, ySize).flip();
+                i420Buffer.getDataU().put(bytes, ySize, uvSize).flip();
+                i420Buffer.getDataV().put(bytes, ySize + uvSize, uvSize).flip();
+                VideoFrame videoFrame = new VideoFrame(i420Buffer, frameData.rotation, System.nanoTime());
 
-              switch (streamMode) {
-                case CAPTURE:
-                  if (callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE) {
-                    currentUserTextureView.onFrame(frame);
-                  }
-                  break;
-                case PLAYBACK:
-                  switch (callSettings.getRemoteCameraState()) {
-                    case VoIPFloatingLayout.STATE_FULLSCREEN:
-                      callingUserTextureView.onFrame(frame);
-                      break;
-                    case VoIPFloatingLayout.STATE_FLOATING:
-                      callingUserMiniTextureRenderer.onFrame(frame);
-                      break;
-                  }
-                  break;
+                switch (streamMode) {
+                  case CAPTURE:
+                    if (callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE) {
+                      currentUserTextureView.onFrame(videoFrame);
+                    }
+                    break;
+                  case PLAYBACK:
+                    switch (callSettings.getRemoteCameraState()) {
+                      case VoIPFloatingLayout.STATE_FULLSCREEN:
+                        callingUserTextureView.onFrame(videoFrame);
+                        break;
+                      case VoIPFloatingLayout.STATE_FLOATING:
+                        callingUserMiniTextureRenderer.onFrame(videoFrame);
+                        break;
+                    }
+                    break;
+                }
+                i420Buffer.release();
               }
-              i420Buffer.release();
             }
           });
         }
