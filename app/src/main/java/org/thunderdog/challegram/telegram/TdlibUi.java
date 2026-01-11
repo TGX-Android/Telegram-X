@@ -2482,7 +2482,7 @@ public class TdlibUi extends Handler {
       Log.i(Log.TAG_VOIP, "Created video chat with ID: %d", groupCallId);
 
       // Join the created video chat
-      joinGroupCall(context, new TdApi.InputGroupCallId(groupCallId), null);
+      joinVideoChat(context, groupCallId, null);
     });
   }
 
@@ -2505,8 +2505,67 @@ public class TdlibUi extends Handler {
    * @param context The delegate context
    * @param groupCallId The group call ID to join
    */
-  public void joinGroupCall (final TdlibDelegate context, final int groupCallId) {
-    joinGroupCall(context, new TdApi.InputGroupCallId(groupCallId), null);
+  public void joinVideoChat (final TdlibDelegate context, final int groupCallId) {
+    joinVideoChat(context, groupCallId, null);
+  }
+
+  private void joinVideoChat (final TdlibDelegate context, final int groupCallId, final @Nullable String inviteHash) {
+    if (!BuildConfig.USE_NTGCALLS) {
+      UI.showToast(R.string.InternalUrlUnsupported, Toast.LENGTH_SHORT);
+      return;
+    }
+    UI.post(() -> {
+      try {
+        org.pytgcalls.ntgcallsx.NTgCallsGroupInterface groupInterface =
+          new org.pytgcalls.ntgcallsx.NTgCallsGroupInterface(tdlib, 0, 0);
+        var joinParams = groupInterface.getJoinParameters();
+        if (joinParams == null) {
+          UI.showToast("Failed to create group call connection", Toast.LENGTH_SHORT);
+          return;
+        }
+        TdApi.GroupCallJoinParameters tdlibParams = new TdApi.GroupCallJoinParameters(
+          joinParams.audioSourceId, joinParams.payload, true, false);
+        tdlib.send(new TdApi.JoinVideoChat(groupCallId, null, tdlibParams, inviteHash), (joinResponse, joinError) -> {
+          if (joinError != null) {
+            UI.showError(joinError);
+            groupInterface.stop();
+            return;
+          }
+          try {
+            groupInterface.connect(joinResponse.text, false);
+            Log.i(Log.TAG_VOIP, "Successfully joined video chat %d", groupCallId);
+            tdlib.send(new TdApi.GetGroupCall(groupCallId), (groupCall, getError) -> {
+              if (getError != null) {
+                Log.e(Log.TAG_VOIP, "Failed to get group call details", new RuntimeException(getError.message));
+                UI.showToast("Failed to get call details", Toast.LENGTH_SHORT);
+                return;
+              }
+              UI.post(() -> {
+                if (context instanceof org.thunderdog.challegram.navigation.ViewController) {
+                  org.thunderdog.challegram.navigation.ViewController<?> controller =
+                    (org.thunderdog.challegram.navigation.ViewController<?>) context;
+                  org.thunderdog.challegram.navigation.NavigationController nav = controller.navigationController();
+                  if (nav != null) {
+                    org.thunderdog.challegram.ui.GroupCallController groupCallController =
+                      new org.thunderdog.challegram.ui.GroupCallController(controller.context(), tdlib);
+                    groupCallController.setArguments(new org.thunderdog.challegram.ui.GroupCallController.Arguments(
+                      groupInterface, groupCall, groupCall.title));
+                    nav.navigateTo(groupCallController);
+                  }
+                }
+              });
+            });
+          } catch (io.github.pytgcalls.exceptions.ConnectionException e) {
+            Log.e(Log.TAG_VOIP, "Failed to connect to video chat", e);
+            UI.showToast("Failed to connect to video chat", Toast.LENGTH_SHORT);
+            groupInterface.stop();
+          }
+        });
+      } catch (Exception e) {
+        Log.e(Log.TAG_VOIP, "Failed to create group call interface", e);
+        UI.showToast("Failed to join video chat", Toast.LENGTH_SHORT);
+      }
+    });
   }
 
   private void joinGroupCall (final TdlibDelegate context, final TdApi.InputGroupCall inputGroupCall, final @Nullable UrlOpenParameters openParameters) {

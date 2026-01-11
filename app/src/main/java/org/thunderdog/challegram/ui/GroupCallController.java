@@ -366,7 +366,7 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
 
     // End call button (only visible for admins) - long press on leave button
     leaveButton.setOnLongClickListener(v -> {
-      if (groupCall != null && tdlib.canManageVideoChats(groupCall.chatId)) {
+      if (groupCall != null && groupCall.canBeManaged) {
         showEndCallConfirmation();
         return true;
       }

@@ -2283,7 +2283,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else if (id == R.id.btn_joinVideoChat) {
       // Join existing video chat
       if (chat != null && chat.videoChat != null && chat.videoChat.groupCallId != 0) {
-        tdlib.ui().joinGroupCall(this, chat.videoChat.groupCallId);
+        tdlib.ui().joinVideoChat(this, chat.videoChat.groupCallId);
       }
     } else if (id == R.id.btn_manageGroup) {
       manageGroup();
