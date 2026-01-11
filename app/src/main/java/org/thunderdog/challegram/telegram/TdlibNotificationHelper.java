@@ -206,6 +206,22 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
 
       int visualChangeCount = group.updateGroup(update, addedNotifications, removedNotifications);
 
+      // Filter out notifications from muted forum topics and make silent if all are muted
+      if (addedNotifications != null && !addedNotifications.isEmpty()) {
+        Iterator<TdlibNotification> iter = addedNotifications.iterator();
+        while (iter.hasNext()) {
+          TdlibNotification notification = iter.next();
+          if (notification.isFromMutedForumTopic(tdlib)) {
+            TDLib.Tag.notifications("Filtering notification from muted forum topic, chatId=%d", update.chatId);
+            iter.remove();
+            visualChangeCount--;
+          }
+        }
+        if (addedNotifications.isEmpty()) {
+          isSilent = true;
+        }
+      }
+
       if (removedNotifications != null && !removedNotifications.isEmpty()) {
         notifications.removeAll(removedNotifications);
       }
@@ -264,8 +280,23 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
       group = new TdlibNotificationGroup(tdlib, update);
       if (group.isEmpty())
         return;
+
+      // Filter out notifications from muted forum topics for new groups
+      List<TdlibNotification> groupNotifications = new ArrayList<>(group.notifications());
+      Iterator<TdlibNotification> iter = groupNotifications.iterator();
+      while (iter.hasNext()) {
+        TdlibNotification notification = iter.next();
+        if (notification.isFromMutedForumTopic(tdlib)) {
+          TDLib.Tag.notifications("Filtering notification from muted forum topic (new group), chatId=%d", update.chatId);
+          iter.remove();
+        }
+      }
+      if (groupNotifications.isEmpty()) {
+        isSilent = true;
+      }
+
       groups.put(update.notificationGroupId, group);
-      notifications.addAll(group.notifications());
+      notifications.addAll(groupNotifications);
       Collections.sort(notifications);
     }
     boolean needNotification = !isSilent && context.allowNotificationSound(update.chatId);

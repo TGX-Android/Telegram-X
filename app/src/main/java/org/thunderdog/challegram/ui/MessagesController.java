@@ -3198,6 +3198,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void updateBottomBar (boolean isUpdate) {
     setInputBlockFlag(FLAG_INPUT_TEXT_DISABLED, !tdlib.canSendBasicMessage(chat));
+    setInputBlockFlag(FLAG_INPUT_TOPIC_CLOSED, isTopicClosedForUser());
     if (sendButton != null) {
       sendButton.getSlowModeCounterController(tdlib).updateSlowModeTimer(isUpdate);
     }
@@ -7266,8 +7267,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final int FLAG_INPUT_OFFSCREEN = 1 << 1;
   private static final int FLAG_INPUT_RECORDING = 1 << 2;
   private static final int FLAG_INPUT_TEXT_DISABLED = 1 << 3;
+  private static final int FLAG_INPUT_TOPIC_CLOSED = 1 << 4;
 
   private int inputBlockFlags;
+
+  /**
+   * Check if the current user can manage forum topics.
+   */
+  private boolean canManageTopics () {
+    if (chat == null) return false;
+    TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
+    if (status == null) return false;
+    switch (status.getConstructor()) {
+      case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+        return true;
+      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canManageTopics;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Check if the topic is closed and the user cannot send messages to it.
+   */
+  private boolean isTopicClosedForUser () {
+    if (forumTopic == null || forumTopic.info == null) return false;
+    if (!forumTopic.info.isClosed) return false;
+    // Admins with canManageTopics permission can still send to closed topics
+    return !canManageTopics();
+  }
 
   private boolean setInputBlockFlags (int flags) {
     if (this.inputBlockFlags != flags) {
@@ -7284,10 +7313,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void setInputBlockFlag (int flag, boolean active) {
     if (setInputBlockFlags(BitwiseUtils.setFlag(inputBlockFlags, flag, active))) {
-      if ((flag == FLAG_INPUT_OFFSCREEN || flag == FLAG_INPUT_TEXT_DISABLED) && inputView != null) {
+      if ((flag == FLAG_INPUT_OFFSCREEN || flag == FLAG_INPUT_TEXT_DISABLED || flag == FLAG_INPUT_TOPIC_CLOSED) && inputView != null) {
         inputView.setEnabled(
           !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_OFFSCREEN) &&
-          !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_TEXT_DISABLED)
+          !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_TEXT_DISABLED) &&
+          !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_TOPIC_CLOSED)
         );
       }
     }
@@ -11135,6 +11165,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().post(() -> {
       if (ChatId.toSupergroupId(getChatId()) == supergroup.id) {
         updateBottomBar(true);
+        // Check if forum mode was enabled externally (by another admin)
+        // Only redirect if we're viewing unified chat (not a specific topic)
+        if (supergroup.isForum && forumTopic == null && messageThread == null && chat != null) {
+          // Forum mode was enabled - navigate to topics view
+          navigateBack();
+          tdlib.ui().post(() -> {
+            if (!isDestroyed()) {
+              tdlib.ui().openChat(this, chat.id, new TdlibUi.ChatOpenParameters().keepStack());
+            }
+          });
+        }
       }
     });
   }

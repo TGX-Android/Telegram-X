@@ -2634,6 +2634,35 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  /**
+   * Get a ForumTopic by chat ID and topic ID from cache.
+   */
+  public @Nullable TdApi.ForumTopic forumTopic (long chatId, long topicId) {
+    synchronized (dataLock) {
+      List<TdApi.ForumTopic> topics = forumTopicsCache.get(chatId);
+      if (topics != null) {
+        for (TdApi.ForumTopic topic : topics) {
+          if (topic.info.forumTopicId == topicId) {
+            return topic;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Check if a forum topic is muted.
+   * Returns true if the topic has notification settings with muteFor > 0.
+   */
+  public boolean isForumTopicMuted (long chatId, long topicId) {
+    TdApi.ForumTopic topic = forumTopic(chatId, topicId);
+    if (topic != null && topic.notificationSettings != null) {
+      return topic.notificationSettings.muteFor > 0;
+    }
+    return false;
+  }
+
   public @Nullable TdApi.Chat chat (long chatId) {
     if (chatId == 0) {
       return null;

@@ -33,8 +33,10 @@ import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.navigation.ViewPagerTopView;
+import tgx.td.ChatId;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.ProgressComponentView;
@@ -258,12 +260,33 @@ public class ForumTopicTabsController extends ViewPagerController<ForumTopicTabs
   // TdlibCache.SupergroupDataChangeListener implementation
   @Override
   public void onSupergroupUpdated (TdApi.Supergroup supergroup) {
-    // Handle supergroup updates if needed
+    tdlib.ui().post(() -> {
+      if (ChatId.toSupergroupId(chatId) == supergroup.id) {
+        // Check if forum mode was disabled externally or tabs layout changed
+        if (!supergroup.isForum && chat != null) {
+          // Forum mode was disabled - navigate to regular chat view
+          navigateBack();
+          tdlib.ui().post(() -> {
+            if (!isDestroyed()) {
+              tdlib.ui().openChat(this, chat.id, new TdlibUi.ChatOpenParameters().keepStack());
+            }
+          });
+        } else if (supergroup.isForum && !supergroup.hasForumTabs && chat != null) {
+          // Tabs layout was disabled - switch to list controller
+          navigateBack();
+          tdlib.ui().post(() -> {
+            if (!isDestroyed()) {
+              tdlib.ui().openChat(this, chat.id, new TdlibUi.ChatOpenParameters().keepStack());
+            }
+          });
+        }
+      }
+    });
   }
 
   @Override
   public void onSupergroupFullUpdated (long supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
-    // Handle full info updates if needed
+    // Not used
   }
 
   // Menu implementation
