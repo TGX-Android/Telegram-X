@@ -92,6 +92,7 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
   private CircleButton cameraButton;
   private CircleButton screenShareButton;
   private CircleButton raiseHandButton;
+  private CircleButton inviteButton;
   private CircleButton leaveButton;
   private android.widget.TextView titleView;
   private android.widget.TextView subtitleView;
@@ -359,6 +360,10 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
     raiseHandButton = createControlButton(context, R.id.btn_raiseHand, R.drawable.baseline_arrow_upward_24);
     controlsLayout.addView(raiseHandButton, createButtonParams());
 
+    // Invite button
+    inviteButton = createControlButton(context, R.id.btn_inviteToCall, R.drawable.baseline_person_add_24);
+    controlsLayout.addView(inviteButton, createButtonParams());
+
     // Leave button (red)
     leaveButton = createControlButton(context, R.id.btn_leaveCall, R.drawable.baseline_call_end_24);
     leaveButton.setBackgroundColor(Theme.getColor(ColorId.fillingNegative));
@@ -466,6 +471,33 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
     } else if (id == R.id.btn_leaveCall) {
       leaveCall();
     }
+  }
+
+  private void shareInviteLink () {
+    if (groupCall == null) return;
+
+    tdlib.send(new TdApi.GetVideoChatInviteLink(groupCall.id, groupCall.canBeManaged), (result, error) -> {
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+
+      String inviteLink = result.url;
+      UI.post(() -> {
+        // Copy to clipboard
+        android.content.ClipboardManager clipboard =
+          (android.content.ClipboardManager) context().getSystemService(Context.CLIPBOARD_SERVICE);
+        android.content.ClipData clip = android.content.ClipData.newPlainText("Video Chat Invite", inviteLink);
+        clipboard.setPrimaryClip(clip);
+        UI.showToast(R.string.InviteLinkCopied, Toast.LENGTH_SHORT);
+
+        // Also offer to share
+        android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, inviteLink);
+        context().startActivity(android.content.Intent.createChooser(shareIntent, Lang.getString(R.string.InviteToVideoChat)));
+      });
+    });
   }
 
   private void toggleRaiseHand () {

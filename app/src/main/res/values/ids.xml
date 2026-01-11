@@ -564,6 +564,7 @@
   <item type="id" name="btn_endVideoChat" />
   <item type="id" name="btn_joinVideoChat" />
   <item type="id" name="btn_raiseHand" />
+  <item type="id" name="btn_inviteToCall" />
   <item type="id" name="btn_follow" />
   <item type="id" name="btn_openLinkedChat" />
   <item type="id" name="btn_openDirectMessages" />

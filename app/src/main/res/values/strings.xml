@@ -761,6 +761,8 @@
   <string name="EndVideoChat">End Video Chat</string>
   <string name="RaiseHand">Raise Hand</string>
   <string name="LowerHand">Lower Hand</string>
+  <string name="InviteToVideoChat">Invite to Video Chat</string>
+  <string name="InviteLinkCopied">Invite link copied</string>
 
   <string name="LiveStreamInviteOther">You invited %1$s to the live stream</string>
   <string name="LiveStreamInviteSelf">%1$s invited you to the live stream</string>
