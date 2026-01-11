@@ -11052,6 +11052,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
+  public boolean canManageVideoChats (long chatId) {
+    TdApi.ChatMemberStatus status = chatStatus(chatId);
+    if (status != null) {
+      switch (status.getConstructor()) {
+        case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+          return true;
+        case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+          if (((TdApi.ChatMemberStatusAdministrator) status).rights.canManageVideoChats) {
+            return true;
+          }
+          break;
+        case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+          break;
+      }
+    }
+    return false;
+  }
+
   public boolean inSlowMode (long chatId) {
     return cache.getSlowModeDelayExpiresIn(ChatId.toSupergroupId(chatId), TimeUnit.SECONDS) > 0;
   }

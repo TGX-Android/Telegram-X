@@ -756,6 +756,11 @@
   <string name="VoiceChatEnded">Video chat ended</string>
   <string name="VoiceChatEndedBy">%1$s ended the video chat</string>
   <string name="VoiceChatEndedYou">You ended the video chat</string>
+  <string name="StartVideoChat">Start Video Chat</string>
+  <string name="JoinVideoChat">Join Video Chat</string>
+  <string name="EndVideoChat">End Video Chat</string>
+  <string name="RaiseHand">Raise Hand</string>
+  <string name="LowerHand">Lower Hand</string>
 
   <string name="LiveStreamInviteOther">You invited %1$s to the live stream</string>
   <string name="LiveStreamInviteSelf">%1$s invited you to the live stream</string>

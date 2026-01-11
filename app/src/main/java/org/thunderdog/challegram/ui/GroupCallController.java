@@ -91,6 +91,7 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
   private CircleButton muteButton;
   private CircleButton cameraButton;
   private CircleButton screenShareButton;
+  private CircleButton raiseHandButton;
   private CircleButton leaveButton;
   private android.widget.TextView titleView;
   private android.widget.TextView subtitleView;
@@ -109,6 +110,7 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
   private boolean isCameraEnabled = false;
   private boolean isScreenSharing = false;
   private boolean isFrontCamera = true;
+  private boolean isHandRaised = false;
   private List<TdApi.GroupCallParticipant> participants = new ArrayList<>();
   private List<VideoParticipant> videoParticipants = new ArrayList<>();
 
@@ -353,10 +355,23 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
     screenShareButton = createControlButton(context, R.id.btn_screenShare, R.drawable.baseline_screen_share_24);
     controlsLayout.addView(screenShareButton, createButtonParams());
 
+    // Raise hand button
+    raiseHandButton = createControlButton(context, R.id.btn_raiseHand, R.drawable.baseline_arrow_upward_24);
+    controlsLayout.addView(raiseHandButton, createButtonParams());
+
     // Leave button (red)
     leaveButton = createControlButton(context, R.id.btn_leaveCall, R.drawable.baseline_call_end_24);
     leaveButton.setBackgroundColor(Theme.getColor(ColorId.fillingNegative));
     controlsLayout.addView(leaveButton, createButtonParams());
+
+    // End call button (only visible for admins) - long press on leave button
+    leaveButton.setOnLongClickListener(v -> {
+      if (groupCall != null && tdlib.canManageVideoChats(groupCall.chatId)) {
+        showEndCallConfirmation();
+        return true;
+      }
+      return false;
+    });
 
     FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
       ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -445,9 +460,57 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
       }
       updateScreenShareButton();
 
+    } else if (id == R.id.btn_raiseHand) {
+      toggleRaiseHand();
+
     } else if (id == R.id.btn_leaveCall) {
       leaveCall();
     }
+  }
+
+  private void toggleRaiseHand () {
+    if (groupCall == null) return;
+
+    isHandRaised = !isHandRaised;
+    tdlib.send(new TdApi.ToggleGroupCallParticipantIsHandRaised(
+      groupCall.id,
+      new TdApi.MessageSenderUser(tdlib.myUserId()),
+      isHandRaised
+    ), (ok, error) -> {
+      if (error != null) {
+        UI.showError(error);
+        isHandRaised = !isHandRaised; // Revert on error
+      } else {
+        UI.post(() -> {
+          updateRaiseHandButton();
+          UI.showToast(isHandRaised ? R.string.RaiseHand : R.string.LowerHand, Toast.LENGTH_SHORT);
+        });
+      }
+    });
+  }
+
+  private void updateRaiseHandButton () {
+    if (raiseHandButton != null) {
+      raiseHandButton.setBackgroundColor(isHandRaised ?
+        Theme.getColor(ColorId.fillingPositive) : Theme.getColor(ColorId.circleButtonRegular));
+    }
+  }
+
+  private void showEndCallConfirmation () {
+    showOptions(
+      Lang.getString(R.string.EndVideoChat),
+      new int[] {R.id.btn_endVideoChat, R.id.btn_cancel},
+      new String[] {Lang.getString(R.string.EndVideoChat), Lang.getString(R.string.Cancel)},
+      new int[] {OptionColor.RED, OptionColor.NORMAL},
+      new int[] {R.drawable.baseline_call_end_24, R.drawable.baseline_cancel_24},
+      (itemView, optionId) -> {
+        if (optionId == R.id.btn_endVideoChat && groupCall != null) {
+          tdlib.ui().endVideoChat(groupCall.id);
+          navigateBack();
+        }
+        return true;
+      }
+    );
   }
 
   private void updateCameraButton () {

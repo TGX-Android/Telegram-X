@@ -2457,6 +2457,58 @@ public class TdlibUi extends Handler {
     openChat(context, 0, new TdApi.SearchPublicChat(videoChatOrLiveStreamInvitation.chatUsername), new ChatOpenParameters().urlOpenParameters(openParameters).videoChatOrLiveStreamInvitation(videoChatOrLiveStreamInvitation).keepStack().openProfileInCaseOfPrivateChat());
   }
 
+  /**
+   * Creates a new video chat in the specified chat and joins it.
+   * @param context The delegate context
+   * @param chatId The chat ID to create the video chat in
+   * @param title Optional title for the video chat (null for default)
+   * @param startDate Scheduled start date (0 to start immediately)
+   */
+  public void createVideoChat (final TdlibDelegate context, final long chatId, final @Nullable String title, final int startDate) {
+    if (!BuildConfig.USE_NTGCALLS) {
+      UI.showToast(R.string.InternalUrlUnsupported, Toast.LENGTH_SHORT);
+      return;
+    }
+
+    // Create video chat via TDLib
+    tdlib.send(new TdApi.CreateVideoChat(chatId, title, startDate, false), (result, error) -> {
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+
+      // result is groupCallId - now join it
+      int groupCallId = result.id;
+      Log.i(Log.TAG_VOIP, "Created video chat with ID: %d", groupCallId);
+
+      // Join the created video chat
+      joinGroupCall(context, new TdApi.InputGroupCallId(groupCallId), null);
+    });
+  }
+
+  /**
+   * Ends a video chat. Only chat admins can do this.
+   * @param groupCallId The group call ID to end
+   */
+  public void endVideoChat (final int groupCallId) {
+    tdlib.send(new TdApi.EndGroupCall(groupCallId), (ok, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        UI.showToast("Video chat ended", Toast.LENGTH_SHORT);
+      }
+    });
+  }
+
+  /**
+   * Joins an existing group call by ID.
+   * @param context The delegate context
+   * @param groupCallId The group call ID to join
+   */
+  public void joinGroupCall (final TdlibDelegate context, final int groupCallId) {
+    joinGroupCall(context, new TdApi.InputGroupCallId(groupCallId), null);
+  }
+
   private void joinGroupCall (final TdlibDelegate context, final TdApi.InputGroupCall inputGroupCall, final @Nullable UrlOpenParameters openParameters) {
     if (!BuildConfig.USE_NTGCALLS) {
       showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
