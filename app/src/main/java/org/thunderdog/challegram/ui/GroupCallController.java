@@ -25,12 +25,24 @@ import android.widget.Toast;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import io.github.pytgcalls.NetworkInfo;
+import io.github.pytgcalls.devices.JavaVideoCapturerModule;
+import io.github.pytgcalls.media.Frame;
+import io.github.pytgcalls.media.FrameData;
+import io.github.pytgcalls.media.StreamDevice;
+import io.github.pytgcalls.media.StreamMode;
+import io.github.pytgcalls.media.StreamStatus;
 import org.pytgcalls.ntgcallsx.NTgCallsGroupInterface;
+import org.pytgcalls.ntgcallsx.VoIPFloatingLayout;
+import org.pytgcalls.ntgcallsx.VoIPTextureView;
+import org.webrtc.JavaI420Buffer;
+import org.webrtc.RendererCommon;
+import org.webrtc.VideoFrame;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -85,11 +97,34 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
   private RecyclerView participantsList;
   private ParticipantsAdapter participantsAdapter;
 
+  // Video UI elements
+  private VoIPFloatingLayout localCameraFloatingLayout;
+  private VoIPTextureView localCameraTextureView;
+  private FrameLayout videoGridContainer;
+  private RecyclerView videoGrid;
+  private VideoParticipantsAdapter videoAdapter;
+
   // State
   private boolean isMuted = true;
   private boolean isCameraEnabled = false;
   private boolean isScreenSharing = false;
+  private boolean isFrontCamera = true;
   private List<TdApi.GroupCallParticipant> participants = new ArrayList<>();
+  private List<VideoParticipant> videoParticipants = new ArrayList<>();
+
+  // Video participant tracking
+  private static class VideoParticipant {
+    String endpoint;
+    TdApi.GroupCallParticipant participant;
+    VoIPTextureView textureView;
+    boolean hasVideo;
+
+    VideoParticipant (String endpoint, TdApi.GroupCallParticipant participant) {
+      this.endpoint = endpoint;
+      this.participant = participant;
+      this.hasVideo = false;
+    }
+  }
 
   public GroupCallController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -109,11 +144,111 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
 
     if (groupInterface != null) {
       groupInterface.setStateListener(this);
+      setupVideoCallbacks();
     }
 
     // Subscribe to group call updates
     if (groupCall != null) {
       tdlib.listeners().subscribeToGroupCallUpdates(groupCall.id, this);
+    }
+  }
+
+  private void setupVideoCallbacks () {
+    if (groupInterface == null) return;
+
+    // Set up remote source change callback to detect when participants enable/disable video
+    groupInterface.setRemoteSourceChangeCallback((chatId, remoteSource) -> {
+      UI.post(() -> {
+        if (remoteSource.device == StreamDevice.CAMERA || remoteSource.device == StreamDevice.SCREEN) {
+          String endpoint = remoteSource.ssrc > 0 ? String.valueOf(remoteSource.ssrc) : "";
+          boolean hasVideo = remoteSource.state == StreamStatus.ACTIVE;
+
+          if (hasVideo) {
+            onParticipantVideoEnabled(endpoint);
+          } else {
+            onParticipantVideoDisabled(endpoint);
+          }
+        }
+      });
+    });
+
+    // Set up frame callback to receive video frames
+    groupInterface.setFrameCallback((chatId, streamMode, streamDevice, frames) -> {
+      boolean isVideo = streamDevice == StreamDevice.CAMERA || streamDevice == StreamDevice.SCREEN;
+      if (!isVideo) return;
+
+      for (Frame frame : frames) {
+        byte[] bytes = frame.data;
+        FrameData frameData = frame.frameData;
+        int ySize = frameData.width * frameData.height;
+        int uvSize = ySize / 4;
+        var i420Buffer = JavaI420Buffer.allocate(frameData.width, frameData.height);
+        i420Buffer.getDataY().put(bytes, 0, ySize).flip();
+        i420Buffer.getDataU().put(bytes, ySize, uvSize).flip();
+        i420Buffer.getDataV().put(bytes, ySize + uvSize, uvSize).flip();
+        VideoFrame videoFrame = new VideoFrame(i420Buffer, frameData.rotation, System.nanoTime());
+
+        switch (streamMode) {
+          case CAPTURE:
+            // Local camera preview
+            if (localCameraTextureView != null && isCameraEnabled) {
+              localCameraTextureView.onFrame(videoFrame);
+            }
+            break;
+          case PLAYBACK:
+            // Remote participant video - route to appropriate texture view
+            // For now, this would need endpoint info to route correctly
+            // The frame callback doesn't provide endpoint, so we handle this via
+            // onParticipantVideoChanged for visibility, and frames are routed by endpoint
+            break;
+        }
+        i420Buffer.release();
+      }
+    });
+  }
+
+  private void onParticipantVideoEnabled (String endpoint) {
+    // Find or create video participant entry
+    for (VideoParticipant vp : videoParticipants) {
+      if (vp.endpoint.equals(endpoint)) {
+        vp.hasVideo = true;
+        updateVideoGrid();
+        return;
+      }
+    }
+    // New video participant
+    VideoParticipant vp = new VideoParticipant(endpoint, null);
+    vp.hasVideo = true;
+    videoParticipants.add(vp);
+    updateVideoGrid();
+  }
+
+  private void onParticipantVideoDisabled (String endpoint) {
+    for (int i = 0; i < videoParticipants.size(); i++) {
+      if (videoParticipants.get(i).endpoint.equals(endpoint)) {
+        videoParticipants.get(i).hasVideo = false;
+        updateVideoGrid();
+        return;
+      }
+    }
+  }
+
+  private void updateVideoGrid () {
+    if (videoGridContainer == null) return;
+
+    // Count active video participants
+    int activeCount = 0;
+    for (VideoParticipant vp : videoParticipants) {
+      if (vp.hasVideo) activeCount++;
+    }
+
+    // Show/hide video grid based on whether anyone has video enabled
+    boolean showVideoGrid = activeCount > 0 || isCameraEnabled;
+    videoGridContainer.setVisibility(showVideoGrid ? View.VISIBLE : View.GONE);
+    participantsList.setVisibility(showVideoGrid ? View.GONE : View.VISIBLE);
+
+    if (videoAdapter != null) {
+      videoAdapter.notifyDataSetChanged();
     }
   }
 
@@ -149,7 +284,25 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
     headerParams.gravity = Gravity.TOP;
     contentView.addView(headerLayout, headerParams);
 
-    // Participants list
+    // Video grid container (shown when video is active)
+    videoGridContainer = new FrameLayout(context);
+    videoGridContainer.setBackgroundColor(0xff1b1f23);
+    videoGridContainer.setVisibility(View.GONE);
+
+    videoGrid = new RecyclerView(context);
+    videoGrid.setLayoutManager(new GridLayoutManager(context, 2));
+    videoAdapter = new VideoParticipantsAdapter();
+    videoGrid.setAdapter(videoAdapter);
+    videoGridContainer.addView(videoGrid, new FrameLayout.LayoutParams(
+      ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+    FrameLayout.LayoutParams videoGridParams = new FrameLayout.LayoutParams(
+      ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+    videoGridParams.topMargin = Screen.dp(120);
+    videoGridParams.bottomMargin = Screen.dp(100);
+    contentView.addView(videoGridContainer, videoGridParams);
+
+    // Participants list (shown when no video)
     participantsList = new RecyclerView(context);
     participantsList.setLayoutManager(new LinearLayoutManager(context));
     participantsAdapter = new ParticipantsAdapter();
@@ -160,6 +313,25 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
     listParams.topMargin = Screen.dp(120);
     listParams.bottomMargin = Screen.dp(100);
     contentView.addView(participantsList, listParams);
+
+    // Local camera floating layout
+    localCameraFloatingLayout = new VoIPFloatingLayout(context);
+    localCameraFloatingLayout.setDelegate((progress, value) -> {
+      if (localCameraTextureView != null) {
+        localCameraTextureView.setScreenShareMiniProgress(progress, value);
+      }
+    });
+    localCameraFloatingLayout.setRelativePosition(1f, 1f);
+    localCameraFloatingLayout.setVisibility(View.GONE);
+    localCameraFloatingLayout.setTag(VoIPFloatingLayout.STATE_GONE);
+
+    localCameraTextureView = new VoIPTextureView(context, true, false);
+    localCameraTextureView.renderer.setUseCameraRotation(true);
+    localCameraTextureView.renderer.setMirror(isFrontCamera);
+    localCameraFloatingLayout.addView(localCameraTextureView);
+
+    contentView.addView(localCameraFloatingLayout, FrameLayoutFix.newParams(
+      ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
     // Controls at bottom
     controlsLayout = new LinearLayout(context);
@@ -259,9 +431,11 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
       isCameraEnabled = !isCameraEnabled;
       isScreenSharing = false;
       if (groupInterface != null) {
-        groupInterface.setCameraEnabled(isCameraEnabled, true);
+        groupInterface.setCameraEnabled(isCameraEnabled, isFrontCamera);
       }
       updateCameraButton();
+      showLocalCameraPreview(isCameraEnabled);
+      updateVideoGrid();
 
     } else if (id == R.id.btn_screenShare) {
       isScreenSharing = !isScreenSharing;
@@ -290,6 +464,28 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
     }
   }
 
+  private void showLocalCameraPreview (boolean show) {
+    if (localCameraFloatingLayout == null || localCameraTextureView == null) return;
+
+    if (show) {
+      // Initialize renderer if needed
+      localCameraTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+      localCameraTextureView.renderer.setMirror(isFrontCamera);
+      localCameraTextureView.setIsCamera(true);
+      localCameraTextureView.setIsScreencast(false);
+
+      // Show floating layout
+      localCameraFloatingLayout.setVisibility(View.VISIBLE);
+      localCameraFloatingLayout.setTag(VoIPFloatingLayout.STATE_FLOATING);
+      localCameraFloatingLayout.setFloatingMode(true, true);
+    } else {
+      // Hide and release
+      localCameraFloatingLayout.setVisibility(View.GONE);
+      localCameraFloatingLayout.setTag(VoIPFloatingLayout.STATE_GONE);
+      localCameraTextureView.stopCapturing();
+    }
+  }
+
   private void leaveCall () {
     if (groupInterface != null) {
       groupInterface.stop();
@@ -312,10 +508,21 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
     super.destroy();
     if (groupInterface != null) {
       groupInterface.setStateListener(null);
+      groupInterface.setFrameCallback(null);
+      groupInterface.setRemoteSourceChangeCallback(null);
     }
     // Unsubscribe from group call updates
     if (groupCall != null) {
       tdlib.listeners().unsubscribeFromGroupCallUpdates(groupCall.id, this);
+    }
+    // Clean up video resources
+    if (localCameraTextureView != null) {
+      localCameraTextureView.stopCapturing();
+    }
+    for (VideoParticipant vp : videoParticipants) {
+      if (vp.textureView != null) {
+        vp.textureView.stopCapturing();
+      }
     }
   }
 
@@ -341,7 +548,13 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
 
   @Override
   public void onParticipantVideoChanged (String endpoint, boolean hasVideo) {
-    // TODO: Handle video changes
+    UI.post(() -> {
+      if (hasVideo) {
+        onParticipantVideoEnabled(endpoint);
+      } else {
+        onParticipantVideoDisabled(endpoint);
+      }
+    });
   }
 
   // GroupCallListener implementation
@@ -470,6 +683,74 @@ public class GroupCallController extends ViewController<GroupCallController.Argu
           muteIcon.draw(canvas);
         }
       }
+    }
+  }
+
+  // Video participants adapter for grid layout
+  private class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticipantViewHolder> {
+    @NonNull
+    @Override
+    public VideoParticipantViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
+      VoIPTextureView textureView = new VoIPTextureView(parent.getContext(), false, true, false);
+      textureView.renderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
+      textureView.renderer.setEnableHardwareScaler(true);
+      textureView.scaleType = VoIPTextureView.SCALE_TYPE_FIT;
+
+      FrameLayout container = new FrameLayout(parent.getContext());
+      container.setBackgroundColor(0xff1b1f23);
+      container.addView(textureView, new FrameLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+      int itemHeight = Screen.dp(200);
+      container.setLayoutParams(new RecyclerView.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, itemHeight));
+
+      return new VideoParticipantViewHolder(container, textureView);
+    }
+
+    @Override
+    public void onBindViewHolder (@NonNull VideoParticipantViewHolder holder, int position) {
+      // Get active video participants
+      List<VideoParticipant> activeParticipants = new ArrayList<>();
+      for (VideoParticipant vp : videoParticipants) {
+        if (vp.hasVideo) activeParticipants.add(vp);
+      }
+
+      if (position < activeParticipants.size()) {
+        VideoParticipant vp = activeParticipants.get(position);
+        holder.bind(vp);
+      }
+    }
+
+    @Override
+    public int getItemCount () {
+      int count = 0;
+      for (VideoParticipant vp : videoParticipants) {
+        if (vp.hasVideo) count++;
+      }
+      return count;
+    }
+  }
+
+  private class VideoParticipantViewHolder extends RecyclerView.ViewHolder {
+    private final VoIPTextureView textureView;
+    private VideoParticipant boundParticipant;
+
+    public VideoParticipantViewHolder (@NonNull View itemView, VoIPTextureView textureView) {
+      super(itemView);
+      this.textureView = textureView;
+    }
+
+    public void bind (VideoParticipant participant) {
+      this.boundParticipant = participant;
+      participant.textureView = textureView;
+
+      // Initialize renderer for this participant
+      textureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+    }
+
+    public VoIPTextureView getTextureView () {
+      return textureView;
     }
   }
 }
