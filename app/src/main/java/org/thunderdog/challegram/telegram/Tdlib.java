@@ -6509,7 +6509,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   void processPushOrSync (long pushId, String payload, @Nullable Runnable after) {
     TDLib.Tag.notifications(pushId, accountId, "Started processing push notification, hasAfter:%b", after != null);
     incrementNotificationReferenceCount();
-    client().send(new TdApi.ProcessPushNotification(payload), result -> {
+    send(new TdApi.ProcessPushNotification(payload), (ok, error) -> {
       Runnable notificationChecker = () -> {
         TDLib.Tag.notifications(pushId, accountId, "Making sure all notifications displayed");
         incrementNotificationReferenceCount();
@@ -6528,33 +6528,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         }
       };
 
-      switch (result.getConstructor()) {
-        case TdApi.Ok.CONSTRUCTOR: {
-          TDLib.Tag.notifications(pushId, accountId, "Ensuring updateActiveNotifications was sent. ignoreNotificationUpdates:%b, receivedActiveNotificationsTime:%d, receivedActiveNotificationsIgnored: %b", ignoreNotificationUpdates, receivedActiveNotificationsTime, receivedActiveNotificationsIgnored);
-          awaitNotificationInitialization(notificationChecker);
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          TdApi.Error error = (TdApi.Error) result;
-          if (error.code == 401) {
-            TDLib.Tag.notifications(pushId, accountId, "TDLib tells to expect AuthorizationStateLoggingOut: %s, waiting.", error);
-            awaitClose(() -> {
-              if (after != null) {
-                TDLib.Tag.notifications(pushId, accountId, "Finished processing push. Invoking after()");
-                after.run();
-              } else {
-                TDLib.Tag.notifications(pushId, accountId, "All notifications displayed. But there's no after() callback.");
-              }
-            }, true);
-          } else {
-            TDLib.Tag.notifications(pushId, accountId, "Failed to process push: %s, performing full sync.", TD.toErrorString(result));
-            setHasUnprocessedPushes(true);
-            sync(pushId, () -> {
-              setHasUnprocessedPushes(false);
-              notificationChecker.run();
-            }, true, false);
-          }
-          break;
+      if (ok != null) {
+        TDLib.Tag.notifications(pushId, accountId, "Ensuring updateActiveNotifications was sent. ignoreNotificationUpdates:%b, receivedActiveNotificationsTime:%d, receivedActiveNotificationsIgnored: %b", ignoreNotificationUpdates, receivedActiveNotificationsTime, receivedActiveNotificationsIgnored);
+        awaitNotificationInitialization(notificationChecker);
+      } else if (error != null) {
+        if (error.code == 401) {
+          TDLib.Tag.notifications(pushId, accountId, "TDLib tells to expect AuthorizationStateLoggingOut: %s, waiting.", error);
+          awaitClose(() -> {
+            if (after != null) {
+              TDLib.Tag.notifications(pushId, accountId, "Finished processing push. Invoking after()");
+              after.run();
+            } else {
+              TDLib.Tag.notifications(pushId, accountId, "All notifications displayed. But there's no after() callback.");
+            }
+          }, true);
+        } else {
+          TDLib.Tag.notifications(pushId, accountId, "Failed to process push: %s, performing full sync.", TD.toErrorString(error));
+          setHasUnprocessedPushes(true);
+          sync(pushId, () -> {
+            setHasUnprocessedPushes(false);
+            notificationChecker.run();
+          }, true, false);
         }
       }
       decrementNotificationReferenceCount();

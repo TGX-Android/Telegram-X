@@ -1589,7 +1589,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return failureCount == 0;
   }
 
-  public void processPushOrSync (long pushId, int accountId, String payload, @Nullable Runnable after) {
+  public void processPushOrSync (long pushId, int accountId, String payload,  @Nullable Runnable after) {
     performTdlibTask(pushId, accountId, (account, onDone) -> account.tdlib().processPushOrSync(pushId, payload, onDone), Config.MAX_RUNNING_TDLIBS, null, after);
   }
 
