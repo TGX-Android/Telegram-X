@@ -1,100 +1,31 @@
+cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+project(tgcalls VERSION 1.0.0 LANGUAGES C CXX)
+
+message(STATUS "Building ${PROJECT_NAME} platform: ${ANDROID_PLATFORM} abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
+
+set(TGCALLS_DEPS_DIR "${PROJECT_SOURCE_DIR}/third_party")
+set(STUB_DIR "${PROJECT_SOURCE_DIR}/stub")
+
+# usrsctp
+include("${PROJECT_SOURCE_DIR}/BuildUsrSCTP.cmake")
+# srtp
+include("${PROJECT_SOURCE_DIR}/BuildLibSRTP.cmake")
+# openh264
+include("${PROJECT_SOURCE_DIR}/BuildOpenH264.cmake")
+# absl
+include("${PROJECT_SOURCE_DIR}/BuildAbsl.cmake")
+# json11
+include("${PROJECT_SOURCE_DIR}/BuildJson11.cmake")
+# rnnoise
+include("${PROJECT_SOURCE_DIR}/BuildRNNoise.cmake")
+# webrtc
+include("${PROJECT_SOURCE_DIR}/BuildWebRTC.cmake")
+# libtgvoip
+include("${PROJECT_SOURCE_DIR}/BuildTelegramVoIP.cmake")
 # tgcalls
+include("${PROJECT_SOURCE_DIR}/BuildTgCalls.cmake")
 
-set(TGCALLS_DIR "${THIRDPARTY_DIR}/tgcalls")
-
-# Commit Telegram X currently relies on:
-# https://github.com/TelegramMessenger/tgcalls/tree/c89f009c29e7142f1935383a978f2ad7c46da4d1
-
-# Source files list:
-# https://github.com/TelegramMessenger/Telegram-iOS/blob/1f869f309f183a5d91bc24387c1cb0ffbb302f5d/submodules/TgVoipWebrtc/BUILD
-
-add_library(tgcalls STATIC
-  "${TGCALLS_DIR}/tgcalls/utils/gzip.cpp"
-
-  "${TGCALLS_DIR}/tgcalls/legacy/InstanceImplLegacy.cpp"
-
-  "${TGCALLS_DIR}/tgcalls/desktop_capturer/DesktopCaptureSourceManager.cpp"
-  "${TGCALLS_DIR}/tgcalls/desktop_capturer/DesktopCaptureSourceHelper.cpp"
-  "${TGCALLS_DIR}/tgcalls/desktop_capturer/DesktopCaptureSource.cpp"
-
-  "${TGCALLS_DIR}/tgcalls/platform/android/AndroidContext.cpp"
-  "${TGCALLS_DIR}/tgcalls/platform/android/AndroidInterface.cpp"
-  "${TGCALLS_DIR}/tgcalls/platform/android/VideoCameraCapturer.cpp"
-  "${TGCALLS_DIR}/tgcalls/platform/android/VideoCapturerInterfaceImpl.cpp"
-
-  "${TGCALLS_DIR}/tgcalls/Manager.cpp"
-  "${TGCALLS_DIR}/tgcalls/MediaManager.cpp"
-  "${TGCALLS_DIR}/tgcalls/AudioDeviceHelper.cpp"
-  "${TGCALLS_DIR}/tgcalls/ChannelManager.cpp"
-  "${TGCALLS_DIR}/tgcalls/CodecSelectHelper.cpp"
-  "${TGCALLS_DIR}/tgcalls/CryptoHelper.cpp"
-  "${TGCALLS_DIR}/tgcalls/EncryptedConnection.cpp"
-  "${TGCALLS_DIR}/tgcalls/FakeAudioDeviceModule.cpp"
-  "${TGCALLS_DIR}/tgcalls/FakeVideoTrackSource.cpp"
-  "${TGCALLS_DIR}/tgcalls/FieldTrialsConfig.cpp"
-  "${TGCALLS_DIR}/tgcalls/Instance.cpp"
-  "${TGCALLS_DIR}/tgcalls/InstanceImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/LogSinkImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/Message.cpp"
-  "${TGCALLS_DIR}/tgcalls/NetworkManager.cpp"
-  "${TGCALLS_DIR}/tgcalls/SctpDataChannelProviderInterfaceImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/StaticThreads.cpp"
-  "${TGCALLS_DIR}/tgcalls/ThreadLocalObject.cpp"
-  "${TGCALLS_DIR}/tgcalls/TurnCustomizerImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/VideoCaptureInterface.cpp"
-  "${TGCALLS_DIR}/tgcalls/VideoCaptureInterfaceImpl.cpp"
-
-  "${TGCALLS_DIR}/tgcalls/group/AudioStreamingPart.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/AudioStreamingPartInternal.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/AudioStreamingPartPersistentDecoder.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/AVIOContextImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/GroupInstanceCustomImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/GroupJoinPayloadInternal.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/GroupNetworkManager.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/StreamingMediaContext.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/VideoStreamingPart.cpp"
-
-  "${TGCALLS_DIR}/tgcalls/v2/ContentNegotiation.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/DirectNetworkingImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/ExternalSignalingConnection.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/InstanceV2Impl.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/InstanceV2ReferenceImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/NativeNetworkingImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/RawTcpSocket.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/ReflectorPort.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/ReflectorRelayPortFactory.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/Signaling.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/SignalingEncryption.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/SignalingConnection.cpp"
-  "${TGCALLS_DIR}/tgcalls/v2/SignalingSctpConnection.cpp"
-)
-
-target_include_directories(tgcalls PRIVATE
-  "${CMAKE_HOME_DIRECTORY}"
-)
-target_include_directories(tgcalls PUBLIC
-  "${TGCALLS_DIR}"
-  "${TGCALLS_DIR}/tgcalls"
-)
-
-target_compile_options(tgcalls PUBLIC
-  -Wall -Werror -Wno-deprecated-declarations
-  -fno-strict-aliasing
-  -frtti
-  -funroll-loops
-  -fexceptions
-  -fno-math-errno
-)
-
-target_link_libraries(tgcalls PRIVATE
-  rnnoise
-  json11
-  z
-)
-
-target_link_libraries(tgcalls PUBLIC
-  tgvoip
-)
+# webrtc sdk + tgvoip.cpp layer
 
 set(TGCALLS_LIB "tgcallsjni")
 
@@ -207,11 +138,12 @@ add_library(${TGCALLS_LIB} SHARED
 )
 target_include_directories(${TGCALLS_LIB} PRIVATE
   "${WEBRTC_DIR}/generated"
-  "${THIRDPARTY_DIR}"
+  "${TGCALLS_DEPS_DIR}"
+  "${CMAKE_HOME_DIRECTORY}"
   .
-  "${THIRDPARTY_DIR}/abseil-cpp"
+  "${TGCALLS_DEPS_DIR}/abseil-cpp"
   "${YUV_DIR}/include"
-  "${THIRDPARTY_DIR}/webrtc_deps"
+  "${TGCALLS_DEPS_DIR}/webrtc_deps"
   "${STUB_DIR}"
 )
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
@@ -262,15 +194,15 @@ target_link_libraries(${TGCALLS_LIB}
 )
 
 set(TGCALLS_EXCLUDE_LIBS
-  libtgvoip.a
-  libusrsctp.a
-  libsrtp.a
-  libopenh264.a
-  libabsl.a
-  libjson11.a
-  librnnoise.a
-  libwebrtc.a
-  libtgcalls.a
+  tgcalls/libtgvoip.a
+  tgcalls/libusrsctp.a
+  tgcalls/libsrtp.a
+  tgcalls/libopenh264.a
+  tgcalls/libabsl.a
+  tgcalls/libjson11.a
+  tgcalls/librnnoise.a
+  tgcalls/libwebrtc.a
+  tgcalls/libtgcalls.a
 )
 list(APPEND TGCALLS_EXCLUDE_LIBS
   libyuv.a
