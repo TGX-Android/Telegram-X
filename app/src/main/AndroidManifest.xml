@@ -250,13 +250,6 @@
       android:exported="false" />
 
     <activity
-      android:name=".voip.gui.VoIPPermissionActivity"
-      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-      android:excludeFromRecents="true"
-      android:taskAffinity="${applicationId}.voip"
-      android:theme="@style/TransparentTheme"
-      android:exported="false" />
-    <activity
       android:name=".voip.gui.VoIPFeedbackActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
       android:excludeFromRecents="true"
