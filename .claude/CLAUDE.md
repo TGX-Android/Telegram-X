@@ -10,6 +10,70 @@ git push fork <branch-name>
 # NOT: git push origin
 ```
 
+### Feature Branch Workflow
+
+When developing new features, follow this workflow:
+
+1. **Start from `main`** - Create feature branch from latest `origin/main`:
+   ```bash
+   git fetch origin
+   git checkout -b feature/my-feature origin/main
+   ```
+
+2. **Develop in feature branch** - Make commits, test, iterate
+
+3. **Push feature branch** - Push to fork for backup/review:
+   ```bash
+   git push fork feature/my-feature
+   ```
+
+4. **Merge to `all-features-combined`** - After feature is complete:
+   ```bash
+   git checkout all-features-combined
+   git merge feature/my-feature
+   git push fork all-features-combined
+   ```
+
+### Available Feature Branches
+
+Each feature has its own branch based on `main`. Use these for isolated features:
+
+| Branch | Description |
+|--------|-------------|
+| `feature/calls` | NTgCalls integration, video chat, group calls |
+| `feature/mini-apps` | Web Apps (Mini Apps) support |
+| `feature/quotes` | Quote messages, reply in other chat |
+| `feature/stories-implementation` | Stories viewing and posting |
+| `feature/forum-topics-implementation` | Forum topics support |
+| `feature/premium-billing` | Premium billing, Stars |
+| `feature/saved-tags` | Saved Messages Tags |
+| `feature/profile-notes` | Profile notes feature |
+| `feature/playback-speed` | Playback speed controls |
+| `feature/disposable-voices` | Disposable voice messages |
+| `feature/reactions-improvements` | Big reactions, attach button improvements |
+
+### Branch Hierarchy
+
+```
+origin/main (upstream)
+    │
+    ├── feature/calls
+    ├── feature/mini-apps
+    ├── feature/quotes
+    ├── feature/stories-implementation
+    ├── feature/forum-topics-implementation
+    ├── feature/premium-billing
+    ├── feature/saved-tags
+    ├── feature/profile-notes
+    ├── feature/playback-speed
+    ├── feature/disposable-voices
+    └── feature/reactions-improvements
+            │
+            └──► all-features-combined (all features merged)
+```
+
+**Important:** Never commit directly to `all-features-combined`. Always work in a feature branch first, then merge.
+
 ## Build Commands
 
 ```bash
@@ -103,7 +167,9 @@ Color definitions: `app/src/main/other/themes/colors-and-properties.xml`
 
 ## Issue Tracking (MantisBT)
 
-**Use MantisBT for all task/issue tracking.** Project ID: 1 (Telegram X)
+**Project ID: 1** (Telegram X)
+
+Use MantisBT for all task/issue tracking.
 
 ### Workflow:
 1. **Before starting work:** Check MantisBT for assigned issues or pick from unassigned
