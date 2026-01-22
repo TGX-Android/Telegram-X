@@ -27,7 +27,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
-import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -44,9 +43,7 @@ import android.os.Vibrator;
 import android.telephony.TelephonyManager;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
-import android.view.Display;
 import android.view.KeyEvent;
-import android.view.WindowManager;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -95,8 +92,10 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import tgx.td.ChatId;
 
@@ -274,9 +273,15 @@ public class TGCallService extends Service implements
 
   public void updateOutputGainControlState () {
     AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-    this.audioGainControlEnabled = hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged;
-    this.echoCancellationStrength = isHeadsetPlugged || (hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1;
-
+    boolean var;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      android.media.AudioDeviceInfo deviceInfo = am.getCommunicationDevice();
+      var = deviceInfo == null || deviceInfo.getType() == android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE;
+    } else {
+      var = hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged;
+    }
+    this.audioGainControlEnabled = var;
+    this.echoCancellationStrength = isHeadsetPlugged || var ? 0 : 1;
     if (tgcalls != null) {
       tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
       tgcalls.setEchoCancellationStrength(echoCancellationStrength);
@@ -299,6 +304,8 @@ public class TGCallService extends Service implements
     VoIP.initialize(this);
   }
 
+  private Object communicationDeviceChangedListener;
+
   private void initCall (Tdlib tdlib, TdApi.Call call) {
     if (callInitialized) {
       throw new IllegalStateException();
@@ -312,7 +319,11 @@ public class TGCallService extends Service implements
         cpuWakelock.acquire();
       }
 
-      btAdapter = am.isBluetoothScoAvailableOffCall() ? BluetoothAdapter.getDefaultAdapter() : null;
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+
+      } else {
+        btAdapter = am.isBluetoothScoAvailableOffCall() ? BluetoothAdapter.getDefaultAdapter() : null;
+      }
 
       IntentFilter filter = new IntentFilter();
       filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -333,14 +344,22 @@ public class TGCallService extends Service implements
 
       am.registerMediaButtonEventReceiver(new ComponentName(this, VoIPMediaButtonReceiver.class));
 
-      if (btAdapter != null && btAdapter.isEnabled()) {
-        //noinspection MissingPermission
-        int headsetState = btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET);
-        updateBluetoothHeadsetState(headsetState == BluetoothProfile.STATE_CONNECTED);
-        if (headsetState == BluetoothProfile.STATE_CONNECTED) {
-          am.setBluetoothScoOn(true);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (communicationDeviceChangedListener == null) {
+          communicationDeviceChangedListener = (AudioManager.OnCommunicationDeviceChangedListener) device -> UI.post(this::notifyAudioSettingsChanged);
         }
+        am.addOnCommunicationDeviceChangedListener(Executors.newSingleThreadExecutor(), (AudioManager.OnCommunicationDeviceChangedListener) communicationDeviceChangedListener);
         notifyAudioSettingsChanged();
+      } else {
+        if (btAdapter != null && btAdapter.isEnabled()) {
+          //noinspection MissingPermission
+          int headsetState = btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET);
+          updateBluetoothHeadsetState(headsetState == BluetoothProfile.STATE_CONNECTED);
+          if (headsetState == BluetoothProfile.STATE_CONNECTED) {
+            am.setBluetoothScoOn(true);
+          }
+          notifyAudioSettingsChanged();
+        }
       }
     } catch (Throwable t) {
       Log.e(Log.TAG_VOIP, "Error initializing call", t);
@@ -357,7 +376,7 @@ public class TGCallService extends Service implements
     cpuWakelock.release();
     final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
     boolean isBtHeadsetConnected = this.isBtHeadsetConnected;
-    RunnableBool disconnectBt = isBtHeadsetConnected ? (delayed) -> {
+    RunnableBool disconnectBt = Build.VERSION.SDK_INT < Build.VERSION_CODES.S && isBtHeadsetConnected ? (delayed) -> {
       am.stopBluetoothSco();
       Log.d(Log.TAG_VOIP, "AudioManager.stopBluetoothSco (in onDestroy), delayed: %b", delayed);
       am.setSpeakerphoneOn(false);
@@ -387,6 +406,11 @@ public class TGCallService extends Service implements
     } catch (Throwable ignored) { }
     if (haveAudioFocus) {
       am.abandonAudioFocus(this);
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      if (communicationDeviceChangedListener != null) {
+        am.removeOnCommunicationDeviceChangedListener((AudioManager.OnCommunicationDeviceChangedListener) communicationDeviceChangedListener);
+      }
     }
     am.unregisterMediaButtonEventReceiver(new ComponentName(this, VoIPMediaButtonReceiver.class));
     if (haveAudioFocus) {
@@ -501,32 +525,119 @@ public class TGCallService extends Service implements
   private int lastAudioMode;
 
   private void setAudioMode (int mode) {
-    Log.d(Log.TAG_VOIP, "setAudioMode: %s", mode == CallSettings.SPEAKER_MODE_BLUETOOTH ? "SPEAKER_MODE_BLUETOOTH" : mode == CallSettings.SPEAKER_MODE_NONE ? "SPEAKER_MODE_NONE" : mode == CallSettings.SPEAKER_MODE_SPEAKER_DEFAULT ? "SPEAKER_MODE_SPEAKER_DEFAULT" : Integer.toString(mode));
+    Log.d(Log.TAG_VOIP, "setAudioMode: %s", mode == CallSettings.SPEAKER_MODE_BLUETOOTH ? "SPEAKER_MODE_BLUETOOTH" : mode == CallSettings.SPEAKER_MODE_EARPIECE ? "SPEAKER_MODE_NONE" : mode == CallSettings.SPEAKER_MODE_SPEAKER_DEFAULT ? "SPEAKER_MODE_SPEAKER_DEFAULT" : Integer.toString(mode));
     lastAudioMode = mode;
     AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-    switch (mode) {
-      case CallSettings.SPEAKER_MODE_BLUETOOTH: {
-        am.setBluetoothScoOn(true);
-        am.setSpeakerphoneOn(false);
-        break;
-      }
-      case CallSettings.SPEAKER_MODE_NONE: {
-        am.setBluetoothScoOn(false);
-        am.setSpeakerphoneOn(false);
-        break;
-      }
-      case CallSettings.SPEAKER_MODE_SPEAKER: {
-        am.setBluetoothScoOn(false);
-        am.setSpeakerphoneOn(true);
-        break;
-      }
-      case CallSettings.SPEAKER_MODE_SPEAKER_DEFAULT: {
-        if (hasEarpiece()) {
-          am.setSpeakerphoneOn(true);
-        } else {
-          am.setBluetoothScoOn(true);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      android.media.AudioDeviceInfo selectedAudioDevice = null;
+      Filter<android.media.AudioDeviceInfo> filter = null;
+      switch (mode) {
+        case CallSettings.SPEAKER_MODE_EARPIECE: {
+          filter = device -> switch (device.getType()) {
+            case android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE ->
+              true;
+            default ->
+              false;
+          };
+          break;
         }
-        break;
+
+        case CallSettings.SPEAKER_MODE_BLUETOOTH: {
+          filter = device -> switch (device.getType()) {
+            case
+              android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+              android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+              android.media.AudioDeviceInfo.TYPE_BLE_HEADSET/*,
+              android.media.AudioDeviceInfo.TYPE_BLE_SPEAKER,
+              android.media.AudioDeviceInfo.TYPE_BLE_BROADCAST*/ ->
+              true;
+            default ->
+              false;
+          };
+          break;
+        }
+
+        case CallSettings.SPEAKER_MODE_SPEAKER: {
+          filter = device -> switch (device.getType()) {
+            case
+              android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+              android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
+              android.media.AudioDeviceInfo.TYPE_BLE_SPEAKER ->
+              true;
+            default ->
+              false;
+          };
+          break;
+        }
+
+        case CallSettings.SPEAKER_MODE_SPEAKER_DEFAULT: {
+          if (hasEarpiece()) {
+            filter = device -> switch (device.getType()) {
+              case
+                android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+                android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
+                android.media.AudioDeviceInfo.TYPE_BLE_SPEAKER ->
+                true;
+              default ->
+                false;
+            };
+          } else {
+            filter = device -> switch (device.getType()) {
+              case
+                android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+                android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+                android.media.AudioDeviceInfo.TYPE_BLE_HEADSET/*,
+              android.media.AudioDeviceInfo.TYPE_BLE_SPEAKER,
+              android.media.AudioDeviceInfo.TYPE_BLE_BROADCAST*/ ->
+                true;
+              default ->
+                false;
+            };
+          }
+          break;
+        }
+        default:
+          throw new UnsupportedOperationException();
+      }
+      if (filter != null) {
+        List<android.media.AudioDeviceInfo> devices = am.getAvailableCommunicationDevices();
+        for (android.media.AudioDeviceInfo device : devices) {
+          if (filter.accept(device)) {
+            selectedAudioDevice = device;
+            break;
+          }
+        }
+      }
+      if (selectedAudioDevice != null) {
+        am.setCommunicationDevice(selectedAudioDevice);
+      } else {
+        am.clearCommunicationDevice();
+      }
+    } else {
+      switch (mode) {
+        case CallSettings.SPEAKER_MODE_BLUETOOTH: {
+          am.setBluetoothScoOn(true);
+          am.setSpeakerphoneOn(false);
+          break;
+        }
+        case CallSettings.SPEAKER_MODE_EARPIECE: {
+          am.setBluetoothScoOn(false);
+          am.setSpeakerphoneOn(false);
+          break;
+        }
+        case CallSettings.SPEAKER_MODE_SPEAKER: {
+          am.setBluetoothScoOn(false);
+          am.setSpeakerphoneOn(true);
+          break;
+        }
+        case CallSettings.SPEAKER_MODE_SPEAKER_DEFAULT: {
+          if (hasEarpiece()) {
+            am.setSpeakerphoneOn(true);
+          } else {
+            am.setBluetoothScoOn(true);
+          }
+          break;
+        }
       }
     }
   }
@@ -555,7 +666,7 @@ public class TGCallService extends Service implements
         tgcalls.setScreenShareEnabled(lastScreenSharing);
       }
     }
-    setAudioMode(settings != null ? settings.getSpeakerMode() : CallSettings.SPEAKER_MODE_NONE);
+    setAudioMode(settings != null ? settings.getSpeakerMode() : CallSettings.SPEAKER_MODE_EARPIECE);
   }
 
   // Implementation
@@ -620,7 +731,11 @@ public class TGCallService extends Service implements
 
       am.setMode(AudioManager.MODE_IN_COMMUNICATION);
       amChangeCounter++;
-      am.setSpeakerphoneOn(false);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+
+      } else {
+        am.setSpeakerphoneOn(false);
+      }
       am.requestAudioFocus(this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
       updateOutputGainControlState();
 
@@ -1018,9 +1133,19 @@ public class TGCallService extends Service implements
       return mHasEarpiece;
     }
 
+    AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      for (android.media.AudioDeviceInfo deviceInfo : am.getAvailableCommunicationDevices()) {
+        if (deviceInfo.getType() == android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
+          mHasEarpiece = true;
+          return true;
+        }
+      }
+    }
+
     // not calculated yet, do it now
     try {
-      AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
       Method method = AudioManager.class.getMethod("getDevicesForStream", Integer.TYPE);
       Field field = AudioManager.class.getField("DEVICE_OUT_EARPIECE");
       int earpieceFlag = field.getInt(null);
@@ -1046,12 +1171,16 @@ public class TGCallService extends Service implements
     if (this.isBtHeadsetConnected != isConnected) {
       this.isBtHeadsetConnected = isConnected;
       AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-      if (isConnected) {
-        Log.d(Log.TAG_VOIP, "AudioManager.startBluetoothSco()");
-        am.startBluetoothSco();
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+
       } else {
-        Log.d(Log.TAG_VOIP, "AudioManager.stopBluetoothSco()");
-        am.stopBluetoothSco();
+        if (isConnected) {
+          Log.d(Log.TAG_VOIP, "AudioManager.startBluetoothSco()");
+          am.startBluetoothSco();
+        } else {
+          Log.d(Log.TAG_VOIP, "AudioManager.stopBluetoothSco()");
+          am.stopBluetoothSco();
+        }
       }
       notifyAudioSettingsChanged();
     }
@@ -1072,7 +1201,48 @@ public class TGCallService extends Service implements
     Log.d(Log.TAG_VOIP, "notifyAudioSettingsChanged");
 
     AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-    int mode = isBluetoothHeadsetConnected() && am.isBluetoothScoOn() ? CallSettings.SPEAKER_MODE_BLUETOOTH : am.isSpeakerphoneOn() ? CallSettings.SPEAKER_MODE_SPEAKER : CallSettings.SPEAKER_MODE_NONE;
+    int mode;
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      List<android.media.AudioDeviceInfo> audioDevices = am.getAvailableCommunicationDevices();
+      isBtHeadsetConnected = false;
+      for (android.media.AudioDeviceInfo audioDevice : audioDevices) {
+        switch (audioDevice.getType()) {
+          case android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
+          case android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
+          case android.media.AudioDeviceInfo.TYPE_BLE_HEADSET:
+            isBtHeadsetConnected = true;
+            break;
+        }
+      }
+      android.media.AudioDeviceInfo deviceInfo = am.getCommunicationDevice();
+      mode = CallSettings.SPEAKER_MODE_EARPIECE;
+      if (deviceInfo != null) {
+        switch (deviceInfo.getType()) {
+          case android.media.AudioDeviceInfo.TYPE_BLE_SPEAKER:
+          case android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
+          case android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE: {
+            mode = CallSettings.SPEAKER_MODE_SPEAKER;
+            isHeadsetPlugged = false;
+            break;
+          }
+          case android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
+          case android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
+          case android.media.AudioDeviceInfo.TYPE_BLE_HEADSET: {
+            mode = CallSettings.SPEAKER_MODE_BLUETOOTH;
+            isHeadsetPlugged = true;
+            break;
+          }
+          case android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE: {
+            mode = CallSettings.SPEAKER_MODE_EARPIECE;
+            isHeadsetPlugged = false;
+            break;
+          }
+        }
+      }
+    } else {
+      mode = isBluetoothHeadsetConnected() && am.isBluetoothScoOn() ? CallSettings.SPEAKER_MODE_BLUETOOTH : am.isSpeakerphoneOn() ? CallSettings.SPEAKER_MODE_SPEAKER : CallSettings.SPEAKER_MODE_EARPIECE;
+    }
     if (this.lastAudioMode != mode) {
       CallSettings settings = getCallSettings();
       if (settings != null) {

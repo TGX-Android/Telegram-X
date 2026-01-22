@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<resources>
+
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="AppTheme.MediaControl">
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:padding">@dimen/padding_small</item>
+        <item name="android:tint">@color/colorPrimary</item>
+    </style>
+
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="TestHeader" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/text_dark</item>
+        <item name="android:textSize">@dimen/test_header_text_size</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="SubHeader" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/text_dark</item>
+        <item name="android:textSize">@dimen/test_subheader_text_size</item>
+    </style>
+
+    <style name="SubText" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/text_light</item>
+        <item name="android:textSize">@dimen/test_details_text_size</item>
+    </style>
+
+    <style name="TestLogDivider" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/test_details_text_size</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+</resources>

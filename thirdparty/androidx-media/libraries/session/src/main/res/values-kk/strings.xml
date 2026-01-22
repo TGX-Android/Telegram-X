@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Қазір ойнап тұр</string>
+  <string name="media3_controls_play_description">Ойнату</string>
+  <string name="media3_controls_pause_description">Кідірту</string>
+  <string name="media3_controls_seek_to_previous_description">Алдыңғы контентке өту</string>
+  <string name="media3_controls_seek_to_next_description">Келесі контентке өту</string>
+  <string name="media3_controls_seek_back_description">Артқа айналдыру</string>
+  <string name="media3_controls_seek_forward_description">Алға айналдыру</string>
+  <string name="error_message_fallback">Бірдеңе дұрыс емес. Кейінірек қайталап көріңіз.</string>
+  <string name="error_message_info_cancelled">Аяқталмады. Қайталап көріңіз.</string>
+  <string name="error_message_invalid_state">Мұны дәл қазір орындау мүмкін емес.</string>
+  <string name="error_message_authentication_expired">Бұл қолданбаны пайдалану үшін аккаунтқа кіріңіз.</string>
+  <string name="error_message_content_already_playing">Бұл контент ойнатылып жатыр.</string>
+  <string name="error_message_end_of_playlist">Кезекке басқа ештеңе қойылмаған.</string>
+  <string name="error_message_concurrent_stream_limit">Тым көп құрылғыда тыңдалып жатыр.</string>
+  <string name="error_message_not_available_in_region">Бұл контентті осы жерде алу мүмкін емес.</string>
+  <string name="error_message_not_supported">Бұл қолданба мұны орындай алмайды.</string>
+  <string name="error_message_parental_control_restricted">Бұл контент блокталған.</string>
+  <string name="error_message_premium_account_required">Премиум рұқсат қажет.</string>
+  <string name="error_message_skip_limit_reached">Басқа аудиотректерді өткізіп жіберу мүмкін емес.</string>
+  <string name="error_message_bad_value">Кіріс дерек дұрыс емес.</string>
+  <string name="error_message_io">Кіріс/шығыс дерек қатесі орын алды.</string>
+  <string name="error_message_permission_denied">Рұқсат жоқ.</string>
+  <string name="error_message_disconnected">Мультимедиа қолданбасынан ажыратылды.</string>
+  <string name="error_message_setup_required">Реттеу қажет.</string>
+</resources>

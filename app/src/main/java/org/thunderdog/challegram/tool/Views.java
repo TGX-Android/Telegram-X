@@ -219,6 +219,15 @@ public class Views {
     return getParentsTop(view, limit, false);
   }
 
+  @SuppressWarnings("deprecation")
+  public static int saveLayerAlpha (Canvas c, float left, float top, float right, float bottom, int alpha, int flags) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      return c.saveLayerAlpha(left, top, right, bottom, alpha);
+    } else {
+      return c.saveLayerAlpha(left, top, right, bottom, alpha, flags);
+    }
+  }
+
   private static int getParentsTop (View view, int limit, boolean includeTranslation) {
     int top = 0;
     ViewParent parent = view.getParent();
@@ -800,11 +809,17 @@ public class Views {
     }
   }
 
-  public static void applyBottomInset (RecyclerView recyclerView, int bottomInset) {
-    if (recyclerView != null) {
-      setPaddingBottom(recyclerView, bottomInset);
-      recyclerView.setClipToPadding(bottomInset == 0);
+  public static boolean applyBottomInset (ViewGroup viewGroup, int bottomInset) {
+    if (viewGroup != null) {
+      boolean changed = setPaddingBottom(viewGroup, bottomInset);
+      viewGroup.setClipToPadding(bottomInset == 0);
+      return changed;
     }
+    return false;
+  }
+
+  public static int getAppliedBottomInset (ViewGroup viewGroup) {
+    return viewGroup != null ? viewGroup.getPaddingBottom() : 0;
   }
 
   public static void removeRule (RelativeLayout.LayoutParams params, int verb) {
@@ -823,16 +838,17 @@ public class Views {
   @SuppressWarnings("unchecked")
   public static <T extends View> T findAncestor (View view, Class<T> clazz, boolean root) {
     if (view != null) {
-      ViewParent parent = view.getParent();
       T found = null;
-      do {
+      ViewParent parent = view.getParent();
+      while (parent != null) {
         if (clazz.isAssignableFrom(parent.getClass())) {
           found = (T) parent;
           if (!root) {
             return found;
           }
         }
-      } while ((parent = parent.getParent()) != null);
+        parent = parent.getParent();
+      }
       return found;
     }
     return null;
@@ -883,10 +899,13 @@ public class Views {
     }
   }
 
-  public static void setPaddingBottom (View view, int paddingBottom) {
+  public static boolean setPaddingBottom (View view, int paddingBottom) {
     if (view != null) {
+      int prevPaddingBottom = view.getPaddingBottom();
       view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), view.getPaddingRight(), paddingBottom);
+      return prevPaddingBottom != paddingBottom;
     }
+    return false;
   }
 
   public static void setPaddingTop (View view, int paddingTop) {

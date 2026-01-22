@@ -1,0 +1,36 @@
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:ttp="http://www.w3.org/2006/10/ttaf1#parameter"
+    xmlns:tts="http://www.w3.org/2006/10/ttaf1#style"
+    xmlns:ttm="http://www.w3.org/2006/10/ttaf1#metadata">
+<head>
+    <styling>
+        <style id="default-style"
+          tts:fontSize="75%"/>
+        <style id="s0"
+            tts:fontWeight="bold"
+            tts:fontStyle="italic"
+            tts:fontFamily="serif"
+            tts:textDecoration="underline"
+            tts:backgroundColor="blue"
+            tts:color="yellow"
+            tts:fontSize="200%"/>
+    </styling>
+</head>
+<body style="default-style">
+    <div>
+        <p style="s0" begin="10s" end="18s">default + s0 styles</p>
+    </div>
+    <div>
+        <p style="s0" begin="20s" end="28s"
+            tts:fontWeight="normal"
+            tts:fontFamily="sansSerif"
+            tts:backgroundColor="red"
+            tts:color="yellow"
+            tts:fontSize="120%"
+            >default + s0 + overrides</p>
+    </div>
+        <div>
+            <p begin="30s" end="38s">default styling only</p>
+        </div>
+    </body>
+</tt>

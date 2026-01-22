@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/rating_thumb_up"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/rating_thumb_up"
+        app:srcCompat="@drawable/ic_thumb_up_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/rating_thumb_down"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/rating_thumb_down"
+        app:srcCompat="@drawable/ic_thumb_down_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/rating_heart"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/rating_heart"
+        app:srcCompat="@drawable/ic_heart_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/rating_star_1"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/rating_star_1"
+        app:srcCompat="@drawable/ic_star_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/rating_star_2"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/rating_star_2"
+        app:srcCompat="@drawable/ic_star_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/rating_star_3"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/rating_star_3"
+        app:srcCompat="@drawable/ic_star_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/rating_star_4"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/rating_star_4"
+        app:srcCompat="@drawable/ic_star_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/rating_star_5"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/rating_star_5"
+        app:srcCompat="@drawable/ic_star_black_32dp" />
+
+    <EditText
+      android:id="@+id/rating_percentage"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:hint="@string/rating_percentage"
+      android:inputType="numberDecimal"
+      android:maxEms="6"
+      android:minEms="4" />
+
+    <Button
+        android:id="@+id/rating_percentage_set"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/rating_set_percentage" />
+
+</LinearLayout>

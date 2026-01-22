@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">កំពុងចាក់</string>
+  <string name="media3_controls_play_description">ចាក់</string>
+  <string name="media3_controls_pause_description">ផ្អាក</string>
+  <string name="media3_controls_seek_to_previous_description">ទៅកាន់ធាតុមុន</string>
+  <string name="media3_controls_seek_to_next_description">ទៅកាន់ធាតុបន្ទាប់</string>
+  <string name="media3_controls_seek_back_description">ថយក្រោយ</string>
+  <string name="media3_controls_seek_forward_description">រំលង​​ទៅ​មុខ</string>
+  <string name="error_message_fallback">មានអ្វីមួយ​ខុស​ប្រក្រតី។ សូមព្យាយាម​នៅពេលក្រោយ។</string>
+  <string name="error_message_info_cancelled">មិនអាច​បញ្ចប់បានទេ។ សូមព្យាយាមម្ដងទៀត។</string>
+  <string name="error_message_invalid_state">មិនអាច​ធ្វើតាមសំណើនោះ​ឥឡូវនេះ​បានទេ</string>
+  <string name="error_message_authentication_expired">ចូលគណនី ដើម្បីប្រើកម្មវិធីនេះ</string>
+  <string name="error_message_content_already_playing">កំពុងចាក់​ខ្លឹមសារនោះ​ស្រាប់ហើយ</string>
+  <string name="error_message_end_of_playlist">មិនមានអ្វី​ផ្សេងទៀត​នៅក្នុង​ជួរទេ</string>
+  <string name="error_message_concurrent_stream_limit">កំពុងស្ដាប់​នៅលើ​ឧបករណ៍​ច្រើនពេក</string>
+  <string name="error_message_not_available_in_region">មិនអាច​យក​ខ្លឹមសារនោះ​នៅទីនេះ​បានទេ</string>
+  <string name="error_message_not_supported">កម្មវិធីនេះ​មិនអាចធ្វើ​តាមសំណើនោះ​បានទេ</string>
+  <string name="error_message_parental_control_restricted">ខ្លឹមសារនោះ​ត្រូវបានទប់ស្កាត់</string>
+  <string name="error_message_premium_account_required">តម្រូវឱ្យមាន​ការចូលប្រើ​លំដាប់ខ្ពស់</string>
+  <string name="error_message_skip_limit_reached">មិនអាច​រំលងចម្រៀង​បានទៀតទេ</string>
+  <string name="error_message_bad_value">ទិន្នន័យបញ្ចូលមិនត្រឹមត្រូវ</string>
+  <string name="error_message_io">បញ្ហាធាតុចូល/ធាតុចេញ</string>
+  <string name="error_message_permission_denied">បាន​បដិសេធ​ការចូល​ប្រើប្រាស់</string>
+  <string name="error_message_disconnected">បានផ្ដាច់ពីកម្មវិធី​មេឌៀ</string>
+  <string name="error_message_setup_required">តម្រូវឱ្យ​រៀបចំ</string>
+</resources>

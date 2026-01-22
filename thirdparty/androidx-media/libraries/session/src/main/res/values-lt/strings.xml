@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Dabar leidžiama</string>
+  <string name="media3_controls_play_description">Paleisti</string>
+  <string name="media3_controls_pause_description">Pristabdyti</string>
+  <string name="media3_controls_seek_to_previous_description">Prasukti į ankstesnį elementą</string>
+  <string name="media3_controls_seek_to_next_description">Prasukti į kitą elementą</string>
+  <string name="media3_controls_seek_back_description">Prasukti atgal</string>
+  <string name="media3_controls_seek_forward_description">Prasukti pirmyn</string>
+  <string name="error_message_fallback">Kažkas nepavyko. Bandykite vėliau.</string>
+  <string name="error_message_info_cancelled">Nepavyko užbaigti. Bandykite dar kartą.</string>
+  <string name="error_message_invalid_state">Dabar negalima atlikti to veiksmo</string>
+  <string name="error_message_authentication_expired">Prisijunkite, kad galėtumėte naudoti šią programą</string>
+  <string name="error_message_content_already_playing">Tas turinys jau leidžiamas</string>
+  <string name="error_message_end_of_playlist">Eilėje nieko nebėra</string>
+  <string name="error_message_concurrent_stream_limit">Klausoma naudojant per daug įrenginių</string>
+  <string name="error_message_not_available_in_region">Negalima gauti to turinio čia</string>
+  <string name="error_message_not_supported">Ši programa negali atlikti to veiksmo</string>
+  <string name="error_message_parental_control_restricted">Tas turinys užblokuotas</string>
+  <string name="error_message_premium_account_required">Būtina mokama prieiga</string>
+  <string name="error_message_skip_limit_reached">Daugiau takelių praleisti nebegalima</string>
+  <string name="error_message_bad_value">Netinkami įvesties duomenys</string>
+  <string name="error_message_io">Įvesties ir (arba) išvesties klaida</string>
+  <string name="error_message_permission_denied">Prieiga atmesta</string>
+  <string name="error_message_disconnected">Atsijungta nuo medijos programos</string>
+  <string name="error_message_setup_required">Būtina užbaigti sąranką</string>
+</resources>

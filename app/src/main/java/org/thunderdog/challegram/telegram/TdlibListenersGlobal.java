@@ -16,6 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.tool.UI;
@@ -79,6 +80,12 @@ public class TdlibListenersGlobal {
   void notifyUpdateNewMessage (Tdlib tdlib, TdApi.UpdateNewMessage update) {
     for (GlobalMessageListener listener : messageListeners) {
       listener.onNewMessage(tdlib, update.message);
+    }
+  }
+
+  void notifyUpdateMessageContent (Tdlib tdlib, TdApi.UpdateMessageContent update) {
+    for (GlobalMessageListener listener : messageListeners) {
+      listener.onMessageContentChanged(tdlib, update.chatId, update.messageId, update.newContent);
     }
   }
 
@@ -286,12 +293,30 @@ public class TdlibListenersGlobal {
     callListeners.remove(listener);
   }
 
+  @TdlibThread
+  void onUpdateCall (Tdlib tdlib, TdApi.UpdateCall update) {
+    for (GlobalCallListener listener : callListeners) {
+      listener.onUpdateCall(tdlib, update);
+    }
+  }
+
+  @TdlibThread
+  void onUpdateGroupCall (Tdlib tdlib, TdApi.UpdateGroupCall update) {
+    for (GlobalCallListener listener : callListeners) {
+      listener.onUpdateGroupCall(tdlib, update);
+    }
+  }
+
+  // Calls (legacy)
+
+  @UiThread
   void notifyCallUpdated (Tdlib tdlib, TdApi.Call call) {
     for (GlobalCallListener listener : callListeners) {
       listener.onCallUpdated(tdlib, call);
     }
   }
 
+  @UiThread
   void notifyCallSettingsChanged (Tdlib tdlib, int callId, CallSettings settings) {
     for (GlobalCallListener listener : callListeners) {
       listener.onCallSettingsChanged(tdlib, callId, settings);

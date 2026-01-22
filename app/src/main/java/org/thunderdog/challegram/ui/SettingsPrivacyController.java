@@ -160,6 +160,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     TdApi.UserPrivacySetting[] privacySettings = new TdApi.UserPrivacySetting[] {
       new TdApi.UserPrivacySettingShowStatus(),
       new TdApi.UserPrivacySettingShowProfilePhoto(),
+      new TdApi.UserPrivacySettingShowProfileAudio(),
       new TdApi.UserPrivacySettingShowBirthdate(),
       new TdApi.UserPrivacySettingShowBio(),
       new TdApi.UserPrivacySettingShowPhoneNumber(),
@@ -478,7 +479,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       SettingsWebsitesController websites = new SettingsWebsitesController(context, tdlib);
       websites.setArguments(this);
 
-      SimpleViewPagerController c = new SimpleViewPagerController(context, tdlib, new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
+      SimpleViewPagerController c = new SimpleViewPagerController(context, tdlib, new ViewController<?>[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
       navigateTo(c);
     } else if (id == R.id.btn_passcode) {
       lastClickedButton = id;
@@ -503,31 +504,19 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       }
     } else if (id == R.id.btn_loginEmail) {
       if (passwordState != null && !StringUtils.isEmpty(passwordState.loginEmailAddressPattern)) {
-        showOptions(new Options.Builder()
-          .title(passwordState.loginEmailAddressPattern) // TODO(spoiler): replace `*` with the spoiler effect
-          .info(Lang.getMarkdownString(this, R.string.ChangeEmailPromptText))
-          .item(new OptionItem.Builder().id(R.id.btn_changeEmail).name(R.string.ChangeEmailPromptButton).icon(R.drawable.baseline_edit_24).build())
-          .cancelItem()
-          .build(), (optionView, optionId) -> {
-            if (optionId == R.id.btn_changeEmail) {
-              PasswordController controller = new PasswordController(context, tdlib);
-              controller.setArguments(new PasswordController.Args(PasswordController.MODE_LOGIN_EMAIL_CHANGE, passwordState));
-              navigateTo(controller);
-            }
-            return true;
-          }
-        );
+        tdlib.ui().editLoginEmail(this, passwordState);
       }
     } else if (id == R.id.btn_accountTTL) {
       int days = accountTtl != null ? accountTtl.days : 0;
       int months = days / 30;
-      int years = months / 12;
-      showSettings(id, new ListItem[] {
+      showSettings(new SettingsWrapBuilder(id).setRawItems(new ListItem[] {
         new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1month, 0, Lang.pluralBold(R.string.xMonths, 1), R.id.btn_accountTTL, months == 1),
         new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_3months, 0, Lang.pluralBold(R.string.xMonths, 3), R.id.btn_accountTTL, months == 3),
         new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_6month, 0, Lang.pluralBold(R.string.xMonths, 6), R.id.btn_accountTTL, months == 6),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1year, 0, Lang.pluralBold(R.string.xYears, 1), R.id.btn_accountTTL, years == 1)
-      }, this);
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_12months, 0, Lang.pluralBold(R.string.xMonths, 12), R.id.btn_accountTTL, months == 12),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_18months, 0, Lang.pluralBold(R.string.xMonths, 18), R.id.btn_accountTTL, months == 18),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_24months, 0, Lang.pluralBold(R.string.xMonths, 24), R.id.btn_accountTTL, months == 24),
+      }).setIntDelegate(this).setAllowResize(false));
     } else if (id == R.id.btn_deleteAccount) {
       tdlib.ui().permanentlyDeleteAccount(this, true);
     } else if (id == R.id.btn_clearAllDrafts) {
@@ -552,8 +541,12 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
           resultDaysTTL = 91;
         } else if (resultId == R.id.btn_6month) {
           resultDaysTTL = 181;
-        } else if (resultId == R.id.btn_1year) {
+        } else if (resultId == R.id.btn_12months) {
           resultDaysTTL = 366;
+        } else if (resultId == R.id.btn_18months) {
+          resultDaysTTL = 546;
+        } else if (resultId == R.id.btn_24months) {
+          resultDaysTTL = 730;
         } else {
           resultDaysTTL = 0;
         }
@@ -764,12 +757,11 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       if (days < 30) {
         duration = Lang.pluralBold(R.string.DeleteAccountIfAwayForDays, days);
       } else {
-        days /= 30;
-        if (days < 12) {
-          duration = Lang.pluralBold(R.string.DeleteAccountIfAwayForMonths, days);
+        int months = days / 30;
+        if (months % 12 == 0) {
+          return Lang.pluralBold(R.string.DeleteAccountIfAwayForYears, months / 12);
         } else {
-          days /= 12;
-          duration = Lang.pluralBold(R.string.DeleteAccountIfAwayForYears, days);
+          return Lang.pluralBold(R.string.DeleteAccountIfAwayForMonths, months);
         }
       }
       return duration;

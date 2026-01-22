@@ -1,0 +1,21 @@
+seekMap:
+  isSeekable = true
+  duration = 1783744
+  getPosition(0) = [[timeUs=0, position=0]]
+  getPosition(1) = [[timeUs=1, position=0]]
+  getPosition(891872) = [[timeUs=891872, position=106614]]
+  getPosition(1783744) = [[timeUs=1783744, position=213417]]
+numberOfTracks = 1
+track 32:
+  total output bytes = 0
+  sample count = 0
+  format 0:
+    id = 1/32
+    containerMimeType = video/mp2t
+    sampleMimeType = audio/mhm1
+    codecs = mhm1.0C
+    sampleRate = 48000
+    initializationData:
+      data = length 0, hash 1
+      data = length 1, hash 30
+tracksEnded = true

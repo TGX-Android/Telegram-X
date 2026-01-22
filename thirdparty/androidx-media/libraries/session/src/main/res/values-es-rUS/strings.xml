@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Está sonando</string>
+  <string name="media3_controls_play_description">Reproducir</string>
+  <string name="media3_controls_pause_description">Pausar</string>
+  <string name="media3_controls_seek_to_previous_description">Saltar al elemento anterior</string>
+  <string name="media3_controls_seek_to_next_description">Saltar al siguiente elemento</string>
+  <string name="media3_controls_seek_back_description">Retroceder</string>
+  <string name="media3_controls_seek_forward_description">Avanzar</string>
+  <string name="error_message_fallback">Se produjo un error. Vuelve a intentarlo más tarde.</string>
+  <string name="error_message_info_cancelled">No se pudo completar la acción. Vuelve a intentarlo.</string>
+  <string name="error_message_invalid_state">No se puede realizar esa acción en este momento</string>
+  <string name="error_message_authentication_expired">Accede para usar esta app</string>
+  <string name="error_message_content_already_playing">Ya se está reproduciendo ese contenido</string>
+  <string name="error_message_end_of_playlist">No hay más contenido en la fila</string>
+  <string name="error_message_concurrent_stream_limit">Se está escuchando contenido en demasiados dispositivos</string>
+  <string name="error_message_not_available_in_region">No se puede acceder a ese contenido en esta región</string>
+  <string name="error_message_not_supported">Esta app no puede realizar esa acción</string>
+  <string name="error_message_parental_control_restricted">Ese contenido está bloqueado</string>
+  <string name="error_message_premium_account_required">Se requiere acceso Premium</string>
+  <string name="error_message_skip_limit_reached">No se pueden omitir más pistas</string>
+  <string name="error_message_bad_value">Datos de entrada incorrectos</string>
+  <string name="error_message_io">Error de entrada/salida</string>
+  <string name="error_message_permission_denied">Acceso denegado</string>
+  <string name="error_message_disconnected">Se desconectó de la app de música</string>
+  <string name="error_message_setup_required">Se requiere la configuración</string>
+</resources>

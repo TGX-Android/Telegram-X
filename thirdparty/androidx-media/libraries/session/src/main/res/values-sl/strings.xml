@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Zdaj se predvaja</string>
+  <string name="media3_controls_play_description">Predvajaj</string>
+  <string name="media3_controls_pause_description">Začasno zaustavi</string>
+  <string name="media3_controls_seek_to_previous_description">Premakni na prejšnji element</string>
+  <string name="media3_controls_seek_to_next_description">Premakni na naslednji element</string>
+  <string name="media3_controls_seek_back_description">Premakni nazaj</string>
+  <string name="media3_controls_seek_forward_description">Premakni naprej</string>
+  <string name="error_message_fallback">Prišlo je do napake. Poskusite pozneje.</string>
+  <string name="error_message_info_cancelled">Ni bilo mogoče dokončati. Poskusite znova.</string>
+  <string name="error_message_invalid_state">Trenutno to ni izvedljivo</string>
+  <string name="error_message_authentication_expired">Prijavite se, če želite uporabljati to aplikacijo</string>
+  <string name="error_message_content_already_playing">Ta vsebina se že predvaja</string>
+  <string name="error_message_end_of_playlist">Čakalna vrsta je prazna</string>
+  <string name="error_message_concurrent_stream_limit">Poslušanje v preveč napravah</string>
+  <string name="error_message_not_available_in_region">Te vsebine tukaj ni mogoče pridobiti</string>
+  <string name="error_message_not_supported">Ta aplikacija ne more izvesti tega</string>
+  <string name="error_message_parental_control_restricted">Ta vsebina je blokirana</string>
+  <string name="error_message_premium_account_required">Potrebujete plačljiv dostop</string>
+  <string name="error_message_skip_limit_reached">Dosegli ste omejitev preskakovanja skladb</string>
+  <string name="error_message_bad_value">Nepravilni vhodni podatki</string>
+  <string name="error_message_io">Napaka vhodnih/izhodnih podatkov</string>
+  <string name="error_message_permission_denied">Dostop zavrnjen</string>
+  <string name="error_message_disconnected">Ni povezave z aplikacijo za predstavnost</string>
+  <string name="error_message_setup_required">Potrebna je nastavitev</string>
+</resources>

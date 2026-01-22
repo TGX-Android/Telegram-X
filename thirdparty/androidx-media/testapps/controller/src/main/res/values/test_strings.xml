@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources>
+  <!-- Tests UI -->
+  <string name="test_options_header">Tests</string>
+  <string name="test_results_header">Results</string>
+  <string name="test_query_placeholder">Query</string>
+  <string name="configure_button">Configure</string>
+  <string name="test_run_button">Run Test</string>
+  <string name="test_empty_query_message">"Query is required but empty"</string>
+  <string name="test_running_title">Test is running</string>
+  <string name="navigation_test_text">Tests</string>
+  <string name="navigation_suite_text">Test Suites</string>
+
+  <!-- Test Suite UI -->
+  <string name="test_suite_options_header">Test Suites</string>
+  <string name="test_suite_iteration_header"># Iterations</string>
+  <string name="test_suite_iteration_default">1</string>
+  <string name="run_suite_button">Run Suite</string>
+  <string name="done_configure_button">Done</string>
+  <string name="reset_button">Reset</string>
+  <string name="cancel_suite_button">Cancel Suite</string>
+  <string name="close_results_button">Close</string>
+  <string name="test_suite_invalid_iteration_msg">Invalid iteration number, must be between (1..10).</string>
+  <string name="configure_dialog_title">%1$s Configuration</string>
+  <string name="suite_is_running_title">Suite is running…</string>
+  <string name="test_suite_result">Passing: (%d/%d)</string>
+  <string name="failing_logs_header">Failing Logs:</string>
+  <string name="passing_logs_header">Passing Logs:</string>
+  <string name="test_iteration_divider">--- Iteration ---</string>
+
+  <!-- Test Titles -->
+  <string name="play_test_title">Play Test</string>
+  <string name="pause_test_title">Pause Test</string>
+  <string name="stop_test_title">Stop Test</string>
+  <string name="play_search_test_title">Play From Search Test</string>
+
+  <!-- Test Descriptions -->
+  <string name="play_test_description">This tests the \'play\' functionality.</string>
+  <string name="pause_test_description">This tests the \'pause\' functionality.</string>
+  <string name="stop_test_description">This tests the \'stop\' functionality.</string>
+  <string name="play_search_test_description">This tests the \'play from search\' functionality. Enter the search query in the query field.</string>
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Nyt toistetaan</string>
+  <string name="media3_controls_play_description">Toista</string>
+  <string name="media3_controls_pause_description">Keskeytä</string>
+  <string name="media3_controls_seek_to_previous_description">Siirry edelliseen</string>
+  <string name="media3_controls_seek_to_next_description">Siirry seuraavaan</string>
+  <string name="media3_controls_seek_back_description">Siirry taaksepäin</string>
+  <string name="media3_controls_seek_forward_description">Siirry eteenpäin</string>
+  <string name="error_message_fallback">Jotain meni pieleen. Yritä myöhemmin.</string>
+  <string name="error_message_info_cancelled">Ei onnistunut. Yritä uudelleen.</string>
+  <string name="error_message_invalid_state">Tämä ei juuri nyt onnistu</string>
+  <string name="error_message_authentication_expired">Kirjaudu sisään käyttääksesi tätä sovellusta</string>
+  <string name="error_message_content_already_playing">Sisältöä toistetaan jo</string>
+  <string name="error_message_end_of_playlist">Ei muuta jonossa</string>
+  <string name="error_message_concurrent_stream_limit">Kuuntelu käynnissä liian monella laitteella</string>
+  <string name="error_message_not_available_in_region">Sisältö ei ole saatavilla täällä</string>
+  <string name="error_message_not_supported">Sovellus ei tue pyyntöä</string>
+  <string name="error_message_parental_control_restricted">Tämä sisältö on estetty</string>
+  <string name="error_message_premium_account_required">Edellyttää premium-tilausta</string>
+  <string name="error_message_skip_limit_reached">Enimmäismäärä kappaleita ohitettu</string>
+  <string name="error_message_bad_value">Virheellinen syötedata</string>
+  <string name="error_message_io">Syöte‑ tai tuotosvirhe</string>
+  <string name="error_message_permission_denied">Pääsy estetty</string>
+  <string name="error_message_disconnected">Yhteys katkaistu mediasovelluksesta</string>
+  <string name="error_message_setup_required">Käyttöönottoa vaaditaan</string>
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Afspilles nu</string>
+  <string name="media3_controls_play_description">Afspil</string>
+  <string name="media3_controls_pause_description">Sæt på pause</string>
+  <string name="media3_controls_seek_to_previous_description">Hop til forrige element</string>
+  <string name="media3_controls_seek_to_next_description">Hop til næste element</string>
+  <string name="media3_controls_seek_back_description">Hop tilbage</string>
+  <string name="media3_controls_seek_forward_description">Hop frem</string>
+  <string name="error_message_fallback">Der er noget galt. Prøv igen senere.</string>
+  <string name="error_message_info_cancelled">Handlingen kunne ikke gennemføres. Prøv igen.</string>
+  <string name="error_message_invalid_state">Det er ikke muligt lige nu</string>
+  <string name="error_message_authentication_expired">Log ind for at bruge denne app</string>
+  <string name="error_message_content_already_playing">Indholdet afspilles allerede</string>
+  <string name="error_message_end_of_playlist">Der er ikke mere i køen</string>
+  <string name="error_message_concurrent_stream_limit">Du lytter på for mange enheder</string>
+  <string name="error_message_not_available_in_region">Indholdet er ikke tilgængeligt her</string>
+  <string name="error_message_not_supported">Det kan denne app ikke gøre</string>
+  <string name="error_message_parental_control_restricted">Indholdet er blokeret</string>
+  <string name="error_message_premium_account_required">Dette kræver en Premium-konto</string>
+  <string name="error_message_skip_limit_reached">Du kan ikke springe flere numre over</string>
+  <string name="error_message_bad_value">Dataene for input er ikke korrekte</string>
+  <string name="error_message_io">Fejl i input/output</string>
+  <string name="error_message_permission_denied">Adgangen blev nægtet</string>
+  <string name="error_message_disconnected">Forbindelsen til medieappen er afbrudt</string>
+  <string name="error_message_setup_required">Konfiguration er påkrævet</string>
+</resources>

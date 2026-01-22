@@ -26,7 +26,7 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatRemovedFromList (long chatId, TdApi.ChatList chatList) { }
   default void onChatPermissionsChanged (long chatId, TdApi.ChatPermissions permissions) { }
   default void onChatTitleChanged (long chatId, String title) { }
-  default void onChatThemeChanged (long chatId, String themeName) { }
+  default void onChatThemeChanged (long chatId, TdApi.ChatTheme theme) { }
 
   default void onChatBackgroundChanged (long chatId, @Nullable TdApi.ChatBackground background) { }
   default void onChatAccentColorsChanged (long chatId,

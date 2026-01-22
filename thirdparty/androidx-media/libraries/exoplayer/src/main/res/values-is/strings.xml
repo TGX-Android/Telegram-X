@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Sækja</string>
+  <string name="exo_download_notification_channel_name">Niðurhal</string>
+  <string name="exo_download_downloading">Sækir</string>
+  <string name="exo_download_completed">Niðurhali lokið</string>
+  <string name="exo_download_failed">Niðurhal mistókst</string>
+  <string name="exo_download_removing">Fjarlægir niðurhal</string>
+  <string name="exo_download_paused">Niðurhöl í bið</string>
+  <string name="exo_download_paused_for_network">Niðurhöl bíða eftir netkerfi</string>
+  <string name="exo_download_paused_for_wifi">Niðurhöl bíða eftir WiFi</string>
+</resources>

@@ -1074,7 +1074,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
   }
 
   private void setExoPlayerSpeed () {
-    setExoPlayerSpeed (Settings.instance().getPlaybackSpeed());
+    setExoPlayerSpeed(Settings.instance().getPlaybackSpeed());
   }
 
   private void setExoPlayerSpeed (int speed) {

@@ -1,0 +1,67 @@
+// Copyright (C) 2016 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+gradle.ext.androidxMediaModulePrefix = ''
+
+def modulePrefix = ':'
+if (gradle.ext.has('androidxMediaModulePrefix')) {
+    modulePrefix += gradle.ext.androidxMediaModulePrefix
+}
+
+rootProject.name = 'androidx.media3'
+gradle.ext.rootProjectIsAndroidXMedia3 = true
+
+gradle.ext.androidxMediaEnableMidiModule = true
+
+// All library modules should be configured in core_settings.gradle. Below are
+// modules that no app should depend on.
+
+// Demo apps
+include modulePrefix + 'demo'
+project(modulePrefix + 'demo').projectDir = new File(rootDir, 'demos/main')
+include modulePrefix + 'demo-cast'
+project(modulePrefix + 'demo-cast').projectDir = new File(rootDir, 'demos/cast')
+include modulePrefix + 'demo-compose'
+project(modulePrefix + 'demo-compose').projectDir = new File(rootDir, 'demos/compose')
+include modulePrefix + 'demo-composition'
+project(modulePrefix + 'demo-composition').projectDir = new File(rootDir, 'demos/composition')
+include modulePrefix + 'demo-effect'
+project(modulePrefix + 'demo-effect').projectDir = new File(rootDir, 'demos/effect')
+include modulePrefix + 'demo-gl'
+project(modulePrefix + 'demo-gl').projectDir = new File(rootDir, 'demos/gl')
+include modulePrefix + 'demo-session'
+project(modulePrefix + 'demo-session').projectDir = new File(rootDir, 'demos/session')
+include modulePrefix + 'demo-session-service'
+project(modulePrefix + 'demo-session-service').projectDir = new File(rootDir, 'demos/session_service')
+include modulePrefix + 'demo-session-automotive'
+project(modulePrefix + 'demo-session-automotive').projectDir = new File(rootDir, 'demos/session_automotive')
+include modulePrefix + 'demo-shortform'
+project(modulePrefix + 'demo-shortform').projectDir = new File(rootDir, 'demos/shortform')
+include modulePrefix + 'demo-surface'
+project(modulePrefix + 'demo-surface').projectDir = new File(rootDir, 'demos/surface')
+include modulePrefix + 'demo-transformer'
+project(modulePrefix + 'demo-transformer').projectDir = new File(rootDir, 'demos/transformer')
+
+// Modules that only contain tests (not utils used by other test modules)
+include modulePrefix + 'test-exoplayer-playback'
+project(modulePrefix + 'test-exoplayer-playback').projectDir = new File(rootDir, 'libraries/test_exoplayer_playback')
+include modulePrefix + 'test-session-common'
+project(modulePrefix + 'test-session-common').projectDir = new File(rootDir, 'libraries/test_session_common')
+include modulePrefix + 'test-session-current'
+project(modulePrefix + 'test-session-current').projectDir = new File(rootDir, 'libraries/test_session_current')
+
+// MediaController test app.
+include modulePrefix + 'testapp-controller'
+project(modulePrefix + 'testapp-controller').projectDir = new File(rootDir, 'testapps/controller')
+
+apply from: 'core_settings.gradle'

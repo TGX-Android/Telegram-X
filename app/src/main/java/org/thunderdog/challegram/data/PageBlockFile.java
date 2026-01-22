@@ -37,7 +37,7 @@ public class PageBlockFile extends PageBlock {
     if (result == null)
       throw new UnsupportedOperationException(pageBlock.toString());
     if (pageBlock.getConstructor() == TdApi.PageBlockAudio.CONSTRUCTOR) {
-      ((InlineResultCommon) result).setIsTrack(false);
+      result.setIsTrack(false);
     }
   }
 

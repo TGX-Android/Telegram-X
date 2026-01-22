@@ -1,0 +1,44 @@
+MediaCodecAdapter (exotest.video.avc):
+  inputBuffers:
+    count = 2
+    input buffer #0:
+      timeUs = 1000000000000
+      contents = length 36692, hash D216076E
+    input buffer #1:
+      timeUs = 0
+      flags = 4
+      contents = length 0, hash 1
+  outputBuffers:
+    count = 1
+    output buffer #0:
+      timeUs = 1000000000000
+      size = 36692
+      rendered = true
+MediaCodecAdapter (exotest.video.avc):
+  inputBuffers:
+    count = 1
+    input buffer #0:
+      timeUs = 1000000025000
+      contents = length 36692, hash D216076E
+  outputBuffers:
+    count = 1
+    output buffer #0:
+      timeUs = 1000000025000
+      size = 36692
+      rendered = true
+MediaCodecAdapter (exotest.video.avc):
+  inputBuffers:
+    count = 2
+    input buffer #0:
+      timeUs = 1000000000000
+      contents = length 36692, hash D216076E
+    input buffer #1:
+      timeUs = 0
+      flags = 4
+      contents = length 0, hash 1
+  outputBuffers:
+    count = 1
+    output buffer #0:
+      timeUs = 1000000000000
+      size = 36692
+      rendered = true

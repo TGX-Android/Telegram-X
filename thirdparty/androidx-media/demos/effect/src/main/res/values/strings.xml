@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2024 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          https://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources>
+  <string name="app_name">Effect Demo</string>
+  <string name="choose_preset_input">Choose preset input</string>
+  <string name="choose_local_file">Choose local file</string>
+  <string name="apply_effects">Apply effects</string>
+  <string name="ok">OK</string>
+  <string name="playlist_loading_error">Error loading playlist from %1$s: %2$s</string>
+  <string name="no_loaded_playlists_error">There are no loaded preset inputs.</string>
+  <string name="can_not_open_file_error">"File couldn't be opened. Please try again."</string>
+  <string name="permission_not_granted_error">"Permission was not granted."</string>
+  <string name="contrast">Contrast</string>
+  <string name="confetti_overlay">Confetti Overlay</string>
+  <string name="custom_text_overlay">Custom Text Overlay</string>
+  <string name="text">Text</string>
+  <string name="text_color">Text color</string>
+  <string name="unknown_color">Unknown color</string>
+  <string name="alpha">Alpha</string>
+</resources>

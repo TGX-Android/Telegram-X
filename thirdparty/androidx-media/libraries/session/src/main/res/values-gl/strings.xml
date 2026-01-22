@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Reproducindo</string>
+  <string name="media3_controls_play_description">Reproducir</string>
+  <string name="media3_controls_pause_description">Pór en pausa</string>
+  <string name="media3_controls_seek_to_previous_description">Retroceder ao elemento anterior</string>
+  <string name="media3_controls_seek_to_next_description">Avanzar ao elemento seguinte</string>
+  <string name="media3_controls_seek_back_description">Retroceder</string>
+  <string name="media3_controls_seek_forward_description">Avanzar</string>
+  <string name="error_message_fallback">Produciuse un problema. Téntao máis tarde.</string>
+  <string name="error_message_info_cancelled">Non se puido completar a acción. Téntao de novo.</string>
+  <string name="error_message_invalid_state">Nestes momentos non se pode realizar a acción</string>
+  <string name="error_message_authentication_expired">Inicia sesión para utilizar esta aplicación</string>
+  <string name="error_message_content_already_playing">Xa se está reproducindo ese contido</string>
+  <string name="error_message_end_of_playlist">Non hai nada máis na cola</string>
+  <string name="error_message_concurrent_stream_limit">Estase escoitando contido en demasiados dispositivos</string>
+  <string name="error_message_not_available_in_region">Aquí non se pode acceder a ese contido</string>
+  <string name="error_message_not_supported">Esta aplicación non pode realizar a acción</string>
+  <string name="error_message_parental_control_restricted">Ese contido está bloqueado</string>
+  <string name="error_message_premium_account_required">Requírese acceso premium</string>
+  <string name="error_message_skip_limit_reached">Non se poden saltar máis pistas</string>
+  <string name="error_message_bad_value">Datos de entrada incorrectos</string>
+  <string name="error_message_io">Erro de entrada/saída</string>
+  <string name="error_message_permission_denied">Acceso denegado</string>
+  <string name="error_message_disconnected">Desconectouse da aplicación multimedia</string>
+  <string name="error_message_setup_required">Configuración obrigatoria</string>
+</resources>

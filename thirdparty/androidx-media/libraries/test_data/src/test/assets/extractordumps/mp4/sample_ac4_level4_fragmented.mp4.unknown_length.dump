@@ -1,0 +1,101 @@
+seekMap:
+  isSeekable = true
+  duration = 853333
+  getPosition(0) = [[timeUs=0, position=669]]
+  getPosition(1) = [[timeUs=0, position=669]]
+  getPosition(426666) = [[timeUs=0, position=669]]
+  getPosition(853333) = [[timeUs=0, position=669]]
+numberOfTracks = 1
+track 0:
+  total output bytes = 162700
+  sample count = 20
+  track duration = 853000
+  format 0:
+    id = 1
+    containerMimeType = audio/mp4
+    sampleMimeType = audio/ac4
+    channelCount = 21
+    sampleRate = 48000
+    language = und
+    metadata = entries=[Mp4AlternateGroup: 2]
+  sample 0:
+    time = 0
+    flags = 1
+    data = length 8135, hash B524F88E
+  sample 1:
+    time = 42666
+    flags = 0
+    data = length 8135, hash FB80C2FB
+  sample 2:
+    time = 85333
+    flags = 0
+    data = length 8135, hash 907C0C31
+  sample 3:
+    time = 128000
+    flags = 0
+    data = length 8135, hash FDFBD32B
+  sample 4:
+    time = 170666
+    flags = 0
+    data = length 8135, hash 6CAF0549
+  sample 5:
+    time = 213333
+    flags = 0
+    data = length 8135, hash F5CA1C9A
+  sample 6:
+    time = 256000
+    flags = 0
+    data = length 8135, hash B1B5160D
+  sample 7:
+    time = 298666
+    flags = 0
+    data = length 8135, hash 9E923B3F
+  sample 8:
+    time = 341333
+    flags = 0
+    data = length 8135, hash B1C0BB1F
+  sample 9:
+    time = 384000
+    flags = 0
+    data = length 8135, hash 56F65A03
+  sample 10:
+    time = 426666
+    flags = 1
+    data = length 8135, hash D07FA9A1
+  sample 11:
+    time = 469333
+    flags = 0
+    data = length 8135, hash EF26FDDE
+  sample 12:
+    time = 512000
+    flags = 0
+    data = length 8135, hash 8946EEEB
+  sample 13:
+    time = 554666
+    flags = 0
+    data = length 8135, hash AC2E4C99
+  sample 14:
+    time = 597333
+    flags = 0
+    data = length 8135, hash B63A1D8
+  sample 15:
+    time = 640000
+    flags = 0
+    data = length 8135, hash 23119F0F
+  sample 16:
+    time = 682666
+    flags = 0
+    data = length 8135, hash 507972CA
+  sample 17:
+    time = 725333
+    flags = 0
+    data = length 8135, hash E574BC00
+  sample 18:
+    time = 768000
+    flags = 0
+    data = length 8135, hash 52F482FA
+  sample 19:
+    time = 810666
+    flags = 0
+    data = length 8135, hash C1A7B518
+tracksEnded = true

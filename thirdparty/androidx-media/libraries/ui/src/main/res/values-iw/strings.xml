@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">הצגת פקדי הנגן</string>
+  <string name="exo_controls_hide">הסתרת פקדי הנגן</string>
+  <string name="exo_controls_seek_bar_description">התקדמות ההפעלה</string>
+  <string name="exo_controls_settings_description">הגדרות</string>
+  <string name="exo_controls_overflow_hide_description">הסתרת ההגדרות הנוספות</string>
+  <string name="exo_controls_overflow_show_description">הצגת הגדרות נוספות</string>
+  <string name="exo_controls_fullscreen_enter_description">כניסה למסך מלא</string>
+  <string name="exo_controls_fullscreen_exit_description">יציאה ממסך מלא</string>
+  <string name="exo_controls_previous_description">הקודם</string>
+  <string name="exo_controls_next_description">הבא</string>
+  <string name="exo_controls_pause_description">השהיה</string>
+  <string name="exo_controls_play_description">הפעלה</string>
+  <string name="exo_controls_stop_description">הפסקה</string>
+  <string name="exo_controls_rewind_description">הרצה אחורה</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">הרצה %d שניות אחורה</item>
+    <item quantity="two">הרצה %d שניות אחורה</item>
+    <item quantity="other">הרצה %d שניות אחורה</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">הרצה קדימה</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">הרצה %d שניות קדימה</item>
+    <item quantity="two">הרצה %d שניות קדימה</item>
+    <item quantity="other">הרצה %d שניות קדימה</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">המצב הנוכחי: ללא חזרה. לחצן להחלפת מצב החזרה.</string>
+  <string name="exo_controls_repeat_one_description">המצב הנוכחי: חזרה על פריט אחד. לחצן להחלפת מצב החזרה.</string>
+  <string name="exo_controls_repeat_all_description">המצב הנוכחי: חזרה על כל הפריטים. לחצן להחלפת מצב החזרה.</string>
+  <string name="exo_controls_shuffle_on_description">השבתת מצב ההפעלה האקראית</string>
+  <string name="exo_controls_shuffle_off_description">הפעלת מצב ההפעלה האקראית</string>
+  <string name="exo_controls_vr_description">מצב VR</string>
+  <string name="exo_controls_cc_enabled_description">השבתת כתוביות</string>
+  <string name="exo_controls_cc_disabled_description">הפעלת כתוביות</string>
+  <string name="exo_controls_playback_speed">מהירות</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0.25x</item>
+    <item>0.5x</item>
+    <item>0.75x</item>
+    <item>רגילה</item>
+    <item>1.25x</item>
+    <item>1.5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">אודיו</string>
+  <string name="exo_track_selection_none">ללא</string>
+  <string name="exo_track_selection_auto">אוטומטי</string>
+  <string name="exo_track_unknown">לא ידוע</string>
+  <string name="exo_track_unknown_name">לא ידוע (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">מונו</string>
+  <string name="exo_track_stereo">סטריאו</string>
+  <string name="exo_track_surround">סראונד</string>
+  <string name="exo_track_surround_5_point_1">סראונד 5.1</string>
+  <string name="exo_track_surround_7_point_1">סראונד 7.1</string>
+  <string name="exo_track_role_alternate">חלופי</string>
+  <string name="exo_track_role_supplementary">משלים</string>
+  <string name="exo_track_role_commentary">פרשנות</string>
+  <string name="exo_track_role_closed_captions">כתוביות</string>
+  <string name="exo_track_bitrate">%1$.2f מגה סיביות לשנייה</string>
+  <string name="exo_item_list">%1$s‏, %2$s</string>
+</resources>

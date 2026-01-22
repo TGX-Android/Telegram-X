@@ -1,0 +1,300 @@
+AudioSink:
+  buffer count = 98
+  config:
+    pcmEncoding = 2
+    channelCount = 2
+    sampleRate = 44100
+  buffer #0:
+    time = 0
+    data = 1742602241
+  buffer #1:
+    time = 23219
+    data = 1742602241
+  buffer #2:
+    time = 46439
+    data = 1742602241
+  buffer #3:
+    time = 69659
+    data = 1742602241
+  buffer #4:
+    time = 92879
+    data = 1742602241
+  buffer #5:
+    time = 116099
+    data = 1742602241
+  buffer #6:
+    time = 139319
+    data = 1742602241
+  buffer #7:
+    time = 162539
+    data = 1742602241
+  buffer #8:
+    time = 185759
+    data = 1742602241
+  buffer #9:
+    time = 208979
+    data = 1742602241
+  buffer #10:
+    time = 232199
+    data = 1742602241
+  buffer #11:
+    time = 255419
+    data = 1742602241
+  buffer #12:
+    time = 278639
+    data = 1742602241
+  buffer #13:
+    time = 301859
+    data = 1742602241
+  buffer #14:
+    time = 325079
+    data = 1742602241
+  buffer #15:
+    time = 348299
+    data = 1742602241
+  buffer #16:
+    time = 371519
+    data = 1742602241
+  buffer #17:
+    time = 394739
+    data = 1742602241
+  buffer #18:
+    time = 417959
+    data = 1742602241
+  buffer #19:
+    time = 441179
+    data = 1742602241
+  buffer #20:
+    time = 464399
+    data = 1742602241
+  buffer #21:
+    time = 487619
+    data = 1728208641
+  buffer #22:
+    time = 500000
+    data = 620404993
+  buffer #23:
+    time = 534058
+    data = 1742602241
+  buffer #24:
+    time = 557278
+    data = 1742602241
+  buffer #25:
+    time = 580498
+    data = 1742602241
+  buffer #26:
+    time = 603718
+    data = 1742602241
+  buffer #27:
+    time = 626938
+    data = 1742602241
+  buffer #28:
+    time = 650158
+    data = 1742602241
+  buffer #29:
+    time = 673378
+    data = 1742602241
+  buffer #30:
+    time = 696598
+    data = 1742602241
+  buffer #31:
+    time = 719818
+    data = 1742602241
+  buffer #32:
+    time = 743038
+    data = 1742602241
+  buffer #33:
+    time = 766258
+    data = 1742602241
+  buffer #34:
+    time = 789478
+    data = 1742602241
+  buffer #35:
+    time = 812698
+    data = 1742602241
+  buffer #36:
+    time = 835918
+    data = 1742602241
+  buffer #37:
+    time = 859138
+    data = 1742602241
+  buffer #38:
+    time = 882358
+    data = 1742602241
+  buffer #39:
+    time = 905578
+    data = 1742602241
+  buffer #40:
+    time = 928798
+    data = 1742602241
+  buffer #41:
+    time = 952018
+    data = 1742602241
+  buffer #42:
+    time = 975238
+    data = 1742602241
+  buffer #43:
+    time = 998458
+    data = 1097317889
+  buffer #44:
+    time = 1000000
+    data = 1072516495
+  buffer #45:
+    time = 1100000
+    data = 1080356869
+  buffer #46:
+    time = 1200000
+    data = 885365699
+  buffer #47:
+    time = 1300000
+    data = -1015251545
+  buffer #48:
+    time = 1400000
+    data = -159485629
+  buffer #49:
+    time = 1500000
+    data = -797815221
+  buffer #50:
+    time = 1600000
+    data = -347578263
+  buffer #51:
+    time = 1700000
+    data = -943138441
+  buffer #52:
+    time = 1800000
+    data = -215647269
+  buffer #53:
+    time = 1900000
+    data = -667240285
+  buffer #54:
+    time = 2000000
+    data = 1742602241
+  buffer #55:
+    time = 2023219
+    data = 1742602241
+  buffer #56:
+    time = 2046439
+    data = 1742602241
+  buffer #57:
+    time = 2069659
+    data = 1742602241
+  buffer #58:
+    time = 2092879
+    data = 1742602241
+  buffer #59:
+    time = 2116099
+    data = 1742602241
+  buffer #60:
+    time = 2139319
+    data = 1742602241
+  buffer #61:
+    time = 2162539
+    data = 1742602241
+  buffer #62:
+    time = 2185759
+    data = 1742602241
+  buffer #63:
+    time = 2208979
+    data = 1742602241
+  buffer #64:
+    time = 2232199
+    data = 1742602241
+  buffer #65:
+    time = 2255419
+    data = 1742602241
+  buffer #66:
+    time = 2278639
+    data = 1742602241
+  buffer #67:
+    time = 2301859
+    data = 1742602241
+  buffer #68:
+    time = 2325079
+    data = 1742602241
+  buffer #69:
+    time = 2348299
+    data = 1742602241
+  buffer #70:
+    time = 2371519
+    data = 1742602241
+  buffer #71:
+    time = 2394739
+    data = 1742602241
+  buffer #72:
+    time = 2417959
+    data = 1742602241
+  buffer #73:
+    time = 2441179
+    data = 1742602241
+  buffer #74:
+    time = 2464399
+    data = 1742602241
+  buffer #75:
+    time = 2487619
+    data = 1728208641
+  buffer #76:
+    time = 2500000
+    data = 620404993
+  buffer #77:
+    time = 2534058
+    data = 1742602241
+  buffer #78:
+    time = 2557278
+    data = 1742602241
+  buffer #79:
+    time = 2580498
+    data = 1742602241
+  buffer #80:
+    time = 2603718
+    data = 1742602241
+  buffer #81:
+    time = 2626938
+    data = 1742602241
+  buffer #82:
+    time = 2650158
+    data = 1742602241
+  buffer #83:
+    time = 2673378
+    data = 1742602241
+  buffer #84:
+    time = 2696598
+    data = 1742602241
+  buffer #85:
+    time = 2719818
+    data = 1742602241
+  buffer #86:
+    time = 2743038
+    data = 1742602241
+  buffer #87:
+    time = 2766258
+    data = 1742602241
+  buffer #88:
+    time = 2789478
+    data = 1742602241
+  buffer #89:
+    time = 2812698
+    data = 1742602241
+  buffer #90:
+    time = 2835918
+    data = 1742602241
+  buffer #91:
+    time = 2859138
+    data = 1742602241
+  buffer #92:
+    time = 2882358
+    data = 1742602241
+  buffer #93:
+    time = 2905578
+    data = 1742602241
+  buffer #94:
+    time = 2928798
+    data = 1742602241
+  buffer #95:
+    time = 2952018
+    data = 1742602241
+  buffer #96:
+    time = 2975238
+    data = 1742602241
+  buffer #97:
+    time = 2998458
+    data = 1097317889

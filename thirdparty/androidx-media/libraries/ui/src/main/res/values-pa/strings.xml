@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">ਪਲੇਅਰ ਕੰਟਰੋਲਾਂ ਨੂੰ ਦਿਖਾਓ</string>
+  <string name="exo_controls_hide">ਪਲੇਅਰ ਕੰਟਰੋਲਾਂ ਨੂੰ ਲੁਕਾਓ</string>
+  <string name="exo_controls_seek_bar_description">ਪਲੇਬੈਕ ਪ੍ਰਗਤੀ</string>
+  <string name="exo_controls_settings_description">ਸੈਟਿੰਗਾਂ</string>
+  <string name="exo_controls_overflow_hide_description">ਵਧੀਕ ਸੈਟਿੰਗਾਂ ਨੂੰ ਲੁਕਾਓ</string>
+  <string name="exo_controls_overflow_show_description">ਵਧੀਕ ਸੈਟਿੰਗਾਂ ਨੂੰ ਦਿਖਾਓ</string>
+  <string name="exo_controls_fullscreen_enter_description">ਪੂਰੀ ਸਕ੍ਰੀਨ ਦਾਖਲ ਕਰੋ</string>
+  <string name="exo_controls_fullscreen_exit_description">ਪੂਰੀ-ਸਕ੍ਰੀਨ ਤੋਂ ਬਾਹਰ ਜਾਓ</string>
+  <string name="exo_controls_previous_description">ਪਿੱਛੇ</string>
+  <string name="exo_controls_next_description">ਅੱਗੇ</string>
+  <string name="exo_controls_pause_description">ਰੋਕੋ</string>
+  <string name="exo_controls_play_description">ਚਲਾਓ</string>
+  <string name="exo_controls_stop_description">ਬੰਦ ਕਰੋ</string>
+  <string name="exo_controls_rewind_description">ਪਿੱਛੇ ਕਰੋ</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">%d ਸਕਿੰਟ ਪਿੱਛੇ ਕਰੋ</item>
+    <item quantity="other">%d ਸਕਿੰਟ ਪਿੱਛੇ ਕਰੋ</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">ਤੇਜ਼ੀ ਨਾਲ ਅੱਗੇ ਕਰੋ</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">ਤੇਜ਼ੀ ਨਾਲ %d ਸਕਿੰਟ ਅੱਗੇ ਕਰੋ</item>
+    <item quantity="other">ਤੇਜ਼ੀ ਨਾਲ %d ਸਕਿੰਟ ਅੱਗੇ ਕਰੋ</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">ਮੌਜੂਦਾ ਮੋਡ: ਕਿਸੇ ਨੂੰ ਨਾ ਦੁਹਰਾਓ। ਦੁਹਰਾਓ ਮੋਡ ਟੌਗਲ ਕਰੋ।</string>
+  <string name="exo_controls_repeat_one_description">ਮੌਜੂਦਾ ਮੋਡ: ਇੱਕ ਨੂੰ ਦੁਹਰਾਓ। ਦੁਹਰਾਓ ਮੋਡ ਟੌਗਲ ਕਰੋ।</string>
+  <string name="exo_controls_repeat_all_description">ਮੌਜੂਦਾ ਮੋਡ: ਸਭ ਦੁਹਰਾਓ। ਦੁਹਰਾਓ ਮੋਡ ਟੌਗਲ ਕਰੋ।</string>
+  <string name="exo_controls_shuffle_on_description">ਬੇਤਰਤੀਬ ਮੋਡ ਬੰਦ ਕਰੋ</string>
+  <string name="exo_controls_shuffle_off_description">ਬੇਤਰਤੀਬ ਮੋਡ ਚਾਲੂ ਕਰੋ</string>
+  <string name="exo_controls_vr_description">VR ਮੋਡ</string>
+  <string name="exo_controls_cc_enabled_description">ਉਪਸਿਰਲੇਖਾਂ ਨੂੰ ਬੰਦ ਕਰੋ</string>
+  <string name="exo_controls_cc_disabled_description">ਉਪਸਿਰਲੇਖਾਂ ਨੂੰ ਚਾਲੂ ਕਰੋ</string>
+  <string name="exo_controls_playback_speed">ਗਤੀ</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0.25x</item>
+    <item>0.5x</item>
+    <item>0.75x</item>
+    <item>ਸਧਾਰਨ</item>
+    <item>1.25x</item>
+    <item>1.5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">ਆਡੀਓ</string>
+  <string name="exo_track_selection_none">ਕੋਈ ਨਹੀਂ</string>
+  <string name="exo_track_selection_auto">ਸਵੈਚਲਿਤ</string>
+  <string name="exo_track_unknown">ਅਗਿਆਤ</string>
+  <string name="exo_track_unknown_name">ਅਗਿਆਤ (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">ਮੋਨੋ</string>
+  <string name="exo_track_stereo">ਸਟੀਰਿਓ</string>
+  <string name="exo_track_surround">ਸਰਾਊਂਡ ਸਾਊਂਡ</string>
+  <string name="exo_track_surround_5_point_1">5.1 ਸਰਾਊਂਡ ਸਾਊਂਡ</string>
+  <string name="exo_track_surround_7_point_1">7.1 ਸਰਾਊਂਡ ਸਾਊਂਡ</string>
+  <string name="exo_track_role_alternate">ਵਟਾਵਾਂ</string>
+  <string name="exo_track_role_supplementary">ਪੂਰਕ</string>
+  <string name="exo_track_role_commentary">ਕਮੈਂਟਰੀ</string>
+  <string name="exo_track_role_closed_captions">ਬੰਦ ਸੁੁਰਖੀਆਂ</string>
+  <string name="exo_track_bitrate">%1$.2f Mbps</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

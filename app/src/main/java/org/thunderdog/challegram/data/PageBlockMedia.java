@@ -361,7 +361,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
 
     final int maxWidth = width - getMinimumContentPadding(false) - getMinimumContentPadding(true);
     final float maxHeightFactor = collageContext != null ? .78f : isCover || isList ? 1.2f : 1.78f;
-    final int maxHeight = (int) ((float) Math.min(width * maxHeightFactor, (isCover ? Screen.widestSide() : Screen.currentHeight()) - HeaderView.getSize(true) * 2 - Screen.dp(16f) * 2));
+    final int maxHeight = (int) (Math.min(width * maxHeightFactor, (isCover ? Screen.widestSide() : Screen.currentHeight()) - HeaderView.getSize(true) * 2 - Screen.dp(16f) * 2));
 
     if (embedded != null) {
       if (isUnknownHeight()) {
@@ -579,11 +579,6 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     MediaViewController.openWithStack(context, stack, source, this, forceThumbs);
 
     return true;
-  }
-
-  @Override
-  public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
-    return null;
   }
 
   @Override

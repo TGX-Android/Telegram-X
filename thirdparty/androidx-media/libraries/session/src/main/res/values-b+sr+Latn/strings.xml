@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Trenutno svira</string>
+  <string name="media3_controls_play_description">Pusti</string>
+  <string name="media3_controls_pause_description">Pauziraj</string>
+  <string name="media3_controls_seek_to_previous_description">Premotaj na prethodnu stavku</string>
+  <string name="media3_controls_seek_to_next_description">Premotaj na sledeću stavku</string>
+  <string name="media3_controls_seek_back_description">Premotaj unazad</string>
+  <string name="media3_controls_seek_forward_description">Premotaj unapred</string>
+  <string name="error_message_fallback">Došlo je do greške. Probajte kasnije.</string>
+  <string name="error_message_info_cancelled">Nismo uspeli da dovršimo radnju. Probajte ponovo.</string>
+  <string name="error_message_invalid_state">Trenutno ne možemo to da uradimo</string>
+  <string name="error_message_authentication_expired">Prijavite se da biste koristili ovu aplikaciju</string>
+  <string name="error_message_content_already_playing">Taj sadržaj se već pušta</string>
+  <string name="error_message_end_of_playlist">Ništa drugo nije stavljeno u redosled</string>
+  <string name="error_message_concurrent_stream_limit">Slušate na previše uređaja</string>
+  <string name="error_message_not_available_in_region">Ne možete da dobijete taj sadržaj ovde</string>
+  <string name="error_message_not_supported">Ova aplikacija ne može to da uradi</string>
+  <string name="error_message_parental_control_restricted">Taj sadržaj je blokiran</string>
+  <string name="error_message_premium_account_required">Potreban je premijum pristup</string>
+  <string name="error_message_skip_limit_reached">Ne možete više da preskačete pesme</string>
+  <string name="error_message_bad_value">Netačni podaci za unos</string>
+  <string name="error_message_io">Greška unosa/izlaza</string>
+  <string name="error_message_permission_denied">Pristup je odbijen</string>
+  <string name="error_message_disconnected">Prekinuta je veza sa medijskom aplikacijom</string>
+  <string name="error_message_setup_required">Treba da obavite podešavanje</string>
+</resources>

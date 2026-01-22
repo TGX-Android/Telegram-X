@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Cats -> Dogs",
+    "playlist": [
+      {
+        "uri": "https://html5demos.com/assets/dizzy.mp4"
+      },
+      {
+        "uri": "https://storage.googleapis.com/exoplayer-test-media-1/mkv/android-screens-lavf-56.36.100-aac-avc-main-1280x720.mkv"
+      }
+    ]
+  },
+  {
+    "name": "Android Block -> Dogs -> BigBuckBunny",
+    "playlist": [
+      {
+        "uri": "https://storage.googleapis.com/exoplayer-test-media-0/android-block-1080-hevc.mp4"
+      },
+      {
+        "uri": "https://storage.googleapis.com/exoplayer-test-media-1/mkv/android-screens-lavf-56.36.100-aac-avc-main-1280x720.mkv"
+      },
+      {
+        "uri": "https://storage.googleapis.com/exoplayer-test-media-0/BigBuckBunny_320x180.mp4"
+      }
+    ]
+  }
+]

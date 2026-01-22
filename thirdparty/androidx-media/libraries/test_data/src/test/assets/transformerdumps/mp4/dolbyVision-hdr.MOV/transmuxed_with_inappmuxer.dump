@@ -1,0 +1,102 @@
+seekMap:
+  isSeekable = true
+  duration = 166700
+  getPosition(0) = [[timeUs=0, position=400052]]
+  getPosition(1) = [[timeUs=0, position=400052]]
+  getPosition(83350) = [[timeUs=0, position=400052]]
+  getPosition(166700) = [[timeUs=0, position=400052]]
+numberOfTracks = 2
+track 0:
+  total output bytes = 56045
+  sample count = 5
+  track duration = 166700
+  format 0:
+    averageBitrate = 2690171
+    id = 1
+    containerMimeType = video/mp4
+    sampleMimeType = video/hevc
+    codecs = hvc1.2.4.L93.B0
+    maxInputSize = 30755
+    maxNumReorderSamples = 2
+    width = 1280
+    height = 720
+    frameRate = 30.00
+    rotationDegrees = 90
+    maxSubLayers = 1
+    colorInfo:
+      colorSpace = 6
+      colorRange = 2
+      colorTransfer = 7
+      lumaBitdepth = 10
+      chromaBitdepth = 10
+    language = und
+    metadata = entries=[mdta: key=com.apple.quicktime.location.accuracy.horizontal, value=35.000000, mdta: key=com.apple.quicktime.location.ISO6709, value=+51.5334-000.1255+026.756/, mdta: key=com.apple.quicktime.software, value=16.4.1, mdta: key=com.apple.quicktime.creationdate, value=2023-05-09T12:41:46+0100, mdta: key=com.apple.quicktime.make, value=Apple, mdta: key=com.apple.quicktime.model, value=iPhone 14 Pro, Mp4Timestamp: creation time=3000000000, modification time=4000000000, timescale=10000]
+    initializationData:
+      data = length 97, hash 71D67547
+  sample 0:
+    time = 0
+    flags = 1
+    data = length 30725, hash A9F08085
+  sample 1:
+    time = 133333
+    flags = 0
+    data = length 11543, hash D0A79439
+  sample 2:
+    time = 66666
+    flags = 0
+    data = length 6139, hash 3FCEAFBE
+  sample 3:
+    time = 33333
+    flags = 0
+    data = length 3660, hash A80DE201
+  sample 4:
+    time = 100000
+    flags = 536870912
+    data = length 3978, hash 59521A2C
+track 1:
+  total output bytes = 2674
+  sample count = 7
+  track duration = 162600
+  format 0:
+    averageBitrate = 131559
+    peakBitrate = 192000
+    id = 2
+    containerMimeType = video/mp4
+    sampleMimeType = audio/mp4a-latm
+    codecs = mp4a.40.2
+    maxInputSize = 616
+    channelCount = 2
+    sampleRate = 44100
+    language = und
+    metadata = entries=[mdta: key=com.apple.quicktime.location.accuracy.horizontal, value=35.000000, mdta: key=com.apple.quicktime.location.ISO6709, value=+51.5334-000.1255+026.756/, mdta: key=com.apple.quicktime.software, value=16.4.1, mdta: key=com.apple.quicktime.creationdate, value=2023-05-09T12:41:46+0100, mdta: key=com.apple.quicktime.make, value=Apple, mdta: key=com.apple.quicktime.model, value=iPhone 14 Pro, Mp4Timestamp: creation time=3000000000, modification time=4000000000, timescale=10000]
+    initializationData:
+      data = length 2, hash 5FF
+  sample 0:
+    time = 0
+    flags = 1
+    data = length 6, hash 6EFB71F1
+  sample 1:
+    time = 23229
+    flags = 1
+    data = length 260, hash EE23C4F4
+  sample 2:
+    time = 46458
+    flags = 1
+    data = length 458, hash C54D6937
+  sample 3:
+    time = 69687
+    flags = 1
+    data = length 448, hash 319412F3
+  sample 4:
+    time = 92916
+    flags = 1
+    data = length 422, hash 1E293713
+  sample 5:
+    time = 116145
+    flags = 1
+    data = length 586, hash C4CD7E3D
+  sample 6:
+    time = 139375
+    flags = 536870913
+    data = length 494, hash A7AFD1B8
+tracksEnded = true

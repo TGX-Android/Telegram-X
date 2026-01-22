@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Now playing</string>
+  <string name="media3_controls_play_description">Play</string>
+  <string name="media3_controls_pause_description">Pause</string>
+  <string name="media3_controls_seek_to_previous_description">Rewind to previous item</string>
+  <string name="media3_controls_seek_to_next_description">Forward to next item</string>
+  <string name="media3_controls_seek_back_description">Rewind</string>
+  <string name="media3_controls_seek_forward_description">Fast forward</string>
+  <string name="error_message_fallback">Something\'s wrong. Try later.</string>
+  <string name="error_message_info_cancelled">Couldn\'t finish. Try again.</string>
+  <string name="error_message_invalid_state">Can\'t do that at the moment</string>
+  <string name="error_message_authentication_expired">Sign in to use this app</string>
+  <string name="error_message_content_already_playing">Already playing that content</string>
+  <string name="error_message_end_of_playlist">Nothing else is queued up</string>
+  <string name="error_message_concurrent_stream_limit">Listening on too many devices</string>
+  <string name="error_message_not_available_in_region">Can\'t get that content here</string>
+  <string name="error_message_not_supported">This app can\'t do that</string>
+  <string name="error_message_parental_control_restricted">That content is blocked</string>
+  <string name="error_message_premium_account_required">Premium access required</string>
+  <string name="error_message_skip_limit_reached">Can\'t skip any more tracks</string>
+  <string name="error_message_bad_value">Incorrect input data</string>
+  <string name="error_message_io">Input/output error</string>
+  <string name="error_message_permission_denied">Access denied</string>
+  <string name="error_message_disconnected">Disconnected from media app</string>
+  <string name="error_message_setup_required">Setup required</string>
+</resources>

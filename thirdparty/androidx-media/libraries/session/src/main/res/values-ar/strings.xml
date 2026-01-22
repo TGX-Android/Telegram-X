@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">قيد التشغيل الآن</string>
+  <string name="media3_controls_play_description">تشغيل</string>
+  <string name="media3_controls_pause_description">إيقاف مؤقت</string>
+  <string name="media3_controls_seek_to_previous_description">ترجيع إلى العنصر السابق</string>
+  <string name="media3_controls_seek_to_next_description">تقديم إلى العنصر التالي</string>
+  <string name="media3_controls_seek_back_description">ترجيع</string>
+  <string name="media3_controls_seek_forward_description">تقديم</string>
+  <string name="error_message_fallback">حدث خطأ. يُرجى المحاولة لاحقًا.</string>
+  <string name="error_message_info_cancelled">تعذّر تنفيذ الإجراء المطلوب. يُرجى إعادة المحاولة.</string>
+  <string name="error_message_invalid_state">يتعذّر تنفيذ هذا الإجراء في الوقت الحالي</string>
+  <string name="error_message_authentication_expired">سجِّل الدخول لاستخدام هذا التطبيق</string>
+  <string name="error_message_content_already_playing">هذا المحتوى قيد التشغيل الآن</string>
+  <string name="error_message_end_of_playlist">لم يتم وضع أي مقطع صوتي آخر في قائمة التشغيل</string>
+  <string name="error_message_concurrent_stream_limit">يتم الآن الاستماع على أجهزة أكثر من الحد المسموح به</string>
+  <string name="error_message_not_available_in_region">غير مسموح بالحصول على هذا المحتوى في منطقتك</string>
+  <string name="error_message_not_supported">يتعذّر على التطبيق تنفيذ هذا الإجراء</string>
+  <string name="error_message_parental_control_restricted">هذا المحتوى محظور</string>
+  <string name="error_message_premium_account_required">مطلوب تسجيل الدخول إلى حساب مدفوع</string>
+  <string name="error_message_skip_limit_reached">لا يمكن تخطّي المزيد من المقاطع الصوتية</string>
+  <string name="error_message_bad_value">البيانات المقدَّمة غير صحيحة</string>
+  <string name="error_message_io">خطأ في الإدخال/الإخراج</string>
+  <string name="error_message_permission_denied">تم رفض طلب الوصول</string>
+  <string name="error_message_disconnected">تم إلغاء الربط بتطبيق الوسائط</string>
+  <string name="error_message_setup_required">يجب ضبط الإعدادات</string>
+</resources>

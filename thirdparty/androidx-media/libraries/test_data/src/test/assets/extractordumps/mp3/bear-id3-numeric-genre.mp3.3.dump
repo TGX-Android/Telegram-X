@@ -1,0 +1,22 @@
+seekMap:
+  isSeekable = true
+  duration = 2808000
+  getPosition(0) = [[timeUs=0, position=39729]]
+  getPosition(1) = [[timeUs=0, position=39729]]
+  getPosition(1404000) = [[timeUs=1404000, position=58809]]
+  getPosition(2808000) = [[timeUs=2808000, position=77889]]
+numberOfTracks = 1
+track 0:
+  total output bytes = 0
+  sample count = 0
+  track duration = 2808000
+  format 0:
+    containerMimeType = audio/mpeg
+    sampleMimeType = audio/mpeg
+    maxInputSize = 4096
+    channelCount = 2
+    sampleRate = 48000
+    encoderDelay = 576
+    encoderPadding = 576
+    metadata = entries=[TIT2: description=null: values=[Test title], TPE1: description=null: values=[Test Artist], TALB: description=null: values=[Test Album], TXXX: description=Test description: values=[Test user info], COMM: language=eng, description=Test description, text=Test comment, WXXX: url=Test URL, TSSE: description=null: values=[Lavf58.29.100], MLLT, PRIV: owner=test@gmail.com, UNKN, GEOB: mimeType=test/mime, filename=Testfilename.txt, description=Test description, CHAP, CHAP, CTOC, APIC: mimeType=image/jpeg, description=Test description, TCON: description=null: values=[9]]
+tracksEnded = true

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Most játszott tartalom</string>
+  <string name="media3_controls_play_description">Lejátszás</string>
+  <string name="media3_controls_pause_description">Szüneteltetés</string>
+  <string name="media3_controls_seek_to_previous_description">Ugrás az előző elemre</string>
+  <string name="media3_controls_seek_to_next_description">Ugrás a következő elemre</string>
+  <string name="media3_controls_seek_back_description">Ugrás vissza</string>
+  <string name="media3_controls_seek_forward_description">Ugrás előre</string>
+  <string name="error_message_fallback">Hiba történt. Próbálkozzon újra később.</string>
+  <string name="error_message_info_cancelled">Nem sikerült befejezni. Próbálja újra.</string>
+  <string name="error_message_invalid_state">Ez jelenleg nem lehetséges</string>
+  <string name="error_message_authentication_expired">Az alkalmazás használatához jelentkezzen be</string>
+  <string name="error_message_content_already_playing">A tartalom lejátszása már folyamatban van</string>
+  <string name="error_message_end_of_playlist">Semmi más nincs a sorban</string>
+  <string name="error_message_concurrent_stream_limit">Túl sok eszköz van használatban</string>
+  <string name="error_message_not_available_in_region">Nem lehet betölteni a tartalmat</string>
+  <string name="error_message_not_supported">Ez az alkalmazás nem képes erre</string>
+  <string name="error_message_parental_control_restricted">A tartalom le van tiltva</string>
+  <string name="error_message_premium_account_required">Prémium hozzáférés szükséges</string>
+  <string name="error_message_skip_limit_reached">Nem lehet több számot átugrani</string>
+  <string name="error_message_bad_value">Helytelen beviteli adat</string>
+  <string name="error_message_io">Beviteli/kimeneti hiba</string>
+  <string name="error_message_permission_denied">Hozzáférés megtagadva</string>
+  <string name="error_message_disconnected">Leválasztva a médialkalmazásról</string>
+  <string name="error_message_setup_required">Beállítás szükséges</string>
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">ਹੁਣੇ ਚੱਲ ਰਿਹਾ ਹੈ</string>
+  <string name="media3_controls_play_description">ਚਲਾਓ</string>
+  <string name="media3_controls_pause_description">ਰੋਕੋ</string>
+  <string name="media3_controls_seek_to_previous_description">ਪਿਛਲੀ ਆਈਟਮ \'ਤੇ ਜਾਓ</string>
+  <string name="media3_controls_seek_to_next_description">ਅਗਲੀ ਆਈਟਮ \'ਤੇ ਜਾਓ</string>
+  <string name="media3_controls_seek_back_description">ਪਿੱਛੇ ਲਿਜਾਓ</string>
+  <string name="media3_controls_seek_forward_description">ਅੱਗੇ ਵਧਾਓ</string>
+  <string name="error_message_fallback">ਕੋਈ ਗੜਬੜ ਹੋ ਗਈ। ਬਾਅਦ ਵਿੱਚ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</string>
+  <string name="error_message_info_cancelled">ਕਾਰਵਾਈ ਪੂਰੀ ਨਹੀਂ ਕੀਤੀ ਜਾ ਸਕੀ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</string>
+  <string name="error_message_invalid_state">ਫ਼ਿਲਹਾਲ ਬੇਨਤੀ ਪੂਰੀ ਨਹੀਂ ਕੀਤੀ ਜਾ ਸਕਦੀ</string>
+  <string name="error_message_authentication_expired">ਇਸ ਐਪ ਨੂੰ ਵਰਤਣ ਲਈ ਸਾਈਨ-ਇਨ ਕਰੋ</string>
+  <string name="error_message_content_already_playing">ਇਹ ਸਮੱਗਰੀ ਪਹਿਲਾਂ ਹੀ ਚੱਲ ਰਹੀ ਹੈ</string>
+  <string name="error_message_end_of_playlist">ਹੋਰ ਕੁਝ ਵੀ ਕਤਾਰਬੱਧ ਨਹੀਂ ਹੈ</string>
+  <string name="error_message_concurrent_stream_limit">ਬਹੁਤ ਜ਼ਿਆਦਾ ਡੀਵਾਈਸਾਂ \'ਤੇ ਸੁਣਿਆ ਜਾ ਰਿਹਾ ਹੈ</string>
+  <string name="error_message_not_available_in_region">ਇੱਥੇ ਇਹ ਸਮੱਗਰੀ ਨਹੀਂ ਮਿਲ ਸਕਦੀ</string>
+  <string name="error_message_not_supported">ਇਹ ਐਪ ਇਹ ਨਹੀਂ ਕਰ ਸਕਦੀ</string>
+  <string name="error_message_parental_control_restricted">ਇਸ ਸਮੱਗਰੀ ਨੂੰ ਬਲਾਕ ਕੀਤਾ ਗਿਆ ਹੈ</string>
+  <string name="error_message_premium_account_required">ਪ੍ਰੀਮੀਅਮ ਪਹੁੰਚ ਦੀ ਲੋੜ ਹੈ</string>
+  <string name="error_message_skip_limit_reached">ਕਿਸੇ ਹੋਰ ਟਰੈਕ ਨੂੰ ਛੱਡਿਆ ਨਹੀਂ ਜਾ ਸਕਦਾ</string>
+  <string name="error_message_bad_value">ਗਲਤ ਇਨਪੁੱਟ ਡਾਟਾ</string>
+  <string name="error_message_io">ਇਨਪੁੱਟ/ਆਊਟਪੁੱਟ ਸੰਬੰਧੀ ਗੜਬੜ</string>
+  <string name="error_message_permission_denied">ਪਹੁੰਚ ਨੂੰ ਅਸਵੀਕਾਰ ਕੀਤਾ ਗਿਆ</string>
+  <string name="error_message_disconnected">ਮੀਡੀਆ ਐਪ ਤੋਂ ਡਿਸਕਨੈਕਟ ਕੀਤਾ ਗਿਆ</string>
+  <string name="error_message_setup_required">ਸੈੱਟਅੱਪ ਲੋੜੀਂਦਾ ਹੈ</string>
+</resources>

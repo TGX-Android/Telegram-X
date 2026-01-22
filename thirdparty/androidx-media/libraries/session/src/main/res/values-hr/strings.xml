@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Upravo svira</string>
+  <string name="media3_controls_play_description">Reproduciraj</string>
+  <string name="media3_controls_pause_description">Pauziraj</string>
+  <string name="media3_controls_seek_to_previous_description">Idi na prethodnu stavku</string>
+  <string name="media3_controls_seek_to_next_description">Idi na sljedeću stavku</string>
+  <string name="media3_controls_seek_back_description">Skok unatrag</string>
+  <string name="media3_controls_seek_forward_description">Skok prema naprijed</string>
+  <string name="error_message_fallback">Nešto nije u redu. Pokušajte kasnije.</string>
+  <string name="error_message_info_cancelled">Završavanje nije uspjelo. Pokušajte ponovo.</string>
+  <string name="error_message_invalid_state">Trenutačno to ne možemo učiniti</string>
+  <string name="error_message_authentication_expired">Prijavite se za upotrebu te aplikacije</string>
+  <string name="error_message_content_already_playing">Taj se sadržaj već reproducira</string>
+  <string name="error_message_end_of_playlist">Nema više ničeg u redu čekanja</string>
+  <string name="error_message_concurrent_stream_limit">Slušate na previše uređaja</string>
+  <string name="error_message_not_available_in_region">Taj sadržaj nije dostupan ovdje</string>
+  <string name="error_message_not_supported">Ova aplikacija nema tu mogućnost</string>
+  <string name="error_message_parental_control_restricted">Taj je sadržaj blokiran</string>
+  <string name="error_message_premium_account_required">Potreban je pristup uz dodatnu naplatu</string>
+  <string name="error_message_skip_limit_reached">Ne možete više preskakati pjesme</string>
+  <string name="error_message_bad_value">Netočni ulazni podaci</string>
+  <string name="error_message_io">Pogreška unosa/rezultata obrade</string>
+  <string name="error_message_permission_denied">Pristup je odbijen</string>
+  <string name="error_message_disconnected">Prekinuta je veza s aplikacijom za medijske sadržaje</string>
+  <string name="error_message_setup_required">Potrebno je postavljanje</string>
+</resources>

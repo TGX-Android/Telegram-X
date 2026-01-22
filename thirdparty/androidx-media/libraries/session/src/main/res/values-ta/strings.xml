@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">இப்போது பிளே ஆவது</string>
+  <string name="media3_controls_play_description">பிளே செய்யும்</string>
+  <string name="media3_controls_pause_description">இடைநிறுத்தும்</string>
+  <string name="media3_controls_seek_to_previous_description">முந்தையதற்குச் செல்லும்</string>
+  <string name="media3_controls_seek_to_next_description">அடுத்ததற்குச் செல்லும்</string>
+  <string name="media3_controls_seek_back_description">பின்செல்லும்</string>
+  <string name="media3_controls_seek_forward_description">முன்செல்லும்</string>
+  <string name="error_message_fallback">ஏதோ தவறாகிவிட்டது. மீண்டும் முயலவும்.</string>
+  <string name="error_message_info_cancelled">நிறைவடையவில்லை. மீண்டும் முயலவும்.</string>
+  <string name="error_message_invalid_state">தற்சமயம் இதைச் செய்ய முடியாது</string>
+  <string name="error_message_authentication_expired">இந்த ஆப்ஸைப் பயன்படுத்த உள்நுழையவும்</string>
+  <string name="error_message_content_already_playing">அந்த உள்ளடக்கம் ஏற்கெனவே பிளே செய்யப்பட்டுக் கொண்டிருக்கிறது</string>
+  <string name="error_message_end_of_playlist">வேறு எதுவும் வரிசையில் இல்லை</string>
+  <string name="error_message_concurrent_stream_limit">நிறைய சாதனங்களைக் கவனிக்கிறது</string>
+  <string name="error_message_not_available_in_region">அந்த உள்ளடக்கத்தை இங்கே பெற முடியவில்லை</string>
+  <string name="error_message_not_supported">இந்த ஆப்ஸால் அதைச் செய்ய முடியாது</string>
+  <string name="error_message_parental_control_restricted">அந்த உள்ளடக்கம் தடுக்கப்பட்டுள்ளது</string>
+  <string name="error_message_premium_account_required">Premium அணுகல் தேவை</string>
+  <string name="error_message_skip_limit_reached">இதற்கு மேல் டிராக்குகளைத் தவிர்க்க முடியாது</string>
+  <string name="error_message_bad_value">தவறான உள்ளீட்டுத் தரவு</string>
+  <string name="error_message_io">உள்ளீடு/வெளியீடு பிழை</string>
+  <string name="error_message_permission_denied">அணுகல் மறுக்கப்பட்டது</string>
+  <string name="error_message_disconnected">மீடியா ஆப்ஸில் இருந்து இணைப்பு துண்டிக்கப்பட்டது</string>
+  <string name="error_message_setup_required">அமைக்க வேண்டும்</string>
+</resources>

@@ -13,8 +13,6 @@
 package tgx.gradle.task
 
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.Property
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.process.ExecOperations
@@ -40,23 +38,29 @@ abstract class GitVersionValueSource : ValueSource<GitVersionValueSource.Details
       git[0],
       git[1],
       git[2].toLong(),
-      if (git[3].startsWith("git@")) {
-        val index = git[3].indexOf(':', 4)
-        val domain = git[3].substring(4, index)
-        val endIndex = if (git[3].endsWith(".git")) {
-          git[3].length - 4
-        } else {
-          git[3].length
+      when {
+        git[3].startsWith("git@") -> {
+          val index = git[3].indexOf(':', 4)
+          val domain = git[3].substring(4, index)
+          val endIndex = if (git[3].endsWith(".git")) {
+            git[3].length - 4
+          } else {
+            git[3].length
+          }
+          val query = git[3].substring(index + 1, endIndex)
+          "https://${domain}/${query}"
         }
-        val query = git[3].substring(index + 1, endIndex)
-        "https://${domain}/${query}"
-      } else {
-        git[3]
+        git[3].endsWith(".git") -> {
+          git[3].substring(0, git[3].length - 4)
+        }
+        else -> {
+          git[3]
+        }
       }
     )
 
     val commitUrl: String
-      get() = String.format(Locale.ENGLISH, "%1\$s/tree/%3\$s", remoteUrl, commitHashShort, commitHashLong)
+      get() = String.format(Locale.ENGLISH, $$"%1$s/tree/%3$s", remoteUrl, commitHashShort, commitHashLong)
   }
 
   @get:Inject

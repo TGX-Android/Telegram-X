@@ -935,6 +935,7 @@ public class TooltipOverlayView extends ViewGroup {
       return false;
     }
 
+    @SuppressWarnings("deprecation")
     public void draw (Canvas c) {
       float factor = this.isVisible.getFloatValue();
       float alpha = MathUtils.clamp(factor);
@@ -1341,12 +1342,13 @@ public class TooltipOverlayView extends ViewGroup {
       activePopups.get(i).hide(force);
     }
   }
-
-  public boolean onBackPressed () {
+  public boolean handleOnBackPress (boolean commit) {
     for (int i = activePopups.size() - 1; i >= 0; i--) {
       TooltipInfo info = activePopups.get(i);
       boolean handled = info.wontHideDelayed();
-      info.hide(true);
+      if (commit) {
+        info.hide(true);
+      }
       if (handled || BitwiseUtils.hasFlag(info.flags, FLAG_HANDLE_BACK_PRESS)) {
         return true;
       }
@@ -1382,10 +1384,13 @@ public class TooltipOverlayView extends ViewGroup {
   private final List<TooltipInfo> activePopups = new ArrayList<>();
 
   private void removeHint (TooltipInfo tooltipInfo) {
-    if (activePopups.remove(tooltipInfo) && activePopups.isEmpty()) {
-      setWillNotDraw(true);
-      if (availabilityListener != null) {
-        availabilityListener.onAvailabilityChanged(this, false);
+    if (activePopups.remove(tooltipInfo)) {
+      UI.getContext(getContext()).notifyBackPressAvailabilityChanged();
+      if (activePopups.isEmpty()) {
+        setWillNotDraw(true);
+        if (availabilityListener != null) {
+          availabilityListener.onAvailabilityChanged(this, false);
+        }
       }
     }
   }
@@ -1402,6 +1407,7 @@ public class TooltipOverlayView extends ViewGroup {
       info.layout(getMeasuredWidth(), getMeasuredHeight());
     }
     this.activePopups.add(info);
+    UI.getContext(getContext()).notifyBackPressAvailabilityChanged();
     if (this.activePopups.size() == 1) {
       setWillNotDraw(false);
       addOnAttachStateChangeListener(new OnAttachStateChangeListener() {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">አውርድ</string>
+  <string name="exo_download_notification_channel_name">የወረዱ</string>
+  <string name="exo_download_downloading">በማውረድ ላይ</string>
+  <string name="exo_download_completed">ማውረድ ተጠናቋል</string>
+  <string name="exo_download_failed">ማውረድ አልተሳካም</string>
+  <string name="exo_download_removing">ውርዶችን በማስወገድ ላይ</string>
+  <string name="exo_download_paused">ውርዶች ባሉበት ቆመዋል</string>
+  <string name="exo_download_paused_for_network">አውታረ መረቦችን በመጠባበቅ ላይ ያሉ ውርዶች</string>
+  <string name="exo_download_paused_for_wifi">WiFiን በመጠባበቅ ላይ ያሉ ውርዶች</string>
+</resources>

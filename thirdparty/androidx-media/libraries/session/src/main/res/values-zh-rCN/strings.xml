@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">正在播放</string>
+  <string name="media3_controls_play_description">播放</string>
+  <string name="media3_controls_pause_description">暂停</string>
+  <string name="media3_controls_seek_to_previous_description">跳转到上一项</string>
+  <string name="media3_controls_seek_to_next_description">跳转到下一项</string>
+  <string name="media3_controls_seek_back_description">快退</string>
+  <string name="media3_controls_seek_forward_description">快进</string>
+  <string name="error_message_fallback">出了点问题。请稍后重试。</string>
+  <string name="error_message_info_cancelled">无法完成操作。请重试。</string>
+  <string name="error_message_invalid_state">目前无法完成该操作</string>
+  <string name="error_message_authentication_expired">登录后才能使用此应用</string>
+  <string name="error_message_content_already_playing">已经在播放这项内容</string>
+  <string name="error_message_end_of_playlist">队列中没有任何其他内容</string>
+  <string name="error_message_concurrent_stream_limit">同时使用太多设备聆听</string>
+  <string name="error_message_not_available_in_region">在此地区无法获取这项内容</string>
+  <string name="error_message_not_supported">此应用无法执行该操作</string>
+  <string name="error_message_parental_control_restricted">该内容已被屏蔽</string>
+  <string name="error_message_premium_account_required">需要使用付费账号访问</string>
+  <string name="error_message_skip_limit_reached">无法再跳过更多曲目</string>
+  <string name="error_message_bad_value">输入数据有误</string>
+  <string name="error_message_io">输入/输出有误</string>
+  <string name="error_message_permission_denied">访问被拒绝</string>
+  <string name="error_message_disconnected">已与媒体应用断开连接</string>
+  <string name="error_message_setup_required">需要设置</string>
+</resources>

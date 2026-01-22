@@ -1,0 +1,33 @@
+ftyp (28 bytes):
+  Data = length 20, hash EF896440
+mdat (56016 bytes):
+  Data = length 56000, hash F535891
+moov (16642 bytes):
+  mvhd (108 bytes):
+    Data = length 100, hash 2613A5C
+  trak (16526 bytes):
+    tkhd (92 bytes):
+      Data = length 84, hash 3D79758F
+    mdia (16426 bytes):
+      mdhd (32 bytes):
+        Data = length 24, hash 41542D81
+      hdlr (44 bytes):
+        Data = length 36, hash A0852FF2
+      minf (16342 bytes):
+        vmhd (20 bytes):
+          Data = length 12, hash EE830681
+        dinf (36 bytes):
+          Data = length 28, hash D535436B
+        stbl (16278 bytes):
+          stsd (166 bytes):
+            Data = length 158, hash 11532063
+          stts (24 bytes):
+            Data = length 16, hash E8BAA2C7
+          stsz (4020 bytes):
+            Data = length 4012, hash 537BD986
+          stsc (28 bytes):
+            Data = length 20, hash 8F6E8285
+          co64 (8016 bytes):
+            Data = length 8008, hash E71FBD7C
+          stss (4016 bytes):
+            Data = length 4008, hash 729103FF

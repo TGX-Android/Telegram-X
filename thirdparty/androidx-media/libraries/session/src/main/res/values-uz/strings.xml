@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Bu qaysi musiqa</string>
+  <string name="media3_controls_play_description">Ijro</string>
+  <string name="media3_controls_pause_description">Pauza</string>
+  <string name="media3_controls_seek_to_previous_description">Avvalgi trekka oʻtish</string>
+  <string name="media3_controls_seek_to_next_description">Keyingi trekka oʻtish</string>
+  <string name="media3_controls_seek_back_description">Orqaga surish</string>
+  <string name="media3_controls_seek_forward_description">Oldinga surish</string>
+  <string name="error_message_fallback">Nimadir xato ketdi. Keyinroq urining.</string>
+  <string name="error_message_info_cancelled">Tugallanmadi. Qayta urining.</string>
+  <string name="error_message_invalid_state">Buni hozir amalga oshira olmaydi</string>
+  <string name="error_message_authentication_expired">Bu ilovadan foydalanish uchun hisobingizga kiring</string>
+  <string name="error_message_content_already_playing">Bu kontent allaqachon ijro etilmoqda</string>
+  <string name="error_message_end_of_playlist">Ijro navbatida boshqa fayllar mavjud emas</string>
+  <string name="error_message_concurrent_stream_limit">Juda koʻp qurilmada tinglanmoqda</string>
+  <string name="error_message_not_available_in_region">Bu kontentni bu yerda olish imkonsiz</string>
+  <string name="error_message_not_supported">Bu ilova bunday qila olmaydi</string>
+  <string name="error_message_parental_control_restricted">Bu kontent bloklangan</string>
+  <string name="error_message_premium_account_required">Premium ruxsat kerak</string>
+  <string name="error_message_skip_limit_reached">Boshqa trek qoldirib ketish imkonsiz</string>
+  <string name="error_message_bad_value">Xato axborot kiritilgan</string>
+  <string name="error_message_io">Kirish/chiqish xatosi</string>
+  <string name="error_message_permission_denied">Ruxsat berilmadi</string>
+  <string name="error_message_disconnected">Media ilovasidan uzildi</string>
+  <string name="error_message_setup_required">Sozlanishi lozim</string>
+</resources>

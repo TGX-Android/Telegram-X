@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Lejátszásvezérlők mutatása</string>
+  <string name="exo_controls_hide">Lejátszásvezérlők elrejtése</string>
+  <string name="exo_controls_seek_bar_description">Lejátszási folyamat</string>
+  <string name="exo_controls_settings_description">Beállítások</string>
+  <string name="exo_controls_overflow_hide_description">További beállítások elrejtése</string>
+  <string name="exo_controls_overflow_show_description">További beállítások megjelenítése</string>
+  <string name="exo_controls_fullscreen_enter_description">Teljes képernyő</string>
+  <string name="exo_controls_fullscreen_exit_description">Kilépés a teljes képernyős módból</string>
+  <string name="exo_controls_previous_description">Előző</string>
+  <string name="exo_controls_next_description">Következő</string>
+  <string name="exo_controls_pause_description">Szüneteltetés</string>
+  <string name="exo_controls_play_description">Lejátszás</string>
+  <string name="exo_controls_stop_description">Leállítás</string>
+  <string name="exo_controls_rewind_description">Visszatekerés</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Visszatekerés %d másodperccel</item>
+    <item quantity="other">Visszatekerés %d másodperccel</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Előretekerés</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Előretekerés %d másodperccel</item>
+    <item quantity="other">Előretekerés %d másodperccel</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Jelenlegi: Nincs ismétlés. Ismétlés mód be/ki.</string>
+  <string name="exo_controls_repeat_one_description">Jelenlegi: Egy ismétlése. Ismétlés mód be/ki.</string>
+  <string name="exo_controls_repeat_all_description">Jelenlegi: Összes ismétlése. Ismétlés mód be/ki.</string>
+  <string name="exo_controls_shuffle_on_description">Keverés mód kikapcsolása</string>
+  <string name="exo_controls_shuffle_off_description">Keverés mód bekapcsolása</string>
+  <string name="exo_controls_vr_description">VR-mód</string>
+  <string name="exo_controls_cc_enabled_description">Feliratok kikapcsolása</string>
+  <string name="exo_controls_cc_disabled_description">Feliratok bekapcsolása</string>
+  <string name="exo_controls_playback_speed">Sebesség</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25×</item>
+    <item>0,5×</item>
+    <item>0,75×</item>
+    <item>Normál</item>
+    <item>1,25×</item>
+    <item>1,5×</item>
+    <item>2×</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Hang</string>
+  <string name="exo_track_selection_none">Nincs</string>
+  <string name="exo_track_selection_auto">Automatikus</string>
+  <string name="exo_track_unknown">Ismeretlen</string>
+  <string name="exo_track_unknown_name">Ismeretlen (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Monó</string>
+  <string name="exo_track_stereo">Sztereó</string>
+  <string name="exo_track_surround">Térhatású hangzás</string>
+  <string name="exo_track_surround_5_point_1">5.1-es térhatású hangzás</string>
+  <string name="exo_track_surround_7_point_1">7.1-es térhatású hangzás</string>
+  <string name="exo_track_role_alternate">Alternatív</string>
+  <string name="exo_track_role_supplementary">Kiegészítő</string>
+  <string name="exo_track_role_commentary">Kommentár</string>
+  <string name="exo_track_role_closed_captions">Felirat</string>
+  <string name="exo_track_bitrate">%1$.2f Mbps</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

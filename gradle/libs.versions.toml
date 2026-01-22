@@ -1,0 +1,244 @@
+[versions]
+android-gradle-plugin = "8.13.2"
+
+kotlin = "2.3.0"
+ksp = "2.3.4"
+desugaring = "2.1.5"
+
+kotlinx-coroutines = "1.10.2"
+kotlinx-serialization = "1.9.0"
+
+androidx-core-legacy = "1.12.0" # 1.13.0+ requires minSdk 19
+androidx-core-latest = "1.17.0"
+
+androidx-activity-legacy = "1.8.2" # 1.9.0+ requires minSdk 19
+androidx-activity-lollipop = "1.11.0" # 1.12.2+ requires minSdk 23
+androidx-activity-latest = "1.12.2"
+
+androidx-work-legacy = "2.9.1"
+androidx-work-lollipop = "2.10.5" # 2.11.0+ requires minSdk 23
+androidx-work-latest = "2.11.0"
+
+androidx-gridlayout-legacy = "1.0.0" # 1.1.0+ requires minSdk 21
+androidx-gridlayout-latest = "1.1.0"
+
+androidx-recyclerview-legacy = "1.3.2" # 1.4.0+ requires minSdk 21
+androidx-recyclerview-latest = "1.4.0"
+
+androidx-constraintlayout-legacy = "2.1.4" # 2.2.0+ requires minSdk 21
+androidx-constraintlayout-latest = "2.2.1"
+
+androidx-viewpager-legacy = "1.0.0" # 1.1.0+ requires minSdk 21
+androidx-viewpager-latest = "1.1.0"
+androidx-browser-legacy = "1.5.0" # 1.7.0+ requires minSdk 19
+androidx-browser-latest = "1.9.0"
+
+androidx-exifinterface-legacy = "1.3.7" # 1.4.0+ requires minSdk 21
+androidx-exifinterface-latest = "1.4.2"
+
+androidx-camera-legacy = "1.4.2" # 1.6.0+ requires minSdk 23
+androidx-camera-latest = "1.5.2"
+
+androidx-media-legacy = "1.2.1" # 1.3.0+ requires minSdk 19, 1.5.0+ requires minSdk 21
+androidx-media-lollipop = "1.8.0" # 1.9.0+ requires minSdk 23
+androidx-media-latest = "1.9.0"
+
+androidx-multidex = "2.0.1"
+androidx-annotation = "1.9.1"
+androidx-biometric = "1.1.0"
+androidx-palette = "1.0.0"
+androidx-collection = "1.5.0"
+androidx-interpolator = "1.0.0"
+
+firebase-messaging-legacy = "22.0.0" # 23.0.0+ requires minSdk 19
+firebase-messaging-lollipop = "24.1.2" # 25.0.0+ requires minSdk 23
+firebase-messaging-latest = "25.0.1"
+
+google-recaptcha-legacy = "18.4.0" # 18.5.0+ requires minSdk 21
+google-recaptcha-lollipop = "18.7.1" # 18.8.0+ requires minSdk 23
+google-recaptcha-latest = "18.8.0"
+
+google-play-integrity-legacy = "1.3.0" # 1.4.0+ requires minSdk 21
+google-play-integrity-lollipop = "1.4.0" # 1.5.0+ requires minSdk 23
+google-play-integrity-latest = "1.6.0"
+
+google-play-services-base-legacy = "17.6.0" # 18.0.0+ requires minSdk 21
+google-play-services-base-lollipop = "18.7.2" # 18.8.0+ requires minSdk 23
+google-play-services-basement-lollipop = "18.7.1" # 18.7.2 was not released
+google-play-services-base-latest = "18.9.0"
+
+google-play-services-maps-legacy = "17.0.1"
+google-play-services-maps-latest = "19.2.0"
+
+google-play-services-location-legacy = "18.0.0"
+google-play-services-location-latest = "21.3.0"
+
+google-play-services-safetynet-legacy = "18.0.1" # 18.1.0+ requires minSdk 21
+google-play-services-safetynet-latest = "18.1.0"
+
+google-play-services-mlkit-barcode-scanning-legacy = "16.2.1" # 18.3.0+ requires minSdk 21, 18.3.1+ requires minSdk 26
+google-play-services-mlkit-barcode-scanning-latest = "18.3.1"
+
+google-mlkit-language-id-legacy = "16.1.1"
+google-mlkit-language-id-latest = "17.0.6"
+
+google-zxing = "3.5.4"
+google-play-app-update = "2.1.0"
+
+google-services-plugin = "4.4.4"
+
+huawei-agcp = "1.9.3.302"
+huawei-hms = "6.13.0.300"
+
+okhttp-legacy = "4.12.0" # 5.x+ requires minSdk 21
+okhttp-latest = "5.3.2"
+
+checkerframework = "3.43.0" #
+
+shortcutbadger = "1.1.22"
+relinker = "1.4.5"
+konfetti = "2.0.5"
+transcoder = "ba8f098c94"
+sunrise-sunset-calculator = "1.2"
+subsampling-scale-image-view = "3.10.0"
+mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
+
+[libraries]
+desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugaring" }
+androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "androidx-multidex" }
+
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }
+
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "androidx-biometric" }
+androidx-interpolator = { module = "androidx.interpolator:interpolator", version.ref = "androidx-interpolator" }
+androidx-collection = { module = "androidx.collection:collection", version.ref = "androidx-collection" }
+androidx-palette = { module = "androidx.palette:palette", version.ref = "androidx-palette" }
+
+androidx-core-ktx-legacy = { module = "androidx.core:core-ktx", version.ref = "androidx-core-legacy" }
+androidx-core-ktx-latest = { module = "androidx.core:core-ktx", version.ref = "androidx-core-latest" }
+
+androidx-activity-legacy = { module = "androidx.activity:activity", version.ref = "androidx-activity-legacy" }
+androidx-activity-lollipop = { module = "androidx.activity:activity", version.ref = "androidx-activity-lollipop" }
+androidx-activity-latest = { module = "androidx.activity:activity", version.ref = "androidx-activity-latest" }
+
+androidx-work-runtime-legacy = { module = "androidx.work:work-runtime", version.ref = "androidx-work-legacy" }
+androidx-work-runtime-lollipop = { module = "androidx.work:work-runtime", version.ref = "androidx-work-lollipop" }
+androidx-work-runtime-latest = { module = "androidx.work:work-runtime", version.ref = "androidx-work-latest" }
+
+androidx-browser-legacy = { module = "androidx.browser:browser", version.ref = "androidx-browser-legacy" }
+androidx-browser-latest = { module = "androidx.browser:browser", version.ref = "androidx-browser-latest" }
+
+androidx-gridlayout-legacy = { module = "androidx.gridlayout:gridlayout", version.ref = "androidx-gridlayout-legacy" }
+androidx-gridlayout-latest = { module = "androidx.gridlayout:gridlayout", version.ref = "androidx-gridlayout-latest" }
+
+androidx-recyclerview-legacy = { module = "androidx.recyclerview:recyclerview", version.ref = "androidx-recyclerview-legacy" }
+androidx-recyclerview-latest = { module = "androidx.recyclerview:recyclerview", version.ref = "androidx-recyclerview-latest" }
+
+androidx-constraintlayout-legacy = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidx-constraintlayout-legacy" }
+androidx-constraintlayout-latest = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidx-constraintlayout-latest" }
+
+androidx-viewpager-legacy = { module = "androidx.viewpager:viewpager", version.ref = "androidx-viewpager-legacy" }
+androidx-viewpager-latest = { module = "androidx.viewpager:viewpager", version.ref = "androidx-viewpager-latest" }
+
+androidx-exifinterface-legacy = { module = "androidx.exifinterface:exifinterface", version.ref = "androidx-exifinterface-legacy" }
+androidx-exifinterface-latest = { module = "androidx.exifinterface:exifinterface", version.ref = "androidx-exifinterface-latest" }
+
+androidx-camera-camera2-legacy = { module = "androidx.camera:camera-camera2", version.ref = "androidx-camera-legacy" }
+androidx-camera-camera2-latest = { module = "androidx.camera:camera-camera2", version.ref = "androidx-camera-latest" }
+
+androidx-camera-video-legacy = { module = "androidx.camera:camera-video", version.ref = "androidx-camera-legacy" }
+androidx-camera-video-latest = { module = "androidx.camera:camera-video", version.ref = "androidx-camera-latest" }
+
+androidx-camera-lifecycle-legacy = { module = "androidx.camera:camera-lifecycle", version.ref = "androidx-camera-legacy" }
+androidx-camera-lifecycle-latest = { module = "androidx.camera:camera-lifecycle", version.ref = "androidx-camera-latest" }
+
+androidx-camera-view-legacy = { module = "androidx.camera:camera-view", version.ref = "androidx-camera-legacy" }
+androidx-camera-view-latest = { module = "androidx.camera:camera-view", version.ref = "androidx-camera-latest" }
+
+androidx-media-common-legacy = { module = "androidx.media3:media3-common", version.ref = "androidx-media-legacy" }
+androidx-media-common-lollipop = { module = "androidx.media3:media3-common", version.ref = "androidx-media-lollipop" }
+androidx-media-common-latest = { module = "androidx.media3:media3-common", version.ref = "androidx-media-latest" }
+
+androidx-media-exoplayer-legacy = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media-legacy" }
+androidx-media-exoplayer-lollipop = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media-lollipop" }
+androidx-media-exoplayer-latest = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media-latest" }
+
+androidx-media-exoplayer-hls-legacy = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "androidx-media-legacy" }
+androidx-media-exoplayer-hls-lollipop = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "androidx-media-lollipop" }
+androidx-media-exoplayer-hls-latest = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "androidx-media-latest" }
+
+androidx-media-inspector-latest = { module = "androidx.media3:media3-inspector", version.ref = "androidx-media-latest" }
+
+androidx-media-transformer-legacy = { module = "androidx.media3:media3-transformer", version.ref = "androidx-media-legacy" }
+androidx-media-transformer-lollipop = { module = "androidx.media3:media3-transformer", version.ref = "androidx-media-lollipop" }
+androidx-media-transformer-latest = { module = "androidx.media3:media3-transformer", version.ref = "androidx-media-latest" }
+androidx-media-effect-legacy = { module = "androidx.media3:media3-effect", version.ref = "androidx-media-legacy" }
+androidx-media-effect-lollipop = { module = "androidx.media3:media3-effect", version.ref = "androidx-media-lollipop" }
+androidx-media-effect-latest = { module = "androidx.media3:media3-effect", version.ref = "androidx-media-latest" }
+
+google-recaptcha-legacy = { module = "com.google.android.recaptcha:recaptcha", version.ref = "google-recaptcha-legacy" }
+google-recaptcha-lollipop = { module = "com.google.android.recaptcha:recaptcha", version.ref = "google-recaptcha-lollipop" }
+google-recaptcha-latest = { module = "com.google.android.recaptcha:recaptcha", version.ref = "google-recaptcha-latest" }
+
+google-firebase-messaging-legacy = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging-legacy" }
+google-firebase-messaging-lollipop = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging-lollipop" }
+google-firebase-messaging-latest = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging-latest" }
+
+google-zxing-core = { module = "com.google.zxing:core", version.ref = "google-zxing" }
+google-play-app-update = { module = "com.google.android.play:app-update", version.ref = "google-play-app-update" }
+
+google-play-integrity-legacy = { module = "com.google.android.play:integrity", version.ref = "google-play-integrity-legacy" }
+google-play-integrity-lollipop = { module = "com.google.android.play:integrity", version.ref = "google-play-integrity-lollipop" }
+google-play-integrity-latest = { module = "com.google.android.play:integrity", version.ref = "google-play-integrity-latest" }
+
+google-play-services-base-legacy = { module = "com.google.android.gms:play-services-base", version.ref = "google-play-services-base-legacy" }
+google-play-services-base-lollipop = { module = "com.google.android.gms:play-services-base", version.ref = "google-play-services-base-lollipop" }
+google-play-services-base-latest = { module = "com.google.android.gms:play-services-base", version.ref = "google-play-services-base-latest" }
+google-play-services-basement-legacy = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-base-legacy" }
+google-play-services-basement-lollipop = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-basement-lollipop" }
+google-play-services-basement-latest = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-base-latest" }
+
+google-play-services-maps-legacy = { module = "com.google.android.gms:play-services-maps", version.ref = "google-play-services-maps-legacy" }
+google-play-services-maps-latest = { module = "com.google.android.gms:play-services-maps", version.ref = "google-play-services-maps-latest" }
+
+google-play-services-location-legacy = { module = "com.google.android.gms:play-services-location", version.ref = "google-play-services-location-legacy" }
+google-play-services-location-latest = { module = "com.google.android.gms:play-services-location", version.ref = "google-play-services-location-latest" }
+
+google-play-services-mlkit-barcode-scanning-legacy = { module = "com.google.android.gms:play-services-mlkit-barcode-scanning", version.ref = "google-play-services-mlkit-barcode-scanning-legacy" }
+google-play-services-mlkit-barcode-scanning-latest = { module = "com.google.android.gms:play-services-mlkit-barcode-scanning", version.ref = "google-play-services-mlkit-barcode-scanning-latest" }
+
+google-mlkit-language-id-legacy = { module = "com.google.mlkit:language-id", version.ref = "google-mlkit-language-id-legacy" }
+google-mlkit-language-id-latest = { module = "com.google.mlkit:language-id", version.ref = "google-mlkit-language-id-latest" }
+
+google-play-services-safetynet-legacy = { module = "com.google.android.gms:play-services-safetynet", version.ref = "google-play-services-safetynet-legacy" }
+google-play-services-safetynet-latest = { module = "com.google.android.gms:play-services-safetynet", version.ref = "google-play-services-safetynet-latest" }
+
+huawei-agconnect = { module = "com.huawei.agconnect:agcp", version.ref = "huawei-agcp" }
+huawei-hms = { module = "com.huawei.hms:push", version.ref = "huawei-hms" }
+
+okhttp-legacy = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp-legacy" }
+okhttp-latest = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp-latest" }
+
+shortcutbadger = { module = "me.leolin:ShortcutBadger", version.ref = "shortcutbadger" }
+relinker = { module = "com.getkeepsafe.relinker:relinker", version.ref = "relinker" }
+konfetti = { module = "nl.dionsegijn:konfetti-xml", version.ref = "konfetti" }
+transcoder = { module = "com.github.natario1:Transcoder", version.ref = "transcoder" }
+sunriseSunsetCalculator = { module = "com.luckycatlabs:SunriseSunsetCalculator", version.ref = "sunrise-sunset-calculator" }
+subsamplingScaleImageView = { module = "com.davemorrissey.labs:subsampling-scale-image-view-androidx", version.ref = "subsampling-scale-image-view" }
+mp4parser-isoparser = { module = "com.googlecode.mp4parser:isoparser", version.ref = "mp4parser-isoparser" }
+
+checkerframework = { module = "org.checkerframework:checker-qual", version.ref = "checkerframework" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }
+android-library = { id = "com.android.library", version.ref = "android-gradle-plugin" }
+
+google-services = { id = "com.google.gms.google-services", version.ref = "google-services-plugin" }
+
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

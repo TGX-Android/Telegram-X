@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">ابھی چل رہا ہے</string>
+  <string name="media3_controls_play_description">چلائیں</string>
+  <string name="media3_controls_pause_description">روکیں</string>
+  <string name="media3_controls_seek_to_previous_description">پچھلے آئٹم پر جائیں</string>
+  <string name="media3_controls_seek_to_next_description">اگلے آئٹم پر جائیں</string>
+  <string name="media3_controls_seek_back_description">واپس جائیں</string>
+  <string name="media3_controls_seek_forward_description">آگے جائیں</string>
+  <string name="error_message_fallback">کچھ غلط ہو گیا۔ بعد میں کوشش کریں۔</string>
+  <string name="error_message_info_cancelled">مکمل نہیں ہو سکا۔ دوبارہ کوشش کریں۔</string>
+  <string name="error_message_invalid_state">اس وقت یہ نہیں کیا جا سکتا ہے</string>
+  <string name="error_message_authentication_expired">اس ایپ کا استعمال کرنے کے لیے سائن ان کریں</string>
+  <string name="error_message_content_already_playing">وہ مواد پہلے سے ہی چلایا جا رہا ہے</string>
+  <string name="error_message_end_of_playlist">اور کچھ بھی قطار میں نہیں ہے</string>
+  <string name="error_message_concurrent_stream_limit">بہت سے آلات پر سنا جا رہا ہے</string>
+  <string name="error_message_not_available_in_region">یہاں وہ مواد حاصل نہیں کر سکتے</string>
+  <string name="error_message_not_supported">یہ ایپ ایسا نہیں کر سکتی</string>
+  <string name="error_message_parental_control_restricted">وہ مواد مسدود ہے</string>
+  <string name="error_message_premium_account_required">پریمیم رسائی درکار ہے</string>
+  <string name="error_message_skip_limit_reached">مزید کسی اور ٹریک کو نظر انداز نہیں کر سکتے</string>
+  <string name="error_message_bad_value">غلط ان پٹ ڈیٹا</string>
+  <string name="error_message_io">ان پٹ/آؤٹ پٹ کی خرابی</string>
+  <string name="error_message_permission_denied">رسائی مسترد ہو گئی</string>
+  <string name="error_message_disconnected">میڈیا ایپ سے غیر منسلک ہو گیا</string>
+  <string name="error_message_setup_required">سیٹ اپ درکار ہے</string>
+</resources>

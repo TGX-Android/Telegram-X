@@ -22,7 +22,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.Unlockable;

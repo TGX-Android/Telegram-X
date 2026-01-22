@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Yuklab olish</string>
+  <string name="exo_download_notification_channel_name">Yuklanmalar</string>
+  <string name="exo_download_downloading">Yuklab olinmoqda</string>
+  <string name="exo_download_completed">Yuklab olindi</string>
+  <string name="exo_download_failed">Yuklab olinmadi</string>
+  <string name="exo_download_removing">Yuklanmalar olib tashlanmoqda</string>
+  <string name="exo_download_paused">Yuklanmalar pauzada</string>
+  <string name="exo_download_paused_for_network">Yuklanmalar internetga ulanishni kutmoqda</string>
+  <string name="exo_download_paused_for_wifi">Yuklanmalar Wi-Fi aloqasini kutmoqda</string>
+</resources>

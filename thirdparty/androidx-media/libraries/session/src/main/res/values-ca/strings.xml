@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">S\'està reproduint</string>
+  <string name="media3_controls_play_description">Reprodueix</string>
+  <string name="media3_controls_pause_description">Posa en pausa</string>
+  <string name="media3_controls_seek_to_previous_description">Ves a l\'element anterior</string>
+  <string name="media3_controls_seek_to_next_description">Ves a l\'element següent</string>
+  <string name="media3_controls_seek_back_description">Retrocedeix</string>
+  <string name="media3_controls_seek_forward_description">Avança</string>
+  <string name="error_message_fallback">S\'ha produït un error. Prova-ho més tard.</string>
+  <string name="error_message_info_cancelled">No s\'ha pogut acabar. Torna-ho a provar.</string>
+  <string name="error_message_invalid_state">Ara mateix aquesta acció no es pot dur a terme</string>
+  <string name="error_message_authentication_expired">Inicia la sessió per utilitzar aquesta aplicació</string>
+  <string name="error_message_content_already_playing">Aquest contingut ja s\'està reproduint</string>
+  <string name="error_message_end_of_playlist">No hi ha res més a la cua</string>
+  <string name="error_message_concurrent_stream_limit">S\'està escoltant contingut en massa dispositius</string>
+  <string name="error_message_not_available_in_region">El contingut no està disponible en aquesta regió</string>
+  <string name="error_message_not_supported">L\'aplicació no pot dur a terme aquesta acció</string>
+  <string name="error_message_parental_control_restricted">El contingut està bloquejat</string>
+  <string name="error_message_premium_account_required">Es requereix accés prèmium</string>
+  <string name="error_message_skip_limit_reached">No es poden saltar més cançons</string>
+  <string name="error_message_bad_value">Les dades d\'entrada són incorrectes</string>
+  <string name="error_message_io">Error d\'entrada o de sortida</string>
+  <string name="error_message_permission_denied">Accés denegat</string>
+  <string name="error_message_disconnected">S\'ha desconnectat de l\'aplicació multimèdia</string>
+  <string name="error_message_setup_required">Configuració necessària</string>
+</resources>

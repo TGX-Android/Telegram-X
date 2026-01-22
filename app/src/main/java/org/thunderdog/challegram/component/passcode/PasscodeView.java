@@ -105,6 +105,14 @@ public class PasscodeView extends View {
     }
   }
 
+  private int extraData;
+
+  public void setExtraData (int extraData) {
+    if (this.extraData != extraData) {
+      this.extraData = extraData;
+    }
+  }
+
   public void setState (int state) {
     if (this.state != state) {
       this.state = state;
@@ -197,7 +205,7 @@ public class PasscodeView extends View {
         return height * .5f + getPaddingTop();
       }
       case Passcode.MODE_GESTURE:
-      case Passcode.MODE_FINGERPRINT: {
+      case Passcode.MODE_BIOMETRICS: {
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
           return Screen.dpf(TEXT_GESTURE_TOP + offset) + getPaddingTop();
         }
@@ -221,8 +229,9 @@ public class PasscodeView extends View {
     if (seconds > 0) {
       text = Lang.getString(R.string.format_PasscodeTooManyAttempts, Lang.plural(R.string.TryAgainSeconds, seconds));
     } else {
-      text = Passcode.getActionName(mode, state);
+      text = Passcode.getActionName(mode, state, true, extraData);
     }
+
     if (text == null) {
       return;
     }
@@ -236,7 +245,7 @@ public class PasscodeView extends View {
 
   private float getTextLeft () {
     float center = (float) getMeasuredWidth() * .5f;
-    return (mode == Passcode.MODE_PINCODE || mode == Passcode.MODE_PATTERN || mode == Passcode.MODE_GESTURE || mode == Passcode.MODE_FINGERPRINT) && orientation == Configuration.ORIENTATION_LANDSCAPE ? center * .5f - textWidth * .5f : center - textWidth * .5f;
+    return (mode == Passcode.MODE_PINCODE || mode == Passcode.MODE_PATTERN || mode == Passcode.MODE_GESTURE || mode == Passcode.MODE_BIOMETRICS) && orientation == Configuration.ORIENTATION_LANDSCAPE ? center * .5f - textWidth * .5f : center - textWidth * .5f;
   }
 
   private void buildLayout () {
@@ -297,7 +306,7 @@ public class PasscodeView extends View {
         break;
       }
       case Passcode.MODE_GESTURE:
-      case Passcode.MODE_FINGERPRINT: {
+      case Passcode.MODE_BIOMETRICS: {
         textTop = getTextTop();
         break;
       }

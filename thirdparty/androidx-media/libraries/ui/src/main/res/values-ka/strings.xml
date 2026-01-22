@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">დამკვრელის სამართავი ღილაკების ჩვენება</string>
+  <string name="exo_controls_hide">დამკვრელის სამართავი ღილაკების დამალვა</string>
+  <string name="exo_controls_seek_bar_description">დაკვრის პროგრესი</string>
+  <string name="exo_controls_settings_description">პარამეტრები</string>
+  <string name="exo_controls_overflow_hide_description">დამატებითი პარამეტრების დამალვა</string>
+  <string name="exo_controls_overflow_show_description">დამატებითი პარამეტრების ჩვენება</string>
+  <string name="exo_controls_fullscreen_enter_description">სრულეკრანიან რეჟიმში შესვლა</string>
+  <string name="exo_controls_fullscreen_exit_description">სრულეკრანიანი რეჟიმიდან გამოსვლა</string>
+  <string name="exo_controls_previous_description">წინა</string>
+  <string name="exo_controls_next_description">შემდეგ</string>
+  <string name="exo_controls_pause_description">პაუზა</string>
+  <string name="exo_controls_play_description">დაკვრა</string>
+  <string name="exo_controls_stop_description">შეწყვეტა</string>
+  <string name="exo_controls_rewind_description">უკან გადახვევა</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">უკან გადახვევა %d წამით</item>
+    <item quantity="other">უკან გადახვევა %d წამით</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">წინ გადახვევა</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">წინ გადახვევა %d წამით</item>
+    <item quantity="other">წინ გადახვევა %d წამით</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">მიმდინარე რეჟიმი: არაფრის გამეორება. გადართეთ გამეორების რეჟიმი.</string>
+  <string name="exo_controls_repeat_one_description">მიმდინარე რეჟიმი: ერთის გამეორება. გადართეთ გამეორების რეჟიმი.</string>
+  <string name="exo_controls_repeat_all_description">მიმდინარე რეჟიმი: ყველას გამეორება. გადართეთ გამეორების რეჟიმი.</string>
+  <string name="exo_controls_shuffle_on_description">არეულად დაკვრის რეჟიმის გათიშვა</string>
+  <string name="exo_controls_shuffle_off_description">არეულად დაკვრის რეჟიმის ჩართვა</string>
+  <string name="exo_controls_vr_description">VR რეჟიმი</string>
+  <string name="exo_controls_cc_enabled_description">სუბტიტრების გათიშვა</string>
+  <string name="exo_controls_cc_disabled_description">სუბტიტრების ჩართვა</string>
+  <string name="exo_controls_playback_speed">სიჩქარე</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25x</item>
+    <item>0,5x</item>
+    <item>0,75x</item>
+    <item>ჩვეულებრივი</item>
+    <item>1,25x</item>
+    <item>1,5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">აუდიო</string>
+  <string name="exo_track_selection_none">არცერთი</string>
+  <string name="exo_track_selection_auto">ავტომატური</string>
+  <string name="exo_track_unknown">უცნობი</string>
+  <string name="exo_track_unknown_name">უცნობი (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">მონო</string>
+  <string name="exo_track_stereo">სტერეო</string>
+  <string name="exo_track_surround">მოცულობითი ხმა</string>
+  <string name="exo_track_surround_5_point_1">5.1 მოცულობითი ხმა</string>
+  <string name="exo_track_surround_7_point_1">7.1 მოცულობითი ხმა</string>
+  <string name="exo_track_role_alternate">ალტერნატიული</string>
+  <string name="exo_track_role_supplementary">დამატებითი</string>
+  <string name="exo_track_role_commentary">კომენტარი</string>
+  <string name="exo_track_role_closed_captions">დახურული სუბტიტრები</string>
+  <string name="exo_track_bitrate">%1$.2f მბიტ/წმ</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

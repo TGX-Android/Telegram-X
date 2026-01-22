@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Last ned</string>
+  <string name="exo_download_notification_channel_name">Nedlastinger</string>
+  <string name="exo_download_downloading">Laster ned</string>
+  <string name="exo_download_completed">Nedlastingen er fullført</string>
+  <string name="exo_download_failed">Nedlastingen mislyktes</string>
+  <string name="exo_download_removing">Fjerner nedlastinger</string>
+  <string name="exo_download_paused">Nedlastinger er satt på pause</string>
+  <string name="exo_download_paused_for_network">Nedlastinger venter på nettverket</string>
+  <string name="exo_download_paused_for_wifi">Nedlastinger venter på Wi-FI-tilkobling</string>
+</resources>

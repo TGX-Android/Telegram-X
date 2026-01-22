@@ -208,6 +208,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     Views.setLayoutHeight(buttonWrap, Screen.dp(56f) + effectiveInsetsWithoutIme.bottom);
     buttonWrap.setPadding(0, 0, 0, effectiveInsetsWithoutIme.bottom);
     Views.setLayoutHeight(bottomWrap, Screen.dp(56f) + Screen.dp(7f) + effectiveInsetsWithoutIme.bottom);
+    stickersController.setBottomInset(systemInsets.bottom, systemInsetsWithoutIme.bottom);
   }
 
   @Override
@@ -604,12 +605,12 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   private int calculateTotalHeight () {
-    return Math.min(Math.max(Screen.currentActualHeight() / 2, Screen.smallestSide()), Screen.dp(350f));
+    return Math.min(Math.max(UI.getContext(getContext()).getVisibleContentHeight() / 2, Screen.smallestSide()), Screen.dp(380f));
   }
 
   @Override
   public int provideOffset () {
-    return Math.max(0, Screen.currentActualHeight() - calculateTotalHeight());
+    return Math.max(0, UI.getContext(getContext()).getVisibleContentHeight() - calculateTotalHeight());
   }
 
   // private float shadowFactor;

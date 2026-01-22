@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Visa spelarkontroller</string>
+  <string name="exo_controls_hide">Dölj spelarkontroller</string>
+  <string name="exo_controls_seek_bar_description">Uppspelningsförlopp</string>
+  <string name="exo_controls_settings_description">Inställningar</string>
+  <string name="exo_controls_overflow_hide_description">Dölj ytterligare inställningar</string>
+  <string name="exo_controls_overflow_show_description">Visa ytterligare inställningar</string>
+  <string name="exo_controls_fullscreen_enter_description">Aktivera helskärm</string>
+  <string name="exo_controls_fullscreen_exit_description">Lämna helskärm</string>
+  <string name="exo_controls_previous_description">Föregående</string>
+  <string name="exo_controls_next_description">Nästa</string>
+  <string name="exo_controls_pause_description">Pausa</string>
+  <string name="exo_controls_play_description">Spela upp</string>
+  <string name="exo_controls_stop_description">Stoppa</string>
+  <string name="exo_controls_rewind_description">Spola tillbaka</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Spola tillbaka %d sekund</item>
+    <item quantity="other">Spola tillbaka %d sekunder</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Snabbspola framåt</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Spola framåt %d sekund</item>
+    <item quantity="other">Spola framåt %d sekunder</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Aktuellt läge: Upprepa inga. Ändra läge för upprepning.</string>
+  <string name="exo_controls_repeat_one_description">Aktuellt läge: Upprepa en. Ändra läge för upprepning.</string>
+  <string name="exo_controls_repeat_all_description">Aktuellt läge: Upprepa alla. Ändra läge för upprepning.</string>
+  <string name="exo_controls_shuffle_on_description">Inaktivera blandningsläget</string>
+  <string name="exo_controls_shuffle_off_description">Aktivera blandningsläget</string>
+  <string name="exo_controls_vr_description">VR-läge</string>
+  <string name="exo_controls_cc_enabled_description">Inaktivera undertexter</string>
+  <string name="exo_controls_cc_disabled_description">Aktivera undertexter</string>
+  <string name="exo_controls_playback_speed">Hastighet</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25x</item>
+    <item>0,5x</item>
+    <item>0,75x</item>
+    <item>Normal</item>
+    <item>1,25x</item>
+    <item>1,5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Ljud</string>
+  <string name="exo_track_selection_none">Ingen</string>
+  <string name="exo_track_selection_auto">Automatiskt</string>
+  <string name="exo_track_unknown">Okänt</string>
+  <string name="exo_track_unknown_name">Okänd (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Mono</string>
+  <string name="exo_track_stereo">Stereo</string>
+  <string name="exo_track_surround">Surroundljud</string>
+  <string name="exo_track_surround_5_point_1">5.1-kanaligt surroundljud</string>
+  <string name="exo_track_surround_7_point_1">7.1-kanaligt surroundljud</string>
+  <string name="exo_track_role_alternate">Alternativ</string>
+  <string name="exo_track_role_supplementary">Tillägg</string>
+  <string name="exo_track_role_commentary">Kommentar</string>
+  <string name="exo_track_role_closed_captions">Undertexter</string>
+  <string name="exo_track_bitrate">%1$.2f Mbit/s</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

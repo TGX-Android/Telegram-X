@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Nu spelas</string>
+  <string name="media3_controls_play_description">Spela upp</string>
+  <string name="media3_controls_pause_description">Pausa</string>
+  <string name="media3_controls_seek_to_previous_description">Hoppa till föregående objekt</string>
+  <string name="media3_controls_seek_to_next_description">Hoppa till nästa objekt</string>
+  <string name="media3_controls_seek_back_description">Hoppa bakåt</string>
+  <string name="media3_controls_seek_forward_description">Hoppa framåt</string>
+  <string name="error_message_fallback">Något är fel. Försök igen senare.</string>
+  <string name="error_message_info_cancelled">Det gick inte att slutföra. Försök igen.</string>
+  <string name="error_message_invalid_state">Det går inte att göra detta just nu</string>
+  <string name="error_message_authentication_expired">Logga in om du vill använda appen</string>
+  <string name="error_message_content_already_playing">Det innehållet spelas redan upp</string>
+  <string name="error_message_end_of_playlist">Inget annat har lagts i uppspelningskön</string>
+  <string name="error_message_concurrent_stream_limit">För många enheter streamas</string>
+  <string name="error_message_not_available_in_region">Det innehållet är inte tillgängligt här</string>
+  <string name="error_message_not_supported">Det går inte med den här appen</string>
+  <string name="error_message_parental_control_restricted">Det innehållet har blockerats</string>
+  <string name="error_message_premium_account_required">Premiumkonto krävs</string>
+  <string name="error_message_skip_limit_reached">Det går inte att hoppa över fler låtar</string>
+  <string name="error_message_bad_value">Felaktig indata</string>
+  <string name="error_message_io">Indata-/utdatafel</string>
+  <string name="error_message_permission_denied">Åtkomst nekad</string>
+  <string name="error_message_disconnected">Frånkopplad från medieapp</string>
+  <string name="error_message_setup_required">Konfiguration krävs</string>
+</resources>

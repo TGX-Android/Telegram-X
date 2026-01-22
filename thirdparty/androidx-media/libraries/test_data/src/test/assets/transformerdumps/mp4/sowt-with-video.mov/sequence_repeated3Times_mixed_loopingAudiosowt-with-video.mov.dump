@@ -1,0 +1,3242 @@
+format audio:
+  averageBitrate = 131072
+  sampleMimeType = audio/mp4a-latm
+  channelCount = 2
+  sampleRate = 48000
+  pcmEncoding = 2
+  metadata = entries=[Mp4AlternateGroup: 1, Mp4Timestamp: creation time=0, modification time=0, timescale=1000]
+format video:
+  averageBitrate = 5946664
+  id = 1
+  containerMimeType = video/mp4
+  sampleMimeType = video/avc
+  codecs = avc1.64002A
+  maxInputSize = 41084
+  maxNumReorderSamples = 2
+  width = 1920
+  height = 1080
+  frameRate = 50.00
+  colorInfo:
+    colorSpace = 1
+    colorRange = 2
+    lumaBitdepth = 8
+    chromaBitdepth = 8
+  metadata = entries=[Mp4Timestamp: creation time=0, modification time=0, timescale=1000]
+  initializationData:
+    data = length 34, hash 8D738018
+    data = length 10, hash 7A0D0F2B
+container metadata:
+  entry = Mp4AlternateGroup: 1
+  entry = Mp4Timestamp: creation time=0, modification time=0, timescale=1000
+  entry = Mp4Timestamp: creation time=0, modification time=0, timescale=1000
+sample:
+  trackType = audio
+  dataHashCode = -1687632261
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1478319665
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1397541526
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1603020579
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1808151108
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1826788311
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 230178874
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1476942289
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -795218330
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1094860545
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 590144730
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1930897291
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1015307208
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -320459469
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1588431727
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1513339283
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -699703924
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 912881372
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 303874557
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1063586128
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1549291673
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 867765667
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1803656123
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1630654664
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -201202860
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1344298206
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1890638217
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 200093207
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 963017679
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1394789331
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1051651457
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1207406587
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -676191560
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -583225814
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 915980802
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 799716564
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -234176206
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1760325485
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1697817673
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -307010372
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2080867578
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1026923372
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1696066674
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 352117120
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1675211964
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1573016551
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1823148413
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 45153535
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1579739877
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 750177668
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1164012769
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2060086570
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1370655536
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1042328738
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2089736410
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2066152318
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1016749549
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -984761751
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1167683506
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -628409737
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -643591345
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1546622827
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1546933960
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -2116125226
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1846382186
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1474459706
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1743368408
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 732493196
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -464586495
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1248869503
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1698425932
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -921412054
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2050472950
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -130528682
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1640510927
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 936208363
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -795163508
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 837460753
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1725387525
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 731938439
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1492767553
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1847282153
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 85080372
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -124455844
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1038098391
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 742779012
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1785788167
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1457921567
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -252140105
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -799974294
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1717336188
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1499224037
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 314696767
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 837449695
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 838021400
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 633987592
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1943523461
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -985114336
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -154627591
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2133293448
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1014456012
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 654908525
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -132269918
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 555405546
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1482473463
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 129119028
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 502797212
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 542836094
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1325569490
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 874226047
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1779486576
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -2004589806
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 938647291
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -141669549
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -283530079
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 118195046
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2098767292
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1695203241
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1985139696
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1763057516
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 639928544
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 749194724
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -910208987
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 959631305
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1649589706
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -182420750
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -254879723
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 395413674
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2009339091
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1591854766
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1647096841
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -515267588
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1881968626
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 75121665
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1094299755
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1782035116
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -767117748
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1134849225
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1610999523
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -564948617
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1426777322
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 65200553
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1342082888
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1714555976
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -969753072
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -5039218
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1456260686
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -834399282
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 680403188
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1041470195
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 531012677
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1124577502
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -949451178
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -8881707
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -941390285
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1180550547
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 97669576
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1366061703
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1128742559
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1637306999
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1833442006
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1217448978
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1482655959
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 266624996
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1775674542
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -993680532
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 385444981
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1052011835
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 333255080
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2038250279
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1739663347
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -483749083
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 466574946
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -116280597
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 345704319
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -61603554
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -159154892
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1308906286
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -505883899
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2056299016
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 182442795
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1599265797
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1572819189
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -422735408
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -433646473
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1969228449
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1915061257
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1839061261
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1167378324
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1730090286
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1633723846
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -99271154
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1595012245
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 87714564
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -305509713
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1427352837
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1633753434
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 387672278
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -611596
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 460264310
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1292991734
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -207491041
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 889847626
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 797895252
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1955348736
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1687496307
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1601463076
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -633594844
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1280505773
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -912886949
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1841961106
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1636561944
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1317873821
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2033511857
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -919389036
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -2099696293
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 156304839
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -2054022826
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2117827949
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 636583131
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1193880888
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1416580965
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1031760386
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1890134168
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1463716844
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1439204009
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -327075543
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 802371812
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 918992832
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1855178393
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1066177659
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1725626542
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -395828672
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1691878489
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1248864427
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1218958647
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1592130911
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -362817901
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 967283445
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 362674633
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 193357777
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 334209194
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1411072018
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -695935320
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 288850499
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 515161069
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1054113422
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -633464900
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 870925679
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1938631578
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1767499054
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1646560538
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 544033907
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1668127061
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -35010150
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1575731463
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1963598987
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -910650939
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1328947814
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1214915414
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 460364956
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1618995427
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 366691141
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -134076766
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -170843389
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 2120316149
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 631292187
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 933047897
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 193793489
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -42954700
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -762942330
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1526901524
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -53618207
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -804608575
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = 1315965648
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1527602798
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -280446194
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -460782598
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -98265929
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1707542294
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -1636703209
+  size = 4096
+  isKeyFrame = true
+sample:
+  trackType = audio
+  dataHashCode = -587460036
+  size = 1024
+  isKeyFrame = true
+sample:
+  trackType = video
+  dataHashCode = 33691269
+  size = 41054
+  isKeyFrame = true
+  presentationTimeUs = 0
+sample:
+  trackType = video
+  dataHashCode = 951153212
+  size = 15163
+  isKeyFrame = false
+  presentationTimeUs = 40000
+sample:
+  trackType = video
+  dataHashCode = 552307150
+  size = 6490
+  isKeyFrame = false
+  presentationTimeUs = 20000
+sample:
+  trackType = video
+  dataHashCode = -151063635
+  size = 25484
+  isKeyFrame = false
+  presentationTimeUs = 120000
+sample:
+  trackType = video
+  dataHashCode = -1847115463
+  size = 14792
+  isKeyFrame = false
+  presentationTimeUs = 80000
+sample:
+  trackType = video
+  dataHashCode = 775037055
+  size = 8823
+  isKeyFrame = false
+  presentationTimeUs = 60000
+sample:
+  trackType = video
+  dataHashCode = 1452603441
+  size = 7905
+  isKeyFrame = false
+  presentationTimeUs = 100000
+sample:
+  trackType = video
+  dataHashCode = 1732228513
+  size = 21086
+  isKeyFrame = false
+  presentationTimeUs = 200000
+sample:
+  trackType = video
+  dataHashCode = 1246814657
+  size = 13181
+  isKeyFrame = false
+  presentationTimeUs = 160000
+sample:
+  trackType = video
+  dataHashCode = 426081419
+  size = 7666
+  isKeyFrame = false
+  presentationTimeUs = 140000
+sample:
+  trackType = video
+  dataHashCode = -241872379
+  size = 8627
+  isKeyFrame = false
+  presentationTimeUs = 180000
+sample:
+  trackType = video
+  dataHashCode = 1109784816
+  size = 23310
+  isKeyFrame = false
+  presentationTimeUs = 280000
+sample:
+  trackType = video
+  dataHashCode = -377448231
+  size = 16108
+  isKeyFrame = false
+  presentationTimeUs = 240000
+sample:
+  trackType = video
+  dataHashCode = -688376574
+  size = 10591
+  isKeyFrame = false
+  presentationTimeUs = 220000
+sample:
+  trackType = video
+  dataHashCode = 496944885
+  size = 9652
+  isKeyFrame = false
+  presentationTimeUs = 260000
+sample:
+  trackType = video
+  dataHashCode = 591739725
+  size = 26209
+  isKeyFrame = false
+  presentationTimeUs = 360000
+sample:
+  trackType = video
+  dataHashCode = -469037805
+  size = 14679
+  isKeyFrame = false
+  presentationTimeUs = 320000
+sample:
+  trackType = video
+  dataHashCode = 2089439735
+  size = 11258
+  isKeyFrame = false
+  presentationTimeUs = 300000
+sample:
+  trackType = video
+  dataHashCode = -991522861
+  size = 8380
+  isKeyFrame = false
+  presentationTimeUs = 340000
+sample:
+  trackType = video
+  dataHashCode = 1228181765
+  size = 21371
+  isKeyFrame = false
+  presentationTimeUs = 420000
+sample:
+  trackType = video
+  dataHashCode = -881594031
+  size = 15113
+  isKeyFrame = false
+  presentationTimeUs = 380000
+sample:
+  trackType = video
+  dataHashCode = -1336355567
+  size = 10553
+  isKeyFrame = false
+  presentationTimeUs = 400000
+sample:
+  trackType = video
+  dataHashCode = -1156719720
+  size = 34938
+  isKeyFrame = false
+  presentationTimeUs = 480000
+sample:
+  trackType = video
+  dataHashCode = 396046716
+  size = 17842
+  isKeyFrame = false
+  presentationTimeUs = 440000
+sample:
+  trackType = video
+  dataHashCode = -1084632521
+  size = 11502
+  isKeyFrame = false
+  presentationTimeUs = 460000
+sample:
+  trackType = video
+  dataHashCode = -337819407
+  size = 18009
+  isKeyFrame = false
+  presentationTimeUs = 500000
+sample:
+  trackType = video
+  dataHashCode = 1295059940
+  size = 24298
+  isKeyFrame = false
+  presentationTimeUs = 520000
+sample:
+  trackType = video
+  dataHashCode = -929598998
+  size = 21682
+  isKeyFrame = false
+  presentationTimeUs = 540000
+sample:
+  trackType = video
+  dataHashCode = 1579805687
+  size = 31833
+  isKeyFrame = false
+  presentationTimeUs = 620000
+sample:
+  trackType = video
+  dataHashCode = 79553286
+  size = 20853
+  isKeyFrame = false
+  presentationTimeUs = 580000
+sample:
+  trackType = video
+  dataHashCode = -119845353
+  size = 12906
+  isKeyFrame = false
+  presentationTimeUs = 560000
+sample:
+  trackType = video
+  dataHashCode = -1242905044
+  size = 17165
+  isKeyFrame = false
+  presentationTimeUs = 600000
+sample:
+  trackType = video
+  dataHashCode = 1161132039
+  size = 35065
+  isKeyFrame = false
+  presentationTimeUs = 700000
+sample:
+  trackType = video
+  dataHashCode = 1801923857
+  size = 19881
+  isKeyFrame = false
+  presentationTimeUs = 660000
+sample:
+  trackType = video
+  dataHashCode = -1201934910
+  size = 22571
+  isKeyFrame = false
+  presentationTimeUs = 640000
+sample:
+  trackType = video
+  dataHashCode = -655417171
+  size = 11566
+  isKeyFrame = false
+  presentationTimeUs = 680000
+sample:
+  trackType = video
+  dataHashCode = 2011055114
+  size = 24236
+  isKeyFrame = false
+  presentationTimeUs = 780000
+sample:
+  trackType = video
+  dataHashCode = 1098159553
+  size = 10515
+  isKeyFrame = false
+  presentationTimeUs = 740000
+sample:
+  trackType = video
+  dataHashCode = 813195513
+  size = 8188
+  isKeyFrame = false
+  presentationTimeUs = 720000
+sample:
+  trackType = video
+  dataHashCode = 1610084647
+  size = 9662
+  isKeyFrame = false
+  presentationTimeUs = 760000
+sample:
+  trackType = video
+  dataHashCode = -389131647
+  size = 22443
+  isKeyFrame = false
+  presentationTimeUs = 860000
+sample:
+  trackType = video
+  dataHashCode = -49148581
+  size = 12726
+  isKeyFrame = false
+  presentationTimeUs = 820000
+sample:
+  trackType = video
+  dataHashCode = 650534699
+  size = 8521
+  isKeyFrame = false
+  presentationTimeUs = 800000
+sample:
+  trackType = video
+  dataHashCode = 554081714
+  size = 7850
+  isKeyFrame = false
+  presentationTimeUs = 840000
+sample:
+  trackType = video
+  dataHashCode = -539147636
+  size = 30005
+  isKeyFrame = false
+  presentationTimeUs = 940000
+sample:
+  trackType = video
+  dataHashCode = 863445487
+  size = 19430
+  isKeyFrame = false
+  presentationTimeUs = 900000
+sample:
+  trackType = video
+  dataHashCode = -210870675
+  size = 12962
+  isKeyFrame = false
+  presentationTimeUs = 880000
+sample:
+  trackType = video
+  dataHashCode = -1294790684
+  size = 10767
+  isKeyFrame = false
+  presentationTimeUs = 920000
+sample:
+  trackType = video
+  dataHashCode = -650391415
+  size = 25914
+  isKeyFrame = false
+  presentationTimeUs = 1000000
+sample:
+  trackType = video
+  dataHashCode = 1964249241
+  size = 11471
+  isKeyFrame = false
+  presentationTimeUs = 960000
+sample:
+  trackType = video
+  dataHashCode = 1901943199
+  size = 8639
+  isKeyFrame = false
+  presentationTimeUs = 980000
+sample:
+  trackType = video
+  dataHashCode = 754314804
+  size = 22173
+  isKeyFrame = false
+  presentationTimeUs = 1060000
+sample:
+  trackType = video
+  dataHashCode = 1631939129
+  size = 10274
+  isKeyFrame = false
+  presentationTimeUs = 1020000
+sample:
+  trackType = video
+  dataHashCode = -914580412
+  size = 8625
+  isKeyFrame = false
+  presentationTimeUs = 1040000
+sample:
+  trackType = video
+  dataHashCode = 464184359
+  size = 19443
+  isKeyFrame = false
+  presentationTimeUs = 1100000
+sample:
+  trackType = video
+  dataHashCode = 521590252
+  size = 9189
+  isKeyFrame = false
+  presentationTimeUs = 1080000
+sample:
+  trackType = video
+  dataHashCode = -1920606290
+  size = 16242
+  isKeyFrame = false
+  presentationTimeUs = 1120000
+sample:
+  trackType = video
+  dataHashCode = -1462753526
+  size = 16036
+  isKeyFrame = false
+  presentationTimeUs = 1140000
+sample:
+  trackType = video
+  dataHashCode = -2095257664
+  size = 16431
+  isKeyFrame = false
+  presentationTimeUs = 1160000
+sample:
+  trackType = video
+  dataHashCode = -1722510728
+  size = 16421
+  isKeyFrame = false
+  presentationTimeUs = 1180000
+sample:
+  trackType = video
+  dataHashCode = -2075073532
+  size = 23643
+  isKeyFrame = false
+  presentationTimeUs = 1240000
+sample:
+  trackType = video
+  dataHashCode = 1068866869
+  size = 9962
+  isKeyFrame = false
+  presentationTimeUs = 1200000
+sample:
+  trackType = video
+  dataHashCode = 2139806323
+  size = 8627
+  isKeyFrame = false
+  presentationTimeUs = 1220000
+sample:
+  trackType = video
+  dataHashCode = -75510961
+  size = 20148
+  isKeyFrame = false
+  presentationTimeUs = 1280000
+sample:
+  trackType = video
+  dataHashCode = -1734586788
+  size = 8888
+  isKeyFrame = false
+  presentationTimeUs = 1260000
+sample:
+  trackType = video
+  dataHashCode = 1689355701
+  size = 19300
+  isKeyFrame = false
+  presentationTimeUs = 1320000
+sample:
+  trackType = video
+  dataHashCode = 1014386281
+  size = 8455
+  isKeyFrame = false
+  presentationTimeUs = 1300000
+sample:
+  trackType = video
+  dataHashCode = 655967971
+  size = 29708
+  isKeyFrame = false
+  presentationTimeUs = 1400000
+sample:
+  trackType = video
+  dataHashCode = 651498019
+  size = 12715
+  isKeyFrame = false
+  presentationTimeUs = 1360000
+sample:
+  trackType = video
+  dataHashCode = -1326592134
+  size = 8573
+  isKeyFrame = false
+  presentationTimeUs = 1340000
+sample:
+  trackType = video
+  dataHashCode = -481876840
+  size = 8982
+  isKeyFrame = false
+  presentationTimeUs = 1380000
+sample:
+  trackType = video
+  dataHashCode = -1289166593
+  size = 25026
+  isKeyFrame = false
+  presentationTimeUs = 1460000
+sample:
+  trackType = video
+  dataHashCode = 1533284887
+  size = 9600
+  isKeyFrame = false
+  presentationTimeUs = 1420000
+sample:
+  trackType = video
+  dataHashCode = 931231084
+  size = 8098
+  isKeyFrame = false
+  presentationTimeUs = 1440000
+sample:
+  trackType = video
+  dataHashCode = 593905363
+  size = 27032
+  isKeyFrame = false
+  presentationTimeUs = 1540000
+sample:
+  trackType = video
+  dataHashCode = -61693143
+  size = 11416
+  isKeyFrame = false
+  presentationTimeUs = 1500000
+sample:
+  trackType = video
+  dataHashCode = 2034274294
+  size = 8119
+  isKeyFrame = false
+  presentationTimeUs = 1480000
+sample:
+  trackType = video
+  dataHashCode = -1382173825
+  size = 7355
+  isKeyFrame = false
+  presentationTimeUs = 1520000
+sample:
+  trackType = video
+  dataHashCode = 1141112289
+  size = 27694
+  isKeyFrame = false
+  presentationTimeUs = 1620000
+sample:
+  trackType = video
+  dataHashCode = 615108734
+  size = 10665
+  isKeyFrame = false
+  presentationTimeUs = 1580000
+sample:
+  trackType = video
+  dataHashCode = -192568269
+  size = 7176
+  isKeyFrame = false
+  presentationTimeUs = 1560000
+sample:
+  trackType = video
+  dataHashCode = 1139129648
+  size = 7375
+  isKeyFrame = false
+  presentationTimeUs = 1600000
+sample:
+  trackType = video
+  dataHashCode = -644623072
+  size = 24651
+  isKeyFrame = false
+  presentationTimeUs = 1700000
+sample:
+  trackType = video
+  dataHashCode = 1087668168
+  size = 9679
+  isKeyFrame = false
+  presentationTimeUs = 1660000
+sample:
+  trackType = video
+  dataHashCode = 1406222068
+  size = 6862
+  isKeyFrame = false
+  presentationTimeUs = 1640000
+sample:
+  trackType = video
+  dataHashCode = -622032068
+  size = 6000
+  isKeyFrame = false
+  presentationTimeUs = 1680000
+sample:
+  trackType = video
+  dataHashCode = 1191619637
+  size = 22101
+  isKeyFrame = false
+  presentationTimeUs = 1780000
+sample:
+  trackType = video
+  dataHashCode = 603349552
+  size = 8537
+  isKeyFrame = false
+  presentationTimeUs = 1740000
+sample:
+  trackType = video
+  dataHashCode = -1784449460
+  size = 6288
+  isKeyFrame = false
+  presentationTimeUs = 1720000
+sample:
+  trackType = video
+  dataHashCode = 1158465085
+  size = 5152
+  isKeyFrame = false
+  presentationTimeUs = 1760000
+sample:
+  trackType = video
+  dataHashCode = 147323155
+  size = 19889
+  isKeyFrame = false
+  presentationTimeUs = 1860000
+sample:
+  trackType = video
+  dataHashCode = 1714081095
+  size = 8893
+  isKeyFrame = false
+  presentationTimeUs = 1820000
+sample:
+  trackType = video
+  dataHashCode = -1894307035
+  size = 5905
+  isKeyFrame = false
+  presentationTimeUs = 1800000
+sample:
+  trackType = video
+  dataHashCode = -1208848015
+  size = 5635
+  isKeyFrame = false
+  presentationTimeUs = 1840000
+sample:
+  trackType = video
+  dataHashCode = 1015012687
+  size = 14896
+  isKeyFrame = false
+  presentationTimeUs = 1940000
+sample:
+  trackType = video
+  dataHashCode = 513736378
+  size = 9260
+  isKeyFrame = false
+  presentationTimeUs = 1900000
+sample:
+  trackType = video
+  dataHashCode = 1346700024
+  size = 5850
+  isKeyFrame = false
+  presentationTimeUs = 1880000
+sample:
+  trackType = video
+  dataHashCode = 279399292
+  size = 7154
+  isKeyFrame = false
+  presentationTimeUs = 1920000
+sample:
+  trackType = video
+  dataHashCode = 831498454
+  size = 8605
+  isKeyFrame = false
+  presentationTimeUs = 1980000
+sample:
+  trackType = video
+  dataHashCode = -20875598
+  size = 6983
+  isKeyFrame = false
+  presentationTimeUs = 1960000
+sample:
+  trackType = video
+  dataHashCode = 33691269
+  size = 41054
+  isKeyFrame = true
+  presentationTimeUs = 2000000
+sample:
+  trackType = video
+  dataHashCode = 951153212
+  size = 15163
+  isKeyFrame = false
+  presentationTimeUs = 2040000
+sample:
+  trackType = video
+  dataHashCode = 552307150
+  size = 6490
+  isKeyFrame = false
+  presentationTimeUs = 2020000
+sample:
+  trackType = video
+  dataHashCode = -151063635
+  size = 25484
+  isKeyFrame = false
+  presentationTimeUs = 2120000
+sample:
+  trackType = video
+  dataHashCode = -1847115463
+  size = 14792
+  isKeyFrame = false
+  presentationTimeUs = 2080000
+sample:
+  trackType = video
+  dataHashCode = 775037055
+  size = 8823
+  isKeyFrame = false
+  presentationTimeUs = 2060000
+sample:
+  trackType = video
+  dataHashCode = 1452603441
+  size = 7905
+  isKeyFrame = false
+  presentationTimeUs = 2100000
+sample:
+  trackType = video
+  dataHashCode = 1732228513
+  size = 21086
+  isKeyFrame = false
+  presentationTimeUs = 2200000
+sample:
+  trackType = video
+  dataHashCode = 1246814657
+  size = 13181
+  isKeyFrame = false
+  presentationTimeUs = 2160000
+sample:
+  trackType = video
+  dataHashCode = 426081419
+  size = 7666
+  isKeyFrame = false
+  presentationTimeUs = 2140000
+sample:
+  trackType = video
+  dataHashCode = -241872379
+  size = 8627
+  isKeyFrame = false
+  presentationTimeUs = 2180000
+sample:
+  trackType = video
+  dataHashCode = 1109784816
+  size = 23310
+  isKeyFrame = false
+  presentationTimeUs = 2280000
+sample:
+  trackType = video
+  dataHashCode = -377448231
+  size = 16108
+  isKeyFrame = false
+  presentationTimeUs = 2240000
+sample:
+  trackType = video
+  dataHashCode = -688376574
+  size = 10591
+  isKeyFrame = false
+  presentationTimeUs = 2220000
+sample:
+  trackType = video
+  dataHashCode = 496944885
+  size = 9652
+  isKeyFrame = false
+  presentationTimeUs = 2260000
+sample:
+  trackType = video
+  dataHashCode = 591739725
+  size = 26209
+  isKeyFrame = false
+  presentationTimeUs = 2360000
+sample:
+  trackType = video
+  dataHashCode = -469037805
+  size = 14679
+  isKeyFrame = false
+  presentationTimeUs = 2320000
+sample:
+  trackType = video
+  dataHashCode = 2089439735
+  size = 11258
+  isKeyFrame = false
+  presentationTimeUs = 2300000
+sample:
+  trackType = video
+  dataHashCode = -991522861
+  size = 8380
+  isKeyFrame = false
+  presentationTimeUs = 2340000
+sample:
+  trackType = video
+  dataHashCode = 1228181765
+  size = 21371
+  isKeyFrame = false
+  presentationTimeUs = 2420000
+sample:
+  trackType = video
+  dataHashCode = -881594031
+  size = 15113
+  isKeyFrame = false
+  presentationTimeUs = 2380000
+sample:
+  trackType = video
+  dataHashCode = -1336355567
+  size = 10553
+  isKeyFrame = false
+  presentationTimeUs = 2400000
+sample:
+  trackType = video
+  dataHashCode = -1156719720
+  size = 34938
+  isKeyFrame = false
+  presentationTimeUs = 2480000
+sample:
+  trackType = video
+  dataHashCode = 396046716
+  size = 17842
+  isKeyFrame = false
+  presentationTimeUs = 2440000
+sample:
+  trackType = video
+  dataHashCode = -1084632521
+  size = 11502
+  isKeyFrame = false
+  presentationTimeUs = 2460000
+sample:
+  trackType = video
+  dataHashCode = -337819407
+  size = 18009
+  isKeyFrame = false
+  presentationTimeUs = 2500000
+sample:
+  trackType = video
+  dataHashCode = 1295059940
+  size = 24298
+  isKeyFrame = false
+  presentationTimeUs = 2520000
+sample:
+  trackType = video
+  dataHashCode = -929598998
+  size = 21682
+  isKeyFrame = false
+  presentationTimeUs = 2540000
+sample:
+  trackType = video
+  dataHashCode = 1579805687
+  size = 31833
+  isKeyFrame = false
+  presentationTimeUs = 2620000
+sample:
+  trackType = video
+  dataHashCode = 79553286
+  size = 20853
+  isKeyFrame = false
+  presentationTimeUs = 2580000
+sample:
+  trackType = video
+  dataHashCode = -119845353
+  size = 12906
+  isKeyFrame = false
+  presentationTimeUs = 2560000
+sample:
+  trackType = video
+  dataHashCode = -1242905044
+  size = 17165
+  isKeyFrame = false
+  presentationTimeUs = 2600000
+sample:
+  trackType = video
+  dataHashCode = 1161132039
+  size = 35065
+  isKeyFrame = false
+  presentationTimeUs = 2700000
+sample:
+  trackType = video
+  dataHashCode = 1801923857
+  size = 19881
+  isKeyFrame = false
+  presentationTimeUs = 2660000
+sample:
+  trackType = video
+  dataHashCode = -1201934910
+  size = 22571
+  isKeyFrame = false
+  presentationTimeUs = 2640000
+sample:
+  trackType = video
+  dataHashCode = -655417171
+  size = 11566
+  isKeyFrame = false
+  presentationTimeUs = 2680000
+sample:
+  trackType = video
+  dataHashCode = 2011055114
+  size = 24236
+  isKeyFrame = false
+  presentationTimeUs = 2780000
+sample:
+  trackType = video
+  dataHashCode = 1098159553
+  size = 10515
+  isKeyFrame = false
+  presentationTimeUs = 2740000
+sample:
+  trackType = video
+  dataHashCode = 813195513
+  size = 8188
+  isKeyFrame = false
+  presentationTimeUs = 2720000
+sample:
+  trackType = video
+  dataHashCode = 1610084647
+  size = 9662
+  isKeyFrame = false
+  presentationTimeUs = 2760000
+sample:
+  trackType = video
+  dataHashCode = -389131647
+  size = 22443
+  isKeyFrame = false
+  presentationTimeUs = 2860000
+sample:
+  trackType = video
+  dataHashCode = -49148581
+  size = 12726
+  isKeyFrame = false
+  presentationTimeUs = 2820000
+sample:
+  trackType = video
+  dataHashCode = 650534699
+  size = 8521
+  isKeyFrame = false
+  presentationTimeUs = 2800000
+sample:
+  trackType = video
+  dataHashCode = 554081714
+  size = 7850
+  isKeyFrame = false
+  presentationTimeUs = 2840000
+sample:
+  trackType = video
+  dataHashCode = -539147636
+  size = 30005
+  isKeyFrame = false
+  presentationTimeUs = 2940000
+sample:
+  trackType = video
+  dataHashCode = 863445487
+  size = 19430
+  isKeyFrame = false
+  presentationTimeUs = 2900000
+sample:
+  trackType = video
+  dataHashCode = -210870675
+  size = 12962
+  isKeyFrame = false
+  presentationTimeUs = 2880000
+sample:
+  trackType = video
+  dataHashCode = -1294790684
+  size = 10767
+  isKeyFrame = false
+  presentationTimeUs = 2920000
+sample:
+  trackType = video
+  dataHashCode = -650391415
+  size = 25914
+  isKeyFrame = false
+  presentationTimeUs = 3000000
+sample:
+  trackType = video
+  dataHashCode = 1964249241
+  size = 11471
+  isKeyFrame = false
+  presentationTimeUs = 2960000
+sample:
+  trackType = video
+  dataHashCode = 1901943199
+  size = 8639
+  isKeyFrame = false
+  presentationTimeUs = 2980000
+sample:
+  trackType = video
+  dataHashCode = 754314804
+  size = 22173
+  isKeyFrame = false
+  presentationTimeUs = 3060000
+sample:
+  trackType = video
+  dataHashCode = 1631939129
+  size = 10274
+  isKeyFrame = false
+  presentationTimeUs = 3020000
+sample:
+  trackType = video
+  dataHashCode = -914580412
+  size = 8625
+  isKeyFrame = false
+  presentationTimeUs = 3040000
+sample:
+  trackType = video
+  dataHashCode = 464184359
+  size = 19443
+  isKeyFrame = false
+  presentationTimeUs = 3100000
+sample:
+  trackType = video
+  dataHashCode = 521590252
+  size = 9189
+  isKeyFrame = false
+  presentationTimeUs = 3080000
+sample:
+  trackType = video
+  dataHashCode = -1920606290
+  size = 16242
+  isKeyFrame = false
+  presentationTimeUs = 3120000
+sample:
+  trackType = video
+  dataHashCode = -1462753526
+  size = 16036
+  isKeyFrame = false
+  presentationTimeUs = 3140000
+sample:
+  trackType = video
+  dataHashCode = -2095257664
+  size = 16431
+  isKeyFrame = false
+  presentationTimeUs = 3160000
+sample:
+  trackType = video
+  dataHashCode = -1722510728
+  size = 16421
+  isKeyFrame = false
+  presentationTimeUs = 3180000
+sample:
+  trackType = video
+  dataHashCode = -2075073532
+  size = 23643
+  isKeyFrame = false
+  presentationTimeUs = 3240000
+sample:
+  trackType = video
+  dataHashCode = 1068866869
+  size = 9962
+  isKeyFrame = false
+  presentationTimeUs = 3200000
+sample:
+  trackType = video
+  dataHashCode = 2139806323
+  size = 8627
+  isKeyFrame = false
+  presentationTimeUs = 3220000
+sample:
+  trackType = video
+  dataHashCode = -75510961
+  size = 20148
+  isKeyFrame = false
+  presentationTimeUs = 3280000
+sample:
+  trackType = video
+  dataHashCode = -1734586788
+  size = 8888
+  isKeyFrame = false
+  presentationTimeUs = 3260000
+sample:
+  trackType = video
+  dataHashCode = 1689355701
+  size = 19300
+  isKeyFrame = false
+  presentationTimeUs = 3320000
+sample:
+  trackType = video
+  dataHashCode = 1014386281
+  size = 8455
+  isKeyFrame = false
+  presentationTimeUs = 3300000
+sample:
+  trackType = video
+  dataHashCode = 655967971
+  size = 29708
+  isKeyFrame = false
+  presentationTimeUs = 3400000
+sample:
+  trackType = video
+  dataHashCode = 651498019
+  size = 12715
+  isKeyFrame = false
+  presentationTimeUs = 3360000
+sample:
+  trackType = video
+  dataHashCode = -1326592134
+  size = 8573
+  isKeyFrame = false
+  presentationTimeUs = 3340000
+sample:
+  trackType = video
+  dataHashCode = -481876840
+  size = 8982
+  isKeyFrame = false
+  presentationTimeUs = 3380000
+sample:
+  trackType = video
+  dataHashCode = -1289166593
+  size = 25026
+  isKeyFrame = false
+  presentationTimeUs = 3460000
+sample:
+  trackType = video
+  dataHashCode = 1533284887
+  size = 9600
+  isKeyFrame = false
+  presentationTimeUs = 3420000
+sample:
+  trackType = video
+  dataHashCode = 931231084
+  size = 8098
+  isKeyFrame = false
+  presentationTimeUs = 3440000
+sample:
+  trackType = video
+  dataHashCode = 593905363
+  size = 27032
+  isKeyFrame = false
+  presentationTimeUs = 3540000
+sample:
+  trackType = video
+  dataHashCode = -61693143
+  size = 11416
+  isKeyFrame = false
+  presentationTimeUs = 3500000
+sample:
+  trackType = video
+  dataHashCode = 2034274294
+  size = 8119
+  isKeyFrame = false
+  presentationTimeUs = 3480000
+sample:
+  trackType = video
+  dataHashCode = -1382173825
+  size = 7355
+  isKeyFrame = false
+  presentationTimeUs = 3520000
+sample:
+  trackType = video
+  dataHashCode = 1141112289
+  size = 27694
+  isKeyFrame = false
+  presentationTimeUs = 3620000
+sample:
+  trackType = video
+  dataHashCode = 615108734
+  size = 10665
+  isKeyFrame = false
+  presentationTimeUs = 3580000
+sample:
+  trackType = video
+  dataHashCode = -192568269
+  size = 7176
+  isKeyFrame = false
+  presentationTimeUs = 3560000
+sample:
+  trackType = video
+  dataHashCode = 1139129648
+  size = 7375
+  isKeyFrame = false
+  presentationTimeUs = 3600000
+sample:
+  trackType = video
+  dataHashCode = -644623072
+  size = 24651
+  isKeyFrame = false
+  presentationTimeUs = 3700000
+sample:
+  trackType = video
+  dataHashCode = 1087668168
+  size = 9679
+  isKeyFrame = false
+  presentationTimeUs = 3660000
+sample:
+  trackType = video
+  dataHashCode = 1406222068
+  size = 6862
+  isKeyFrame = false
+  presentationTimeUs = 3640000
+sample:
+  trackType = video
+  dataHashCode = -622032068
+  size = 6000
+  isKeyFrame = false
+  presentationTimeUs = 3680000
+sample:
+  trackType = video
+  dataHashCode = 1191619637
+  size = 22101
+  isKeyFrame = false
+  presentationTimeUs = 3780000
+sample:
+  trackType = video
+  dataHashCode = 603349552
+  size = 8537
+  isKeyFrame = false
+  presentationTimeUs = 3740000
+sample:
+  trackType = video
+  dataHashCode = -1784449460
+  size = 6288
+  isKeyFrame = false
+  presentationTimeUs = 3720000
+sample:
+  trackType = video
+  dataHashCode = 1158465085
+  size = 5152
+  isKeyFrame = false
+  presentationTimeUs = 3760000
+sample:
+  trackType = video
+  dataHashCode = 147323155
+  size = 19889
+  isKeyFrame = false
+  presentationTimeUs = 3860000
+sample:
+  trackType = video
+  dataHashCode = 1714081095
+  size = 8893
+  isKeyFrame = false
+  presentationTimeUs = 3820000
+sample:
+  trackType = video
+  dataHashCode = -1894307035
+  size = 5905
+  isKeyFrame = false
+  presentationTimeUs = 3800000
+sample:
+  trackType = video
+  dataHashCode = -1208848015
+  size = 5635
+  isKeyFrame = false
+  presentationTimeUs = 3840000
+sample:
+  trackType = video
+  dataHashCode = 1015012687
+  size = 14896
+  isKeyFrame = false
+  presentationTimeUs = 3940000
+sample:
+  trackType = video
+  dataHashCode = 513736378
+  size = 9260
+  isKeyFrame = false
+  presentationTimeUs = 3900000
+sample:
+  trackType = video
+  dataHashCode = 1346700024
+  size = 5850
+  isKeyFrame = false
+  presentationTimeUs = 3880000
+sample:
+  trackType = video
+  dataHashCode = 279399292
+  size = 7154
+  isKeyFrame = false
+  presentationTimeUs = 3920000
+sample:
+  trackType = video
+  dataHashCode = 831498454
+  size = 8605
+  isKeyFrame = false
+  presentationTimeUs = 3980000
+sample:
+  trackType = video
+  dataHashCode = -20875598
+  size = 6983
+  isKeyFrame = false
+  presentationTimeUs = 3960000
+sample:
+  trackType = video
+  dataHashCode = 33691269
+  size = 41054
+  isKeyFrame = true
+  presentationTimeUs = 4000000
+sample:
+  trackType = video
+  dataHashCode = 951153212
+  size = 15163
+  isKeyFrame = false
+  presentationTimeUs = 4040000
+sample:
+  trackType = video
+  dataHashCode = 552307150
+  size = 6490
+  isKeyFrame = false
+  presentationTimeUs = 4020000
+sample:
+  trackType = video
+  dataHashCode = -151063635
+  size = 25484
+  isKeyFrame = false
+  presentationTimeUs = 4120000
+sample:
+  trackType = video
+  dataHashCode = -1847115463
+  size = 14792
+  isKeyFrame = false
+  presentationTimeUs = 4080000
+sample:
+  trackType = video
+  dataHashCode = 775037055
+  size = 8823
+  isKeyFrame = false
+  presentationTimeUs = 4060000
+sample:
+  trackType = video
+  dataHashCode = 1452603441
+  size = 7905
+  isKeyFrame = false
+  presentationTimeUs = 4100000
+sample:
+  trackType = video
+  dataHashCode = 1732228513
+  size = 21086
+  isKeyFrame = false
+  presentationTimeUs = 4200000
+sample:
+  trackType = video
+  dataHashCode = 1246814657
+  size = 13181
+  isKeyFrame = false
+  presentationTimeUs = 4160000
+sample:
+  trackType = video
+  dataHashCode = 426081419
+  size = 7666
+  isKeyFrame = false
+  presentationTimeUs = 4140000
+sample:
+  trackType = video
+  dataHashCode = -241872379
+  size = 8627
+  isKeyFrame = false
+  presentationTimeUs = 4180000
+sample:
+  trackType = video
+  dataHashCode = 1109784816
+  size = 23310
+  isKeyFrame = false
+  presentationTimeUs = 4280000
+sample:
+  trackType = video
+  dataHashCode = -377448231
+  size = 16108
+  isKeyFrame = false
+  presentationTimeUs = 4240000
+sample:
+  trackType = video
+  dataHashCode = -688376574
+  size = 10591
+  isKeyFrame = false
+  presentationTimeUs = 4220000
+sample:
+  trackType = video
+  dataHashCode = 496944885
+  size = 9652
+  isKeyFrame = false
+  presentationTimeUs = 4260000
+sample:
+  trackType = video
+  dataHashCode = 591739725
+  size = 26209
+  isKeyFrame = false
+  presentationTimeUs = 4360000
+sample:
+  trackType = video
+  dataHashCode = -469037805
+  size = 14679
+  isKeyFrame = false
+  presentationTimeUs = 4320000
+sample:
+  trackType = video
+  dataHashCode = 2089439735
+  size = 11258
+  isKeyFrame = false
+  presentationTimeUs = 4300000
+sample:
+  trackType = video
+  dataHashCode = -991522861
+  size = 8380
+  isKeyFrame = false
+  presentationTimeUs = 4340000
+sample:
+  trackType = video
+  dataHashCode = 1228181765
+  size = 21371
+  isKeyFrame = false
+  presentationTimeUs = 4420000
+sample:
+  trackType = video
+  dataHashCode = -881594031
+  size = 15113
+  isKeyFrame = false
+  presentationTimeUs = 4380000
+sample:
+  trackType = video
+  dataHashCode = -1336355567
+  size = 10553
+  isKeyFrame = false
+  presentationTimeUs = 4400000
+sample:
+  trackType = video
+  dataHashCode = -1156719720
+  size = 34938
+  isKeyFrame = false
+  presentationTimeUs = 4480000
+sample:
+  trackType = video
+  dataHashCode = 396046716
+  size = 17842
+  isKeyFrame = false
+  presentationTimeUs = 4440000
+sample:
+  trackType = video
+  dataHashCode = -1084632521
+  size = 11502
+  isKeyFrame = false
+  presentationTimeUs = 4460000
+sample:
+  trackType = video
+  dataHashCode = -337819407
+  size = 18009
+  isKeyFrame = false
+  presentationTimeUs = 4500000
+sample:
+  trackType = video
+  dataHashCode = 1295059940
+  size = 24298
+  isKeyFrame = false
+  presentationTimeUs = 4520000
+sample:
+  trackType = video
+  dataHashCode = -929598998
+  size = 21682
+  isKeyFrame = false
+  presentationTimeUs = 4540000
+sample:
+  trackType = video
+  dataHashCode = 1579805687
+  size = 31833
+  isKeyFrame = false
+  presentationTimeUs = 4620000
+sample:
+  trackType = video
+  dataHashCode = 79553286
+  size = 20853
+  isKeyFrame = false
+  presentationTimeUs = 4580000
+sample:
+  trackType = video
+  dataHashCode = -119845353
+  size = 12906
+  isKeyFrame = false
+  presentationTimeUs = 4560000
+sample:
+  trackType = video
+  dataHashCode = -1242905044
+  size = 17165
+  isKeyFrame = false
+  presentationTimeUs = 4600000
+sample:
+  trackType = video
+  dataHashCode = 1161132039
+  size = 35065
+  isKeyFrame = false
+  presentationTimeUs = 4700000
+sample:
+  trackType = video
+  dataHashCode = 1801923857
+  size = 19881
+  isKeyFrame = false
+  presentationTimeUs = 4660000
+sample:
+  trackType = video
+  dataHashCode = -1201934910
+  size = 22571
+  isKeyFrame = false
+  presentationTimeUs = 4640000
+sample:
+  trackType = video
+  dataHashCode = -655417171
+  size = 11566
+  isKeyFrame = false
+  presentationTimeUs = 4680000
+sample:
+  trackType = video
+  dataHashCode = 2011055114
+  size = 24236
+  isKeyFrame = false
+  presentationTimeUs = 4780000
+sample:
+  trackType = video
+  dataHashCode = 1098159553
+  size = 10515
+  isKeyFrame = false
+  presentationTimeUs = 4740000
+sample:
+  trackType = video
+  dataHashCode = 813195513
+  size = 8188
+  isKeyFrame = false
+  presentationTimeUs = 4720000
+sample:
+  trackType = video
+  dataHashCode = 1610084647
+  size = 9662
+  isKeyFrame = false
+  presentationTimeUs = 4760000
+sample:
+  trackType = video
+  dataHashCode = -389131647
+  size = 22443
+  isKeyFrame = false
+  presentationTimeUs = 4860000
+sample:
+  trackType = video
+  dataHashCode = -49148581
+  size = 12726
+  isKeyFrame = false
+  presentationTimeUs = 4820000
+sample:
+  trackType = video
+  dataHashCode = 650534699
+  size = 8521
+  isKeyFrame = false
+  presentationTimeUs = 4800000
+sample:
+  trackType = video
+  dataHashCode = 554081714
+  size = 7850
+  isKeyFrame = false
+  presentationTimeUs = 4840000
+sample:
+  trackType = video
+  dataHashCode = -539147636
+  size = 30005
+  isKeyFrame = false
+  presentationTimeUs = 4940000
+sample:
+  trackType = video
+  dataHashCode = 863445487
+  size = 19430
+  isKeyFrame = false
+  presentationTimeUs = 4900000
+sample:
+  trackType = video
+  dataHashCode = -210870675
+  size = 12962
+  isKeyFrame = false
+  presentationTimeUs = 4880000
+sample:
+  trackType = video
+  dataHashCode = -1294790684
+  size = 10767
+  isKeyFrame = false
+  presentationTimeUs = 4920000
+sample:
+  trackType = video
+  dataHashCode = -650391415
+  size = 25914
+  isKeyFrame = false
+  presentationTimeUs = 5000000
+sample:
+  trackType = video
+  dataHashCode = 1964249241
+  size = 11471
+  isKeyFrame = false
+  presentationTimeUs = 4960000
+sample:
+  trackType = video
+  dataHashCode = 1901943199
+  size = 8639
+  isKeyFrame = false
+  presentationTimeUs = 4980000
+sample:
+  trackType = video
+  dataHashCode = 754314804
+  size = 22173
+  isKeyFrame = false
+  presentationTimeUs = 5060000
+sample:
+  trackType = video
+  dataHashCode = 1631939129
+  size = 10274
+  isKeyFrame = false
+  presentationTimeUs = 5020000
+sample:
+  trackType = video
+  dataHashCode = -914580412
+  size = 8625
+  isKeyFrame = false
+  presentationTimeUs = 5040000
+sample:
+  trackType = video
+  dataHashCode = 464184359
+  size = 19443
+  isKeyFrame = false
+  presentationTimeUs = 5100000
+sample:
+  trackType = video
+  dataHashCode = 521590252
+  size = 9189
+  isKeyFrame = false
+  presentationTimeUs = 5080000
+sample:
+  trackType = video
+  dataHashCode = -1920606290
+  size = 16242
+  isKeyFrame = false
+  presentationTimeUs = 5120000
+sample:
+  trackType = video
+  dataHashCode = -1462753526
+  size = 16036
+  isKeyFrame = false
+  presentationTimeUs = 5140000
+sample:
+  trackType = video
+  dataHashCode = -2095257664
+  size = 16431
+  isKeyFrame = false
+  presentationTimeUs = 5160000
+sample:
+  trackType = video
+  dataHashCode = -1722510728
+  size = 16421
+  isKeyFrame = false
+  presentationTimeUs = 5180000
+sample:
+  trackType = video
+  dataHashCode = -2075073532
+  size = 23643
+  isKeyFrame = false
+  presentationTimeUs = 5240000
+sample:
+  trackType = video
+  dataHashCode = 1068866869
+  size = 9962
+  isKeyFrame = false
+  presentationTimeUs = 5200000
+sample:
+  trackType = video
+  dataHashCode = 2139806323
+  size = 8627
+  isKeyFrame = false
+  presentationTimeUs = 5220000
+sample:
+  trackType = video
+  dataHashCode = -75510961
+  size = 20148
+  isKeyFrame = false
+  presentationTimeUs = 5280000
+sample:
+  trackType = video
+  dataHashCode = -1734586788
+  size = 8888
+  isKeyFrame = false
+  presentationTimeUs = 5260000
+sample:
+  trackType = video
+  dataHashCode = 1689355701
+  size = 19300
+  isKeyFrame = false
+  presentationTimeUs = 5320000
+sample:
+  trackType = video
+  dataHashCode = 1014386281
+  size = 8455
+  isKeyFrame = false
+  presentationTimeUs = 5300000
+sample:
+  trackType = video
+  dataHashCode = 655967971
+  size = 29708
+  isKeyFrame = false
+  presentationTimeUs = 5400000
+sample:
+  trackType = video
+  dataHashCode = 651498019
+  size = 12715
+  isKeyFrame = false
+  presentationTimeUs = 5360000
+sample:
+  trackType = video
+  dataHashCode = -1326592134
+  size = 8573
+  isKeyFrame = false
+  presentationTimeUs = 5340000
+sample:
+  trackType = video
+  dataHashCode = -481876840
+  size = 8982
+  isKeyFrame = false
+  presentationTimeUs = 5380000
+sample:
+  trackType = video
+  dataHashCode = -1289166593
+  size = 25026
+  isKeyFrame = false
+  presentationTimeUs = 5460000
+sample:
+  trackType = video
+  dataHashCode = 1533284887
+  size = 9600
+  isKeyFrame = false
+  presentationTimeUs = 5420000
+sample:
+  trackType = video
+  dataHashCode = 931231084
+  size = 8098
+  isKeyFrame = false
+  presentationTimeUs = 5440000
+sample:
+  trackType = video
+  dataHashCode = 593905363
+  size = 27032
+  isKeyFrame = false
+  presentationTimeUs = 5540000
+sample:
+  trackType = video
+  dataHashCode = -61693143
+  size = 11416
+  isKeyFrame = false
+  presentationTimeUs = 5500000
+sample:
+  trackType = video
+  dataHashCode = 2034274294
+  size = 8119
+  isKeyFrame = false
+  presentationTimeUs = 5480000
+sample:
+  trackType = video
+  dataHashCode = -1382173825
+  size = 7355
+  isKeyFrame = false
+  presentationTimeUs = 5520000
+sample:
+  trackType = video
+  dataHashCode = 1141112289
+  size = 27694
+  isKeyFrame = false
+  presentationTimeUs = 5620000
+sample:
+  trackType = video
+  dataHashCode = 615108734
+  size = 10665
+  isKeyFrame = false
+  presentationTimeUs = 5580000
+sample:
+  trackType = video
+  dataHashCode = -192568269
+  size = 7176
+  isKeyFrame = false
+  presentationTimeUs = 5560000
+sample:
+  trackType = video
+  dataHashCode = 1139129648
+  size = 7375
+  isKeyFrame = false
+  presentationTimeUs = 5600000
+sample:
+  trackType = video
+  dataHashCode = -644623072
+  size = 24651
+  isKeyFrame = false
+  presentationTimeUs = 5700000
+sample:
+  trackType = video
+  dataHashCode = 1087668168
+  size = 9679
+  isKeyFrame = false
+  presentationTimeUs = 5660000
+sample:
+  trackType = video
+  dataHashCode = 1406222068
+  size = 6862
+  isKeyFrame = false
+  presentationTimeUs = 5640000
+sample:
+  trackType = video
+  dataHashCode = -622032068
+  size = 6000
+  isKeyFrame = false
+  presentationTimeUs = 5680000
+sample:
+  trackType = video
+  dataHashCode = 1191619637
+  size = 22101
+  isKeyFrame = false
+  presentationTimeUs = 5780000
+sample:
+  trackType = video
+  dataHashCode = 603349552
+  size = 8537
+  isKeyFrame = false
+  presentationTimeUs = 5740000
+sample:
+  trackType = video
+  dataHashCode = -1784449460
+  size = 6288
+  isKeyFrame = false
+  presentationTimeUs = 5720000
+sample:
+  trackType = video
+  dataHashCode = 1158465085
+  size = 5152
+  isKeyFrame = false
+  presentationTimeUs = 5760000
+sample:
+  trackType = video
+  dataHashCode = 147323155
+  size = 19889
+  isKeyFrame = false
+  presentationTimeUs = 5860000
+sample:
+  trackType = video
+  dataHashCode = 1714081095
+  size = 8893
+  isKeyFrame = false
+  presentationTimeUs = 5820000
+sample:
+  trackType = video
+  dataHashCode = -1894307035
+  size = 5905
+  isKeyFrame = false
+  presentationTimeUs = 5800000
+sample:
+  trackType = video
+  dataHashCode = -1208848015
+  size = 5635
+  isKeyFrame = false
+  presentationTimeUs = 5840000
+sample:
+  trackType = video
+  dataHashCode = 1015012687
+  size = 14896
+  isKeyFrame = false
+  presentationTimeUs = 5940000
+sample:
+  trackType = video
+  dataHashCode = 513736378
+  size = 9260
+  isKeyFrame = false
+  presentationTimeUs = 5900000
+sample:
+  trackType = video
+  dataHashCode = 1346700024
+  size = 5850
+  isKeyFrame = false
+  presentationTimeUs = 5880000
+sample:
+  trackType = video
+  dataHashCode = 279399292
+  size = 7154
+  isKeyFrame = false
+  presentationTimeUs = 5920000
+sample:
+  trackType = video
+  dataHashCode = 831498454
+  size = 8605
+  isKeyFrame = false
+  presentationTimeUs = 5980000
+sample:
+  trackType = video
+  dataHashCode = -20875598
+  size = 6983
+  isKeyFrame = false
+  presentationTimeUs = 5960000
+released = true

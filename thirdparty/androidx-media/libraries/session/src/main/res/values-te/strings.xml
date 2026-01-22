@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">ప్రస్తుతం ప్లే అవుతున్నది</string>
+  <string name="media3_controls_play_description">ప్లే చేయండి</string>
+  <string name="media3_controls_pause_description">పాజ్ చేయండి</string>
+  <string name="media3_controls_seek_to_previous_description">మునుపటి ఐటెమ్‌కు దాటవేయండి</string>
+  <string name="media3_controls_seek_to_next_description">తర్వాతి ఐటెమ్‌కు దాటవేయండి</string>
+  <string name="media3_controls_seek_back_description">వెనుకకు దాటవేయండి</string>
+  <string name="media3_controls_seek_forward_description">ముందుకు ఫార్వర్డ్ చేయండి</string>
+  <string name="error_message_fallback">ఏదో తప్పు జరిగింది. తర్వాత ట్రై చేయండి.</string>
+  <string name="error_message_info_cancelled">పూర్తి చేయడం సాధ్యపడలేదు. మళ్లీ ట్రై చేయండి.</string>
+  <string name="error_message_invalid_state">ప్రస్తుతం దాన్ని చేయడం సాధ్యపడదు</string>
+  <string name="error_message_authentication_expired">ఈ యాప్‌ను ఉపయోగించడానికి సైన్ ఇన్ చేయండి</string>
+  <string name="error_message_content_already_playing">ఇప్పటికే ఆ కంటెంట్ ప్లే అవుతోంది</string>
+  <string name="error_message_end_of_playlist">క్యూలో ఇంకేవీ లేవు</string>
+  <string name="error_message_concurrent_stream_limit">పలు పరికరాలలో వింటున్నారు</string>
+  <string name="error_message_not_available_in_region">సంబంధిత కంటెంట్‌ను ఇక్కడ పొందడం సాధ్యపడదు</string>
+  <string name="error_message_not_supported">ఈ యాప్ దాన్ని చేయలేదు</string>
+  <string name="error_message_parental_control_restricted">సంబంధిత కంటెంట్ బ్లాక్ చేయబడింది</string>
+  <string name="error_message_premium_account_required">Premium యాక్సెస్ అవసరం</string>
+  <string name="error_message_skip_limit_reached">ఇంక ఏ ట్రాక్‌లనూ స్కిప్ చేయడం సాధ్యపడదు</string>
+  <string name="error_message_bad_value">ఇన్‌పుట్ డేటా సరిగ్గా లేదు</string>
+  <string name="error_message_io">ఇన్‌పుట్/అవుట్‌పుట్ ఎర్రర్</string>
+  <string name="error_message_permission_denied">యాక్సెస్‌ తిరస్కరించబడింది</string>
+  <string name="error_message_disconnected">మీడియా యాప్ నుండి డిస్‌కనెక్ట్ చేయండి</string>
+  <string name="error_message_setup_required">సెటప్ అవసరం</string>
+</resources>

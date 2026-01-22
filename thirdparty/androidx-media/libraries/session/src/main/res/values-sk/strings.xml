@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Prehráva sa</string>
+  <string name="media3_controls_play_description">Prehrať</string>
+  <string name="media3_controls_pause_description">Pozastaviť</string>
+  <string name="media3_controls_seek_to_previous_description">Hľadať v predchádzajúcej položke</string>
+  <string name="media3_controls_seek_to_next_description">Hľadať v ďalšej položke</string>
+  <string name="media3_controls_seek_back_description">Hľadať smerom dozadu</string>
+  <string name="media3_controls_seek_forward_description">Hľadať smerom dopredu</string>
+  <string name="error_message_fallback">Vyskytol sa problém. Skúste to neskôr.</string>
+  <string name="error_message_info_cancelled">Nepodarilo sa dokončiť. Skúste to znova.</string>
+  <string name="error_message_invalid_state">Teraz to nie je možné</string>
+  <string name="error_message_authentication_expired">Ak chcete použiť túto aplikáciu, prihláste sa</string>
+  <string name="error_message_content_already_playing">Tento obsah sa už prehráva</string>
+  <string name="error_message_end_of_playlist">Poradie je prázdne</string>
+  <string name="error_message_concurrent_stream_limit">Počúva sa na príliš veľa zariadeniach</string>
+  <string name="error_message_not_available_in_region">Daný obsah tu nie je k dispozícii</string>
+  <string name="error_message_not_supported">Táto aplikácia to nedokáže</string>
+  <string name="error_message_parental_control_restricted">Daný obsah je blokovaný</string>
+  <string name="error_message_premium_account_required">Vyžaduje sa prémiový prístup</string>
+  <string name="error_message_skip_limit_reached">Nie je možné preskočiť žiadne ďalšie skladby</string>
+  <string name="error_message_bad_value">Nesprávne vstupné údaje</string>
+  <string name="error_message_io">Chyba vstupu alebo výstupu</string>
+  <string name="error_message_permission_denied">Prístup bol odmietnutý</string>
+  <string name="error_message_disconnected">Odpojené od prehrávača</string>
+  <string name="error_message_setup_required">Vyžaduje sa nastavenie</string>
+</resources>

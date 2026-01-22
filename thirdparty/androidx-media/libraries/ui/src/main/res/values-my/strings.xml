@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">ပလေယာ ခလုတ်များကို ပြရန်</string>
+  <string name="exo_controls_hide">ပလေယာ ခလုတ်များကို ဝှက်ရန်</string>
+  <string name="exo_controls_seek_bar_description">ဖွင့်သည့် အနေအထား</string>
+  <string name="exo_controls_settings_description">ဆက်တင်များ</string>
+  <string name="exo_controls_overflow_hide_description">နောက်ထပ်ဆက်တင်များကို ဖျောက်သည်</string>
+  <string name="exo_controls_overflow_show_description">နောက်ထပ်ဆက်တင်များကို ပြသည်</string>
+  <string name="exo_controls_fullscreen_enter_description">ဖန်သားပြင်အပြည့်သို့ ဝင်ရောက်ပါ</string>
+  <string name="exo_controls_fullscreen_exit_description">ဖန်သားပြင်အပြည့်မှ ထွက်ရန်</string>
+  <string name="exo_controls_previous_description">ယခင်</string>
+  <string name="exo_controls_next_description">ရှေ့သို့</string>
+  <string name="exo_controls_pause_description">ခဏရပ်ရန်</string>
+  <string name="exo_controls_play_description">ဖွင့်ရန်</string>
+  <string name="exo_controls_stop_description">ရပ်ရန်</string>
+  <string name="exo_controls_rewind_description">ပြန်ရစ်ရန်</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">နောက်သို့ %d စက္ကန့်ရစ်ရန်</item>
+    <item quantity="other">နောက်သို့ %d စက္ကန့်ရစ်ရန်</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">ရှေ့သို့ အမြန်သွားရန်</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">ရှေ့သို့ %d စက္ကန့်ရစ်ရန်</item>
+    <item quantity="other">ရှေ့သို့ %d စက္ကန့်ရစ်ရန်</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">လက်ရှိမုဒ်- ပြန်မကျော့ပါနှင့်။ ပြန်ကျော့မုဒ် ပြောင်းရန်။</string>
+  <string name="exo_controls_repeat_one_description">လက်ရှိမုဒ်- တစ်ခုပြန်ကျော့ရန်။ ပြန်ကျော့မုဒ် ပြောင်းရန်။</string>
+  <string name="exo_controls_repeat_all_description">လက်ရှိမုဒ်- အားလုံးပြန်ကျော့ရန်။ ပြန်ကျော့မုဒ် ပြောင်းရန်။</string>
+  <string name="exo_controls_shuffle_on_description">ရောသမမွှေမုဒ် ပိတ်ရန်</string>
+  <string name="exo_controls_shuffle_off_description">ရောသမမွှေမုဒ် ဖွင့်ရန်</string>
+  <string name="exo_controls_vr_description">VR မုဒ်</string>
+  <string name="exo_controls_cc_enabled_description">စာတန်းထိုး ပိတ်ပါ</string>
+  <string name="exo_controls_cc_disabled_description">စာတန်းထိုး ဖွင့်ပါ</string>
+  <string name="exo_controls_playback_speed">မြန်နှုန်း</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>၀.၂၅ ဆ</item>
+    <item>၀.၅ ဆ</item>
+    <item>၀.၇၅ ဆ</item>
+    <item>ပုံမှန်</item>
+    <item>၁.၂၅ ဆ</item>
+    <item>၁.၅ ဆ</item>
+    <item>၂ ဆ</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">အသံ</string>
+  <string name="exo_track_selection_none">မရှိ</string>
+  <string name="exo_track_selection_auto">အလိုအလျောက်</string>
+  <string name="exo_track_unknown">အမည်မသိ</string>
+  <string name="exo_track_unknown_name">အမျိုးအမည်မသိ (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">မိုနို</string>
+  <string name="exo_track_stereo">စတီရီယို</string>
+  <string name="exo_track_surround">ပတ်လည် အသံစနစ်</string>
+  <string name="exo_track_surround_5_point_1">5.1 ပတ်လည် အသံစနစ်</string>
+  <string name="exo_track_surround_7_point_1">7.1 ပတ်လည် အသံစနစ်</string>
+  <string name="exo_track_role_alternate">အရန်</string>
+  <string name="exo_track_role_supplementary">နောက်ဆက်တွဲ</string>
+  <string name="exo_track_role_commentary">ထင်မြင်သုံးသပ်ချက်</string>
+  <string name="exo_track_role_closed_captions">CC</string>
+  <string name="exo_track_bitrate">%1$.2f Mbps</string>
+  <string name="exo_item_list">%1$s၊ %2$s</string>
+</resources>

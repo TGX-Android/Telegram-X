@@ -69,6 +69,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.voip.VoIPLogs;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import java.util.List;
@@ -760,8 +761,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       }
 
-      if (!msg.isChannel() && !msg.isRepliesChat() && !msg.isThreadHeader() && msg.canGetMessageThread() && msg.getMessageThreadId() != m.getMessageThreadId()) {
-        if (msg.isMessageThreadRoot()) {
+      if (!msg.isChannel() && !msg.isRepliesChat() && !msg.isThreadHeader() && !Td.equalsTo(msg.getMessageTopicId(), m.getMessageTopicId())) {
+        long messageThreadId = Td.messageThreadId(msg.getMessageTopicId());
+        boolean canGetMessageThread = msg.canGetMessageThread();
+        if (canGetMessageThread && msg.isMessageThreadRoot()) {
           int replyCount = msg.getReplyCount();
           if (replyCount > 0) {
             boolean areComments = msg.isChannelAutoForward();
@@ -769,15 +772,15 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             ids.append(R.id.btn_messageReplies);
             icons.append(R.drawable.outline_forum_24);
           }
-        } else if (msg.getMessageThreadId() != 0) {
-          TdApi.Message repliedMessage = msg.tdlib().getMessageLocally(msg.getChatId(), msg.getMessageThreadId());
+        } else if (messageThreadId != 0) {
+          TdApi.Message repliedMessage = msg.tdlib().getMessageLocally(msg.getChatId(), messageThreadId);
           if (repliedMessage != null) {
             int replyCount = TD.getReplyCount(repliedMessage.interactionInfo);
             if (replyCount > 1) {
               if (msg.tdlib().isChannelAutoForward(repliedMessage)) {
                 strings.append(Lang.plural(R.string.ViewXOtherComments, replyCount - 1));
               } else {
-                strings.append(Lang.getString(R.string.ViewThread));
+                strings.append(Lang.getString(R.string.ViewInThread));
               }
               ids.append(R.id.btn_messageReplies);
               icons.append(R.drawable.outline_forum_24);
@@ -1479,7 +1482,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
-  private boolean startSwipeIfNeeded (float diffX) {
+  private boolean startSwipeIfNeeded (MotionEvent e, float diffX) {
     if (msg == null || msg.isNotSent() || !msg.canSwipe() || msg.isSponsoredMessage() || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
       return false;
     }
@@ -1488,6 +1491,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if (recyclerView == null) {
       return false;
     }
+    RootFrameLayout rootView = Views.findAncestor(this, RootFrameLayout.class, true);
+    if (rootView != null && rootView.isWithinSystemGesturesArea(this, e)) {
+      return false;
+    }
+
     if (touchX > MessagesController.getSlideBackBound()) {
       msg.checkTranslatableText(() -> {
         msg.loadAvailableReactions(() -> {
@@ -1579,7 +1587,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
         MessagesRecyclerView recyclerView = findParentRecyclerView();
         if (recyclerView != null && !recyclerView.disallowInterceptTouchEvent() && diffY < Screen.getTouchSlop() && diffX > Screen.getTouchSlop()) {
-          if (startSwipeIfNeeded(e.getX() - touchX)) {
+          if (startSwipeIfNeeded(e, e.getX() - touchX)) {
             if ((flags & FLAG_WILL_CALL_LONG_PRESS) != 0) {
               preventLongPress();
             }

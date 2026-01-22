@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources>
+  <string name="app_name">Media3 Controller Test</string>
+  <string name="app_icon_desc">App icon for %1$s.</string>
+  <string name="no_apps_found">No Media Apps Found</string>
+  <string name="no_apps_reason_no_media_services">Could not locate any apps with media services.</string>
+  <string name="no_apps_reason_no_active_sessions">Could not locate any apps with active media sessions.</string>
+  <string name="no_apps_reason_missing_permission">Notification Listener permission is required to scan for active media sessions.</string>
+  <string name="action_notification_permissions_settings">Settings</string>
+
+  <string name="media_app_header_media_service">Media Service Implementations</string>
+  <string name="media_app_header_active_session">Active MediaSessions</string>
+
+  <string name="id_hint">URI, Media ID, or Query</string>
+
+  <string name="app_control_button">Control</string>
+  <string name="app_test_button">Test</string>
+
+  <string name="media_app_details_update_failed">Couldn\'t update MediaAppDetails object</string>
+  <string name="media_controller_failed_msg">Failed to create a MediaController from session token</string>
+
+  <string name="action_prepare">Prepare</string>
+  <string name="action_play">Play</string>
+
+  <string name="audio_focus_title">Audio Focus</string>
+  <string name="audio_focus_gain_focus">Gain</string>
+  <string name="audio_focus_abandon_focus">Abandon</string>
+
+  <string name="media_info_default">Empty Media Info</string>
+
+  <string name="info_state_string">PlaybackState</string>
+  <string name="info_title_string">Title</string>
+  <string name="info_artist_string">Artist</string>
+  <string name="info_album_string">Album</string>
+  <string name="info_play_when_ready">PlayWhenReady</string>
+
+  <string name="media_art_string">Album art</string>
+
+  <string name="action_pause">Pause</string>
+  <string name="action_resume">Resume</string>
+  <string name="action_stop">Stop</string>
+  <string name="action_skip_previous">Previous</string>
+  <string name="action_skip_next">Next</string>
+  <string name="action_fast_forward">Fast forward</string>
+  <string name="action_fast_rewind">Rewind</string>
+
+  <string name="action_skip_30s_forward">Skip 30s</string>
+  <string name="action_skip_30s_backward">Skip back 30s</string>
+
+  <string name="action_set_shuffle">Set shuffle mode</string>
+  <string name="action_set_repeat">Set repeat mode</string>
+
+  <string name="shuffle_on">Shuffle</string>
+  <string name="shuffle_off">None</string>
+
+  <string name="rating_thumb_up">Thumb Up</string>
+  <string name="rating_thumb_down">Thumb Down</string>
+
+  <string name="rating_heart">Heart</string>
+
+  <string name="rating_star_1">1 star</string>
+  <string name="rating_star_2">2 stars</string>
+  <string name="rating_star_3">3 stars</string>
+  <string name="rating_star_4">4 stars</string>
+  <string name="rating_star_5">5 stars</string>
+
+  <string name="rating_percentage">Rating %</string>
+  <string name="rating_set_percentage">Set</string>
+
+  <string name="custom_commands_header">App-provided Custom Commands</string>
+  <string name="custom_command_description">Send custom command</string>
+
+  <string name="media_browse_tree_top">Browse to top</string>
+  <string name="media_browse_tree_up">Browse up</string>
+  <string name="media_browse_tree_header">App-provided MediaItems</string>
+  <string name="media_browse_tree_empty">Empty tree</string>
+
+  <string name="controller_disconnected_msg">MediaController disconnected</string>
+  <string name="controller_connection_failed_msg">Failed connecting browser: %s</string>
+
+  <string name="search_query_placeholder">Query</string>
+  <string name="search_query_empty_msg">Query is empty</string>
+  <string name="search_button">Search</string>
+  <string name="search_result_empty">Result empty</string>
+  
+  <string name="timeline_list_header">MediaItems in Timeline</string>
+  <string name="timeline_refresh_button">Refresh</string>
+  <string name="timeline_remove_button">Remove</string>
+
+  <string name="command_not_supported_msg">Command not supported</string>
+</resources>

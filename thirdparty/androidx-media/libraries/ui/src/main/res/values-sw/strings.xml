@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Onyesha vidhibiti vya kichezaji</string>
+  <string name="exo_controls_hide">Ficha vidhibiti vya kichezaji</string>
+  <string name="exo_controls_seek_bar_description">Kiasi cha uchezaji</string>
+  <string name="exo_controls_settings_description">Mipangilio</string>
+  <string name="exo_controls_overflow_hide_description">Ficha mipangilio ya ziada</string>
+  <string name="exo_controls_overflow_show_description">Onyesha mipangilio ya ziada</string>
+  <string name="exo_controls_fullscreen_enter_description">Fungua skrini nzima</string>
+  <string name="exo_controls_fullscreen_exit_description">Funga skrini nzima</string>
+  <string name="exo_controls_previous_description">Uliotangulia</string>
+  <string name="exo_controls_next_description">Endelea</string>
+  <string name="exo_controls_pause_description">Sitisha</string>
+  <string name="exo_controls_play_description">Cheza</string>
+  <string name="exo_controls_stop_description">Simamisha</string>
+  <string name="exo_controls_rewind_description">Rudisha nyuma</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Rudisha nyuma kwa sekunde %d</item>
+    <item quantity="other">Rudisha nyuma kwa sekunde %d</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Sogeza mbele haraka</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Sogeza mbele haraka kwa sekunde %d</item>
+    <item quantity="other">Sogeza mbele haraka kwa sekunde %d</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Hali ya sasa: Usirudie yoyote Geuza hali ya kurudia.</string>
+  <string name="exo_controls_repeat_one_description">Hali ya sasa: Rudia moja. Geuza hali ya kurudia.</string>
+  <string name="exo_controls_repeat_all_description">Hali ya sasa: Rudia zote. Geuza hali ya kurudia.</string>
+  <string name="exo_controls_shuffle_on_description">Zima hali ya kuchanganya</string>
+  <string name="exo_controls_shuffle_off_description">Washa hali ya kuchanganya</string>
+  <string name="exo_controls_vr_description">Hali ya Uhalisia Pepe</string>
+  <string name="exo_controls_cc_enabled_description">Zima manukuu</string>
+  <string name="exo_controls_cc_disabled_description">Washa manukuu</string>
+  <string name="exo_controls_playback_speed">Kasi</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0.25x</item>
+    <item>0.5x</item>
+    <item>0.75x</item>
+    <item>Ya kawaida</item>
+    <item>1.25x</item>
+    <item>1.5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Sauti</string>
+  <string name="exo_track_selection_none">Hamna</string>
+  <string name="exo_track_selection_auto">Otomatiki</string>
+  <string name="exo_track_unknown">Haijulikani</string>
+  <string name="exo_track_unknown_name">(%1$s) isiyojulikana</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Mono</string>
+  <string name="exo_track_stereo">Stereo</string>
+  <string name="exo_track_surround">Sauti inayozingira</string>
+  <string name="exo_track_surround_5_point_1">Sauti inayozingira ya 5.1</string>
+  <string name="exo_track_surround_7_point_1">Sauti inayozingira ya 7.1</string>
+  <string name="exo_track_role_alternate">Mbadala</string>
+  <string name="exo_track_role_supplementary">Wa ziada</string>
+  <string name="exo_track_role_commentary">Uchambuzi</string>
+  <string name="exo_track_role_closed_captions">Manukuu</string>
+  <string name="exo_track_bitrate">Mbps %1$.2f</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

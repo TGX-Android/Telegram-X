@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">अहिले प्ले भइरहेको</string>
+  <string name="media3_controls_play_description">प्ले गर्नुहोस्</string>
+  <string name="media3_controls_pause_description">पज गर्नुहोस्</string>
+  <string name="media3_controls_seek_to_previous_description">अघिल्लो वस्तुमा जानुहोस्</string>
+  <string name="media3_controls_seek_to_next_description">अर्को वस्तुमा जानुहोस्</string>
+  <string name="media3_controls_seek_back_description">पछाडि जानुहोस्</string>
+  <string name="media3_controls_seek_forward_description">अगाडि जानुहोस्</string>
+  <string name="error_message_fallback">कुनै समस्या आयो। पछि प्रयास गर्नुहोस्।</string>
+  <string name="error_message_info_cancelled">कार्य पूरा गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
+  <string name="error_message_invalid_state">उक्त कार्य अहिले नै गर्न सकिँदैन</string>
+  <string name="error_message_authentication_expired">यो एप प्रयोग गर्न साइन इन गर्नुहोस्</string>
+  <string name="error_message_content_already_playing">उक्त सामग्री प्ले भइरहेको छ</string>
+  <string name="error_message_end_of_playlist">सूचीमा अरू केही पनि छैन</string>
+  <string name="error_message_concurrent_stream_limit">अत्यधिक डिभाइसहरूबाट सुनिँदै छ</string>
+  <string name="error_message_not_available_in_region">उक्त सामग्री यहाँबाट हेर्न मिल्दैन</string>
+  <string name="error_message_not_supported">यो एपले उक्त कार्य गर्न सक्दैन</string>
+  <string name="error_message_parental_control_restricted">उक्त सामग्री ब्लक गरिएको छ</string>
+  <string name="error_message_premium_account_required">Premium खाताको एक्सेस चाहिन्छ</string>
+  <string name="error_message_skip_limit_reached">योभन्दा धेरै गीतहरू स्किप गर्न मिल्दैन</string>
+  <string name="error_message_bad_value">इन्पुट डेटा गलत छ</string>
+  <string name="error_message_io">इन्पुट/आउटपुटसम्बन्धी त्रुटि</string>
+  <string name="error_message_permission_denied">एक्सेस दिइएन</string>
+  <string name="error_message_disconnected">मिडिया एपबाट डिसकनेक्ट गरियो</string>
+  <string name="error_message_setup_required">सेटअप गर्नु पर्ने हुन्छ</string>
+</resources>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Zobrazit ovládací prvky přehrávače</string>
+  <string name="exo_controls_hide">Skrýt ovládací prvky přehrávače</string>
+  <string name="exo_controls_seek_bar_description">Průběh přehrávání</string>
+  <string name="exo_controls_settings_description">Nastavení</string>
+  <string name="exo_controls_overflow_hide_description">Skrýt další nastavení</string>
+  <string name="exo_controls_overflow_show_description">Zobrazit další nastavení</string>
+  <string name="exo_controls_fullscreen_enter_description">Přejít do režimu celé obrazovky</string>
+  <string name="exo_controls_fullscreen_exit_description">Ukončit režim celé obrazovky</string>
+  <string name="exo_controls_previous_description">Předchozí</string>
+  <string name="exo_controls_next_description">Další</string>
+  <string name="exo_controls_pause_description">Pozastavit</string>
+  <string name="exo_controls_play_description">Přehrát</string>
+  <string name="exo_controls_stop_description">Zastavit</string>
+  <string name="exo_controls_rewind_description">Přetočit zpět</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Přetočit zpět o %d sekundu</item>
+    <item quantity="few">Přetočit zpět o %d sekundy</item>
+    <item quantity="many">Přetočit zpět o %d sekundy</item>
+    <item quantity="other">Přetočit zpět o %d sekund</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Rychle vpřed</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Posunout vpřed o %d sekundu</item>
+    <item quantity="few">Posunout vpřed o %d sekundy</item>
+    <item quantity="many">Posunout vpřed o %d sekundy</item>
+    <item quantity="other">Posunout vpřed o %d sekund</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Aktuálně: Nic neopakovat. Zapněte režim opakování.</string>
+  <string name="exo_controls_repeat_one_description">Aktuálně: Opakovat jednu položku. Zapněte režim opakování.</string>
+  <string name="exo_controls_repeat_all_description">Aktuálně: Opakovat vše. Zapněte režim opakování.</string>
+  <string name="exo_controls_shuffle_on_description">Deaktivovat náhodné přehrávání</string>
+  <string name="exo_controls_shuffle_off_description">Aktivovat náhodné přehrávání</string>
+  <string name="exo_controls_vr_description">Režim VR</string>
+  <string name="exo_controls_cc_enabled_description">Vypnout titulky</string>
+  <string name="exo_controls_cc_disabled_description">Zapnout titulky</string>
+  <string name="exo_controls_playback_speed">Rychlost</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25×</item>
+    <item>0,5×</item>
+    <item>0,75×</item>
+    <item>Normální</item>
+    <item>1,25×</item>
+    <item>1,5×</item>
+    <item>2×</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Zvuk</string>
+  <string name="exo_track_selection_none">Žádné</string>
+  <string name="exo_track_selection_auto">Automaticky</string>
+  <string name="exo_track_unknown">Neznámé</string>
+  <string name="exo_track_unknown_name">Neznámé (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Mono</string>
+  <string name="exo_track_stereo">Stereo</string>
+  <string name="exo_track_surround">Prostorový zvuk</string>
+  <string name="exo_track_surround_5_point_1">Prostorový zvuk 5.1</string>
+  <string name="exo_track_surround_7_point_1">Prostorový zvuk 7.1</string>
+  <string name="exo_track_role_alternate">Alternativní</string>
+  <string name="exo_track_role_supplementary">Dodatkové</string>
+  <string name="exo_track_role_commentary">Komentář</string>
+  <string name="exo_track_role_closed_captions">Titulky</string>
+  <string name="exo_track_bitrate">%1$.2f Mb/s</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

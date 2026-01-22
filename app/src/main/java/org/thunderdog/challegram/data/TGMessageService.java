@@ -207,7 +207,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetTheme setTheme) {
     super(context, msg);
     setTextCreator(() -> {
-      if (StringUtils.isEmpty(setTheme.themeName)) {
+      String themeName = Td.themeName(setTheme.theme);
+      if (StringUtils.isEmpty(themeName)) {
         if (msg.isOutgoing) {
           return getText(
             R.string.ChatThemeDisabled_outgoing
@@ -222,13 +223,13 @@ public final class TGMessageService extends TGMessageServiceImpl {
         if (msg.isOutgoing) {
           return getText(
             R.string.ChatThemeSet_outgoing,
-            new BoldArgument(setTheme.themeName)
+            new BoldArgument(themeName)
           );
         } else {
           return getText(
             R.string.ChatThemeSet,
             new SenderArgument(sender, isUserChat()),
-            new BoldArgument(setTheme.themeName)
+            new BoldArgument(themeName)
           );
         }
       }
@@ -477,6 +478,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
             case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
             case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+            case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
             case TdApi.MessageUsersShared.CONSTRUCTOR:
             case TdApi.MessageChatShared.CONSTRUCTOR:
             case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
@@ -484,6 +486,9 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
             case TdApi.MessageGift.CONSTRUCTOR:
             case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+            case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+            case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+            case TdApi.MessageStakeDice.CONSTRUCTOR:
             case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
             case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
             case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
@@ -496,7 +501,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_7c00740();
+              Td.assertMessageContent_11bff7df();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
@@ -1542,25 +1547,6 @@ public final class TGMessageService extends TGMessageServiceImpl {
         );
       }
     });
-    if (forumTopicInfo != null) {
-      setDisplayMessage(msg.chatId, forumTopicInfo.messageThreadId, message -> {
-        setTextCreator(() -> {
-          if (msg.isOutgoing) {
-            return getText(
-              topicTextOutgoingResId,
-              new MessageArgument(message, new TdApi.FormattedText(topicName, null))
-            );
-          } else {
-            return getText(
-              topicTextResId,
-              new SenderArgument(sender),
-              new MessageArgument(message, new TdApi.FormattedText(topicName, null))
-            );
-          }
-        });
-        return true;
-      });
-    }
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicEdited forumTopicEdited) {
@@ -1755,7 +1741,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         tdlib.ui().openMap(this, new MapController.Args(
             chatLocation.location.latitude,
             chatLocation.location.longitude
-          ).setChatId(msg.chatId, messagesController().getMessageThreadId(), messagesController().getMessageTopicId())
+          ).setChatId(msg.chatId, messagesController().getMessageTopicId())
             .setLocationOwnerChatId(msg.chatId)
             .setIsFaded(locationChanged.newLocation == null)
         )

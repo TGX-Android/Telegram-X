@@ -460,7 +460,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   public TdlibChatListSlice list () {
     if (list == null) {
-      this.list = new TdlibChatListSlice(tdlib, chatList(), filter, false);
+      this.list = tdlib.chatList(chatList()).slice(filter);
     }
     return list;
   }
@@ -723,7 +723,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     }
 
     if (filter == null) {
-      liveLocationHelper = new LiveLocationHelper(this.context, tdlib, 0, 0, null, chatsView, true, this);
+      liveLocationHelper = new LiveLocationHelper(this.context, tdlib, 0, null, chatsView, true, this);
       liveLocationHelper.init();
     }
 
@@ -2705,7 +2705,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     tdlib.settings().removeUserPreferenceChangeListener(this);
     tdlib.listeners().unsubscribeFromGlobalUpdates(this);
     tdlib.cache().unsubscribeFromGlobalUpdates(this);
-    list.unsubscribeFromUpdates(this);
+    list.performDestroy();
     TGLegacyManager.instance().removeEmojiListener(this);
     tdlib.contacts().removeListener(this);
     tdlib.context().dateManager().removeListener(this);

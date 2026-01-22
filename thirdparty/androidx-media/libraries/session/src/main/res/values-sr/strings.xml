@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Тренутно свира</string>
+  <string name="media3_controls_play_description">Пусти</string>
+  <string name="media3_controls_pause_description">Паузирај</string>
+  <string name="media3_controls_seek_to_previous_description">Премотај на претходну ставку</string>
+  <string name="media3_controls_seek_to_next_description">Премотај на следећу ставку</string>
+  <string name="media3_controls_seek_back_description">Премотај уназад</string>
+  <string name="media3_controls_seek_forward_description">Премотај унапред</string>
+  <string name="error_message_fallback">Дошло је до грешке. Пробајте касније.</string>
+  <string name="error_message_info_cancelled">Нисмо успели да довршимо радњу. Пробајте поново.</string>
+  <string name="error_message_invalid_state">Тренутно не можемо то да урадимо</string>
+  <string name="error_message_authentication_expired">Пријавите се да бисте користили ову апликацију</string>
+  <string name="error_message_content_already_playing">Тај садржај се већ пушта</string>
+  <string name="error_message_end_of_playlist">Ништа друго није стављено у редослед</string>
+  <string name="error_message_concurrent_stream_limit">Слушате на превише уређаја</string>
+  <string name="error_message_not_available_in_region">Не можете да добијете тај садржај овде</string>
+  <string name="error_message_not_supported">Ова апликација не може то да уради</string>
+  <string name="error_message_parental_control_restricted">Тај садржај је блокиран</string>
+  <string name="error_message_premium_account_required">Потребан је премијум приступ</string>
+  <string name="error_message_skip_limit_reached">Не можете више да прескачете песме</string>
+  <string name="error_message_bad_value">Нетачни подаци за унос</string>
+  <string name="error_message_io">Грешка уноса/излаза</string>
+  <string name="error_message_permission_denied">Приступ је одбијен</string>
+  <string name="error_message_disconnected">Прекинута је веза са медијском апликацијом</string>
+  <string name="error_message_setup_required">Треба да обавите подешавање</string>
+</resources>

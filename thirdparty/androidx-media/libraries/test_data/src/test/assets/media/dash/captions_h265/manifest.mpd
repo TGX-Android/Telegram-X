@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" minBufferTime="PT1.500000S" type="static" xmlns:cenc="urn:mpeg:cenc:2013" mediaPresentationDuration="PT0H0M2.500S" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011">
+  <Period id="0" duration="PT2.000S">
+    <AdaptationSet mimeType="video/mp4">
+      <Accessibility schemeIdUri="urn:scte:dash:cc:cea-608:2015" value="CC1=eng"/>
+      <Representation codecs="hev1.1.6.L60.90" width="416" height="234" bandwidth="742564" id="sd-dash">
+        <BaseURL>fragmented_captions_h265.mp4</BaseURL>
+        <SegmentList presentationTimeOffset="0" duration="20000" timescale="10000">
+          <Initialization range="0-3202"/>
+          <SegmentURL mediaRange="3203-27898"/>
+        </SegmentList>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>

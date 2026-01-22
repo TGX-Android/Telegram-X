@@ -463,20 +463,24 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   }
 
   @Override
-  public boolean closeSearchModeByBackPress (boolean fromTop) {
+  public boolean closeSearchModeByBackPress (boolean fromTop, boolean commit) {
     return true;
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (inEmojiSelectMode) {
-      closeEmojiSelectMode();
+      if (commit) {
+        closeEmojiSelectMode();
+      }
       return true;
     } else if (inSearchMode()) {
-      closeSearchMode(null);
+      if (commit) {
+        closeSearchMode(null);
+      }
       return true;
     }
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override

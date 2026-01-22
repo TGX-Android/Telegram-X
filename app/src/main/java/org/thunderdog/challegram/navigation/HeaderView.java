@@ -280,8 +280,13 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   // Theme stuff
 
+  @SuppressWarnings("deprecation")
   private void invalidateHeader () {
-    invalidate(0, 0, getMeasuredWidth(), filling.getBottom() + filling.getExtraHeight());
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      invalidate();
+    } else {
+      invalidate(0, 0, getMeasuredWidth(), filling.getBottom() + filling.getExtraHeight());
+    }
   }
 
   public void resetColors (ViewController<?> c, ViewController<?> preview) {
@@ -1149,7 +1154,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
         return false;
       }
       if (e.getAction() == MotionEvent.ACTION_DOWN && e.getY() < filling.getBottom()) {
-        ViewController<?> c = UI.getCurrentStackItem();
+        ViewController<?> c = UI.getCurrentStackItem(getContext());
         if (c != null) {
           c.dismissIntercept();
         }
@@ -1344,7 +1349,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
       if (forward) {
         addView(menuPreview, -1);
       } else {
-        addView(menuPreview, 3);
+        addView(menuPreview, Math.min(3, getChildCount()));
       }
     } else {
       menuPreviewUsed = false;
@@ -1420,6 +1425,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   private boolean useShadowSwitch, shadowSwitch;
   private boolean usePlayerSwitch, playerSwitch;
   private float translationFactor;
+  private boolean forceRtlAnimation;
 
   public float getTranslation () {
     return translationFactor;
@@ -1459,7 +1465,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
     switch (translationMode) {
       case MODE_HORIZONTAL: {
-        if (Lang.rtl()) {
+        if (forceRtlAnimation || Lang.rtl()) {
           if (translateForward) {
             title.setTranslationX(currentX * raptor);
             preview.setTranslationX(-currentX * (1f - raptor));
@@ -1622,7 +1628,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       if (useBarSwitch) {
-        window.setStatusBarColor(barChanger.getColor(raptor));
+        setStatusBarColor(window, barChanger.getColor(raptor));
       }
     }
 
@@ -1638,6 +1644,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
         preview.invalidate();
       }
     }
+  }
+
+  @SuppressWarnings("deprecation")
+  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  private static void setStatusBarColor (Window window, int color) {
+    window.setStatusBarColor(color);
   }
 
   void applyPreview (ViewController<?> current) {
@@ -1725,7 +1737,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   private void transform (final ViewController<?> controller, final int mode, int arg, final boolean open, boolean animated, final Runnable after, boolean needUpdateKeyboard) {
     this.transformMode = mode;
 
-    openPreview(controller, null, open, MODE_FADE, translationFactor);
+    openPreview(controller, null, open, MODE_FADE, translationFactor, false);
 
     if (open) {
       switch (mode) {
@@ -2224,11 +2236,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   private boolean previewOpened = false;
 
-  void openPreview (ViewController<?> left, ViewController<?> right, boolean forward, int direction, float factor) {
+  void openPreview (ViewController<?> left, ViewController<?> right, boolean forward, int direction, float factor, boolean forceRtl) {
     this.previewOpened = true;
     this.currentX = (float) getMeasuredWidth() * TRANSLATION_FACTOR;
     this.translationMode = direction;
     this.translationFactor = factor;
+    this.forceRtlAnimation = direction == MODE_HORIZONTAL && forceRtl;
 
     if (right != null && !forward && right.usePopupMode()) {
       this.currentY = left.getHeaderHeight() + getEffectiveTopOffset();
@@ -2803,6 +2816,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return ColorUtils.compositeColor(color, STATUS_OVERLAY_COLOR);
   }
 
+  @SuppressWarnings("deprecation")
   public static int computeStatusBarColor (ViewController<?> c, int alpha) {
     return ColorUtils.compositeColor(c.getStatusBarColor(), Color.argb((int) ((float) alpha / 255f * (float) Color.alpha(STATUS_OVERLAY_COLOR)), Color.red(STATUS_OVERLAY_COLOR), Color.green(STATUS_OVERLAY_COLOR), Color.blue(STATUS_OVERLAY_COLOR)));
   }

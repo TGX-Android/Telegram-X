@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Ցուցադրել նվագարկչի կառավարները</string>
+  <string name="exo_controls_hide">Թաքցնել նվագարկչի կառավարները</string>
+  <string name="exo_controls_seek_bar_description">Նվագարկման ընթացքը</string>
+  <string name="exo_controls_settings_description">Կարգավորումներ</string>
+  <string name="exo_controls_overflow_hide_description">Թաքցնել լրացուցիչ կարգավորումները</string>
+  <string name="exo_controls_overflow_show_description">Ցուցադրել լրացուցիչ կարգավորումները</string>
+  <string name="exo_controls_fullscreen_enter_description">Մտնել լիաէկրան ռեժիմ</string>
+  <string name="exo_controls_fullscreen_exit_description">Դուրս գալ լիաէկրան ռեժիմից</string>
+  <string name="exo_controls_previous_description">Հետ</string>
+  <string name="exo_controls_next_description">Առաջ</string>
+  <string name="exo_controls_pause_description">Դադարեցնել</string>
+  <string name="exo_controls_play_description">Նվագարկել</string>
+  <string name="exo_controls_stop_description">Կանգնեցնել</string>
+  <string name="exo_controls_rewind_description">Հետ</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">%d վայրկյան հետ տալ</item>
+    <item quantity="other">%d վայրկյան հետ տալ</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Առաջ</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">%d վայրկյան առաջ տալ</item>
+    <item quantity="other">%d վայրկյան առաջ տալ</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Ընթացիկ ռեժիմը՝ «Չկրկնել»։ Փոխել կրկնության ռեժիմը։</string>
+  <string name="exo_controls_repeat_one_description">Ընթացիկ ռեժիմը՝ «Կրկնել մեկը»։ Փոխել կրկնության ռեժիմը։</string>
+  <string name="exo_controls_repeat_all_description">Ընթացիկ ռեժիմը՝ «Կրկնել բոլորը»։ Փոխել կրկնության ռեժիմը։</string>
+  <string name="exo_controls_shuffle_on_description">Անջատել խառը նվագարկման ռեժիմը</string>
+  <string name="exo_controls_shuffle_off_description">Միացնել խառը նվագարկման ռեժիմը</string>
+  <string name="exo_controls_vr_description">VR ռեժիմ</string>
+  <string name="exo_controls_cc_enabled_description">Անջատել ենթագրերը</string>
+  <string name="exo_controls_cc_disabled_description">Միացնել ենթագրերը</string>
+  <string name="exo_controls_playback_speed">Արագություն</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25x</item>
+    <item>0,5x</item>
+    <item>0,75x</item>
+    <item>Սովորական</item>
+    <item>1,25x</item>
+    <item>1,5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Աուդիո</string>
+  <string name="exo_track_selection_none">Ոչ մեկը</string>
+  <string name="exo_track_selection_auto">Ավտոմատ</string>
+  <string name="exo_track_unknown">Անհայտ</string>
+  <string name="exo_track_unknown_name">Անհայտ (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Մոնո</string>
+  <string name="exo_track_stereo">Ստերեո</string>
+  <string name="exo_track_surround">Ծավալային ձայն</string>
+  <string name="exo_track_surround_5_point_1">5․1 ծավալային ձայն</string>
+  <string name="exo_track_surround_7_point_1">7․1 ծավալային ձայն</string>
+  <string name="exo_track_role_alternate">Այլընտրանքային</string>
+  <string name="exo_track_role_supplementary">Լրացուցիչ</string>
+  <string name="exo_track_role_commentary">Մեկնաբանություններ</string>
+  <string name="exo_track_role_closed_captions">Ենթագրեր</string>
+  <string name="exo_track_bitrate">%1$.2f Մբիթ/վ</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

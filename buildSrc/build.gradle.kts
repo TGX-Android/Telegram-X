@@ -1,31 +1,51 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
   `kotlin-dsl`
 }
 
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
+}
+
+kotlin {
+  compilerOptions {
+    allWarningsAsErrors = true
+    jvmTarget = JvmTarget.JVM_21
+  }
+  jvmToolchain {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
+}
+
 gradlePlugin {
   plugins {
-    register("module-plugin") {
-      id = "module-plugin"
-      implementationClass = "tgx.gradle.plugin.ModulePlugin"
+    register("tgx-config") {
+      id = "tgx-config"
+      implementationClass = "tgx.gradle.plugin.ConfigurationPlugin"
     }
-    register("cmake-plugin") {
-      id = "cmake-plugin"
-      implementationClass = "tgx.gradle.plugin.CMakePlugin"
+    register("tgx-module") {
+      id = "tgx-module"
+      implementationClass = "tgx.gradle.plugin.ModulePlugin"
     }
   }
 }
 
-repositories {
-  google()
-  mavenCentral()
+dependencies {
+  // https://github.com/gradle/gradle/issues/15383#issuecomment-779893192
+  implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
+
+  compileOnly(gradleApi())
+  implementation(libs.android.gradle.plugin)
+  implementation(libs.okhttp.latest)
+  implementation(libs.kotlinx.serialization.json)
 }
 
-dependencies {
-  compileOnly(gradleApi())
-  implementation("com.android.tools.build:gradle:8.12.2")
-  implementation("com.google.gms:google-services:4.4.3")
-  implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.21")
-  implementation("com.squareup.okhttp3:okhttp:4.12.0")
-  implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-  implementation("com.beust:klaxon:5.6")
+apply(from = "${rootDir.parentFile}/properties.gradle.kts")
+if (extra["huawei"] == true) {
+  dependencies {
+    implementation(libs.huawei.agconnect)
+  }
 }

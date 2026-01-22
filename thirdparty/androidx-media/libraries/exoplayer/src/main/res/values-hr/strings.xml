@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Preuzmi</string>
+  <string name="exo_download_notification_channel_name">Preuzimanja</string>
+  <string name="exo_download_downloading">Preuzimanje</string>
+  <string name="exo_download_completed">Preuzimanje je dovršeno</string>
+  <string name="exo_download_failed">Preuzimanje nije uspjelo</string>
+  <string name="exo_download_removing">Uklanjanje preuzimanja</string>
+  <string name="exo_download_paused">Preuzimanja su pauzirana</string>
+  <string name="exo_download_paused_for_network">Preuzimanja čekaju mrežu</string>
+  <string name="exo_download_paused_for_wifi">Preuzimanja čekaju Wi-Fi</string>
+</resources>

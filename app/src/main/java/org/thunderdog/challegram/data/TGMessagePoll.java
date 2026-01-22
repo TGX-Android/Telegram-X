@@ -387,6 +387,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
   @Override
   public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    if (options == null) {
+      textMediaReceiver.clear();
+      return;
+    }
     int idOffset = Integer.MAX_VALUE / (options.length + 1);
     if (questionText != null) {
       questionText.requestMedia(textMediaReceiver, 0, idOffset);

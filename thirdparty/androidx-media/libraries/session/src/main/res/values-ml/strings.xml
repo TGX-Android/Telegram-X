@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">ഇപ്പോൾ പ്ലേ ചെയ്യുന്നത്</string>
+  <string name="media3_controls_play_description">പ്ലേ ചെയ്യുക</string>
+  <string name="media3_controls_pause_description">താൽക്കാലികമായി നിർത്തുക</string>
+  <string name="media3_controls_seek_to_previous_description">മുമ്പത്തെ ഇനത്തിലേക്ക് നീക്കുക</string>
+  <string name="media3_controls_seek_to_next_description">അടുത്ത ഇനത്തിലേക്ക് നീക്കുക</string>
+  <string name="media3_controls_seek_back_description">പിന്നോട്ട് നീക്കുക</string>
+  <string name="media3_controls_seek_forward_description">മുന്നോട്ട് നീക്കുക</string>
+  <string name="error_message_fallback">എന്തോ കുഴപ്പമുണ്ട്. പിന്നീട് ശ്രമിക്കുക.</string>
+  <string name="error_message_info_cancelled">പൂർത്തിയാക്കാനായില്ല. വീണ്ടും ശ്രമിക്കുക.</string>
+  <string name="error_message_invalid_state">അത് ഇപ്പോൾ ചെയ്യാനാകില്ല</string>
+  <string name="error_message_authentication_expired">ഈ ആപ്പ് ഉപയോഗിക്കാൻ സെെൻ ഇൻ ചെയ്യുക</string>
+  <string name="error_message_content_already_playing">ആ ഉള്ളടക്കം നിലവിൽ പ്ലേ ചെയ്യുകയാണ്</string>
+  <string name="error_message_end_of_playlist">മറ്റൊന്നും ക്യൂവിലില്ല</string>
+  <string name="error_message_concurrent_stream_limit">നിരവധി ഉപകരണങ്ങളിൽ കേൾക്കുന്നു</string>
+  <string name="error_message_not_available_in_region">ആ ഉള്ളടക്കം ഇവിടെ ലഭ്യമല്ല</string>
+  <string name="error_message_not_supported">ഈ ആപ്പിന് അത് ചെയ്യാനാകില്ല</string>
+  <string name="error_message_parental_control_restricted">ആ ഉള്ളടക്കം ബ്ലോക്ക് ചെയ്‌തിരിക്കുന്നു</string>
+  <string name="error_message_premium_account_required">പ്രീമിയം ആക്‌സസ് ആവശ്യമാണ്</string>
+  <string name="error_message_skip_limit_reached">ഇനിയും ട്രാക്കുകൾ ഒഴിവാക്കാനാകില്ല</string>
+  <string name="error_message_bad_value">ഇൻപുട്ട് ഡാറ്റ തെറ്റാണ്</string>
+  <string name="error_message_io">ഇൻപുട്ട്/ഔട്ട്പുട്ട് പിശക്</string>
+  <string name="error_message_permission_denied">ആക്സസ് നിരസിച്ചു</string>
+  <string name="error_message_disconnected">മീഡിയ ആപ്പിൽ നിന്ന് വിച്ഛേദിച്ചു</string>
+  <string name="error_message_setup_required">സജ്ജീകരിക്കൽ ആവശ്യമാണ്</string>
+</resources>

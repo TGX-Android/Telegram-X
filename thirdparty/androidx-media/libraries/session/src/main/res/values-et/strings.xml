@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Hetkel mängimas</string>
+  <string name="media3_controls_play_description">Esitamine</string>
+  <string name="media3_controls_pause_description">Peatamine</string>
+  <string name="media3_controls_seek_to_previous_description">Eelmise üksuse juurde liikumine</string>
+  <string name="media3_controls_seek_to_next_description">Järgmise üksuse juurde liikumine</string>
+  <string name="media3_controls_seek_back_description">Tagasikerimine</string>
+  <string name="media3_controls_seek_forward_description">Edasikerimine</string>
+  <string name="error_message_fallback">Midagi on valesti. Proovige hiljem.</string>
+  <string name="error_message_info_cancelled">Ei saanud lõpetada. Proovige uuesti.</string>
+  <string name="error_message_invalid_state">Seda ei saa praegu teha</string>
+  <string name="error_message_authentication_expired">Selle rakenduse kasutamiseks logige sisse</string>
+  <string name="error_message_content_already_playing">Seda sisu juba esitatakse</string>
+  <string name="error_message_end_of_playlist">Midagi muud pole järjekorras</string>
+  <string name="error_message_concurrent_stream_limit">Kuulatakse liiga paljudes seadmetes</string>
+  <string name="error_message_not_available_in_region">Seda sisu ei saa siin esitada</string>
+  <string name="error_message_not_supported">See rakendus ei saa seda teha</string>
+  <string name="error_message_parental_control_restricted">See sisu on blokeeritud</string>
+  <string name="error_message_premium_account_required">Vaja on Premium-tasemel juurdepääsu</string>
+  <string name="error_message_skip_limit_reached">Rohkem lugusid ei saa vahele jätta</string>
+  <string name="error_message_bad_value">Valed sisendandmed</string>
+  <string name="error_message_io">Sisendi/väljundi viga</string>
+  <string name="error_message_permission_denied">Juurdepääs keelatud</string>
+  <string name="error_message_disconnected">Ühendus meediarakendusega on katkestatud</string>
+  <string name="error_message_setup_required">Seadistamine on nõutav</string>
+</resources>

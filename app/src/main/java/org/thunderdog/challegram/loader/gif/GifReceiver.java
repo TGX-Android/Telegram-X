@@ -198,8 +198,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
       } else {
         ratio = Math.min(widthRatio, heightRatio);
       }
-      sourceWidth *= ratio;
-      sourceHeight *= ratio;
+      sourceWidth = (int) ((float) sourceWidth * ratio);
+      sourceHeight = (int) ((float) sourceHeight * ratio);
       return sourceWidth;
     }
     return getWidth();
@@ -229,8 +229,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
       } else {
         ratio = Math.min(widthRatio, heightRatio);
       }
-      sourceWidth *= ratio;
-      sourceHeight *= ratio;
+      sourceWidth = (int) ((float) sourceWidth * ratio);
+      sourceHeight = (int) ((float) sourceHeight * ratio);
       return sourceHeight;
     }
     return 0;
@@ -292,8 +292,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
           }
 
           float ratio = Math.min((float) availWidth / (float) sourceWidth, (float) availHeight / (float) sourceHeight);
-          sourceWidth *= ratio;
-          sourceHeight *= ratio;
+          sourceWidth = (int) ((float) sourceWidth * ratio);
+          sourceHeight = (int) ((float) sourceHeight * ratio);
 
           int centerX = (int) drawRegion.centerX();
           int centerY = (int) drawRegion.centerY();

@@ -598,9 +598,9 @@
   <item type="id" name="btn_passcodeType_password" />
   <item type="id" name="btn_passcodeType_pattern" />
   <item type="id" name="btn_passcodeType_gesture" />
-  <item type="id" name="btn_passcodeType_fingerprint" />
+  <item type="id" name="btn_passcodeType_biometrics" />
   <item type="id" name="btn_pattern" />
-  <item type="id" name="btn_fingerprint" />
+  <item type="id" name="btn_biometrics" />
   <item type="id" name="btn_screenCapture" />
   <item type="id" name="btn_notificationContent" />
   <item type="id" name="btn_passcode_change" />
@@ -901,7 +901,9 @@
   <item type="id" name="btn_1month" />
   <item type="id" name="btn_3months" />
   <item type="id" name="btn_6month" />
-  <item type="id" name="btn_1year" />
+  <item type="id" name="btn_12months" />
+  <item type="id" name="btn_18months" />
+  <item type="id" name="btn_24months" />
   <item type="id" name="btn_setPassword" />
   <item type="id" name="btn_changePassword" />
   <item type="id" name="btn_disablePassword" />

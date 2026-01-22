@@ -1,0 +1,32 @@
+seekMap:
+  isSeekable = true
+  duration = 4166600
+  getPosition(0) = [[timeUs=0, position=40]]
+  getPosition(1) = [[timeUs=0, position=40], [timeUs=33333, position=52413]]
+  getPosition(2083300) = [[timeUs=2066644, position=4012137], [timeUs=2099977, position=4082385]]
+  getPosition(4166600) = [[timeUs=4133288, position=8385052]]
+numberOfTracks = 1
+track 0:
+  total output bytes = 70926
+  sample count = 1
+  track duration = 4166600
+  format 0:
+    averageBitrate = 16235575
+    id = 1
+    containerMimeType = video/mp4
+    sampleMimeType = video/apv
+    maxInputSize = 70970
+    width = 640
+    height = 480
+    frameRate = 30.00
+    colorInfo:
+      lumaBitdepth = 10
+      chromaBitdepth = 10
+    metadata = entries=[mdta: key=com.android.version, value=15, xyz: latitude=0.0, longitude=-180.0, Mp4Timestamp: creation time=3821418903, modification time=3821418903, timescale=10000]
+    initializationData:
+      data = length 18, hash 77EBC81
+  sample 0:
+    time = 4133288
+    flags = 536870913
+    data = length 70926, hash 95538A45
+tracksEnded = true

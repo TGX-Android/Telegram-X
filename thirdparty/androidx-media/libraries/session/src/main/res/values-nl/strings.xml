@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Wordt nu afgespeeld</string>
+  <string name="media3_controls_play_description">Afspelen</string>
+  <string name="media3_controls_pause_description">Pauzeren</string>
+  <string name="media3_controls_seek_to_previous_description">Naar vorige item springen</string>
+  <string name="media3_controls_seek_to_next_description">Naar volgende item springen</string>
+  <string name="media3_controls_seek_back_description">Achteruit springen</string>
+  <string name="media3_controls_seek_forward_description">Vooruit springen</string>
+  <string name="error_message_fallback">Er is iets misgegaan. Probeer het later opnieuw.</string>
+  <string name="error_message_info_cancelled">Kan niet afronden. Probeer het opnieuw.</string>
+  <string name="error_message_invalid_state">Kan dat nu niet doen</string>
+  <string name="error_message_authentication_expired">Log in om deze app te gebruiken</string>
+  <string name="error_message_content_already_playing">Die content wordt al afgespeeld</string>
+  <string name="error_message_end_of_playlist">Er staat niets anders in de wachtrij</string>
+  <string name="error_message_concurrent_stream_limit">Er wordt op te veel apparaten geluisterd</string>
+  <string name="error_message_not_available_in_region">Kan die content hier niet krijgen</string>
+  <string name="error_message_not_supported">Deze app kan dat niet doen</string>
+  <string name="error_message_parental_control_restricted">Die content is geblokkeerd</string>
+  <string name="error_message_premium_account_required">Premium toegang vereist</string>
+  <string name="error_message_skip_limit_reached">Kan geen nummers meer overslaan</string>
+  <string name="error_message_bad_value">Onjuiste invoergegevens</string>
+  <string name="error_message_io">Invoer-/uitvoerfout</string>
+  <string name="error_message_permission_denied">Toegang geweigerd</string>
+  <string name="error_message_disconnected">Verbinding met media-app verbroken</string>
+  <string name="error_message_setup_required">Instellen vereist</string>
+</resources>

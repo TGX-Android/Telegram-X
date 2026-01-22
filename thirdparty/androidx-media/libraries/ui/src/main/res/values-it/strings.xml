@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Mostra i controlli del player</string>
+  <string name="exo_controls_hide">Nascondi i controlli del player</string>
+  <string name="exo_controls_seek_bar_description">Avanzamento della riproduzione</string>
+  <string name="exo_controls_settings_description">Impostazioni</string>
+  <string name="exo_controls_overflow_hide_description">Nascondi impostazioni aggiuntive</string>
+  <string name="exo_controls_overflow_show_description">Mostra impostazioni aggiuntive</string>
+  <string name="exo_controls_fullscreen_enter_description">Attiva schermo intero</string>
+  <string name="exo_controls_fullscreen_exit_description">Esci da schermo intero</string>
+  <string name="exo_controls_previous_description">Indietro</string>
+  <string name="exo_controls_next_description">Avanti</string>
+  <string name="exo_controls_pause_description">Pausa</string>
+  <string name="exo_controls_play_description">Riproduci</string>
+  <string name="exo_controls_stop_description">Interrompi</string>
+  <string name="exo_controls_rewind_description">Riavvolgi</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Indietro di %d secondo</item>
+    <item quantity="other">Indietro di %d secondi</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Avanti veloce</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Avanti di %d secondo</item>
+    <item quantity="other">Avanti di %d secondi</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Modalità attuale: Non ripetere nulla. Cambia modalità di ripetizione.</string>
+  <string name="exo_controls_repeat_one_description">Modalità attuale: Ripeti uno. Cambia modalità di ripetizione.</string>
+  <string name="exo_controls_repeat_all_description">Modalità attuale: Ripeti tutto. Cambia modalità di ripetizione.</string>
+  <string name="exo_controls_shuffle_on_description">Disattiva la riproduzione casuale</string>
+  <string name="exo_controls_shuffle_off_description">Attiva la riproduzione casuale</string>
+  <string name="exo_controls_vr_description">Modalità VR</string>
+  <string name="exo_controls_cc_enabled_description">Disattiva i sottotitoli</string>
+  <string name="exo_controls_cc_disabled_description">Attiva i sottotitoli</string>
+  <string name="exo_controls_playback_speed">Velocità</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25x</item>
+    <item>0,5x</item>
+    <item>0,75x</item>
+    <item>Normale</item>
+    <item>1,25x</item>
+    <item>1,5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Audio</string>
+  <string name="exo_track_selection_none">Nessuno</string>
+  <string name="exo_track_selection_auto">Auto</string>
+  <string name="exo_track_unknown">Sconosciuta</string>
+  <string name="exo_track_unknown_name">Sconosciute (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Mono</string>
+  <string name="exo_track_stereo">Stereo</string>
+  <string name="exo_track_surround">Audio surround</string>
+  <string name="exo_track_surround_5_point_1">Audio surround 5.1</string>
+  <string name="exo_track_surround_7_point_1">Audio surround 7.1</string>
+  <string name="exo_track_role_alternate">Versione alternativa</string>
+  <string name="exo_track_role_supplementary">Contenuti supplementari</string>
+  <string name="exo_track_role_commentary">Commenti</string>
+  <string name="exo_track_role_closed_captions">Sottotitoli</string>
+  <string name="exo_track_bitrate">%1$.2f Mbps</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

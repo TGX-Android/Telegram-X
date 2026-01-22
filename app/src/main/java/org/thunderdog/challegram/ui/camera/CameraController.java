@@ -1620,7 +1620,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
       qrCodeListener.onQrCodeScanned(savedQrCodeData);
       savedQrCodeData = null;
       qrCodeConfirmed = true;
-      context.onBackPressed();
+      context.performBackPress(false);
     }
   }
 
@@ -1702,7 +1702,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
     }
 
     if (isInQrScanMode()) {
-      context.onBackPressed();
+      context.performBackPress(false);
     } else if (canTakeSnapshot()) {
       manager.setTakingPhoto(true);
       if (flashMode == CameraFeatures.FEATURE_FLASH_OFF) {

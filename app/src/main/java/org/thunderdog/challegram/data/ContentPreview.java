@@ -222,13 +222,14 @@ public class ContentPreview {
       return new ContentPreview(EMOJI_ERROR, 0, Lang.getString(R.string.DeletedMessage), false);
     }
     if (Settings.instance().needRestrictContent()) {
-      if (!StringUtils.isEmpty(message.restrictionReason)) {
-        return new ContentPreview(EMOJI_ERROR, 0, message.restrictionReason, false);
+      String restrictionText = Lang.getRestrictionText(message.restrictionInfo);
+      if (!StringUtils.isEmpty(restrictionText)) {
+        return new ContentPreview(EMOJI_ERROR, 0, restrictionText, false);
       }
       if (checkChatRestrictions && chatId != 0) { // Otherwise lookup is handled by the caller
-        String restrictionReason = tdlib.chatRestrictionReason(chatId);
-        if (restrictionReason != null) {
-          return new ContentPreview(EMOJI_ERROR, 0, restrictionReason, false);
+        restrictionText = Lang.getRestrictionText(tdlib.chatRestriction(chatId));
+        if (!StringUtils.isEmpty(restrictionText)) {
+          return new ContentPreview(EMOJI_ERROR, 0, restrictionText, false);
         }
       }
     }
@@ -528,7 +529,7 @@ public class ContentPreview {
         arg1 = ((TdApi.MessageChatSetMessageAutoDeleteTime) message.content).messageAutoDeleteTime;
         break;
       case TdApi.MessageChatSetTheme.CONSTRUCTOR:
-        alternativeText = ((TdApi.MessageChatSetTheme) message.content).themeName;
+        alternativeText = Td.themeName(((TdApi.MessageChatSetTheme) message.content).theme);
         break;
       case TdApi.MessageGiftedPremium.CONSTRUCTOR: {
         // TODO: R.string.ChatContent*
@@ -712,6 +713,9 @@ public class ContentPreview {
       case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
       case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
@@ -722,6 +726,7 @@ public class ContentPreview {
       case TdApi.MessageUsersShared.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
       case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
       case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
@@ -737,14 +742,14 @@ public class ContentPreview {
       case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
       case TdApi.MessageGiftedTon.CONSTRUCTOR:
+      case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
-      case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_11bff7df();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1121,11 +1126,13 @@ public class ContentPreview {
         return getNotificationPreview(TdApi.MessageChatChangeTitle.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatChangeTitle) push.content).title);
 
       case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR:
-        return getNotificationPreview(TdApi.MessageChatSetTheme.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatSetTheme) push.content).themeName);
+        return getNotificationPreview(TdApi.MessageChatSetTheme.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatSetTheme) push.content).name);
       case TdApi.PushMessageContentChatSetBackground.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageChatSetBackground.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, ((TdApi.PushMessageContentChatSetBackground) push.content).isSame ? ARG_TRUE : ARG_NONE, 0);
       case TdApi.PushMessageContentSuggestProfilePhoto.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
+      case TdApi.PushMessageContentSuggestBirthdate.CONSTRUCTOR:
+        return getNotificationPreview(TdApi.MessageSuggestBirthdate.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
 
       case TdApi.PushMessageContentPremiumGiftCode.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessagePremiumGiftCode.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, ((TdApi.PushMessageContentPremiumGiftCode) push.content).monthCount, 0);
@@ -1204,7 +1211,7 @@ public class ContentPreview {
         return getNotificationPreview(TdApi.MessageUnsupported.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
       }
       default:
-        Td.assertPushMessageContent_55b7513d();
+        Td.assertPushMessageContent_366f79c5();
         throw Td.unsupported(push.content);
     }
   }
@@ -1541,6 +1548,7 @@ public class ContentPreview {
       case TdApi.MessageUsersShared.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
       case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
       case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
@@ -1551,6 +1559,9 @@ public class ContentPreview {
       case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageChecklist.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
@@ -1563,6 +1574,7 @@ public class ContentPreview {
       case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
       case TdApi.MessageGiftedTon.CONSTRUCTOR:
+      case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1571,10 +1583,9 @@ public class ContentPreview {
 
       // Bots only. Unused
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
-      case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_11bff7df();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

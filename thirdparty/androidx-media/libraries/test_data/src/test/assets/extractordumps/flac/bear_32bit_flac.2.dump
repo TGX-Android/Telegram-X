@@ -1,0 +1,63 @@
+seekMap:
+  isSeekable = true
+  duration = 2741000
+  getPosition(0) = [[timeUs=0, position=8286]]
+  getPosition(1) = [[timeUs=1, position=8286]]
+  getPosition(1370500) = [[timeUs=1370500, position=83950]]
+  getPosition(2741000) = [[timeUs=2741000, position=163626]]
+numberOfTracks = 1
+track 0:
+  total output bytes = 54272
+  sample count = 10
+  track duration = 2741000
+  format 0:
+    containerMimeType = audio/flac
+    sampleMimeType = audio/flac
+    maxInputSize = 6466
+    channelCount = 2
+    sampleRate = 48000
+    pcmEncoding = 22
+    metadata = entries=[VC: ENCODER=Lavf61.7.100]
+    initializationData:
+      data = length 42, hash DE0B9CE3
+  sample 0:
+    time = 1824000
+    flags = 1
+    data = length 5822, hash 21F8ABEF
+  sample 1:
+    time = 1920000
+    flags = 1
+    data = length 5927, hash 3FDE7E9E
+  sample 2:
+    time = 2016000
+    flags = 1
+    data = length 6030, hash 9AC6FD0E
+  sample 3:
+    time = 2112000
+    flags = 1
+    data = length 5926, hash A3C067A1
+  sample 4:
+    time = 2208000
+    flags = 1
+    data = length 6019, hash BDA32275
+  sample 5:
+    time = 2304000
+    flags = 1
+    data = length 5979, hash CFF22F6E
+  sample 6:
+    time = 2400000
+    flags = 1
+    data = length 5976, hash D185E6C5
+  sample 7:
+    time = 2496000
+    flags = 1
+    data = length 6023, hash 9E1F037B
+  sample 8:
+    time = 2592000
+    flags = 1
+    data = length 5012, hash 2ACC9CC4
+  sample 9:
+    time = 2688000
+    flags = 1
+    data = length 1558, hash 94FFBE4D
+tracksEnded = true

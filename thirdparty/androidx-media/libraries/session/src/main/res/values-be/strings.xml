@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Зараз іграе</string>
+  <string name="media3_controls_play_description">Прайграць</string>
+  <string name="media3_controls_pause_description">Прыпыніць</string>
+  <string name="media3_controls_seek_to_previous_description">Перайсці да папярэдняга элемента</string>
+  <string name="media3_controls_seek_to_next_description">Перайсці да наступнага элемента</string>
+  <string name="media3_controls_seek_back_description">Перайсці назад</string>
+  <string name="media3_controls_seek_forward_description">Перайсці ўперад</string>
+  <string name="error_message_fallback">Узнікла памылка. Паўтарыце спробу пазней.</string>
+  <string name="error_message_info_cancelled">Не ўдалося завяршыць дзеянне. Паўтарыце спробу.</string>
+  <string name="error_message_invalid_state">Не ўдаецца выканаць гэты запыт</string>
+  <string name="error_message_authentication_expired">Каб выкарыстоўваць гэту праграму, увайдзіце</string>
+  <string name="error_message_content_already_playing">Гэта змесціва ўжо прайграецца</string>
+  <string name="error_message_end_of_playlist">У чарзе пуста</string>
+  <string name="error_message_concurrent_stream_limit">Праслухоўванне адбываецца на занадта вялікай колькасці прылад</string>
+  <string name="error_message_not_available_in_region">Не ўдалося загрузіць змесціва ў гэтым рэгіёне</string>
+  <string name="error_message_not_supported">Дзеянне недаступнае ў гэтай праграме</string>
+  <string name="error_message_parental_control_restricted">Гэта змесціва заблакіравана</string>
+  <string name="error_message_premium_account_required">Даступна для платных уліковых запісаў</string>
+  <string name="error_message_skip_limit_reached">Прапускаць трэкі больш нельга</string>
+  <string name="error_message_bad_value">Уведзены няправільныя даныя</string>
+  <string name="error_message_io">Памылка ўводу або вываду</string>
+  <string name="error_message_permission_denied">У доступе адмоўлена</string>
+  <string name="error_message_disconnected">Вы адключыліся ад мультымедыйнай праграмы</string>
+  <string name="error_message_setup_required">Патрабуецца наладжванне</string>
+</resources>

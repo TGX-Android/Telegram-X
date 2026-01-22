@@ -1,0 +1,61 @@
+seekMap:
+  isSeekable = true
+  duration = 853333
+  getPosition(0) = [[timeUs=0, position=669]]
+  getPosition(1) = [[timeUs=0, position=669]]
+  getPosition(426666) = [[timeUs=0, position=669]]
+  getPosition(853333) = [[timeUs=0, position=669]]
+numberOfTracks = 1
+track 0:
+  total output bytes = 81350
+  sample count = 10
+  track duration = 853000
+  format 0:
+    id = 1
+    containerMimeType = audio/mp4
+    sampleMimeType = audio/ac4
+    channelCount = 21
+    sampleRate = 48000
+    language = und
+    metadata = entries=[Mp4AlternateGroup: 2]
+  sample 0:
+    time = 426666
+    flags = 1
+    data = length 8135, hash D07FA9A1
+  sample 1:
+    time = 469333
+    flags = 0
+    data = length 8135, hash EF26FDDE
+  sample 2:
+    time = 512000
+    flags = 0
+    data = length 8135, hash 8946EEEB
+  sample 3:
+    time = 554666
+    flags = 0
+    data = length 8135, hash AC2E4C99
+  sample 4:
+    time = 597333
+    flags = 0
+    data = length 8135, hash B63A1D8
+  sample 5:
+    time = 640000
+    flags = 0
+    data = length 8135, hash 23119F0F
+  sample 6:
+    time = 682666
+    flags = 0
+    data = length 8135, hash 507972CA
+  sample 7:
+    time = 725333
+    flags = 0
+    data = length 8135, hash E574BC00
+  sample 8:
+    time = 768000
+    flags = 0
+    data = length 8135, hash 52F482FA
+  sample 9:
+    time = 810666
+    flags = 0
+    data = length 8135, hash C1A7B518
+tracksEnded = true

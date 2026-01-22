@@ -1,0 +1,96 @@
+AudioSink:
+  buffer count = 30
+  config:
+    pcmEncoding = 2
+    channelCount = 1
+    sampleRate = 44100
+  buffer #0:
+    time = 0
+    data = -85819864
+  buffer #1:
+    time = 100000
+    data = 566487491
+  buffer #2:
+    time = 200000
+    data = -1256531710
+  buffer #3:
+    time = 300000
+    data = 793455796
+  buffer #4:
+    time = 400000
+    data = -268235582
+  buffer #5:
+    time = 500000
+    data = -8136122
+  buffer #6:
+    time = 600000
+    data = 1750866613
+  buffer #7:
+    time = 700000
+    data = -1100753636
+  buffer #8:
+    time = 800000
+    data = 507833230
+  buffer #9:
+    time = 900000
+    data = 1472467506
+  buffer #10:
+    time = 1000000
+    data = 1785344804
+  buffer #11:
+    time = 1100000
+    data = 458152960
+  buffer #12:
+    time = 1200000
+    data = -2129352270
+  buffer #13:
+    time = 1300000
+    data = 1572219123
+  buffer #14:
+    time = 1348616
+    data = -2263
+  buffer #15:
+    time = 0
+    data = -85819864
+  buffer #16:
+    time = 100000
+    data = 566487491
+  buffer #17:
+    time = 200000
+    data = -1256531710
+  buffer #18:
+    time = 300000
+    data = 793455796
+  buffer #19:
+    time = 400000
+    data = -268235582
+  buffer #20:
+    time = 500000
+    data = -8136122
+  buffer #21:
+    time = 600000
+    data = 1750866613
+  buffer #22:
+    time = 700000
+    data = -1100753636
+  buffer #23:
+    time = 800000
+    data = 507833230
+  buffer #24:
+    time = 900000
+    data = 1472467506
+  buffer #25:
+    time = 1000000
+    data = 1785344804
+  buffer #26:
+    time = 1100000
+    data = 458152960
+  buffer #27:
+    time = 1200000
+    data = -2129352270
+  buffer #28:
+    time = 1300000
+    data = 1572219123
+  buffer #29:
+    time = 1348616
+    data = -2263

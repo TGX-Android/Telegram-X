@@ -359,7 +359,7 @@ public class ChatEventUtil {
         StringBuilder b = new StringBuilder();
         ArrayList<TdApi.TextEntity> entities = new ArrayList<>();
         final TdApi.ChatMemberStatus oldStatus, newStatus;
-        final boolean isPromote, isTransferOwnership;
+        final boolean isPromote, isTransferOwnership, isRegularBanUnban;
         boolean isAnonymous = false;
 
         final int stringRes;
@@ -376,16 +376,19 @@ public class ChatEventUtil {
 
           if (e.oldStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
             isTransferOwnership = true;
+            isRegularBanUnban = false;
             oldStatus = e.oldStatus;
             newStatus = new TdApi.ChatMemberStatusCreator();
             type = 3;
           } else if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
             isTransferOwnership = true;
+            isRegularBanUnban = false;
             oldStatus = e.oldStatus;
             newStatus = new TdApi.ChatMemberStatusCreator();
             type = 4;
           } else {
             isTransferOwnership = false;
+            isRegularBanUnban = false;
 
             if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
               type = 5;
@@ -446,6 +449,27 @@ public class ChatEventUtil {
           isPromote = false;
           isTransferOwnership = false;
 
+          // STATUS_NORMAL = 0, STATUS_BANNED = 1, STATUS_RESTRICTED = 2
+          int prevState = 0, newState = 0;
+          switch (e.oldStatus.getConstructor()) {
+            case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
+              prevState = 1;
+              break;
+            case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
+              prevState = 2;
+              break;
+          }
+          switch (e.newStatus.getConstructor()) {
+            case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
+              newState = 1;
+              break;
+            case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
+              newState = 2;
+              break;
+          }
+          isRegularBanUnban = (prevState == 0 && newState == 1) || (prevState == 1 && newState == 0);
+
+
           if (msg.isChannelPost) {
             oldStatus = null;
             newStatus = null;
@@ -457,26 +481,6 @@ public class ChatEventUtil {
           } else {
             oldStatus = e.oldStatus;
             newStatus = e.newStatus;
-            // STATUS_NORMAL = 0, STATUS_BANNED = 1, STATUS_RESTRICTED = 2
-            int prevState = 0, newState = 0;
-
-            switch (e.oldStatus.getConstructor()) {
-              case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
-                prevState = 1;
-                break;
-              case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
-                prevState = 2;
-                break;
-            }
-
-            switch (e.newStatus.getConstructor()) {
-              case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
-                newState = 1;
-                break;
-              case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
-                newState = 2;
-                break;
-            }
 
             if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
               isAnonymous = ((TdApi.ChatMemberStatusCreator) e.oldStatus).isAnonymous != ((TdApi.ChatMemberStatusCreator) e.newStatus).isAnonymous;
@@ -602,41 +606,43 @@ public class ChatEventUtil {
           final TdApi.ChatMemberStatusRestricted oldBan = oldStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) oldStatus : null;
           final TdApi.ChatMemberStatusRestricted newBan = newStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) newStatus : null;
 
-          if (Config.COMPILE_CHECK) {
-            new TdApi.ChatPermissions(
-              false,
-              false,
-              false,
-              false,
-              false,
-              false,
-              false,
-              false,
-              false,
-              false,
-              false,
-              false,
-              false,
-              false
-            );
+          if (!isRegularBanUnban) {
+            if (Config.COMPILE_CHECK) {
+              new TdApi.ChatPermissions(
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+              );
+            }
+            if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+              appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
+            }
+            appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendBasicMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendBasicMessages : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedSendPhoto, oldBan != null ? oldBan.permissions.canSendPhotos : oldCanReadMessages, newBan != null ? newBan.permissions.canSendPhotos : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedSendVideo, oldBan != null ? oldBan.permissions.canSendVideos : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVideos : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedSendAudio, oldBan != null ? oldBan.permissions.canSendAudios : oldCanReadMessages, newBan != null ? newBan.permissions.canSendAudios : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedSendDocs, oldBan != null ? oldBan.permissions.canSendDocuments : oldCanReadMessages, newBan != null ? newBan.permissions.canSendDocuments : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedSendVoiceNotes, oldBan != null ? oldBan.permissions.canSendVoiceNotes : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVoiceNotes : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedSendVideoNotes, oldBan != null ? oldBan.permissions.canSendVideoNotes : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVideoNotes : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedSendPolls, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedSendEmbed, oldBan != null ? oldBan.permissions.canAddLinkPreviews : oldCanReadMessages, newBan != null ? newBan.permissions.canAddLinkPreviews : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedTopics, oldBan != null ? oldBan.permissions.canCreateTopics : oldCanReadMessages, newBan != null ? newBan.permissions.canCreateTopics : newCanReadMessages, false);
           }
-          if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
-            appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
-          }
-          appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendBasicMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendBasicMessages : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendPhoto, oldBan != null ? oldBan.permissions.canSendPhotos : oldCanReadMessages, newBan != null ? newBan.permissions.canSendPhotos : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendVideo, oldBan != null ? oldBan.permissions.canSendVideos : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVideos : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendAudio, oldBan != null ? oldBan.permissions.canSendAudios : oldCanReadMessages, newBan != null ? newBan.permissions.canSendAudios : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendDocs, oldBan != null ? oldBan.permissions.canSendDocuments : oldCanReadMessages, newBan != null ? newBan.permissions.canSendDocuments : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendVoiceNotes, oldBan != null ? oldBan.permissions.canSendVoiceNotes : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVoiceNotes : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendVideoNotes, oldBan != null ? oldBan.permissions.canSendVideoNotes : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVideoNotes : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendPolls, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendEmbed, oldBan != null ? oldBan.permissions.canAddLinkPreviews : oldCanReadMessages, newBan != null ? newBan.permissions.canAddLinkPreviews : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedTopics, oldBan != null ? oldBan.permissions.canCreateTopics : oldCanReadMessages, newBan != null ? newBan.permissions.canCreateTopics : newCanReadMessages, false);
         }
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), null);

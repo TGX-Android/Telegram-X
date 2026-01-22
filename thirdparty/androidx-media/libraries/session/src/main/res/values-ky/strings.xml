@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Ойноп жатат</string>
+  <string name="media3_controls_play_description">Ойнотуу</string>
+  <string name="media3_controls_pause_description">Тындыруу</string>
+  <string name="media3_controls_seek_to_previous_description">Мурунку нерсеге өтүү</string>
+  <string name="media3_controls_seek_to_next_description">Кийинки нерсеге өтүү</string>
+  <string name="media3_controls_seek_back_description">Артка түрдүрүү</string>
+  <string name="media3_controls_seek_forward_description">Алдыга түрдүрүү</string>
+  <string name="error_message_fallback">Бир жерден ката кетти. Бир аздан кийин кайталап көрүңүз.</string>
+  <string name="error_message_info_cancelled">Аягына чыккан жок. Кайра аракет кылыңыз.</string>
+  <string name="error_message_invalid_state">Аны азыр аткаруу мүмкүн эмес</string>
+  <string name="error_message_authentication_expired">Бул колдонмону пайдалануу үчүн аккаунтуңузга кириңиз</string>
+  <string name="error_message_content_already_playing">Ал контент ойнотулууда</string>
+  <string name="error_message_end_of_playlist">Кезекте эч нерсе жок</string>
+  <string name="error_message_concurrent_stream_limit">Өтө көп түзмөк угулууда</string>
+  <string name="error_message_not_available_in_region">Ал контент сиз жашаган аймакта жеткиликсиз</string>
+  <string name="error_message_not_supported">Бул колдонмо аны аткара албайт</string>
+  <string name="error_message_parental_control_restricted">Ал контент бөгөттөлгөн</string>
+  <string name="error_message_premium_account_required">Артыкчылыктуу кирүү мүмкүнчүлүгү талап кылынат</string>
+  <string name="error_message_skip_limit_reached">Эми тректерди өткөрүп жиберүүгө болбойт</string>
+  <string name="error_message_bad_value">Киргизүү маалыматы туура эмес</string>
+  <string name="error_message_io">Киргизүү/чыгаруу катасы</string>
+  <string name="error_message_permission_denied">Кирүү мүмкүнчүлүгү четке кагылды</string>
+  <string name="error_message_disconnected">Мультимедиа колдонмосунан ажыратылды</string>
+  <string name="error_message_setup_required">Тууралоо талап кылынат</string>
+</resources>

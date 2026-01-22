@@ -393,7 +393,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     int initialChunkSize = Screen.calculateLoadingItems(itemHeight, 5) + 5;
     int chunkSize = Screen.calculateLoadingItems(itemHeight, 25);
     loadingMore = true;
-    chatListSlice = new TdlibChatListSlice(tdlib, ChatPosition.CHAT_LIST_MAIN, null, true);
+    chatListSlice = tdlib.chatList(ChatPosition.CHAT_LIST_MAIN).slice(null, true, null);
 
 
     chatListSlice.initializeList(this, this::processChats, initialChunkSize, () -> {
@@ -432,7 +432,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   @Override
   public void destroy () {
     super.destroy();
-    chatListSlice.unsubscribeFromUpdates(this);
+    chatListSlice.performDestroy();
     if (headerCell != null) {
       headerCell.destroy();
     }
@@ -469,16 +469,20 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (hasBubbles() && isChatSearchOpen() && headerCell != null) {
-      headerCell.clearSearchInput();
+      if (commit) {
+        headerCell.clearSearchInput();
+      }
       return true;
     }
     if (hasChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(null);
+      }
       return true;
     }
-    return super.onBackPressed(fromTop);
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override
@@ -1185,7 +1189,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     }
     int saveCount;
     if (alpha < 0xFF) {
-      saveCount = canvas.saveLayerAlpha(bounds.left, bounds.top, bounds.right, bounds.bottom, alpha, Canvas.ALL_SAVE_FLAG);
+      saveCount = Views.saveLayerAlpha(canvas, bounds.left, bounds.top, bounds.right, bounds.bottom, alpha, Canvas.ALL_SAVE_FLAG);
     } else {
       saveCount = Integer.MIN_VALUE;
     }

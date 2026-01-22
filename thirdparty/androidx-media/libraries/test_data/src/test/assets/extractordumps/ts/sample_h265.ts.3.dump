@@ -1,0 +1,39 @@
+seekMap:
+  isSeekable = true
+  duration = 900000
+  getPosition(0) = [[timeUs=0, position=0]]
+  getPosition(1) = [[timeUs=1, position=0]]
+  getPosition(450000) = [[timeUs=450000, position=11421]]
+  getPosition(900000) = [[timeUs=900000, position=23030]]
+numberOfTracks = 1
+track 256:
+  total output bytes = 396
+  sample count = 3
+  format 0:
+    id = 1/256
+    containerMimeType = video/mp2t
+    sampleMimeType = video/hevc
+    codecs = hvc1.1.6.L90.90
+    maxNumReorderSamples = 2
+    width = 854
+    height = 480
+    maxSubLayers = 1
+    colorInfo:
+      colorRange = 2
+      lumaBitdepth = 8
+      chromaBitdepth = 8
+    initializationData:
+      data = length 81, hash 2D0E82DA
+  sample 0:
+    time = 966666
+    flags = 0
+    data = length 141, hash AAFAA0A4
+  sample 1:
+    time = 933333
+    flags = 0
+    data = length 87, hash FB87CA92
+  sample 2:
+    time = 1000000
+    flags = 0
+    data = length 168, hash 8220F9BC
+tracksEnded = true

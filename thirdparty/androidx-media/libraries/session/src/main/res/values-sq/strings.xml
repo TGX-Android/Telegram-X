@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Gjej këngën</string>
+  <string name="media3_controls_play_description">Luaj</string>
+  <string name="media3_controls_pause_description">Vendos në pauzë</string>
+  <string name="media3_controls_seek_to_previous_description">Kërko te artikulli i mëparshëm</string>
+  <string name="media3_controls_seek_to_next_description">Kërko te artikulli tjetër</string>
+  <string name="media3_controls_seek_back_description">Kërko prapa</string>
+  <string name="media3_controls_seek_forward_description">Kërko përpara</string>
+  <string name="error_message_fallback">Ndodhi një gabim. Provo më vonë.</string>
+  <string name="error_message_info_cancelled">Nuk mund të përfundonte. Provo përsëri.</string>
+  <string name="error_message_invalid_state">Kjo nuk mund të bëhet në këtë moment</string>
+  <string name="error_message_authentication_expired">Identifikohu për të përdorur këtë aplikacion</string>
+  <string name="error_message_content_already_playing">Ajo përmbajtje po luhet tashmë</string>
+  <string name="error_message_end_of_playlist">Nuk ka asgjë tjetër në radhë</string>
+  <string name="error_message_concurrent_stream_limit">Po dëgjon në shumë pajisje</string>
+  <string name="error_message_not_available_in_region">Ajo përmbajtje nuk mund të merret këtu</string>
+  <string name="error_message_not_supported">Ky aplikacion nuk mund ta bëjë këtë</string>
+  <string name="error_message_parental_control_restricted">Ajo përmbajtje është e bllokuar</string>
+  <string name="error_message_premium_account_required">Kërkohet qasje e nivelit premium</string>
+  <string name="error_message_skip_limit_reached">Nuk mund të kapërcehen pjesë të tjera muzikore</string>
+  <string name="error_message_bad_value">Të dhëna të gabuara të hyrjes</string>
+  <string name="error_message_io">Gabim me hyrjen/daljen</string>
+  <string name="error_message_permission_denied">Qasja është refuzuar</string>
+  <string name="error_message_disconnected">Është shkëputur nga aplikacioni i medias</string>
+  <string name="error_message_setup_required">Nevojitet konfigurim</string>
+</resources>

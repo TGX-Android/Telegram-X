@@ -1006,10 +1006,10 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     return inSelectMode;
   }
 
+  @SuppressWarnings("unchecked")
   protected final void toggleSelected (ListItem item) {
     final long messageId = item.getLongId();
 
-    //noinspection unchecked
     final T data = (T) item.getData();
 
     if (data == null || messageId == 0 || (item.getViewType() != ListItem.TYPE_SMALL_MEDIA && item.getViewType() != ListItem.TYPE_CUSTOM_INLINE)) {
@@ -1545,7 +1545,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   }
 
   @Override
-  public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
+  public MediaStack collectMedias (long fromMessageId, boolean isSponsored, @Nullable TdApi.SearchMessagesFilter filter) {
     if (data == null || data.isEmpty()) {
       return null;
     }

@@ -12,12 +12,11 @@
  */
 package tgx.gradle.task
 
-import com.beust.klaxon.Klaxon
-import tgx.gradle.fatal
+import kotlinx.serialization.json.Json
 import org.gradle.api.tasks.TaskAction
+import tgx.gradle.fatal
 import java.io.File
 import java.util.*
-import kotlin.contracts.ExperimentalContracts
 import kotlin.streams.asSequence
 
 open class CheckEmojiKeyboardTask : BaseTask() {
@@ -29,6 +28,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
       .replace(Regex("//[^\n]+"), "")
   }
 
+  @Suppress("NewApi")
   private fun hex(text: String): String {
     return text.chars().asSequence().joinToString("") { "\\u" + it.toString(16).uppercase(Locale.US) }
   }
@@ -37,6 +37,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     return "\"${hex(text)}\" /* $text */"
   }
 
+  @Suppress("NewApi")
   private fun javaWrapCodePoints(text: String): String {
     return "intArrayOf(${text.codePoints().toArray().joinToString(", ") { "0x${it.toString(16)}" }})"
   }
@@ -121,7 +122,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
             tones = mutableListOf(c)
           else
             tones.add(c)
-          result = result.substring(0, index - 1) + result.substring(index + 1)
+          result = result.take(index - 1) + result.substring(index + 1)
           index -= 2
         }
       }
@@ -196,23 +197,20 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     return TextDirection.NEUTRAL
   }
 
-  @ExperimentalContracts
   @TaskAction
   fun checkEmojiKeyboard () {
     val supportedFile = File("app/src/main/java/org/thunderdog/challegram/tool/EmojiCode.java").readText()
     val displayingFile = File("app/src/main/java/org/thunderdog/challegram/tool/EmojiCodeColored.java").readText()
 
     val supportedArray = supportedFile.getArray("DATA")
-
     val displayingArray = displayingFile.getArray("DATA_COLORED").replace("EmojiCode.DATA[1]", "[]")
-
     val supported = try {
-      Klaxon().parseArray<List<String>>(supportedArray)!!
+      Json.decodeFromString<List<List<String>>>(supportedArray)
     } catch (e: Throwable) {
       fatal("Unable to parse supportedArray: ${e.message}\n${supportedArray}")
     }
     val displaying = try {
-      Klaxon().parseArray<List<String>>(displayingArray)!!
+      Json.decodeFromString<List<List<String>>>(displayingArray)
     } catch (e: Throwable) {
       fatal("Unable to parse displayingArray: ${e.message}\n${displayingArray}")
     }
@@ -344,10 +342,8 @@ open class CheckEmojiKeyboardTask : BaseTask() {
           fatal("Unknown displayed emoji: ${emojiSignature(emoji)})")
         }
       }
-      val addingEmoji = if (emojis.isEmpty()) {
+      val addingEmoji = emojis.ifEmpty {
         supported[index]
-      } else {
-        emojis
       }
       for (emoji in addingEmoji) {
         if (!displayingSet.add(emoji)) {

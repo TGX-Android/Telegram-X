@@ -471,7 +471,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   /**
-   * Called from {@link org.thunderdog.challegram.service.FirebaseListenerService} when push processing takes too long.
+   * Called from {@link org.thunderdog.challegram.service.PushProcessor} when push processing takes too long.
    * */
   public void notifyPushProcessingTakesTooLong () {
     notification.abortCancelableOperations();
@@ -500,7 +500,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   public boolean hasLocalNotificationProblem () {
     return areNotificationsBlockedGlobally() || areNotificationsBlocked(scopePrivate()) ||
       areNotificationsBlocked(scopeGroup()) || areNotificationsBlocked(scopeChannel()) ||
-      !hasFirebase() ||
+      !hasRemotePushService() ||
       tdlib.notifications().getNotificationBlockStatus() == TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED;
   }
 
@@ -511,8 +511,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       case Status.BLOCKED_CATEGORY:
       case Status.DISABLED_APP_SYNC:
       case Status.DISABLED_SYNC:
-      case Status.FIREBASE_MISSING:
-      case Status.FIREBASE_ERROR:
+      case Status.PUSH_SERVICE_MISSING:
+      case Status.PUSH_SERVICE_ERROR:
 
       case Status.INTERNAL_ERROR:
         return true;
@@ -525,11 +525,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   public boolean needSyncAlert () {
-    return isSyncDisabledGlobally() && !hasFirebase();
+    return isSyncDisabledGlobally() && !hasRemotePushService();
   }
 
-  private boolean hasFirebase () {
-    return U.isGooglePlayServicesAvailable(UI.getAppContext());
+  private boolean hasRemotePushService () {
+    return TdlibNotificationUtils.getDeviceTokenRetriever().isAvailable(UI.getContext());
   }
 
   private boolean isSyncDisabledGlobally () {
@@ -547,10 +547,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     Status.BLOCKED_ALL,
     Status.DISABLED_SYNC,
     Status.DISABLED_APP_SYNC,
-    Status.FIREBASE_MISSING,
+    Status.PUSH_SERVICE_MISSING,
     Status.INTERNAL_ERROR,
     Status.ACCOUNT_NOT_SELECTED,
-    Status.FIREBASE_ERROR,
+    Status.PUSH_SERVICE_ERROR,
     Status.MISSING_PERMISSION
   })
   public @interface Status {
@@ -560,10 +560,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       BLOCKED_ALL = 2,
       DISABLED_SYNC = 3,
       DISABLED_APP_SYNC = 4,
-      FIREBASE_MISSING = 5,
+      PUSH_SERVICE_MISSING = 5,
       INTERNAL_ERROR = 6,
       ACCOUNT_NOT_SELECTED = 7,
-      FIREBASE_ERROR = 8,
+      PUSH_SERVICE_ERROR = 8,
       MISSING_PERMISSION = 9;
   }
 
@@ -586,21 +586,21 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     if (!NotificationManagerCompat.from(UI.getAppContext()).areNotificationsEnabled()) {
       return Status.BLOCKED_ALL;
     }
-    boolean hasFirebase = hasFirebase();
-    if (!hasFirebase) {
-      // Sync matters only when Firebase unavailable
+    boolean hasPushServices = hasRemotePushService();
+    if (!hasPushServices) {
+      // Sync matters only when push service (firebase, hms, ...) unavailable
       if (isSyncDisabledGlobally())
         return Status.DISABLED_SYNC;
       if (isSyncDisabledForApp())
         return Status.DISABLED_APP_SYNC;
-      return Status.FIREBASE_MISSING;
+      return Status.PUSH_SERVICE_MISSING;
     }
     if (tdlib.settings().hasNotificationProblems())
       return Status.INTERNAL_ERROR;
     if (!tdlib.account().forceEnableNotifications() && Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS))
       return Status.ACCOUNT_NOT_SELECTED;
     if (tdlib.context().getTokenState() == TdlibManager.TokenState.ERROR)
-      return Status.FIREBASE_ERROR;
+      return Status.PUSH_SERVICE_ERROR;
     return Status.NOT_BLOCKED;
   }
 

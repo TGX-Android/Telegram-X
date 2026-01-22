@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MediaAppControllerActivity">
+
+    <ImageView
+        android:id="@+id/media_art"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/margin_large"
+        android:contentDescription="@string/media_art_string"
+        android:background="@color/background_grey"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toTopOf="@+id/media_title"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        tools:src="@drawable/ic_album_black_24dp" />
+
+    <TextView
+        android:id="@+id/media_title"
+        style="@style/TextAppearance.AppCompat.Large"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/margin_small"
+        android:gravity="center"
+        android:paddingTop="@dimen/padding_large"
+        android:textStyle="bold"
+        app:layout_constraintLeft_toLeftOf="@+id/primaryGuidelineStart"
+        app:layout_constraintRight_toLeftOf="@+id/primaryGuidelineEnd"
+        app:layout_constraintBottom_toTopOf="@+id/media_artist"
+        tools:text="Title" />
+
+    <TextView
+        android:id="@+id/media_artist"
+        style="@style/TextAppearance.AppCompat.Small"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_small"
+        android:gravity="center"
+        app:layout_constraintLeft_toLeftOf="@+id/primaryGuidelineStart"
+        app:layout_constraintRight_toLeftOf="@+id/primaryGuidelineEnd"
+        app:layout_constraintBottom_toTopOf="@+id/media_album"
+        tools:text="Artist" />
+
+    <TextView
+        android:id="@+id/media_album"
+        style="@style/TextAppearance.AppCompat.Medium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_small"
+        android:gravity="center"
+        android:paddingBottom="@dimen/padding_large"
+        app:layout_constraintLeft_toLeftOf="@+id/primaryGuidelineStart"
+        app:layout_constraintRight_toLeftOf="@+id/primaryGuidelineEnd"
+        app:layout_constraintBottom_toTopOf="@+id/rating"
+        tools:text="Album" />
+
+    <include
+        android:id="@+id/rating"
+        layout="@layout/media_ratings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/margin_small"
+        android:layout_marginEnd="@dimen/margin_small"
+        android:layout_marginLeft="@dimen/margin_small"
+        android:layout_marginRight="@dimen/margin_small"
+        android:layout_marginTop="@dimen/margin_small"
+        app:layout_constraintLeft_toLeftOf="@+id/primaryGuidelineStart"
+        app:layout_constraintBottom_toTopOf="@+id/group_toggle_repeat"
+        app:layout_constraintRight_toRightOf="@+id/primaryGuidelineEnd" />
+
+    <ImageButton
+        android:id="@+id/action_skip_30s_backward"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/margin_small"
+        android:contentDescription="@string/action_skip_30s_backward"
+        app:layout_constraintBottom_toTopOf="@+id/mediaControlsGuideline"
+        app:layout_constraintEnd_toStartOf="@id/centerGuideline"
+        app:srcCompat="@drawable/ic_replay_30_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/action_skip_30s_forward"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/margin_small"
+        android:layout_marginStart="@dimen/margin_small"
+        android:layout_marginBottom="@dimen/margin_small"
+        android:contentDescription="@string/action_skip_30s_forward"
+        app:layout_constraintBottom_toTopOf="@+id/mediaControlsGuideline"
+        app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
+        app:layout_constraintStart_toStartOf="@id/centerGuideline"
+        app:srcCompat="@drawable/ic_forward_30_black_32dp" />
+
+    <LinearLayout
+        android:id="@+id/group_toggle_repeat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/margin_small"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/mediaControlsGuideline"
+        app:layout_constraintEnd_toStartOf="@+id/action_skip_30s_backward"
+        app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
+        app:layout_constraintStart_toEndOf="@+id/primaryGuidelineStart">
+
+        <ImageView
+            android:id="@+id/repeat_mode_icon"
+            style="@style/AppTheme.MediaControl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/action_set_repeat"
+            app:srcCompat="@drawable/ic_repeat_black_32dp" />
+
+        <Spinner
+            android:id="@+id/repeat_mode_spinner"
+            android:layout_height="@dimen/app_button_height"
+            android:layout_width="wrap_content"
+            android:entries="@array/repeat_modes" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/group_toggle_shuffle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/margin_small"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/mediaControlsGuideline"
+        app:layout_constraintEnd_toStartOf="@+id/primaryGuidelineEnd"
+        app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
+        app:layout_constraintStart_toEndOf="@+id/action_skip_30s_forward">
+
+        <ImageView
+            android:id="@+id/shuffle_mode_icon"
+            style="@style/AppTheme.MediaControl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/action_set_shuffle"
+            app:srcCompat="@drawable/ic_shuffle_toggle_32dp" />
+
+        <ToggleButton
+            android:id="@+id/shuffle_mode_button"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/app_button_height"
+            android:textOff="@string/shuffle_off"
+            android:textOn="@string/shuffle_on" />
+
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/action_skip_previous"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/action_skip_previous"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintRight_toLeftOf="@+id/action_fast_rewind"
+        app:srcCompat="@drawable/ic_skip_previous_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/action_fast_rewind"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/action_fast_rewind"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintRight_toLeftOf="@+id/action_resume"
+        app:srcCompat="@drawable/ic_fast_rewind_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/action_resume"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/action_resume"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintRight_toLeftOf="@+id/action_pause"
+        app:srcCompat="@drawable/ic_play_arrow_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/action_pause"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/action_pause"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
+        app:layout_constraintRight_toLeftOf="@+id/centerGuideline"
+        app:srcCompat="@drawable/ic_pause_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/action_stop"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/action_stop"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintLeft_toRightOf="@+id/action_pause"
+        app:srcCompat="@drawable/ic_stop_black_32dp"
+        tools:background="@drawable/bg_unsupported_action" />
+
+    <ImageButton
+        android:id="@+id/action_fast_forward"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/action_fast_forward"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintLeft_toRightOf="@+id/action_stop"
+        app:srcCompat="@drawable/ic_fast_forward_black_32dp" />
+
+    <ImageButton
+        android:id="@+id/action_skip_next"
+        style="@style/AppTheme.MediaControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/action_skip_next"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintLeft_toRightOf="@+id/action_fast_forward"
+        app:srcCompat="@drawable/ic_skip_next_black_32dp" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/centerGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.5"
+        app:layout_constraintTop_toTopOf="@+id/mediaControlsGuideline" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/mediaControlsGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.8" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/primaryGuidelineStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_begin="@dimen/padding_large" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/primaryGuidelineEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_end="@dimen/padding_large" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

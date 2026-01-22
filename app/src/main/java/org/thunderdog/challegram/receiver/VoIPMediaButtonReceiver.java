@@ -11,7 +11,6 @@ import org.thunderdog.challegram.service.TGCallService;
  * Created by grishka on 21.11.16.
  */
 
-@Deprecated
 public class VoIPMediaButtonReceiver extends BroadcastReceiver{
 	@Override
 	public void onReceive(Context context, Intent intent){

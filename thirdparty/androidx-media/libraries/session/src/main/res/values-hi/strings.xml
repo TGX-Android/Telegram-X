@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">अभी चल रहा है</string>
+  <string name="media3_controls_play_description">चलाएं</string>
+  <string name="media3_controls_pause_description">रोकें</string>
+  <string name="media3_controls_seek_to_previous_description">पिछले आइटम पर जाएं</string>
+  <string name="media3_controls_seek_to_next_description">अगले आइटम पर जाएं</string>
+  <string name="media3_controls_seek_back_description">वापस जाएं</string>
+  <string name="media3_controls_seek_forward_description">आगे बढ़ाएं</string>
+  <string name="error_message_fallback">कोई गड़बड़ी हुई. बाद में कोशिश करें.</string>
+  <string name="error_message_info_cancelled">कार्रवाई पूरी नहीं हो सकी. फिर से कोशिश करें.</string>
+  <string name="error_message_invalid_state">अनुरोध अभी पूरा नहीं किया जा सकता</string>
+  <string name="error_message_authentication_expired">इस ऐप्लिकेशन का इस्तेमाल करने के लिए साइन इन करें</string>
+  <string name="error_message_content_already_playing">यह कॉन्टेंट पहले से ही चल रहा है</string>
+  <string name="error_message_end_of_playlist">सूची में और कुछ नहीं है</string>
+  <string name="error_message_concurrent_stream_limit">इसे बहुत सारे डिवाइसों पर चलाया जा रहा है</string>
+  <string name="error_message_not_available_in_region">यह कॉन्टेंट यहां नहीं चलाया जा सकता</string>
+  <string name="error_message_not_supported">इस ऐप्लिकेशन पर यह काम नहीं किया जा सकता</string>
+  <string name="error_message_parental_control_restricted">कॉन्टेंट पर रोक लगा दी गई है</string>
+  <string name="error_message_premium_account_required">इसके लिए प्रीमियम ऐक्सेस ज़रूरी है</string>
+  <string name="error_message_skip_limit_reached">इससे ज़्यादा गाने स्किप नहीं किए जा सकते</string>
+  <string name="error_message_bad_value">इनपुट डेटा गलत है</string>
+  <string name="error_message_io">इनपुट/आउटपुट की गड़बड़ी</string>
+  <string name="error_message_permission_denied">ऐक्सेस करने की अनुमति नहीं मिली</string>
+  <string name="error_message_disconnected">मीडिया ऐप्लिकेशन से डिसकनेक्ट कर दिया गया है</string>
+  <string name="error_message_setup_required">सेटअप करना ज़रूरी है</string>
+</resources>

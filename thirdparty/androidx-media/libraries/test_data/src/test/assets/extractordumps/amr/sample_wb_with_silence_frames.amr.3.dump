@@ -1,0 +1,19 @@
+seekMap:
+  isSeekable = true
+  duration = 3400000
+  getPosition(0) = [[timeUs=0, position=9]]
+  getPosition(1) = [[timeUs=0, position=9], [timeUs=100000, position=129]]
+  getPosition(1700000) = [[timeUs=1700000, position=2026]]
+  getPosition(3400000) = [[timeUs=3400000, position=4066]]
+numberOfTracks = 1
+track 0:
+  total output bytes = 0
+  sample count = 0
+  track duration = 3400000
+  format 0:
+    containerMimeType = audio/amr-wb
+    sampleMimeType = audio/amr-wb
+    maxInputSize = 61
+    channelCount = 1
+    sampleRate = 16000
+tracksEnded = true

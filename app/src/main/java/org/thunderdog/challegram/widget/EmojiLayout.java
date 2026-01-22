@@ -46,6 +46,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.EmojiListController;
 import org.thunderdog.challegram.ui.EmojiMediaListController;
 import org.thunderdog.challegram.ui.EmojiStatusListController;
@@ -378,7 +379,8 @@ public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChang
 
     final int padding = Screen.dp(4);
     params = FrameLayoutFix.newParams(Screen.dp(23f) * 2 + padding * 2, Screen.dp(23f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
-    params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
+    params.rightMargin = Screen.dp(16f) - padding;
+    params.bottomMargin = Screen.dp(16f) - padding + extraBottomInsetWithoutKeyboard;
 
     circleButton = new CircleButton(getContext());
     if (themeProvider != null) {
@@ -418,6 +420,9 @@ public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChang
           ViewController<?> controller = adapter.cachedItems.valueAt(i);
           controller.setBottomInset(extraBottomInset, extraBottomInsetWithoutKeyboard);
         }
+      }
+      if (circleButton != null) {
+        Views.setBottomMargin(circleButton, Screen.dp(16f) - Screen.dp(4f) + extraBottomInsetWithoutKeyboard);
       }
     }
   }

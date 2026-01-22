@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Inayocheza sasa</string>
+  <string name="media3_controls_play_description">Cheza</string>
+  <string name="media3_controls_pause_description">Sitisha</string>
+  <string name="media3_controls_seek_to_previous_description">Rudi kwenye maudhui yaliyotangulia</string>
+  <string name="media3_controls_seek_to_next_description">Nenda kwenye maudhui yanayofuata</string>
+  <string name="media3_controls_seek_back_description">Sogeza nyuma</string>
+  <string name="media3_controls_seek_forward_description">Sogeza mbele</string>
+  <string name="error_message_fallback">Hitilafu fulani imetokea. Jaribu baadaye.</string>
+  <string name="error_message_info_cancelled">Imeshindwa kumaliza. Jaribu tena.</string>
+  <string name="error_message_invalid_state">Imeshindwa kutekeleza ombi hilo kwa sasa</string>
+  <string name="error_message_authentication_expired">Ingia katika akaunti ili utumie programu hii</string>
+  <string name="error_message_content_already_playing">Tayari inacheza maudhui hayo</string>
+  <string name="error_message_end_of_playlist">Hakuna maudhui mengine kwenye foleni</string>
+  <string name="error_message_concurrent_stream_limit">Unasikiliza kwenye vifaa vingi mno</string>
+  <string name="error_message_not_available_in_region">Imeshindwa kupata maudhui hayo hapa</string>
+  <string name="error_message_not_supported">Programu hii imeshindwa kutekeleza ombi lako</string>
+  <string name="error_message_parental_control_restricted">Maudhui hayo yamezuiwa</string>
+  <string name="error_message_premium_account_required">Unahitaji kutumia akaunti ya kulipia</string>
+  <string name="error_message_skip_limit_reached">Imeshindwa kuruka nyimbo zaidi</string>
+  <string name="error_message_bad_value">Data uliyoweka si sahihi</string>
+  <string name="error_message_io">Hitilafu ya kusoma/kuandika data</string>
+  <string name="error_message_permission_denied">Huna idhini ya kufikia</string>
+  <string name="error_message_disconnected">Imetenganishwa na programu ya muziki</string>
+  <string name="error_message_setup_required">Unahitaji kuweka mipangilio</string>
+</resources>

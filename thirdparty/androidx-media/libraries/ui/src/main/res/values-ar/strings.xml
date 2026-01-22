@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">عرض عناصر التحكم بالمشغّل</string>
+  <string name="exo_controls_hide">إخفاء عناصر التحكم بالمشغّل</string>
+  <string name="exo_controls_seek_bar_description">مستوى تقدُّم التشغيل</string>
+  <string name="exo_controls_settings_description">الإعدادات</string>
+  <string name="exo_controls_overflow_hide_description">إخفاء الإعدادات الإضافية</string>
+  <string name="exo_controls_overflow_show_description">عرض الإعدادات الإضافية</string>
+  <string name="exo_controls_fullscreen_enter_description">دخول إلى وضع ملء الشاشة</string>
+  <string name="exo_controls_fullscreen_exit_description">خروج من وضع ملء الشاشة</string>
+  <string name="exo_controls_previous_description">السابق</string>
+  <string name="exo_controls_next_description">التالي</string>
+  <string name="exo_controls_pause_description">إيقاف مؤقت</string>
+  <string name="exo_controls_play_description">تشغيل</string>
+  <string name="exo_controls_stop_description">إيقاف</string>
+  <string name="exo_controls_rewind_description">ترجيع</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="zero">ترجيع الفيديو بمقدار %d ثانية</item>
+    <item quantity="one">ترجيع الفيديو بمقدار ثانية واحدة (%d)</item>
+    <item quantity="two">ترجيع الفيديو بمقدار ثانيتَين (%d)</item>
+    <item quantity="few">ترجيع الفيديو بمقدار %d ثوانٍ</item>
+    <item quantity="many">ترجيع الفيديو بمقدار %d ثانية</item>
+    <item quantity="other">ترجيع الفيديو بمقدار %d ثانية</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">تقديم سريع</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="zero">تقديم سريع للفيديو بمقدار %d ثانية</item>
+    <item quantity="one">تقديم سريع للفيديو بمقدار ثانية واحدة (%d)</item>
+    <item quantity="two">تقديم سريع للفيديو بمقدار ثانيتَين (%d)</item>
+    <item quantity="few">تقديم سريع للفيديو بمقدار %d ثوانٍ</item>
+    <item quantity="many">تقديم سريع للفيديو بمقدار %d ثانية</item>
+    <item quantity="other">تقديم سريع للفيديو بمقدار %d ثانية</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">الوضع الحالي: عدم التكرار. تبديل وضع التكرار</string>
+  <string name="exo_controls_repeat_one_description">الوضع الحالي: التكرار مرة واحدة. تبديل وضع التكرار</string>
+  <string name="exo_controls_repeat_all_description">الوضع الحالي: تكرار الكل. تبديل وضع التكرار</string>
+  <string name="exo_controls_shuffle_on_description">إيقاف وضع الترتيب العشوائي</string>
+  <string name="exo_controls_shuffle_off_description">تفعيل وضع الترتيب العشوائي</string>
+  <string name="exo_controls_vr_description">وضع VR</string>
+  <string name="exo_controls_cc_enabled_description">إيقاف الترجمة</string>
+  <string name="exo_controls_cc_disabled_description">تفعيل الترجمة</string>
+  <string name="exo_controls_playback_speed">السرعة</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>أسرع بـ 0.25 مرة</item>
+    <item>أسرع بـ 0.5 مرات</item>
+    <item>أسرع بـ 0.75 مرة</item>
+    <item>عادية</item>
+    <item>أسرع بـ 1.25 مرة</item>
+    <item>أسرع بـ 1.5 مرة</item>
+    <item>أسرع بمرتين</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">صوت</string>
+  <string name="exo_track_selection_none">بدون اختيار</string>
+  <string name="exo_track_selection_auto">تلقائي</string>
+  <string name="exo_track_unknown">غير معروف</string>
+  <string name="exo_track_unknown_name">غير معروف (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">قناة أحادية</string>
+  <string name="exo_track_stereo">استريو</string>
+  <string name="exo_track_surround">صوت مجسّم</string>
+  <string name="exo_track_surround_5_point_1">صوت مجسّم 5.1</string>
+  <string name="exo_track_surround_7_point_1">صوت مجسّم 7.1</string>
+  <string name="exo_track_role_alternate">بديل</string>
+  <string name="exo_track_role_supplementary">تكميلي</string>
+  <string name="exo_track_role_commentary">التعليقات</string>
+  <string name="exo_track_role_closed_captions">الترجمة والشرح</string>
+  <string name="exo_track_bitrate">%1$.2f ميغابت في الثانية</string>
+  <string name="exo_item_list">%1$s، %2$s</string>
+</resources>

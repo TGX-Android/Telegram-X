@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Зараз відтворюється</string>
+  <string name="media3_controls_play_description">Відтворити</string>
+  <string name="media3_controls_pause_description">Призупинити</string>
+  <string name="media3_controls_seek_to_previous_description">Перейти до попереднього об’єкта</string>
+  <string name="media3_controls_seek_to_next_description">Перейти до наступного об’єкта</string>
+  <string name="media3_controls_seek_back_description">Перемотати назад</string>
+  <string name="media3_controls_seek_forward_description">Перемотати вперед</string>
+  <string name="error_message_fallback">Сталася помилка. Повторіть спробу пізніше.</string>
+  <string name="error_message_info_cancelled">Не вдалося завершити. Повторіть спробу.</string>
+  <string name="error_message_invalid_state">Зараз ця дія недоступна</string>
+  <string name="error_message_authentication_expired">Увійдіть, щоб використовувати цей додаток</string>
+  <string name="error_message_content_already_playing">Цей контент уже відтворюється</string>
+  <string name="error_message_end_of_playlist">Черга порожня</string>
+  <string name="error_message_concurrent_stream_limit">Контент відтворюється на завеликій кількості пристроїв</string>
+  <string name="error_message_not_available_in_region">Цей контент недоступний у вашому регіоні</string>
+  <string name="error_message_not_supported">Додаток не підтримує цю дію</string>
+  <string name="error_message_parental_control_restricted">Цей контент заблоковано</string>
+  <string name="error_message_premium_account_required">Потрібен платний обліковий запис</string>
+  <string name="error_message_skip_limit_reached">Більше не можна пропускати композиції</string>
+  <string name="error_message_bad_value">Неправильні вхідні дані</string>
+  <string name="error_message_io">Помилка вводу/виводу</string>
+  <string name="error_message_permission_denied">Доступ заборонено</string>
+  <string name="error_message_disconnected">Від’єднано від мультимедійного додатка</string>
+  <string name="error_message_setup_required">Потрібне налаштування</string>
+</resources>

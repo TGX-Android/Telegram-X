@@ -271,6 +271,9 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
                   view.setData(R.string.PrivacyPhotoExceptionContacts);
                   break;
+                case TdApi.UserPrivacySettingShowProfileAudio.CONSTRUCTOR:
+                  view.setData(R.string.PrivacyAudioExceptionContacts);
+                  break;
                 case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
                   view.setData(R.string.PrivacyLastSeenExceptionContacts);
                   break;
@@ -311,7 +314,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 case TdApi.UserPrivacySettingAllowUnpaidMessages.CONSTRUCTOR:
                   throw new IllegalStateException();
                 default: {
-                  Td.assertUserPrivacySetting_6bbb3d7e();
+                  Td.assertUserPrivacySetting_a60188bf();
                   throw Td.unsupported(setting);
                 }
               }
@@ -351,6 +354,9 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 break;
               case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
                 view.setData(isActive ? R.string.PrivacyPhotoExceptionOn : R.string.PrivacyPhotoExceptionOff);
+                break;
+              case TdApi.UserPrivacySettingShowProfileAudio.CONSTRUCTOR:
+                view.setData(isActive ? R.string.PrivacyAudioExceptionOn : R.string.PrivacyAudioExceptionOff);
                 break;
               case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
                 view.setData(isActive ? R.string.PrivacyLastSeenExceptionOn : R.string.PrivacyLastSeenExceptionOff);
@@ -514,6 +520,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
         new TdApi.UserPrivacySetting[] {
           new TdApi.UserPrivacySettingShowStatus(),
           new TdApi.UserPrivacySettingShowProfilePhoto(),
+          new TdApi.UserPrivacySettingShowProfileAudio(),
           new TdApi.UserPrivacySettingShowBio(),
           new TdApi.UserPrivacySettingShowLinkInForwardedMessages(),
         }
@@ -521,6 +528,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
       new TdApi.UserPrivacySetting[] {
         new TdApi.UserPrivacySettingShowStatus(),
         new TdApi.UserPrivacySettingShowProfilePhoto(),
+        new TdApi.UserPrivacySettingShowProfileAudio(),
         new TdApi.UserPrivacySettingShowBirthdate(),
         new TdApi.UserPrivacySettingShowBio(),
         new TdApi.UserPrivacySettingShowPhoneNumber(),

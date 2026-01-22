@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -679,7 +680,7 @@ public class TextEntityMessage extends TextEntity {
 
     final int[] shareState = {0};
 
-    context.showOptions(copyText, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
+    context.showOptions(copyText, ids.get(), strings.get(), null, icons.get(), Config.MAX_COPY_TEXT_LINE_COUNT, (itemView, id) -> {
       if (id == R.id.btn_copyLink) {
         UI.copyText(copyLink != null ? copyLink : copyText, R.string.CopiedLink);
       } else if (id == R.id.btn_copyText) {

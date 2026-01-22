@@ -4834,12 +4834,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           new String[] {Lang.getString(R.string.Copy)},
           null,
           new int[] {R.drawable.baseline_content_copy_24},
+          Config.MAX_COPY_TEXT_LINE_COUNT,
           (optionItemView, id) -> {
             if (id == R.id.btn_copyText) {
               UI.copyText(text, R.string.CopiedText);
             }
             return true;
-          }
+          },
+          null
         );
       }
     } else if (viewId == R.id.btn_description) {
@@ -5212,26 +5214,32 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public boolean closeSearchModeByBackPress (boolean fromTop) {
-    clearSearchInput();
+  public boolean closeSearchModeByBackPress (boolean fromTop, boolean commit) {
+    if (commit) {
+      clearSearchInput();
+    }
     return false;
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (isTransforming() || (expandAnimator != null && expandAnimator.isAnimating())) {
       return true;
     }
     if (inSelectMode) {
-      clearSelectMode();
+      if (commit) {
+        clearSelectMode();
+      }
       return true;
     }
     if (isEditing() && hasUnsavedChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(null);
+      }
       return true;
     }
 
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override
@@ -5715,13 +5723,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // Shared stuff
 
   @Override
-  public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
+  public MediaStack collectMedias (long fromMessageId, boolean isSponsored, @Nullable TdApi.SearchMessagesFilter filter) {
     if (currentPositionOffset != 0f) {
       return null;
     }
     ViewController<?> c = pagerAdapter.findCachedControllerByPosition(currentMediaPosition);
     if (c instanceof MediaCollectorDelegate) {
-      return ((MediaCollectorDelegate) c).collectMedias(fromMessageId, filter);
+      return ((MediaCollectorDelegate) c).collectMedias(fromMessageId, isSponsored, filter);
     }
     return null;
   }
@@ -5786,7 +5794,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           break;
         }
         default: {
-          String restrictionReason = tdlib.chatRestrictionReason(chat);
+          String restrictionText = Lang.getRestrictionText(tdlib.chatRestriction(chat));
 
           if (mode == Mode.GROUP) {
             controllers.add(new SharedMembersController(context, tdlib));
@@ -5804,7 +5812,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
           }
 
-          if (restrictionReason == null) {
+          if (StringUtils.isEmpty(restrictionText)) {
             if (Config.HIDE_EMPTY_TABS) {
               int syncTabCount = SYNC_TAB_COUNT;
               TdApi.SearchMessagesFilter[] filters = getFiltersOrder();
@@ -5828,7 +5836,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             getSimilarChatsCount(false, true);
             getSimilarChatsCount(true, true);
           } else {
-            controllers.add(new SharedRestrictionController(context, tdlib).setRestrictionReason(restrictionReason));
+            controllers.add(new SharedRestrictionController(context, tdlib).setRestrictionReason(restrictionText));
           }
 
           switch (mode) {

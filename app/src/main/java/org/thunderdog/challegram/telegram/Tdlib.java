@@ -498,6 +498,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private int[] favoriteStickerIds;
   private int unreadTrendingStickerSetsCount;
+  private long[] trustedMiniAppBotUserIds;
+  private TdApi.GroupCallMessageLevel[] groupCallMessageLevels;
 
   private @Mode int instanceMode;
   private boolean instancePaused;
@@ -667,36 +669,31 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     long[] availableUserIds = context.availableUserIds(instanceMode);
     long[] otherUserIds = ArrayUtils.removeElement(availableUserIds, Arrays.binarySearch(availableUserIds, myUserId));
     if (TdlibSettingsManager.checkRegisteredDeviceToken(id(), myUserId, deviceToken, otherUserIds, false)) {
-      Log.i(Log.TAG_FCM, "Device token already registered. accountId:%d", accountId);
+      TDLib.Tag.notifications("Device token already registered. accountId:%d", accountId);
       context.setDeviceRegistered(accountId, true);
       U.run(onDone);
       return;
     }
-    Log.i(Log.TAG_FCM, "Registering device token... accountId:%d", accountId);
+    TDLib.Tag.notifications("Registering device token... accountId:%d", accountId);
     context.setDeviceRegistered(accountId, false);
     incrementReferenceCount(REFERENCE_TYPE_JOB);
-    client().send(new TdApi.RegisterDevice(deviceToken, otherUserIds), result -> {
-      switch (result.getConstructor()) {
-        case TdApi.PushReceiverId.CONSTRUCTOR:
-          Log.i(Log.TAG_FCM, "Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
-          Settings.instance().putNotificationReceiverId(((TdApi.PushReceiverId) result).id, accountId);
-          TdlibSettingsManager.setRegisteredDevice(accountId, myUserId, deviceToken, otherUserIds);
-          context().setDeviceRegistered(accountId, true);
-          context().unregisterDevices(instanceMode, accountId, availableUserIds);
+    send(new TdApi.RegisterDevice(deviceToken, otherUserIds), (pushReceiverId, error) -> {
+      if (pushReceiverId != null) {
+        TDLib.Tag.notifications("Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
+        Settings.instance().putNotificationReceiverId(pushReceiverId.id, accountId);
+        TdlibSettingsManager.setRegisteredDevice(accountId, myUserId, deviceToken, otherUserIds);
+        context().setDeviceRegistered(accountId, true);
+        context().unregisterDevices(instanceMode, accountId, availableUserIds);
+        U.run(onDone);
+      } else {
+        int seconds = Math.max(5, TD.getFloodErrorSeconds(error.code, error.message, 5));
+        if (seconds > 60 && isDebugInstance()) {
+          TDLib.Tag.notifications("Unable to register device token, flood is %d seconds, ignoring: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
+          context.setDeviceRegistered(accountId, true);
           U.run(onDone);
-          break;
-        case TdApi.Error.CONSTRUCTOR: {
-          TdApi.Error error = (TdApi.Error) result;
-          int seconds = Math.max(5, TD.getFloodErrorSeconds(error.code, error.message, 5));
-          if (seconds > 60 && isDebugInstance()) {
-            Log.e("Unable to register device token, flood is %d seconds, ignoring: %s, accountId:%d", seconds, TD.toErrorString(result), accountId);
-            context.setDeviceRegistered(accountId, true);
-            U.run(onDone);
-          } else {
-            Log.e("Unable to register device token, retrying in %d seconds: %s, accountId:%d", seconds, TD.toErrorString(result), accountId);
-            client().send(new TdApi.SetAlarm(seconds), ignored -> checkDeviceTokenImpl(onDone));
-          }
-          break;
+        } else {
+          TDLib.Tag.notifications("Unable to register device token, retrying in %d seconds: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
+          client().send(new TdApi.SetAlarm(seconds), ignored -> checkDeviceTokenImpl(onDone));
         }
       }
       decrementReferenceCount(REFERENCE_TYPE_JOB);
@@ -954,7 +951,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   private long getPauseTimeout () {
-    if (Settings.instance().forceTdlibRestart())
+    if (Config.TEST_TDLIB_RESTARTS || Settings.instance().forceTdlibRestart())
       return TimeUnit.SECONDS.toMillis(1);
     if (!context().hasUi())
       return TimeUnit.SECONDS.toMillis(5); // No UI (running in the background), no limits
@@ -1625,6 +1622,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public Client client () { // TODO migrate all tdlib.client().send(..) to tdlib.send(..)
     return clientHolder().client;
+  }
+
+  public static abstract class CancellableResultHandler<T extends TdApi.Object> implements ResultHandler<T> {
+    private final CancellationSignal signal = new CancellationSignal();
+
+    public void cancel () {
+      signal.cancel();
+    }
+
+    public boolean isPending () {
+      return !signal.isCanceled();
+    }
+
+    public abstract void act (T result, @Nullable TdApi.Error error);
+
+    @Override
+    public final void onResult (T result, @Nullable TdApi.Error error) {
+      if (isPending()) {
+        act(result, error);
+      }
+    }
   }
 
   public interface ResultHandler<T extends TdApi.Object> {
@@ -2699,10 +2717,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private @NonNull TdlibChatList chatListImpl (@NonNull TdApi.ChatList chatList) {
     final String key = TD.makeChatListKey(chatList);
-    TdlibChatList list = chatLists.get(key);
-    if (list == null) {
-      list = new TdlibChatList(this, chatList);
-      chatLists.put(key, list);
+    TdlibChatList list;
+    synchronized (chatLists) {
+      list = chatLists.get(key);
+      if (list == null) {
+        list = new TdlibChatList(this, chatList);
+        chatLists.put(key, list);
+      }
     }
     return list;
   }
@@ -4070,6 +4091,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return (options.repliesBotChatId != 0 && options.repliesBotChatId == chatId) || (chatId == ChatId.fromUserId(options.repliesBotUserId));
   }
 
+  public boolean hasMessageThreads (long chatId) {
+    return ChatId.isSupergroup(chatId) && !ChatId.isMonoforumChat(chatId) && !isChannel(chatId);
+  }
+
   public boolean isServiceNotificationsChat (long chatId) {
     return (options.telegramServiceNotificationsChatId != 0 && options.telegramServiceNotificationsChatId == chatId) || (chatId == ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID));
   }
@@ -4172,18 +4197,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean chatRestricted (long chatId) {
-    return !StringUtils.isEmpty(chatRestrictionReason(chatId));
+    return chatRestriction(chatId) != null;
   }
 
   public boolean chatRestricted (TdApi.Chat chat) {
-    return !StringUtils.isEmpty(chatRestrictionReason(chat));
+    return chatRestriction(chat) != null;
   }
 
-  public String chatRestrictionReason (long chatId) {
-    return chatRestrictionReason(chatStrict(chatId));
+  public TdApi.RestrictionInfo chatRestriction (long chatId) {
+    return chatRestriction(chatStrict(chatId));
   }
 
-  public String chatRestrictionReason (TdApi.Chat chat) {
+  public TdApi.RestrictionInfo chatRestriction (TdApi.Chat chat) {
     if (chat == null || !Settings.instance().needRestrictContent()) {
       return null;
     }
@@ -4191,10 +4216,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.ChatTypePrivate.CONSTRUCTOR:
       case TdApi.ChatTypeSecret.CONSTRUCTOR:
         TdApi.User user = chatUser(chat);
-        return user != null && !StringUtils.isEmpty(user.restrictionReason) ? user.restrictionReason : null;
+        return user != null ? user.restrictionInfo : null;
       case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
         TdApi.Supergroup supergroup = cache().supergroup(ChatId.toSupergroupId(chat.id));
-        return supergroup != null && !StringUtils.isEmpty(supergroup.restrictionReason) ? supergroup.restrictionReason : null;
+        return supergroup != null ? supergroup.restrictionInfo : null;
     }
     return null;
   }
@@ -4665,27 +4690,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     client().send(new TdApi.ViewMessages(chatId, messageIds, new TdApi.MessageSourceScreenshot(), false), messageHandler());
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Animation animation) {
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Animation animation) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false, false);
-    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
+    sendMessage(chatId, topicId, replyTo, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Audio audio) {
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Audio audio) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAudio(new TdApi.InputFileId(audio.audio.id), null, audio.duration, audio.title, audio.performer, null);
-    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
+    sendMessage(chatId, topicId, replyTo, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Sticker sticker, @Nullable String emoji) {
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Sticker sticker, @Nullable String emoji) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji);
-    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
+    sendMessage(chatId, topicId, replyTo, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent) {
-    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent, null);
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent) {
+    sendMessage(chatId, topicId, replyTo, options, inputMessageContent, null);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
-    client().send(new TdApi.SendMessage(chatId, messageThreadId, replyTo, options, null, inputMessageContent), after != null ? result -> {
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
+    client().send(new TdApi.SendMessage(chatId, topicId, replyTo, options, null, inputMessageContent), after != null ? result -> {
       messageHandler.onResult(result);
       after.runWithData(result instanceof TdApi.Message ? (TdApi.Message) result : null);
     } : messageHandler());
@@ -4720,7 +4745,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_11bff7df();
         break;
     }
 
@@ -4804,7 +4829,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_7c00740();
+      Td.assertMessageContent_11bff7df();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -4997,12 +5022,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public void forwardMessage (long chatId, long messageThreadId, long fromChatId, long messageId, TdApi.MessageSendOptions options) {
-    client().send(new TdApi.ForwardMessages(chatId, messageThreadId, fromChatId, new long[] {messageId}, options, false, false), messageHandler());
+  public void forwardMessage (long chatId, @Nullable TdApi.MessageTopic topicId, long fromChatId, long messageId, TdApi.MessageSendOptions options) {
+    client().send(new TdApi.ForwardMessages(chatId, topicId, fromChatId, new long[] {messageId}, options, false, false), messageHandler());
   }
 
-  public void sendInlineQueryResult (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, long queryId, String resultId) {
-    client().send(new TdApi.SendInlineQueryResultMessage(chatId, messageThreadId, replyTo, options, queryId, resultId, false), messageHandler());
+  public void sendInlineQueryResult (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, long queryId, String resultId) {
+    client().send(new TdApi.SendInlineQueryResultMessage(chatId, topicId, replyTo, options, queryId, resultId, false), messageHandler());
   }
 
   public void sendBotStartMessage (long botUserId, long chatId, String parameter) {
@@ -5875,7 +5900,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (deviceToken != null && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
         state = TdlibManager.TokenState.OK;
       }
-      String tokenProvider = TdlibNotificationUtils.getTokenRetriever().getName();
+      String tokenProvider = TdlibNotificationUtils.getDeviceTokenRetriever().name;
       String error = context().getTokenError();
       switch (state) {
         case TdlibManager.TokenState.ERROR: {
@@ -5898,7 +5923,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
             case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR: {
               tokenOrEndpoint = ((TdApi.DeviceTokenHuaweiPush) deviceToken).token;
               final String huaweiTokenPrefix = "huawei://";
-              if (tokenOrEndpoint.startsWith(huaweiTokenPrefix)) {
+              if (!tokenOrEndpoint.startsWith(huaweiTokenPrefix)) {
                 tokenOrEndpoint = huaweiTokenPrefix + tokenOrEndpoint;
               }
               break;
@@ -5939,6 +5964,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       params.put("data", fingerprint);
     }
     params.put("tz_offset", timeZoneOffset);
+    params.put("recaptcha", BuildConfig.RECAPTCHA_VERSION);
 
     Map<String, Object> git = new LinkedHashMap<>();
     git.put("remote", BuildConfig.REMOTE_URL.replaceAll("^(https?://)?github\\.com/", ""));
@@ -6288,65 +6314,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return chat != null && chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR;
   }
 
-  private static final int CLIENT_DATA_VERSION = 0;
-
-  public static class ChatPasscode {
-    public static final int FLAG_INVISIBLE = 1;
-
-    public int mode;
-    private int flags;
-    public String hash;
-    public @Nullable String fingerHash;
-
-    public ChatPasscode (int mode, int flags, String hash, @Nullable String fingerHash) {
-      this.mode = mode;
-      this.flags = flags;
-      this.hash = hash;
-      this.fingerHash = fingerHash;
-    }
-
-    public boolean isVisible () {
-      return (flags & FLAG_INVISIBLE) == 0;
-    }
-
-    public void setIsVisible (boolean isVisible) {
-      flags = BitwiseUtils.setFlag(flags, FLAG_INVISIBLE, !isVisible);
-    }
-
-    public boolean unlock (int mode, String hash) {
-      return this.mode == mode && this.hash.equals(hash);
-    }
-
-    public boolean unlockWithFingerprint (String fingerHash) {
-      return !StringUtils.isEmpty(this.fingerHash) && this.fingerHash.equals(fingerHash);
-    }
-
-    @Override
-    public final String toString () {
-      StringBuilder b = new StringBuilder()
-        .append(CLIENT_DATA_VERSION)
-        .append('_')
-        .append(mode)
-        .append('_')
-        .append(flags)
-        .append('_')
-        .append(hash.length())
-        .append('_')
-        .append(hash);
-      if (!StringUtils.isEmpty(fingerHash)) {
-        b.append('_').append(fingerHash.length()).append('_').append(fingerHash);
-      }
-      return b.toString();
-    }
-
-    public static int makeFlags (boolean isVisible) {
-      int flags = 0;
-      if (!isVisible) {
-        flags |= FLAG_INVISIBLE;
-      }
-      return flags;
-    }
-  }
+  static final int CLIENT_DATA_VERSION = 0;
 
   public boolean hasPasscode (long chatId) {
     return hasPasscode(chat(chatId));
@@ -6383,7 +6351,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       return null;
     }
     if (version < CLIENT_DATA_VERSION) {
-      for (; version <= CLIENT_DATA_VERSION; version++) {
+      for (version = version + 1; version <= CLIENT_DATA_VERSION; version++) {
         clientData = upgradeChatClientData(chat, version);
       }
       setChatClientData(chat, clientData);
@@ -7134,21 +7102,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   // Updates: NOTIFICATIONS
 
   private boolean havePendingNotifications, haveInitializedNotifications;
-
   private void resetState () {
     haveInitializedNotifications = false;
     ignoreNotificationUpdates = false;
   }
 
+  @TdlibThread
   private void resetChatsData () {
     knownChatIds.clear();
     chats.clear();
-    chatLists.clear();
+    synchronized (chatLists) {
+      for (TdlibChatList chatList : chatLists.values()) {
+        chatList.clear();
+      }
+    }
     forumTopicInfos.clear();
   }
 
+  @TdlibThread
   private void resetContextualData () {
-    // chats.clear();
     resetChatsData();
     activeCalls.clear();
     activeStories.clear();
@@ -7477,6 +7449,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
 
     listeners.updateMessageContent(update);
+    context.global().notifyUpdateMessageContent(this, update);
 
     switch (update.newContent.getConstructor()) {
       case TdApi.MessageLocation.CONSTRUCTOR: {
@@ -8097,7 +8070,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
-      chat.themeName = update.themeName;
+      chat.theme = update.theme;
       chatLists = chatListsImpl(chat.positions);
     }
     listeners.updateChatTheme(update, chat, chatLists);
@@ -8270,7 +8243,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateForumTopicInfo (TdApi.UpdateForumTopicInfo update) {
-    String cacheKey = update.info.chatId + "_" + update.info.messageThreadId;
+    String cacheKey = update.info.chatId + "_" + update.info.forumTopicId;
     synchronized (dataLock) {
       forumTopicInfos.put(cacheKey, update.info);
     }
@@ -8597,6 +8570,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       haveActiveCalls = !activeCalls.isEmpty();
     }
     setHaveActiveCalls(haveActiveCalls);
+    context.global().onUpdateCall(this, update);
 
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_UPDATE_CALL, update));
     listeners.updateCall(update);
@@ -8609,6 +8583,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateGroupCall (TdApi.UpdateGroupCall update) {
+    context.global().onUpdateGroupCall(this, update);
     listeners.updateGroupCall(update);
   }
 
@@ -8620,6 +8595,34 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   private void updateGroupCallParticipants (TdApi.UpdateGroupCallParticipants update) {
     listeners.updateGroupCallParticipants(update);
+  }
+
+  @TdlibThread
+  private void updateNewGroupCallMessage (TdApi.UpdateNewGroupCallMessage update) {
+    listeners.updateNewGroupCallMessage(update);
+  }
+
+  @TdlibThread
+  private void updateNewGroupCallPaidReaction (TdApi.UpdateNewGroupCallPaidReaction update) {
+    listeners.updateNewGroupCallPaidReaction(update);
+  }
+
+  @TdlibThread
+  private void updateGroupCallMessageLevels (TdApi.UpdateGroupCallMessageLevels update) {
+    synchronized (dataLock) {
+      this.groupCallMessageLevels = update.levels;
+    }
+    listeners.updateGroupCallMessageLevels(update);
+  }
+
+  @TdlibThread
+  private void updateGroupCallMessageSendFailed (TdApi.UpdateGroupCallMessageSendFailed update) {
+    listeners.updateGroupCallMessageSendFailed(update);
+  }
+
+  @TdlibThread
+  private void updateGroupCallMessagesDeleted (TdApi.UpdateGroupCallMessagesDeleted update) {
+    listeners.updateGroupCallMessagesDeleted(update);
   }
 
   @TdlibThread
@@ -8717,6 +8720,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   // Updates: SECURITY
 
+  @SuppressWarnings("deprecation")
   private void updateServiceNotification (TdApi.UpdateServiceNotification update) {
     final TdApi.FormattedText text = Td.textOrCaption(update.content);
     CharSequence msg = TD.toDisplayCharSequence(text);
@@ -8989,29 +8993,70 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_DISPATCH_TERMS_OF_SERVICE, update));
   }
 
-  public interface IntegrityCallback {
-    void onIntegrityResult (String result, boolean isError);
+  public interface ApplicationVerificationCallback {
+    void onApplicationVerificationResult (@NonNull String data);
   }
 
-  public void requestPlayIntegrity (long verificationId, String nonce, IntegrityCallback callback) {
+  public static final class ApplicationVerificationException extends RuntimeException {
+    public ApplicationVerificationException (@NonNull String message) {
+      super(message);
+    }
+
+    public ApplicationVerificationException (@NonNull String message, Throwable cause) {
+      super(message, cause);
+    }
+
+    public static String formatPlayIntegrityMessage (Exception e) {
+      if (e == null) return "NULL";
+      String str = "";
+      if (e.getClass() != null && e.getClass().getSimpleName() != null) {
+        str = e.getClass().getSimpleName();
+        if (str == null) str = "";
+      }
+      if (e.getMessage() != null) {
+        if (str.length() > 0) str += " ";
+        str += e.getMessage();
+      }
+      return str.toUpperCase().replaceAll(" ", "_");
+    }
+
+    public static String formatReCaptchaMessage (Exception e) {
+      if (e == null) return "NULL";
+      if (e.getMessage() == null) return "MSG_NULL";
+      return e.getMessage().replaceAll(" ", "_").toUpperCase();
+    }
+  }
+
+  public void requestPlayIntegrity (long verificationId, String nonce, ApplicationVerificationCallback callback) {
     TDLib.Tag.playIntegrity("Received Play Integrity request verificationId=%d", verificationId);
     RunnableData<Exception> onError = e -> {
       TDLib.Tag.playIntegrity("failure verificationId=%d: %s", verificationId, Log.toString(e));
-      final String error = Log.toErrorString(e);
-      callback.onIntegrityResult(error, true);
+      final String error;
+      if (e instanceof ApplicationVerificationException) {
+        error = e.getMessage();
+      } else {
+        error = "PLAYINTEGRITY_FAILED_EXCEPTION_" + ApplicationVerificationException.formatPlayIntegrityMessage(e);
+      }
+      callback.onApplicationVerificationResult(error);
     };
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-      onError.runWithData(new IllegalStateException("SDK_LEVEL_TOO_LOW: " + Build.VERSION.SDK_INT));
+      onError.runWithData(new ApplicationVerificationException("PLAYINTEGRITY_FAILED_SDK_TOO_LOW_" + Build.VERSION.SDK_INT));
       return;
     }
+    long projectId = 0;
     try {
       FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
       String projectIdRaw = options != null ? options.getGcmSenderId() : "";
-      if (StringUtils.isEmpty(projectIdRaw)) {
-        onError.runWithData(new IllegalStateException("PLAY_SERVICES_PROJECT_NUMBER_UNKNOWN"));
-        return;
+      if (!StringUtils.isEmpty(projectIdRaw)) {
+        projectId = Long.parseLong(projectIdRaw);
+      } else {
+        throw new IllegalStateException();
       }
-      long projectId = Long.parseLong(projectIdRaw);
+    } catch (Exception e) {
+      onError.runWithData(new ApplicationVerificationException("PLAYINTEGRITY_FAILED_EXCEPTION_NOPROJECT"));
+      return;
+    }
+    try {
       IntegrityTokenRequest request = IntegrityTokenRequest.builder()
         .setNonce(nonce)
         .setCloudProjectNumber(projectId)
@@ -9021,9 +9066,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       integrityTokenResponse
         .addOnSuccessListener(r -> {
           final String token = r.token();
-          TDLib.Tag.playIntegrity("success verificationId=%d: %s", verificationId, token);
-          final String result = token != null ? token : "PLAYINTEGRITY_FAILED_EXCEPTION_NULL";
-          callback.onIntegrityResult(result, token != null);
+          if (token != null) {
+            TDLib.Tag.playIntegrity("success verificationId=%d: %s", verificationId, token);
+            callback.onApplicationVerificationResult(token);
+          } else {
+            onError.runWithData(new ApplicationVerificationException("PLAYINTEGRITY_FAILED_EXCEPTION_NULL"));
+          }
         })
         .addOnFailureListener(onError::runWithData);
     } catch (Exception e) {
@@ -9031,46 +9079,67 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public void requestRecaptcha (long verificationId, String action, String recaptchaKeyId, IntegrityCallback callback) {
+  public void requestRecaptcha (long verificationId, String action, String recaptchaKeyId, ApplicationVerificationCallback callback) {
     TDLib.Tag.recaptcha("Received ReCaptcha request verificationId=%d action=%s", verificationId, action);
-    RunnableData<Exception> onError = e -> {
-      final String error = Log.toErrorString(e);
-      callback.onIntegrityResult(error, true);
+    RunnableData<ApplicationVerificationException> onError = e -> {
+      TDLib.Tag.recaptcha("failure verificationId=%d: %s", verificationId, Log.toString(e));
+      callback.onApplicationVerificationResult(e.getMessage());
     };
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-      onError.runWithData(new IllegalStateException("SDK_LEVEL_TOO_LOW: " + Build.VERSION.SDK_INT));
+      onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_SDK_TOO_LOW_" + Build.VERSION.SDK_INT));
       return;
     }
     RunnableData<RecaptchaTasksClient> actor = client -> {
       client.executeTask(RecaptchaAction.custom(action))
         .addOnSuccessListener(token -> {
-          TDLib.Tag.recaptcha("success verificationId=%d", verificationId);
-          callback.onIntegrityResult(token, false);
+          if (token != null) {
+            TDLib.Tag.recaptcha("success verificationId=%d", verificationId);
+            callback.onApplicationVerificationResult(token);
+          } else {
+            onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_TOKEN_NULL"));
+          }
         })
-        .addOnFailureListener(error -> {
-          TDLib.Tag.recaptcha("failure verificationId=%d: %s", verificationId, Log.toString(error));
-          onError.runWithData(error);
-        });
+        .addOnFailureListener(taskError ->
+          onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_TASK_EXCEPTION_" + ApplicationVerificationException.formatReCaptchaMessage(taskError), taskError))
+        );
     };
-    RecaptchaProviderRegistry.INSTANCE.execute(recaptchaKeyId, actor, onError);
+    RecaptchaProviderRegistry.execute(recaptchaKeyId, actor, clientError ->
+      onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_GETCLIENT_EXCEPTION_" + ApplicationVerificationException.formatReCaptchaMessage(clientError), clientError))
+    );
+  }
+
+  private TdApi.AgeVerificationParameters ageVerificationParameters;
+
+  @TdlibThread
+  private void updateAgeVerificationParameters (TdApi.UpdateAgeVerificationParameters update) {
+    synchronized (dataLock) {
+      this.ageVerificationParameters = update.parameters;
+    }
+  }
+
+  @Nullable
+  public TdApi.AgeVerificationParameters ageVerificationParameters () {
+    synchronized (dataLock) {
+      return ageVerificationParameters;
+    }
   }
 
   @TdlibThread
   private void updateApplicationVerificationRequired (TdApi.UpdateApplicationVerificationRequired update) {
     incrementJobReferenceCount();
     Runnable after = this::decrementJobReferenceCount;
-    requestPlayIntegrity(update.verificationId, update.nonce, (token, isError) -> {
-      send(new TdApi.SetApplicationVerificationToken(update.verificationId, isError ? null : token), typedOkHandler(after));
-    });
+    requestPlayIntegrity(update.verificationId, update.nonce, data ->
+      send(new TdApi.SetApplicationVerificationToken(update.verificationId, data), typedOkHandler(after))
+    );
   }
 
   @TdlibThread
   private void updateApplicationRecaptchaVerificationRequired (TdApi.UpdateApplicationRecaptchaVerificationRequired update) {
     incrementJobReferenceCount();
     Runnable after = this::decrementJobReferenceCount;
-    requestRecaptcha(update.verificationId, update.action, update.recaptchaKeyId, (token, isError) -> {
-      send(new TdApi.SetApplicationVerificationToken(update.verificationId, isError ? null : token), typedOkHandler(after));
-    });
+    requestRecaptcha(update.verificationId, update.action, update.recaptchaKeyId, data ->
+      send(new TdApi.SetApplicationVerificationToken(update.verificationId, data), typedOkHandler(after))
+    );
   }
 
   @TdlibThread
@@ -9125,14 +9194,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  private final Map<String, TdApi.ChatTheme> chatThemes = new HashMap<>();
+  private final Map<String, TdApi.EmojiChatTheme> emojiChatThemes = new HashMap<>();
 
   @TdlibThread
-  private void updateChatThemes (TdApi.UpdateChatThemes update) {
+  private void updateChatThemes (TdApi.UpdateEmojiChatThemes update) {
     synchronized (dataLock) {
-      chatThemes.clear();
-      for (TdApi.ChatTheme theme : update.chatThemes) {
-        chatThemes.put(theme.name, theme);
+      emojiChatThemes.clear();
+      for (TdApi.EmojiChatTheme emojiChatTheme : update.chatThemes) {
+        emojiChatThemes.put(emojiChatTheme.name, emojiChatTheme);
       }
     }
   }
@@ -9196,11 +9265,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private void updateStarRevenueStatus (TdApi.UpdateStarRevenueStatus update) {
     listeners.updateStarRevenueStatus(update);
   }
+  
+  @TdlibThread
+  private void updateTonRevenueStatus (TdApi.UpdateTonRevenueStatus update) {
+    listeners.updateTonRevenueStatus(update);
+  }
 
   @AnyThread
-  public @Nullable TdApi.ChatTheme chatTheme (String themeName) {
+  public @Nullable TdApi.EmojiChatTheme emojiChatTheme (String themeName) {
     synchronized (dataLock) {
-      return chatThemes.get(themeName);
+      return emojiChatThemes.get(themeName);
     }
   }
 
@@ -9470,6 +9544,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       unreadCount = this.unreadTrendingStickerSetsCount = TD.calculateUnreadStickerSetCount(update.stickerSets);
     }
     listeners.updateTrendingStickerSets(update, unreadCount);
+  }
+
+  private void updateTrustedMiniAppBots (TdApi.UpdateTrustedMiniAppBots update) {
+    synchronized (dataLock) {
+      this.trustedMiniAppBotUserIds = update.botUserIds;
+    }
+    listeners.updateTrustedMiniAppBots(update);
   }
 
   private void updateSavedAnimations (TdApi.UpdateSavedAnimations update) {
@@ -9884,6 +9965,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateGroupCall((TdApi.UpdateGroupCall) update);
         break;
       }
+      case TdApi.UpdateNewGroupCallMessage.CONSTRUCTOR: {
+        updateNewGroupCallMessage((TdApi.UpdateNewGroupCallMessage) update);
+        break;
+      }
+      case TdApi.UpdateNewGroupCallPaidReaction.CONSTRUCTOR: {
+        updateNewGroupCallPaidReaction((TdApi.UpdateNewGroupCallPaidReaction) update);
+        break;
+      }
+      case TdApi.UpdateGroupCallMessageLevels.CONSTRUCTOR: {
+        updateGroupCallMessageLevels((TdApi.UpdateGroupCallMessageLevels) update);
+        break;
+      }
+      case TdApi.UpdateGroupCallMessageSendFailed.CONSTRUCTOR: {
+        updateGroupCallMessageSendFailed((TdApi.UpdateGroupCallMessageSendFailed) update);
+        break;
+      }
+      case TdApi.UpdateGroupCallMessagesDeleted.CONSTRUCTOR: {
+        updateGroupCallMessagesDeleted((TdApi.UpdateGroupCallMessagesDeleted) update);
+        break;
+      }
+
       case TdApi.UpdateGroupCallVerificationState.CONSTRUCTOR: {
         updateGroupCallVerificationState((TdApi.UpdateGroupCallVerificationState) update);
         break;
@@ -10032,6 +10134,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateOwnedStarCount((TdApi.UpdateOwnedStarCount) update);
         break;
       }
+      case TdApi.UpdateOwnedTonCount.CONSTRUCTOR: {
+        updateOwnedTonCount((TdApi.UpdateOwnedTonCount) update);
+        break;
+      }
       case TdApi.UpdateSpeechRecognitionTrial.CONSTRUCTOR: {
         updateSpeechRecognitionTrial((TdApi.UpdateSpeechRecognitionTrial) update);
         break;
@@ -10100,6 +10206,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateTrendingStickerSets((TdApi.UpdateTrendingStickerSets) update);
         break;
       }
+      case TdApi.UpdateTrustedMiniAppBots.CONSTRUCTOR: {
+        updateTrustedMiniAppBots((TdApi.UpdateTrustedMiniAppBots) update);
+        break;
+      }
       case TdApi.UpdateSavedAnimations.CONSTRUCTOR: {
         updateSavedAnimations((TdApi.UpdateSavedAnimations) update);
         break;
@@ -10114,6 +10224,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
       case TdApi.UpdateTermsOfService.CONSTRUCTOR: {
         updateTermsOfService((TdApi.UpdateTermsOfService) update);
+        break;
+      }
+      case TdApi.UpdateAgeVerificationParameters.CONSTRUCTOR: {
+        updateAgeVerificationParameters((TdApi.UpdateAgeVerificationParameters) update);
         break;
       }
       case TdApi.UpdateApplicationVerificationRequired.CONSTRUCTOR: {
@@ -10140,8 +10254,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateContactCloseBirthdays((TdApi.UpdateContactCloseBirthdays) update);
         break;
       }
-      case TdApi.UpdateChatThemes.CONSTRUCTOR: {
-        updateChatThemes((TdApi.UpdateChatThemes) update);
+      case TdApi.UpdateEmojiChatThemes.CONSTRUCTOR: {
+        updateChatThemes((TdApi.UpdateEmojiChatThemes) update);
         break;
       }
       case TdApi.UpdateChatBackground.CONSTRUCTOR: {
@@ -10164,6 +10278,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateStarRevenueStatus((TdApi.UpdateStarRevenueStatus) update);
         break;
       }
+      case TdApi.UpdateTonRevenueStatus.CONSTRUCTOR: {
+        updateTonRevenueStatus((TdApi.UpdateTonRevenueStatus) update);
+        break;
+      }
 
       // File generation
       case TdApi.UpdateFileGenerationStart.CONSTRUCTOR: {
@@ -10174,6 +10292,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateFileGenerationStop((TdApi.UpdateFileGenerationStop) update);
         break;
       }
+
+
+      case TdApi.UpdatePendingTextMessage.CONSTRUCTOR:
+      case TdApi.UpdateLiveStoryTopDonors.CONSTRUCTOR:
+      case TdApi.UpdateGiftAuctionState.CONSTRUCTOR:
+      case TdApi.UpdateActiveGiftAuctions.CONSTRUCTOR:
+      case TdApi.UpdateStakeDiceState.CONSTRUCTOR:
+        break;
 
       // for bots only.
       case TdApi.UpdateNewChatJoinRequest.CONSTRUCTOR:
@@ -10201,7 +10327,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_e8e2dbe3();
+        Td.assertUpdate_98126c66();
         throw Td.unsupported(update);
       }
     }
@@ -10529,18 +10655,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void findUpdateFile (@NonNull RunnableData<UpdateFileInfo> onDone) {
-    final String abi = U.getCpuAbi();
-    final String hashtag;
-    switch (abi) {
-      case "armeabi-v7a": hashtag = "arm32"; break;
-      case "arm64-v8a": hashtag = "arm64"; break;
-      case "x86": hashtag = "x86"; break;
-      case "x86_64": case "x64": hashtag = "x64"; break;
-      default: {
-        onDone.runWithData(null);
-        return;
-      }
+    final String abiFlavor = U.getPreferredAbiFlavor();
+    if (abiFlavor == null) {
+      onDone.runWithData(null);
+      return;
     }
+    final String hashtag;
+    if (!BuildConfig.LATEST_FLAVOR) {
+      hashtag = abiFlavor + StringUtils.ucfirst(BuildConfig.FLAVOR_SDK);
+    } else {
+      hashtag = abiFlavor;
+    }
+    final String query = "#apk " +
+      (Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS) ? "" : "#stable ") +
+      "#" + hashtag;
     clientHolder().updates.findResource(message -> {
       if (message != null && Td.isDocument(message.content)) {
         TdApi.Document document = ((TdApi.MessageDocument) message.content).document;
@@ -10573,9 +10701,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         }
         onDone.runWithData(ok ? new UpdateFileInfo(document, buildNo, version, commit) : null);
       }
-    }, "#apk " + (
-      Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS) ? "" : "#stable "
-    ) + "#" + hashtag, BuildConfig.COMMIT_DATE);
+    }, query, BuildConfig.COMMIT_DATE);
   }
 
   public <T extends Settings.CloudSetting> void fetchCloudSettings (@NonNull RunnableData<List<T>> callback, String requiredHashtag, @NonNull Future<T> currentSettingProvider, @NonNull Future<T> builtinItemProvider, @NonNull WrapperProvider<T, TdApi.Message> instanceProvider) {
@@ -10929,6 +11055,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
             if (!((TdApi.ChatMemberStatusRestricted) status).permissions.canPinMessages)
               return false;
+            break;
           case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
           case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
           case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
@@ -11173,6 +11300,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageGiftedTon.CONSTRUCTOR:
         case TdApi.MessageGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+        case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+        case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+        case TdApi.MessageStakeDice.CONSTRUCTOR:
         case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
         case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
         case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
@@ -11189,6 +11319,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessagePinMessage.CONSTRUCTOR:
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+        case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
         case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
         case TdApi.MessageUnsupported.CONSTRUCTOR:
         case TdApi.MessageUsersShared.CONSTRUCTOR:
@@ -11209,7 +11340,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_7c00740();
+          Td.assertMessageContent_11bff7df();
           throw Td.unsupported(message.content);
       }
     }
@@ -11254,9 +11385,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.InputMessageContact.CONSTRUCTOR:
         case TdApi.InputMessageStory.CONSTRUCTOR:
         case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
+        case TdApi.InputMessageStakeDice.CONSTRUCTOR:
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertInputMessageContent_65313187();
+          Td.assertInputMessageContent_eb9f33ef();
           throw Td.unsupported(content);
       }
     }
@@ -11618,11 +11750,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     switch (action.getConstructor()) {
       case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
       case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:
-      case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR: {
+      case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
+      case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR: {
         return true;
       }
       default: {
-        Td.assertSuggestedAction_c92fb71c();
+        Td.assertSuggestedAction_a78df4c9();
         break;
       }
     }
@@ -11684,7 +11817,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     ResolvableProblem.NOTIFICATIONS,
     ResolvableProblem.CHECK_PASSWORD,
     ResolvableProblem.CHECK_PHONE_NUMBER,
-    ResolvableProblem.SET_BIRTHDATE
+    ResolvableProblem.SET_BIRTHDATE,
+    ResolvableProblem.SET_LOGIN_EMAIL
   })
   public @interface ResolvableProblem {
     int
@@ -11693,7 +11827,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       NOTIFICATIONS = 2,
       CHECK_PASSWORD = 3,
       CHECK_PHONE_NUMBER = 4,
-      SET_BIRTHDATE = 5;
+      SET_BIRTHDATE = 5,
+      SET_LOGIN_EMAIL = 6;
   }
 
   @ResolvableProblem
@@ -11714,8 +11849,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           return ResolvableProblem.CHECK_PHONE_NUMBER;
         case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
           return ResolvableProblem.SET_BIRTHDATE;
+        case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR:
+          return ResolvableProblem.SET_LOGIN_EMAIL;
         default:
-          Td.assertSuggestedAction_c92fb71c();
+          Td.assertSuggestedAction_a78df4c9();
           throw Td.unsupported(singleAction);
       }
     }

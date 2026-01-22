@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Ακούγεται τώρα</string>
+  <string name="media3_controls_play_description">Αναπαραγωγή</string>
+  <string name="media3_controls_pause_description">Παύση</string>
+  <string name="media3_controls_seek_to_previous_description">Αναζήτηση προς προηγούμενο στοιχείο</string>
+  <string name="media3_controls_seek_to_next_description">Αναζήτηση προς επόμενο στοιχείο</string>
+  <string name="media3_controls_seek_back_description">Αναζήτηση προς τα πίσω</string>
+  <string name="media3_controls_seek_forward_description">Αναζήτηση προς τα εμπρός</string>
+  <string name="error_message_fallback">Παρουσιάστηκε κάποιο πρόβλημα. Δοκιμάστε αργότερα.</string>
+  <string name="error_message_info_cancelled">Δεν ήταν δυνατή η ολοκλήρωση. Δοκιμάστε ξανά.</string>
+  <string name="error_message_invalid_state">Δεν είναι δυνατή η εκτέλεση του αιτήματος αυτή τη στιγμή</string>
+  <string name="error_message_authentication_expired">Συνδεθείτε για να χρησιμοποιήσετε αυτή την εφαρμογή</string>
+  <string name="error_message_content_already_playing">Γίνεται ήδη αναπαραγωγή αυτού του περιεχομένου</string>
+  <string name="error_message_end_of_playlist">Δεν υπάρχει κάτι άλλο στην ουρά</string>
+  <string name="error_message_concurrent_stream_limit">Γίνεται ακρόαση σε πάρα πολλές συσκευές</string>
+  <string name="error_message_not_available_in_region">Δεν είναι δυνατή η λήψη αυτού του περιεχομένου εδώ</string>
+  <string name="error_message_not_supported">Δεν είναι δυνατή η εκτέλεση του αιτήματος από αυτή την εφαρμογή</string>
+  <string name="error_message_parental_control_restricted">Αυτό το περιεχόμενο είναι αποκλεισμένο</string>
+  <string name="error_message_premium_account_required">Απαιτείται premium πρόσβαση</string>
+  <string name="error_message_skip_limit_reached">Δεν είναι δυνατή η παράβλεψη περισσότερων κομματιών</string>
+  <string name="error_message_bad_value">Λανθασμένα δεδομένα εισόδου</string>
+  <string name="error_message_io">Σφάλμα εισόδου/εξόδου</string>
+  <string name="error_message_permission_denied">Δεν επιτρέπεται η πρόσβαση</string>
+  <string name="error_message_disconnected">Αποσυνδέθηκε από την εφαρμογή μέσων</string>
+  <string name="error_message_setup_required">Απαιτείται ρύθμιση</string>
+</resources>

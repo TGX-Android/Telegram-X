@@ -216,7 +216,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           break;
         }
 
-        case TdApi.LinkPreviewTypeChat.CONSTRUCTOR: {
+        case TdApi.LinkPreviewTypeChat.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeDirectMessagesChat.CONSTRUCTOR: {
           this.type = TYPE_TELEGRAM_CHAT;
           break;
         }
@@ -258,17 +259,21 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         case TdApi.LinkPreviewTypePremiumGiftCode.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeStoryAlbum.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeVideoNote.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
           break;
 
         default: {
-          Td.assertLinkPreviewType_e3ce10d5();
+          Td.assertLinkPreviewType_a9a3ffcd();
           if (BuildConfig.DEBUG) {
             Tracer.onTdlibHandlerError(new UnsupportedOperationException(type.toString()));
           }
@@ -630,7 +635,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       String host = uri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");
       String webPageHost = webPageUri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");
 
-      return StringUtils.equalsOrBothEmpty(host, webPageHost) && StringUtils.equalsOrBothEmpty(uri.getPath(), webPageUri.getPath());
+      return
+        StringUtils.equalsOrBothEmpty(host, webPageHost) &&
+        StringUtils.equalsOrBothEmpty(uri.getPath(), webPageUri.getPath()) &&
+        StringUtils.equalsOrBothEmpty(uri.getQuery(), webPageUri.getQuery());
     } catch (Throwable t) {
       Log.i("Invalid url", t);
     }

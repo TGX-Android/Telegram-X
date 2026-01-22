@@ -40,6 +40,7 @@ import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSetThemed;
@@ -417,6 +418,9 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
 
   @Override
   public boolean onTouchEvent (MotionEvent event) {
+    if (!Views.isValid(this)) {
+      return false;
+    }
     TextEntry text = this.text.singletonItem();
     if (text == null || (linkFlags == Text.ENTITY_FLAGS_NONE && entities == null)) {
       return super.onTouchEvent(event);

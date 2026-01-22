@@ -1,0 +1,60 @@
+// Copyright (C) 2024 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+
+apply from: "$gradle.ext.androidxMediaSettingsDir/common_library_config.gradle"
+apply plugin: 'kotlin-android'
+
+android {
+    namespace 'androidx.media3.common.ktx'
+
+    buildTypes {
+        debug {
+            testCoverageEnabled = true
+        }
+    }
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+        }
+    }
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
+        }
+    }
+}
+
+dependencies {
+    api project(modulePrefix + 'lib-common')
+    implementation 'androidx.core:core:' + androidxCoreVersion
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:' + kotlinxCoroutinesVersion
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:' + kotlinxCoroutinesVersion
+
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:' + kotlinxCoroutinesVersion
+    testImplementation 'org.robolectric:robolectric:' + robolectricVersion
+    testImplementation project(modulePrefix + 'test-utils')}
+
+ext {
+    releaseArtifactId = 'media3-common-ktx'
+    releaseName = 'Media3 common KTX module'
+}
+apply from: '../../publish.gradle'

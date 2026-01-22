@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Đang phát</string>
+  <string name="media3_controls_play_description">Phát</string>
+  <string name="media3_controls_pause_description">Tạm dừng</string>
+  <string name="media3_controls_seek_to_previous_description">Tua về mục trước</string>
+  <string name="media3_controls_seek_to_next_description">Tua đến mục tiếp theo</string>
+  <string name="media3_controls_seek_back_description">Tua lại</string>
+  <string name="media3_controls_seek_forward_description">Tua đi</string>
+  <string name="error_message_fallback">Đã xảy ra lỗi. Hãy thử lại sau.</string>
+  <string name="error_message_info_cancelled">Không thể hoàn tất hành động. Hãy thử lại.</string>
+  <string name="error_message_invalid_state">Không thực hiện được yêu cầu đó ngay bây giờ</string>
+  <string name="error_message_authentication_expired">Hãy đăng nhập để dùng ứng dụng này</string>
+  <string name="error_message_content_already_playing">Đang phát nội dung đó</string>
+  <string name="error_message_end_of_playlist">Không có nội dung nào khác trong danh sách chờ</string>
+  <string name="error_message_concurrent_stream_limit">Đang nghe trên quá nhiều thiết bị</string>
+  <string name="error_message_not_available_in_region">Không xem được nội dung đó tại đây</string>
+  <string name="error_message_not_supported">Ứng dụng này không thực hiện được yêu cầu đó</string>
+  <string name="error_message_parental_control_restricted">Nội dung đó đã bị chặn</string>
+  <string name="error_message_premium_account_required">Cần có tài khoản Premium</string>
+  <string name="error_message_skip_limit_reached">Không thể bỏ qua bản nhạc nào nữa</string>
+  <string name="error_message_bad_value">Dữ liệu đầu vào không chính xác</string>
+  <string name="error_message_io">Lỗi đầu vào/đầu ra</string>
+  <string name="error_message_permission_denied">Yêu cầu truy cập bị từ chối</string>
+  <string name="error_message_disconnected">Đã ngắt kết nối khỏi ứng dụng nghe nhìn</string>
+  <string name="error_message_setup_required">Yêu cầu thiết lập</string>
+</resources>

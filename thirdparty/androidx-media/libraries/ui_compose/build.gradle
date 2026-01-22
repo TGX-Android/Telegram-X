@@ -1,0 +1,69 @@
+// Copyright (C) 2024 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+apply from: "$gradle.ext.androidxMediaSettingsDir/common_library_config.gradle"
+apply plugin: 'kotlin-android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+android {
+    namespace 'androidx.media3.ui.compose'
+
+    buildTypes {
+        debug {
+            testCoverageEnabled = true
+        }
+    }
+    buildFeatures {
+        compose true
+    }
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+        }
+    }
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
+        }
+    }
+}
+
+dependencies {
+    api project(modulePrefix + 'lib-common')
+    api project(modulePrefix + 'lib-common-ktx')
+
+    def composeBom = platform('androidx.compose:compose-bom:2024.12.01')
+    api composeBom
+
+    // Remove the version number once b/385138624 is fixed, GMaven doesn't resolve the BOM above
+    api 'androidx.compose.foundation:foundation:1.7.6'
+
+    testImplementation 'androidx.compose.ui:ui-test'
+    testImplementation 'androidx.compose.ui:ui-test-junit4'
+    testImplementation project(modulePrefix + 'test-utils')
+    testImplementation 'org.robolectric:robolectric:' + robolectricVersion
+}
+
+ext {
+    releaseArtifactId = 'media3-ui-compose'
+    releaseName = 'Media3 UI Compose module'
+}
+apply from: '../../publish.gradle'

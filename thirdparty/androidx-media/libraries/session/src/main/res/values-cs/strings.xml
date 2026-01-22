@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Přehrává se</string>
+  <string name="media3_controls_play_description">Přehrát</string>
+  <string name="media3_controls_pause_description">Pozastavit</string>
+  <string name="media3_controls_seek_to_previous_description">Posunout na předchozí položku</string>
+  <string name="media3_controls_seek_to_next_description">Posunout na další položku</string>
+  <string name="media3_controls_seek_back_description">Posunout zpět</string>
+  <string name="media3_controls_seek_forward_description">Posunout vpřed</string>
+  <string name="error_message_fallback">Někde se stala chyba. Zkuste to později.</string>
+  <string name="error_message_info_cancelled">Nelze dokončit. Zkuste to znovu.</string>
+  <string name="error_message_invalid_state">Tuto akci teď nelze provést</string>
+  <string name="error_message_authentication_expired">Pokud chcete aplikaci použít, přihlaste se</string>
+  <string name="error_message_content_already_playing">Tento obsah se už přehrává</string>
+  <string name="error_message_end_of_playlist">Ve frontě není nic dalšího</string>
+  <string name="error_message_concurrent_stream_limit">Poslech je aktivován v příliš mnoha zařízeních</string>
+  <string name="error_message_not_available_in_region">Tento obsah tu nelze načíst</string>
+  <string name="error_message_not_supported">Tuto akci aplikace nedokáže provést</string>
+  <string name="error_message_parental_control_restricted">Obsah je blokován</string>
+  <string name="error_message_premium_account_required">Je vyžadován prémiový přístup</string>
+  <string name="error_message_skip_limit_reached">Další skladby nelze přeskočit</string>
+  <string name="error_message_bad_value">Nesprávná vstupní data</string>
+  <string name="error_message_io">Chyba vstupu/výstupu</string>
+  <string name="error_message_permission_denied">Přístup byl odepřen</string>
+  <string name="error_message_disconnected">Odpojeno od mediální aplikace</string>
+  <string name="error_message_setup_required">Je vyžadováno nastavení</string>
+</resources>

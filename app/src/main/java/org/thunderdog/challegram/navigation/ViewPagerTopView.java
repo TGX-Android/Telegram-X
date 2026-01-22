@@ -1050,6 +1050,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private float lastCallSelectionFactor;
 
   @Override
+  @SuppressWarnings("deprecation")
   public void draw (@NonNull Canvas c) {
     super.draw(c);
 
@@ -1251,7 +1252,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     if (clipText) {
       saveCount = c.save();
       c.clipRect(x, 0, clipRight, getHeight());
-      c.saveLayerAlpha(x, 0, clipRight, getHeight(), (int) (0xFF * labelFactor), Canvas.ALL_SAVE_FLAG);
+      Views.saveLayerAlpha(c, x, 0, clipRight, getHeight(), (int) (0xFF * labelFactor), Canvas.ALL_SAVE_FLAG);
     } else {
       saveCount = -1;
     }

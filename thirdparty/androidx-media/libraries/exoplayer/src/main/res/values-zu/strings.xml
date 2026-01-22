@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Landa</string>
+  <string name="exo_download_notification_channel_name">Ukulandwa</string>
+  <string name="exo_download_downloading">Iyalanda</string>
+  <string name="exo_download_completed">Ukulanda kuqedile</string>
+  <string name="exo_download_failed">Ukulanda kuhlulekile</string>
+  <string name="exo_download_removing">Kususwa okulandiwe</string>
+  <string name="exo_download_paused">Okulandwayo kumiswe isikhashana</string>
+  <string name="exo_download_paused_for_network">Ukulanda kulinde inethiwekhi</string>
+  <string name="exo_download_paused_for_wifi">Ukulanda kulinde i-WiFi</string>
+</resources>

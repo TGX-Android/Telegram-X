@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Nagpi-play ngayon</string>
+  <string name="media3_controls_play_description">I-play</string>
+  <string name="media3_controls_pause_description">I-pause</string>
+  <string name="media3_controls_seek_to_previous_description">Mag-seek sa nakaraang item</string>
+  <string name="media3_controls_seek_to_next_description">Mag-seek sa susunod na item</string>
+  <string name="media3_controls_seek_back_description">Mag-seek pabalik</string>
+  <string name="media3_controls_seek_forward_description">Mag-seek pasulong</string>
+  <string name="error_message_fallback">May problema. Subukan sa ibang pagkakataon.</string>
+  <string name="error_message_info_cancelled">Hindi natapos. Subukan ulit.</string>
+  <string name="error_message_invalid_state">Hindi iyon magagawa ngayon</string>
+  <string name="error_message_authentication_expired">Mag-sign in para gamitin ang app na ito</string>
+  <string name="error_message_content_already_playing">Pine-play na ang content na iyon</string>
+  <string name="error_message_end_of_playlist">Wala nang naka-queue</string>
+  <string name="error_message_concurrent_stream_limit">Nakikinig sa masyadong maraming device</string>
+  <string name="error_message_not_available_in_region">Hindi makukuha ang content na iyon dito</string>
+  <string name="error_message_not_supported">Hindi iyon magagawa ng app na ito</string>
+  <string name="error_message_parental_control_restricted">Naka-block ang content na iyon</string>
+  <string name="error_message_premium_account_required">Kailangan ng premium na access</string>
+  <string name="error_message_skip_limit_reached">Hindi na makakalaktaw pa ng track</string>
+  <string name="error_message_bad_value">Maling data ng input</string>
+  <string name="error_message_io">Error sa input/output</string>
+  <string name="error_message_permission_denied">Tinanggihan ang pag-access</string>
+  <string name="error_message_disconnected">Nadiskonekta sa media app</string>
+  <string name="error_message_setup_required">Kailangan ng pag-set up</string>
+</resources>

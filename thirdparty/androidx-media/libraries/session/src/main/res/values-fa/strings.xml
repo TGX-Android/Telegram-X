@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">درحال پخش</string>
+  <string name="media3_controls_play_description">پخش</string>
+  <string name="media3_controls_pause_description">مکث</string>
+  <string name="media3_controls_seek_to_previous_description">رفتن به مورد قبلی</string>
+  <string name="media3_controls_seek_to_next_description">رفتن به مورد بعدی</string>
+  <string name="media3_controls_seek_back_description">رفتن به عقب</string>
+  <string name="media3_controls_seek_forward_description">رفتن به جلو</string>
+  <string name="error_message_fallback">مشکلی رخ داد. بعداً امتحان کنید.</string>
+  <string name="error_message_info_cancelled">تکمیل نشد. دوباره امتحان کنید.</string>
+  <string name="error_message_invalid_state">درحال‌حاضر انجام نمی‌شود</string>
+  <string name="error_message_authentication_expired">برای استفاده از این برنامه، به سیستم وارد شوید</string>
+  <string name="error_message_content_already_playing">این محتوا ازقبل درحال پخش است</string>
+  <string name="error_message_end_of_playlist">هیچ مورد دیگری در صف پخش نیست</string>
+  <string name="error_message_concurrent_stream_limit">درحال گوش کردن به تعداد زیادی دستگاه</string>
+  <string name="error_message_not_available_in_region">نمی‌توان این محتوا را در اینجا دریافت کرد</string>
+  <string name="error_message_not_supported">این برنامه نمی‌تواند این کار را انجام دهد</string>
+  <string name="error_message_parental_control_restricted">این محتوا مسدود شده است</string>
+  <string name="error_message_premium_account_required">دسترسی ممتاز لازم است</string>
+  <string name="error_message_skip_limit_reached">از هیچ آهنگ دیگری نمی‌توان رد شد</string>
+  <string name="error_message_bad_value">داده‌های ورودی نادرست است</string>
+  <string name="error_message_io">خطا در ورودی/ خروجی</string>
+  <string name="error_message_permission_denied">دسترسی رد شد</string>
+  <string name="error_message_disconnected">اتصال از برنامه رسانه قطع شد</string>
+  <string name="error_message_setup_required">لازم است راه‌اندازی کنید</string>
+</resources>

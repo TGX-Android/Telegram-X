@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Se redă acum</string>
+  <string name="media3_controls_play_description">Redă</string>
+  <string name="media3_controls_pause_description">Întrerupe</string>
+  <string name="media3_controls_seek_to_previous_description">Treci la elementul anterior</string>
+  <string name="media3_controls_seek_to_next_description">Treci la elementul următor</string>
+  <string name="media3_controls_seek_back_description">Derulează înapoi</string>
+  <string name="media3_controls_seek_forward_description">Derulează înainte</string>
+  <string name="error_message_fallback">A apărut o problemă. Încearcă mai târziu.</string>
+  <string name="error_message_info_cancelled">Nu s-a putut finaliza. Încearcă din nou.</string>
+  <string name="error_message_invalid_state">Acțiunea nu poate fi realizată momentan</string>
+  <string name="error_message_authentication_expired">Conectează-te pentru a folosi aplicația</string>
+  <string name="error_message_content_already_playing">Conținutul se redă deja</string>
+  <string name="error_message_end_of_playlist">Nu mai există elemente în coadă</string>
+  <string name="error_message_concurrent_stream_limit">Se ascultă pe prea multe dispozitive</string>
+  <string name="error_message_not_available_in_region">Conținutul nu poate fi descărcat aici</string>
+  <string name="error_message_not_supported">Aplicația nu poate realiza această acțiune</string>
+  <string name="error_message_parental_control_restricted">Conținutul este blocat</string>
+  <string name="error_message_premium_account_required">Este necesar accesul premium</string>
+  <string name="error_message_skip_limit_reached">Nu mai pot fi omise melodii</string>
+  <string name="error_message_bad_value">Date de intrare incorecte</string>
+  <string name="error_message_io">Eroare la intrare / ieșire</string>
+  <string name="error_message_permission_denied">Acces refuzat</string>
+  <string name="error_message_disconnected">Deconectat de la aplicația media</string>
+  <string name="error_message_setup_required">Este necesară configurarea</string>
+</resources>

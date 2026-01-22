@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Şimdi oynatılıyor</string>
+  <string name="media3_controls_play_description">Oynat</string>
+  <string name="media3_controls_pause_description">Duraklat</string>
+  <string name="media3_controls_seek_to_previous_description">Önceki öğeye sar</string>
+  <string name="media3_controls_seek_to_next_description">Sonraki öğeye sar</string>
+  <string name="media3_controls_seek_back_description">Geri sar</string>
+  <string name="media3_controls_seek_forward_description">İleri sar</string>
+  <string name="error_message_fallback">Bir hata oluştu. Daha sonra deneyebilirsiniz.</string>
+  <string name="error_message_info_cancelled">Tamamlanamadı. Tekrar deneyin.</string>
+  <string name="error_message_invalid_state">İşlem şu anda gerçekleştirilemiyor</string>
+  <string name="error_message_authentication_expired">Bu uygulamayı kullanmak için oturum açın</string>
+  <string name="error_message_content_already_playing">Bu içerik zaten oynatılıyor</string>
+  <string name="error_message_end_of_playlist">Sıraya eklenmiş başka bir şey yok</string>
+  <string name="error_message_concurrent_stream_limit">Çok fazla cihazda dinleme yapılıyor</string>
+  <string name="error_message_not_available_in_region">İçeriğe buradan erişilemiyor</string>
+  <string name="error_message_not_supported">Bu uygulama bu işlemi gerçekleştiremiyor</string>
+  <string name="error_message_parental_control_restricted">Bu içerik engellendi</string>
+  <string name="error_message_premium_account_required">Premium erişim gerekli</string>
+  <string name="error_message_skip_limit_reached">Daha fazla parça atlanamıyor</string>
+  <string name="error_message_bad_value">Yanlış giriş verileri</string>
+  <string name="error_message_io">Giriş/çıkış hatası</string>
+  <string name="error_message_permission_denied">Erişim engellendi</string>
+  <string name="error_message_disconnected">Medya uygulamasıyla bağlantı kesildi</string>
+  <string name="error_message_setup_required">Kurulum gerekli</string>
+</resources>

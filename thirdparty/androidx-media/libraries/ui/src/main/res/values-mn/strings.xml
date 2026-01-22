@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Тоглуулагчийн удирдлагыг харуулах</string>
+  <string name="exo_controls_hide">Тоглуулагчийн удирдлагыг нуух</string>
+  <string name="exo_controls_seek_bar_description">Дахин тоглуулах явц</string>
+  <string name="exo_controls_settings_description">Тохиргоо</string>
+  <string name="exo_controls_overflow_hide_description">Нэмэлт тохиргоог нуух</string>
+  <string name="exo_controls_overflow_show_description">Нэмэлт тохиргоог харуулах</string>
+  <string name="exo_controls_fullscreen_enter_description">Бүтэн дэлгэцээр харах</string>
+  <string name="exo_controls_fullscreen_exit_description">Бүтэн дэлгэцээс гарах</string>
+  <string name="exo_controls_previous_description">Өмнөх</string>
+  <string name="exo_controls_next_description">Дараах</string>
+  <string name="exo_controls_pause_description">Түр зогсоох</string>
+  <string name="exo_controls_play_description">Тоглуулах</string>
+  <string name="exo_controls_stop_description">Зогсоох</string>
+  <string name="exo_controls_rewind_description">Ухраах</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">%d секунд ухраах</item>
+    <item quantity="other">%d секунд ухраах</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Хурдан урагшлуулах</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">%d секундээр хурдан урагшлуулах</item>
+    <item quantity="other">%d секундээр хурдан урагшлуулах</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Одоогийн горим: Алийг нь ч дахин тоглуулахгүй. Дахин тоглуулах горимыг асаана уу/унтраана уу.</string>
+  <string name="exo_controls_repeat_one_description">Одоогийн горим: Нэгийг дахин тоглуулна уу. Дахин тоглуулах горимыг асаана уу/унтраана уу.</string>
+  <string name="exo_controls_repeat_all_description">Одоогийн горим: Бүгдийг дахин тоглуулна уу. Дахин тоглуулах горимыг асаана уу/унтраана уу.</string>
+  <string name="exo_controls_shuffle_on_description">Холих горимыг идэвхгүй болгох</string>
+  <string name="exo_controls_shuffle_off_description">Холих горимыг идэвхжүүлэх</string>
+  <string name="exo_controls_vr_description">VR горим</string>
+  <string name="exo_controls_cc_enabled_description">Хадмалыг идэвхгүй болгох</string>
+  <string name="exo_controls_cc_disabled_description">Хадмалыг идэвхжүүлэх</string>
+  <string name="exo_controls_playback_speed">Хурд</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0.25x</item>
+    <item>0.5x</item>
+    <item>0.75x</item>
+    <item>Энгийн</item>
+    <item>1.25x</item>
+    <item>1.5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Дуу</string>
+  <string name="exo_track_selection_none">Байхгүй</string>
+  <string name="exo_track_selection_auto">Автомат</string>
+  <string name="exo_track_unknown">Үл мэдэгдэх</string>
+  <string name="exo_track_unknown_name">Тодорхойгүй (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Моно</string>
+  <string name="exo_track_stereo">Стерео</string>
+  <string name="exo_track_surround">Орчин тойрны дуу</string>
+  <string name="exo_track_surround_5_point_1">5.1 орчин тойрны дуу</string>
+  <string name="exo_track_surround_7_point_1">7.1 орчин тойрны дуу</string>
+  <string name="exo_track_role_alternate">Хувилбар</string>
+  <string name="exo_track_role_supplementary">Нэмэлт</string>
+  <string name="exo_track_role_commentary">Тайлбар</string>
+  <string name="exo_track_role_closed_captions">Хаалттай тайлбар</string>
+  <string name="exo_track_bitrate">%1$.2f Mbps</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

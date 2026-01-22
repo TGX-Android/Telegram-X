@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Está sonando</string>
+  <string name="media3_controls_play_description">Reproducir</string>
+  <string name="media3_controls_pause_description">Pausar</string>
+  <string name="media3_controls_seek_to_previous_description">Ir al elemento anterior</string>
+  <string name="media3_controls_seek_to_next_description">Ir al elemento siguiente</string>
+  <string name="media3_controls_seek_back_description">Volver</string>
+  <string name="media3_controls_seek_forward_description">Avanzar</string>
+  <string name="error_message_fallback">Se ha producido un error. Inténtalo más tarde.</string>
+  <string name="error_message_info_cancelled">No se ha podido finalizar. Inténtalo de nuevo.</string>
+  <string name="error_message_invalid_state">No se puede hacer en estos momentos</string>
+  <string name="error_message_authentication_expired">Inicia sesión para usar esta aplicación</string>
+  <string name="error_message_content_already_playing">Ya se está reproduciendo ese contenido</string>
+  <string name="error_message_end_of_playlist">No hay nada más en la cola</string>
+  <string name="error_message_concurrent_stream_limit">Se está escuchando en demasiados dispositivos</string>
+  <string name="error_message_not_available_in_region">No se puede reproducir ese contenido en esta ubicación</string>
+  <string name="error_message_not_supported">Esta aplicación no puede hacer eso</string>
+  <string name="error_message_parental_control_restricted">Ese contenido está bloqueado</string>
+  <string name="error_message_premium_account_required">Se necesita acceso premium</string>
+  <string name="error_message_skip_limit_reached">No se pueden saltar más pistas</string>
+  <string name="error_message_bad_value">Datos de entrada incorrectos</string>
+  <string name="error_message_io">Error de entrada/salida</string>
+  <string name="error_message_permission_denied">Acceso denegado</string>
+  <string name="error_message_disconnected">Desconectado de la aplicación multimedia</string>
+  <string name="error_message_setup_required">Configuración necesaria</string>
+</resources>

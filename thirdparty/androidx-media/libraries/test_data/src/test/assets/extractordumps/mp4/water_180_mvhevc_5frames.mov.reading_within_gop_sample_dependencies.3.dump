@@ -1,0 +1,56 @@
+seekMap:
+  isSeekable = true
+  duration = 55555
+  getPosition(0) = [[timeUs=0, position=36]]
+  getPosition(1) = [[timeUs=0, position=36]]
+  getPosition(27777) = [[timeUs=0, position=36]]
+  getPosition(55555) = [[timeUs=0, position=36]]
+numberOfTracks = 1
+track 0:
+  total output bytes = 86208
+  sample count = 5
+  track duration = 55555
+  format 0:
+    averageBitrate = 12414076
+    id = 1
+    containerMimeType = video/mp4
+    sampleMimeType = video/mv-hevc
+    codecs = hvc1.6.40.L156.BF.80
+    maxInputSize = 40098
+    maxNumReorderSamples = 2
+    width = 1934
+    height = 2160
+    frameRate = 90.00
+    maxSubLayers = 1
+    colorInfo:
+      colorSpace = 1
+      colorRange = 2
+      colorTransfer = 3
+      lumaBitdepth = 8
+      chromaBitdepth = 8
+    language = und
+    metadata = entries=[Mp4Timestamp: creation time=3803488223, modification time=3803488223, timescale=11520]
+    initializationData:
+      data = length 124, hash CAFF1DA1
+      data = length 27, hash 23A1DCCE
+  sample 0:
+    time = 0
+    flags = 1
+    data = length 40068, hash A863CAFC
+  sample 1:
+    time = 44444
+    flags = 0
+    data = length 18167, hash AA9B6C63
+  sample 2:
+    time = 22222
+    flags = 0
+    data = length 11313, hash 39F384B0
+  sample 3:
+    time = 11111
+    flags = 0
+    data = length 7989, hash 3AAF059
+  sample 4:
+    time = 33333
+    flags = 536870912
+    data = length 8671, hash 30D44CD
+tracksEnded = true

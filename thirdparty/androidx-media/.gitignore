@@ -1,0 +1,90 @@
+# Android generated
+bin
+gen
+libs
+obj
+lint.xml
+.kotlin
+
+# IntelliJ IDEA
+.idea
+*.iml
+*.ipr
+*.iws
+classes
+gen-external-apklibs
+
+# Eclipse
+.project
+.classpath
+.settings
+.checkstyle
+.cproject
+
+# Gradle
+.gradle
+build
+buildout
+out
+
+# Maven
+target
+release.properties
+pom.xml.*
+
+# Ant
+ant.properties
+local.properties
+proguard.cfg
+proguard-project.txt
+
+# Bazel
+bazel-bin
+bazel-genfiles
+bazel-out
+bazel-testlogs
+
+# Other
+.DS_Store
+cmake-build-debug
+dist
+jacoco.exec
+tmp
+
+# External native builds
+.externalNativeBuild
+.cxx
+
+# VP9 decoder extension
+libraries/decoder_vp9/src/main/jni/libvpx
+libraries/decoder_vp9/src/main/jni/libvpx_android_configs
+libraries/decoder_vp9/src/main/jni/libyuv
+
+# AV1 decoder extension
+libraries/decoder_av1/src/main/jni/cpu_features
+libraries/decoder_av1/src/main/jni/libgav1
+
+# Opus decoder extension
+libraries/decoder_opus/src/main/jni/libopus
+
+# FLAC decoder extension
+libraries/decoder_flac/src/main/jni/flac
+libraries/decoder_flac/src/main/jni/libflac
+
+# FFmpeg decoder extension
+libraries/decoder_ffmpeg/src/main/jni/ffmpeg
+
+# Cronet datasource extension
+libraries/datasource_cronet/jniLibs/*
+!libraries/datasource_cronet/jniLibs/README.md
+libraries/datasource_cronet/libs/*
+!libraries/datasource_cronet/libs/README.md
+
+# MIDI decoder extension
+libraries/decoder_midi/lib
+
+# IAMF decoder extension
+libraries/decoder_iamf/src/main/jni/libiamf
+
+# MPEG-H decoder extension
+libraries/decoder_mpegh/src/main/jni/libmpegh

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">ಇದೀಗ ಪ್ಲೇ ಮಾಡಲಾಗುತ್ತಿದೆ</string>
+  <string name="media3_controls_play_description">ಪ್ಲೇ ಮಾಡಿ</string>
+  <string name="media3_controls_pause_description">ವಿರಾಮಗೊಳಿಸಿ</string>
+  <string name="media3_controls_seek_to_previous_description">ಹಿಂದಿನ ಐಟಂಗೆ ಸೀಕ್ ಮಾಡಿ</string>
+  <string name="media3_controls_seek_to_next_description">ಮುಂದಿನ ಐಟಂಗೆ ಸೀಕ್ ಮಾಡಿ</string>
+  <string name="media3_controls_seek_back_description">ಹಿಂದಕ್ಕೆ ಸೀಕ್ ಮಾಡಿ</string>
+  <string name="media3_controls_seek_forward_description">ಮುಂದಕ್ಕೆ ಸೀಕ್ ಮಾಡಿ</string>
+  <string name="error_message_fallback">ಏನೋ ತಪ್ಪಾಗಿದೆ. ನಂತರ ಪ್ರಯತ್ನಿಸಿ.</string>
+  <string name="error_message_info_cancelled">ಪೂರ್ಣಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಪುನಃ ಪ್ರಯತ್ನಿಸಿ.</string>
+  <string name="error_message_invalid_state">ಸದ್ಯಕ್ಕೆ ಅದನ್ನು ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ</string>
+  <string name="error_message_authentication_expired">ಈ ಆ್ಯಪ್ ಬಳಸಲು ಸೈನ್ ಇನ್ ಮಾಡಿ</string>
+  <string name="error_message_content_already_playing">ಈಗಾಗಲೇ ಆ ಕಂಟೆಂಟ್‌ ಅನ್ನು ಪ್ಲೇ ಮಾಡಲಾಗುತ್ತಿದೆ</string>
+  <string name="error_message_end_of_playlist">ಸರದಿಯಲ್ಲಿ ಯಾವುದು ಬಾಕಿ ಉಳಿದಿಲ್ಲ</string>
+  <string name="error_message_concurrent_stream_limit">ಹಲವಾರು ಸಾಧನಗಳಲ್ಲಿ ಆಲಿಸಲಾಗುತ್ತಿದೆ</string>
+  <string name="error_message_not_available_in_region">ಆ ಕಂಟೆಂಟ್‌ ಅನ್ನು ಇಲ್ಲಿ ಪಡೆದುಕೊಳ್ಳಲು ಸಾಧ್ಯವಿಲ್ಲ</string>
+  <string name="error_message_not_supported">ಈ ಆ್ಯಪ್‌ನಿಂದ ಅದನ್ನು ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ</string>
+  <string name="error_message_parental_control_restricted">ಕಂಟೆಂಟ್‌ ಅನ್ನು ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ</string>
+  <string name="error_message_premium_account_required">ಪ್ರೀಮಿಯಂ ಆ್ಯಕ್ಸೆಸ್‌ನ ಅಗತ್ಯವಿದೆ</string>
+  <string name="error_message_skip_limit_reached">ಇನ್ನು ಮುಂದೆ ಟ್ರ್ಯಾಕ್‌ಗಳನ್ನು ಸ್ಕಿಪ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ</string>
+  <string name="error_message_bad_value">ತಪ್ಪಾದ ಇನ್‌ಪುಟ್ ಡೇಟಾ</string>
+  <string name="error_message_io">ಇನ್‌ಪುಟ್/ಔಟ್‌‌ಪುಟ್ ದೋಷ</string>
+  <string name="error_message_permission_denied">ಆ್ಯಕ್ಸೆಸ್ ಅನ್ನು ನಿರಾಕರಿಸಲಾಗಿದೆ</string>
+  <string name="error_message_disconnected">ಮಾಧ್ಯಮ ಆ್ಯಪ್‌ನಿಂದ ಸಂಪರ್ಕ ಕಡಿತಗೊಂಡಿದೆ</string>
+  <string name="error_message_setup_required">ಸೆಟಪ್ ಅಗತ್ಯವಿದೆ</string>
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">กำลังเล่น</string>
+  <string name="media3_controls_play_description">เล่น</string>
+  <string name="media3_controls_pause_description">หยุดชั่วคราว</string>
+  <string name="media3_controls_seek_to_previous_description">กรอไปยังรายการก่อนหน้า</string>
+  <string name="media3_controls_seek_to_next_description">กรอไปยังรายการถัดไป</string>
+  <string name="media3_controls_seek_back_description">กรอกลับ</string>
+  <string name="media3_controls_seek_forward_description">กรอไปข้างหน้า</string>
+  <string name="error_message_fallback">เกิดข้อผิดพลาด ลองดำเนินการในภายหลัง</string>
+  <string name="error_message_info_cancelled">ดำเนินการไม่สำเร็จ โปรดลองอีกครั้ง</string>
+  <string name="error_message_invalid_state">ดำเนินการดังกล่าวไม่ได้ในขณะนี้</string>
+  <string name="error_message_authentication_expired">ลงชื่อเข้าใช้เพื่อใช้แอปนี้</string>
+  <string name="error_message_content_already_playing">กำลังเล่นเนื้อหาดังกล่าวอยู่แล้ว</string>
+  <string name="error_message_end_of_playlist">ไม่มีรายการอื่นในคิว</string>
+  <string name="error_message_concurrent_stream_limit">กำลังเปิดฟังจากหลายอุปกรณ์เกินไป</string>
+  <string name="error_message_not_available_in_region">เปิดเนื้อหาดังกล่าวไม่ได้ที่นี่</string>
+  <string name="error_message_not_supported">แอปนี้ดำเนินการดังกล่าวไม่ได้</string>
+  <string name="error_message_parental_control_restricted">เนื้อหาดังกล่าวถูกบล็อก</string>
+  <string name="error_message_premium_account_required">ต้องมีสิทธิ์เข้าถึงระดับพรีเมียม</string>
+  <string name="error_message_skip_limit_reached">ข้ามแทร็กอื่นอีกไม่ได้แล้ว</string>
+  <string name="error_message_bad_value">ข้อมูลอินพุตไม่ถูกต้อง</string>
+  <string name="error_message_io">ข้อผิดพลาดในอินพุต/เอาต์พุต</string>
+  <string name="error_message_permission_denied">การเข้าถึงถูกปฏิเสธ</string>
+  <string name="error_message_disconnected">ยกเลิกการเชื่อมต่อกับแอปสื่อแล้ว</string>
+  <string name="error_message_setup_required">ต้องตั้งค่า</string>
+</resources>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD availabilityStartTime="2014-06-19T23:07:42" type="dynamic">
+    <Period start="PT7462826.784S" id="0">
+        <AdaptationSet id="0" lang="fr" contentType="video">
+            <Role schemeIdUri="urn:mpeg:DASH:role:2011" value="commentary"/>
+            <SupplementalProperty
+                schemeIdUri="urn:mpeg:dash:adaptation-set-switching:2016"
+                value="1,2,3,4,5"/>
+            <Representation id="0"/>
+        </AdaptationSet>
+        <AdaptationSet id="1" lang="fr" contentType="video">
+            <SupplementalProperty
+                schemeIdUri="urn:mpeg:dash:adaptation-set-switching:2016"
+                value="0,2,3,4,5"/>
+            <Representation id="1"/>
+            </AdaptationSet>
+        <AdaptationSet id="2" lang="en" contentType="video">
+            <SupplementalProperty
+                schemeIdUri="urn:mpeg:dash:adaptation-set-switching:2016"
+                value="0,1,3,4,5"/>
+            <Representation id="2"/>
+        </AdaptationSet>
+        <AdaptationSet id="3" lang="fr" contentType="video">
+            <SupplementalProperty
+                schemeIdUri="urn:mpeg:dash:adaptation-set-switching:2016"
+                value="0,1,2,4,5"/>
+            <Representation id="3"/>
+        </AdaptationSet>
+        <AdaptationSet id="4" lang="en" contentType="video">
+            <SupplementalProperty
+                schemeIdUri="urn:mpeg:dash:adaptation-set-switching:2016"
+                value="0,1,2,3,5"/>
+            <Representation id="4"/>
+        </AdaptationSet>
+        <AdaptationSet id="5" lang="en" contentType="audio">
+            <SupplementalProperty
+                schemeIdUri="urn:mpeg:dash:adaptation-set-switching:2016"
+                value="0,1,2,3,4"/>
+            <Representation id="4"/>
+        </AdaptationSet>
+    </Period>
+</MPD>

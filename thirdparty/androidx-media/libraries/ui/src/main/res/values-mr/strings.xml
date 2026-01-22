@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">प्लेअर नियंत्रणे दर्शवा</string>
+  <string name="exo_controls_hide">प्लेअर नियंत्रणे लपवा</string>
+  <string name="exo_controls_seek_bar_description">प्लेबॅकची प्रगती</string>
+  <string name="exo_controls_settings_description">सेटिंग्ज</string>
+  <string name="exo_controls_overflow_hide_description">अतिरिक्त सेटिंग्ज लपवा</string>
+  <string name="exo_controls_overflow_show_description">अतिरिक्त सेटिंग्ज दाखवा</string>
+  <string name="exo_controls_fullscreen_enter_description">फुलस्क्रीनवर पहा</string>
+  <string name="exo_controls_fullscreen_exit_description">फुलस्क्रीनवरून बाहेर पडा</string>
+  <string name="exo_controls_previous_description">मागील</string>
+  <string name="exo_controls_next_description">पुढील</string>
+  <string name="exo_controls_pause_description">विराम</string>
+  <string name="exo_controls_play_description">प्‍ले करा</string>
+  <string name="exo_controls_stop_description">थांबा</string>
+  <string name="exo_controls_rewind_description">रीवाइंड करा</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">%d सेकंद रिवाइंड करा</item>
+    <item quantity="other">%d सेकंद रिवाइंड करा</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">फास्ट फॉरवर्ड करा</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">%d सेकंद फास्ट फॉरवर्ड करा</item>
+    <item quantity="other">%d सेकंद फास्ट फॉरवर्ड करा</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">सध्याचा मोड: काहीही रिपीट करू नका. रिपीट मोड टॉगल करा.</string>
+  <string name="exo_controls_repeat_one_description">सध्याचा मोड: एक रिपीट करा. रिपीट मोड टॉगल करा.</string>
+  <string name="exo_controls_repeat_all_description">सध्याचा मोड: सर्व रिपीट करा. रिपीट मोड टॉगल करा.</string>
+  <string name="exo_controls_shuffle_on_description">शफल मोड बंद करा</string>
+  <string name="exo_controls_shuffle_off_description">शफल मोड सुरू करा</string>
+  <string name="exo_controls_vr_description">VR मोड</string>
+  <string name="exo_controls_cc_enabled_description">सबटायटल बंद करा</string>
+  <string name="exo_controls_cc_disabled_description">सबटायटल सुरू करा</string>
+  <string name="exo_controls_playback_speed">वेग</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>०.२५x</item>
+    <item>०.५x</item>
+    <item>०.७५x</item>
+    <item>सामान्य</item>
+    <item>१.२५x</item>
+    <item>१.५x</item>
+    <item>२x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">ऑडिओ</string>
+  <string name="exo_track_selection_none">काहीही नाही</string>
+  <string name="exo_track_selection_auto">आपोआप</string>
+  <string name="exo_track_unknown">अज्ञात</string>
+  <string name="exo_track_unknown_name">अज्ञात (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">मोनो</string>
+  <string name="exo_track_stereo">स्टिरिओ</string>
+  <string name="exo_track_surround">सराउंड साउंड</string>
+  <string name="exo_track_surround_5_point_1">५.१ सराउंड साउंड</string>
+  <string name="exo_track_surround_7_point_1">७.१ सराउंड साउंड</string>
+  <string name="exo_track_role_alternate">पर्यायी</string>
+  <string name="exo_track_role_supplementary">साहाय्यक</string>
+  <string name="exo_track_role_commentary">समालोचन</string>
+  <string name="exo_track_role_closed_captions">सबटायटल</string>
+  <string name="exo_track_bitrate">%1$.2f Mbps</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

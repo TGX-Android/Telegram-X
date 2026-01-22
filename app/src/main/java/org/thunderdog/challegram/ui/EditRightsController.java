@@ -1276,12 +1276,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (hasAnyChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(null);
+      }
       return true;
     }
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private void setCanViewMessages (boolean value) {
@@ -1829,7 +1831,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       CharSequence[] hints = errorHints.toArray(new CharSequence[0]);
       CharSequence hint = TextUtils.join("\n", hints);
       context().tooltipManager()
-        .builder(((SettingView) view).getToggler())
+        .builder(view.getToggler())
         .show(this, tdlib, R.drawable.baseline_info_24, hint);
     }
   }

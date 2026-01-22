@@ -1868,7 +1868,7 @@ public class RoundVideoController extends BasePlaybackController implements
   }
 
   private void setExoPlayerSpeed () {
-    setExoPlayerSpeed (Settings.instance().getPlaybackSpeed());
+    setExoPlayerSpeed(Settings.instance().getPlaybackSpeed());
   }
 
   private void setExoPlayerSpeed (int speed) {

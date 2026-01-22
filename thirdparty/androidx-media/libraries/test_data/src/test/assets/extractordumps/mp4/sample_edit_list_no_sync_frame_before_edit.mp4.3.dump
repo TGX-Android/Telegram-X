@@ -1,0 +1,180 @@
+seekMap:
+  isSeekable = true
+  duration = 2772200
+  getPosition(0) = [[timeUs=315644, position=5338]]
+  getPosition(1) = [[timeUs=315644, position=5338]]
+  getPosition(1386100) = [[timeUs=1383977, position=24070]]
+  getPosition(2772200) = [[timeUs=1383977, position=24070]]
+numberOfTracks = 2
+track 0:
+  total output bytes = 1115896
+  sample count = 30
+  track duration = 2772200
+  format 0:
+    averageBitrate = 8365494
+    id = 1
+    containerMimeType = video/mp4
+    sampleMimeType = video/hevc
+    codecs = hvc1.2.4.L120.B0
+    maxInputSize = 196379
+    maxNumReorderSamples = 2
+    width = 1920
+    height = 1080
+    frameRate = 27.70
+    rotationDegrees = 90
+    maxSubLayers = 1
+    colorInfo:
+      colorSpace = 6
+      colorRange = 2
+      colorTransfer = 7
+      lumaBitdepth = 10
+      chromaBitdepth = 10
+    language = und
+    metadata = entries=[Mp4Timestamp: creation time=3820926047, modification time=3820926047, timescale=10000]
+    initializationData:
+      data = length 97, hash 32FB3D18
+  sample 0:
+    time = 1383977
+    flags = 1
+    data = length 143217, hash A7D06C3F
+  sample 1:
+    time = 1317311
+    flags = 0
+    data = length 32967, hash E490EDD3
+  sample 2:
+    time = 1283977
+    flags = 0
+    data = length 17445, hash 5F91C2B8
+  sample 3:
+    time = 1350644
+    flags = 0
+    data = length 14638, hash 775110FE
+  sample 4:
+    time = 1517311
+    flags = 0
+    data = length 67665, hash A9A21D87
+  sample 5:
+    time = 1450644
+    flags = 0
+    data = length 32392, hash 7E790D61
+  sample 6:
+    time = 1417311
+    flags = 0
+    data = length 10589, hash 6EB324E3
+  sample 7:
+    time = 1483977
+    flags = 0
+    data = length 18023, hash 29D03684
+  sample 8:
+    time = 1650644
+    flags = 0
+    data = length 67946, hash 8135C195
+  sample 9:
+    time = 1583977
+    flags = 0
+    data = length 41030, hash B6A9208
+  sample 10:
+    time = 1550644
+    flags = 0
+    data = length 15110, hash BF682221
+  sample 11:
+    time = 1617311
+    flags = 0
+    data = length 17245, hash 2BAFA805
+  sample 12:
+    time = 1783977
+    flags = 0
+    data = length 57455, hash 2754BFA0
+  sample 13:
+    time = 1717311
+    flags = 0
+    data = length 37067, hash CCE6C30F
+  sample 14:
+    time = 1683977
+    flags = 0
+    data = length 14098, hash 60A5760F
+  sample 15:
+    time = 1750644
+    flags = 0
+    data = length 20864, hash 94450211
+  sample 16:
+    time = 1917311
+    flags = 0
+    data = length 62871, hash BA53494F
+  sample 17:
+    time = 1850644
+    flags = 0
+    data = length 38596, hash 420335AC
+  sample 18:
+    time = 1817311
+    flags = 0
+    data = length 17584, hash 2E024B02
+  sample 19:
+    time = 1883977
+    flags = 0
+    data = length 18521, hash 7381819A
+  sample 20:
+    time = 2050644
+    flags = 0
+    data = length 54835, hash F45163BF
+  sample 21:
+    time = 1983977
+    flags = 0
+    data = length 29346, hash A57C757F
+  sample 22:
+    time = 1950644
+    flags = 0
+    data = length 15815, hash 1B194C31
+  sample 23:
+    time = 2017311
+    flags = 0
+    data = length 20390, hash A162AAD0
+  sample 24:
+    time = 2183977
+    flags = 0
+    data = length 64262, hash 875514C7
+  sample 25:
+    time = 2117311
+    flags = 0
+    data = length 39953, hash 3884739A
+  sample 26:
+    time = 2083977
+    flags = 0
+    data = length 23136, hash 8AF1C1AD
+  sample 27:
+    time = 2150644
+    flags = 0
+    data = length 26792, hash 3157758F
+  sample 28:
+    time = 2317311
+    flags = 0
+    data = length 62711, hash EF9AC8F5
+  sample 29:
+    time = 2250644
+    flags = 536870912
+    data = length 33333, hash 567D33D6
+track 1:
+  total output bytes = 417
+  sample count = 1
+  track duration = 2257700
+  format 0:
+    averageBitrate = 139197
+    peakBitrate = 192000
+    id = 2
+    containerMimeType = video/mp4
+    sampleMimeType = audio/mp4a-latm
+    codecs = mp4a.40.2
+    maxInputSize = 476
+    channelCount = 2
+    sampleRate = 44100
+    encoderDelay = 761
+    encoderPadding = 2114
+    language = und
+    metadata = entries=[Mp4Timestamp: creation time=3820926047, modification time=3820926047, timescale=10000]
+    initializationData:
+      data = length 2, hash 5FF
+  sample 0:
+    time = 2299687
+    flags = 536870913
+    data = length 417, hash 761190B8
+tracksEnded = true

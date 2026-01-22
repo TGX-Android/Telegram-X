@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Now playing</string>
+  <string name="media3_controls_play_description">වාදනය කරන්න</string>
+  <string name="media3_controls_pause_description">විරාම ගන්වන්න</string>
+  <string name="media3_controls_seek_to_previous_description">පෙර අයිතමය වෙත අන්වේෂණය</string>
+  <string name="media3_controls_seek_to_next_description">ඊළඟ අයිතමය වෙත අන්වේෂණය</string>
+  <string name="media3_controls_seek_back_description">ආපස්සට අන්වේෂණය</string>
+  <string name="media3_controls_seek_forward_description">ඉදිරියට අන්වේෂණය</string>
+  <string name="error_message_fallback">යම් දෙයක් වැරදියි. පසුව උත්සාහ කරන්න.</string>
+  <string name="error_message_info_cancelled">අවසන් කිරීමට නොහැකි විය. නැවත උත්සාහ කරන්න.</string>
+  <string name="error_message_invalid_state">මේ දැන් එය කළ නොහැක</string>
+  <string name="error_message_authentication_expired">මෙම යෙදුම භාවිත කිරීමට පුරන්න</string>
+  <string name="error_message_content_already_playing">දැනටමත් එම අන්තර්ගතය වාදනය කරයි</string>
+  <string name="error_message_end_of_playlist">වෙන කිසිවක් පෝලිමේ නැත</string>
+  <string name="error_message_concurrent_stream_limit">ඕනෑවට වඩා උපාංග මත සවන් දීම</string>
+  <string name="error_message_not_available_in_region">එම අන්තර්ගතය මෙතැනින් ලබා ගත නොහැක</string>
+  <string name="error_message_not_supported">මෙම යෙදුමට එය කළ නොහැක</string>
+  <string name="error_message_parental_control_restricted">එම අන්තර්ගතය අවහිර කර ඇත</string>
+  <string name="error_message_premium_account_required">පාරිතෝෂික ප්‍රවේශය අවශ්‍යයි</string>
+  <string name="error_message_skip_limit_reached">තවත් ගීත මඟ හැරිය නොහැක</string>
+  <string name="error_message_bad_value">වැරදි ආදාන දත්ත</string>
+  <string name="error_message_io">ආදාන/ප්‍රතිදාන දෝෂයකි</string>
+  <string name="error_message_permission_denied">ප්‍රවේශය ප්‍රතික්ෂේප වුනි</string>
+  <string name="error_message_disconnected">මාධ්‍ය යෙදුමෙන් විසන්ධි විය</string>
+  <string name="error_message_setup_required">පිහිටුවීම අවශ්‍යයි</string>
+</resources>

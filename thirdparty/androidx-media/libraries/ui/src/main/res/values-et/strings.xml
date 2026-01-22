@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Kuva pleieri juhtnupud</string>
+  <string name="exo_controls_hide">Peida pleieri juhtnupud</string>
+  <string name="exo_controls_seek_bar_description">Taasesitus on pooleli</string>
+  <string name="exo_controls_settings_description">Seaded</string>
+  <string name="exo_controls_overflow_hide_description">Peida lisaseaded</string>
+  <string name="exo_controls_overflow_show_description">Kuva lisaseaded</string>
+  <string name="exo_controls_fullscreen_enter_description">Avamine täisekraanil</string>
+  <string name="exo_controls_fullscreen_exit_description">Väljumine täisekraanilt</string>
+  <string name="exo_controls_previous_description">Eelmine</string>
+  <string name="exo_controls_next_description">Edasi</string>
+  <string name="exo_controls_pause_description">Peata</string>
+  <string name="exo_controls_play_description">Esita</string>
+  <string name="exo_controls_stop_description">Lõpeta</string>
+  <string name="exo_controls_rewind_description">Keri tagasi</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Keri %d sekund tagasi</item>
+    <item quantity="other">Keri %d sekundit tagasi</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Keri edasi</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Keri %d sekund edasi</item>
+    <item quantity="other">Keri %d sekundit edasi</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Praegune režiim: Ära korda. Aktiveerige kordusrežiim.</string>
+  <string name="exo_controls_repeat_one_description">Praegune režiim: Korda ühte. Aktiveerige kordusrežiim.</string>
+  <string name="exo_controls_repeat_all_description">Praegune režiim: Korda kõiki. Aktiveerige kordusrežiim.</string>
+  <string name="exo_controls_shuffle_on_description">Juhuesituse režiimi keelamine</string>
+  <string name="exo_controls_shuffle_off_description">Juhuesituse režiimi lubamine</string>
+  <string name="exo_controls_vr_description">VR-režiim</string>
+  <string name="exo_controls_cc_enabled_description">Keela subtiitrid</string>
+  <string name="exo_controls_cc_disabled_description">Luba subtiitrid</string>
+  <string name="exo_controls_playback_speed">Kiirus</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25-kordne</item>
+    <item>0,5-kordne</item>
+    <item>0,75-kordne</item>
+    <item>Tavaline</item>
+    <item>1,25-kordne</item>
+    <item>1,5-kordne</item>
+    <item>2-kordne</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Heli</string>
+  <string name="exo_track_selection_none">Ühtegi</string>
+  <string name="exo_track_selection_auto">Automaatne</string>
+  <string name="exo_track_unknown">Teadmata</string>
+  <string name="exo_track_unknown_name">Teadmata (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Mono</string>
+  <string name="exo_track_stereo">Stereo</string>
+  <string name="exo_track_surround">Ruumiline heli</string>
+  <string name="exo_track_surround_5_point_1">Ruumiline heli 5.1</string>
+  <string name="exo_track_surround_7_point_1">Ruumiline heli 7.1</string>
+  <string name="exo_track_role_alternate">Alternatiiv</string>
+  <string name="exo_track_role_supplementary">Lisalugu</string>
+  <string name="exo_track_role_commentary">Kommentaar</string>
+  <string name="exo_track_role_closed_captions">Subtiitrid</string>
+  <string name="exo_track_bitrate">%1$.2f Mbit/s</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

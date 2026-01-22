@@ -135,6 +135,7 @@ import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.voip.VoIPLogs;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ForceTouchView;
@@ -587,11 +588,11 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public static void showDeleteOptions (ViewController<?> context, MessageWithProperties message) {
+  public void showDeleteOptions (ViewController<?> context, MessageWithProperties message) {
     showDeleteOptions(context, new MessageWithProperties[] {message}, null);
   }
 
-  public static void showDeleteOptions (final ViewController<?> context, final MessageWithProperties[] messages, final @Nullable Runnable after) {
+  public void showDeleteOptions (final ViewController<?> context, final MessageWithProperties[] messages, final @Nullable Runnable after) {
     if (context != null && messages != null && messages.length > 0) {
       if (deleteSuperGroupMessages(context, messages, after)) {
         return;
@@ -846,7 +847,7 @@ public class TdlibUi extends Handler {
     showTTLPicker(context, selfDestructType, !ChatId.isSecret(chat.id), false, false, 0, result -> setTTL(chat, result.ttlTime));
   }
 
-  public static void showTTLPicker (final Context context, @Nullable TdApi.MessageSelfDestructType currentSelfDestructType, boolean allowInstant, boolean useDarkMode, boolean precise, @StringRes int message, final RunnableData<TTLOption> callback) {
+  public void showTTLPicker (final Context context, @Nullable TdApi.MessageSelfDestructType currentSelfDestructType, boolean allowInstant, boolean useDarkMode, boolean precise, @StringRes int message, final RunnableData<TTLOption> callback) {
     final ArrayList<TTLOption> ttlOptions = new ArrayList<>(21);
     ttlOptions.add(new TTLOption(0, Lang.getString(R.string.Off)));
     if (allowInstant) {
@@ -1706,6 +1707,7 @@ public class TdlibUi extends Handler {
   private static final int CHAT_OPTION_REMOVE_DUPLICATES = 1 << 5;
   private static final int CHAT_OPTION_SCHEDULED_MESSAGES = 1 << 6;
   private static final int CHAT_OPTION_OPEN_PROFILE_IF_DUPLICATE = 1 << 7;
+  private static final int CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT = 1 << 8;
 
   public static class ChatOpenParameters {
     public int options;
@@ -1850,6 +1852,11 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters openProfileInCaseOfDuplicateChat () {
       this.options |= CHAT_OPTION_OPEN_PROFILE_IF_DUPLICATE;
+      return this;
+    }
+
+    public ChatOpenParameters openDirectMessagesChat () {
+      this.options |= CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT;
       return this;
     }
 
@@ -2106,6 +2113,11 @@ public class TdlibUi extends Handler {
       return;
     }
 
+    if ((options & CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT) != 0) {
+      openDirectMessagesChat(context, chat, messageThread, urlOpenParameters, params::onDone);
+      return;
+    }
+
     if ((options & CHAT_OPTION_NO_OPEN) != 0) {
       if (after != null) {
         after.runWithLong(chat.id);
@@ -2266,6 +2278,31 @@ public class TdlibUi extends Handler {
     }
   }
 
+  public void openDirectMessagesChat (final TdlibDelegate context, final @NonNull TdApi.Chat chat, final @Nullable ThreadInfo threadInfo, final @Nullable UrlOpenParameters openParameters, @Nullable Runnable after) {
+    if (TdlibManager.inBackgroundThread()) {
+      tdlib.runOnUiThread(() -> openDirectMessagesChat(context, chat, threadInfo, openParameters, after));
+      return;
+    }
+    TdApi.Supergroup supergroup = tdlib.chatToSupergroup(chat.id);
+    if (supergroup == null || !tdlib.hasDirectMessagesChat(chat.id)) {
+      showAccessError(context, openParameters, Tdlib.CHAT_ACCESS_FAIL, false);
+      if (after != null) {
+        after.run();
+      }
+      return;
+    }
+    tdlib.cache().supergroupFull(supergroup.id, supergroupFull -> {
+      if (supergroupFull == null || supergroupFull.directMessagesChatId == 0) {
+        showAccessError(context, openParameters, Tdlib.CHAT_ACCESS_FAIL, false);
+      } else {
+        openChat(context, supergroupFull.directMessagesChatId, new ChatOpenParameters().keepStack().urlOpenParameters(openParameters));
+      }
+      if (after != null) {
+        after.run();
+      }
+    });
+  }
+
   public void openChatProfile (final TdlibDelegate context, final @NonNull TdApi.Chat chat, final @Nullable ThreadInfo threadInfo, final @Nullable UrlOpenParameters openParameters) {
     if (TdlibManager.inBackgroundThread()) {
       tdlib.runOnUiThread(() -> openChatProfile(context, chat, threadInfo, openParameters));
@@ -2340,6 +2377,10 @@ public class TdlibUi extends Handler {
 
   public void openPublicChat (final TdlibDelegate context, final @NonNull String username, final @Nullable UrlOpenParameters openParameters) {
     openChat(context, 0, new TdApi.SearchPublicChat(username), new ChatOpenParameters().urlOpenParameters(openParameters).keepStack().openProfileInCaseOfPrivateChat());
+  }
+
+  public void openDirectMessages (final TdlibDelegate context, final @NonNull String username, final @Nullable UrlOpenParameters openParameters) {
+    openChat(context, 0, new TdApi.SearchPublicChat(username), new ChatOpenParameters().urlOpenParameters(openParameters).keepStack().openDirectMessagesChat());
   }
 
   public void openVideoChatOrLiveStream (final TdlibDelegate context, final @NonNull TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation, final @Nullable UrlOpenParameters openParameters) {
@@ -2422,7 +2463,7 @@ public class TdlibUi extends Handler {
     if (messageLink.message != null) {
       // TODO support for album, media timestamp, etc
       MessageId messageId = new MessageId(messageLink.message.chatId, messageLink.message.id);
-      if (messageLink.messageThreadId != 0) {
+      if (Td.messageThreadId(messageLink.topicId) != 0) {
         // FIXME TDLib/Server: need GetMessageThread alternative that accepts (chatId, messageThreadId)
         context.tdlib().send(new TdApi.GetMessageThread(messageId.getChatId(), messageId.getMessageId()), (messageThreadInfo, error) -> {
           if (error != null) {
@@ -2453,6 +2494,7 @@ public class TdlibUi extends Handler {
           }
         });
       } else {
+        // TODO: properly handle messageLink.topicId
         openMessage(context, messageLink.chatId, messageId, openParameters);
       }
     } else {
@@ -2644,7 +2686,7 @@ public class TdlibUi extends Handler {
     public MessageId messageId;
     public String refererUrl, instantViewFallbackUrl, originalUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
-    public boolean requireOpenPrompt, ignoreExplicitUserInteraction;
+    public boolean requireOpenPrompt, ignoreExplicitUserInteraction, forceDirectMessagesChat;
     public Runnable openPromptCancellationCallback;
     public String displayUrl;
 
@@ -3600,6 +3642,40 @@ public class TdlibUi extends Handler {
         context.context().navigation().navigateTo(c);
         break;
       }
+      case TdApi.InternalLinkTypeLoginEmailSettings.CONSTRUCTOR: {
+        NavigationController navigation = context.context().navigation();
+        ViewController<?> current = navigation.getCurrentStackItem();
+        if (current != null) {
+          editLoginEmail(current);
+        }
+        break;
+      }
+      case TdApi.InternalLinkTypePasswordSettings.CONSTRUCTOR: {
+        NavigationController navigation = context.context().navigation();
+        ViewController<?> current = navigation.getCurrentStackItem();
+        if (current != null) {
+          tdlib.send(new TdApi.GetPasswordState(), (passwordState, error) -> current.runOnUiThreadOptional(() -> {
+            if (passwordState != null) {
+              if (!passwordState.hasPassword) {
+                Settings2FAController controller = new Settings2FAController(context.context(), context.tdlib());
+                controller.setArguments(new Settings2FAController.Args(null, null, null));
+                navigation.navigateTo(controller);
+              } else {
+                PasswordController controller = new PasswordController(context.context(), context.tdlib());
+                controller.setArguments(new PasswordController.Args(PasswordController.MODE_UNLOCK_EDIT, passwordState));
+                navigation.navigateTo(controller);
+              }
+            }
+          }));
+        }
+        break;
+      }
+      case TdApi.InternalLinkTypePhoneNumberPrivacySettings.CONSTRUCTOR: {
+        SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+        c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingShowPhoneNumber()));
+        context.context().navigation().navigateTo(c);
+        break;
+      }
       case TdApi.InternalLinkTypeThemeSettings.CONSTRUCTOR: {
         SettingsThemeController c = new SettingsThemeController(context.context(), context.tdlib());
         c.setArguments(new SettingsThemeController.Args(SettingsThemeController.MODE_THEMES));
@@ -3613,6 +3689,11 @@ public class TdlibUi extends Handler {
         } else {
           openPublicChat(context, publicChat.chatUsername, openParameters);
         }
+        break;
+      }
+      case TdApi.InternalLinkTypeDirectMessagesChat.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeDirectMessagesChat directMessagesChat = (TdApi.InternalLinkTypeDirectMessagesChat) linkType;
+        openDirectMessages(context, directMessagesChat.channelUsername, openParameters);
         break;
       }
       case TdApi.InternalLinkTypeInstantView.CONSTRUCTOR: {
@@ -3629,12 +3710,14 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
         SettingsSessionsController sessions = new SettingsSessionsController(context.context(), context.tdlib());
         SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
-        ViewController<?> c = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
+        ViewController<?> c = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController<?>[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
         context.context().navigation().navigateTo(c);
         break;
       }
 
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeLiveStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeStoryAlbum.CONSTRUCTOR:
       case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
@@ -3648,6 +3731,8 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
@@ -3788,12 +3873,49 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_35d33133();
+        Td.assertInternalLinkType_fbab3129();
         throw Td.unsupported(linkType);
       }
     }
     if (after != null) {
       after.runWithBool(ok);
+    }
+  }
+
+  public void editLoginEmail (ViewController<?> context) {
+    context.tdlib().send(new TdApi.GetPasswordState(), (passwordState, error) -> {
+      if (passwordState != null) {
+        context.runOnUiThreadOptional(() -> {
+          editLoginEmail(context, passwordState);
+        });
+      }
+    });
+  }
+
+  public void editLoginEmail (ViewController<?> context, @NonNull TdApi.PasswordState passwordState) {
+    Runnable act = () -> {
+      PasswordController controller = new PasswordController(context.context(), context.tdlib());
+      controller.setArguments(new PasswordController.Args(PasswordController.MODE_LOGIN_EMAIL_CHANGE, passwordState));
+      context.navigateTo(controller);
+    };
+    if (StringUtils.isEmpty(passwordState.loginEmailAddressPattern)) {
+      act.run();
+    } else {
+      ViewController.Options.Builder b = new ViewController.Options.Builder()
+        .info(Lang.getMarkdownString(context, R.string.ChangeEmailPromptText))
+        .item(new ViewController.OptionItem.Builder().id(R.id.btn_changeEmail).name(R.string.ChangeEmailPromptButton).icon(R.drawable.baseline_edit_24).build())
+        .cancelItem();
+      if (!StringUtils.isEmpty(passwordState.loginEmailAddressPattern)) {
+        // TODO(spoiler): replace `*` with the spoiler effect
+        b.title(passwordState.loginEmailAddressPattern);
+      }
+      context.showOptions(b.build(), (optionView, optionId) -> {
+          if (optionId == R.id.btn_changeEmail) {
+            act.run();
+          }
+          return true;
+        }
+      );
     }
   }
 
@@ -6731,7 +6853,7 @@ public class TdlibUi extends Handler {
       } else if (menuItemId == R.id.btn_sendNoMarkdown) {
         sendCallback.onSendRequested(Td.newSendOptions(), true);
       } else if (menuItemId == R.id.btn_sendNoSound) {
-        sendCallback.onSendRequested(Td.newSendOptions(0L, null, true), false);
+        sendCallback.onSendRequested(Td.newSendOptions(null, true), false);
       } else if (menuItemId == R.id.btn_sendOnceOnline) {
         sendCallback.onSendRequested(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
       }
@@ -6800,7 +6922,7 @@ public class TdlibUi extends Handler {
     context.showOptions(null, ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
       long seconds = 0;
       if (optionId == R.id.btn_sendNoSound) {
-        callback.runWithData(Td.newSendOptions(defaultSendOptions, 0L, null, true));
+        callback.runWithData(Td.newSendOptions(defaultSendOptions, null, true));
         return true;
       } else if (optionId == R.id.btn_sendOnceOnline) {
         callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()));
@@ -6832,13 +6954,13 @@ public class TdlibUi extends Handler {
         }
         context.showDateTimePicker(Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
           int sendDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis);
-          callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate)));
+          callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate, 0 /*TODO: repeat period*/)));
         }, forcedTheme);
         return true;
       }
       if (seconds > 0) {
         int sendDate = (int) (tdlib.currentTime(TimeUnit.SECONDS) + seconds);
-        callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate)));
+        callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate, 0 /*TODO: repeat period*/)));
       }
       return true;
     }, forcedTheme);
@@ -7683,7 +7805,8 @@ public class TdlibUi extends Handler {
           new int[] {R.id.btn_send, R.id.btn_cancel},
           new String[] {Lang.getString(R.string.SetBirthdateOk), Lang.getString(R.string.Cancel)},
           new int[] {ViewController.OptionColor.BLUE, ViewController.OptionColor.NORMAL},
-          new int[] {R.drawable.baseline_check_24, R.drawable.baseline_cancel_24}
+          new int[] {R.drawable.baseline_check_24, R.drawable.baseline_cancel_24},
+          Text.LINE_COUNT_UNLIMITED
         );
         options.setIgnoreOtherPopUps(true);
         controller.showOptions(options, (optionItemView, id) -> {

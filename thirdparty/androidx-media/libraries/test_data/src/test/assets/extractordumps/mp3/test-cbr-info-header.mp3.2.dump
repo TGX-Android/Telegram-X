@@ -1,0 +1,75 @@
+seekMap:
+  isSeekable = true
+  duration = 1044875
+  getPosition(0) = [[timeUs=0, position=227]]
+  getPosition(1) = [[timeUs=0, position=227], [timeUs=26125, position=436]]
+  getPosition(522437) = [[timeUs=496375, position=4198], [timeUs=522500, position=4407]]
+  getPosition(1044875) = [[timeUs=1018750, position=8377]]
+numberOfTracks = 1
+track 0:
+  total output bytes = 2717
+  sample count = 13
+  track duration = 1044875
+  format 0:
+    averageBitrate = 64000
+    containerMimeType = audio/mpeg
+    sampleMimeType = audio/mpeg
+    maxInputSize = 4096
+    channelCount = 1
+    sampleRate = 44100
+    encoderDelay = 576
+    encoderPadding = 1404
+    metadata = entries=[TSSE: description=null: values=[Lavf58.45.100]]
+  sample 0:
+    time = 705250
+    flags = 1
+    data = length 209, hash 30962500
+  sample 1:
+    time = 731372
+    flags = 1
+    data = length 209, hash 2C5CCBB7
+  sample 2:
+    time = 757494
+    flags = 1
+    data = length 209, hash F9CB9E37
+  sample 3:
+    time = 783617
+    flags = 1
+    data = length 209, hash F75BC8C0
+  sample 4:
+    time = 809739
+    flags = 1
+    data = length 209, hash D00ED607
+  sample 5:
+    time = 835862
+    flags = 1
+    data = length 209, hash B4338395
+  sample 6:
+    time = 861984
+    flags = 1
+    data = length 209, hash E3E838A0
+  sample 7:
+    time = 888107
+    flags = 1
+    data = length 209, hash 2B0CF78
+  sample 8:
+    time = 914229
+    flags = 1
+    data = length 209, hash 31906FA9
+  sample 9:
+    time = 940352
+    flags = 1
+    data = length 209, hash C92FC08F
+  sample 10:
+    time = 966474
+    flags = 1
+    data = length 209, hash 7C89994
+  sample 11:
+    time = 992596
+    flags = 1
+    data = length 209, hash EC37743B
+  sample 12:
+    time = 1018719
+    flags = 1
+    data = length 209, hash C974F6FB
+tracksEnded = true

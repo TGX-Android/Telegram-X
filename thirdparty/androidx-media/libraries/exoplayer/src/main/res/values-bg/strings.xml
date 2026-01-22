@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Изтегляне</string>
+  <string name="exo_download_notification_channel_name">Изтегляния</string>
+  <string name="exo_download_downloading">Изтегля се</string>
+  <string name="exo_download_completed">Изтеглянето завърши</string>
+  <string name="exo_download_failed">Изтеглянето не бе успешно</string>
+  <string name="exo_download_removing">Изтеглянията се премахват</string>
+  <string name="exo_download_paused">Изтеглянията са на пауза</string>
+  <string name="exo_download_paused_for_network">Изтеглянията чакат връзка с интернет</string>
+  <string name="exo_download_paused_for_wifi">Изтеглянията чакат връзка с Wi-Fi</string>
+</resources>

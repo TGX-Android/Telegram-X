@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">지금 재생 중</string>
+  <string name="media3_controls_play_description">재생</string>
+  <string name="media3_controls_pause_description">일시중지</string>
+  <string name="media3_controls_seek_to_previous_description">이전 항목 찾기</string>
+  <string name="media3_controls_seek_to_next_description">다음 항목 찾기</string>
+  <string name="media3_controls_seek_back_description">뒤로 탐색</string>
+  <string name="media3_controls_seek_forward_description">앞으로 탐색</string>
+  <string name="error_message_fallback">문제가 발생했습니다. 나중에 다시 시도해 주세요.</string>
+  <string name="error_message_info_cancelled">완료할 수 없습니다. 다시 시도해 주세요.</string>
+  <string name="error_message_invalid_state">지금은 요청한 작업을 할 수 없습니다.</string>
+  <string name="error_message_authentication_expired">이 앱을 사용하려면 로그인하세요.</string>
+  <string name="error_message_content_already_playing">요청한 콘텐츠가 이미 재생 중입니다.</string>
+  <string name="error_message_end_of_playlist">현재 재생목록이 비어 있습니다.</string>
+  <string name="error_message_concurrent_stream_limit">너무 많은 기기에서 동시에 스트리밍하고 있습니다.</string>
+  <string name="error_message_not_available_in_region">이 지역에서 재생할 수 없는 콘텐츠입니다.</string>
+  <string name="error_message_not_supported">요청한 작업이 이 앱에서 지원되지 않습니다.</string>
+  <string name="error_message_parental_control_restricted">차단된 콘텐츠입니다.</string>
+  <string name="error_message_premium_account_required">프리미엄 액세스 권한이 필요합니다.</string>
+  <string name="error_message_skip_limit_reached">트랙을 더 이상 건너뛸 수 없습니다.</string>
+  <string name="error_message_bad_value">잘못된 입력 데이터입니다.</string>
+  <string name="error_message_io">입력/출력 오류입니다.</string>
+  <string name="error_message_permission_denied">액세스가 거부되었습니다</string>
+  <string name="error_message_disconnected">미디어 앱에서 연결 해제되었습니다.</string>
+  <string name="error_message_setup_required">설정이 필요합니다.</string>
+</resources>

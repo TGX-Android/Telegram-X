@@ -10,6 +10,7 @@ import org.thunderdog.challegram.charts.data.StackLinearChartData;
 import org.thunderdog.challegram.charts.view_data.LineViewData;
 import org.thunderdog.challegram.charts.view_data.StackLinearViewData;
 
+@SuppressWarnings("unchecked")
 public class StackLinearChartView<T extends StackLinearViewData> extends BaseChartView<StackLinearChartData, T> {
 
 

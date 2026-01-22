@@ -1,0 +1,111 @@
+seekMap:
+  isSeekable = true
+  duration = 900000
+  getPosition(0) = [[timeUs=0, position=0]]
+  getPosition(1) = [[timeUs=1, position=0]]
+  getPosition(450000) = [[timeUs=450000, position=11421]]
+  getPosition(900000) = [[timeUs=900000, position=23030]]
+numberOfTracks = 1
+track 256:
+  total output bytes = 3806
+  sample count = 21
+  format 0:
+    id = 1/256
+    containerMimeType = video/mp2t
+    sampleMimeType = video/hevc
+    codecs = hvc1.1.6.L90.90
+    maxNumReorderSamples = 2
+    width = 854
+    height = 480
+    maxSubLayers = 1
+    colorInfo:
+      colorRange = 2
+      lumaBitdepth = 8
+      chromaBitdepth = 8
+    initializationData:
+      data = length 81, hash 2D0E82DA
+  sample 0:
+    time = 300000
+    flags = 0
+    data = length 225, hash C61E3F15
+  sample 1:
+    time = 333333
+    flags = 0
+    data = length 184, hash 3EDAD72C
+  sample 2:
+    time = 400000
+    flags = 0
+    data = length 89, hash 69DE46BC
+  sample 3:
+    time = 533333
+    flags = 0
+    data = length 297, hash 49DF1804
+  sample 4:
+    time = 500000
+    flags = 0
+    data = length 275, hash 34C7C63
+  sample 5:
+    time = 466666
+    flags = 0
+    data = length 185, hash 504E9E96
+  sample 6:
+    time = 566666
+    flags = 0
+    data = length 278, hash C7315C87
+  sample 7:
+    time = 733333
+    flags = 0
+    data = length 264, hash 56B3F978
+  sample 8:
+    time = 666666
+    flags = 0
+    data = length 213, hash DE708C94
+  sample 9:
+    time = 600000
+    flags = 0
+    data = length 137, hash 6E6DEE67
+  sample 10:
+    time = 633333
+    flags = 0
+    data = length 121, hash D117866
+  sample 11:
+    time = 700000
+    flags = 0
+    data = length 102, hash 65B2BC73
+  sample 12:
+    time = 900000
+    flags = 0
+    data = length 240, hash 2A9D518E
+  sample 13:
+    time = 833333
+    flags = 0
+    data = length 210, hash 5953A2BA
+  sample 14:
+    time = 766666
+    flags = 0
+    data = length 102, hash DD8617B9
+  sample 15:
+    time = 800000
+    flags = 0
+    data = length 110, hash 4288988B
+  sample 16:
+    time = 866666
+    flags = 0
+    data = length 118, hash 3BDC1C03
+  sample 17:
+    time = 1033333
+    flags = 0
+    data = length 260, hash 86D42F65
+  sample 18:
+    time = 966666
+    flags = 0
+    data = length 141, hash AAFAA0A4
+  sample 19:
+    time = 933333
+    flags = 0
+    data = length 87, hash FB87CA92
+  sample 20:
+    time = 1000000
+    flags = 0
+    data = length 168, hash 8220F9BC
+tracksEnded = true

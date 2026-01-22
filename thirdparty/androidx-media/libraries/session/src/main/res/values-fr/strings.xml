@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">En cours de lecture</string>
+  <string name="media3_controls_play_description">Lecture</string>
+  <string name="media3_controls_pause_description">Pause</string>
+  <string name="media3_controls_seek_to_previous_description">Accéder à l\'élément précédent</string>
+  <string name="media3_controls_seek_to_next_description">Accéder à l\'élément suivant</string>
+  <string name="media3_controls_seek_back_description">Revenir en arrière</string>
+  <string name="media3_controls_seek_forward_description">Avancer</string>
+  <string name="error_message_fallback">Une erreur s\'est produite. Réessayez plus tard.</string>
+  <string name="error_message_info_cancelled">Impossible de terminer l\'opération. Réessayez.</string>
+  <string name="error_message_invalid_state">Impossible d\'effectuer cette opération pour le moment</string>
+  <string name="error_message_authentication_expired">Connectez-vous pour utiliser cette appli</string>
+  <string name="error_message_content_already_playing">Ce contenu est déjà en cours de lecture</string>
+  <string name="error_message_end_of_playlist">Aucun autre titre dans la file d\'attente</string>
+  <string name="error_message_concurrent_stream_limit">Écoute en cours sur trop d\'appareils</string>
+  <string name="error_message_not_available_in_region">Impossible d\'accéder à ce contenu ici</string>
+  <string name="error_message_not_supported">Cette appli ne peut pas effectuer cette opération</string>
+  <string name="error_message_parental_control_restricted">Ce contenu est bloqué</string>
+  <string name="error_message_premium_account_required">Accès Premium requis</string>
+  <string name="error_message_skip_limit_reached">Impossible de passer d\'autres titres</string>
+  <string name="error_message_bad_value">Données d\'entrée incorrectes</string>
+  <string name="error_message_io">Erreur d\'entrée/de sortie</string>
+  <string name="error_message_permission_denied">Accès refusé</string>
+  <string name="error_message_disconnected">Déconnecté de l\'application multimédia</string>
+  <string name="error_message_setup_required">Configuration requise</string>
+</resources>

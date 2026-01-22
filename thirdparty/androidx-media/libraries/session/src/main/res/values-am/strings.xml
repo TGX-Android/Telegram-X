@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">አሁን እየተጫወተ ያለ</string>
+  <string name="media3_controls_play_description">አጫውት</string>
+  <string name="media3_controls_pause_description">ባለበት አቁም</string>
+  <string name="media3_controls_seek_to_previous_description">ወደ ቀዳሚው ንጥል ፈልግ</string>
+  <string name="media3_controls_seek_to_next_description">ወደ ቀጣዩ ንጥል ፈልግ</string>
+  <string name="media3_controls_seek_back_description">ወደኋላ ፈልግ</string>
+  <string name="media3_controls_seek_forward_description">ወደፊት ፈልግ</string>
+  <string name="error_message_fallback">የሆነ ስህተት ተከስቷል። በኋላ ይሞክሩ።</string>
+  <string name="error_message_info_cancelled">መጨረስ አልተቻለም። እንደገና ይሞክሩ።</string>
+  <string name="error_message_invalid_state">አሁን ያን ማድረግ አይቻልም</string>
+  <string name="error_message_authentication_expired">ይህን መተግበሪያ ለመጠቀም በመለያ ይግቡ</string>
+  <string name="error_message_content_already_playing">ያን ይዘት አስቀድሞ በማጫወት ላይ</string>
+  <string name="error_message_end_of_playlist">ሌላ ምንም ነገር ሰልፍ አልያዘም</string>
+  <string name="error_message_concurrent_stream_limit">ከልክ በላይ ብዙ በሆኑ መሣሪያዎች ላይ በማዳመጥ ላይ</string>
+  <string name="error_message_not_available_in_region">ይዘቱን እዚህ ማግኘት አልተቻለም</string>
+  <string name="error_message_not_supported">ይህ መተግበሪያ ያንን ማድረግ አይችልም</string>
+  <string name="error_message_parental_control_restricted">ይዘቱ ታግዷል</string>
+  <string name="error_message_premium_account_required">የPremium መዳረሻ ያስፈልጋል</string>
+  <string name="error_message_skip_limit_reached">ተጨማሪ ትራኮችን መዝለል አይቻልም</string>
+  <string name="error_message_bad_value">ትክክል ያልሆነ ውሂብ</string>
+  <string name="error_message_io">ግብዓት/ውጤት ስህተት</string>
+  <string name="error_message_permission_denied">መዳረሻ ተክልክሏል</string>
+  <string name="error_message_disconnected">ከሚዲያ መተግበሪያ ግንኙነት ተቋርጧል</string>
+  <string name="error_message_setup_required">ማዋቀር ያስፈልጋል</string>
+</resources>

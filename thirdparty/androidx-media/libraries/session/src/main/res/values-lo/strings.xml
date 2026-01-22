@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">ກຳລັງຫຼິ້ນຕອນນີ້</string>
+  <string name="media3_controls_play_description">ຫຼິ້ນ</string>
+  <string name="media3_controls_pause_description">ຢຸດຊົ່ວຄາວ</string>
+  <string name="media3_controls_seek_to_previous_description">ເລື່ອນໄປຫາລາຍການກ່ອນໜ້າ</string>
+  <string name="media3_controls_seek_to_next_description">ເລື່ອນໄປຫາລາຍການຕໍ່ໄປ</string>
+  <string name="media3_controls_seek_back_description">ເລື່ອນກັບຫຼັງ</string>
+  <string name="media3_controls_seek_forward_description">ເລື່ອນໄປໜ້າ</string>
+  <string name="error_message_fallback">ມີບ່າງຢ່າງຜິດພາດ. ລອງໃໝ່ພາຍຫຼັງ.</string>
+  <string name="error_message_info_cancelled">ບໍ່ສາມາດສຳເລັດໄດ້. ກະລຸນາລອງໃໝ່.</string>
+  <string name="error_message_invalid_state">ບໍ່ສາມາດເຮັດໄດ້ຕອນນີ້</string>
+  <string name="error_message_authentication_expired">ເຂົ້າສູ່ລະບົບເພື່ອໃຊ້ແອັບນີ້</string>
+  <string name="error_message_content_already_playing">ຫຼິ້ນເນື້ອຫານັ້ນແລ້ວ</string>
+  <string name="error_message_end_of_playlist">ບໍ່ມີລາຍການອື່ນໃນຄິວ</string>
+  <string name="error_message_concurrent_stream_limit">ກຳລັງຟັງຢູ່ໃນຫຼາຍອຸປະກອນເກີນໄປ</string>
+  <string name="error_message_not_available_in_region">ບໍ່ສາມາດຮັບເນື້ອຫານັ້ນຢູ່ບ່ອນນີ້</string>
+  <string name="error_message_not_supported">ແອັບນີ້ບໍ່ສາມາດເຮັດສິ່ງນັ້ນໄດ້</string>
+  <string name="error_message_parental_control_restricted">ເນື້ອຫານັ້ນຖືກບລັອກໄວ້</string>
+  <string name="error_message_premium_account_required">ຕ້ອງມີສິດເຂົ້າເຖິງລະດັບພຣີມຽມ</string>
+  <string name="error_message_skip_limit_reached">ຂ້າມເພງບໍ່ໄດ້ອີກແລ້ວ</string>
+  <string name="error_message_bad_value">ຂໍ້ມູນອິນພຸດບໍ່ຖືກຕ້ອງ</string>
+  <string name="error_message_io">ອິນພຸດ/ເອົ້າພຸດຜິດພາດ</string>
+  <string name="error_message_permission_denied">ປະຕິເສດການເຂົ້າເຖິງ</string>
+  <string name="error_message_disconnected">ຕັດການເຊື່ອມຕໍ່ຈາກແອັບມີເດຍແລ້ວ</string>
+  <string name="error_message_setup_required">ຕ້ອງຕັ້ງຄ່າ</string>
+</resources>

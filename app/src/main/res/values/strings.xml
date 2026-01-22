@@ -438,7 +438,7 @@
   <string name="ChatContentVoiceChatFinished">Ended the video chat (%1$s)</string>
   <string name="ChatContentVoiceChatFinished_outgoing">Ended the video chat (%1$s)</string>
   <string name="ChatContentVoiceChatFinishedNoTime">Ended the video chat</string>
-  <string name="ChatContentVoiceChatFinishedNoTime_outgoing">Ended the video chat®</string>
+  <string name="ChatContentVoiceChatFinishedNoTime_outgoing">Ended the video chat</string>
   <string name="ChatContentVoiceChatInviteYou">Invited you to the video chat</string>
   <string name="ChatContentVoiceChatInvite">Invited %1$s to the video chat</string>
   <string name="ChatContentVoiceChatInvite_outgoing">Invited %1$s to the video chat</string>
@@ -503,6 +503,7 @@
   <string name="PasscodeMismatchPin">PINs do not match</string>
   <string name="PasscodeMismatchPattern">Patterns do not match</string>
   <string name="PasscodeMismatchFingerprint">Fingerprints do not match</string>
+  <string name="PasscodeMismatchBiometrics">Biometrics do not match</string>
 
   <string name="PasscodeInvalidPassword">Invalid Password</string>
   <string name="PasscodeInvalidGesture">Invalid Gesture</string>
@@ -517,6 +518,7 @@
   <string name="ChangePasscode">Change Passcode</string>
   <string name="passcode_passcodeInvisibility">Passcode Invisibility</string>
   <string name="passcode_fingerprint">Unlock with Fingerprint</string>
+  <string name="passcode_biometrics">Unlock with Biometrics</string>
   <string name="LoadingInformation">Loading information…</string>
   <string name="BlockContact">Block</string>
   <string name="BlockBot">Block Bot</string>
@@ -549,6 +551,8 @@
   <string name="slideToCancel">Slide to Cancel</string>
   <string name="fingerprint_hint3">Please add at least one fingerprint in System Settings &gt; Security &gt; Fingerprints.</string>
   <string name="fingerprint_fail">Unknown finger</string>
+  <string name="biometrics_hint3">Please add biometrics in System Settings &gt; Security &gt; Biometrics.</string>
+  <string name="biometrics_fail">Unknown biometrics</string>
   <string name="cam_hint">Please allow Telegram X to use camera in System Settings &gt; Apps &gt; Telegram X &gt; Permissions</string>
   <string name="Settings">Settings</string>
   <string name="LogOut">Log out</string>
@@ -771,6 +775,11 @@
   <string name="PasscodePattern">Pattern</string>
   <string name="PasscodeGesture">Gesture</string>
   <string name="PasscodeFingerprint">Fingerprint</string>
+  <string name="PasscodeBiometrics">Biometrics</string>
+  <string name="PasscodeBiometricsStrong">Biometrics (strong)</string>
+  <string name="PasscodeBiometricsWeak">Biometrics (weak)</string>
+  <string name="BiometricsStrong">Strong (**Class 3** sensor)</string>
+  <string name="BiometricsWeak">Weak (**Class 2** sensor)</string>
   <string name="NewChannel">New Channel</string>
   <string name="NewGroup">New Group</string>
   <string name="NewChat">New Chat</string>
@@ -779,16 +788,25 @@
   <string name="ChooseYourPattern">Choose your pattern</string>
   <string name="ChooseYourGesture">Draw your gesture</string>
   <string name="TouchYourSensor">Touch your sensor</string>
+  <string name="TouchYourSensorWeak">Touch your sensor (weak)</string>
+  <string name="UseBiometrics">Use your biometrics</string>
+  <string name="UseBiometricsWeak">Use your biometrics (weak)</string>
+  <string name="CancelBiometrics">Cancel</string>
   <string name="ConfirmYourPIN">Confirm your PIN</string>
   <string name="ConfirmYourPassword">Confirm your password</string>
   <string name="ConfirmYourPattern">Confirm your pattern</string>
   <string name="ConfirmYourGesture">Confirm your gesture</string>
   <string name="ConfirmYourFingerprint">Confirm your fingerprint</string>
+  <string name="ConfirmYourFingerprintWeak">Confirm your fingerprint (weak)</string>
+  <string name="ConfirmYourBiometricsStrong">Confirm your biometrics (strong)</string>
+  <string name="ConfirmYourBiometrics">Confirm your biometrics</string>
+  <string name="ConfirmYourBiometricsWeak">Confirm your biometrics (weak)</string>
   <string name="UnlockByPIN">Enter your PIN to unlock</string>
   <string name="UnlockByPassword">Enter your password to unlock</string>
   <string name="UnlockByPattern">Draw your pattern to unlock</string>
   <string name="UnlockByGesture">Draw your gesture to unlock</string>
   <string name="UnlockByFingerprint">Touch sensor to unlock</string>
+  <string name="UnlockByBiometrics">Use biometrics to unlock</string>
   <string name="SecretLinkPreviewEnable">Enable</string>
   <string name="AirplaneModeDisable">Disable</string>
   <string name="EditName">Edit name</string>
@@ -934,7 +952,7 @@
   <string name="Off">Off</string>
   <string name="TimerInstant">Immediately</string>
   <string name="Chats">Chats</string>
-  <string name="Birthdate">Date of birth</string>
+  <string name="Birthdate">Birthday</string>
   <string name="Notifications">Notifications</string>
   <string name="NotificationsEnabled">Enabled</string>
   <string name="NotificationsEnabledHint">Enabled (%1$s)</string>
@@ -1385,10 +1403,10 @@
   <string name="SetBirthdateWarning">Set birthdate to %1$s? There\'s a time frame before you can change it to another date.</string>
   <string name="SetBirthdateOk">Confirm</string>
   <string name="SetBirthdate">Tap to set</string>
-  <string name="BirthdayPopupTitle">Date of Birth</string>
+  <string name="BirthdayPopupTitle">Birthday</string>
   <string name="BirthdateEmpty">Unset</string>
-  <string name="MenuBirthdateSet">Add Date of Birth</string>
-  <string name="MenuBirthdateEdit">Edit Date of Birth</string>
+  <string name="MenuBirthdateSet">Add Birthday</string>
+  <string name="MenuBirthdateEdit">Edit Birthday</string>
   <string name="MenuBirthdatePrivacy">Change Privacy Settings</string>
   <string name="MenuBirthdateRemove">Remove</string>
   <string name="PhoneMobile">Mobile</string>
@@ -1488,6 +1506,8 @@
   <string name="DataSettings">Data and Storage</string>
   <string name="StorageUsage">Storage Usage</string>
   <string name="ReduceMotion">Reduce Motion</string>
+  <string name="RightSwipeEdgeAnimation">Match Predictive Gesture</string>
+  <string name="RightSwipeEdgeAnimationInfo">When enabled, animation will follow the finger direction when swiping from the right edge of the screen.</string>
   <string name="StorageUsageHint">Manage disk space</string>
   <string name="MobileUsage">Mobile Data Usage</string>
   <string name="WiFiUsage">Wi-Fi Data Usage</string>
@@ -1766,7 +1786,7 @@
   <string name="SendSticker">Send sticker</string>
   <string name="ViewPackPreview">View Pack</string>
   <string name="UserBio">Bio</string>
-  <string name="UserBirthdate">Date of Birth</string>
+  <string name="UserBirthdate">Birthday</string>
   <string name="BotInfo">Description</string>
   <string name="BotDescription">Intro</string>
   <string name="EditBotUsername">Public Link</string>
@@ -2417,6 +2437,7 @@
   <string name="PinnedMessageChanged">Pinned message changed</string>
   <string name="EditMarkdown">Edit Markdown</string>
   <string name="ForceBuiltinDecoding">Force built-in media decoding</string>
+  <string name="DisableHlsVideo">Disable HLS video playback</string>
   <string name="CompressAudio">Compress audio in videos</string>
   <string name="EditMarkdownHint2">Edit text in messages using shortcuts: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
   <string name="MessageNotFound">Message not found</string>
@@ -2434,7 +2455,7 @@
   <string name="ContactsOnTelegramMany_other">%2$s and %1$s more of your contacts are&#160;using&#160;Telegram</string>
   <string name="SearchPeople">Search People</string>
   <string name="ManyContactsJoined">1000+ contacts on Telegram</string>
-  <string name="InviteTextCommonMany_one">Hey, I\'m using Telegram to chat – and so is %1$s of our other contact. Join us! Download it here: %2$s</string>
+  <string name="InviteTextCommonMany_one">Hey, I\'m using Telegram to chat – and so is %1$s of our other contacts. Join us! Download it here: %2$s</string>
   <string name="InviteTextCommonMany_other">Hey, I\'m using Telegram to chat – and so are %1$s of our other contacts. Join us! Download it here: %2$s</string>
   <string name="InviteTextCommonOverThousand">Hey, I\'m using Telegram to chat – and so are 1000+ of our other contacts. Join us! Download it here: %1$s</string>
   <string name="InviteContacts">Invite Contacts</string>
@@ -2473,9 +2494,11 @@
   <string name="ClearDrawing">Clear drawing</string>
   <string name="RoundVideoPlaybackError">Failed to play video message, see logs for details.</string>
   <string name="VideoPlaybackError">Failed to play video, see logs for details.</string>
+  <string name="VideoErrorLog">Error log</string>
   <string name="VideoPlaybackUnsupported">Video format is not supported.</string>
   <string name="GifPlaybackError">Failed to play GIF, see logs for details.</string>
   <string name="GifPlaybackUnsupported">GIF format is not supported.</string>
+  <string name="ViewVideoError">See logs</string>
   <string name="AudioPlaybackError">Failed to play audio, see logs for details.</string>
   <string name="AudioPlaybackUnsupported">Audio format is not supported.</string>
   <string name="CloudDownload">Download %1$s</string>
@@ -3810,6 +3833,17 @@
   <string name="PrivacyPhotoEverybodyExcept">Everybody (%1$s) can see your profile photo</string>
   <string name="PrivacyPhotoTitle">Profile Photos</string>
 
+  <string name="PrivacyAudioExceptionOn">Visible</string>
+  <string name="PrivacyAudioExceptionOff">Hidden</string>
+  <string name="PrivacyAudioExceptionContacts">Visible only for contacts</string>
+  <string name="PrivacyAudioNobody">Nobody can see your saved music</string>
+  <string name="PrivacyAudioNobodyExcept">Nobody (%1$s) can see your saved music</string>
+  <string name="PrivacyAudioContacts">Only contacts can see your saved music</string>
+  <string name="PrivacyAudioContactsExcept">Only contacts (%1$s) can see your saved music</string>
+  <string name="PrivacyAudioEverybody">Everybody can see your saved music</string>
+  <string name="PrivacyAudioEverybodyExcept">Everybody (%1$s) can see your saved music</string>
+  <string name="PrivacyAudioTitle">Saved Music</string>
+
   <string name="PrivacyVoiceVideoNobody">Nobody can send you voice messages</string>
   <string name="PrivacyVoiceVideoNobodyExcept">Nobody (%1$s) can send you voice messages</string>
   <string name="PrivacyVoiceVideoContacts">Only contacts can send you voice messages</string>
@@ -3850,7 +3884,7 @@
   <string name="PrivacyMessageTitle">Messages</string>
   <string name="PrivacyMessagePreview">New Chats</string>
   <string name="WhoCanSendMessages">Who can send me messages?</string>
-  <string name="NewChatsPrivacyDesc">You can restrict messages from users who are not in your contacts and don\'t have **Telegram&#160;Premium**.</string>
+  <string name="NewChatsPrivacyDesc">You can restrict messages from users who are not in your contacts and whom you haven\'t messaged first.</string>
 
   <string name="EditPrivacyVoice">Send Me Voice Messages</string>
   <string name="EditPrivacyGifts">Display Gifts without approval</string>
@@ -3862,6 +3896,9 @@
 
   <string name="WhoCanSeePhoto">Who can see your profile photo?</string>
   <string name="WhoCanSeePhotoInfo">You can restrict who can see your profile photo with granular precision.</string>
+
+  <string name="WhoCanSeeAudio">Who can see your saved music?</string>
+  <string name="WhoCanSeeAudioInfo">You can restrict who can see your saved music with granular precision.</string>
 
   <string name="format_chatAndError">%1$s: %2$s</string>
 
@@ -3954,8 +3991,8 @@
   <string name="WhoCanSeePhoneInfo">Users who have your number saved in their contacts will also see it on Telegram.</string>
   <string name="WhoCanSeeBio">Who can see your bio?</string>
   <string name="WhoCanSeeBioInfo">You can restrict who can see the bio on your profile with granular precision.</string>
-  <string name="WhoCanSeeBirthdate">Who can see your date of birth?</string>
-  <string name="WhoCanSeeBirthdateInfo">You can restrict who can see the date of birth on your profile with granular precision.</string>
+  <string name="WhoCanSeeBirthdate">Who can see your birthday?</string>
+  <string name="WhoCanSeeBirthdateInfo">You can restrict who can see the birthday on your profile with granular precision.</string>
 
   <string name="PrivacyShowNumberExceptionOn">Visible</string>
   <string name="PrivacyShowNumberExceptionContacts">Visible only for contacts</string>
@@ -3980,12 +4017,12 @@
   <string name="PrivacyShowBirthdateExceptionOn">Visible</string>
   <string name="PrivacyShowBirthdateExceptionContacts">Visible only for contacts</string>
   <string name="PrivacyShowBirthdateExceptionOff">Hidden</string>
-  <string name="PrivacyShowBirthdateNobody">Nobody can see your date of birth</string>
-  <string name="PrivacyShowBirthdateNobodyExcept">Nobody (%1$s) can see your date of birth</string>
-  <string name="PrivacyShowBirthdateContacts">Only contacts can see your date of birth</string>
-  <string name="PrivacyShowBirthdateContactsExcept">Only contacts (%1$s) can see your date of birth</string>
-  <string name="PrivacyShowBirthdateEverybody">Everybody can see your date of birth</string>
-  <string name="PrivacyShowBirthdateEverybodyExcept">Everybody (%1$s) can see your date of birth</string>
+  <string name="PrivacyShowBirthdateNobody">Nobody can see your birthday</string>
+  <string name="PrivacyShowBirthdateNobodyExcept">Nobody (%1$s) can see your birthday</string>
+  <string name="PrivacyShowBirthdateContacts">Only contacts can see your birthday</string>
+  <string name="PrivacyShowBirthdateContactsExcept">Only contacts (%1$s) can see your birthday</string>
+  <string name="PrivacyShowBirthdateEverybody">Everybody can see your birthday</string>
+  <string name="PrivacyShowBirthdateEverybodyExcept">Everybody (%1$s) can see your birthday</string>
 
   <!--<string name="PrivacyAllowFindingNobody">Nobody can see your phone number</string>
   <string name="PrivacyAllowFindingNobodyExcept">Nobody (%1$s) can see your phone number</string>-->
@@ -4411,10 +4448,11 @@
   <string name="PrivacyDefaultXChats_other">Default for %1$s chats</string>
 
   <string name="EditPrivacyPhoto">Profile Photos</string>
+  <string name="EditPrivacyAudio">Saved Music</string>
   <string name="EditPrivacyStatus">Last Seen &amp; Online</string>
   <string name="EditPrivacyPhoneNumber">Phone Number</string>
   <string name="EditPrivacyBio">Bio</string>
-  <string name="EditPrivacyBirthdate">Date of Birth</string>
+  <string name="EditPrivacyBirthdate">Birthday</string>
 
   <string name="EditPrivacyReadDate">See My Read Date</string>
   <string name="EditPrivacyReadDateToggleHint">You can hide your **Read Date** only from everyone who can\'t see your **Last Seen &amp; Online**.\n\nSee **[Privacy and Security](tg://settings/privacy)** – **Last Seen &amp; Online** – **Hide Read Time**.</string>
@@ -4547,6 +4585,7 @@
   <string name="DiscussionStart">Discussion started</string>
   <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
   <string name="ViewThread">View Thread</string>
+  <string name="ViewInThread">View in thread</string>
   <string name="ViewInChat">View in chat</string>
   <string name="CommentsTitle">Comments</string>
   <string name="RepliesTitle">Replies</string>
@@ -4774,6 +4813,9 @@
   <string name="ReminderSetBirthdate">Let people know when you\'re celebrating</string>
   <string name="ReminderSetBirthdateText">Add your birthday</string>
   <string name="ReminderSetBirthdateHide">Hide Suggestion</string>
+  <string name="ReminderSetLoginEmail">Set login email</string>
+  <string name="ReminderSetLoginEmailText">Ensure you can receive login codes</string>
+  <string name="ReminderSetLoginEmailHide">Hide Suggestion</string>
   <string name="ReminderActionLearnMore">Learn More</string>
   <string name="ReminderActionChangePhoneNumber">Change Phone Number</string>
   <string name="ReminderActionVerifyPassword">Verify Password</string>
@@ -4847,6 +4889,9 @@
   <string name="session_System">System: %1$s</string>
 
   <string name="RecommendedSign">recommended</string>
+
+  <string name="MediaAd">Ad</string>
+  <string name="MediaRecommendation">Recommendation</string>
 
   <string name="SponsoredSign">ad</string>
   <string name="SponsoredInfoMenu">What are sponsored messages?</string>
@@ -5291,7 +5336,10 @@
   <string name="Experiment_PeerIdsInfo">Show API identifiers of users and chats in their profiles</string>
 
   <string name="Experiment_NoEdgeToEdge">Disable Edge to Edge</string>
-  <string name="Experiment_NoEdgeToEdgeInfo">Edge to Edge support on Android 11–14 is not tested, issues are expected. Use this settings to compare behavior without edge-to-edge mode.</string>
+  <string name="Experiment_NoEdgeToEdgeInfo">Use this setting to compare behavior without edge-to-edge mode on Android 11–14.</string>
+
+  <string name="Experiment_ForceAltPushService">Force alternative Push Services</string>
+  <string name="Experiment_ForceAltPushServiceInfo">Prefer alternative push services provider, even if Google Play Services are installed and available. Restart application manually to apply changes.</string>
 
   <string name="PeerId">Peer ID</string>
   <string name="UserId">User ID</string>
@@ -5614,5 +5662,8 @@
 
   <string name="xBotUsers_one">%1$s monthly user</string>
   <string name="xBotUsers_other">%1$s monthly users</string>
+
+  <string name="RestrictedContent">Restricted Content</string>
+  <string name="SensitiveContent">Sensitive Content</string>
 
 </resources>

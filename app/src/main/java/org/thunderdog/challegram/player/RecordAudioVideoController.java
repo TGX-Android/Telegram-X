@@ -967,12 +967,16 @@ public class RecordAudioVideoController implements
 
   private void setEditFactor (float factor) {
     if (this.editFactor != factor) {
+      boolean wasOpen = isOpen();
       this.editFactor = factor;
       lockView.setEditFactor(factor);
       updateMainAlphas();
       updateButtons();
       updateMiddle();
       updateLockY();
+      if (isOpen() != wasOpen) {
+        context.notifyBackPressAvailabilityChanged();
+      }
     }
   }
 
@@ -998,11 +1002,16 @@ public class RecordAudioVideoController implements
     return mode != RECORD_MODE_NONE && mode != RECORD_MODE_VIDEO_EDIT && mode != RECORD_MODE_AUDIO_EDIT;
   }
 
+  private void setRecordModeImpl (int mode) {
+    this.recordMode = mode;
+    context.notifyBackPressAvailabilityChanged();
+  }
+
   private void setRecordMode (int mode, boolean animated) {
     boolean wasRecording = isInRecording(this.recordMode);
     boolean isRecording = isInRecording(mode);
     this.recordingVideo = isVideoMode(this.recordMode) || isVideoMode(mode);
-    this.recordMode = mode;
+    setRecordModeImpl(mode);
     if (targetController != null) {
       targetController.setChatAction(recordingVideo ? TdApi.ChatActionRecordingVideoNote.CONSTRUCTOR : TdApi.ChatActionRecordingVoiceNote.CONSTRUCTOR, mode != RECORD_MODE_NONE, false);
       targetController.hideBottomHint();
@@ -1036,7 +1045,7 @@ public class RecordAudioVideoController implements
   private boolean inRaiseMode;
 
   private long targetChatId;
-  private long targetMessageThreadId;
+  private @Nullable TdApi.MessageTopic targetMessageTopicId;
   private MessagesController targetController;
 
   public boolean startRecording (View view, boolean inRaiseMode) {
@@ -1061,7 +1070,7 @@ public class RecordAudioVideoController implements
     this.savedRoundDurationSeconds = 0;
     this.prevVideoPath = null;
     this.targetChatId = targetController.getChatId();
-    this.targetMessageThreadId = targetController.getMessageThreadId();
+    this.targetMessageTopicId = targetController.getMessageTopicId();
     if (needVideo && !tdlib.chatSupportsRoundVideos(targetChatId)) {
       TdApi.User user = tdlib.chatUser(targetChatId);
       String name = user != null ? user.firstName : tdlib.chatTitle(targetChatId);
@@ -1209,7 +1218,7 @@ public class RecordAudioVideoController implements
   }
 
   private boolean hasValidOutputTarget () {
-    return targetController != null && !targetController.isDestroyed() && targetController.compareChat(targetChatId, targetMessageThreadId) && targetChatId != 0 && tdlib != null;
+    return targetController != null && !targetController.isDestroyed() && targetController.compareChat(targetChatId, targetMessageTopicId) && targetChatId != 0 && tdlib != null;
   }
 
   private void checkActualRecording (int closeMode) {
@@ -1325,6 +1334,7 @@ public class RecordAudioVideoController implements
 
   private void setRecordFactor (float factor) {
     if (this.recordFactor != factor) {
+      boolean wasOpen = isOpen();
       this.recordFactor = factor;
 
       updateMainAlphas();
@@ -1332,6 +1342,10 @@ public class RecordAudioVideoController implements
       updateLockY();
       updateDuration();
       updateMiddle();
+
+      if (wasOpen != isOpen()) {
+        context.notifyBackPressAvailabilityChanged();
+      }
     }
   }
 
@@ -1471,7 +1485,7 @@ public class RecordAudioVideoController implements
 
       ownedCamera.getLegacyManager().setUseRoundRender(false);
 
-      recordMode = RECORD_MODE_NONE;
+      setRecordModeImpl(RECORD_MODE_NONE);
       resetRoundState();
       // editFactor = 0f;
 
@@ -1725,21 +1739,20 @@ public class RecordAudioVideoController implements
       targetController.pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         TdApi.InputMessageVideoNote newVideoNote = tdlib.filegen().createThumbnail(videoNote, isSecretChat, helperFile);
         long chatId = targetController.getChatId();
-        long messageThreadId = targetController.getMessageThreadId();
         MessagesController.ReplyInfo replyInfo = targetController.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
+        TdApi.MessageTopic topicId = targetController.getMessageTopicId(replyInfo);
         TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
           modifiedSendOptions,
-          targetController.getDirectMessagesChatTopicId(replyInfo),
           targetController.getInputSuggestedPostInfo(replyInfo),
           targetController.obtainSilentMode()
         );
         if (newVideoNote.thumbnail == null && helperFile != null) {
           tdlib.client().send(new TdApi.DownloadFile(helperFile.id, TdlibFilesManager.PRIORITY_FILE_GENERATION, 0, 0, true), result -> {
-            tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, result.getConstructor() == TdApi.File.CONSTRUCTOR ? tdlib.filegen().createThumbnail(videoNote, isSecretChat, (TdApi.File) result) : newVideoNote, null);
+            tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, result.getConstructor() == TdApi.File.CONSTRUCTOR ? tdlib.filegen().createThumbnail(videoNote, isSecretChat, (TdApi.File) result) : newVideoNote, null);
           });
         } else {
-          tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, newVideoNote, null);
+          tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, newVideoNote, null);
         }
       });
     }
@@ -1751,16 +1764,15 @@ public class RecordAudioVideoController implements
     if (hasValidOutputTarget()) {
       targetController.pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         long chatId = targetController.getChatId();
-        long messageThreadId = targetController.getMessageThreadId();
         MessagesController.ReplyInfo replyInfo = targetController.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
+        TdApi.MessageTopic topicId = targetController.getMessageTopicId(replyInfo);
         TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
           modifiedSendOptions,
-          targetController.getDirectMessagesChatTopicId(replyInfo),
           targetController.getInputSuggestedPostInfo(replyInfo),
           targetController.obtainSilentMode()
         );
-        tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, voiceNote, null);
+        tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, voiceNote, null);
       });
     }
 
@@ -1937,7 +1949,7 @@ public class RecordAudioVideoController implements
       return;
     }
 
-    this.recordMode = RECORD_MODE_NONE;
+    setRecordModeImpl(RECORD_MODE_NONE);
 
     if (initialSendOptions != null) {
       if (videoPreviewView.hasTrim()) {
@@ -1976,7 +1988,7 @@ public class RecordAudioVideoController implements
       return;
     }
 
-    this.recordMode = RECORD_MODE_NONE;
+    setRecordModeImpl(RECORD_MODE_NONE);
 
     final var record = voiceRecord;
     if (initialSendOptions != null && record != null) {

@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.telegram;
 
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -39,7 +40,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageCache;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReader;
-import org.thunderdog.challegram.push.TokenRetrieverFactory;
+import org.thunderdog.challegram.push.FirebaseDeviceTokenRetriever;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
@@ -50,9 +51,11 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.DeviceTokenType;
-import org.thunderdog.challegram.util.TokenRetriever;
 import org.thunderdog.challegram.util.text.Letters;
 
+import tgx.bridge.DeviceTokenRetriever;
+import tgx.bridge.PushManagerBridge;
+import tgx.bridge.TokenRetrieverListener;
 import tgx.td.Td;
 
 public class TdlibNotificationUtils {
@@ -240,69 +243,71 @@ public class TdlibNotificationUtils {
     }
   }
 
-  private static TokenRetriever tokenRetriever;
+  private static DeviceTokenRetriever deviceTokenRetriever;
 
   public static synchronized boolean initialize () {
-    if (tokenRetriever == null) {
-      TokenRetriever retriever = TokenRetrieverFactory.newRetriever(UI.getAppContext());
+    if (deviceTokenRetriever == null) {
+      DeviceTokenRetriever retriever = PushManagerBridge.onCreateNewTokenRetriever(UI.getAppContext());
       //noinspection ConstantConditions
       if (retriever == null) {
         return false;
       }
-      tokenRetriever = retriever;
+      deviceTokenRetriever = retriever;
     }
-    return tokenRetriever.initialize(UI.getAppContext());
+    return deviceTokenRetriever.initialize(UI.getAppContext());
   }
 
-  public static @NonNull TokenRetriever getTokenRetriever () {
-    if (tokenRetriever == null) {
+  public static @NonNull DeviceTokenRetriever getDeviceTokenRetriever () {
+    if (deviceTokenRetriever == null) {
       initialize();
     }
-    return tokenRetriever;
+    return deviceTokenRetriever;
   }
 
   @DeviceTokenType
   public static int getDeviceTokenType (TdApi.DeviceToken deviceToken) {
-    switch (deviceToken.getConstructor()) {
-      case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR:
-        return DeviceTokenType.FIREBASE_CLOUD_MESSAGING;
-      case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR:
-        return DeviceTokenType.HUAWEI_PUSH_SERVICE;
-      case TdApi.DeviceTokenSimplePush.CONSTRUCTOR:
-        return DeviceTokenType.SIMPLE_PUSH_SERVICE;
-      default:
+    return switch (deviceToken.getConstructor()) {
+      case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR ->
+        DeviceTokenType.FIREBASE_CLOUD_MESSAGING;
+      case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR ->
+        DeviceTokenType.HUAWEI_PUSH_SERVICE;
+      case TdApi.DeviceTokenSimplePush.CONSTRUCTOR ->
+        DeviceTokenType.SIMPLE_PUSH_SERVICE;
+      default -> {
         Td.assertDeviceToken_de4a4f61();
         throw Td.unsupported(deviceToken);
-    }
+      }
+    };
   }
 
-  public static void getDeviceToken (int retryCount, TokenRetriever.RegisterCallback callback) {
+  public static void getDeviceToken (Context context, int retryCount, TokenRetrieverListener listener) {
     if (retryCount > 0) {
-      getDeviceTokenImpl(retryCount, new TokenRetriever.RegisterCallback() {
+      getDeviceTokenImpl(context, retryCount, new TokenRetrieverListener() {
         @Override
-        public void onSuccess (@NonNull TdApi.DeviceToken token) {
-          callback.onSuccess(token);
+        public void onTokenRetrievalSuccess (@NonNull TdApi.DeviceToken token) {
+          listener.onTokenRetrievalSuccess(token);
         }
 
         @Override
-        public void onError (@NonNull String errorKey, @Nullable Throwable e) {
+        public void onTokenRetrievalError (@NonNull String errorKey, @Nullable Throwable e) {
           UI.post(() ->
-            getDeviceToken(retryCount - 1, callback),
+            getDeviceToken(context, retryCount - 1, listener),
             3500
           );
         }
       });
     } else {
-      getDeviceTokenImpl(0, callback);
+      getDeviceTokenImpl(context, 0, listener);
     }
   }
 
-  private static void getDeviceTokenImpl (int retryCount, TokenRetriever.RegisterCallback callback) {
+  private static void getDeviceTokenImpl (Context context, int retryCount, TokenRetrieverListener listener) {
     if (initialize()) {
-      tokenRetriever.retrieveDeviceToken(retryCount, callback);
+      TDLib.Tag.notifications("Retrieving device token via %s... retryCount: %d", deviceTokenRetriever.name, retryCount);
+      deviceTokenRetriever.retrieveDeviceToken(context, listener);
     } else {
       TDLib.Tag.notifications("Token fetch failed because TokenRetriever was not initialized, retryCount: %d", retryCount);
-      callback.onError("INITIALIZATION_ERROR", new NotificationInitializationFailedError());
+      listener.onTokenRetrievalError("INITIALIZATION_ERROR", new NotificationInitializationFailedError());
     }
   }
 }

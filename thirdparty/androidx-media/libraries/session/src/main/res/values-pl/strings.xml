@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Odtwarzam teraz</string>
+  <string name="media3_controls_play_description">Odtwórz</string>
+  <string name="media3_controls_pause_description">Wstrzymaj</string>
+  <string name="media3_controls_seek_to_previous_description">Przewiń do poprzedniego elementu</string>
+  <string name="media3_controls_seek_to_next_description">Przewiń do następnego elementu</string>
+  <string name="media3_controls_seek_back_description">Przewiń do tyłu</string>
+  <string name="media3_controls_seek_forward_description">Przewiń do przodu</string>
+  <string name="error_message_fallback">Coś poszło nie tak. Spróbuj później.</string>
+  <string name="error_message_info_cancelled">Nie udało się dokończyć. Spróbuj ponownie.</string>
+  <string name="error_message_invalid_state">Teraz nie można tego zrobić</string>
+  <string name="error_message_authentication_expired">Zaloguj się, aby używać tej aplikacji</string>
+  <string name="error_message_content_already_playing">Te materiały są już odtwarzane</string>
+  <string name="error_message_end_of_playlist">Nie ma już nic w kolejce</string>
+  <string name="error_message_concurrent_stream_limit">Słuchasz na zbyt wielu urządzeniach</string>
+  <string name="error_message_not_available_in_region">Te materiały są niedostępne w tym regionie</string>
+  <string name="error_message_not_supported">Ta aplikacja nie ma takiej funkcji</string>
+  <string name="error_message_parental_control_restricted">Te materiały są zablokowane</string>
+  <string name="error_message_premium_account_required">Wymagany jest dostęp na poziomie premium</string>
+  <string name="error_message_skip_limit_reached">Nie można pominąć większej liczby utworów</string>
+  <string name="error_message_bad_value">Nieprawidłowe dane wejściowe</string>
+  <string name="error_message_io">Błąd danych wejściowych/wyjściowych</string>
+  <string name="error_message_permission_denied">Odmowa dostępu</string>
+  <string name="error_message_disconnected">Odłączono od aplikacji do multimediów</string>
+  <string name="error_message_setup_required">Wymagana konfiguracja</string>
+</resources>

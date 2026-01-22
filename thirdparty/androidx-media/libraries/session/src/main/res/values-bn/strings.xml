@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">এখন চলছে</string>
+  <string name="media3_controls_play_description">চালান</string>
+  <string name="media3_controls_pause_description">পজ করুন</string>
+  <string name="media3_controls_seek_to_previous_description">আগের আইটেমে যান</string>
+  <string name="media3_controls_seek_to_next_description">পরের আইটেমে যান</string>
+  <string name="media3_controls_seek_back_description">ফিরে যাওয়ার বোতাম</string>
+  <string name="media3_controls_seek_forward_description">এগিয়ে যান</string>
+  <string name="error_message_fallback">কোনও সমস্যা হয়েছে। পরে চেষ্টা করে দেখুন।</string>
+  <string name="error_message_info_cancelled">সম্পূর্ণ করা যায়নি। আবার চেষ্টা করুন।</string>
+  <string name="error_message_invalid_state">এটি এখন করা যাবে না</string>
+  <string name="error_message_authentication_expired">এই অ্যাপ ব্যবহার করতে সাইন-ইন করুন</string>
+  <string name="error_message_content_already_playing">এই কন্টেন্ট আগে থেকেই চলছে</string>
+  <string name="error_message_end_of_playlist">সারিতে আর কিছু নেই</string>
+  <string name="error_message_concurrent_stream_limit">অনেকগুলি ডিভাইস থেকে শোনা হচ্ছে</string>
+  <string name="error_message_not_available_in_region">ওই কন্টেন্টটি এখানে উপলভ্য নয়</string>
+  <string name="error_message_not_supported">এই অ্যাপে কাজটি করা যাবে না</string>
+  <string name="error_message_parental_control_restricted">ওই কন্টেন্টটি ব্লক করা হয়েছে</string>
+  <string name="error_message_premium_account_required">প্রিমিয়াম অ্যাকাউন্ট থাকতে হবে</string>
+  <string name="error_message_skip_limit_reached">আর কোনও ট্র্যাক এড়িয়ে যেতে পারবেন না</string>
+  <string name="error_message_bad_value">ভুল ইনপুট ডেটা</string>
+  <string name="error_message_io">ইনপুট/আউটপুট সংক্রান্ত সমস্যা</string>
+  <string name="error_message_permission_denied">অ্যাক্সেস দেওয়া হয়নি</string>
+  <string name="error_message_disconnected">মিডিয়া অ্যাপ থেকে ডিসকানেক্ট হয়ে গেছে</string>
+  <string name="error_message_setup_required">সেট-আপ করতে হবে</string>
+</resources>

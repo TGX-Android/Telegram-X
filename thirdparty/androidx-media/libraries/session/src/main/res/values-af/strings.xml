@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Speel tans</string>
+  <string name="media3_controls_play_description">Speel</string>
+  <string name="media3_controls_pause_description">Onderbreek</string>
+  <string name="media3_controls_seek_to_previous_description">Soek tot by vorige item</string>
+  <string name="media3_controls_seek_to_next_description">Soek tot by volgende item</string>
+  <string name="media3_controls_seek_back_description">Soek agtertoe</string>
+  <string name="media3_controls_seek_forward_description">Soek vorentoe</string>
+  <string name="error_message_fallback">Iets is fout. Probeer later.</string>
+  <string name="error_message_info_cancelled">Kon nie voltooi word nie. Probeer weer.</string>
+  <string name="error_message_invalid_state">Kan dit nie op die oomblik doen nie</string>
+  <string name="error_message_authentication_expired">Meld aan om hierdie app te gebruik</string>
+  <string name="error_message_content_already_playing">Speel reeds daardie inhoud</string>
+  <string name="error_message_end_of_playlist">Daar is niks anders op die waglys nie</string>
+  <string name="error_message_concurrent_stream_limit">Luister tans op te veel toestelle</string>
+  <string name="error_message_not_available_in_region">Kan nie daardie inhoud hier kry nie</string>
+  <string name="error_message_not_supported">Hierdie app kan dit nie doen nie</string>
+  <string name="error_message_parental_control_restricted">Daardie inhoud word geblokkeer</string>
+  <string name="error_message_premium_account_required">Premiumtoegang word vereis</string>
+  <string name="error_message_skip_limit_reached">Kan nie meer snitte oorslaan nie</string>
+  <string name="error_message_bad_value">Verkeerde invoerdata</string>
+  <string name="error_message_io">Invoer-/uitvoerfout</string>
+  <string name="error_message_permission_denied">Toegang geweier</string>
+  <string name="error_message_disconnected">Ontkoppel van media-app</string>
+  <string name="error_message_setup_required">Opstelling word vereis</string>
+</resources>

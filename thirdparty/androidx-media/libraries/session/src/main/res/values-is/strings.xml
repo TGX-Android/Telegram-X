@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Í spilun</string>
+  <string name="media3_controls_play_description">Spila</string>
+  <string name="media3_controls_pause_description">Gera hlé</string>
+  <string name="media3_controls_seek_to_previous_description">Spóla að fyrra atriði</string>
+  <string name="media3_controls_seek_to_next_description">Spóla að næsta atriði</string>
+  <string name="media3_controls_seek_back_description">Spóla til baka</string>
+  <string name="media3_controls_seek_forward_description">Spóla áfram</string>
+  <string name="error_message_fallback">Eitthvað fór úrskeiðis. Reyndu aftur síðar.</string>
+  <string name="error_message_info_cancelled">Ekki tókst að ljúka þessu. Reyndu aftur.</string>
+  <string name="error_message_invalid_state">Ekki er hægt að framkvæma þetta eins og er</string>
+  <string name="error_message_authentication_expired">Skráðu þig inn til að nota forritið</string>
+  <string name="error_message_content_already_playing">Þetta efni er þegar í spilun</string>
+  <string name="error_message_end_of_playlist">Ekkert annað í röðinni</string>
+  <string name="error_message_concurrent_stream_limit">Hlustað í of mörgum tækjum</string>
+  <string name="error_message_not_available_in_region">Efnið er ekki tiltækt hér</string>
+  <string name="error_message_not_supported">Forritið getur ekki framkvæmt þetta</string>
+  <string name="error_message_parental_control_restricted">Þetta efni er á bannlista</string>
+  <string name="error_message_premium_account_required">Krefst Premium-aðgangs</string>
+  <string name="error_message_skip_limit_reached">Ekki hægt að sleppa fleiri lögum</string>
+  <string name="error_message_bad_value">Röng inntaksgögn</string>
+  <string name="error_message_io">Villa í inntaki/úttaki</string>
+  <string name="error_message_permission_denied">Aðgangi hafnað</string>
+  <string name="error_message_disconnected">Aftengdist efnisspilunarforriti</string>
+  <string name="error_message_setup_required">Uppsetningar er krafist</string>
+</resources>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Prikaži kontrole plejera</string>
+  <string name="exo_controls_hide">Sakrij kontrole plejera</string>
+  <string name="exo_controls_seek_bar_description">Napredovanje reprodukcije</string>
+  <string name="exo_controls_settings_description">Podešavanja</string>
+  <string name="exo_controls_overflow_hide_description">Sakrij dodatna podešavanja</string>
+  <string name="exo_controls_overflow_show_description">Prikaži dodatna podešavanja</string>
+  <string name="exo_controls_fullscreen_enter_description">Pređi na ceo ekran</string>
+  <string name="exo_controls_fullscreen_exit_description">Izađi iz celog ekrana</string>
+  <string name="exo_controls_previous_description">Prethodna</string>
+  <string name="exo_controls_next_description">Sledeća</string>
+  <string name="exo_controls_pause_description">Pauziraj</string>
+  <string name="exo_controls_play_description">Pusti</string>
+  <string name="exo_controls_stop_description">Zaustavi</string>
+  <string name="exo_controls_rewind_description">Premotaj unazad</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Premotajte %d sekundu unazad</item>
+    <item quantity="few">Premotajte %d sekunde unazad</item>
+    <item quantity="other">Premotajte %d sekundi unazad</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Premotaj unapred</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Premotajte %d sekundu unapred</item>
+    <item quantity="few">Premotajte %d sekunde unapred</item>
+    <item quantity="other">Premotajte %d sekundi unapred</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Vaš režim: Bez ponavljanja. Uključite/isključite.</string>
+  <string name="exo_controls_repeat_one_description">Vaš režim: Ponovi jedno. Uključite/isključite.</string>
+  <string name="exo_controls_repeat_all_description">Vaš režim: Ponovi sve. Uključite/isključite.</string>
+  <string name="exo_controls_shuffle_on_description">Onemogućite nasumični režim</string>
+  <string name="exo_controls_shuffle_off_description">Omogućite nasumični režim</string>
+  <string name="exo_controls_vr_description">VR režim</string>
+  <string name="exo_controls_cc_enabled_description">Onemogući titlove</string>
+  <string name="exo_controls_cc_disabled_description">Omogući titlove</string>
+  <string name="exo_controls_playback_speed">Brzina</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25x</item>
+    <item>0,5x</item>
+    <item>0,75x</item>
+    <item>Normalno</item>
+    <item>1,25x</item>
+    <item>1,5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Audio</string>
+  <string name="exo_track_selection_none">Nijedna</string>
+  <string name="exo_track_selection_auto">Automatski</string>
+  <string name="exo_track_unknown">Nepoznato</string>
+  <string name="exo_track_unknown_name">Nepoznato (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Mono</string>
+  <string name="exo_track_stereo">Stereo</string>
+  <string name="exo_track_surround">Prostorni zvuk</string>
+  <string name="exo_track_surround_5_point_1">Prostorni zvuk 5.1</string>
+  <string name="exo_track_surround_7_point_1">Prostorni zvuk 7.1</string>
+  <string name="exo_track_role_alternate">Alternativno</string>
+  <string name="exo_track_role_supplementary">Dodatno</string>
+  <string name="exo_track_role_commentary">Komentar</string>
+  <string name="exo_track_role_closed_captions">Titl</string>
+  <string name="exo_track_bitrate">%1$.2f Mb/s</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

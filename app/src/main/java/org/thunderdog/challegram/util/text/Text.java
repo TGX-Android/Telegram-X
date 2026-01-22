@@ -132,6 +132,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   public static final int ENTITY_FLAGS_ALL = ENTITY_FLAGS_ALL_NO_COMMANDS | ENTITY_FLAG_COMMAND;
   public static final int ENTITY_FLAGS_NONE = 0;
 
+  public static final int LINE_COUNT_UNLIMITED = -1;
+
   public interface LineWidthProvider {
     int provideLineWidth (int lineIndex, int y, int defaultMaxWidth, int lineHeight);
   }
@@ -957,7 +959,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
           if (!prevIsNewLine || !BitwiseUtils.hasFlag(textFlags, Text.FLAG_IGNORE_CONTINUOUS_NEWLINES)) {
             if (BitwiseUtils.hasFlag(textFlags, Text.FLAG_IGNORE_NEWLINES)) {
               if (currentX > 0 && !out.isEmpty()) {
-                currentX += makeSpaceSize(getTextPaint(null));
+                currentX += (int) makeSpaceSize(getTextPaint(null));
                 if (currentX > getLineMaxWidth(out.get(out.size() - 1).getLineIndex(), currentY)) {
                   newLineOrEllipsis(out, in);
                 }
@@ -1949,7 +1951,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
               if (currentX + ellipsisWidth <= lineMaxWidth) {
                 lastPart.setLine(ellipsis, 0, ellipsis.length() - defaultEllipsis.length());
                 lastPart.setWidth(ellipsisWidth - defaultEllipsisWidth2);
-                currentX += ellipsisWidth - defaultEllipsisWidth2;
+                currentX += (int) (ellipsisWidth - defaultEllipsisWidth2);
 
                 TextPart defaultEllipsisPart = new TextPart(this, defaultEllipsis, 0, defaultEllipsis.length(), lastPart.getLineIndex(), lastPart.getParagraphIndex());
                 defaultEllipsisPart.setXY(currentX, lastPart.getY());
@@ -1957,7 +1959,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
                 defaultEllipsisPart.setEntity(entity);
                 defaultEllipsisPart.setBidiEntity(bidiEntityForEllipsis);
                 out.add(defaultEllipsisPart);
-                currentX += defaultEllipsisWidth2;
+                currentX += (int) defaultEllipsisWidth2;
 
                 done = true;
                 break;

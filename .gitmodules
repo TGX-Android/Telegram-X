@@ -22,7 +22,7 @@
 	url = https://github.com/lz4/lz4
 	shallow = true
 [submodule "androidx-media"]
-	path = thirdparty/androidx-media
+	path = thirdparty/androidx-media/legacy
 	url = https://github.com/androidx/media
 	shallow = true
 	branch = release
@@ -129,3 +129,9 @@
 [submodule "rtc_third_party"]
 	path = app/jni/third_party/webrtc_deps/third_party
 	url = https://chromium.googlesource.com/chromium/src/third_party
+[submodule "thirdparty/androidx-media/latest"]
+	path = thirdparty/androidx-media/latest
+	url = https://github.com/androidx/media
+[submodule "thirdparty/androidx-media/lollipop"]
+	path = thirdparty/androidx-media/lollipop
+	url = https://github.com/androidx/media

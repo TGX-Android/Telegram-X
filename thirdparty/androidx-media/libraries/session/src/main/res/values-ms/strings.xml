@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Sedang dimainkan</string>
+  <string name="media3_controls_play_description">Main</string>
+  <string name="media3_controls_pause_description">Jeda</string>
+  <string name="media3_controls_seek_to_previous_description">Cari sehingga item sebelumnya</string>
+  <string name="media3_controls_seek_to_next_description">Cari sehingga item seterusnya</string>
+  <string name="media3_controls_seek_back_description">Mandir</string>
+  <string name="media3_controls_seek_forward_description">Mundar</string>
+  <string name="error_message_fallback">Ada yang tidak kena. Cuba sebentar lagi.</string>
+  <string name="error_message_info_cancelled">Tidak dapat diselesaikan. Cuba lagi.</string>
+  <string name="error_message_invalid_state">Tidak dapat berbuat demikian sekarang</string>
+  <string name="error_message_authentication_expired">Log masuk untuk menggunakan apl ini</string>
+  <string name="error_message_content_already_playing">Sudah pun memainkan kandungan itu</string>
+  <string name="error_message_end_of_playlist">Tiada lagu lain dalam baris gilir</string>
+  <string name="error_message_concurrent_stream_limit">Mendengar pada terlalu banyak peranti</string>
+  <string name="error_message_not_available_in_region">Tidak boleh mendapatkan kandungan itu di sini</string>
+  <string name="error_message_not_supported">Apl ini tidak dapat berbuat demikian</string>
+  <string name="error_message_parental_control_restricted">Kandungan itu disekat</string>
+  <string name="error_message_premium_account_required">Akses premium diperlukan</string>
+  <string name="error_message_skip_limit_reached">Tidak boleh melangkau apa-apa lagu lagi</string>
+  <string name="error_message_bad_value">Data input tidak betul</string>
+  <string name="error_message_io">Ralat input/output</string>
+  <string name="error_message_permission_denied">Akses ditolak</string>
+  <string name="error_message_disconnected">Terputus sambungan daripada apl media</string>
+  <string name="error_message_setup_required">Persediaan diperlukan</string>
+</resources>

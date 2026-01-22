@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Shkarko</string>
+  <string name="exo_download_notification_channel_name">Shkarkimet</string>
+  <string name="exo_download_downloading">Po shkarkohet</string>
+  <string name="exo_download_completed">Shkarkimi përfundoi</string>
+  <string name="exo_download_failed">Shkarkimi dështoi</string>
+  <string name="exo_download_removing">Shkarkimet po hiqen</string>
+  <string name="exo_download_paused">Shkarkimet u vendosën në pauzë</string>
+  <string name="exo_download_paused_for_network">Shkarkimet në pritje të rrjetit</string>
+  <string name="exo_download_paused_for_wifi">Shkarkimet në pritje të WiFi</string>
+</resources>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Prikaz kontrolnikov predvajalnika</string>
+  <string name="exo_controls_hide">Skrivanje kontrolnikov predvajalnika</string>
+  <string name="exo_controls_seek_bar_description">Potek predvajanja</string>
+  <string name="exo_controls_settings_description">Nastavitve</string>
+  <string name="exo_controls_overflow_hide_description">Skrivanje dodatnih nastavitev</string>
+  <string name="exo_controls_overflow_show_description">Prikaz dodatnih nastavitev</string>
+  <string name="exo_controls_fullscreen_enter_description">Vstop v celozaslonski način</string>
+  <string name="exo_controls_fullscreen_exit_description">Izhod iz celozaslonskega načina</string>
+  <string name="exo_controls_previous_description">Nazaj</string>
+  <string name="exo_controls_next_description">Naprej</string>
+  <string name="exo_controls_pause_description">Zaustavitev</string>
+  <string name="exo_controls_play_description">Predvajanje</string>
+  <string name="exo_controls_stop_description">Ustavitev</string>
+  <string name="exo_controls_rewind_description">Previjanje nazaj</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Premik nazaj za %d sekundo</item>
+    <item quantity="two">Premik nazaj za %d sekundi</item>
+    <item quantity="few">Premik nazaj za %d sekunde</item>
+    <item quantity="other">Premik nazaj za %d sekund</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Previjanje naprej</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Premik naprej za %d sekundo</item>
+    <item quantity="two">Premik naprej za %d sekundi</item>
+    <item quantity="few">Premik naprej za %d sekunde</item>
+    <item quantity="other">Premik naprej za %d sekund</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Trenutni način: Brez ponavljanja. Preklopite način ponavljanja.</string>
+  <string name="exo_controls_repeat_one_description">Trenutni način: Ponovi eno. Preklopite način ponavljanja.</string>
+  <string name="exo_controls_repeat_all_description">Trenutni način: Ponovi vse. Preklopite način ponavljanja.</string>
+  <string name="exo_controls_shuffle_on_description">Onemogočanje načina naključnega predvajanja</string>
+  <string name="exo_controls_shuffle_off_description">Omogočanje načina naključnega predvajanja</string>
+  <string name="exo_controls_vr_description">Način VR</string>
+  <string name="exo_controls_cc_enabled_description">Onemogočanje podnapisov</string>
+  <string name="exo_controls_cc_disabled_description">Omogočanje podnapisov</string>
+  <string name="exo_controls_playback_speed">Hitrost</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25-kratna</item>
+    <item>0,5-kratna</item>
+    <item>0,75-kratna</item>
+    <item>Običajna</item>
+    <item>1,25-kratna</item>
+    <item>1,5-kratna</item>
+    <item>2-kratna</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Zvočni posnetki</string>
+  <string name="exo_track_selection_none">Nič</string>
+  <string name="exo_track_selection_auto">Samodejno</string>
+  <string name="exo_track_unknown">Neznano</string>
+  <string name="exo_track_unknown_name">Neznano (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Mono</string>
+  <string name="exo_track_stereo">Stereo</string>
+  <string name="exo_track_surround">Prostorski zvok</string>
+  <string name="exo_track_surround_5_point_1">Prostorski zvok 5.1</string>
+  <string name="exo_track_surround_7_point_1">Prostorski zvok 7.1</string>
+  <string name="exo_track_role_alternate">Dodatni posnetek</string>
+  <string name="exo_track_role_supplementary">Dodatek</string>
+  <string name="exo_track_role_commentary">Komentar</string>
+  <string name="exo_track_role_closed_captions">Podnapisi</string>
+  <string name="exo_track_bitrate">%1$.2f Mb/s</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

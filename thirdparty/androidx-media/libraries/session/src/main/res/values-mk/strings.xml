@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Сега е пуштено</string>
+  <string name="media3_controls_play_description">Пушти</string>
+  <string name="media3_controls_pause_description">Паузирај</string>
+  <string name="media3_controls_seek_to_previous_description">Премотај на претходната ставка</string>
+  <string name="media3_controls_seek_to_next_description">Премотај на следната ставка</string>
+  <string name="media3_controls_seek_back_description">Премотај наназад</string>
+  <string name="media3_controls_seek_forward_description">Премотај нанапред</string>
+  <string name="error_message_fallback">Нешто не е во ред. Обидете се подоцна.</string>
+  <string name="error_message_info_cancelled">Не можеше да се заврши. Обидете се повторно.</string>
+  <string name="error_message_invalid_state">Не може да се направи тоа во моментов</string>
+  <string name="error_message_authentication_expired">Најавете се за да ја користите апликацијава</string>
+  <string name="error_message_content_already_playing">Веќе се пуштени тие содржини</string>
+  <string name="error_message_end_of_playlist">Ништо не чека на ред</string>
+  <string name="error_message_concurrent_stream_limit">Се слуша на премногу уреди</string>
+  <string name="error_message_not_available_in_region">Не може да се добијат тие содржини тука</string>
+  <string name="error_message_not_supported">Апликацијава не може да го направи тоа</string>
+  <string name="error_message_parental_control_restricted">Тие содржини се блокирани</string>
+  <string name="error_message_premium_account_required">Потребен е премиум пристап</string>
+  <string name="error_message_skip_limit_reached">Веќе не може да се прескокнуваат песни</string>
+  <string name="error_message_bad_value">Неточни влезни податоци</string>
+  <string name="error_message_io">Грешка со влезни/излезни податоци</string>
+  <string name="error_message_permission_denied">Пристапот е одбиен</string>
+  <string name="error_message_disconnected">Врската со апликацијата за аудиовизуелни содржини е прекината</string>
+  <string name="error_message_setup_required">Потребно е поставување</string>
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Одоо тоглуулж байна</string>
+  <string name="media3_controls_play_description">Тоглуулах</string>
+  <string name="media3_controls_pause_description">Түр зогсоох</string>
+  <string name="media3_controls_seek_to_previous_description">Өмнөх зүйл рүү гүйлгэх</string>
+  <string name="media3_controls_seek_to_next_description">Дараагийн зүйл рүү гүйлгэх</string>
+  <string name="media3_controls_seek_back_description">Буцаан гүйлгэх</string>
+  <string name="media3_controls_seek_forward_description">Урагшлуулах</string>
+  <string name="error_message_fallback">Ямар нэг алдаа гарлаа. Дараа оролдоно уу.</string>
+  <string name="error_message_info_cancelled">Дуусгаж чадсангүй. Дахин оролдоно уу.</string>
+  <string name="error_message_invalid_state">Яг одоо тухайн хүсэлтийг гүйцэтгэх боломжгүй</string>
+  <string name="error_message_authentication_expired">Энэ аппыг ашиглахын тулд нэвтэрнэ үү</string>
+  <string name="error_message_content_already_playing">Энэ контентыг аль хэдийн тоглуулж байна</string>
+  <string name="error_message_end_of_playlist">Дараалалд өөр юу ч алга</string>
+  <string name="error_message_concurrent_stream_limit">Хэт олон төхөөрөмж дээр сонсож байна</string>
+  <string name="error_message_not_available_in_region">Энэ контентыг энд авах боломжгүй</string>
+  <string name="error_message_not_supported">Энэ апп тухайн хүсэлтийг гүйцэтгэх боломжгүй</string>
+  <string name="error_message_parental_control_restricted">Энэ контентыг блоклосон байна</string>
+  <string name="error_message_premium_account_required">Premium хандалт шаардлагатай</string>
+  <string name="error_message_skip_limit_reached">Өөр ямар ч бичлэгийг алгасах боломжгүй</string>
+  <string name="error_message_bad_value">Оролтын өгөгдөл буруу байна</string>
+  <string name="error_message_io">Оролт/гаралтын алдаа</string>
+  <string name="error_message_permission_denied">Хандалтыг зөвшөөрөөгүй</string>
+  <string name="error_message_disconnected">Медиа аппаас салсан</string>
+  <string name="error_message_setup_required">Тохируулах шаардлагатай</string>
+</resources>

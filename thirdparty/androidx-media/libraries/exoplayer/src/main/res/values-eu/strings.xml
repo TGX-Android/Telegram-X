@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Deskargak</string>
+  <string name="exo_download_notification_channel_name">Deskargak</string>
+  <string name="exo_download_downloading">Deskargatzen</string>
+  <string name="exo_download_completed">Osatu da deskarga</string>
+  <string name="exo_download_failed">Ezin izan da deskargatu</string>
+  <string name="exo_download_removing">Deskargak kentzen</string>
+  <string name="exo_download_paused">Deskargak pausatuta daude</string>
+  <string name="exo_download_paused_for_network">Deskargak sare mugikorrera konektatzeko zain daude</string>
+  <string name="exo_download_paused_for_wifi">Deskargak wifira konektatzeko zain daude</string>
+</resources>

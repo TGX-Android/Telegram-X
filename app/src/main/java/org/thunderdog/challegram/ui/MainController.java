@@ -193,11 +193,17 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (composeWrap != null) {
       checkComposeWrapPaddings();
     }
-    if (bottomBar != null) {
-      Views.setBottomMargin(bottomBar, extraBottomInsetWithoutIme);
-      bottomBarSpace.setLayoutHeight(extraBottomInsetWithoutIme, true);
-    }
+    Views.setPaddingBottom(updateSnackBar, extraBottomInsetWithoutIme);
+    updateBottomBarMargins();
     checkMargins();
+  }
+
+  private void updateBottomBarMargins () {
+    if (bottomBar != null) {
+      int height = Math.round(extraBottomInsetWithoutIme * (1f - (updateSnackBar != null ? updateSnackBar.getVisibilityFactor() : 0)));
+      Views.setBottomMargin(bottomBar, height);
+      bottomBarSpace.setLayoutHeight(height, true);
+    }
   }
 
   @Override
@@ -976,6 +982,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         break;
       }
     }
+    context.notifyBackPressAvailabilityChanged();
   }
 
   @Override
@@ -1062,16 +1069,21 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private void onAppUpdateAvailable (boolean isApk, boolean immediate) {
     if (updateSnackBar == null) {
       updateSnackBar = new SnackBar(context);
+      Views.setPaddingBottom(updateSnackBar, extraBottomInsetWithoutIme);
       updateSnackBar.setCallback(new SnackBar.Callback() {
         @Override
         public void onSnackBarTransition (SnackBar v, float factor) {
           float offsetBySnackBar = v.getMeasuredHeight() * factor;
           composeWrap.setTranslationY(-offsetBySnackBar);
+          boolean tabsAtBottom = displayTabsAtBottom();
           if (Config.CHAT_FOLDERS_HIDE_BOTTOM_BAR_ON_SCROLL) {
             bottomBarOffsetBySnackBar = -offsetBySnackBar;
             invalidateBottomBarOffset();
-          } else if (displayTabsAtBottom()) {
+          } else if (tabsAtBottom) {
             Views.setBottomMargin(pagerWrap, Math.round(offsetBySnackBar)); // FIXME
+          }
+          if (tabsAtBottom) {
+            updateBottomBarMargins();
           }
         }
 
@@ -1848,12 +1860,23 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (composeWrap != null && composeWrap.isShowing()) {
-      composeWrap.close();
+      if (commit) {
+        composeWrap.close();
+      }
       return true;
     }
-    return scrollToFirstPosition();
+    if (commit) {
+      if (scrollToFirstPosition()) {
+        return true;
+      }
+    } else {
+      if (!isAtFirstPosition()) {
+        return true;
+      }
+    }
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   // Intent process
@@ -2729,12 +2752,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         bottomBar.addView(shadowView);
         bottomBar.addView(headerCellView);
         pagerWrap.addView(bottomBar, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerHeight + Views.getTopMargin(headerCellView), Gravity.BOTTOM));
-        Views.setBottomMargin(bottomBar, extraBottomInsetWithoutIme);
 
         bottomBarSpace = new FillingSpace(context);
         bottomBarSpace.setThemedBackground(ColorId.headerLightBackground, this);
         pagerWrap.addView(bottomBarSpace, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.BOTTOM));
-        bottomBarSpace.setLayoutHeight(extraBottomInsetWithoutIme, true);
+
+        updateBottomBarMargins();
 
         if (Config.CHAT_FOLDERS_HIDE_BOTTOM_BAR_ON_SCROLL) {
           isBottomBarVisible.setValue(true, false);
@@ -2873,7 +2896,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     notifyPagerItemPositionsChanged();
     ViewPager pager = getViewPager();
     if (pager != null) {
-      onPageSelected(getCurrentPagerItemPosition(), pager.getCurrentItem());
+      onPageSelected(pager.getCurrentItem());
     }
     if (oldHasFolders != hasFolders() && pagerWrap != null) {
       checkTabs();

@@ -1,0 +1,47 @@
+seekMap:
+  isSeekable = false
+  duration = UNSET TIME
+  getPosition(0) = [[timeUs=0, position=0]]
+numberOfTracks = 1
+track 256:
+  total output bytes = 12451
+  sample count = 6
+  format 0:
+    id = 1/256
+    containerMimeType = video/mp2t
+    sampleMimeType = video/avc
+    codecs = avc1.64001E
+    maxNumReorderSamples = 2
+    width = 640
+    height = 426
+    colorInfo:
+      lumaBitdepth = 8
+      chromaBitdepth = 8
+    initializationData:
+      data = length 28, hash 2750DE4
+      data = length 9, hash D971CD89
+  sample 0:
+    time = 66733
+    flags = 0
+    data = length 735, hash E551BC23
+  sample 1:
+    time = 66733
+    flags = 1
+    data = length 10937, hash D1D094EB
+  sample 2:
+    time = 133466
+    flags = 0
+    data = length 6, hash 34E64009
+  sample 3:
+    time = 133466
+    flags = 0
+    data = length 518, hash 2AB0964B
+  sample 4:
+    time = 100100
+    flags = 0
+    data = length 6, hash 34E64009
+  sample 5:
+    time = 100100
+    flags = 0
+    data = length 249, hash 689D3447
+tracksEnded = true

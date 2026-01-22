@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Играет сейчас</string>
+  <string name="media3_controls_play_description">Воспроизвести</string>
+  <string name="media3_controls_pause_description">Приостановить</string>
+  <string name="media3_controls_seek_to_previous_description">К предыдущему файлу</string>
+  <string name="media3_controls_seek_to_next_description">К следующему файлу</string>
+  <string name="media3_controls_seek_back_description">Перемотать назад</string>
+  <string name="media3_controls_seek_forward_description">Перемотать вперед</string>
+  <string name="error_message_fallback">Произошла ошибка. Повторите попытку позже.</string>
+  <string name="error_message_info_cancelled">Не удалось выполнить действие. Повторите попытку.</string>
+  <string name="error_message_invalid_state">Сейчас это действие недоступно.</string>
+  <string name="error_message_authentication_expired">Чтобы использовать это приложение, войдите в аккаунт.</string>
+  <string name="error_message_content_already_playing">Этот контент уже воспроизводится.</string>
+  <string name="error_message_end_of_playlist">В очереди воспроизведения нет других файлов.</string>
+  <string name="error_message_concurrent_stream_limit">Слишком много устройств, на которых воспроизводится аудио.</string>
+  <string name="error_message_not_available_in_region">Контент недоступен в вашем регионе.</string>
+  <string name="error_message_not_supported">Действие недоступно в этом приложении.</string>
+  <string name="error_message_parental_control_restricted">Контент заблокирован.</string>
+  <string name="error_message_premium_account_required">Требуется премиум-аккаунт.</string>
+  <string name="error_message_skip_limit_reached">Пропускать треки больше нельзя.</string>
+  <string name="error_message_bad_value">Введены неверные данные.</string>
+  <string name="error_message_io">При вводе или выводе данных произошла ошибка.</string>
+  <string name="error_message_permission_denied">Доступ запрещен.</string>
+  <string name="error_message_disconnected">Нет подключения к приложению для мультимедиа.</string>
+  <string name="error_message_setup_required">Требуется настройка.</string>
+</resources>

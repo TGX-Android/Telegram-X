@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Hiển thị các nút điều khiển trình phát</string>
+  <string name="exo_controls_hide">Ẩn các nút điều khiển trình phát</string>
+  <string name="exo_controls_seek_bar_description">Tiến trình phát</string>
+  <string name="exo_controls_settings_description">Cài đặt</string>
+  <string name="exo_controls_overflow_hide_description">Ẩn các tùy chọn cài đặt bổ sung</string>
+  <string name="exo_controls_overflow_show_description">Hiện các tùy chọn cài đặt bổ sung</string>
+  <string name="exo_controls_fullscreen_enter_description">Chuyển sang chế độ toàn màn hình</string>
+  <string name="exo_controls_fullscreen_exit_description">Thoát khỏi chế độ toàn màn hình</string>
+  <string name="exo_controls_previous_description">Trước</string>
+  <string name="exo_controls_next_description">Tiếp theo</string>
+  <string name="exo_controls_pause_description">Tạm dừng</string>
+  <string name="exo_controls_play_description">Phát</string>
+  <string name="exo_controls_stop_description">Dừng</string>
+  <string name="exo_controls_rewind_description">Tua lại</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Tua lại %d giây</item>
+    <item quantity="other">Tua lại %d giây</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Tua đi</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Tua nhanh %d giây</item>
+    <item quantity="other">Tua nhanh %d giây</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Chế độ hiện tại: Không lặp lại. Bật/tắt chế độ lặp lại.</string>
+  <string name="exo_controls_repeat_one_description">Chế độ hiện tại: Lặp lại một nội dung. Bật/tắt chế độ lặp lại.</string>
+  <string name="exo_controls_repeat_all_description">Chế độ hiện tại: Lặp lại tất cả nội dung. Bật/tắt chế độ lặp lại.</string>
+  <string name="exo_controls_shuffle_on_description">Tắt chế độ trộn bài</string>
+  <string name="exo_controls_shuffle_off_description">Bật chế độ trộn bài</string>
+  <string name="exo_controls_vr_description">Chế độ thực tế ảo</string>
+  <string name="exo_controls_cc_enabled_description">Tắt phụ đề</string>
+  <string name="exo_controls_cc_disabled_description">Bật phụ đề</string>
+  <string name="exo_controls_playback_speed">Tốc độ</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25x</item>
+    <item>0,5x</item>
+    <item>0,75x</item>
+    <item>Bình thường</item>
+    <item>1,25x</item>
+    <item>1,5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Âm thanh</string>
+  <string name="exo_track_selection_none">Không</string>
+  <string name="exo_track_selection_auto">Tự động</string>
+  <string name="exo_track_unknown">Không xác định</string>
+  <string name="exo_track_unknown_name">Không xác định (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Đơn âm</string>
+  <string name="exo_track_stereo">Âm thanh nổi</string>
+  <string name="exo_track_surround">Âm thanh vòm</string>
+  <string name="exo_track_surround_5_point_1">Âm thanh vòm 5.1</string>
+  <string name="exo_track_surround_7_point_1">Âm thanh vòm 7.1</string>
+  <string name="exo_track_role_alternate">Thay thế</string>
+  <string name="exo_track_role_supplementary">Bổ sung</string>
+  <string name="exo_track_role_commentary">Bình luận</string>
+  <string name="exo_track_role_closed_captions">Phụ đề</string>
+  <string name="exo_track_bitrate">%1$.2f Mb/giây</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

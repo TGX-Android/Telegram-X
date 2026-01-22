@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Спампаваць</string>
+  <string name="exo_download_notification_channel_name">Спампоўкі</string>
+  <string name="exo_download_downloading">Спампоўваецца</string>
+  <string name="exo_download_completed">Спампоўка завершана</string>
+  <string name="exo_download_failed">Збой спампоўкі</string>
+  <string name="exo_download_removing">Выдаленне спамповак</string>
+  <string name="exo_download_paused">Спампоўкі прыпынены</string>
+  <string name="exo_download_paused_for_network">Спампоўкі чакаюць падключэння да сеткі</string>
+  <string name="exo_download_paused_for_wifi">Спампоўкі чакаюць падключэння да Wi-Fi</string>
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Trenutno se reproducira</string>
+  <string name="media3_controls_play_description">Reproduciranje</string>
+  <string name="media3_controls_pause_description">Pauziranje</string>
+  <string name="media3_controls_seek_to_previous_description">Pomicanje na prethodnu stavku</string>
+  <string name="media3_controls_seek_to_next_description">Pomicanje na sljedeću stavku</string>
+  <string name="media3_controls_seek_back_description">Pomicanje nazad</string>
+  <string name="media3_controls_seek_forward_description">Pomicanje naprijed</string>
+  <string name="error_message_fallback">Nešto nije uredu. Pokušajte kasnije.</string>
+  <string name="error_message_info_cancelled">Završavanje nije uspjelo. Pokušajte ponovo.</string>
+  <string name="error_message_invalid_state">Trenutno nije moguće izvršiti taj zahtjev</string>
+  <string name="error_message_authentication_expired">Prijavite se da koristite ovu aplikaciju</string>
+  <string name="error_message_content_already_playing">Taj sadržaj se već reproducira</string>
+  <string name="error_message_end_of_playlist">Ništa više nije postavljeno u red čekanja</string>
+  <string name="error_message_concurrent_stream_limit">Previše je uređaja na kojima se sluša</string>
+  <string name="error_message_not_available_in_region">Nije moguće preuzeti taj sadržaj ovdje</string>
+  <string name="error_message_not_supported">Ova aplikacija ne može izvršiti taj zahtjev</string>
+  <string name="error_message_parental_control_restricted">Taj sadržaj je blokiran</string>
+  <string name="error_message_premium_account_required">Potreban je premijum pristup</string>
+  <string name="error_message_skip_limit_reached">Nije moguće preskakati još numera</string>
+  <string name="error_message_bad_value">Netačni ulazni podaci</string>
+  <string name="error_message_io">Greška s ulaznim/izlaznim podacima</string>
+  <string name="error_message_permission_denied">Pristup je odbijen</string>
+  <string name="error_message_disconnected">Prekinuta je povezanost s medijskom aplikacijom</string>
+  <string name="error_message_setup_required">Potrebno je postavljanje</string>
+</resources>

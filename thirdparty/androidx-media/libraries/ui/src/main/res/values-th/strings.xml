@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">แสดงแผงควบคุมโปรแกรมเล่น</string>
+  <string name="exo_controls_hide">ซ่อนตัวควบคุมโปรแกรมเล่น</string>
+  <string name="exo_controls_seek_bar_description">ความคืบหน้าในการเล่น</string>
+  <string name="exo_controls_settings_description">การตั้งค่า</string>
+  <string name="exo_controls_overflow_hide_description">ซ่อนการตั้งค่าเพิ่มเติม</string>
+  <string name="exo_controls_overflow_show_description">แสดงการตั้งค่าเพิ่มเติม</string>
+  <string name="exo_controls_fullscreen_enter_description">แสดงแบบเต็มหน้าจอ</string>
+  <string name="exo_controls_fullscreen_exit_description">ออกจากโหมดเต็มหน้าจอ</string>
+  <string name="exo_controls_previous_description">ก่อนหน้า</string>
+  <string name="exo_controls_next_description">ถัดไป</string>
+  <string name="exo_controls_pause_description">หยุด</string>
+  <string name="exo_controls_play_description">เล่น</string>
+  <string name="exo_controls_stop_description">หยุด</string>
+  <string name="exo_controls_rewind_description">กรอกลับ</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">กรอกลับ %d วินาที</item>
+    <item quantity="other">กรอกลับ %d วินาที</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">กรอไปข้างหน้า</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">กรอไปข้างหน้า %d วินาที</item>
+    <item quantity="other">กรอไปข้างหน้า %d วินาที</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">โหมดปัจจุบัน: ไม่เล่นซ้ำ สลับโหมดเล่นซ้ำ</string>
+  <string name="exo_controls_repeat_one_description">โหมดปัจจุบัน: เล่นซ้ำรายการเดียว สลับโหมดเล่นซ้ำ</string>
+  <string name="exo_controls_repeat_all_description">โหมดปัจจุบัน: เล่นซ้ำทั้งหมด สลับโหมดเล่นซ้ำ</string>
+  <string name="exo_controls_shuffle_on_description">ปิดใช้โหมดสุ่มเพลง</string>
+  <string name="exo_controls_shuffle_off_description">เปิดใช้โหมดสุ่มเพลง</string>
+  <string name="exo_controls_vr_description">โหมด VR</string>
+  <string name="exo_controls_cc_enabled_description">ปิดใช้คำบรรยาย</string>
+  <string name="exo_controls_cc_disabled_description">เปิดใช้คำบรรยาย</string>
+  <string name="exo_controls_playback_speed">ความเร็ว</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0.25x</item>
+    <item>0.5x</item>
+    <item>0.75x</item>
+    <item>ปกติ</item>
+    <item>1.25x</item>
+    <item>1.5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">เสียง</string>
+  <string name="exo_track_selection_none">ไม่มี</string>
+  <string name="exo_track_selection_auto">อัตโนมัติ</string>
+  <string name="exo_track_unknown">ไม่ทราบ</string>
+  <string name="exo_track_unknown_name">ไม่รู้จัก (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">โมโน</string>
+  <string name="exo_track_stereo">สเตอริโอ</string>
+  <string name="exo_track_surround">เสียงเซอร์ราวด์</string>
+  <string name="exo_track_surround_5_point_1">ระบบเสียง 5.1 เซอร์ราวด์</string>
+  <string name="exo_track_surround_7_point_1">7.1 เสียงเซอร์ราวด์</string>
+  <string name="exo_track_role_alternate">อื่นๆ</string>
+  <string name="exo_track_role_supplementary">แทร็กเสริม</string>
+  <string name="exo_track_role_commentary">ความคิดเห็น</string>
+  <string name="exo_track_role_closed_captions">คำบรรยาย</string>
+  <string name="exo_track_bitrate">%1$.2f Mbps</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

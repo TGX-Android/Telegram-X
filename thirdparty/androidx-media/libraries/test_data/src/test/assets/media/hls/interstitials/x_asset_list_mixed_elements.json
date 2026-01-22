@@ -1,0 +1,112 @@
+{
+  "bar": [
+    {},
+    {
+      "foo": [
+        {
+          "URI": "http://1",
+          "DURATION": 12.123
+        },
+        {
+          "URI": "http://2",
+          "DURATION": 22.123
+        },
+        {
+          "URI": "http://3",
+          "DURATION": 32.123
+        }
+      ]
+    }
+  ],
+  "foo": "foo",
+  "fooObject": {
+    "attr1": "",
+    "attr2": 2.0
+  },
+  "ASSETS": [
+    {
+      "URI": "http://1",
+      "DURATION": 12.123,
+      "foo": 12,
+      "fooBar": "text",
+      "booleanFoo": true,
+      "fooObject": {
+        "id": 23
+      },
+      "fooEmpty": {},
+      "fooArray": [
+        {
+          "id": "1"
+        },
+        {
+          "id": "2"
+        }
+      ]
+    },
+    {
+      "URI": null,
+      "DURATION": 12.123
+    },
+    {
+      "URI": 1.2,
+      "DURATION": 12.123
+    },
+    {},
+    {
+      "URI": true,
+      "DURATION": 12.123
+    },
+    {
+      "DURATION": 12.123
+    },
+    {
+      "URI": "http://2",
+      "DURATION": 22.123
+    },
+    {
+      "URI": "http://2",
+      "DURATION": null
+    },
+    {
+      "URI": "http://2",
+      "DURATION": "12.0"
+    },
+    {
+      "URI": "http://2",
+      "DURATION": "twelve"
+    },
+    {
+      "URI": "http://2",
+      "DURATION": false
+    },
+    {
+      "URI": "http://2"
+    },
+    {
+      "foo": 12,
+      "fooBar": "text",
+      "fooObject": {
+        "id": 23
+      },
+      "fooEmpty": {},
+      "fooArray": [
+        {
+          "id": "1"
+        }
+      ],
+      "URI": "http://3",
+      "DURATION": 32.123
+    }
+  ],
+  "fooBar": "fooBar",
+  "barFoo": 12.00,
+  "nullFoo": null,
+  "ASSETS": "stringValue",
+  "ASSETS": [
+    {
+      "URI": "http://4",
+      "DURATION": 42.123
+    }
+  ],
+  "booleanFoo": true
+}

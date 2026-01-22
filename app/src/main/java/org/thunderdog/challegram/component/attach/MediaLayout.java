@@ -273,7 +273,7 @@ public class MediaLayout extends FrameLayoutFix implements
       }
     }
 
-    controllers = new MediaBottomBaseController[items.length];
+    controllers = new MediaBottomBaseController<?>[items.length];
 
     if (mode == MODE_DEFAULT) {
       bottomBar = new MediaBottomBar(getContext());
@@ -328,7 +328,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public void initCustom () {
     mode = MODE_CUSTOM_POPUP;
-    controllers = new MediaBottomBaseController[1];
+    controllers = new MediaBottomBaseController<?>[1];
     currentController = getControllerForIndex(0);
     View controllerView = currentController.getValue();
 
@@ -394,33 +394,38 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean onBackPressed (boolean fromTop, boolean commit) {
     MediaBottomBaseController<?> c = getCurrentController();
     if (c.isAnimating()) {
       return true;
     }
-    if (c.onBackPressed(fromTop)) {
+    if (c.performOnBackPressed(fromTop, commit)) {
       return true;
     }
     if (counterView != null && counterView.isEnabled()) {
-      if (!c.showExitWarning(false)) {
-        cancelMultiSelection();
+      if (commit) {
+        if (!c.showExitWarning(false, commit)) {
+          cancelMultiSelection();
+        }
       }
       return true;
     }
     if (c.isExpanded()) {
-      c.collapseToStart();
+      if (commit) {
+        c.collapseToStart();
+      }
       return true;
     }
-    return c.showExitWarning(false);
+    return c.showExitWarning(false, commit);
   }
 
   public long getTargetChatId () {
     return target != null ? target.getChatId() : 0;
   }
 
-  public long getTargetMessageThreadId () {
-    return target != null ? target.getMessageThreadId() : 0;
+  @Nullable
+  public TdApi.MessageTopic getTargetTopicId () {
+    return target != null ? target.getMessageTopicId() : null;
   }
 
   public boolean areScheduledOnly () {
@@ -528,7 +533,7 @@ public class MediaLayout extends FrameLayoutFix implements
   @Override
   public boolean onBackgroundTouchDown (PopupLayout popupLayout, MotionEvent e) {
     MediaBottomBaseController<?> c = getCurrentController();
-    return c != null && c.showExitWarning(false);
+    return c != null && c.showExitWarning(false, true);
   }
 
   @Override
@@ -728,7 +733,6 @@ public class MediaLayout extends FrameLayoutFix implements
               CreatePollController c = new CreatePollController(target.context(), target.tdlib());
               c.setArguments(new CreatePollController.Args(
                 chatId,
-                target.getMessageThread(),
                 target.getMessageTopicId(),
                 target.getInputSuggestedPostInfo(null),
                 target
@@ -1402,7 +1406,7 @@ public class MediaLayout extends FrameLayoutFix implements
     } else if (viewId == R.id.btn_mosaic) {
       setNeedGroupMedia(!needGroupMedia, true);
     } else if (viewId == R.id.btn_close) {
-      if (!getCurrentController().showExitWarning(true)) {
+      if (!getCurrentController().showExitWarning(true, true)) {
         cancelMultiSelection();
       }
     }

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">હાલમાં ચાલી રહી છે</string>
+  <string name="media3_controls_play_description">ચલાવો</string>
+  <string name="media3_controls_pause_description">થોભાવો</string>
+  <string name="media3_controls_seek_to_previous_description">પાછલી આઇટમ શોધો</string>
+  <string name="media3_controls_seek_to_next_description">આગલી આઇટમ શોધો</string>
+  <string name="media3_controls_seek_back_description">પાછળ લઈ જાઓ</string>
+  <string name="media3_controls_seek_forward_description">આગળ લઈ જાઓ</string>
+  <string name="error_message_fallback">કંઈક ખોટું થયું. થોડા સમય પછી પ્રયાસ કરો.</string>
+  <string name="error_message_info_cancelled">સમાપ્ત કરી શક્યાં નથી. ફરી પ્રયાસ કરો.</string>
+  <string name="error_message_invalid_state">તે અત્યારે કરી શકતા નથી</string>
+  <string name="error_message_authentication_expired">આ ઍપનો ઉપયોગ કરવા માટે સાઇન ઇન કરો</string>
+  <string name="error_message_content_already_playing">તે કન્ટેન્ટ પહેલાંથી ચલાવી રહ્યાં છીએ</string>
+  <string name="error_message_end_of_playlist">બીજું કંઈ કતારમાં નથી</string>
+  <string name="error_message_concurrent_stream_limit">ઘણા બધા ડિવાઇસ પર સાંભળી રહ્યાં છીએ</string>
+  <string name="error_message_not_available_in_region">તે કન્ટેન્ટ અહીં મેળવી શકાતું નથી</string>
+  <string name="error_message_not_supported">આ ઍપ તે કરી શકતી નથી</string>
+  <string name="error_message_parental_control_restricted">તે કન્ટેન્ટ બ્લૉક કર્યું છે</string>
+  <string name="error_message_premium_account_required">પ્રીમિયમ ઍક્સેસ જરૂરી છે</string>
+  <string name="error_message_skip_limit_reached">કોઈ વધુ ટ્રૅક છોડી શકાતા નથી</string>
+  <string name="error_message_bad_value">ખોટો ઇનપુટ ડેટા</string>
+  <string name="error_message_io">ઇનપુટ/આઉટપુટમાં ભૂલ</string>
+  <string name="error_message_permission_denied">ઍક્સેસ નકારવામાં આવ્યો</string>
+  <string name="error_message_disconnected">મીડિયા ઍપથી ડિસ્કનેક્ટેડ છે</string>
+  <string name="error_message_setup_required">સેટઅપ જરૂરી છે</string>
+</resources>

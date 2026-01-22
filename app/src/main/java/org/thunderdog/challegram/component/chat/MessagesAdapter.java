@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageMedia;
@@ -37,7 +38,9 @@ import org.thunderdog.challegram.v.MessagesRecyclerView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import me.vkryl.core.lambda.Filter;
 import tgx.td.MessageId;
 
 public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
@@ -200,6 +203,16 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
 
   public TGMessage getBottomMessage () {
     return getMessage(0);
+  }
+
+  public TGMessage getBottomActiveMessage () {
+    int index = indexOfMessage(m -> !m.isSponsoredMessage());
+    return getMessage(index);
+  }
+
+  public TGMessage getTopActiveMessage () {
+    int index = indexOfMessageReverse(m -> !m.isSponsoredMessage());
+    return getMessage(index);
   }
 
   public TGMessage getMessage (int index) {
@@ -435,6 +448,20 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
   }
 
   public boolean addMessage (TGMessage message, boolean top, boolean needScrollToBottom) {
+    if (!top && !needScrollToBottom) {
+      AtomicBoolean tempRes = new AtomicBoolean();
+      manager.maintainScrollPositionAndOffset(() -> {
+        boolean res = addMessageImpl(message, top, needScrollToBottom);
+        tempRes.set(res);
+        return !res;
+      });
+      return tempRes.get();
+    } else {
+      return addMessageImpl(message, top, needScrollToBottom);
+    }
+  }
+
+  public boolean addMessageImpl (TGMessage message, boolean top, boolean needScrollToBottom) {
     if (manager.needRemoveDuplicates() && indexOfMessageContainer(message.getId()) != -1)
       return false;
 
@@ -473,9 +500,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
 
     TGMessage bottomMessage = top ? null : getMessage(0);
     TGMessage topMessage = top ? getMessage(getMessageCount() - 1) : null;
-    boolean sponsoredFlag = bottomMessage != null && bottomMessage.isSponsoredMessage();
+    boolean hasFollowingSponsoredMessage = bottomMessage != null && bottomMessage.isSponsoredMessage();
 
-    if (sponsoredFlag && items != null) {
+    if (hasFollowingSponsoredMessage && items != null) {
       for (TGMessage msg : items) {
         if (!msg.isSponsoredMessage()) {
           bottomMessage = msg;
@@ -493,7 +520,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
       if (!message.isOld()) {
         message.markAsBeingAdded(true);
       }
-      if ((!needScrollToBottom || message.isOld()) && !message.isOutgoing() && message.checkIsUnread(false) && !hasUnreadSeparator()) {
+      if (!message.isSponsoredMessage() && (!needScrollToBottom || message.isOld()) && !message.isOutgoing() && message.checkIsUnread(false) && !hasUnreadSeparator()) {
         TdApi.Chat chat = message.tdlib().chat(message.getChatId());
         if (chat != null) {
           ThreadInfo messageThread = message.messagesController().getMessageThread();
@@ -525,16 +552,21 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         notifyItemChanged(items.size() - 2);
       }
     } else {
-      int newIndex = sponsoredFlag ? 1 : 0;
+      int insertionIndex = hasFollowingSponsoredMessage ? 1 : 0;
       if (bottomMessage != null) {
-        notifyItemChanged(newIndex);
+        notifyItemChanged(insertionIndex);
       }
-      items.add(newIndex, message);
+      items.add(insertionIndex, message);
       if (prevSize == 0) {
         notifyItemChanged(0);
       } else {
-        notifyItemInserted(newIndex);
-        notifyItemRangeChanged(0, items.size());
+        notifyItemInserted(insertionIndex);
+        if (insertionIndex + 1 < items.size()) {
+          notifyItemChanged(insertionIndex + 1);
+        }
+        if (insertionIndex > 0) {
+          notifyItemChanged(insertionIndex - 1);
+        }
       }
     }
 
@@ -553,6 +585,43 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
     U.notifyItemsReplaced(this, oldItemCount);
   }
 
+  public int countMessages (@NonNull Filter<TGMessage> filter) {
+    if (items != null) {
+      int count = 0;
+      for (TGMessage message : items) {
+        if (filter.accept(message)) {
+          count++;
+        }
+      }
+      return count;
+    }
+    return 0;
+  }
+
+  public int indexOfMessageReverse (@NonNull Filter<TGMessage> filter) {
+    if (items != null) {
+      for (int i = items.size() - 1; i >= 0; i--) {
+        TGMessage message = items.get(i);
+        if (filter.accept(message)) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
+  public int indexOfMessage (@NonNull Filter<TGMessage> filter) {
+    if (items != null) {
+      for (int i = 0; i < items.size(); i++) {
+        TGMessage message = items.get(i);
+        if (filter.accept(message)) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
   public void addMessages (List<TGMessage> items, boolean fromTop) {
     if (this.items == null) {
       this.items = new ArrayList<>(INITIAL_CAPACITY);
@@ -564,7 +633,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
       if (items.size() > count) {
         for (int i = items.size() - 1; i >= 0; i--) {
           TGMessage msg = items.get(i);
-          if (indexOfMessageContainer(msg.getId()) != -1) {
+          if ((!Config.TEST_MULTI_SPONSORED_MESSAGES || !msg.isSponsoredMessage()) && indexOfMessageContainer(msg.getId()) != -1) {
             items.remove(i);
             if (i > 0) {
               items.get(i - 1).mergeWith(items.size() > i ? items.get(i) : null, !fromTop && i - 1 == 0);
@@ -576,7 +645,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         for (TGMessage item : this.items) {
           for (int i = items.size() - 1; i >= 0; i--) {
             TGMessage newItem = items.get(i);
-            if (item.isDescendantOrSelf(newItem.getId())) {
+            if ((!Config.TEST_MULTI_SPONSORED_MESSAGES || !newItem.isSponsoredMessage()) && item.isDescendantOrSelf(newItem.getId())) {
               items.remove(i);
               if (i > 0) {
                 items.get(i - 1).mergeWith(items.size() > i ? items.get(i) : null, !fromTop && i - 1 == 0);

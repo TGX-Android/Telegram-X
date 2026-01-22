@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Pakua</string>
+  <string name="exo_download_notification_channel_name">Vipakuliwa</string>
+  <string name="exo_download_downloading">Inapakua</string>
+  <string name="exo_download_completed">Imepakuliwa</string>
+  <string name="exo_download_failed">Imeshindwa kupakua</string>
+  <string name="exo_download_removing">Inaondoa vipakuliwa</string>
+  <string name="exo_download_paused">Imesimamisha shughuli ya kupakua</string>
+  <string name="exo_download_paused_for_network">Upakuaji unasubiri mtandao</string>
+  <string name="exo_download_paused_for_wifi">Upakuaji unasubiri Wi-Fi</string>
+</resources>

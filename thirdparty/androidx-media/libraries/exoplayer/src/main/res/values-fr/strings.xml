@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">Télécharger</string>
+  <string name="exo_download_notification_channel_name">Téléchargements</string>
+  <string name="exo_download_downloading">Téléchargement…</string>
+  <string name="exo_download_completed">Téléchargement terminé</string>
+  <string name="exo_download_failed">Échec du téléchargement</string>
+  <string name="exo_download_removing">Suppression des téléchargements…</string>
+  <string name="exo_download_paused">Téléchargements mis en pause</string>
+  <string name="exo_download_paused_for_network">Téléchargements en attente de réseau</string>
+  <string name="exo_download_paused_for_wifi">Téléchargements en attente de Wi-Fi</string>
+</resources>

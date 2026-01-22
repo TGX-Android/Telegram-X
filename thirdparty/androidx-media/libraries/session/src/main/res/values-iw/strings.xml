@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">הפריט שמופעל עכשיו</string>
+  <string name="media3_controls_play_description">הפעלה</string>
+  <string name="media3_controls_pause_description">השהיה</string>
+  <string name="media3_controls_seek_to_previous_description">דילוג לפריט הקודם</string>
+  <string name="media3_controls_seek_to_next_description">דילוג לפריט הבא</string>
+  <string name="media3_controls_seek_back_description">דילוג אחורה</string>
+  <string name="media3_controls_seek_forward_description">דילוג קדימה</string>
+  <string name="error_message_fallback">משהו השתבש. אפשר לנסות מאוחר יותר.</string>
+  <string name="error_message_info_cancelled">לא ניתן להשלים את הפעולה. רוצה לנסות שוב?</string>
+  <string name="error_message_invalid_state">אי אפשר לבצע את הפעולה הזו כרגע</string>
+  <string name="error_message_authentication_expired">כדי להשתמש באפליקציה הזו, צריך להיכנס לחשבון</string>
+  <string name="error_message_content_already_playing">התוכן הזה כבר פועל</string>
+  <string name="error_message_end_of_playlist">אין עוד פריטים ברשימת הבאים בתור</string>
+  <string name="error_message_concurrent_stream_limit">מתבצעת האזנה ביותר מדי מכשירים</string>
+  <string name="error_message_not_available_in_region">התוכן הזה לא זמין כאן</string>
+  <string name="error_message_not_supported">אי אפשר לבצע את הפעולה הזו באפליקציה הזו</string>
+  <string name="error_message_parental_control_restricted">התוכן הזה חסום</string>
+  <string name="error_message_premium_account_required">נדרשת גישה ל-Premium</string>
+  <string name="error_message_skip_limit_reached">אי אפשר לדלג יותר על טראקים</string>
+  <string name="error_message_bad_value">נתוני קלט שגויים</string>
+  <string name="error_message_io">נתוני קלט או פלט שגויים</string>
+  <string name="error_message_permission_denied">הגישה נדחתה</string>
+  <string name="error_message_disconnected">נותק מאפליקציית המדיה</string>
+  <string name="error_message_setup_required">נדרשת הגדרה</string>
+</resources>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:paddingBottom="@dimen/margin_small"
+  android:paddingTop="@dimen/margin_small">
+
+  <ImageView
+    android:id="@+id/action_icon"
+    android:layout_width="@dimen/app_icon_size"
+    android:layout_height="@dimen/app_icon_size"
+    android:layout_gravity="center_vertical"
+    android:layout_marginRight="@dimen/margin_small"
+    android:layout_marginEnd="@dimen/margin_small"
+    android:scaleType="fitCenter"
+    app:tint="@color/text_dark"
+    android:contentDescription="@string/custom_command_description" />
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+      android:id="@+id/action_name"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center_vertical"
+      android:textColor="@color/text_dark"
+      android:textSize="@dimen/app_name_text_size"
+      android:textStyle="bold"
+      tools:text="Custom Command" />
+
+    <TextView
+      android:id="@+id/action_description"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="@dimen/margin_small"
+      android:ellipsize="middle"
+      android:textColor="@color/text_light"
+      android:textSize="@dimen/app_package_text_size"
+      tools:text="CustomActionDescription" />
+  </LinearLayout>
+
+</LinearLayout>

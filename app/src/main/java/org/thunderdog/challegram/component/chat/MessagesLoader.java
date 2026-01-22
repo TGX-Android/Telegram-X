@@ -44,7 +44,6 @@ import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -111,7 +110,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private @Nullable ThreadInfo messageThread;
   private @Nullable TdApi.MessageTopic topicId;
 
-  private CancellableResultHandler sponsoredResultHandler;
+  private Tdlib.CancellableResultHandler<TdApi.SponsoredMessages> sponsoredResultHandler;
   private final MessagesSearchManagerMiddleware searchManagerMiddleware;
 
   private long contextId;
@@ -120,36 +119,25 @@ public class MessagesLoader implements Client.ResultHandler {
     return tdlib.isChannel(chatId) && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages();
   }
 
-  // Callback is called only on successful load
-  public void requestSponsoredMessage (long chatId, RunnableData<TdApi.SponsoredMessages> callback) {
+  public void requestSponsoredMessages (long chatId, RunnableData<TdApi.SponsoredMessages> callback) {
     if (!canShowSponsoredMessage(chatId) || isLoadingSponsoredMessage) {
       return;
     }
-
     isLoadingSponsoredMessage = true;
-    sponsoredResultHandler = new CancellableResultHandler() {
+    final long contextId = this.contextId;
+    sponsoredResultHandler = new Tdlib.CancellableResultHandler<>() {
       @Override
-      public void processResult (TdApi.Object object) {
+      public void act (TdApi.SponsoredMessages sponsoredMessages, @Nullable TdApi.Error error) {
         UI.post(() -> {
           isLoadingSponsoredMessage = false;
           sponsoredResultHandler = null;
-
-          TdApi.SponsoredMessages message;
-
-          if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
-            message = ((TdApi.SponsoredMessages) object);
-          } else {
-            message = null;
-          }
-
-          if (chatId == getChatId()) {
-            callback.runWithData(message);
+          if (chatId == getChatId() && MessagesLoader.this.contextId == contextId) {
+            callback.runWithData(sponsoredMessages);
           }
         });
       }
     };
-
-    tdlib.client().send(new TdApi.GetChatSponsoredMessages(chatId), sponsoredResultHandler);
+    tdlib.send(new TdApi.GetChatSponsoredMessages(chatId), sponsoredResultHandler);
   }
 
   public MessagesLoader (MessagesManager manager, MessagesSearchManagerMiddleware searchMiddleware) {
@@ -194,20 +182,21 @@ public class MessagesLoader implements Client.ResultHandler {
       return new TdApi.MessageSourceChatEventLog();
     } else if (specialMode == MessagesLoader.SPECIAL_MODE_SEARCH) {
       return new TdApi.MessageSourceSearch();
-    } else if (getMessageThreadId() != 0) {
-      return new TdApi.MessageSourceMessageThreadHistory();
     } else if (topicId != null) {
-      switch (topicId.getConstructor()) {
-        case TdApi.MessageTopicForum.CONSTRUCTOR:
-          return new TdApi.MessageSourceForumTopicHistory();
-        case TdApi.MessageTopicDirectMessages.CONSTRUCTOR:
-          return new TdApi.MessageSourceDirectMessagesChatTopicHistory();
-        case TdApi.MessageTopicSavedMessages.CONSTRUCTOR:
-          return new TdApi.MessageSourceChatHistory();
-        default:
-          Td.assertMessageTopic_e5c08b7c();
+      return switch (topicId.getConstructor()) {
+        case TdApi.MessageTopicThread.CONSTRUCTOR ->
+          new TdApi.MessageSourceMessageThreadHistory();
+        case TdApi.MessageTopicForum.CONSTRUCTOR ->
+          new TdApi.MessageSourceForumTopicHistory();
+        case TdApi.MessageTopicDirectMessages.CONSTRUCTOR ->
+          new TdApi.MessageSourceDirectMessagesChatTopicHistory();
+        case TdApi.MessageTopicSavedMessages.CONSTRUCTOR ->
+          new TdApi.MessageSourceChatHistory();
+        default -> {
+          Td.assertMessageTopic_98b4a9a3();
           throw Td.unsupported(topicId);
-      }
+        }
+      };
     } else {
       return new TdApi.MessageSourceChatHistory();
     }
@@ -229,8 +218,9 @@ public class MessagesLoader implements Client.ResultHandler {
     return messageThread != null ? messageThread.getChatId() : chat != null ? chat.id : 0;
   }
 
-  public long getMessageThreadId () {
-    return messageThread != null ? messageThread.getMessageThreadId() : 0;
+  @Nullable
+  public TdApi.MessageTopic getMessageTopicId () {
+    return messageThread != null ? messageThread.getMessageTopicId() : null;
   }
 
   @Nullable
@@ -253,13 +243,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
   private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnread) {
     final long currentContextId = contextId;
-    if (DEBUG_HANDLER) {
-      Log.w("lastHandler = [new instance], error: %b", Log.generateException(1), lastHandler != null);
-    }
-    if (lastHandler != null) {
-      throw new IllegalStateException("lastHandler != null");
-    }
-    return lastHandler = new Client.ResultHandler() {
+    Client.ResultHandler handler = new Client.ResultHandler() {
       @Override
       public void onResult (final TdApi.Object object) {
         if (contextId != currentContextId) {
@@ -546,6 +530,16 @@ public class MessagesLoader implements Client.ResultHandler {
           needFindUnread && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
     };
+    synchronized (lock) {
+      if (DEBUG_HANDLER) {
+        Log.w("lastHandler = [new instance], error: %b", Log.generateException(1), lastHandler != null);
+      }
+      if (lastHandler != null) {
+        throw new IllegalStateException("lastHandler != null");
+      }
+      lastHandler = handler;
+      return handler;
+    }
   }
 
   public void reuse () {
@@ -569,6 +563,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
     if (sponsoredResultHandler != null) {
       sponsoredResultHandler.cancel();
+      sponsoredResultHandler = null;
     }
 
     synchronized (lock) {
@@ -1196,7 +1191,7 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   private boolean loadMore (boolean fromTop, int count, boolean onlyLocal) {
-    if (isLoading || getChatId() == 0) {
+    if (isLoading || getChatId() == 0 || lastHandler != null) {
       return false;
     }
     if (fromTop) {
@@ -1240,11 +1235,11 @@ public class MessagesLoader implements Client.ResultHandler {
       isChannel, false, false, false,
       event.date, 0,
       null, null, null, null,
-      null, null, null, 0, null,
+      null, null, null, null,
       null, 0, 0,
       0, 0, 0, 0, null,
-      0, 0, false,
-      null, null, null
+      0, 0,
+      null, null, null, null
     );
   }
 
@@ -1774,13 +1769,13 @@ public class MessagesLoader implements Client.ResultHandler {
 
   @Nullable
   private MessageId getStartBottom () {
-    TGMessage msg = manager.getAdapter().getBottomMessage();
+    TGMessage msg = manager.getAdapter().getBottomActiveMessage();
     return msg != null ? new MessageId(msg.getChatId(), msg.getBiggestId()) : null;
   }
 
   @Nullable
   private MessageId getStartTop () {
-    TGMessage msg = manager.getAdapter().getTopMessage();
+    TGMessage msg = manager.getAdapter().getTopActiveMessage();
     return msg != null ? new MessageId(msg.getChatId(), msg.getSmallestId()) : null;
   }
 

@@ -16,6 +16,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -203,9 +204,9 @@ public final class TGAvatars implements FactorAnimator.Target {
     int saveCount;
     boolean isRightGravity = (gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.RIGHT;
     if (isRightGravity) {
-      saveCount = c.saveLayerAlpha(x - maxWidth - avatarOutline, cy - avatarRadius - avatarOutline, x + avatarOutline, cy + avatarRadius + avatarOutline, 255, Canvas.ALL_SAVE_FLAG);
+      saveCount = Views.saveLayerAlpha(c, x - maxWidth - avatarOutline, cy - avatarRadius - avatarOutline, x + avatarOutline, cy + avatarRadius + avatarOutline, 255, Canvas.ALL_SAVE_FLAG);
     } else {
-      saveCount = c.saveLayerAlpha(x - avatarOutline, cy - avatarRadius - avatarOutline, x + maxWidth + avatarOutline, cy + avatarRadius + avatarOutline, 255, Canvas.ALL_SAVE_FLAG);
+      saveCount = Views.saveLayerAlpha(c, x - avatarOutline, cy - avatarRadius - avatarOutline, x + maxWidth + avatarOutline, cy + avatarRadius + avatarOutline, 255, Canvas.ALL_SAVE_FLAG);
     }
     for (int index = animator.size() - 1; index >= 0; index--) {
       ListAnimator.Entry<AvatarEntry> entry = animator.getEntry(index);

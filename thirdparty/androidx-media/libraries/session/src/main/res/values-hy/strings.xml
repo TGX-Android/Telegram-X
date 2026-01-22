@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Այժմ նվագարկվում է</string>
+  <string name="media3_controls_play_description">Նվագարկել</string>
+  <string name="media3_controls_pause_description">Դադարեցնել</string>
+  <string name="media3_controls_seek_to_previous_description">Անցնել նախորդ տարրին</string>
+  <string name="media3_controls_seek_to_next_description">Անցնել հաջորդ տարրին</string>
+  <string name="media3_controls_seek_back_description">Հետ գնալ</string>
+  <string name="media3_controls_seek_forward_description">Առաջ գնալ</string>
+  <string name="error_message_fallback">Սխալ առաջացավ։ Փորձեք ավելի ուշ։</string>
+  <string name="error_message_info_cancelled">Չհաջողվեց ավարտել։ Նորից փորձեք։</string>
+  <string name="error_message_invalid_state">Այս գործողությունը ներկայումս հասանելի չէ</string>
+  <string name="error_message_authentication_expired">Մուտք գործեք՝ հավելվածն օգտագործելու համար</string>
+  <string name="error_message_content_already_playing">Բովանդակությունն արդեն նվագարկվում է</string>
+  <string name="error_message_end_of_playlist">Հերթացանկը դատարկ է</string>
+  <string name="error_message_concurrent_stream_limit">Չափից շատ սարքերում է բովանդակություն նվագարկվում</string>
+  <string name="error_message_not_available_in_region">Բովանդակությունն անհասանելի է այս տարածաշրջանում</string>
+  <string name="error_message_not_supported">Գործողությունը հասանելի չէ այս հավելվածում</string>
+  <string name="error_message_parental_control_restricted">Բովանդակությունն արգելափակված է</string>
+  <string name="error_message_premium_account_required">Անհրաժեշտ է պրեմիում հաշիվ</string>
+  <string name="error_message_skip_limit_reached">Այլևս հնարավոր չէ կատարումներ բաց թողնել</string>
+  <string name="error_message_bad_value">Սխալ մուտքային տվյալներ</string>
+  <string name="error_message_io">Ներածման/արտածման սխալ</string>
+  <string name="error_message_permission_denied">Մուտքը մերժված է</string>
+  <string name="error_message_disconnected">Անջատված է մուլտիմեդիա հավելվածից</string>
+  <string name="error_message_setup_required">Պահանջվում է կարգավորում</string>
+</resources>

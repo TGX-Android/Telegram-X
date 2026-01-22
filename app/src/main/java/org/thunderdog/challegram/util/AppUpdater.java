@@ -169,7 +169,6 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   public void checkForUpdates () {
     if (state == State.NONE) {
-      setState(State.CHECKING);
       if (preferTelegramChannelFlow()) {
         checkForTelegramChannelUpdates();
       } else {
@@ -215,19 +214,20 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   private void checkForGooglePlayUpdates () {
     if (googlePlayUpdateManager == null)
-      throw new IllegalStateException();
+      return;
+    setState(State.CHECKING);
     googlePlayUpdateManager.getAppUpdateInfo().addOnSuccessListener(updateInfo -> {
       this.googlePlayUpdateInfo = updateInfo;
       int installStatus = updateInfo.installStatus();
       if (installStatus == InstallStatus.DOWNLOADED) {
-        onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), null, true);
+        onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (updateInfo.availableVersionCode() / 1000), null, true);
       } else if (installStatus == InstallStatus.FAILED) {
         onGooglePlayFlowError();
       } else {
         int updateAvailability = updateInfo.updateAvailability();
         switch (updateAvailability) {
           case UpdateAvailability.UPDATE_AVAILABLE: {
-            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), null, false);
+            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (updateInfo.availableVersionCode() / 1000), null, false);
             break;
           }
           case UpdateAvailability.UNKNOWN: {
@@ -320,6 +320,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   }
 
   private void checkForTelegramChannelUpdates () {
+    setState(State.CHECKING);
     Tdlib tdlib = context.hasTdlib() ? context.currentTdlib() : null;
     if (tdlib == null || tdlib.context().inRecoveryMode() || !tdlib.isAuthorized()) {
       onUpdateUnavailable();

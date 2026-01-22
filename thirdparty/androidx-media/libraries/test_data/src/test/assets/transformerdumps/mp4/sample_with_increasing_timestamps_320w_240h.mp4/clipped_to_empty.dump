@@ -1,0 +1,44 @@
+format audio:
+  averageBitrate = 192182
+  peakBitrate = 192181
+  id = 2
+  containerMimeType = video/mp4
+  sampleMimeType = audio/mp4a-latm
+  codecs = mp4a.40.2
+  maxInputSize = 643
+  channelCount = 2
+  sampleRate = 48000
+  language = en
+  metadata = entries=[Mp4AlternateGroup: 1, TSSE: description=null: values=[Lavf58.76.100], Mp4Timestamp: creation time=0, modification time=0, timescale=1000]
+  initializationData:
+    data = length 2, hash 560
+format video:
+  averageBitrate = 656560
+  peakBitrate = 656560
+  id = 1
+  containerMimeType = video/mp4
+  sampleMimeType = video/avc
+  codecs = avc1.42C015
+  maxInputSize = 14839
+  maxNumReorderSamples = 0
+  width = 320
+  height = 240
+  frameRate = 60.00
+  colorInfo:
+    colorSpace = 2
+    colorRange = 1
+    colorTransfer = 3
+    lumaBitdepth = 8
+    chromaBitdepth = 8
+  language = en
+  metadata = entries=[TSSE: description=null: values=[Lavf58.76.100], Mp4Timestamp: creation time=0, modification time=0, timescale=1000]
+  initializationData:
+    data = length 31, hash 4B108214
+    data = length 9, hash FBA158BB
+container metadata:
+  entry = Mp4AlternateGroup: 1
+  entry = Mp4Timestamp: creation time=0, modification time=0, timescale=1000
+  entry = Mp4Timestamp: creation time=0, modification time=0, timescale=1000
+  entry = TSSE: description=null: values=[Lavf58.76.100]
+  entry = TSSE: description=null: values=[Lavf58.76.100]
+released = true

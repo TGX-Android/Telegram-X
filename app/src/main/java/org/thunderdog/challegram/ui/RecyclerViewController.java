@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
@@ -116,10 +117,14 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
     }
   }
 
+  protected FrameLayout createFrameLayout (Context context) {
+    return new FrameLayoutFix(context);
+  }
+
   @SuppressLint("InflateParams")
   @Override
   protected View onCreateView (Context context) {
-    FrameLayoutFix wrap = new FrameLayoutFix(context);
+    FrameLayout wrap = createFrameLayout(context);
     if (needContentBackground()) {
       ViewSupport.setThemedBackground(wrap, getRecyclerBackground(), this);
     }

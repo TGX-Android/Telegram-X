@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Sedang diputar</string>
+  <string name="media3_controls_play_description">Putar</string>
+  <string name="media3_controls_pause_description">Jeda</string>
+  <string name="media3_controls_seek_to_previous_description">Cari item sebelumnya</string>
+  <string name="media3_controls_seek_to_next_description">Cari item berikutnya</string>
+  <string name="media3_controls_seek_back_description">Mundur</string>
+  <string name="media3_controls_seek_forward_description">Maju</string>
+  <string name="error_message_fallback">Terjadi error. Coba nanti.</string>
+  <string name="error_message_info_cancelled">Tidak dapat diselesaikan. Coba lagi.</string>
+  <string name="error_message_invalid_state">Tidak dapat melakukannya saat ini</string>
+  <string name="error_message_authentication_expired">Login untuk menggunakan aplikasi ini</string>
+  <string name="error_message_content_already_playing">Sedang memutar konten tersebut</string>
+  <string name="error_message_end_of_playlist">Tidak ada antrean lagi</string>
+  <string name="error_message_concurrent_stream_limit">Terlalu banyak perangkat digunakan untuk mendengarkan</string>
+  <string name="error_message_not_available_in_region">Tidak dapat memuat konten tersebut di sini</string>
+  <string name="error_message_not_supported">Aplikasi ini tidak dapat melakukannya</string>
+  <string name="error_message_parental_control_restricted">Konten tersebut diblokir</string>
+  <string name="error_message_premium_account_required">Memerlukan akses premium</string>
+  <string name="error_message_skip_limit_reached">Tidak dapat melewati lagu lagi</string>
+  <string name="error_message_bad_value">Data input salah</string>
+  <string name="error_message_io">Input/output error</string>
+  <string name="error_message_permission_denied">Akses ditolak</string>
+  <string name="error_message_disconnected">Terputus dari aplikasi media</string>
+  <string name="error_message_setup_required">Memerlukan penyiapan</string>
+</resources>

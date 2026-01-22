@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">A tocar</string>
+  <string name="media3_controls_play_description">Reproduzir</string>
+  <string name="media3_controls_pause_description">Pausar</string>
+  <string name="media3_controls_seek_to_previous_description">Retroceder para o item anterior</string>
+  <string name="media3_controls_seek_to_next_description">Avançar para o item seguinte</string>
+  <string name="media3_controls_seek_back_description">Anterior</string>
+  <string name="media3_controls_seek_forward_description">Avançar</string>
+  <string name="error_message_fallback">Algo correu mal. Tente mais tarde.</string>
+  <string name="error_message_info_cancelled">Não foi possível terminar. Tente novamente.</string>
+  <string name="error_message_invalid_state">Não é possível responder a esse pedido neste momento</string>
+  <string name="error_message_authentication_expired">Inicie sessão para usar esta app</string>
+  <string name="error_message_content_already_playing">Esse conteúdo já está em reprodução</string>
+  <string name="error_message_end_of_playlist">Não há mais nada em fila</string>
+  <string name="error_message_concurrent_stream_limit">A ouvir em demasiados dispositivos</string>
+  <string name="error_message_not_available_in_region">Não é possível aceder a esse conteúdo aqui</string>
+  <string name="error_message_not_supported">Esta app não consegue responder a esse pedido</string>
+  <string name="error_message_parental_control_restricted">Esse conteúdo está bloqueado</string>
+  <string name="error_message_premium_account_required">Acesso premium necessário</string>
+  <string name="error_message_skip_limit_reached">Não é possível saltar mais faixas</string>
+  <string name="error_message_bad_value">Dados de entrada incorretos</string>
+  <string name="error_message_io">Erro de entrada/saída</string>
+  <string name="error_message_permission_denied">Acesso negado</string>
+  <string name="error_message_disconnected">Desassociado da app de multimédia</string>
+  <string name="error_message_setup_required">Configuração necessária</string>
+</resources>

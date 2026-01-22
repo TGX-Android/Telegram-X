@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_download_description">ดาวน์โหลด</string>
+  <string name="exo_download_notification_channel_name">ดาวน์โหลด</string>
+  <string name="exo_download_downloading">กำลังดาวน์โหลด</string>
+  <string name="exo_download_completed">การดาวน์โหลดเสร็จสมบูรณ์</string>
+  <string name="exo_download_failed">การดาวน์โหลดล้มเหลว</string>
+  <string name="exo_download_removing">กำลังนำรายการที่ดาวน์โหลดออก</string>
+  <string name="exo_download_paused">การดาวน์โหลดหยุดชั่วคราว</string>
+  <string name="exo_download_paused_for_network">กำลังรอเครือข่ายเพื่อดาวน์โหลด</string>
+  <string name="exo_download_paused_for_wifi">กำลังรอ Wi-Fi เพื่อดาวน์โหลด</string>
+</resources>

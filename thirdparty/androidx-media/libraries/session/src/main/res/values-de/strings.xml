@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Läuft gerade</string>
+  <string name="media3_controls_play_description">Wiedergabe</string>
+  <string name="media3_controls_pause_description">Pause</string>
+  <string name="media3_controls_seek_to_previous_description">Zum vorherigen Element</string>
+  <string name="media3_controls_seek_to_next_description">Zum nächsten Element</string>
+  <string name="media3_controls_seek_back_description">Zurückspulen</string>
+  <string name="media3_controls_seek_forward_description">Vorspulen</string>
+  <string name="error_message_fallback">Ein Fehler ist aufgetreten. Bitte versuch es später noch einmal.</string>
+  <string name="error_message_info_cancelled">Die Aktion konnte nicht fertiggestellt werden. Bitte versuch es noch einmal.</string>
+  <string name="error_message_invalid_state">Das ist gerade nicht möglich</string>
+  <string name="error_message_authentication_expired">Melde dich an, um diese App zu verwenden</string>
+  <string name="error_message_content_already_playing">Der Inhalt wird bereits wiedergegeben</string>
+  <string name="error_message_end_of_playlist">Die Wiedergabeliste hat keine weiteren Titel</string>
+  <string name="error_message_concurrent_stream_limit">Es wird auf zu vielen Geräten gleichzeitig gestreamt</string>
+  <string name="error_message_not_available_in_region">Der Inhalt ist in dieser Region nicht verfügbar</string>
+  <string name="error_message_not_supported">Die Anfrage wird von dieser App nicht unterstützt</string>
+  <string name="error_message_parental_control_restricted">Der Inhalt ist gesperrt</string>
+  <string name="error_message_premium_account_required">Premiumzugriff erforderlich</string>
+  <string name="error_message_skip_limit_reached">Du kannst keine weiteren Titel überspringen</string>
+  <string name="error_message_bad_value">Die eingegebenen Daten sind nicht korrekt</string>
+  <string name="error_message_io">Fehler bei Eingabe/Ausgabe</string>
+  <string name="error_message_permission_denied">Zugriff verweigert</string>
+  <string name="error_message_disconnected">Verbindung zur Medien-App wurde unterbrochen</string>
+  <string name="error_message_setup_required">Einrichtung erforderlich</string>
+</resources>

@@ -373,8 +373,8 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
-    return fakeControllerForBottomHeader != null && fakeControllerForBottomHeader.onBackPressed(fromTop) || super.onBackPressed(fromTop);
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
+    return fakeControllerForBottomHeader != null && fakeControllerForBottomHeader.performOnBackPressed(fromTop, commit) || super.performOnBackPressed(fromTop, commit);
   }
 
   @Override
@@ -982,12 +982,14 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     }
 
     @Override
-    public boolean onBackPressed (boolean fromTop) {
+    public boolean performOnBackPressed (boolean fromTop, boolean commit) {
       if (inSearchMode()) {
-        closeSearchMode(null);
+        if (commit) {
+          closeSearchMode(null);
+        }
         return true;
       }
-      return false;
+      return super.performOnBackPressed(fromTop, commit);
     }
   }
 

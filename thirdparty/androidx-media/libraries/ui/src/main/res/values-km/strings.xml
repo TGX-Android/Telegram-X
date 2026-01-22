@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">បង្ហាញការគ្រប់គ្រងកម្មវិធីចាក់ចម្រៀង</string>
+  <string name="exo_controls_hide">លាក់ការគ្រប់គ្រងកម្មវិធីចាក់ចម្រៀង</string>
+  <string name="exo_controls_seek_bar_description">ការចាក់​កំពុង​ដំណើរការ</string>
+  <string name="exo_controls_settings_description">ការកំណត់</string>
+  <string name="exo_controls_overflow_hide_description">លាក់ការកំណត់​បន្ថែម</string>
+  <string name="exo_controls_overflow_show_description">បង្ហាញការកំណត់​បន្ថែម</string>
+  <string name="exo_controls_fullscreen_enter_description">ចូលអេក្រង់ពេញ</string>
+  <string name="exo_controls_fullscreen_exit_description">ចាកចេញពីអេក្រង់ពេញ</string>
+  <string name="exo_controls_previous_description">មុន</string>
+  <string name="exo_controls_next_description">បន្ទាប់</string>
+  <string name="exo_controls_pause_description">ផ្អាក</string>
+  <string name="exo_controls_play_description">លេង</string>
+  <string name="exo_controls_stop_description">ឈប់</string>
+  <string name="exo_controls_rewind_description">ខា​ថយ​ក្រោយ</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">ខា​ថយក្រោយ %d វិនាទី</item>
+    <item quantity="other">ខា​ថយក្រោយ %d វិនាទី</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">ទៅ​មុខ​​​រហ័ស</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">ខា​ទៅមុខ %d វិនាទី</item>
+    <item quantity="other">ខា​ទៅមុខ %d វិនាទី</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">មុខងារបច្ចុប្បន្ន៖ មិនចាក់ឡើងវិញ។ បិទ/បើកមុខងារចាក់ឡើងវិញ។</string>
+  <string name="exo_controls_repeat_one_description">មុខងារបច្ចុប្បន្ន៖ ចាក់ឡើងវិញមួយ។ បិទ/បើកមុខងារចាក់ឡើងវិញ។</string>
+  <string name="exo_controls_repeat_all_description">មុខងារបច្ចុប្បន្ន៖ ចាក់ឡើងវិញទាំងអស់។ បិទ/បើកមុខងារចាក់ឡើងវិញ។</string>
+  <string name="exo_controls_shuffle_on_description">បិទ​មុខងារច្របល់</string>
+  <string name="exo_controls_shuffle_off_description">បើក​មុខងារច្របល់</string>
+  <string name="exo_controls_vr_description">មុខងារ VR</string>
+  <string name="exo_controls_cc_enabled_description">បិទអក្សររត់</string>
+  <string name="exo_controls_cc_disabled_description">បើកអក្សររត់</string>
+  <string name="exo_controls_playback_speed">ល្បឿន</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0.25x</item>
+    <item>0.5x</item>
+    <item>0.75x</item>
+    <item>ធម្មតា</item>
+    <item>1.25x</item>
+    <item>1.5x</item>
+    <item>2x</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">សំឡេង</string>
+  <string name="exo_track_selection_none">គ្មាន</string>
+  <string name="exo_track_selection_auto">ស្វ័យប្រវត្តិ</string>
+  <string name="exo_track_unknown">មិនស្គាល់</string>
+  <string name="exo_track_unknown_name">មិនស្គាល់ (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">ម៉ូ​ណូ</string>
+  <string name="exo_track_stereo">ស្តេរ៉េអូ</string>
+  <string name="exo_track_surround">សំឡេង​រងំ</string>
+  <string name="exo_track_surround_5_point_1">សំឡេង​រងំ​ខ្នាត 5.1</string>
+  <string name="exo_track_surround_7_point_1">សំឡេង​រងំ​ខ្នាត 7.1</string>
+  <string name="exo_track_role_alternate">ជំនួស</string>
+  <string name="exo_track_role_supplementary">បំពេញបន្ថែម</string>
+  <string name="exo_track_role_commentary">ការអត្ថាធិប្បាយ</string>
+  <string name="exo_track_role_closed_captions">អក្សររត់</string>
+  <string name="exo_track_bitrate">%1$.2f Mbps</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

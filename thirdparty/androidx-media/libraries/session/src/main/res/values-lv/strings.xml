@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Tagad atskaņo</string>
+  <string name="media3_controls_play_description">Atskaņot</string>
+  <string name="media3_controls_pause_description">Apturēt</string>
+  <string name="media3_controls_seek_to_previous_description">Pāriet uz iepriekšējo vienumu</string>
+  <string name="media3_controls_seek_to_next_description">Pāriet uz nākamo vienumu</string>
+  <string name="media3_controls_seek_back_description">Pāriet atpakaļ</string>
+  <string name="media3_controls_seek_forward_description">Pāriet uz priekšu</string>
+  <string name="error_message_fallback">Radās problēma. Mēģiniet vēlāk.</string>
+  <string name="error_message_info_cancelled">Nevarēja pabeigt. Mēģiniet vēlreiz.</string>
+  <string name="error_message_invalid_state">Pašlaik nevar veikt šo darbību.</string>
+  <string name="error_message_authentication_expired">Pierakstieties, lai izmantotu šo lietotni.</string>
+  <string name="error_message_content_already_playing">Šis saturs jau tiek atskaņots.</string>
+  <string name="error_message_end_of_playlist">Rindā vairs nav nekā cita.</string>
+  <string name="error_message_concurrent_stream_limit">Klausīšanās notiek pārāk daudz ierīcēs.</string>
+  <string name="error_message_not_available_in_region">Nevar šeit parādīt šo saturu.</string>
+  <string name="error_message_not_supported">Šo darbību nevar veikt šajā lietotnē.</string>
+  <string name="error_message_parental_control_restricted">Šis saturs ir bloķēts.</string>
+  <string name="error_message_premium_account_required">Nepieciešama maksas piekļuve.</string>
+  <string name="error_message_skip_limit_reached">Vairs nevar izlaist nevienu ierakstu.</string>
+  <string name="error_message_bad_value">Nepareizi ievades dati</string>
+  <string name="error_message_io">Ievades/izvades kļūda</string>
+  <string name="error_message_permission_denied">Piekļuve liegta</string>
+  <string name="error_message_disconnected">Pārtraukts savienojums ar multivides lietotni</string>
+  <string name="error_message_setup_required">Nepieciešama iestatīšana</string>
+</resources>

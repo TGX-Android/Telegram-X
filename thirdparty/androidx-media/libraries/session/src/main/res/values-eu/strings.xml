@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Orain erreproduzitzen</string>
+  <string name="media3_controls_play_description">Erreproduzitu</string>
+  <string name="media3_controls_pause_description">Pausatu</string>
+  <string name="media3_controls_seek_to_previous_description">Joan aurreko elementura</string>
+  <string name="media3_controls_seek_to_next_description">Joan hurrengo elementura</string>
+  <string name="media3_controls_seek_back_description">Atzeratu</string>
+  <string name="media3_controls_seek_forward_description">Aurreratu</string>
+  <string name="error_message_fallback">Arazoren bat izan da. Saiatu geroago.</string>
+  <string name="error_message_info_cancelled">Ezin izan da amaitu ekintza. Saiatu berriro.</string>
+  <string name="error_message_invalid_state">Ezin da egin halakorik une honetan</string>
+  <string name="error_message_authentication_expired">Aplikazioa erabiltzeko, hasi saioa</string>
+  <string name="error_message_content_already_playing">Dagoeneko ari da erreproduzitzen eduki hori</string>
+  <string name="error_message_end_of_playlist">Ez dago beste ezer ilaran</string>
+  <string name="error_message_concurrent_stream_limit">Gailu gehiegitatik jasotzen ari da soinua</string>
+  <string name="error_message_not_available_in_region">Ezin da eskuratu eduki hori lurralde honetan</string>
+  <string name="error_message_not_supported">Aplikazio honek ezin du egin halakorik</string>
+  <string name="error_message_parental_control_restricted">Eduki hori blokeatuta dago</string>
+  <string name="error_message_premium_account_required">Premium-eko sarbidea behar da</string>
+  <string name="error_message_skip_limit_reached">Ezin da saltatu pista gehiagorik</string>
+  <string name="error_message_bad_value">Emandako informazioa ez da zuzena</string>
+  <string name="error_message_io">Emandako informazioaren edo emaitzaren errorea</string>
+  <string name="error_message_permission_denied">Sarbidea ukatu da</string>
+  <string name="error_message_disconnected">Multimedia-aplikaziotik deskonektatu da</string>
+  <string name="error_message_setup_required">Konfiguratu egin behar da</string>
+</resources>

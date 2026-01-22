@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">İndi oxudulur</string>
+  <string name="media3_controls_play_description">Oxudun</string>
+  <string name="media3_controls_pause_description">Durdurun</string>
+  <string name="media3_controls_seek_to_previous_description">Əvvəlki elementə keçin</string>
+  <string name="media3_controls_seek_to_next_description">Növbəti elementə keçin</string>
+  <string name="media3_controls_seek_back_description">Geri keçin</string>
+  <string name="media3_controls_seek_forward_description">İrəli keçin</string>
+  <string name="error_message_fallback">Xəta baş verdi. Sonra cəhd edin.</string>
+  <string name="error_message_info_cancelled">Bitirmək mümkün olmadı. Yenidən cəhd edin.</string>
+  <string name="error_message_invalid_state">Hazırda etmək olmur</string>
+  <string name="error_message_authentication_expired">Bu tətbiqi istifadə etmək üçün daxil olun</string>
+  <string name="error_message_content_already_playing">Həmin kontent artıq işə salınıb</string>
+  <string name="error_message_end_of_playlist">Növbədə heç nə yoxdur</string>
+  <string name="error_message_concurrent_stream_limit">Bir çox cihazda dinlənilir</string>
+  <string name="error_message_not_available_in_region">Həmin kontenti burada əldə etmək mümkün deyil</string>
+  <string name="error_message_not_supported">Bu tətbiq edə bilmir</string>
+  <string name="error_message_parental_control_restricted">Həmin kontent bloklanıb</string>
+  <string name="error_message_premium_account_required">Premium giriş tələb olunur</string>
+  <string name="error_message_skip_limit_reached">Başqa trek ötürmək mümkün deyil</string>
+  <string name="error_message_bad_value">Səhv daxiletmə datası</string>
+  <string name="error_message_io">Daxiletmə/çıxış xətası</string>
+  <string name="error_message_permission_denied">Giriş rədd edildi</string>
+  <string name="error_message_disconnected">Media tətbiqindən ayrıldı</string>
+  <string name="error_message_setup_required">Ayarlama tələb olunur</string>
+</resources>

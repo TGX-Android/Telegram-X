@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">ამჟამად უკრავს</string>
+  <string name="media3_controls_play_description">დაკვრა</string>
+  <string name="media3_controls_pause_description">პაუზა</string>
+  <string name="media3_controls_seek_to_previous_description">წინა ერთეულზე გადახვევა</string>
+  <string name="media3_controls_seek_to_next_description">შემდეგ ერთეულზე გადახვევა</string>
+  <string name="media3_controls_seek_back_description">უკან გადახვევა</string>
+  <string name="media3_controls_seek_forward_description">წინ გადახვევა</string>
+  <string name="error_message_fallback">წარმოიქმნა შეფერხება. ცადეთ მოგვიანებით.</string>
+  <string name="error_message_info_cancelled">დასრულება ვერ მოხერხდა. ცადეთ ხელახლა.</string>
+  <string name="error_message_invalid_state">ამჟამად ამის გაკეთება შეუძლებელია</string>
+  <string name="error_message_authentication_expired">ამ აპით სარგებლობისთვის შედით სისტემაში</string>
+  <string name="error_message_content_already_playing">ეს კონტენტი უკვე იკვრება</string>
+  <string name="error_message_end_of_playlist">რიგში აღარაფერია</string>
+  <string name="error_message_concurrent_stream_limit">მოსმენა მიმდინარეობს მეტისმეტად ბევრ მოწყობილობაზე</string>
+  <string name="error_message_not_available_in_region">ამ კონტენტს აქ ვერ მიიღებთ</string>
+  <string name="error_message_not_supported">ეს აპი ამას ვერ გააკეთებს</string>
+  <string name="error_message_parental_control_restricted">ეს კონტენტი დაბლოკილია</string>
+  <string name="error_message_premium_account_required">საჭიროა პრემიუმ ტიპის წვდომა</string>
+  <string name="error_message_skip_limit_reached">მეტ ჩანაწერს ვერ გამოტოვებთ</string>
+  <string name="error_message_bad_value">შეტანილი მონაცემები არასწორია</string>
+  <string name="error_message_io">შეტანილი/გამოტანილი მონაცემების შეცდომა</string>
+  <string name="error_message_permission_denied">წვდომა უარყოფილია</string>
+  <string name="error_message_disconnected">მედია აპთან კავშირი გაწყვეტილია</string>
+  <string name="error_message_setup_required">საჭიროა დაყენება</string>
+</resources>

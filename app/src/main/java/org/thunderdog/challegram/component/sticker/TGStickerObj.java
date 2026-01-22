@@ -26,6 +26,7 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 
+import me.vkryl.core.ArrayUtils;
 import tgx.td.Td;
 
 public class TGStickerObj {
@@ -187,6 +188,11 @@ public class TGStickerObj {
     TGStickerObj b = (TGStickerObj) obj;
     return (b.sticker == null && sticker == null && b.flags == flags) ||
            (b.sticker != null && sticker != null && b.flags == flags && Td.equalsTo(b.sticker, sticker));
+  }
+
+  @Override
+  public int hashCode () {
+    return ArrayUtils.hash(sticker, flags);
   }
 
   public String getAllEmoji () {

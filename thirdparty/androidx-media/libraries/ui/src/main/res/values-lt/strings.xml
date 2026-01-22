@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="exo_controls_show">Rodyti leistuvės valdiklius</string>
+  <string name="exo_controls_hide">Slėpti leistuvės valdiklius</string>
+  <string name="exo_controls_seek_bar_description">Atkūrimo eiga</string>
+  <string name="exo_controls_settings_description">Nustatymai</string>
+  <string name="exo_controls_overflow_hide_description">Slėpti papildomus nustatymus</string>
+  <string name="exo_controls_overflow_show_description">Rodyti papildomus nustatymus</string>
+  <string name="exo_controls_fullscreen_enter_description">Įjungti viso ekrano režimą</string>
+  <string name="exo_controls_fullscreen_exit_description">Išjungti viso ekrano režimą</string>
+  <string name="exo_controls_previous_description">Ankstesnės</string>
+  <string name="exo_controls_next_description">Kitas</string>
+  <string name="exo_controls_pause_description">Pristabdyti</string>
+  <string name="exo_controls_play_description">Leisti</string>
+  <string name="exo_controls_stop_description">Sustabdyti</string>
+  <string name="exo_controls_rewind_description">Sukti atgal</string>
+  <plurals name="exo_controls_rewind_by_amount_description">
+    <item quantity="one">Atsukti atgal %d sekundę</item>
+    <item quantity="few">Atsukti atgal %d sekundes</item>
+    <item quantity="many">Atsukti atgal %d sekundės</item>
+    <item quantity="other">Atsukti atgal %d sekundžių</item>
+  </plurals>
+  <string name="exo_controls_fastforward_description">Sukti pirmyn</string>
+  <plurals name="exo_controls_fastforward_by_amount_description">
+    <item quantity="one">Prasukti pirmyn %d sekundę</item>
+    <item quantity="few">Prasukti pirmyn %d sekundes</item>
+    <item quantity="many">Prasukti pirmyn %d sekundės</item>
+    <item quantity="other">Prasukti pirmyn %d sekundžių</item>
+  </plurals>
+  <string name="exo_controls_repeat_off_description">Dabart. rež.: nekart. nieko. Perj. pakart. r.</string>
+  <string name="exo_controls_repeat_one_description">Dabart. rež.: kart. vieną. Perj. pakart. r.</string>
+  <string name="exo_controls_repeat_all_description">Dabart. rež.: kart. viską. Perj. pakart. r.</string>
+  <string name="exo_controls_shuffle_on_description">Išjungti maišymo režimą</string>
+  <string name="exo_controls_shuffle_off_description">Įgalinti maišymo režimą</string>
+  <string name="exo_controls_vr_description">VR režimas</string>
+  <string name="exo_controls_cc_enabled_description">Išjungti subtitrus</string>
+  <string name="exo_controls_cc_disabled_description">Įgalinti subtitrus</string>
+  <string name="exo_controls_playback_speed">Sparta</string>
+  <string-array name="exo_controls_playback_speeds">
+    <item>0,25 k.</item>
+    <item>0,5 k.</item>
+    <item>0,75 k.</item>
+    <item>Įprasta</item>
+    <item>1,25 k.</item>
+    <item>1,5 k.</item>
+    <item>2 k.</item>
+  </string-array>
+  <string name="exo_track_selection_title_audio">Garso įrašas</string>
+  <string name="exo_track_selection_none">Nėra</string>
+  <string name="exo_track_selection_auto">Automatinė</string>
+  <string name="exo_track_unknown">Nežinomas</string>
+  <string name="exo_track_unknown_name">Nežinoma (%1$s)</string>
+  <string name="exo_track_resolution">%1$d × %2$d</string>
+  <string name="exo_track_mono">Monofoninis</string>
+  <string name="exo_track_stereo">Stereofoninis</string>
+  <string name="exo_track_surround">Erdvinis garsas</string>
+  <string name="exo_track_surround_5_point_1">5.1 erdvinis garsas</string>
+  <string name="exo_track_surround_7_point_1">7.1 erdvinis garsas</string>
+  <string name="exo_track_role_alternate">Alternatyvus</string>
+  <string name="exo_track_role_supplementary">Papildomas</string>
+  <string name="exo_track_role_commentary">Komentaras</string>
+  <string name="exo_track_role_closed_captions">Subtitrai</string>
+  <string name="exo_track_bitrate">%1$.2f Mb/s</string>
+  <string name="exo_item_list">%1$s, %2$s</string>
+</resources>

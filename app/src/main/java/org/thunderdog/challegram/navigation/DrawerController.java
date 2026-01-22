@@ -29,6 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.activity.BackEventCompat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -93,7 +94,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import tgx.td.ChatId;
 
-public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener, GlobalTokenStateListener {
+public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener, GlobalTokenStateListener, SystemBackEventListener {
   private int currentWidth, shadowWidth;
 
   private boolean isVisible;
@@ -1061,10 +1062,17 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     }
   }
 
+  private void setIsAnimating (boolean isAnimating) {
+    if (this.isAnimating != isAnimating) {
+      this.isAnimating = isAnimating;
+      context.notifyBackPressAvailabilityChanged();
+    }
+  }
+
   public void open (float velocity) {
     if (isAnimating) return;
 
-    isAnimating = true;
+    setIsAnimating(true);
 
     ValueAnimator animator = AnimatorUtils.simpleValueAnimator();
     final float startFactor = getFactor();
@@ -1076,7 +1084,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       @Override
       public void onAnimationEnd (Animator animation) {
         setFactor(1f);
-        isAnimating = false;
+        setIsAnimating(false);
         setIsVisible(true);
       }
     });
@@ -1095,7 +1103,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
   public void close (float velocity, Runnable after) {
     if (isAnimating || ignoreClose) return;
-    isAnimating = true;
+    setIsAnimating(true);
 
     if (factor == 0f) {
       forceClose();
@@ -1110,7 +1118,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         public void onAnimationEnd (Animator animation) {
           hideView();
           setFactor(0f);
-          isAnimating = false;
+          setIsAnimating(false);
           if (after != null) {
             after.run();
           }
@@ -1142,18 +1150,21 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   private void setIsVisible (boolean isVisible) {
-    this.isVisible = isVisible;
+    if (this.isVisible != isVisible) {
+      this.isVisible = isVisible;
+      context.notifyBackPressAvailabilityChanged();
+    }
   }
 
   private void forceOpen () {
     setIsVisible(true);
-    isAnimating = false;
+    setIsAnimating(false);
     setFactor(1f);
   }
 
   private void forceClose () {
     setIsVisible(false);
-    isAnimating = false;
+    setIsAnimating(false);
     setFactor(0f);
     hideView();
   }
@@ -1177,6 +1188,36 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   private ContentFrameLayout currentView;
+
+  @Override
+  public boolean onSystemBackStarted (@NonNull BackEventCompat backEvent) {
+    return prepare();
+  }
+
+  @Override
+  public void onSystemBackProgressed (@NonNull BackEventCompat backEvent) {
+    if (!isAnimating) {
+      setFactor(1f - backEvent.getProgress());
+    }
+  }
+
+  @Override
+  public void onSystemBackCancelled () {
+    if (!isAnimating) {
+      setIsVisible(false);
+      open(0f);
+    }
+  }
+
+  @Override
+  public boolean onSystemBackPressed () {
+    if (!isAnimating) {
+      setIsVisible(true);
+      close(0f, null);
+      return true;
+    }
+    return false;
+  }
 
   // private int currentScreenWidth;
 

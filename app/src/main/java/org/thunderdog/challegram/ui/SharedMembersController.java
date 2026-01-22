@@ -155,7 +155,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
             chatMembersFilter = new TdApi.ChatMembersFilterContacts();
             break;
           case TdApi.SupergroupMembersFilterMention.CONSTRUCTOR:
-            chatMembersFilter = new TdApi.ChatMembersFilterMention(((TdApi.SupergroupMembersFilterMention) specificFilter).messageThreadId);
+            chatMembersFilter = new TdApi.ChatMembersFilterMention(((TdApi.SupergroupMembersFilterMention) specificFilter).topicId);
             break;
           case TdApi.SupergroupMembersFilterRecent.CONSTRUCTOR:
           case TdApi.SupergroupMembersFilterSearch.CONSTRUCTOR:

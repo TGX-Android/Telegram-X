@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Spilles nå</string>
+  <string name="media3_controls_play_description">Spill av</string>
+  <string name="media3_controls_pause_description">Sett på pause</string>
+  <string name="media3_controls_seek_to_previous_description">Hopp til det forrige elementet</string>
+  <string name="media3_controls_seek_to_next_description">Hopp til det neste elementet</string>
+  <string name="media3_controls_seek_back_description">Hopp bakover</string>
+  <string name="media3_controls_seek_forward_description">Hopp fremover</string>
+  <string name="error_message_fallback">Noe gikk galt. Prøv senere.</string>
+  <string name="error_message_info_cancelled">Kunne ikke fullføre. Prøv på nytt.</string>
+  <string name="error_message_invalid_state">Kan ikke gjøre det akkurat nå</string>
+  <string name="error_message_authentication_expired">Logg på for å bruke denne appen</string>
+  <string name="error_message_content_already_playing">Du spiller av innholdet allerede</string>
+  <string name="error_message_end_of_playlist">Ingenting annet er i køen</string>
+  <string name="error_message_concurrent_stream_limit">Du lytter på for mange enheter</string>
+  <string name="error_message_not_available_in_region">Det innholdet er ikke tilgjengelig her</string>
+  <string name="error_message_not_supported">Denne appen kan ikke gjøre det</string>
+  <string name="error_message_parental_control_restricted">Det innholdet er blokkert</string>
+  <string name="error_message_premium_account_required">Premiumtilgang kreves</string>
+  <string name="error_message_skip_limit_reached">Kan ikke hoppe over flere spor</string>
+  <string name="error_message_bad_value">Feil inndata</string>
+  <string name="error_message_io">Inndata/utdata-feil</string>
+  <string name="error_message_permission_denied">Ingen tilgang</string>
+  <string name="error_message_disconnected">Koblet fra medieappen</string>
+  <string name="error_message_setup_required">Konfigurering kreves</string>
+</resources>

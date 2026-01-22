@@ -28,7 +28,6 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.EmbeddedService;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
@@ -210,7 +209,11 @@ public class WebViewPreviewLayout extends PreviewLayout {
 
   @Override
   public void onPopupCompletelyShown (PopupLayout popup) {
-    preview.loadUrl(nativeEmbed.embedUrl);
+    if (nativeEmbed.hasAdditionalHttpHeaders()) {
+      preview.loadUrl(nativeEmbed.embedUrl, nativeEmbed.additionalHttpHeaders);
+    } else {
+      preview.loadUrl(nativeEmbed.embedUrl);
+    }
   }
 
   private void processFullscreen (boolean inFullscreen) {

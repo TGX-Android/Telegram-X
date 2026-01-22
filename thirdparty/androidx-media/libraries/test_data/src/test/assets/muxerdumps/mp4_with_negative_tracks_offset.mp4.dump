@@ -1,0 +1,44 @@
+seekMap:
+  isSeekable = true
+  duration = 600
+  getPosition(0) = [[timeUs=-100, position=400052], [timeUs=100, position=400108]]
+  getPosition(1) = [[timeUs=-100, position=400052], [timeUs=100, position=400108]]
+  getPosition(300) = [[timeUs=300, position=400164]]
+  getPosition(600) = [[timeUs=300, position=400164]]
+numberOfTracks = 1
+track 0:
+  total output bytes = 168
+  sample count = 3
+  track duration = 600
+  format 0:
+    averageBitrate = 2240000
+    id = 1
+    containerMimeType = video/mp4
+    sampleMimeType = video/avc
+    codecs = avc1.F4000A
+    maxInputSize = 86
+    maxNumReorderSamples = 2
+    width = 12
+    height = 10
+    frameRate = 5000.00
+    colorInfo:
+      colorRange = 1
+      lumaBitdepth = 8
+      chromaBitdepth = 8
+    metadata = entries=[Mp4Timestamp: creation time=100000000, modification time=500000000, timescale=10000]
+    initializationData:
+      data = length 28, hash 410B510
+      data = length 9, hash FBADD682
+  sample 0:
+    time = -100
+    flags = 1
+    data = length 56, hash C4551A2E
+  sample 1:
+    time = 100
+    flags = 1
+    data = length 56, hash C4551A2E
+  sample 2:
+    time = 300
+    flags = 536870913
+    data = length 56, hash C4551A2E
+tracksEnded = true

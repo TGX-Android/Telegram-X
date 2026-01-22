@@ -32,6 +32,7 @@ import androidx.annotation.UiThread;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
+import org.jetbrains.annotations.NotNull;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -51,7 +52,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.DeviceStorageError;
-import org.thunderdog.challegram.util.TokenRetriever;
 
 import java.io.File;
 import java.io.IOException;
@@ -86,6 +86,7 @@ import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.FilteredIterator;
+import tgx.bridge.TokenRetrieverListener;
 import tgx.td.JSON;
 import tgx.td.Td;
 
@@ -223,7 +224,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       } else {
         replyTo = null;
       }
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, replyTo, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
+      tdlib.sendMessage(extras.chatId, extras.topicId, replyTo, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
         if (sendingMessage == null) {
           UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
           if (onDone != null) {
@@ -1180,6 +1181,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public static final String MODE_RW = "rw";
   public static final String MODE_R = "r";
 
+  @SuppressWarnings("try")
   private synchronized void saveAccountConfig (int mode, int accountId) {
     long ms = SystemClock.uptimeMillis();
     File file = getAccountConfigFile();
@@ -1405,7 +1407,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         continue;
       long knownUserId = account.getKnownUserId();
       if (knownUserId == 0 || Arrays.binarySearch(excludeUserIds, knownUserId) < 0) {
-        Log.i(Log.TAG_FCM, "Unregistered accountId:%d userId:%d", account.id, knownUserId);
+        TDLib.Tag.notifications("Unregistered accountId:%d userId:%d", account.id, knownUserId);
         setDeviceRegistered(account.id, false);
         // TODO? account.tdlib().checkDeviceToken();
       }
@@ -1715,9 +1717,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       return;
     }
     setTokenState(TokenState.INITIALIZING);
-    TdlibNotificationUtils.getDeviceToken(retryCount, new TokenRetriever.RegisterCallback() {
+    TdlibNotificationUtils.getDeviceToken(UI.getAppContext(), retryCount, new TokenRetrieverListener() {
+
       @Override
-      public void onSuccess (@NonNull TdApi.DeviceToken token) {
+      public void onTokenRetrievalSuccess (TdApi.@NotNull DeviceToken token) {
         setDeviceToken(token);
         if (after != null) {
           after.runWithBool(true);
@@ -1725,8 +1728,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       }
 
       @Override
-      public void onError (@NonNull String errorKey, @Nullable Throwable e) {
-        Log.e(Log.TAG_FCM, "Failed to retrieve push token", e);
+      public void onTokenRetrievalError (@NotNull String errorKey, @org.jetbrains.annotations.Nullable Throwable e) {
+        TDLib.Tag.notifications("Failed to retrieve push token", e);
         setTokenState(TokenState.ERROR, errorKey, e);
         if (after != null) {
           after.runWithBool(false);

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">ယခု ဖွင့်နေသည်</string>
+  <string name="media3_controls_play_description">ဖွင့်ရန်</string>
+  <string name="media3_controls_pause_description">ခဏရပ်ရန်</string>
+  <string name="media3_controls_seek_to_previous_description">ယခင်တစ်ခုသို့ ရစ်ရန်</string>
+  <string name="media3_controls_seek_to_next_description">ရှေ့တစ်ခုသို့ ရစ်ရန်</string>
+  <string name="media3_controls_seek_back_description">နောက်သို့ ရစ်ရန်</string>
+  <string name="media3_controls_seek_forward_description">ရှေ့သို့ ရစ်ရန်</string>
+  <string name="error_message_fallback">တစ်ခုခုမှားနေသည်။ နောက်မှ စမ်းကြည့်ပါ။</string>
+  <string name="error_message_info_cancelled">အပြီးသတ်၍ မရလိုက်ပါ။ ထပ်စမ်းကြည့်ပါ။</string>
+  <string name="error_message_invalid_state">၎င်းကို ယခု ပြုလုပ်၍မရပါ</string>
+  <string name="error_message_authentication_expired">ဤအက်ပ်သုံးရန် လက်မှတ်ထိုးဝင်ပါ</string>
+  <string name="error_message_content_already_playing">၎င်းအကြောင်းအရာကို ဖွင့်ထားပြီးဖြစ်သည်</string>
+  <string name="error_message_end_of_playlist">အခြားစီထားသည်များ မရှိပါ</string>
+  <string name="error_message_concurrent_stream_limit">စက်အများအပြားတွင် နားထောင်နေသည်</string>
+  <string name="error_message_not_available_in_region">၎င်းအကြောင်းအရာကို ဤနေရာတွင် မရနိုင်ပါ</string>
+  <string name="error_message_not_supported">ဤအက်ပ်က ၎င်းကို မပြုလုပ်နိုင်ပါ</string>
+  <string name="error_message_parental_control_restricted">၎င်းအကြောင်းအရာကို ပိတ်ထားသည်</string>
+  <string name="error_message_premium_account_required">ပရီမီယံ အသုံးပြုခွင့် လိုအပ်သည်</string>
+  <string name="error_message_skip_limit_reached">နောက်ထပ်သီချင်းများ ကျော်၍မရပါ</string>
+  <string name="error_message_bad_value">ထည့်သွင်းမှုဒေတာ မမှန်ကန်ပါ</string>
+  <string name="error_message_io">ထည့်သွင်းမှု/ထုတ်လုပ်မှု အမှား</string>
+  <string name="error_message_permission_denied">အသုံးပြုခွင့် မရပါ</string>
+  <string name="error_message_disconnected">မီဒီယာအက်ပ်မှ ချိတ်ဆက်မှုဖြုတ်ထားသည်</string>
+  <string name="error_message_setup_required">စနစ်ထည့်သွင်းရန် လိုအပ်သည်</string>
+</resources>

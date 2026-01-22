@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">再生中</string>
+  <string name="media3_controls_play_description">再生</string>
+  <string name="media3_controls_pause_description">一時停止</string>
+  <string name="media3_controls_seek_to_previous_description">前のアイテムに移動</string>
+  <string name="media3_controls_seek_to_next_description">次のアイテムに移動</string>
+  <string name="media3_controls_seek_back_description">巻き戻し</string>
+  <string name="media3_controls_seek_forward_description">早送り</string>
+  <string name="error_message_fallback">エラーが発生しました。しばらくしてからお試しください。</string>
+  <string name="error_message_info_cancelled">完了できません。もう一度お試しください。</string>
+  <string name="error_message_invalid_state">現在、その操作は実行できません</string>
+  <string name="error_message_authentication_expired">このアプリを使用するにはログインしてください</string>
+  <string name="error_message_content_already_playing">再生中のコンテンツです</string>
+  <string name="error_message_end_of_playlist">キューが一杯で追加できません</string>
+  <string name="error_message_concurrent_stream_limit">再生しているデバイスが多すぎます</string>
+  <string name="error_message_not_available_in_region">この地域では利用できないコンテンツです</string>
+  <string name="error_message_not_supported">このアプリではサポートされていません</string>
+  <string name="error_message_parental_control_restricted">このコンテンツはブロックされています</string>
+  <string name="error_message_premium_account_required">プレミアム アカウントが必要です</string>
+  <string name="error_message_skip_limit_reached">これ以上トラックをスキップできません</string>
+  <string name="error_message_bad_value">入力データが間違っています</string>
+  <string name="error_message_io">入出力エラーです</string>
+  <string name="error_message_permission_denied">アクセスが拒否されました</string>
+  <string name="error_message_disconnected">メディアアプリから切断されました</string>
+  <string name="error_message_setup_required">セットアップが必要です</string>
+</resources>

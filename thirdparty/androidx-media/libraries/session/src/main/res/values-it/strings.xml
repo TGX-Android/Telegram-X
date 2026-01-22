@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">Ora in riproduzione</string>
+  <string name="media3_controls_play_description">Riproduci</string>
+  <string name="media3_controls_pause_description">Metti in pausa</string>
+  <string name="media3_controls_seek_to_previous_description">Vai all\'elemento precedente</string>
+  <string name="media3_controls_seek_to_next_description">Vai all\'elemento successivo</string>
+  <string name="media3_controls_seek_back_description">Vai indietro</string>
+  <string name="media3_controls_seek_forward_description">Vai avanti</string>
+  <string name="error_message_fallback">Si è verificato un problema. Prova più tardi.</string>
+  <string name="error_message_info_cancelled">Impossibile completare. Riprova.</string>
+  <string name="error_message_invalid_state">Al momento non è possibile svolgere l\'operazione</string>
+  <string name="error_message_authentication_expired">Accedi per usare questa app</string>
+  <string name="error_message_content_already_playing">Contenuti già in riproduzione</string>
+  <string name="error_message_end_of_playlist">Nient\'altro in coda</string>
+  <string name="error_message_concurrent_stream_limit">Ascolto attivo su troppi dispositivi</string>
+  <string name="error_message_not_available_in_region">Qui non è possibile scaricare questi contenuti</string>
+  <string name="error_message_not_supported">Questa app non supporta l\'azione richiesta</string>
+  <string name="error_message_parental_control_restricted">Contenuti bloccati</string>
+  <string name="error_message_premium_account_required">È necessario l\'accesso Premium</string>
+  <string name="error_message_skip_limit_reached">Impossibile saltare altre tracce</string>
+  <string name="error_message_bad_value">Dati ingresso non corretti</string>
+  <string name="error_message_io">Errore ingresso/uscita</string>
+  <string name="error_message_permission_denied">Accesso negato</string>
+  <string name="error_message_disconnected">Disconnessione da app multimediale</string>
+  <string name="error_message_setup_required">È richiesta la configurazione</string>
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="default_notification_channel_name">आता प्ले करत आहे</string>
+  <string name="media3_controls_play_description">प्ले करा</string>
+  <string name="media3_controls_pause_description">थांबवा</string>
+  <string name="media3_controls_seek_to_previous_description">मागील आयटम वर जा</string>
+  <string name="media3_controls_seek_to_next_description">पुढील आयटमवर जा</string>
+  <string name="media3_controls_seek_back_description">मागे जा</string>
+  <string name="media3_controls_seek_forward_description">पुढे जा</string>
+  <string name="error_message_fallback">काहीतरी चुकले. नंतर प्रयत्न करा.</string>
+  <string name="error_message_info_cancelled">पूर्ण करता आले नाही. पुन्हा प्रयत्न करा.</string>
+  <string name="error_message_invalid_state">ते आता करू शकत नाही</string>
+  <string name="error_message_authentication_expired">हे अ‍ॅप वापरण्यासाठी साइन इन करा</string>
+  <string name="error_message_content_already_playing">तो आशय आधीपासून प्ले करत आहे</string>
+  <string name="error_message_end_of_playlist">इतर काहीही क्यू केलेले नाही</string>
+  <string name="error_message_concurrent_stream_limit">खूप जास्‍त डिव्हाइसवर ऐकले जात आहे</string>
+  <string name="error_message_not_available_in_region">तो आशय येथे मिळवू शकत नाही</string>
+  <string name="error_message_not_supported">हे ॲप ते करू शकत नाही</string>
+  <string name="error_message_parental_control_restricted">तो आशय ब्लॉक केलेला आहे</string>
+  <string name="error_message_premium_account_required">प्रीमियम ॲक्सेस आवश्यक आहे</string>
+  <string name="error_message_skip_limit_reached">आणखी गाणी वगळू शकत नाही</string>
+  <string name="error_message_bad_value">इनपुट डेटा चुकीचा आहे</string>
+  <string name="error_message_io">इनपुट/आउटपुट एरर</string>
+  <string name="error_message_permission_denied">अ‍ॅक्सेस नाकारला</string>
+  <string name="error_message_disconnected">मीडिया अ‍ॅपवरून डिस्कनेक्ट केले आहे</string>
+  <string name="error_message_setup_required">सेटअप आवश्यक आहे</string>
+</resources>

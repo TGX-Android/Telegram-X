@@ -101,8 +101,9 @@ public class TdlibNotificationGroup implements Iterable<TdlibNotification> {
     return chatId;
   }
 
-  public long getMessageThreadId () {
-    return 0;
+  @Nullable
+  public TdApi.MessageTopic getMessageTopicId () {
+    return null;
   }
 
   public boolean isSelfChat () {
