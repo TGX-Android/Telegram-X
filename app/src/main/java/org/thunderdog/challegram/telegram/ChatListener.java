@@ -50,6 +50,7 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatActiveStoriesChanged (@NonNull TdApi.ChatActiveStories activeStories) { }
   default void onChatVideoChatChanged (long chatId, TdApi.VideoChat videoChat) { }
   default void onChatViewAsTopics (long chatId, boolean viewAsTopics) { }
+  default void onForumUnreadTopicCountChanged (long chatId, int unreadTopicCount) { }
   default void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) { }
   default void onChatReplyMarkupChanged (long chatId, long replyMarkupMessageId) { }
   default void onChatDraftMessageChanged (long chatId, @Nullable TdApi.DraftMessage draftMessage) { }

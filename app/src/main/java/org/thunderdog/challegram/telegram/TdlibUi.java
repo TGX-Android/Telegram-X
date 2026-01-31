@@ -101,6 +101,8 @@ import org.thunderdog.challegram.ui.EditNameController;
 import org.thunderdog.challegram.ui.EditProxyController;
 import org.thunderdog.challegram.ui.EditRightsController;
 import org.thunderdog.challegram.ui.EditUsernameController;
+import org.thunderdog.challegram.ui.ForumTopicTabsController;
+import org.thunderdog.challegram.ui.ForumTopicsController;
 import org.thunderdog.challegram.ui.InstantViewController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MainController;
@@ -1817,6 +1819,11 @@ public class TdlibUi extends Handler {
       return this;
     }
 
+    public ChatOpenParameters messageTopic (TdApi.MessageTopic topicId) {
+      this.messageTopicId = topicId;
+      return this;
+    }
+
     public ChatOpenParameters passcodeUnlocked () {
       this.options |= CHAT_OPTION_PASSCODE_UNLOCKED;
       return this;
@@ -1887,6 +1894,10 @@ public class TdlibUi extends Handler {
     public ChatOpenParameters foundMessage (String query, TdApi.Message message) {
       this.foundMessage = new MessageId(message.chatId, message.id);
       this.searchQuery = query;
+      // If message is in a forum topic, set the topic ID
+      if (message.topicId != null && message.topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+        this.messageTopicId = message.topicId;
+      }
       return highlightMessage(foundMessage);
     }
 
@@ -2111,6 +2122,50 @@ public class TdlibUi extends Handler {
       openChatProfile(context, chat, messageThread, urlOpenParameters);
       params.onDone();
       return;
+    }
+
+    // Check if this is a forum chat that should be viewed as topics
+    if (tdlib.isForum(chat.id) && messageThread == null && messageTopicId == null) {
+      // Check if forum has tabs layout enabled
+      long supergroupId = ChatId.toSupergroupId(chat.id);
+      TdApi.Supergroup supergroup = supergroupId != 0 ? tdlib.cache().supergroup(supergroupId) : null;
+      boolean hasForumTabs = supergroup != null && supergroup.hasForumTabs;
+
+      // Show topics view if viewAsTopics is true (default for forums)
+      // Forums with tabs should always open in tabs view by default
+      // Users can use "View as chat" option to switch to unified view (sets viewAsTopics to false)
+      if (chat.viewAsTopics || hasForumTabs) {
+        ViewController<?> forumController;
+        // Check user's saved preference for forum view (tabs vs topics list)
+        int viewPreference = tdlib.settings().getForumViewPreference(chat.id);
+        boolean preferTabs = hasForumTabs && viewPreference != TdlibSettingsManager.FORUM_VIEW_TOPICS;
+        boolean preferTopics = !hasForumTabs || viewPreference == TdlibSettingsManager.FORUM_VIEW_TOPICS;
+
+        if (preferTabs) {
+          ForumTopicTabsController tabsController = new ForumTopicTabsController(context.context(), context.tdlib());
+          tabsController.setArguments(new ForumTopicTabsController.Arguments(chat));
+          forumController = tabsController;
+        } else {
+          ForumTopicsController listController = new ForumTopicsController(context.context(), context.tdlib());
+          listController.setArguments(new ForumTopicsController.Arguments(chat));
+          forumController = listController;
+        }
+
+        NavigationController nav = context.context().navigation();
+        if (nav.isEmpty()) {
+          nav.initController(forumController);
+          MainController c = new MainController(context.context(), context.tdlib());
+          c.getValue();
+          nav.getStack().insert(c, 0);
+        } else {
+          nav.navigateTo(forumController);
+        }
+        if (params != null) {
+          params.onDone();
+        }
+        return;
+      }
+      // If not hasForumTabs and not viewAsTopics, fall through to open as unified chat
     }
 
     if ((options & CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT) != 0) {
@@ -2493,8 +2548,15 @@ public class TdlibUi extends Handler {
             openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
           }
         });
+      } else if (messageLink.topicId != null && messageLink.topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+        // Handle forum topic links - open the message within the specific topic
+        openChat(context, messageLink.chatId, new ChatOpenParameters()
+          .keepStack()
+          .highlightMessage(messageId)
+          .ensureHighlightAvailable()
+          .messageTopic(messageLink.topicId)
+          .urlOpenParameters(openParameters));
       } else {
-        // TODO: properly handle messageLink.topicId
         openMessage(context, messageLink.chatId, messageId, openParameters);
       }
     } else {

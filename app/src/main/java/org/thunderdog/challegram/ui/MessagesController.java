@@ -2227,6 +2227,35 @@ public class MessagesController extends ViewController<MessagesController.Argume
       openLinkedChat(false);
     } else if (id == R.id.btn_openDirectMessages) {
       openLinkedChat(true);
+    } else if (id == R.id.btn_viewAsTopics) {
+      // Set viewAsTopics to true and open forum topics view
+      tdlib.client().send(new TdApi.ToggleChatViewAsTopics(chat.id, true), result -> {
+        if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+          tdlib.ui().post(() -> {
+            // Navigate directly to forum controller (don't use openChat - chat object not updated yet)
+            long supergroupId = ChatId.toSupergroupId(chat.id);
+            TdApi.Supergroup supergroup = supergroupId != 0 ? tdlib.cache().supergroup(supergroupId) : null;
+            boolean hasForumTabs = supergroup != null && supergroup.hasForumTabs;
+
+            ViewController<?> forumController;
+            if (hasForumTabs) {
+              ForumTopicTabsController tabsController = new ForumTopicTabsController(context, tdlib);
+              tabsController.setArguments(new ForumTopicTabsController.Arguments(chat));
+              forumController = tabsController;
+            } else {
+              ForumTopicsController listController = new ForumTopicsController(context, tdlib);
+              listController.setArguments(new ForumTopicsController.Arguments(chat));
+              forumController = listController;
+            }
+
+            // Navigate and destroy current controller
+            forumController.addOneShotFocusListener(() -> {
+              forumController.destroyStackItemAt(forumController.stackSize() - 2);
+            });
+            navigateTo(forumController);
+          });
+        }
+      });
     } else if (id == R.id.btn_manageGroup) {
       manageGroup();
     } else if (id == R.id.btn_deleteThread) {
@@ -2414,6 +2443,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     public final @Nullable ThreadInfo messageThread;
     public final @Nullable TdApi.MessageTopic messageTopicId;
+    public @Nullable TdApi.ForumTopic forumTopic;
 
     public Referrer referrer;
     public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
@@ -2531,6 +2561,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return this;
     }
 
+    public Arguments setForumTopic (TdApi.ForumTopic forumTopic) {
+      this.forumTopic = forumTopic;
+      return this;
+    }
+
     public Arguments setScheduled (boolean areScheduled) {
       if (areScheduled && messageThread != null) {
         throw new IllegalArgumentException();
@@ -2586,6 +2621,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private TdApi.SearchMessagesFilter previewSearchFilter;
   private ThreadInfo messageThread;
   private TdApi.MessageTopic messageTopicId;
+  private TdApi.ForumTopic forumTopic;
   private boolean areScheduled;
   private Referrer referrer;
   private TdApi.InternalLinkTypeVideoChat voiceChatInvitation;
@@ -2618,6 +2654,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.customCaptionPlaceholder = null;
     this.messageThread = args.messageThread;
     this.messageTopicId = args.messageTopicId;
+    this.forumTopic = args.forumTopic;
     this.openedFromChatList = args.chatList;
     this.linkedChatId = 0;
     this.areScheduled = args.areScheduled;
@@ -2781,8 +2818,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
       updateForcedSubtitle(); // must be called before calling headerCell.setChat
       headerCell.setCallback(areScheduled ? null : this);
     }
+
+    // Load forum topic if we have a messageTopicId but no forumTopic
+    // This happens when opening a message via link in a forum
+    if (forumTopic == null && messageTopicId != null &&
+        messageTopicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+      long forumTopicId = ((TdApi.MessageTopicForum) messageTopicId).messageThreadId;
+      tdlib.client().send(new TdApi.GetForumTopic(chat.id, (int) forumTopicId), result -> {
+        if (result.getConstructor() == TdApi.ForumTopic.CONSTRUCTOR) {
+          runOnUiThreadOptional(() -> {
+            forumTopic = (TdApi.ForumTopic) result;
+            // Update header with loaded topic
+            TdApi.Chat hChat = messageThread != null ? tdlib.chatSync(messageThread.getContextChatId()) : null;
+            headerCell.setChat(tdlib, hChat != null ? hChat : chat, messageThread, forumTopic);
+            // Update unread counts
+            updateCounters(true);
+          });
+        }
+      });
+    }
+
     TdApi.Chat headerChat = messageThread != null ? tdlib.chatSync(messageThread.getContextChatId()) : null;
-    headerCell.setChat(tdlib, headerChat != null ? headerChat : chat, messageThread);
+    headerCell.setChat(tdlib, headerChat != null ? headerChat : chat, messageThread, forumTopic);
 
     if (inPreviewMode) {
       switch (previewMode) {
@@ -2960,6 +3017,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         setUnreadCountBadge(unreadCount, animated);
         setMentionCountBadge(0);
         setReactionCountBadge(0);
+      } else if (forumTopic != null) {
+        // Use forum topic's unread count instead of chat's total unread count
+        setUnreadCountBadge(forumTopic.unreadCount, animated);
+        setMentionCountBadge(forumTopic.unreadMentionCount);
+        setReactionCountBadge(forumTopic.unreadReactionCount);
       } else {
         setUnreadCountBadge(chat.unreadCount, true);
         setMentionCountBadge(chat.unreadMentionCount);
@@ -3136,6 +3198,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void updateBottomBar (boolean isUpdate) {
     setInputBlockFlag(FLAG_INPUT_TEXT_DISABLED, !tdlib.canSendBasicMessage(chat));
+    setInputBlockFlag(FLAG_INPUT_TOPIC_CLOSED, isTopicClosedForUser());
     if (sendButton != null) {
       sendButton.getSlowModeCounterController(tdlib).updateSlowModeTimer(isUpdate);
     }
@@ -4511,6 +4574,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (tdlib.hasDirectMessagesChat(getChatId())) {
       ids.append(R.id.btn_openDirectMessages);
       strings.append(R.string.DirectMessages);
+    }
+
+    // Add "View as topics" option for forum chats viewed as unified chat
+    if (tdlib.isForum(chat.id) && messageThread == null && forumTopic == null && !chat.viewAsTopics) {
+      ids.append(R.id.btn_viewAsTopics);
+      strings.append(R.string.ViewAsTopics);
     }
 
     if (BuildConfig.DEBUG) {
@@ -7198,8 +7267,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final int FLAG_INPUT_OFFSCREEN = 1 << 1;
   private static final int FLAG_INPUT_RECORDING = 1 << 2;
   private static final int FLAG_INPUT_TEXT_DISABLED = 1 << 3;
+  private static final int FLAG_INPUT_TOPIC_CLOSED = 1 << 4;
 
   private int inputBlockFlags;
+
+  /**
+   * Check if the current user can manage forum topics.
+   */
+  private boolean canManageTopics () {
+    if (chat == null) return false;
+    TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
+    if (status == null) return false;
+    switch (status.getConstructor()) {
+      case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+        return true;
+      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canManageTopics;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Check if the topic is closed and the user cannot send messages to it.
+   */
+  private boolean isTopicClosedForUser () {
+    if (forumTopic == null || forumTopic.info == null) return false;
+    if (!forumTopic.info.isClosed) return false;
+    // Admins with canManageTopics permission can still send to closed topics
+    return !canManageTopics();
+  }
 
   private boolean setInputBlockFlags (int flags) {
     if (this.inputBlockFlags != flags) {
@@ -7216,10 +7313,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void setInputBlockFlag (int flag, boolean active) {
     if (setInputBlockFlags(BitwiseUtils.setFlag(inputBlockFlags, flag, active))) {
-      if ((flag == FLAG_INPUT_OFFSCREEN || flag == FLAG_INPUT_TEXT_DISABLED) && inputView != null) {
+      if ((flag == FLAG_INPUT_OFFSCREEN || flag == FLAG_INPUT_TEXT_DISABLED || flag == FLAG_INPUT_TOPIC_CLOSED) && inputView != null) {
         inputView.setEnabled(
           !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_OFFSCREEN) &&
-          !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_TEXT_DISABLED)
+          !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_TEXT_DISABLED) &&
+          !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_TOPIC_CLOSED)
         );
       }
     }
@@ -10854,6 +10952,47 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
+  public void onForumTopicUpdated (long chatId, long messageThreadId, boolean isPinned, long lastReadInboxMessageId, long lastReadOutboxMessageId, int unreadMentionCount, int unreadReactionCount, TdApi.ChatNotificationSettings notificationSettings, TdApi.DraftMessage draftMessage) {
+    tdlib.ui().post(() -> {
+      if (forumTopic == null || getChatId() != chatId || forumTopic.info.forumTopicId != messageThreadId) {
+        return;
+      }
+      // Update the forumTopic fields from the update
+      long oldLastReadInboxMessageId = forumTopic.lastReadInboxMessageId;
+      forumTopic.isPinned = isPinned;
+      forumTopic.lastReadInboxMessageId = lastReadInboxMessageId;
+      forumTopic.lastReadOutboxMessageId = lastReadOutboxMessageId;
+      forumTopic.unreadMentionCount = unreadMentionCount;
+      forumTopic.unreadReactionCount = unreadReactionCount;
+      if (notificationSettings != null) {
+        forumTopic.notificationSettings = notificationSettings;
+      }
+      // Update draft message (topic-scoped)
+      forumTopic.draftMessage = draftMessage;
+      // Also update the messageThread if present so TGMessage.isUnread() works correctly
+      if (messageThread != null) {
+        messageThread.updateReadInbox(lastReadInboxMessageId);
+        messageThread.updateReadOutbox(lastReadOutboxMessageId);
+        // Update message views to show read receipts (double ticks)
+        manager.updateChatReadOutbox(lastReadOutboxMessageId);
+      }
+      // Calculate new unread count
+      if (lastReadInboxMessageId > oldLastReadInboxMessageId) {
+        // Messages were read
+        if (forumTopic.lastMessage != null && lastReadInboxMessageId >= forumTopic.lastMessage.id) {
+          // All messages read
+          forumTopic.unreadCount = 0;
+        } else if (forumTopic.unreadCount > 0) {
+          // Estimate: decrease unread count (may not be exact)
+          // A more accurate approach would be to count visible messages between old and new read position
+          forumTopic.unreadCount = Math.max(0, forumTopic.unreadCount - 1);
+        }
+      }
+      updateCounters(true);
+    });
+  }
+
+  @Override
   public void onUnreadSingleReactionUpdate (long chatId, @Nullable TdApi.UnreadReaction unreadReaction) {
     UI.execute(() -> {
       if (getChatId() == chatId) {
@@ -11026,6 +11165,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().post(() -> {
       if (ChatId.toSupergroupId(getChatId()) == supergroup.id) {
         updateBottomBar(true);
+        // Check if forum mode was enabled externally (by another admin)
+        // Only redirect if we're viewing unified chat (not a specific topic)
+        if (supergroup.isForum && forumTopic == null && messageThread == null && chat != null) {
+          // Forum mode was enabled - navigate to topics view
+          navigateBack();
+          tdlib.ui().post(() -> {
+            if (!isDestroyed()) {
+              tdlib.ui().openChat(this, chat.id, new TdlibUi.ChatOpenParameters().keepStack());
+            }
+          });
+        }
       }
     });
   }
@@ -11298,7 +11448,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (isFocused() && !inPreviewMode()) {
       manager.rebuildLayouts();
       if (headerCell != null) {
-        headerCell.setChat(tdlib, chat, messageThread);
+        headerCell.setChat(tdlib, chat, messageThread, forumTopic);
         if (messageThread != null) {
           updateMessageThreadSubtitle();
         }
