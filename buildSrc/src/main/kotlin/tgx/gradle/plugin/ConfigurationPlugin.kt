@@ -130,6 +130,7 @@ open class ConfigurationPlugin : Plugin<Project> {
       isHuaweiBuild,
       forceOptimize,
       doNotObfuscate,
+      useNTgCalls,
       compileSdkVersion,
       targetSdkVersion,
       buildToolsVersion,

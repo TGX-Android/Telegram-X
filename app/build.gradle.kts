@@ -368,7 +368,7 @@ android {
         externalNativeBuild.ndkBuild.abiFilters(*variant.filters)
         externalNativeBuild.cmake.abiFilters(*variant.filters)
 
-        externalNativeBuild.cmake.arguments.add("-DENABLE_TG_CALLS=" + (if (config.useNTgCalls) "no" else "yes"))
+        externalNativeBuild.cmake.arguments.add("-DENABLE_TGVOIP=" + (if (config.useNTgCalls) "no" else "yes"))
       }
     }
   }
@@ -654,8 +654,8 @@ dependencies {
   implementation(libs.mp4parser.isoparser)
 
   // NTgCalls: https://github.com/pytgcalls/ntgcalls/
-  if (useNTgCalls) {
-    implementation(libs.pytgcalls.ntgcallls)
+  if (config.useNTgCalls) {
+    implementation(libs.pytgcalls.ntgcalls)
   }
 }
 

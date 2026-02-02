@@ -1078,7 +1078,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
         if (callSettings.isCameraSharing()) {
           ids.add(R.id.btn_speaker);
           switch (callSettings.getSpeakerMode()) {
-            case CallSettings.SPEAKER_MODE_NONE:
+            case CallSettings.SPEAKER_MODE_EARPIECE:
               titles.add(Lang.getString(R.string.VoipAudioRoutingEarpiece));
               icons.add(R.drawable.baseline_phone_in_talk_24);
               break;

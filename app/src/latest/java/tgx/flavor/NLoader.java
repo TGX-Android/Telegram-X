@@ -21,7 +21,9 @@ public class NLoader {
     System.loadLibrary("sslx");
     System.loadLibrary("tdjni");
     System.loadLibrary("leveldbjni");
-    System.loadLibrary("tgcallsjni");
+    if (!BuildConfig.USE_NTGCALLS) {
+      System.loadLibrary("tgcallsjni");
+    }
     System.loadLibrary("tgxjni");
     N.setupLibraries();
     loaded = true;

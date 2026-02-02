@@ -1,13 +1,13 @@
 package org.pytgcalls.ntgcallsx;
-
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Point;
-import android.os.Build;
 import android.view.Display;
 import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
-
+import androidx.core.content.ContextCompat;
 import org.drinkless.tdlib.TdApi;
 import io.github.pytgcalls.NetworkInfo;
 import io.github.pytgcalls.FrameCallback;
@@ -53,18 +53,25 @@ public class NTgCallsInterface implements CallInterface {
     ntgcalls.setSignalingDataCallback((callId, data) -> listener.onSignallingDataEmitted(data));
     ntgcalls.setConnectionChangeCallback((chatId, callNetworkState) -> {
       if (callNetworkState.state == NetworkInfo.State.CONNECTED) {
-         listener.onConnectionStateChanged(null, CallState.ESTABLISHED);
+        listener.onConnectionStateChanged(null, CallState.ESTABLISHED);
       } else if (callNetworkState.state != NetworkInfo.State.CONNECTING) {
-         listener.onConnectionStateChanged(null, CallState.FAILED);
+        listener.onConnectionStateChanged(null, CallState.FAILED);
       }
     });
     micDescription = new AudioDescription(
       MediaSource.DEVICE,
       NTgCalls.getMediaDevices().microphone.get(0).metadata,
+      true,
       48000,
       2
     );
     ntgcalls.createP2PCall(CALL_ID);
+    if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+      throw new SecurityException("No microphone permission");
+    }
+    if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+      throw new SecurityException("No microphone permission");
+    }
     ntgcalls.setStreamSources(
       CALL_ID,
       StreamMode.CAPTURE,
@@ -82,6 +89,7 @@ public class NTgCallsInterface implements CallInterface {
         new AudioDescription(
           MediaSource.DEVICE,
           NTgCalls.getMediaDevices().speaker.get(0).metadata,
+          true,
           48000,
           2
         ),
@@ -89,6 +97,7 @@ public class NTgCallsInterface implements CallInterface {
         new VideoDescription(
           MediaSource.EXTERNAL,
           "",
+          true,
           AUTO_DETECT,
           AUTO_DETECT,
           30
@@ -99,8 +108,7 @@ public class NTgCallsInterface implements CallInterface {
     ntgcalls.skipExchange(CALL_ID, state.encryptionKey, call.isOutgoing);
     var rtcServers = Arrays.stream(state.servers)
       .map(server -> {
-        if (server.type instanceof TdApi.CallServerTypeWebrtc) {
-          var webrtc = (TdApi.CallServerTypeWebrtc) server.type;
+        if (server.type instanceof TdApi.CallServerTypeWebrtc webrtc) {
           return new RTCServer(
             server.id,
             server.ipAddress,
@@ -191,6 +199,12 @@ public class NTgCallsInterface implements CallInterface {
   @Override
   public void setCameraEnabled (boolean enabled, boolean front) {
     try {
+      if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        throw new SecurityException("No microphone permission");
+      }
+      if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        throw new SecurityException("No microphone permission");
+      }
       if (enabled) {
         String cameraId = NTgCalls.getMediaDevices().camera.get(front ? 1 : 0).metadata;
         ntgcalls.setStreamSources(
@@ -202,6 +216,7 @@ public class NTgCallsInterface implements CallInterface {
             new VideoDescription(
               MediaSource.DEVICE,
               cameraId,
+              true,
               CAPTURE_WIDTH,
               CAPTURE_HEIGHT,
               30
@@ -221,9 +236,7 @@ public class NTgCallsInterface implements CallInterface {
           )
         );
       }
-    } catch (FileNotFoundException e) {
-      Log.e(Log.TAG_VOIP, "Error setting camera", e);
-    } catch (ConnectionNotFoundException e) {
+    } catch (FileNotFoundException | ConnectionNotFoundException e) {
       Log.e(Log.TAG_VOIP, "Error setting camera", e);
     }
   }
@@ -232,6 +245,12 @@ public class NTgCallsInterface implements CallInterface {
   public void setScreenShareEnabled (boolean enabled) {
     var size = getScreenCaptureSize();
     try {
+      if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        throw new SecurityException("No microphone permission");
+      }
+      if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        throw new SecurityException("No microphone permission");
+      }
       if (enabled) {
         ntgcalls.setStreamSources(
           CALL_ID,
@@ -243,6 +262,7 @@ public class NTgCallsInterface implements CallInterface {
             new VideoDescription(
               MediaSource.DESKTOP,
               NTgCalls.getMediaDevices().screen.get(0).metadata,
+              true,
               size.x,
               size.y,
               30
@@ -261,9 +281,7 @@ public class NTgCallsInterface implements CallInterface {
           )
         );
       }
-    } catch (FileNotFoundException e) {
-      Log.e(Log.TAG_VOIP, "Error setting screen share", e);
-    } catch (ConnectionNotFoundException e) {
+    } catch (FileNotFoundException | ConnectionNotFoundException e) {
       Log.e(Log.TAG_VOIP, "Error setting screen share", e);
     }
   }
@@ -326,10 +344,7 @@ public class NTgCallsInterface implements CallInterface {
     WindowManager wm = (WindowManager) UI.getAppContext().getSystemService(Context.WINDOW_SERVICE);
     Display display = wm.getDefaultDisplay();
     Point size = new Point();
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-      display.getRealSize(size);
-    }
-
+    display.getRealSize(size);
     float aspect;
     if (size.x > size.y) {
       aspect = size.y / (float) size.x;
