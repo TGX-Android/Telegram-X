@@ -1,10 +1,10 @@
 # libtgvoip
 
-set(TGVOIP_DIR "${THIRDPARTY_DIR}/libtgvoip")
+set(TGVOIP_DIR "${TGCALLS_DEPS_DIR}/libtgvoip")
 
 set(NEED_WEBRTC no)
 
-# TODO move to "${THIRDPARTY_DIR}/libtgvoip/CMakeLists.txt"
+# TODO move to "${TGCALLS_DEPS_DIR}/libtgvoip/CMakeLists.txt"
 add_library(tgvoip STATIC
   "${TGVOIP_DIR}/logging.cpp"
   "${TGVOIP_DIR}/VoIPController.cpp"

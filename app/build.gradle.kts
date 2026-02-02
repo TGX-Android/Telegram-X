@@ -234,20 +234,8 @@ android {
     versionName = "${config.majorVersion}.${minorVersion}"
   }
 
-  // TODO: needs performance tests. Must be used once custom icon sets will be available
-  // defaultConfig.vectorDrawables.useSupportLibrary = true
-
   sourceSets.getByName("main") {
-    java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
-    if (!config.useNTgCalls) {
-      java.srcDirs(
-        "./jni/third_party/webrtc/rtc_base/java/src",
-        "./jni/third_party/webrtc/modules/audio_device/android/java/src",
-        "./jni/third_party/webrtc/sdk/android/api",
-        "./jni/third_party/webrtc/sdk/android/src/java",
-        "../thirdparty/WebRTC/src/java"
-      )
-    }
+    java.srcDirs("./src/google/java") // TODO: Exclude in FOSS variant
   }
 
   lint {
@@ -487,6 +475,7 @@ dependencies {
   implementation(project(":extension:${config.extension}"))
   // TDLib: https://github.com/tdlib/td/blob/master/CHANGELOG.md
   implementation(project(":tdlib"))
+  implementation(project(":tgcalls"))
   implementation(project(":vkryl:core"))
   implementation(project(":vkryl:leveldb"))
   implementation(project(":vkryl:android"))

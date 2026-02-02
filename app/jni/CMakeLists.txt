@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 project(tgx VERSION 1.0.0 LANGUAGES C CXX)
-message("${CMAKE_PROJECT_NAME} platform: ${ANDROID_PLATFORM} flavor: ${TGX_FLAVOR}")
+message(STATUS "Building ${PROJECT_NAME} platform: ${ANDROID_PLATFORM} abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
+
+if (NOT ${TGX_FLAVOR} MATCHES "legacy|lollipop|latest")
+  message(FATAL_ERROR "Unknown flavor: ${TGX_FLAVOR}")
+endif()
 
 # == Include ==
 
@@ -10,9 +14,8 @@ include("${CMAKE_HOME_DIRECTORY}/cmake/Join.cmake")
 
 # == Dirs ==
 
-set(THIRDPARTY_DIR "${CMAKE_HOME_DIRECTORY}/third_party")
-set(STUB_DIR "${CMAKE_HOME_DIRECTORY}/stub")
-set(TGX_ROOT_DIR "${CMAKE_HOME_DIRECTORY}/../..")
+set(THIRDPARTY_DIR "${PROJECT_SOURCE_DIR}/third_party")
+set(TGX_ROOT_DIR "${PROJECT_SOURCE_DIR}/../..")
 set(TDLIB_DIR "${TGX_ROOT_DIR}/tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
@@ -23,10 +26,6 @@ set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 #  set(USE_WEBP no)
 #endif()
 set(USE_WEBP yes)
-
-if (NOT ${TGX_FLAVOR} MATCHES "legacy|lollipop|latest")
-  message(FATAL_ERROR "Unknown flavor: ${TGX_FLAVOR}")
-endif()
 
 if (${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
   set(FFMPEG_ABI ${ANDROID_ABI})
@@ -62,10 +61,6 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a"
 else()
   set(IS_ARM_FAMILY no)
 endif()
-
-message(STATUS "Building native library... \
-  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} \
-  IS_ARM_FAMILY: ${IS_ARM_FAMILY}")
 
 # == CMake global settings ==
 
@@ -133,13 +128,13 @@ set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
 target_link_libraries(tdjni INTERFACE ssl crypto)
 
 # opus
-include("${CMAKE_HOME_DIRECTORY}/BuildOpus.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildOpus.cmake")
 
 # ogg
-include("${CMAKE_HOME_DIRECTORY}/BuildOgg.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildOgg.cmake")
 
 # flac
-include("${CMAKE_HOME_DIRECTORY}/BuildFlac.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildFlac.cmake")
 
 # jni-utils
 add_subdirectory(
@@ -147,7 +142,7 @@ add_subdirectory(
 )
 
 # yuv
-include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildYuv.cmake")
 
 # vpx
 add_library(vpx STATIC IMPORTED)
@@ -155,38 +150,17 @@ set_target_properties(vpx PROPERTIES IMPORTED_LOCATION "${VPX_LIB_PATH}")
 target_include_directories(vpx INTERFACE "${VPX_DIR}/include")
 
 # opusfile
-include("${CMAKE_HOME_DIRECTORY}/BuildOpusfile.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildOpusfile.cmake")
 
 # rlottie
-include("${CMAKE_HOME_DIRECTORY}/BuildRlottie.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildRlottie.cmake")
 
 # lz4
-include("${CMAKE_HOME_DIRECTORY}/BuildLz4.cmake")
-
-if (${ENABLE_TG_CALLS})
-  # usrsctp
-  include("${CMAKE_HOME_DIRECTORY}/BuildUsrSCTP.cmake")
-  # srtp
-  include("${CMAKE_HOME_DIRECTORY}/BuildLibSRTP.cmake")
-  # openh264
-  include("${CMAKE_HOME_DIRECTORY}/BuildOpenH264.cmake")
-  # absl
-  include("${CMAKE_HOME_DIRECTORY}/BuildAbsl.cmake")
-  # json11
-  include("${CMAKE_HOME_DIRECTORY}/BuildJson11.cmake")
-  # rnnoise
-  include("${CMAKE_HOME_DIRECTORY}/BuildRNNoise.cmake")
-  # webrtc
-  include("${CMAKE_HOME_DIRECTORY}/BuildWebRTC.cmake")
-  # libtgvoip
-  include("${CMAKE_HOME_DIRECTORY}/BuildTelegramVoIP.cmake")
-  # tgcalls
-  include("${CMAKE_HOME_DIRECTORY}/BuildTgCalls.cmake")
-endif()
+include("${PROJECT_SOURCE_DIR}/BuildLz4.cmake")
 
 # webp
 if (${USE_WEBP})
-  include("${CMAKE_HOME_DIRECTORY}/BuildWebp.cmake")
+  include("${PROJECT_SOURCE_DIR}/BuildWebp.cmake")
 endif()
 
 # ffmpeg
@@ -198,6 +172,13 @@ foreach(FFMPEG_LIB IN LISTS FFMPEG_LIBS)
     "${FFMPEG_SRC_DIR}"
   )
 endforeach()
+
+# tgcalls
+if (${ENABLE_TGVOIP})
+  add_subdirectory(
+    "${PROJECT_SOURCE_DIR}/tgvoip"
+  )
+endif()
 
 # == Target ==
 

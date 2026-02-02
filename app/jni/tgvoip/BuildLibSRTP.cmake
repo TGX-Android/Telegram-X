@@ -1,6 +1,6 @@
 # srtp
 
-set(SRTP_DIR "${THIRDPARTY_DIR}/libsrtp")
+set(SRTP_DIR "${TGCALLS_DEPS_DIR}/libsrtp")
 
 # libsrtp version matches the one used in Chromium:
 # https://chromium.googlesource.com/chromium/deps/libsrtp/+/5b7c744/LIBSRTP_VERSION

@@ -69,6 +69,7 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
   <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
   <uses-permission android:name="android.permission.CHANGE_CONFIGURATION"
     tools:ignore="ProtectedPermissions" />
@@ -172,8 +173,12 @@
       android:name=".service.ForegroundService"
       android:enabled="true"
       android:exported="false"
-      android:foregroundServiceType="shortService"
-      android:stopWithTask="false" />
+      android:foregroundServiceType="specialUse"
+      android:stopWithTask="false">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Telegram X is a messaging app. Users expect to receive instant new message notifications, and the app to be auto-started. A foreground service is required for push messages that require one-time end-to-end encryption key exchange (such as when users receive the first message from a new Secret Chat), for which there is no Firebase Cloud Messaging integration. Other foreground service types do not fit this use case, or can't be used on Android 15 because there are time limits or auto-starting on boot is not allowed. Using the Android work manager isn't an option either." />
+    </service>
 
     <service
       android:name=".service.BootListenerService"
@@ -246,13 +251,6 @@
       android:name=".receiver.TGRemoveAllReceiver"
       android:exported="false" />
 
-    <activity
-      android:name=".voip.gui.VoIPPermissionActivity"
-      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-      android:excludeFromRecents="true"
-      android:taskAffinity="${applicationId}.voip"
-      android:theme="@style/TransparentTheme"
-      android:exported="false" />
     <activity
       android:name=".voip.gui.VoIPFeedbackActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"

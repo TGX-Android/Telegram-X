@@ -8,7 +8,7 @@
 	url = https://chromium.googlesource.com/libyuv/libyuv
 	shallow = true
 [submodule "libtgvoip"]
-	path = app/jni/third_party/libtgvoip
+	path = app/jni/tgvoip/third_party/libtgvoip
 	url = https://github.com/TGX-Android/libtgvoip
 	shallow = true
 	branch = tgx
@@ -82,52 +82,52 @@
 	shallow = true
 	branch = main
 [submodule "usrsctp"]
-	path = app/jni/third_party/usrsctp
+	path = app/jni/tgvoip/third_party/usrsctp
 	url = https://github.com/sctplab/usrsctp
 	shallow = true
 [submodule "libsrtp"]
-	path = app/jni/third_party/libsrtp
+	path = app/jni/tgvoip/third_party/libsrtp
 	url = https://github.com/cisco/libsrtp
 	shallow = true
 [submodule "openh264"]
-	path = app/jni/third_party/openh264
+	path = app/jni/tgvoip/third_party/openh264
 	url = https://github.com/cisco/openh264
 	shallow = true
 	branch = v2.4.1
 [submodule "abseil"]
-	path = app/jni/third_party/abseil-cpp
+	path = app/jni/tgvoip/third_party/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
 	shallow = true
 [submodule "webrtc"]
-	path = app/jni/third_party/webrtc
+	path = app/jni/tgvoip/third_party/webrtc
 	url = https://github.com/TGX-Android/webrtc
 	shallow = true
 	branch = main
 [submodule "tgcalls"]
-	path = app/jni/third_party/tgcalls
+	path = app/jni/tgvoip/third_party/tgcalls
 	url = https://github.com/TGX-Android/tgcalls
 	shallow = true
 	branch = main
 [submodule "libevent"]
-	path = app/jni/third_party/libevent
+	path = app/jni/tgvoip/third_party/libevent
 	url = https://github.com/TGX-Android/libevent
 	shallow = true
 	branch = main
 [submodule "crc32c"]
-	path = app/jni/third_party/crc32c
+	path = app/jni/tgvoip/third_party/crc32c
 	url = https://github.com/google/crc32c
 	shallow = true
 	branch = main
 [submodule "rnnoise"]
-	path = app/jni/third_party/rnnoise
+	path = app/jni/tgvoip/third_party/rnnoise
 	url = https://github.com/xiph/rnnoise
 	shallow = true
 	branch = master
 [submodule "rtc_base"]
-	path = app/jni/third_party/webrtc_deps/base
+	path = app/jni/tgvoip/third_party/webrtc_deps/base
 	url = https://chromium.googlesource.com/chromium/src/base
 [submodule "rtc_third_party"]
-	path = app/jni/third_party/webrtc_deps/third_party
+	path = app/jni/tgvoip/third_party/webrtc_deps/third_party
 	url = https://chromium.googlesource.com/chromium/src/third_party
 [submodule "thirdparty/androidx-media/latest"]
 	path = thirdparty/androidx-media/latest

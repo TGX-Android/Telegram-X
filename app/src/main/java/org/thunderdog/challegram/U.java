@@ -506,17 +506,10 @@ public class U {
         throw new IllegalArgumentException("id == " + notificationId);
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      int knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE;
       switch (notificationId) {
-        case TdlibNotificationManager.ID_MUSIC:
-          knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
-          break;
-        case TdlibNotificationManager.ID_LOCATION:
-          knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION;
-          break;
         case TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION:
-        case TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION:
-          knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
+        case TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION: {
+          int knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (UI.getAppContext().checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
               knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
@@ -529,19 +522,16 @@ public class U {
             knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
           }
           knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
-          break;
+          service.startForeground(notificationId, notification, knownType);
+          return;
+        }
+        case TdlibNotificationManager.ID_MUSIC:
+        case TdlibNotificationManager.ID_LOCATION:
         case TdlibNotificationManager.ID_PENDING_TASK:
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE;
-          } else {
-            // FOREGROUND_SERVICE_TYPE_SHORT_SERVICE was added in Android 14.
-            knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST;
-          }
+          // android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST;
           break;
-      }
-      if (knownType != android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE) {
-        service.startForeground(notificationId, notification, knownType);
-        return;
+        default:
+          throw new UnsupportedOperationException(Integer.toString(notificationId));
       }
     }
     service.startForeground(notificationId, notification);

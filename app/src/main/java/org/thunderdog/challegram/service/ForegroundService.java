@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.service;
 
-import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
@@ -25,6 +24,7 @@ import android.os.IBinder;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
@@ -39,9 +39,12 @@ import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.tool.Intents;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableBool;
 
 public class ForegroundService extends Service {
   private static final String EXTRA_TITLE      = "extra_title";
@@ -50,6 +53,7 @@ public class ForegroundService extends Service {
   private static final String EXTRA_ICON_RES   = "extra_icon_res";
   private static final String EXTRA_PUSH_ID    = "extra_push_id";
   private static final String EXTRA_ACCOUNT_ID = "extra_account_id";
+  private static final String EXTRA_CALLBACK_ID = "extra_callback_id";
 
   private static final String ACTION_START = "start";
   private static final String ACTION_STOP  = "stop";
@@ -63,22 +67,26 @@ public class ForegroundService extends Service {
   @Override
   public int onStartCommand (Intent intent, int flags, int startId) {
     synchronized (ForegroundService.class) {
+      String callbackId = intent != null ? intent.getStringExtra(EXTRA_CALLBACK_ID) : null;
       String action = intent != null ? intent.getAction() : null;
       TDLib.Tag.notifications("ForegroundService: handling %s, startId=%d", action, startId);
+      boolean success;
       if (ACTION_START.equals(action)) {
-        handleStart(intent);
+        success = handleStart(intent);
       } else if (ACTION_STOP.equals(action)) {
-        handleStop(intent);
+        success = handleStop(intent);
       } else {
         throw new IllegalStateException("Action needs to be START or STOP.");
       }
-
+      if (!StringUtils.isEmpty(callbackId)) {
+        invokeCallback(callbackId, success);
+      }
       return START_NOT_STICKY;
     }
   }
 
   @Override
-  @TargetApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+  @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
   public void onTimeout (int startId) {
     TDLib.Tag.notifications("onTimeout(%d) received for service", startId);
   }
@@ -100,7 +108,7 @@ public class ForegroundService extends Service {
     }
   }
 
-  private void handleStart (@NonNull Intent intent) {
+  private boolean handleStart (@NonNull Intent intent) {
     CharSequence title = intent.getCharSequenceExtra(EXTRA_TITLE);
     if (StringUtils.isEmpty(title)) {
       title = intent.getStringExtra(EXTRA_TITLE);
@@ -123,10 +131,30 @@ public class ForegroundService extends Service {
       activeIconRes   = iconRes;
     }
 
-    postObligatoryForegroundNotification(activeTitle, activeText, activeChannelId, activeIconRes);
+    try {
+      postObligatoryForegroundNotification(activeTitle, activeText, activeChannelId, activeIconRes);
+      return true;
+    } catch (Throwable t) {
+      TDLib.Tag.notifications(pushId, accountId, "failed handleStart() Title: %s  ChannelId: %s  Text: %s Error:\n%s", title, channelId, text, Log.toString(t));
+      tasks.remove(info);
+      if (tasks.isEmpty()) {
+        TDLib.Tag.notifications(pushId, accountId, "Ending foreground service because of failure.");
+        finishService();
+      }
+      return false;
+    }
   }
 
-  private void handleStop (@NonNull Intent intent) {
+  private void finishService () {
+    stopForeground(true);
+    stopSelf();
+
+    activeTitle = null;
+    activeText = null;
+    activeChannelId = null;
+    activeIconRes = 0;
+  }
+  private boolean handleStop (@NonNull Intent intent) {
     long pushId      = intent.getLongExtra(EXTRA_PUSH_ID, 0);
     int accountId    = intent.getIntExtra(EXTRA_ACCOUNT_ID, TdlibAccount.NO_ID);
     TDLib.Tag.notifications(pushId, accountId, "handleStop()");
@@ -162,18 +190,21 @@ public class ForegroundService extends Service {
 
     if (StringUtils.isEmpty(channelId))
       throw new IllegalStateException();
-    postObligatoryForegroundNotification(title, text, channelId, iconRes);
+
+    boolean success = false;
+    try {
+      postObligatoryForegroundNotification(title, text, channelId, iconRes);
+      success = true;
+    } catch (Throwable t) {
+      TDLib.Tag.notifications(pushId, accountId, "Failed to update foreground notification:\n%s", Log.toString(t));
+    }
 
     if (tasks.isEmpty()) {
       TDLib.Tag.notifications(pushId, accountId, "Last request. Ending foreground service.");
-      stopForeground(true);
-      stopSelf();
-
-      activeTitle = null;
-      activeText = null;
-      activeChannelId = null;
-      activeIconRes = 0;
+      finishService();
     }
+
+    return success;
   }
 
   private void postObligatoryForegroundNotification (CharSequence title, CharSequence text, String channelId, @DrawableRes int iconRes) {
@@ -200,7 +231,7 @@ public class ForegroundService extends Service {
     return null;
   }
 
-  public static boolean startForegroundTask (@NonNull Context context, @NonNull CharSequence task, @Nullable CharSequence text, @NonNull String channelId, @DrawableRes int iconRes, long pushId, int accountId) {
+  public static boolean startForegroundTask (@NonNull Context context, @NonNull CharSequence task, @Nullable CharSequence text, @NonNull String channelId, @DrawableRes int iconRes, long pushId, int accountId, RunnableBool after) {
     if (StringUtils.isEmpty(channelId))
       throw new IllegalArgumentException(channelId);
     Intent intent = new Intent(context, ForegroundService.class);
@@ -213,6 +244,11 @@ public class ForegroundService extends Service {
       intent.putExtra(EXTRA_ICON_RES, iconRes);
     intent.putExtra(EXTRA_PUSH_ID, pushId);
     intent.putExtra(EXTRA_ACCOUNT_ID, accountId);
+    if (after != null) {
+      String callbackId = keyOf(accountId, pushId);
+      addCallback(callbackId, after);
+      intent.putExtra(EXTRA_CALLBACK_ID, callbackId);
+    }
     return startForegroundService(context, intent, pushId, accountId);
   }
 
@@ -239,6 +275,29 @@ public class ForegroundService extends Service {
       }
       TDLib.Tag.notifications(pushId, accountId, "startForegroundService(%s) failed due to error (SDK %d):\n%s", intent.getAction(), Build.VERSION.SDK_INT, Log.toString(t));
       return false;
+    }
+  }
+
+  private static final Map<String, RunnableBool> callbacks = new LinkedHashMap<>();
+  private static void addCallback (String key, RunnableBool callback) {
+    synchronized (callbacks) {
+      if (callbacks.putIfAbsent(key, callback) != null) {
+        throw new IllegalStateException("Callback already present: " + key);
+      }
+    }
+  }
+
+  private static String keyOf (int accountId, long pushId) {
+    return accountId + "_" + pushId;
+  }
+
+  private static void invokeCallback (String key, boolean value) {
+    RunnableBool runnable;
+    synchronized (callbacks) {
+      runnable = callbacks.remove(key);
+    }
+    if (runnable != null) {
+      runnable.runWithBool(value);
     }
   }
 }

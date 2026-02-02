@@ -1,6 +1,6 @@
 # absl
 
-set(ABSL_DIR "${THIRDPARTY_DIR}/abseil-cpp")
+set(ABSL_DIR "${TGCALLS_DEPS_DIR}/abseil-cpp")
 
 # Source files list:
 # https://github.com/TelegramMessenger/Telegram-iOS/blob/930d1fcc46e39830e6d590986a6a838c3ff49e27/third-party/webrtc/BUILD
