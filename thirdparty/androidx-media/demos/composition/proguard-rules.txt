@@ -1,1 +1,0 @@
-# Proguard rules specific to the composition demo app.
