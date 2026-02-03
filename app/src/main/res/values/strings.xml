@@ -5650,6 +5650,9 @@
   <string name="PlaybackSpeedHintSwipe">Hold and swipe horizontally for precise adjustment</string>
   <string name="PlaybackSpeedHintTemplate">%1$s.\n%2$s.</string>
 
+  <string name="JoinRequestChannelAdminNotice">**%1$s** is an admin of **%2$s**, a channel you requested to join</string>
+  <string name="JoinRequestGroupAdminNotice">**%1$s** is an admin of **%2$s**, a group you requested to join</string>
+
   <string name="DeactivatedBot">deactivated bot</string>
 
   <string name="ReportAd">Report Ad</string>
