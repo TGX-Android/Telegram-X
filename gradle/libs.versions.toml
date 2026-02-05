@@ -102,7 +102,7 @@ transcoder = "ba8f098c94"
 sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
-pytgcalls-ntgcalls = "2.0.9"
+pytgcalls-ntgcalls = "2.1.0"
 
 [libraries]
 desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugaring" }
