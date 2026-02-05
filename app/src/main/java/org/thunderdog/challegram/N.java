@@ -26,6 +26,7 @@ import androidx.media3.decoder.flac.FlacLibrary;
 import androidx.media3.decoder.opus.OpusLibrary;
 import androidx.media3.decoder.vp9.VpxLibrary;
 
+import io.github.pytgcalls.NTgCalls;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.voip.VoIPController;
 import org.webrtc.SoftwareVideoEncoderFactory;
@@ -139,7 +140,15 @@ public final class N {
   public native static void onFatalError (String msg, int cause);
   public native static void throwDirect (String msg);
 
-  public static native String[] getTgCallsVersions ();
+  private static native String[] getTgCallsVersions ();
+
+  public static String[] getTgCallsLibVersions () {
+    if (BuildConfig.USE_NTGCALLS) {
+      return NTgCalls.getProtocol().libraryVersions.toArray(new String[0]);
+    } else {
+      return getTgCallsVersions();
+    }
+  }
   public static native String toHexString (byte[] array);
 
   public static boolean init () {

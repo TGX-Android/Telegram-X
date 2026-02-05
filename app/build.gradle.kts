@@ -93,6 +93,8 @@ android {
 
     buildConfigString("THEME_FILE_EXTENSION", App.THEME_EXTENSION)
 
+    buildConfigField("boolean", "USE_NTGCALLS", config.useNTgCalls.toString())
+
     // Library versions in BuildConfig.java
 
     var openSslVersion = ""
@@ -365,6 +367,8 @@ android {
         ndk.abiFilters.addAll(variant.filters)
         externalNativeBuild.ndkBuild.abiFilters(*variant.filters)
         externalNativeBuild.cmake.abiFilters(*variant.filters)
+
+        externalNativeBuild.cmake.arguments.add("-DENABLE_TGVOIP=" + (if (config.useNTgCalls) "no" else "yes"))
       }
     }
   }
@@ -578,6 +582,7 @@ dependencies {
     exclude(group = "com.google.firebase", module = "firebase-analytics")
     exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
   }
+  // implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
   // Play Integrity: https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/release-notes
   flavorImplementation(
     libs.google.play.integrity.legacy,
@@ -647,6 +652,11 @@ dependencies {
 
   // mp4parser: https://github.com/sannies/mp4parser/releases
   implementation(libs.mp4parser.isoparser)
+
+  // NTgCalls: https://github.com/pytgcalls/ntgcalls/
+  if (config.useNTgCalls) {
+    implementation(libs.pytgcalls.ntgcalls)
+  }
 }
 
 if (!config.isExperimentalBuild) {
