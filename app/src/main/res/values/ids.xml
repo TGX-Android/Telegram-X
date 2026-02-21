@@ -365,6 +365,7 @@
   <item type="id" name="btn_messageLive8Hours" />
   <item type="id" name="btn_mosaic" />
   <item type="id" name="btn_speaker" />
+  <item type="id" name="btn_other_options" />
   <item type="id" name="btn_emoji" />
   <item type="id" name="btn_icon" />
   <item type="id" name="btn_section" />
@@ -379,6 +380,7 @@
   <item type="id" name="btn_logout" />
   <item type="id" name="btn_deleteAccount" />
   <item type="id" name="btn_camera" />
+  <item type="id" name="btn_flip_camera" />
   <item type="id" name="btn_viewScheduled" />
   <item type="id" name="btn_takePhoto" />
   <item type="id" name="btn_takeVideo" />

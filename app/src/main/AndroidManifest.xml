@@ -67,6 +67,8 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
   <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
   <uses-permission android:name="android.permission.CHANGE_CONFIGURATION"
@@ -261,7 +263,7 @@
     <service
       android:name=".service.TGCallService"
       android:exported="false"
-      android:foregroundServiceType="phoneCall|microphone|mediaPlayback" />
+      android:foregroundServiceType="phoneCall|camera|microphone|mediaProjection|mediaPlayback" />
     <receiver android:name=".receiver.VoIPMediaButtonReceiver"
       android:exported="false">
       <intent-filter>

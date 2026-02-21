@@ -287,10 +287,10 @@ debugCall id:long debug:string = Ok;
 
   public boolean checkRecordPermissions (final Context context, final Tdlib tdlib, final @Nullable TdApi.Call call, final long userId, final @Nullable ViewController<?> makeCallContext) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (UI.getAppContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+      if (UI.getAppContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED || UI.getAppContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = UI.getUiContext();
         if (activity != null) {
-          activity.requestMicPermissionForCall((code, permissions, grantResults, grantCount) -> {
+          activity.requestPermissionForCall((code, permissions, grantResults, grantCount) -> {
             if (grantCount == permissions.length) {
               if (makeCallContext != null) {
                 makeCall(makeCallContext, userId, null, false);
