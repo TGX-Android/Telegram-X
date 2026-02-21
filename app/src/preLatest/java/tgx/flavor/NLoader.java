@@ -86,7 +86,9 @@ public class NLoader {
       loadLibraryImpl(reLinker, "sslx", BuildConfig.OPENSSL_VERSION_FULL);
       loadLibraryImpl(reLinker, "tdjni", BuildConfig.TDLIB_VERSION);
       loadLibraryImpl(reLinker, "leveldbjni", BuildConfig.LEVELDB_VERSION);
-      loadLibraryImpl(reLinker, "tgcallsjni", BuildConfig.JNI_VERSION /*TODO: separate variable?*/);
+      if (!BuildConfig.USE_NTGCALLS) {
+        loadLibraryImpl(reLinker, "tgcallsjni", BuildConfig.JNI_VERSION /*TODO: separate variable?*/);
+      }
       loadLibraryImpl(reLinker, "tgxjni", BuildConfig.JNI_VERSION);
       N.setupLibraries();
     } catch (Throwable t) {
