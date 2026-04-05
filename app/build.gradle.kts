@@ -1,13 +1,14 @@
 @file:Suppress("UnstableApiUsage")
 
-import com.android.build.gradle.internal.api.ApkVariantOutputImpl
+import com.android.build.api.artifact.SingleArtifact
+import com.android.build.api.variant.BuildConfigField
+import com.android.build.api.variant.impl.VariantOutputImpl
 import tgx.gradle.*
 import tgx.gradle.task.*
 import java.util.*
 
 plugins {
   id(libs.plugins.android.application.get().pluginId)
-  alias(libs.plugins.kotlin.android)
   id("tgx-config")
   id("tgx-module")
 }
@@ -233,7 +234,9 @@ android {
   }
 
   sourceSets.getByName("main") {
-    java.srcDirs("./src/google/java") // TODO: Exclude in FOSS variant
+    // TODO: Exclude in FOSS variant
+    kotlin.directories += "src/google/java"
+    java.directories += "src/google/java"
   }
 
   lint {
@@ -259,11 +262,10 @@ android {
       (variantBuilder.buildType != "debug" || sdkVariant.flavor == "legacy" || (abiVariant.flavor == "x86" || abiVariant.flavor == "x64" || abiVariant.flavor == "universal"))
   }
   productFlavors {
-    Sdk.VARIANTS.forEach { (sdk, variant) ->
+    Sdk.VARIANTS.forEach { (sdkIndex, variant) ->
       create(variant.flavor) {
         dimension = "SDK"
-        versionCode = (sdk + 1)
-        isDefault = sdk == Sdk.LATEST
+        isDefault = sdkIndex == Sdk.LATEST
 
         val actualMinSdk = if (config.isHuaweiBuild) {
           maxOf(variant.minSdk, Config.MIN_SDK_VERSION_HUAWEI)
@@ -302,20 +304,20 @@ android {
 
         sourceSets.getByName(variant.flavor) {
           Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
-            java.srcDirs("../thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/src/main/java")
+            java.directories += "../thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/src/main/java"
           }
           if (variant.flavor != "legacy") {
-            kotlin.srcDirs("./src/postLegacy/kotlin")
-            java.srcDirs("./src/postLegacy/java")
+            kotlin.directories += "src/postLegacy/kotlin"
+            java.directories += "src/postLegacy/java"
           }
           if (variant.flavor != "latest") {
-            kotlin.srcDirs("./src/preLatest/kotlin")
-            java.srcDirs("./src/preLatest/java")
+            kotlin.directories += "src/preLatest/kotlin"
+            java.directories += "src/preLatest/java"
           }
         }
 
-        Sdk.VARIANTS.forEach { (subSdk, subVariant) ->
-          buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", sdk == subSdk)
+        Sdk.VARIANTS.forEach { (subSdkIndex, subVariant) ->
+          buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", sdkIndex == subSdkIndex)
         }
 
         var extraProguardFileCount = 0
@@ -347,17 +349,16 @@ android {
       }
     }
 
-    Abi.VARIANTS.forEach { (abi, variant) ->
+    Abi.VARIANTS.forEach { (abiIndex, variant) ->
       create(variant.flavor) {
         dimension = "ABI"
-        versionCode = (abi + 1)
-        isDefault = abi == 0
+        isDefault = abiIndex == 0
         ndkVersion = if (variant.is64Bit) {
           config.primaryNdkVersion
         } else {
           config.legacyNdkVersion
         }
-        ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
+        // ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
         buildConfigString("NDK_VERSION", ndkVersion)
         buildConfigBool("WEBP_ENABLED", true) // variant.minSdk < 19
         if (ndk.abiFilters.isNotEmpty())
@@ -369,64 +370,90 @@ android {
     }
   }
 
-  applicationVariants.configureEach {
-    val abiFlavor = productFlavors.first { it.dimension == "ABI" }
-    val abi = (abiFlavor.versionCode ?: fatal("null")) - 1
-    val abiVariant = Abi.VARIANTS[abi] ?: fatal("null")
-    val versionCode = defaultConfig.versionCode ?: fatal("null")
+  androidComponents {
+    onVariants { variant ->
+      val abiFlavor = variant.productFlavors.first { it.first == "ABI" }.second
+      val sdkFlavor = variant.productFlavors.first { it.first == "SDK" }.second
 
-    val sdkFlavor = productFlavors.first { it.dimension == "SDK" }
-    val sdk = (sdkFlavor.versionCode ?: fatal("null")) - 1
-    val sdkVariant = Sdk.VARIANTS[sdk] ?: fatal("null")
+      val (abi, abiVariant) = Abi.VARIANTS.entries.first { it.value.flavor == abiFlavor }
+      val (sdk, sdkVariant) = Sdk.VARIANTS.entries.first { it.value.flavor == sdkFlavor }
 
-    val recaptchaVersion = when (sdkVariant.flavor) {
-      "legacy" -> libs.google.recaptcha.legacy
-      "lollipop" -> libs.google.recaptcha.lollipop
-      "latest" -> libs.google.recaptcha.latest
-      else -> error(sdkVariant.flavor)
-    }.get().version!!
-
-    val versionCodeOverride = versionCode * 1000 + if (!buildType.isDebuggable) (sdk * 100 + abi) else 0
-    val versionNameOverride = StringBuilder("${versionName}.${defaultConfig.versionCode}").apply {
-      if (extra.has("app_version_suffix")) {
-        append(extra["app_version_suffix"])
+      val flavorVersionCode = if (variant.debuggable) 0 else {
+        sdk * 100 + abi
       }
-      if (config.extension != "none") {
-        append("-${config.extension}")
-      }
-      if (!sdkVariant.displayName.isNullOrEmpty()) {
-        append("-${sdkVariant.displayName}")
-      }
-      if (abiVariant.displayName != "universal" || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
-        append("-${abiVariant.displayName}")
-      }
-      if (extra.has("app_name_suffix")) {
-        append("-${extra["app_name_suffix"]}")
-      }
-      if (buildType.isDebuggable) {
-        append("-debug")
-      }
-    }.toString()
+      val flavorVersionNameSuffix = StringBuilder().apply {
+        if (extra.has("app_version_suffix")) {
+          append(extra["app_version_suffix"])
+        }
+        if (config.extension != "none") {
+          append("-${config.extension}")
+        }
+        if (!sdkVariant.displayName.isNullOrEmpty()) {
+          append("-${sdkVariant.displayName}")
+        }
+        if (abiVariant.displayName != "universal" || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
+          append("-${abiVariant.displayName}")
+        }
+        if (extra.has("app_name_suffix")) {
+          append("-${extra["app_name_suffix"]}")
+        }
+        if (variant.debuggable) {
+          append("-debug")
+        }
+      }.toString()
 
-    val fileName = "${config.outputFileNamePrefix}-${versionNameOverride.replace(Regex("-universal(?=-|$)"), "")}"
+      var baseVersionCode: Int? = null
+      var baseVersionName: String? = null
+      var fileName: String? = null
 
-    buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
-    buildConfigField("int", "ABI", abi.toString())
-    buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${versionName}.${defaultConfig.versionCode}\"")
-    buildConfigField("String", "RECAPTCHA_VERSION", "\"${recaptchaVersion}\"")
+      variant.outputs.forEach { output ->
+        baseVersionCode = output.versionCode.get()
+        val modifiedVersionCode = baseVersionCode * 1000 + flavorVersionCode
+        output.versionCode.set(modifiedVersionCode)
 
-    outputs.map { it as ApkVariantOutputImpl }.forEach { output ->
-      output.versionCodeOverride = versionCodeOverride
-      output.versionNameOverride = versionNameOverride
-      output.outputFileName = "${fileName}.apk"
-    }
+        baseVersionName = output.versionName.get()
+        val modifiedVersionName = "$baseVersionName.$baseVersionCode$flavorVersionNameSuffix"
+        output.versionName.set(modifiedVersionName)
 
-    if (buildType.isMinifyEnabled) {
-      assembleProvider!!.configure {
-        doLast {
-          mappingFileProvider.get().files.forEach { mappingFile ->
-            mappingFile.renameTo(File(mappingFile.parentFile, "${fileName}.txt"))
-          }
+        fileName = "${config.outputFileNamePrefix}-${modifiedVersionName.replace(Regex("-universal(?=-|$)"), "")}"
+        if (output is VariantOutputImpl) {
+          output.outputFileName.set("$fileName.apk")
+        }
+      }
+      require(baseVersionCode != null && baseVersionName != null && fileName != null)
+
+      val recaptchaVersion = when (sdkVariant.flavor) {
+        "legacy" -> libs.google.recaptcha.legacy
+        "lollipop" -> libs.google.recaptcha.lollipop
+        "latest" -> libs.google.recaptcha.latest
+        else -> error(sdkVariant.flavor)
+      }.get().version!!
+
+      variant.buildConfigFields!!.apply {
+        put("ABI", BuildConfigField(
+          "int", abi, null
+        ))
+        put("RECAPTCHA_VERSION", BuildConfigField(
+          "String", "\"$recaptchaVersion\"", null
+        ))
+        put("ORIGINAL_VERSION_CODE", BuildConfigField(
+          "int", baseVersionCode, null
+        ))
+        put("ORIGINAL_VERSION_NAME", BuildConfigField(
+          "String", "\"$baseVersionName.$baseVersionCode\"", null
+        ))
+      }
+
+      if (variant.isMinifyEnabled) {
+        val copyTask = project.tasks.register<Copy>("copy${variant.name.replaceFirstChar { it.uppercase() }}MappingFile") {
+          from(variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE))
+          into(project.layout.buildDirectory.dir("outputs/mapping/${variant.name}"))
+          rename("mapping.txt", "$fileName.txt")
+        }
+        tasks.named {
+          it.startsWith("assemble") && it.endsWith("Release")
+        }.configureEach {
+          finalizedBy(copyTask)
         }
       }
     }
@@ -468,6 +495,7 @@ gradle.projectsEvaluated {
 }
 
 dependencies {
+  legacyImplementation(libs.androidx.multidex)
   implementation(project(":extension:${config.extension}"))
   // TDLib: https://github.com/tdlib/td/blob/master/CHANGELOG.md
   implementation(project(":tdlib"))
@@ -500,6 +528,7 @@ dependencies {
   )
   flavorImplementation(
     libs.androidx.browser.legacy,
+    libs.androidx.browser.lollipop,
     libs.androidx.browser.latest
   )
   flavorImplementation(
@@ -549,6 +578,7 @@ dependencies {
   )
   flavorImplementation(
     libs.google.play.services.maps.legacy,
+    libs.google.play.services.maps.lollipop,
     libs.google.play.services.maps.latest
   )
   flavorImplementation(
@@ -620,7 +650,7 @@ dependencies {
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation(libs.google.play.app.update)
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly(libs.checkerframework)
+  compileOnly(libs.annotations.checkerframework)
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
   flavorImplementation(
     libs.okhttp.legacy,
@@ -647,6 +677,13 @@ dependencies {
 
   // mp4parser: https://github.com/sannies/mp4parser/releases
   implementation(libs.mp4parser.isoparser)
+
+  // Compiler warnings
+  compileOnly(libs.annotations.errorprone)
+  compileOnly(libs.annotations.j2objc)
+  compileOnly(libs.androidx.room.latest)
+  compileOnly(libs.annotations.jsr305)
+  compileOnly(libs.annotations.kotlin)
 }
 
 if (!config.isExperimentalBuild) {

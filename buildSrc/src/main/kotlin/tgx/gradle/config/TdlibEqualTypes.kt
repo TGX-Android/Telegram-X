@@ -20,7 +20,11 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   TdlibType("ReplyMarkup"),
 
   TdlibType("GroupCall"),
+  TdlibType("MessageGroupCall"),
   TdlibType("GroupCallRecentSpeaker"),
+  TdlibType("GroupCallParticipantVideoInfo"),
+  TdlibType("GroupCallParticipant"),
+  TdlibType("GroupCallVideoSourceGroup"),
 
   TdlibType("Call"),
   TdlibType("CallState"),

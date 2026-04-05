@@ -7,5 +7,7 @@ import com.google.android.recaptcha.RecaptchaTasksClient
 
 typealias Barcode = com.google.mlkit.vision.barcode.common.Barcode
 
+typealias TgxApplication = Application
+
 fun getRecaptchaTasksClient(application: Application, siteKey: String): Task<RecaptchaTasksClient> =
   Recaptcha.fetchTaskClient(application, siteKey)

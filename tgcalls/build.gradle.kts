@@ -1,6 +1,5 @@
 plugins {
   id(libs.plugins.android.library.get().pluginId)
-  alias(libs.plugins.kotlin.android)
   id("tgx-module")
 }
 
@@ -11,6 +10,10 @@ dependencies {
 android {
   lint {
     disable += "RawTypes"
+  }
+
+  defaultConfig {
+    consumerProguardFiles("consumer-rules.pro")
   }
 
   project.afterEvaluate {

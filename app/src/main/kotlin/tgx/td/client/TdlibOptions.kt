@@ -54,7 +54,7 @@ data class TdlibOptions(
   @JvmField var isPremium: Boolean = false,
   @JvmField var isPremiumAvailable: Boolean = false,
 
-  @JvmField @GiftPremiumFrom var giftPremiumFrom: Int = 0,
+  @JvmField @field:GiftPremiumFrom var giftPremiumFrom: Int = 0,
   @JvmField var premiumUploadSpeedup: Int = 10,
   @JvmField var premiumDownloadSpeedup: Int = 10,
   @JvmField var premiumGiftBoostCount: Int = 3,
