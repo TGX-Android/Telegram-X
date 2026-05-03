@@ -465,7 +465,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
           if (gifsAdapter.getItemCount() == 0) {
             showStickers();
           }
-          tdlib.client().send(new TdApi.RemoveSavedAnimation(new TdApi.InputFileId(animation.animation.id)), tdlib.okHandler());
+          tdlib.send(new TdApi.RemoveSavedAnimation(new TdApi.InputFileId(animation.animation.id)), tdlib.typedOkHandler());
         }
         return true;
       });

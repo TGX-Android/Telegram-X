@@ -285,7 +285,7 @@ public class AvatarPickerManager extends MediaLayoutManager {
   }
 
   private void deleteProfilePhoto (long profilePhotoId) {
-    tdlib.client().send(new TdApi.DeleteProfilePhoto(profilePhotoId), tdlib.okHandler());
+    tdlib.send(new TdApi.DeleteProfilePhoto(profilePhotoId), tdlib.typedOkHandler());
   }
 
   private void setChatPhoto (long chatId, @Nullable TdApi.InputFileGenerated inputFile) {

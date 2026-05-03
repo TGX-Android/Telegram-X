@@ -87,8 +87,8 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
       this.keepMedia = keepMediaInSeconds;
       adapter.updateValuedSettingById(R.id.btn_keepMedia);
       if (needRequest) {
-        tdlib.client().send(new TdApi.SetOption("storage_max_time_from_last_access", new TdApi.OptionValueInteger(keepMediaInSeconds)), tdlib.okHandler());
-        tdlib.client().send(new TdApi.SetOption("use_storage_optimizer", new TdApi.OptionValueBoolean(keepMediaInSeconds != 0)), tdlib.okHandler());
+        tdlib.send(new TdApi.SetOption("storage_max_time_from_last_access", new TdApi.OptionValueInteger(keepMediaInSeconds)), tdlib.typedOkHandler());
+        tdlib.send(new TdApi.SetOption("use_storage_optimizer", new TdApi.OptionValueBoolean(keepMediaInSeconds != 0)), tdlib.typedOkHandler());
       }
     }
   }

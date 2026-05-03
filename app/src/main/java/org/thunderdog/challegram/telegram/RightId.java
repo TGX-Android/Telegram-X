@@ -44,6 +44,7 @@ import java.lang.annotation.RetentionPolicy;
   RightId.DELETE_STORIES,
   RightId.MANAGE_OR_CREATE_TOPICS,
   RightId.MANAGE_DIRECT_MESSAGES,
+  RightId.EDIT_OR_MANAGE_TAGS,
   RightId.ADD_NEW_ADMINS,
   RightId.REMAIN_ANONYMOUS
 })
@@ -72,6 +73,7 @@ public @interface RightId {
     DELETE_STORIES = 21,
     MANAGE_OR_CREATE_TOPICS = 22,
     MANAGE_DIRECT_MESSAGES = 23,
+    EDIT_OR_MANAGE_TAGS = 24,
     ADD_NEW_ADMINS = 100,
     REMAIN_ANONYMOUS = 101;
 }

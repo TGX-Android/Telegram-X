@@ -467,7 +467,7 @@ public class SearchManager {
     if (position != -1) {
       topChats.remove(position);
       topChatIds = ArrayUtils.removeElement(topChatIds, position);
-      tdlib.client().send(new TdApi.RemoveTopChat(new TdApi.TopChatCategoryUsers(), chatId), tdlib.okHandler());
+      tdlib.send(new TdApi.RemoveTopChat(new TdApi.TopChatCategoryUsers(), chatId), tdlib.typedOkHandler());
       if (topChatIds.length == 0) {
         listener.onRemoveTopChats(true, !StringUtils.isEmpty(lastQuery));
       } else {
@@ -782,7 +782,7 @@ public class SearchManager {
         }
       }
     }
-    tdlib.client().send(new TdApi.AddRecentlyFoundChat(chat.getAnyId()), tdlib.okHandler());
+    tdlib.send(new TdApi.AddRecentlyFoundChat(chat.getAnyId()), tdlib.typedOkHandler());
   }
 
   public void clearRecentlyFoundChats () {
@@ -792,7 +792,7 @@ public class SearchManager {
         setLocalChats(null, lastQuery);
         listener.onRemoveLocalChats(oldLocalChatsCount);
       }
-      tdlib.client().send(new TdApi.ClearRecentlyFoundChats(), tdlib.okHandler());
+      tdlib.send(new TdApi.ClearRecentlyFoundChats(), tdlib.typedOkHandler());
     }
   }
 
@@ -819,7 +819,7 @@ public class SearchManager {
       } else {
         listener.onRemoveLocalChat(foundChat.getId(), i, localChats.size() + 1);
       }
-      tdlib.client().send(new TdApi.RemoveRecentlyFoundChat(foundChat.getId()), tdlib.okHandler());
+      tdlib.send(new TdApi.RemoveRecentlyFoundChat(foundChat.getId()), tdlib.typedOkHandler());
     }
   }
 

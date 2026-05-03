@@ -483,13 +483,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       navigateTo(c);
     } else if (id == R.id.btn_passcode) {
       lastClickedButton = id;
-      if (Passcode.instance().isEnabled()) {
-        PasscodeController passcode = new PasscodeController(context, tdlib);
-        passcode.setPasscodeMode(PasscodeController.MODE_UNLOCK_SETUP);
-        navigateTo(passcode);
-      } else {
-        navigateTo(new PasscodeSetupController(context, tdlib));
-      }
+      tdlib.ui().openPasscodeSetup(this);
     } else if (id == R.id.btn_2fa) {
       if (passwordState != null) {
         if (!passwordState.hasPassword) {
@@ -552,7 +546,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
         }
         if (resultDaysTTL >= 30 && (accountTtl == null || accountTtl.days != resultDaysTTL)) {
           accountTtl = new TdApi.AccountTtl(resultDaysTTL);
-          tdlib.client().send(new TdApi.SetAccountTtl(accountTtl), tdlib.okHandler());
+          tdlib.send(new TdApi.SetAccountTtl(accountTtl), tdlib.typedOkHandler());
           adapter.updateValuedSettingById(R.id.btn_accountTTL);
         }
       }

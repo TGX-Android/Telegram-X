@@ -1230,9 +1230,16 @@ public class Lang {
       case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
+      case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+      case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
+      case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_11bff7df();
+        Td.assertMessageContent_baa076bf();
         throw Td.unsupported(message.content);
     }
     if (format == null) {

@@ -991,7 +991,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       case TdApi.MessageAnimation.CONSTRUCTOR ->
         new MediaItem(context, tdlib, chatId, sponsoredMessage.messageId, null, 0, (TdApi.MessageAnimation) sponsoredMessage.content);
       default -> {
-        Td.assertMessageContent_11bff7df();
+        Td.assertMessageContent_baa076bf();
         throw Td.unsupported(sponsoredMessage.content);
       }
     };
@@ -1020,7 +1020,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             break;
           }
           default: {
-            Td.assertChatEventAction_53b6b01e();
+            Td.assertChatEventAction_3964b51d();
             break;
           }
         }
@@ -1817,10 +1817,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, caption, showCaptionAboveMedia, false);
           }
         }
-        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, showCaptionAboveMedia, null, false);
+        return new TdApi.InputMessagePhoto(file, null, null, null, 640, 640, caption, showCaptionAboveMedia, null, false);
       case TYPE_PHOTO:
       case TYPE_GALLERY_PHOTO:
-        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, showCaptionAboveMedia, null, type == TYPE_GALLERY_PHOTO && hasSpoiler);
+        return new TdApi.InputMessagePhoto(file, null, null, null, width, height, caption, showCaptionAboveMedia, null, type == TYPE_GALLERY_PHOTO && hasSpoiler);
       case TYPE_VIDEO:
         return new TdApi.InputMessageVideo(file, null, null, 0, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, showCaptionAboveMedia, null, false);
       case TYPE_GIF:

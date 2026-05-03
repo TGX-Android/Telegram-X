@@ -2196,7 +2196,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         int height = rotation == 90 || rotation == 270 ? opts.outWidth / inSampleSize : opts.outHeight / inSampleSize;
 
         TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(filePath, rotation);
-        out.add(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, messageCaption, false, null, false));
+        out.add(new TdApi.InputMessagePhoto(inputFile, null, null, null, width, height, messageCaption, false, null, false));
         return messageCaption != null;
       }
 

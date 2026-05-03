@@ -380,7 +380,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
             setIds[i] = pendingViewStickerSets.keyAt(i);
           }
           pendingViewStickerSets.clear();
-          tdlib.client().send(new TdApi.ViewTrendingStickerSets(setIds), tdlib.okHandler());
+          tdlib.send(new TdApi.ViewTrendingStickerSets(setIds), tdlib.typedOkHandler());
         }
       }
     };

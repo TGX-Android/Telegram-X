@@ -1,11 +1,11 @@
 [versions]
-android-gradle-plugin = "9.1.0"
+android-gradle-plugin = "9.2.0"
 
 ksp = "2.3.4"
 desugaring = "2.1.5"
 
 kotlinx-coroutines = "1.10.2"
-kotlinx-serialization = "1.10.0"
+kotlinx-serialization = "1.11.0"
 
 androidx-core-legacy = "1.12.0" # 1.13.0+ requires minSdk 19
 androidx-core-lollipop = "1.17.0"
@@ -47,7 +47,7 @@ androidx-media-lollipop = "1.8.0" # 1.9.0+ requires minSdk 23
 androidx-media-latest = "1.10.0"
 
 androidx-multidex = "2.0.1"
-androidx-annotation = "1.9.1"
+androidx-annotation = "1.10.0"
 androidx-biometric = "1.1.0"
 androidx-palette = "1.0.0"
 androidx-collection = "1.6.0"
@@ -105,8 +105,8 @@ sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
 
-annotations-checkerframework = "3.43.0" #
-annotations-errorprone = "2.48.0"
+annotations-checkerframework = "4.0.0"
+annotations-errorprone = "2.49.0"
 annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
 annotations-kotlin = "2.1.20"

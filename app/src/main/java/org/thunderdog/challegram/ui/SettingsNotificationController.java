@@ -2027,7 +2027,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   private void resetNotificationSettings () {
     tdlib.notifications().resetNotificationSettings(false);
     tdlib.setDisableContactRegisteredNotifications(false);
-    tdlib.client().send(new TdApi.ResetAllNotificationSettings(), tdlib.okHandler());
+    tdlib.send(new TdApi.ResetAllNotificationSettings(), tdlib.typedOkHandler());
     int oldMode = getNotificationMode();
     boolean update = Settings.instance().resetNotificationFlags();
     if (update) {

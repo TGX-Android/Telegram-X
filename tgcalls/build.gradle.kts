@@ -26,15 +26,15 @@ android {
     }
   }
 
-  sourceSets.getByName("main") {
+  sourceSets.named<com.android.build.api.dsl.AndroidSourceSet>("main") {
     val webrtcDir = "./../app/jni/tgvoip/third_party/webrtc"
-    java.srcDirs(
+    java.directories.addAll(listOf(
       "${webrtcDir}/rtc_base/java/src",
       "${webrtcDir}/modules/audio_device/android/java/src",
       "${webrtcDir}/sdk/android/api",
       "${webrtcDir}/sdk/android/src/java",
       "../thirdparty/WebRTC/src/java"
-    )
+    ))
   }
 
   namespace = "tgx.tgcalls"

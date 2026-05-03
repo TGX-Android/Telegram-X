@@ -81,6 +81,18 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
     });
   }
 
+  public TdApi.Video getLivePhotoVideo () {
+    if (content.getConstructor() != TdApi.InputMessagePhoto.CONSTRUCTOR) {
+      throw new IllegalStateException();
+    }
+    TdApi.InputMessagePhoto photo = (TdApi.InputMessagePhoto) content;
+    if (photo.video == null) {
+      return null;
+    }
+    // TODO?
+    return null;
+  }
+
   public boolean isVideo () {
     return content.getConstructor() == TdApi.InputMessageVideo.CONSTRUCTOR;
   }
@@ -148,7 +160,7 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
   }
 
   public TdApi.MessagePhoto getMessagePhoto () {
-    return new TdApi.MessagePhoto(getPhoto(), getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
+    return new TdApi.MessagePhoto(getPhoto(), getLivePhotoVideo(), getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
   }
 
   public TdApi.MessageVideo getMessageVideo () {

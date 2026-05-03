@@ -63,6 +63,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.collection.IntSet;
 import me.vkryl.core.lambda.Destroyable;
 import tgx.td.Td;
 
@@ -118,7 +119,18 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         TdApi.PollOption toOption = toState.poll.options[i];
         int voterCount = fromTo(fromOption.voterCount, toOption.voterCount, factor);
         int votePercentage = fromTo(fromOption.votePercentage, toOption.votePercentage, factor);
-        TdApi.PollOption option = new TdApi.PollOption(toOption.text, voterCount, votePercentage, toOption.isChosen, toOption.isBeingChosen);
+        TdApi.PollOption option = new TdApi.PollOption(
+          toOption.id,
+          toOption.text,
+          toOption.media,
+          voterCount,
+          votePercentage,
+          toOption.recentVoterIds,
+          toOption.isChosen,
+          toOption.isBeingChosen,
+          toOption.author,
+          toOption.additionDate
+        );
         options[i] = option;
         this.options[i] = new PollOption(
           option,
@@ -126,7 +138,22 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
           fromTo(fromState.options[i].progress, toState.options[i].progress, factor)
         );
       }
-      this.poll = new TdApi.Poll(toState.poll.id, toState.poll.question, options, toState.poll.totalVoterCount, toState.poll.recentVoterIds, toState.poll.isAnonymous, toState.poll.type, toState.poll.openPeriod, toState.poll.closeDate, toState.poll.isClosed);
+      this.poll = new TdApi.Poll(
+        toState.poll.id,
+        toState.poll.question,
+        options,
+        toState.poll.totalVoterCount,
+        toState.poll.recentVoterIds,
+        toState.poll.canGetVoters,
+        toState.poll.isAnonymous,
+        toState.poll.allowsMultipleAnswers,
+        toState.poll.allowsRevoting,
+        toState.poll.optionOrder,
+        toState.poll.type,
+        toState.poll.openPeriod,
+        toState.poll.closeDate,
+        toState.poll.isClosed
+      );
     }
 
     public int size () {
@@ -668,14 +695,14 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     // Then, draw options
 
     boolean isQuiz = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
-    int correctOptionId;
+    int[] correctOptionIds;
     if (isQuiz) {
-      correctOptionId = ((TdApi.PollTypeQuiz) state.poll.type).correctOptionId;
-      if (correctOptionId == -1 && futureState != null && futureState.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
-        correctOptionId = ((TdApi.PollTypeQuiz) futureState.poll.type).correctOptionId;
+      correctOptionIds = ((TdApi.PollTypeQuiz) state.poll.type).correctOptionIds;
+      if (correctOptionIds.length == 0 && futureState != null && futureState.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
+        correctOptionIds = ((TdApi.PollTypeQuiz) futureState.poll.type).correctOptionIds;
       }
     } else {
-      correctOptionId = -1;
+      correctOptionIds = null;
     }
 
     float visibility = getResultsVisibility();
@@ -727,12 +754,14 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       int contentColor = getVerticalLineContentColor();
       float selectionFactor = option.getSelectionFactor();
 
-      if (correctOptionId != -1) {
-        boolean isChosen = getPoll().options[correctOptionId].isChosen;
-        int secondaryColor = optionId == correctOptionId ? getCorrectLineColor(isChosen) : getNegativeLineColor();
-        int secondaryContentColor = optionId == correctOptionId ? getCorrectLineContentColor(isChosen) : getNegativeLineContentColor();
-        lineColor = ColorUtils.fromToArgb(lineColor, secondaryColor, selectionFactor);
-        contentColor = ColorUtils.fromToArgb(contentColor, secondaryContentColor, selectionFactor);
+      if (correctOptionIds != null) {
+        for (int correctOptionId : correctOptionIds) {
+          boolean isChosen = getPoll().options[correctOptionId].isChosen;
+          int secondaryColor = optionId == correctOptionId ? getCorrectLineColor(isChosen) : getNegativeLineColor();
+          int secondaryContentColor = optionId == correctOptionId ? getCorrectLineContentColor(isChosen) : getNegativeLineContentColor();
+          lineColor = ColorUtils.fromToArgb(lineColor, secondaryColor, selectionFactor);
+          contentColor = ColorUtils.fromToArgb(contentColor, secondaryContentColor, selectionFactor);
+        }
       }
 
       int lineY = startY + optionHeight - Screen.separatorSize() - Screen.dp(2.5f);
@@ -746,9 +775,18 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
       if (selectionFactor > 0f) {
         float moveFactor = option.getMoveFactor();
-        float squareFactor = (state.poll.type.getConstructor() == TdApi.PollTypeRegular.CONSTRUCTOR && ((TdApi.PollTypeRegular) state.poll.type).allowMultipleAnswers ? 1f : 0f);
+        float squareFactor = (state.poll.type.getConstructor() == TdApi.PollTypeRegular.CONSTRUCTOR && state.poll.allowsMultipleAnswers ? 1f : 0f);
+        boolean isNegative = isQuiz;
+        if (isNegative && correctOptionIds != null) {
+          for (int correctOptionId : correctOptionIds) {
+            if (optionId == correctOptionId) {
+              isNegative = false;
+              break;
+            }
+          }
+        }
         if (option.checkBox == null) {
-          option.checkBox = SimplestCheckBox.newInstance(selectionFactor, null, lineColor, contentColor, isQuiz && optionId != correctOptionId, moveFactor);
+          option.checkBox = SimplestCheckBox.newInstance(selectionFactor, null, lineColor, contentColor, isQuiz && isNegative, moveFactor);
         }
         float scale = .75f;
         int cx = fromX - (int) (SimplestCheckBox.size() * scale) / 2 - Screen.dp(8f) + (int) (Screen.dp(2f) * scale);
@@ -766,7 +804,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         } else {
           restoreToCount = -1;
         }
-        SimplestCheckBox.draw(c, cx, cy, selectionFactor, null, option.checkBox, lineColor, contentColor, isQuiz && optionId != correctOptionId, squareFactor);
+        SimplestCheckBox.draw(c, cx, cy, selectionFactor, null, option.checkBox, lineColor, contentColor, isNegative, squareFactor);
         if (needScale) {
           Views.restore(c, restoreToCount);
         }
@@ -891,7 +929,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   }
 
   private boolean isMultiChoicePoll () {
-    return TD.isMultiChoice(getPoll());
+    return getPoll().allowsMultipleAnswers;
   }
 
   private boolean isQuiz () {
@@ -982,7 +1020,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       TdApi.Poll updatedPoll = ((TdApi.MessagePoll) messageContent).poll;
       return oldPoll.options.length == updatedPoll.options.length &&
         oldPoll.type.getConstructor() == updatedPoll.type.getConstructor() &&
-        TD.isMultiChoice(oldPoll) == TD.isMultiChoice(updatedPoll);
+        oldPoll.allowsMultipleAnswers == updatedPoll.allowsMultipleAnswers;
     }
     return false;
   }
@@ -1003,46 +1041,33 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         invalidateContentReceiver();
       }
       if (isQuiz() || Config.TEST_CONFETTI) {
-        int optionId = 0;
-        int beingChosenOptionId = -1;
-        for (TdApi.PollOption option : oldPoll.options) {
-          if (option.isBeingChosen) {
-            beingChosenOptionId = optionId;
-            break;
-          }
-          optionId++;
-        }
-        optionId = 0;
-        int chosenOptionId = -1;
-        for (TdApi.PollOption option : updatedPoll.options) {
-          if (option.isChosen) {
-            chosenOptionId = optionId;
-            break;
-          }
-          optionId++;
-        }
-        int correctOptionId;
+        TdApi.PollTypeQuiz quiz;
         if (updatedPoll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
-          correctOptionId = ((TdApi.PollTypeQuiz) updatedPoll.type).correctOptionId;
+          quiz = (TdApi.PollTypeQuiz) updatedPoll.type;
         } else {
-          correctOptionId = 0;
+          quiz = null;
         }
-        if (correctOptionId != -1 && beingChosenOptionId != -1 && updatedPoll.options[beingChosenOptionId].isChosen) {
-          if (beingChosenOptionId == correctOptionId) {
-            performConfettiAnimation(getConfettiCenterX(beingChosenOptionId), getConfettiCenterY(beingChosenOptionId));
-            performShakeAnimation(true);
-          } else {
-            performShakeAnimation(false);
-            if (updatedPoll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR && !Td.isEmpty(((TdApi.PollTypeQuiz) updatedPoll.type).explanation)) {
+
+        boolean isShaken = false;
+        int optionId = 0;
+        for (TdApi.PollOption option : updatedPoll.options) {
+          TdApi.PollOption oldOption = oldPoll.options[optionId];
+          if (oldOption.isBeingChosen && option.isChosen && quiz != null) {
+            boolean isCorrect = ArrayUtils.contains(quiz.correctOptionIds, optionId);
+            if (isCorrect) {
+              performConfettiAnimation(getConfettiCenterX(optionId), getConfettiCenterY(optionId));
+            }
+            if (!isShaken) {
+              isShaken = true;
+              performShakeAnimation(isCorrect);
+            }
+            if (!isCorrect && !Td.isEmpty(quiz.explanation)) {
               showExplanation(null);
             }
           }
-        } else if (correctOptionId != -1 && chosenOptionId != -1 && correctOptionId != chosenOptionId &&
-          updatedPoll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR && oldPoll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR &&
-          Td.isEmpty(((TdApi.PollTypeQuiz) oldPoll.type).explanation) && !Td.isEmpty(((TdApi.PollTypeQuiz) updatedPoll.type).explanation)
-        ) {
-          showExplanation(null);
-        } else if (chosenOptionId == -1 && !oldPoll.isClosed && updatedPoll.isClosed && oldPoll.openPeriod > 0 && oldPoll.closeDate != 0 && tdlib.currentTimeMillis() / 1000l + 5 >= oldPoll.closeDate) {
+          optionId++;
+        }
+        if (!isShaken && !oldPoll.isClosed && updatedPoll.isClosed && oldPoll.openPeriod > 0 && oldPoll.closeDate != 0 && tdlib.currentTime(TimeUnit.SECONDS) + 5 >= oldPoll.closeDate) {
           performShakeAnimation(false);
         }
       }
@@ -1168,24 +1193,38 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       setTotalVoterCount(state.poll);
       setPollStatus(state.poll.isClosed ? POLL_STATUS_CLOSED : POLL_STATUS_ANONYMOUS);
       setPercentages(needShowResults(state.poll), state.poll.options);
-      int correctOptionId = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) state.poll.type).correctOptionId : -1;
+      int[] correctOptionIds = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) state.poll.type).correctOptionIds : null;
       for (int optionId = 0; optionId < state.poll.options.length; optionId++) {
-        options[optionId].selectionFactor = optionId == correctOptionId || state.poll.options[optionId].isChosen ? 1f : 0f;
+        boolean isCorrect = false;
+        if (correctOptionIds != null) {
+          for (int correctOptionId : correctOptionIds) {
+            if (optionId == correctOptionId) {
+              isCorrect = true;
+              break;
+            }
+          }
+        }
+        options[optionId].selectionFactor = isCorrect || state.poll.options[optionId].isChosen ? 1f : 0f;
       }
     } else {
       setTotalVoterCount(futureState.poll);
       if (state.poll.isClosed != futureState.poll.isClosed) {
         setPollStatus(futureState.poll.isClosed ? POLL_STATUS_CLOSED : POLL_STATUS_ANONYMOUS);
       }
-      int fromCorrectOptionId = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) state.poll.type).correctOptionId : -1;
-      int toCorrectOptionId = futureState.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) futureState.poll.type).correctOptionId : -1;
+      int[] fromCorrectOptionIds = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) state.poll.type).correctOptionIds : null;
+      int[] toCorrectOptionIds = futureState.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) futureState.poll.type).correctOptionIds : null;
       for (int optionId = 0; optionId < state.poll.options.length; optionId++) {
         int fromPercentage = state.resultsVisible ? state.votePercentage(optionId) : 0;
         int toPercentage = futureState.resultsVisible ? futureState.votePercentage(optionId) : 0;
         if (fromPercentage != toPercentage) {
           setPercentage(optionId, fromTo(fromPercentage, toPercentage, changeFactor));
         }
-        options[optionId].selectionFactor = fromTo(optionId == fromCorrectOptionId || state.poll.options[optionId].isChosen ? 1f : 0f, optionId == toCorrectOptionId || futureState.poll.options[optionId].isChosen ? 1f : 0f, changeFactor);
+
+        options[optionId].selectionFactor = fromTo(
+          (ArrayUtils.contains(fromCorrectOptionIds, optionId)) || state.poll.options[optionId].isChosen ? 1f : 0f,
+          (ArrayUtils.contains(toCorrectOptionIds, optionId)) || futureState.poll.options[optionId].isChosen ? 1f : 0f,
+          changeFactor
+        );
       }
     }
   }

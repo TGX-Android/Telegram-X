@@ -1907,13 +1907,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       close();
     } else if (id == R.id.btn_setProfilePhoto) {
       final long photoId = item.getPhotoId();
-      tdlib.client().send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoPrevious(photoId), false), tdlib.okHandler());
+      tdlib.send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoPrevious(photoId), false), tdlib.typedOkHandler());
       close();
     } else if (id == R.id.btn_deleteProfilePhoto) {
       if (mode == MODE_PROFILE) {
-        tdlib.client().send(new TdApi.DeleteProfilePhoto(item.getPhotoId()), tdlib.okHandler());
+        tdlib.send(new TdApi.DeleteProfilePhoto(item.getPhotoId()), tdlib.typedOkHandler());
       } else if (mode == MODE_CHAT_PROFILE) {
-        tdlib.client().send(new TdApi.SetChatPhoto(item.getSourceChatId(), null), tdlib.okHandler());
+        tdlib.send(new TdApi.SetChatPhoto(item.getSourceChatId(), null), tdlib.typedOkHandler());
       }
       forceAnimationType = ANIMATION_TYPE_FADE;
       close();

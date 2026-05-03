@@ -104,7 +104,7 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
 
   @Override
   public void onLanguageStringChanged (Lang.Pack langPack, Lang.PackString string) {
-    tdlib.client().send(new TdApi.SetCustomLanguagePackString(langPack.languageInfo.id, string.translated ? string.string : new TdApi.LanguagePackString(string.getKey(), Lang.STRING_DELETED())), tdlib.okHandler());
+    tdlib.send(new TdApi.SetCustomLanguagePackString(langPack.languageInfo.id, string.translated ? string.string : new TdApi.LanguagePackString(string.getKey(), Lang.STRING_DELETED())), tdlib.typedOkHandler());
     String key = string.getKey();
     switch (key) {
       case "language_name": {

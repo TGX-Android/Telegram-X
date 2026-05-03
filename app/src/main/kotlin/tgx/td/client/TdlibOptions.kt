@@ -55,6 +55,9 @@ data class TdlibOptions(
   @JvmField var isPremiumAvailable: Boolean = false,
 
   @JvmField @field:GiftPremiumFrom var giftPremiumFrom: Int = 0,
+  @JvmField var giftCollectionCountMax: Int = 10,
+  @JvmField var giftCollectionSizeMax: Int = 500,
+
   @JvmField var premiumUploadSpeedup: Int = 10,
   @JvmField var premiumDownloadSpeedup: Int = 10,
   @JvmField var premiumGiftBoostCount: Int = 3,
@@ -75,12 +78,17 @@ data class TdlibOptions(
   @JvmField var giftResaleStarCountMin: Long = 125L,
   @JvmField var giftResaleStarCountMax: Long = 100000L,
   @JvmField var giftResaleEarningsPerMille: Long = 800L,
+  @JvmField var giftResaleToncoinCentCountMax: Long = 10000000L,
+  @JvmField var giftResaleToncoinCentCountMin: Long = 700L,
+  @JvmField var giftResaleStarEarningsPerMille: Int = 800,
+  @JvmField var giftResaleToncoinEarningsPerMille: Int = 900,
 
   @JvmField var starWithdrawalCountMin: Long = 1000L,
   @JvmField var starWithdrawalCountMax: Long = 25000000L,
   @JvmField var paidReactionStarCountMax: Long = 2500L,
   @JvmField var paidMessageEarningsPerMille: Long = 850L,
   @JvmField var paidMessageStarCountMax: Long = 10000L,
+  @JvmField var paidGroupCallMessageStarCountMax: Long = 35000L,
   @JvmField var paidMediaMessageStarCountMax: Long = 10000L,
   @JvmField var subscriptionStarCountMin: Long = 10000L,
   @JvmField var subscriptionStarCountMax: Long = 10000L,
@@ -126,10 +134,16 @@ data class TdlibOptions(
   @JvmField var botMediaPreviewCountMax: Int = 12,
   @JvmField var botVerificationCustomDescriptionLengthMax: Int = 70,
 
+  @JvmField var canUseLoginPasskey: Boolean = false,
+  @JvmField var loginPasskeyCountMax: Int = 5,
+
   @JvmField var canAcceptCalls: Boolean = false,
   @JvmField var callsEnabled: Boolean = true,
 
+  @JvmField var pendingTextMessagePeriod: Int = 30,
+
   @JvmField var groupCallParticipantCountMax: Int = 200,
+  @JvmField var groupCallMessageTextLengthMax: Int = 128,
 
   @JvmField var callConnectTimeoutMs: Long = 30000L,
   @JvmField var callPacketTimeoutMs: Long = 10000L,
@@ -152,12 +166,15 @@ data class TdlibOptions(
   @JvmField var addedShareableChatFolderCountMax: Int = 2,
 
   @JvmField var bioLengthMax: Int = 70,
+  @JvmField var userNoteTextLengthMax: Int = 128,
+  @JvmField var ownedBotCountMax: Int = 20,
 
   @JvmField var messageTextLengthMax: Int = 4000,
   @JvmField var messageCaptionLengthMax: Int = 1024,
   @JvmField var messageReplyQuoteLengthMax: Int = 1024,
 
   @JvmField var pollAnswerCountMax: Int = 12,
+  @JvmField var pollOpenPeriodMax: Int = 2628000,
 
   @JvmField var checklistTaskCountMax: Int = 30,
   @JvmField var checklistTaskTextLengthMax: Int = 200,
@@ -186,10 +203,15 @@ data class TdlibOptions(
   @JvmField var storyStealthModeFuturePeriod: Int = 1500,
   @JvmField var storyStealthModePastPeriod: Int = 300,
   @JvmField var storyLinkAreaCountMax: Int = 3,
+  @JvmField var storyAlbumCountMax: Int = 100,
+  @JvmField var storyAlbumSizeMax: Int = 1000,
 
   @JvmField var businessStartPageTitleLengthMax: Int = 32,
   @JvmField var businessStartPageMessageLengthMax: Int = 70,
   @JvmField var businessChatLinkCountMax: Int = 100,
+
+  @JvmField var stakeDiceStakeAmountMin: Long = 100000000L,
+  @JvmField var stakeDiceStakeAmountMax: Long = 50000000000L,
 
   // Server config
 
@@ -212,6 +234,7 @@ data class TdlibOptions(
 
   @JvmField var storyExpirePeriod: Long = 0,
   @JvmField var storyPostingEnabled: Boolean = true,
+  @JvmField var storyAllHidden: Boolean = false,
 
   @JvmField var translationsManualEnabled: Boolean = true,
   @JvmField var translationsAutoEnabled: Boolean = true,
@@ -314,6 +337,11 @@ data class TdlibOptions(
       "pinned_gift_count_max" ->
         pinnedGiftCountMax = value.intValue()
 
+      "gift_collection_count_max" ->
+        giftCollectionCountMax = value.intValue()
+      "gift_collection_size_max" ->
+        giftCollectionSizeMax = value.intValue()
+
       "gift_sell_period" ->
         giftSellPeriod = value.longValue()
       "gift_resale_star_count_min" ->
@@ -322,6 +350,14 @@ data class TdlibOptions(
         giftResaleStarCountMax = value.longValue()
       "gift_resale_earnings_per_mille" ->
         giftResaleEarningsPerMille = value.longValue()
+      "gift_resale_star_earnings_per_mille" ->
+        giftResaleStarEarningsPerMille = value.intValue()
+      "gift_resale_toncoin_cent_count_max" ->
+        giftResaleToncoinCentCountMax = value.longValue()
+      "gift_resale_toncoin_cent_count_min" ->
+        giftResaleToncoinCentCountMin = value.longValue()
+      "gift_resale_toncoin_earnings_per_mille" ->
+        giftResaleToncoinEarningsPerMille = value.intValue()
 
       "star_withdrawal_count_min" ->
         starWithdrawalCountMin = value.longValue()
@@ -333,6 +369,8 @@ data class TdlibOptions(
         paidMessageEarningsPerMille = value.longValue()
       "paid_message_star_count_max" ->
         paidMessageStarCountMax = value.longValue()
+      "paid_group_call_message_star_count_max" ->
+        paidGroupCallMessageStarCountMax = value.longValue()
       "paid_media_message_star_count_max" ->
         paidMediaMessageStarCountMax = value.longValue()
       "subscription_star_count_min" ->
@@ -414,13 +452,22 @@ data class TdlibOptions(
       "bot_verification_custom_description_length_max" ->
         botVerificationCustomDescriptionLengthMax = value.intValue()
 
+      "can_use_login_passkey" ->
+        canUseLoginPasskey = value.boolValue()
+      "login_passkey_count_max" ->
+        loginPasskeyCountMax = value.intValue()
       "can_accept_calls" ->
         canAcceptCalls = value.boolValue()
       "calls_enabled" ->
         callsEnabled = value.boolValue()
 
+      "pending_text_message_period" ->
+        pendingTextMessagePeriod = value.intValue()
+
       "group_call_participant_count_max" ->
         groupCallParticipantCountMax = value.intValue()
+      "group_call_message_text_length_max" ->
+        groupCallMessageTextLengthMax = value.intValue()
 
       "call_connect_timeout_ms" ->
         callConnectTimeoutMs = value.longValue()
@@ -457,6 +504,10 @@ data class TdlibOptions(
 
       "bio_length_max" ->
         bioLengthMax = value.intValue()
+      "user_note_text_length_max" ->
+        userNoteTextLengthMax = value.intValue()
+      "owned_bot_count_max" ->
+        ownedBotCountMax = value.intValue()
 
       "message_text_length_max" ->
         messageTextLengthMax = value.intValue()
@@ -467,6 +518,8 @@ data class TdlibOptions(
 
       "poll_answer_count_max" ->
         pollAnswerCountMax = value.intValue()
+      "poll_open_period_max" ->
+        pollOpenPeriodMax = value.intValue()
 
       "checklist_task_count_max" ->
         checklistTaskCountMax = value.intValue()
@@ -517,6 +570,10 @@ data class TdlibOptions(
         storyStealthModePastPeriod = value.intValue()
       "story_link_area_count_max" ->
         storyLinkAreaCountMax = value.intValue()
+      "story_album_count_max" ->
+        storyAlbumCountMax = value.intValue()
+      "story_album_size_max" ->
+        storyAlbumSizeMax = value.intValue()
 
       "business_start_page_title_length_max" ->
         businessStartPageTitleLengthMax = value.intValue()
@@ -524,6 +581,11 @@ data class TdlibOptions(
         businessStartPageMessageLengthMax = value.intValue()
       "business_chat_link_count_max" ->
         businessChatLinkCountMax = value.intValue()
+
+      "stake_dice_stake_amount_min" ->
+        stakeDiceStakeAmountMin = value.longValue()
+      "stake_dice_stake_amount_max" ->
+        stakeDiceStakeAmountMax = value.longValue()
 
       "test_mode",
 
@@ -612,6 +674,8 @@ data class TdlibOptions(
         storyExpirePeriod = value.longValue()
       "stories_posting" ->
         storyPostingEnabled = value.stringValue() == "enabled"
+      "stories_all_hidden" ->
+        storyAllHidden = value.boolValue()
 
       "translations_manual_enabled" ->
         translationsManualEnabled = value.stringValue() == "enabled"
