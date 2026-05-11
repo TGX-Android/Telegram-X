@@ -9,18 +9,30 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   )),
   TdlibType("InternalLinkType", isExperimental = true),
   TdlibType("InviteLinkChatType"),
-  TdlibType("PollType", isExperimental = true),
 
+  TdlibType("Location"),
+  TdlibType("Venue"),
+  TdlibType("MessageLocation"),
+
+  TdlibType("Proxy"),
   TdlibType("ProxyType"),
+
+  TdlibType("SettingsSection"),
+
   TdlibType("InlineKeyboardButtonType"),
   TdlibType("KeyboardButtonType"),
   TdlibType("KeyboardButton"),
+  TdlibType("ButtonStyle"),
   TdlibType("InlineKeyboardButton"),
   TdlibType("WebAppOpenMode"),
   TdlibType("ReplyMarkup"),
 
   TdlibType("GroupCall"),
+  TdlibType("MessageGroupCall"),
   TdlibType("GroupCallRecentSpeaker"),
+  TdlibType("GroupCallParticipantVideoInfo"),
+  TdlibType("GroupCallParticipant"),
+  TdlibType("GroupCallVideoSourceGroup"),
 
   TdlibType("Call"),
   TdlibType("CallState"),
@@ -53,6 +65,7 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   TdlibType("Audio"),
 
   TdlibType("StoryList"),
+  TdlibType("StoryContentType"),
   TdlibType("SuggestedAction", isExperimental = true),
 
   TdlibType("TargetChat"),
@@ -104,6 +117,9 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   TdlibType("LinkPreviewType"),
   TdlibType("LinkPreviewAlbumMedia"),
 
+  TdlibType("DateTimeFormattingType"),
+  TdlibType("DateTimePartPrecision"),
+
   TdlibType("TextEntityType"),
   TdlibType("TextEntity"),
 
@@ -123,5 +139,6 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   TdlibType("UpgradedGiftBackdrop"),
   TdlibType("UpgradedGiftBackdropColors"),
   TdlibType("UpgradedGiftOriginalDetails", isExperimental = true),
+  TdlibType("UpgradedGiftAttributeRarity"),
   TdlibType("GiftResaleParameters"),
 )

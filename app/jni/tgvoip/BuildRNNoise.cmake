@@ -1,6 +1,6 @@
 # rnnoise
 
-set(RNNOISE_DIR "${THIRDPARTY_DIR}/rnnoise")
+set(RNNOISE_DIR "${TGCALLS_DEPS_DIR}/rnnoise")
 
 add_library(rnnoise STATIC
   "${RNNOISE_DIR}/src/celt_lpc.c"

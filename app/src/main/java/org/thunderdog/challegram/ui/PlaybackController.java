@@ -2347,7 +2347,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
         tdlib.ui().openMessage(this, message, null);
       }
     } else if (id == R.id.btn_saveFile) {
-      TD.DownloadedFile downloadedFile = TD.getDownloadedFile(currentItem.getMessage());
+      TD.DownloadedFile downloadedFile = TD.getDownloadedFile(currentItem.tdlib(), currentItem.getMessage());
       ;
       if (downloadedFile != null) {
         TD.saveFile(context, downloadedFile);

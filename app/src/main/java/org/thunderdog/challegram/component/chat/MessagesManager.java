@@ -185,13 +185,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (TD.isAdmin(member.status)) {
           if (existingIndex >= 0) {
             // Just update the title, if needed
-            if (!StringUtils.equalsOrBothEmpty(existingAdmin.customTitle, Td.getCustomTitle(member.status))) {
-              existingAdmin.customTitle = Td.getCustomTitle(member.status);
+            if (!StringUtils.equalsOrBothEmpty(existingAdmin.customTitle, member.tag)) {
+              existingAdmin.customTitle = member.tag;
               changed = true;
             }
           } else {
             // Add admin
-            chatAdmins.put(userId, new TdApi.ChatAdministrator(userId, Td.getCustomTitle(member.status), TD.isCreator(member.status)));
+            boolean canBeEdited = member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR && ((TdApi.ChatMemberStatusAdministrator) member.status).canBeEdited;
+            chatAdmins.put(userId, new TdApi.ChatAdministrator(userId, member.tag, TD.isCreator(member.status), canBeEdited));
             changed = true;
           }
         } else {
@@ -1565,10 +1566,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private static boolean isSupported (@NonNull TdApi.InternalLinkType internalLinkType) {
     // Matches TdlibUi.openInternalLinkType
     switch (internalLinkType.getConstructor()) {
-      case TdApi.InternalLinkTypeBotAddToChannel.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeLiveStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStoryAlbum.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
       case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
@@ -1576,26 +1576,66 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
 
-      case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
-      case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
-      case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
-      case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyToncoins.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR:
         return false;
 
+      case TdApi.InternalLinkTypeSettings.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeSettings settings = (TdApi.InternalLinkTypeSettings) internalLinkType;
+        if (settings.section != null) {
+          switch (settings.section.getConstructor()) {
+            case TdApi.SettingsSectionAppearance.CONSTRUCTOR: {
+              TdApi.SettingsSectionAppearance appearance = (TdApi.SettingsSectionAppearance) settings.section;
+              switch (appearance.subsection) {
+                case "your-color/profile":
+                case "your-color/profile/add-icons":
+                case "your-color/profile/use-gift":
+                case "your-color/profile/reset":
+                case "your-color/name":
+                case "your-color/name/add-icons":
+                case "your-color/name/use-gift":
+                case "app-icon":
+                case "tap-for-next-media":
+                  return false;
+              }
+              break;
+            }
+            case TdApi.SettingsSectionPrivacyAndSecurity.CONSTRUCTOR: {
+              TdApi.SettingsSectionPrivacyAndSecurity privacyAndSecurity = (TdApi.SettingsSectionPrivacyAndSecurity) settings.section;
+              switch (privacyAndSecurity.subsection) {
+                case "calls/ios-integration":
+                  return false;
+              }
+              break;
+            }
+            case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
+            case TdApi.SettingsSectionSearch.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyStars.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyToncoins.CONSTRUCTOR:
+            case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
+            case TdApi.SettingsSectionPremium.CONSTRUCTOR:
+            case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
+            case TdApi.SettingsSectionBusiness.CONSTRUCTOR:
+            case TdApi.SettingsSectionInAppBrowser.CONSTRUCTOR:
+            case TdApi.SettingsSectionFeatures.CONSTRUCTOR: {
+              return false;
+            }
+          }
+        }
+        break;
+      }
+
       default:
-        Td.assertInternalLinkType_fbab3129();
-        return true;
+        Td.assertInternalLinkType_d8de28b2();
+        break;
     }
+    return true;
   }
 
   private void filterSponsoredMessages (TdApi.SponsoredMessages sponsoredMessages, RunnableData<TdApi.SponsoredMessages> after) {

@@ -1,6 +1,6 @@
 # usrsctp
 
-set(USRSCTP_DIR "${THIRDPARTY_DIR}/usrsctp/usrsctplib")
+set(USRSCTP_DIR "${TGCALLS_DEPS_DIR}/usrsctp/usrsctplib")
 
 add_library(usrsctp STATIC
   "${USRSCTP_DIR}/netinet/sctp_asconf.c"

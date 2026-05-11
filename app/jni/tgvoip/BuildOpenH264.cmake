@@ -1,6 +1,6 @@
 # OpenH264
 
-set(OPENH264_DIR "${THIRDPARTY_DIR}/openh264")
+set(OPENH264_DIR "${TGCALLS_DEPS_DIR}/openh264")
 
 add_library(openh264 STATIC
   "${OPENH264_DIR}/codec/encoder/core/src/au_set.cpp"

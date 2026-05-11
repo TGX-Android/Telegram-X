@@ -290,20 +290,20 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
   private void loadMessage (long chatId, long messageId) {
     context.tdlib().send(new TdApi.GetMessage(chatId, messageId), (message, error) -> {
       if (message != null) {
-        context.tdlib().send(new TdApi.GetMessageProperties(chatId, messageId), (properties, error1) -> {
-          if (properties != null) {
-            context.tdlib().uiExecute(() -> processReplyMarkup(new MessageWithProperties(message, properties), true));
-          }
-        });
+        updateReplyMarkup(chatId, message);
       }
     });
   }
 
-  public void updateReplyMarkup (long chatId, long messageId) {
-    if (messageId == 0) {
+  public void updateReplyMarkup (long chatId, @Nullable TdApi.Message message) {
+    if (message == null) {
       context.tdlib().uiExecute(() -> processReplyMarkup(null, true));
     } else {
-      loadMessage(chatId, messageId);
+      context.tdlib().send(new TdApi.GetMessageProperties(chatId, message.id), (properties, error) -> {
+        if (properties != null) {
+          context.tdlib().uiExecute(() -> processReplyMarkup(new MessageWithProperties(message, properties), true));
+        }
+      });
     }
   }
 
@@ -360,7 +360,7 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
         TdApi.ReplyMarkupShowKeyboard showKeyboard = (TdApi.ReplyMarkupShowKeyboard) markup;
         processShowKeyboard(messageId, showKeyboard);
         if (type == TYPE_GROUP || type == TYPE_SUPERGROUP) {
-          context.showReply(message, null, 0, false, false); // FIXME?
+          context.showReply(message, null, 0, "", false, false); // FIXME?
         }
         context.setCustomBotPlaceholder(showKeyboard.inputFieldPlaceholder);
         break;
@@ -381,9 +381,9 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
   private void processForceReply (MessageWithProperties message, boolean personal) {
     if (personal) {
       context.showKeyboard();
-      context.showReply(message, null, 0, false, false);
+      context.showReply(message, null, 0, "", false, false);
     } else if (type == TYPE_PRIVATE) {
-      context.showReply(message, null, 0, false, false);
+      context.showReply(message, null, 0, "", false, false);
     }
     if (message != null) {
       context.tdlib().send(new TdApi.DeleteChatReplyMarkup(chatId, message.message.id), context.tdlib().typedOkHandler());

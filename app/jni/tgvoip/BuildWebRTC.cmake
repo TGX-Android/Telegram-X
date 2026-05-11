@@ -1,7 +1,7 @@
 # WebRTC
 
-set(WEBRTC_DIR "${THIRDPARTY_DIR}/webrtc")
-set(WEBRTC_BASE_DIR "${THIRDPARTY_DIR}/webrtc_deps/base")
+set(WEBRTC_DIR "${TGCALLS_DEPS_DIR}/webrtc")
+set(WEBRTC_BASE_DIR "${TGCALLS_DEPS_DIR}/webrtc_deps/base")
 
 # Commit Telegram X currently relies on:
 # https://github.com/ali-fareed/webrtc/tree/e3dfe44d1aea15a1aabded19d71884412e772245
@@ -1386,10 +1386,10 @@ set(WEBRTC_BASE_DIR "${THIRDPARTY_DIR}/webrtc_deps/base")
 # "${WEBRTC_DIR}/rtc_base/task_queue_gcd.cc"
 
 add_library(webrtc STATIC
-  "${THIRDPARTY_DIR}/webrtc_deps/third_party/rnnoise/src/rnn_vad_weights.cc"
+  "${TGCALLS_DEPS_DIR}/webrtc_deps/third_party/rnnoise/src/rnn_vad_weights.cc"
 
-  "${THIRDPARTY_DIR}/webrtc_deps/third_party/pffft/src/fftpack.c"
-  "${THIRDPARTY_DIR}/webrtc_deps/third_party/pffft/src/pffft.c"
+  "${TGCALLS_DEPS_DIR}/webrtc_deps/third_party/pffft/src/fftpack.c"
+  "${TGCALLS_DEPS_DIR}/webrtc_deps/third_party/pffft/src/pffft.c"
 
   "${WEBRTC_DIR}/rtc_base/async_dns_resolver.cc"
   "${WEBRTC_DIR}/rtc_base/async_packet_socket.cc"
@@ -2620,31 +2620,31 @@ target_sources(webrtc PRIVATE
 # crc32
 
 target_sources(webrtc PRIVATE
-  "${THIRDPARTY_DIR}/crc32c/src/crc32c_portable.cc"
-  "${THIRDPARTY_DIR}/crc32c/src/crc32c.cc"
+  "${TGCALLS_DEPS_DIR}/crc32c/src/crc32c_portable.cc"
+  "${TGCALLS_DEPS_DIR}/crc32c/src/crc32c.cc"
 )
 target_include_directories(webrtc PRIVATE
-  "${THIRDPARTY_DIR}/webrtc_deps"
-  "${THIRDPARTY_DIR}/crc32c/include"
+  "${TGCALLS_DEPS_DIR}/webrtc_deps"
+  "${TGCALLS_DEPS_DIR}/crc32c/include"
 )
 
 # libevent
 
 target_sources(webrtc PRIVATE
-  "${THIRDPARTY_DIR}/libevent/buffer.c"
-  "${THIRDPARTY_DIR}/libevent/epoll.c"
-  "${THIRDPARTY_DIR}/libevent/evbuffer.c"
-  "${THIRDPARTY_DIR}/libevent/evdns.c"
-  "${THIRDPARTY_DIR}/libevent/event.c"
-  "${THIRDPARTY_DIR}/libevent/event_tagging.c"
-  "${THIRDPARTY_DIR}/libevent/evrpc.c"
-  "${THIRDPARTY_DIR}/libevent/evutil.c"
-  "${THIRDPARTY_DIR}/libevent/http.c"
-  "${THIRDPARTY_DIR}/libevent/log.c"
-  "${THIRDPARTY_DIR}/libevent/poll.c"
-  "${THIRDPARTY_DIR}/libevent/select.c"
-  "${THIRDPARTY_DIR}/libevent/signal.c"
-  "${THIRDPARTY_DIR}/libevent/strlcpy.c"
+  "${TGCALLS_DEPS_DIR}/libevent/buffer.c"
+  "${TGCALLS_DEPS_DIR}/libevent/epoll.c"
+  "${TGCALLS_DEPS_DIR}/libevent/evbuffer.c"
+  "${TGCALLS_DEPS_DIR}/libevent/evdns.c"
+  "${TGCALLS_DEPS_DIR}/libevent/event.c"
+  "${TGCALLS_DEPS_DIR}/libevent/event_tagging.c"
+  "${TGCALLS_DEPS_DIR}/libevent/evrpc.c"
+  "${TGCALLS_DEPS_DIR}/libevent/evutil.c"
+  "${TGCALLS_DEPS_DIR}/libevent/http.c"
+  "${TGCALLS_DEPS_DIR}/libevent/log.c"
+  "${TGCALLS_DEPS_DIR}/libevent/poll.c"
+  "${TGCALLS_DEPS_DIR}/libevent/select.c"
+  "${TGCALLS_DEPS_DIR}/libevent/signal.c"
+  "${TGCALLS_DEPS_DIR}/libevent/strlcpy.c"
 )
 
 # sdk
@@ -2775,6 +2775,7 @@ target_link_libraries(webrtc PUBLIC
 
 target_include_directories(webrtc PRIVATE
   .
+  "${CMAKE_HOME_DIRECTORY}"
   "${STUB_DIR}"
 )
 

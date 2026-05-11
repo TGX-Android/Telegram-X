@@ -30,17 +30,17 @@ import me.vkryl.core.lambda.RunnableInt;
 import tgx.td.ChatId;
 import tgx.td.Td;
 
-public abstract class SenderListManager extends ListManager<TdApi.MessageSender> implements TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, TdlibCache.SupergroupDataChangeListener, ChatListener {
-  public interface ChangeListener extends ListManager.ListChangeListener<TdApi.MessageSender> { }
+public abstract class PollVoterListManager extends ListManager<TdApi.PollVoter> implements TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, TdlibCache.SupergroupDataChangeListener, ChatListener {
+  public interface ChangeListener extends ListManager.ListChangeListener<TdApi.PollVoter> { }
 
-  private final LongSet senderIdsCheck = new LongSet();
+  private final LongSet voterIdsCheck = new LongSet();
 
-  public SenderListManager (Tdlib tdlib, int initialLoadCount, int loadCount, @Nullable ChangeListener listener) {
+  public PollVoterListManager(Tdlib tdlib, int initialLoadCount, int loadCount, @Nullable ChangeListener listener) {
     super(tdlib, initialLoadCount, loadCount, false, listener);
   }
 
   @Override
-  protected abstract TdApi.Function<TdApi.MessageSenders> nextLoadFunction (boolean reverse, int itemCount, int loadCount);
+  protected abstract TdApi.Function<TdApi.PollVoters> nextLoadFunction (boolean reverse, int itemCount, int loadCount);
 
   @Override
   protected void subscribeToUpdates () {
@@ -55,24 +55,24 @@ public abstract class SenderListManager extends ListManager<TdApi.MessageSender>
   }
 
   @Override
-  protected Response<TdApi.MessageSender> processResponse (TdApi.Object response, Client.ResultHandler retryHandler, int retryLoadCount, boolean reverse) {
-    final TdApi.MessageSenders senders = (TdApi.MessageSenders) response;
-    List<TdApi.MessageSender> sendersList = new ArrayList<>(senders.senders.length);
-    for (TdApi.MessageSender sender : senders.senders) {
-      long senderId = Td.getSenderId(sender);
-      if (senderIdsCheck.add(senderId)) {
-        sendersList.add(sender);
+  protected Response<TdApi.PollVoter> processResponse (TdApi.Object response, Client.ResultHandler retryHandler, int retryLoadCount, boolean reverse) {
+    final TdApi.PollVoters voters = (TdApi.PollVoters) response;
+    List<TdApi.PollVoter> sendersList = new ArrayList<>(voters.voters.length);
+    for (TdApi.PollVoter voter : voters.voters) {
+      long senderId = Td.getSenderId(voter.voterId);
+      if (voterIdsCheck.add(senderId)) {
+        sendersList.add(voter);
       }
     }
-    return new Response<>(sendersList, senders.totalCount);
+    return new Response<>(sendersList, voters.totalCount);
   }
 
   // Updates
 
   private int indexOfItem (long senderId) {
     int index = 0;
-    for (TdApi.MessageSender sender : items) {
-      if (Td.getSenderId(sender) == senderId) {
+    for (TdApi.PollVoter voter : items) {
+      if (Td.getSenderId(voter.voterId) == senderId) {
         return index;
       }
       index++;
@@ -81,7 +81,7 @@ public abstract class SenderListManager extends ListManager<TdApi.MessageSender>
   }
 
   private void runWithChat (long chatId, RunnableInt act) {
-    if (senderIdsCheck.has(chatId)) {
+    if (voterIdsCheck.has(chatId)) {
       runOnUiThreadIfReady(() -> {
         int index = indexOfItem(chatId);
         if (index != -1) {

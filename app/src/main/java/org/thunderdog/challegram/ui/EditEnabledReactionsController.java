@@ -562,7 +562,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
   }
 
   private void updateEnabledReactions () {
-    tdlib.client().send(new TdApi.SetChatAvailableReactions(chat.id, availableReactions), tdlib.okHandler());
+    tdlib.send(new TdApi.SetChatAvailableReactions(chat.id, availableReactions), tdlib.typedOkHandler());
   }
 
   private void checkEnabledReactions (TdApi.ChatAvailableReactions availableReactions) {

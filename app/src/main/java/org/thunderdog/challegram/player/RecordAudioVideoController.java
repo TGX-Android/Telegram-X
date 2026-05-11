@@ -1953,7 +1953,7 @@ public class RecordAudioVideoController implements
 
     if (initialSendOptions != null) {
       if (videoPreviewView.hasTrim()) {
-        tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(roundFile.id), tdlib.okHandler());
+        tdlib.send(new TdApi.CancelPreliminaryUploadFile(roundFile.id), tdlib.typedOkHandler());
         double startTimeSeconds = videoPreviewView.getStartTime();
         double endTimeSeconds = videoPreviewView.getEndTime();
         String conversion = VideoGenerationInfo.makeConversion(roundFile.id, false, 0,

@@ -842,7 +842,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
             if (info != null) {
               reactionsController.removeStickerSet(info);
             }
-            tdlib.client().send(new TdApi.ClearRecentReactions(), tdlib.okHandler());
+            tdlib.send(new TdApi.ClearRecentReactions(), tdlib.typedOkHandler());
           }
           return true;
         });

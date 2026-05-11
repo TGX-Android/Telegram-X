@@ -1,6 +1,6 @@
 # json11
 
-set(JSON11_DIR "${THIRDPARTY_DIR}/tgcalls/tgcalls/third-party")
+set(JSON11_DIR "${TGCALLS_DEPS_DIR}/tgcalls/tgcalls/third-party")
 
 add_library(json11 STATIC
   "${JSON11_DIR}/json11.cpp"

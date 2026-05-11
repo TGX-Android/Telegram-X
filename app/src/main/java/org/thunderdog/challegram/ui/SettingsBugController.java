@@ -1451,8 +1451,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     } else if (viewId == R.id.btn_secret_deleteProfilePhoto) {
       TdApi.User user = tdlib.myUser();
       if (user != null && user.profilePhoto != null) {
-        tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.small.id), tdlib.okHandler());
-        tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.big.id), tdlib.okHandler());
+        tdlib.send(new TdApi.DeleteFile(user.profilePhoto.small.id), tdlib.typedOkHandler());
+        tdlib.send(new TdApi.DeleteFile(user.profilePhoto.big.id), tdlib.typedOkHandler());
       }
     } else if (viewId == R.id.btn_secret_dropSavedScrollPositions) {
       Settings.instance().removeScrollPositions(tdlib.accountId(), null);

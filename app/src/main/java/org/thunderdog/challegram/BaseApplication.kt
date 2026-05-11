@@ -15,7 +15,6 @@
 package org.thunderdog.challegram
 
 import android.content.Context
-import androidx.multidex.MultiDexApplication
 import androidx.work.Configuration
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
@@ -29,8 +28,9 @@ import tgx.bridge.DeviceTokenRetriever
 import tgx.bridge.DeviceTokenRetrieverFactory
 import tgx.bridge.PushManagerBridge
 import tgx.extension.TelegramXExtension
+import tgx.flavor.TgxApplication
 
-class BaseApplication : MultiDexApplication(), Configuration.Provider {
+class BaseApplication : TgxApplication(), Configuration.Provider {
   companion object {
     lateinit var scope: CoroutineScope
   }

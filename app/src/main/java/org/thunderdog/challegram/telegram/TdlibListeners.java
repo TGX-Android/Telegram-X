@@ -886,6 +886,14 @@ public class TdlibListeners {
     );
   }
 
+  // updateChatUnreadPollVoteCount
+
+  void updateChatUnreadPollVoteCount (TdApi.UpdateChatUnreadPollVoteCount update, boolean availabilityChanged) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatUnreadPollVoteCount(update.chatId, update.unreadPollVoteCount, availabilityChanged)
+    );
+  }
+
   // updateChatUnreadReactionCount
 
   void updateChatUnreadReactionCount (TdApi.UpdateChatUnreadReactionCount update, boolean availabilityChanged, TdApi.Chat chat, @Nullable TdlibChatList[] chatLists) {
@@ -1054,7 +1062,7 @@ public class TdlibListeners {
 
   void updateChatReplyMarkup (TdApi.UpdateChatReplyMarkup update) {
     runChatUpdate(update.chatId, listener ->
-      listener.onChatReplyMarkupChanged(update.chatId, update.replyMarkupMessageId)
+      listener.onChatReplyMarkupChanged(update.chatId, update.replyMarkupMessage)
     );
   }
 

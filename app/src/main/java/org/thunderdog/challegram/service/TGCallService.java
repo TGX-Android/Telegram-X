@@ -460,7 +460,7 @@ public class TGCallService extends Service implements
       updateStats();
       if (!sentDebugLog && ((TdApi.CallStateDiscarded) call.state).needDebugInformation && !StringUtils.isEmpty(lastDebugLog)) {
         sentDebugLog = true;
-        tdlib.client().send(new TdApi.SendCallDebugInformation(call.id, lastDebugLog.toString()), tdlib.okHandler());
+        tdlib.send(new TdApi.SendCallDebugInformation(new TdApi.InputCallDiscarded(call.id), lastDebugLog.toString()), tdlib.typedOkHandler());
       }
       if (!sentRating && (((TdApi.CallStateDiscarded) call.state).needRating || BuildConfig.EXPERIMENTAL)) {
         sentRating = true;
@@ -1300,12 +1300,12 @@ public class TGCallService extends Service implements
     prevDuration = newDuration;
 
     if (wifiSentDiff > 0 || wifiReceivedDiff > 0 || durationDiff > 0) {
-      tdlib.client().send(new TdApi.AddNetworkStatistics(new TdApi.NetworkStatisticsEntryCall(new TdApi.NetworkTypeWiFi(), wifiSentDiff, wifiReceivedDiff, durationDiff)), tdlib.okHandler());
+      tdlib.send(new TdApi.AddNetworkStatistics(new TdApi.NetworkStatisticsEntryCall(new TdApi.NetworkTypeWiFi(), wifiSentDiff, wifiReceivedDiff, durationDiff)), tdlib.typedOkHandler());
     }
 
     if (mobileSentDiff > 0 || mobileReceivedDiff > 0 || durationDiff > 0) {
       TdApi.NetworkType type = lastNetInfo != null && lastNetInfo.isRoaming() ? new TdApi.NetworkTypeMobileRoaming() : new TdApi.NetworkTypeMobile();
-      tdlib.client().send(new TdApi.AddNetworkStatistics(new TdApi.NetworkStatisticsEntryCall(type, mobileSentDiff, mobileReceivedDiff, durationDiff)), tdlib.okHandler());
+      tdlib.send(new TdApi.AddNetworkStatistics(new TdApi.NetworkStatisticsEntryCall(type, mobileSentDiff, mobileReceivedDiff, durationDiff)), tdlib.typedOkHandler());
     }
   }
 

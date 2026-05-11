@@ -7,6 +7,8 @@ fun tdlibArrayEqualTypes(): Array<TdlibType> = arrayOf(
   TdlibType("Sticker"),
   TdlibType("CallServer"),
   TdlibType("GroupCallRecentSpeaker"),
+  TdlibType("MessageSender"),
+  TdlibType("GroupCallVideoSourceGroup"),
   TdlibType("LinkPreviewAlbumMedia"),
   TdlibType("ClosedVectorPath"),
   TdlibType("VectorPathCommand"),

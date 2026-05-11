@@ -529,8 +529,15 @@ public class Emoji {
     return null;
   }
 
+  public boolean hasEmoji (String str) {
+    return !StringUtils.isEmpty(extractSingleEmoji(str));
+  }
+
   @Nullable
   public static String extractSingleEmoji (String str) {
+    if (StringUtils.isEmpty(str)) {
+      return null;
+    }
     CharSequence emoji = Emoji.instance().replaceEmoji(str, 0, str.length(), newSingleLimiter());
     if (emoji instanceof Spanned) {
       Spanned spanned = (Spanned) emoji;

@@ -25,6 +25,7 @@ dependencyResolutionManagement {
 rootProject.name = "tgx"
 include(
   ":tdlib",
+  ":tgcalls",
 
   ":vkryl:td",
   ":vkryl:android",

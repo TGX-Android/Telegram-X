@@ -949,7 +949,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
               switch (result.getConstructor()) {
                 case TdApi.File.CONSTRUCTOR: {
                   TdApi.File uploadingFile = (TdApi.File) result;
-                  tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(uploadingFile.id), tdlib.okHandler());
+                  tdlib.send(new TdApi.CancelPreliminaryUploadFile(uploadingFile.id), tdlib.typedOkHandler());
                   tdlib.client().send(new TdApi.DownloadFile(uploadingFile.id, TdlibFilesManager.PRIORITY_NOTIFICATION_MEDIA, 0, 0, true), downloadedFile -> {
                     switch (downloadedFile.getConstructor()) {
                       case TdApi.File.CONSTRUCTOR: {
