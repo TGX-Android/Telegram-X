@@ -1,5 +1,5 @@
 [versions]
-android-gradle-plugin = "9.2.0"
+android-gradle-plugin = "9.2.1"
 
 ksp = "2.3.4"
 desugaring = "2.1.5"
@@ -55,7 +55,7 @@ androidx-interpolator = "1.0.0"
 
 firebase-messaging-legacy = "22.0.0" # 23.0.0+ requires minSdk 19
 firebase-messaging-lollipop = "24.1.2" # 25.0.0+ requires minSdk 23
-firebase-messaging-latest = "25.0.1"
+firebase-messaging-latest = "25.0.2"
 
 google-recaptcha-legacy = "18.4.0" # 18.5.0+ requires minSdk 21
 google-recaptcha-lollipop = "18.7.1" # 18.8.0+ requires minSdk 23
