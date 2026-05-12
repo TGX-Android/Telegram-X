@@ -1028,10 +1028,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     if (args.mode == MODE_CHAT_PERMISSIONS) {
       rightIdOptions.add(new RightOption(RightId.SEND_BASIC_MESSAGES));
       rightIdOptions.add(new RightOption(R.string.RightSendMedia, SEND_MEDIA_RIGHT_IDS));
+      rightIdOptions.add(new RightOption(RightId.REACT_TO_MESSAGES));
       rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
       rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
-      rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
       rightIdOptions.add(new RightOption(RightId.EDIT_OR_MANAGE_TAGS));
+      rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
       if (isForum || getValueForId(RightId.MANAGE_OR_CREATE_TOPICS)) {
         rightIdOptions.add(new RightOption(RightId.MANAGE_OR_CREATE_TOPICS));
       }
@@ -1041,10 +1042,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       rightIdOptions.add(new RightOption(RightId.SEND_BASIC_MESSAGES));
       rightIdOptions.add(new RightOption(R.string.RightSendMedia, SEND_MEDIA_RIGHT_IDS));
+      rightIdOptions.add(new RightOption(RightId.REACT_TO_MESSAGES));
       rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
       rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
-      rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
       rightIdOptions.add(new RightOption(RightId.EDIT_OR_MANAGE_TAGS));
+      rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
       if (isForum || getValueForId(RightId.MANAGE_OR_CREATE_TOPICS)) {
         rightIdOptions.add(new RightOption(RightId.MANAGE_OR_CREATE_TOPICS));
       }
@@ -1404,6 +1406,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         targetRestrict.permissions.canAddLinkPreviews = newValue;
         break;
       }
+      case RightId.REACT_TO_MESSAGES: {
+        setCanViewMessages(canViewMessages || newValue);
+        targetRestrict.permissions.canReactToMessages = newValue;
+        break;
+      }
       case RightId.CHANGE_CHAT_INFO: {
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
           targetAdmin.rights.canChangeInfo = newValue;
@@ -1484,6 +1491,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       targetRestrict.isMember = canViewMessages;
       targetRestrict.permissions.canSendBasicMessages = getValueForId(RightId.SEND_BASIC_MESSAGES);
       targetRestrict.permissions.canAddLinkPreviews = getValueForId(RightId.EMBED_LINKS);
+      targetRestrict.permissions.canReactToMessages = getValueForId(RightId.REACT_TO_MESSAGES);
       targetRestrict.permissions.canSendAudios = getValueForId(RightId.SEND_AUDIO);
       targetRestrict.permissions.canSendDocuments = getValueForId(RightId.SEND_DOCS);
       targetRestrict.permissions.canSendPhotos = getValueForId(RightId.SEND_PHOTOS);
@@ -1554,6 +1562,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         }
       case RightId.EMBED_LINKS:
         return canViewMessages && targetRestrict.permissions.canSendBasicMessages && targetRestrict.permissions.canAddLinkPreviews;
+      case RightId.REACT_TO_MESSAGES:
+        return canViewMessages && targetRestrict.permissions.canReactToMessages;
       case RightId.SEND_AUDIO:
         return canViewMessages && targetRestrict.permissions.canSendAudios;
       case RightId.SEND_DOCS:
@@ -1648,6 +1658,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.string.UserRestrictionsSendPolls;
       case RightId.EMBED_LINKS:
         return R.string.UserRestrictionsEmbedLinks;
+      case RightId.REACT_TO_MESSAGES:
+        return R.string.UserRestrictionsReactToMessages;
       case RightId.CHANGE_CHAT_INFO:
         return isChannel ? R.string.RightChangeChannelInfo : R.string.RightChangeGroupInfo;
       case RightId.DELETE_MESSAGES:
@@ -1705,6 +1717,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.drawable.deproko_baseline_pin_24;
       case RightId.REMAIN_ANONYMOUS:
         return R.drawable.dot_baseline_acc_anon_24;
+      case RightId.REACT_TO_MESSAGES:
+        return R.drawable.baseline_favorite_24;
 
       case RightId.MANAGE_VIDEO_CHATS:
         return R.drawable.baseline_video_chat_24;

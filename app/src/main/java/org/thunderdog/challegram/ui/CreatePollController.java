@@ -633,7 +633,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     }
     boolean hasCustomEmoji = TD.hasCustomEmoji(question);
     int correctOptionId = -1;
-    List<TdApi.FormattedText> options = new ArrayList<>(tdlib.options().pollAnswerCountMax);
+    List<TdApi.InputPollOption> options = new ArrayList<>(tdlib.options().pollAnswerCountMax);
     for (ListItem optionItem : this.options) {
       CharSequence cs = StringUtils.trim(optionItem.getCharSequenceValue());
       if (StringUtils.isEmpty(cs))
@@ -651,7 +651,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       if (optionItem == correctOptionItem) {
         correctOptionId = options.size();
       }
-      options.add(option);
+      options.add(new TdApi.InputPollOption(option, null));
     }
     if (options.size() < 2)
       return;
@@ -684,15 +684,18 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
     TdApi.InputPollOption[] optionsArray = options.toArray(new TdApi.InputPollOption[0]);
     TdApi.InputPollType inputPollType = isQuiz ?
-      new TdApi.InputPollTypeQuiz(new int[] {correctOptionId}, explanation) :
+      new TdApi.InputPollTypeQuiz(new int[] {correctOptionId}, explanation, null) :
       new TdApi.InputPollTypeRegular(false);
     TdApi.InputMessagePoll poll = new TdApi.InputMessagePoll(
       question,
       optionsArray,
       null,
+      null,
       isAnonymousVoting,
       isMultiChoiceVote,
       !isQuiz,
+      false,
+      null,
       false,
       false,
       inputPollType,

@@ -296,7 +296,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
   private void addProxy (@NonNull TdApi.Proxy proxy) {
     setInProgress(true);
     // Calling TDLib method just to validate input
-    tdlib.send(new TdApi.AddProxy(proxy, false), (addedProxy, error) -> runOnUiThreadOptional(() -> {
+    tdlib.send(new TdApi.AddProxy(proxy, false, ""), (addedProxy, error) -> runOnUiThreadOptional(() -> {
       setInProgress(false);
       if (error != null) {
         String errorText = TD.toErrorString(error);

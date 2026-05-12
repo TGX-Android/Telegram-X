@@ -30,6 +30,7 @@ public interface MessageListener {
   default void onAnimatedEmojiMessageClicked (long chatId, long messageId, TdApi.Sticker sticker) { }
   default void onMessageMentionRead (long chatId, long messageId) { }
   default void onMessageInteractionInfoChanged (long chatId, long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) { }
+  default void onMessageUnreadPollVotesChanged (long chatId, long messageId, boolean hasUnreadPollVote, int unreadPollVoteCount) { }
   default void onMessageUnreadReactionsChanged (long chatId, long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount) { }
   default void onMessagesDeleted (long chatId, long[] messageIds) { }
   default void onMessageLiveLocationViewed (long chatId, long messageId) { }

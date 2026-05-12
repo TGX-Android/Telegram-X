@@ -1991,6 +1991,7 @@
   <string name="UserRestrictionsSendStickers">Send Stickers &amp; GIFs</string>
   <string name="UserRestrictionsSendPolls">Send Polls</string>
   <string name="UserRestrictionsEmbedLinks">Embed Links</string>
+  <string name="UserRestrictionsReactToMessages">React to Messages</string>
   <string name="RightChangeGroupInfo">Change Group Info</string>
   <string name="RightChangeChannelInfo">Change Channel Info</string>
   <string name="EditAdminGroupDeleteMessages">Delete Messages</string>
@@ -2188,7 +2189,9 @@
   <string name="EventLogRestrictedSendVideoNotes">Send video messages</string>
   <string name="EventLogRestrictedSendMessages">Send messages</string>
   <string name="EventLogRestrictedSendEmbed">Embed links</string>
+  <string name="EventLogRestrictedReactToMessages">React to messages</string>
   <string name="EventLogPermissionSendEmbed">Embed links</string>
+  <string name="EventLogPermissionReactToMessages">React to messages</string>
   <string name="EventLogRestrictedReadMessages">Read messages</string>
   <string name="EventLogPromotedNew">promoted %1$s</string>
   <string name="EventLogPromoted">changed privileges of %1$s</string>

@@ -156,6 +156,7 @@ public class TD {
       case RightId.SEND_OTHER_MESSAGES:
       case RightId.SEND_POLLS_OR_CHECKLISTS:
       case RightId.EMBED_LINKS:
+      case RightId.REACT_TO_MESSAGES:
       case RightId.CHANGE_CHAT_INFO:
       case RightId.EDIT_MESSAGES:
       case RightId.DELETE_MESSAGES:
@@ -256,7 +257,8 @@ public class TD {
            RightId.EMBED_LINKS,
            RightId.SEND_POLLS_OR_CHECKLISTS ->
         rights.canPostMessages;
-      case RightId.READ_MESSAGES ->
+      case RightId.READ_MESSAGES,
+           RightId.REACT_TO_MESSAGES ->
         true;
       default ->
         throw new UnsupportedOperationException(Integer.toString(id));
@@ -267,6 +269,7 @@ public class TD {
     if (TdConstants.COMPILE_CHECK) {
       // compile check
       new TdApi.ChatPermissions(
+        false,
         false,
         false,
         false,
@@ -326,6 +329,8 @@ public class TD {
         return permissions.canSendOtherMessages;
       case RightId.EMBED_LINKS:
         return permissions.canAddLinkPreviews;
+      case RightId.REACT_TO_MESSAGES:
+        return permissions.canReactToMessages;
       case RightId.CHANGE_CHAT_INFO:
         return permissions.canChangeInfo;
       case RightId.INVITE_USERS:
@@ -1333,6 +1338,7 @@ public class TD {
   public static boolean hasRestrictions (TdApi.ChatPermissions a, TdApi.ChatPermissions defaultPermissions) {
     if (Config.COMPILE_CHECK) {
       new TdApi.ChatPermissions(
+        false,
         false,
         false,
         false,

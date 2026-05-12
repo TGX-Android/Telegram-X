@@ -32,6 +32,7 @@ import java.lang.annotation.RetentionPolicy;
   RightId.SEND_OTHER_MESSAGES,
   RightId.SEND_POLLS_OR_CHECKLISTS,
   RightId.EMBED_LINKS,
+  RightId.REACT_TO_MESSAGES,
   RightId.CHANGE_CHAT_INFO,
   RightId.EDIT_MESSAGES,
   RightId.DELETE_MESSAGES,
@@ -74,6 +75,7 @@ public @interface RightId {
     MANAGE_OR_CREATE_TOPICS = 22,
     MANAGE_DIRECT_MESSAGES = 23,
     EDIT_OR_MANAGE_TAGS = 24,
+    REACT_TO_MESSAGES = 25,
     ADD_NEW_ADMINS = 100,
     REMAIN_ANONYMOUS = 101;
 }

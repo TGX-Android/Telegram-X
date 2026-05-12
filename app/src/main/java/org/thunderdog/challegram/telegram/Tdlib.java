@@ -6147,7 +6147,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public void setProxy (int proxyId, @Nullable TdApi.Proxy proxy) {
     if (proxy != null) {
-      send(new TdApi.AddProxy(proxy, true), (addedProxy, error) -> {
+      send(new TdApi.AddProxy(proxy, true, ""), (addedProxy, error) -> {
         if (addedProxy != null) {
           setEffectiveProxyId(proxyId);
         }
@@ -6212,7 +6212,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     proxy.pingErrorCount = 0;
     notifyPingValueChanged(proxy);
     TdApi.Function<?> function = proxyId != Settings.PROXY_ID_NONE ?
-      new TdApi.AddProxy(proxy.proxy, false) :
+      new TdApi.AddProxy(proxy.proxy, false, "") :
       new TdApi.PingProxy(null);
     AtomicLong uptimeMillis = new AtomicLong(SystemClock.uptimeMillis());
     client().send(function, new Client.ResultHandler() {
@@ -7509,6 +7509,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   private void updateMessageInteractionInfo (TdApi.UpdateMessageInteractionInfo update) {
     listeners.updateMessageInteractionInfo(update);
+  }
+
+  @TdlibThread
+  private void updateMessageContainsUnreadPollVotes (TdApi.UpdateMessageContainsUnreadPollVotes update) {
+    listeners.updateMessageContainsUnreadPollVotes(update);
   }
 
   @TdlibThread
@@ -9730,6 +9735,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateMessageInteractionInfo((TdApi.UpdateMessageInteractionInfo) update);
         break;
       }
+      case TdApi.UpdateMessageContainsUnreadPollVotes.CONSTRUCTOR: {
+        updateMessageContainsUnreadPollVotes((TdApi.UpdateMessageContainsUnreadPollVotes) update);
+        break;
+      }
       case TdApi.UpdateDeleteMessages.CONSTRUCTOR: {
         updateMessagesDeleted((TdApi.UpdateDeleteMessages) update);
         break;
@@ -10344,12 +10353,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateBusinessMessageEdited.CONSTRUCTOR:
       case TdApi.UpdateBusinessMessagesDeleted.CONSTRUCTOR:
       case TdApi.UpdateNewBusinessCallbackQuery.CONSTRUCTOR:
+      case TdApi.UpdateNewGuestQuery.CONSTRUCTOR:
       case TdApi.UpdatePaidMediaPurchased.CONSTRUCTOR: {
         // Must never come from TDLib. If it does, there's a bug on TDLib side.
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_dab2dd22();
+        Td.assertUpdate_ad02591();
         throw Td.unsupported(update);
       }
     }
@@ -11653,7 +11663,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case RightId.SEND_VOICE_NOTES:
         case RightId.SEND_VIDEO_NOTES:
         case RightId.SEND_OTHER_MESSAGES:
-        case RightId.SEND_POLLS_OR_CHECKLISTS: {
+        case RightId.SEND_POLLS_OR_CHECKLISTS:
+        case RightId.REACT_TO_MESSAGES: {
           break;
         }
         case RightId.EMBED_LINKS: {
@@ -11756,6 +11767,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case RightId.SEND_POLLS_OR_CHECKLISTS:
         break;
       case RightId.EMBED_LINKS:
+      case RightId.REACT_TO_MESSAGES:
       case RightId.ADD_NEW_ADMINS:
       case RightId.BAN_USERS:
       case RightId.CHANGE_CHAT_INFO:

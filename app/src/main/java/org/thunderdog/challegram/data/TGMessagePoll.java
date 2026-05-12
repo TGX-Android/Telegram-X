@@ -63,7 +63,6 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.collection.IntSet;
 import me.vkryl.core.lambda.Destroyable;
 import tgx.td.Td;
 
@@ -148,11 +147,14 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         toState.poll.isAnonymous,
         toState.poll.allowsMultipleAnswers,
         toState.poll.allowsRevoting,
+        toState.poll.membersOnly,
+        toState.poll.countryCodes,
         toState.poll.optionOrder,
         toState.poll.type,
         toState.poll.openPeriod,
         toState.poll.closeDate,
-        toState.poll.isClosed
+        toState.poll.isClosed,
+        toState.poll.voteRestrictionReason
       );
     }
 
