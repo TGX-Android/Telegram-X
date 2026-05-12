@@ -439,6 +439,14 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     return -1;
   }
 
+  public int updateForumUnreadTopicCount (long chatId) {
+    int index = indexOfChat(chatId);
+    if (index != -1 && chats.get(index).updateForumUnreadTopicCount(chatId)) {
+      return getItemPositionByChatIndex(index);
+    }
+    return -1;
+  }
+
   public int updateChatHasScheduledMessages (long chatId, boolean hasScheduledMessages) {
     int index = indexOfChat(chatId);
     if (index != -1 && chats.get(index).updateChatHasScheduledMessages(chatId, hasScheduledMessages)) {

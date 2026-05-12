@@ -618,6 +618,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     return false;
   }
 
+  public boolean updateForumUnreadTopicCount (long chatId) {
+    if (chat.id == chatId && tdlib.isForum(chatId)) {
+      setCounter(true);
+      return true;
+    }
+    return false;
+  }
+
   public boolean updateChatUnreadReactionCount (long chatId, int unreadReactionCount) {
     if (chat.id == chatId) {
       boolean hadBadge = chat.unreadReactionCount > 0;
@@ -826,6 +834,15 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       return getTotalUnreadCount();
     } else if (getSource() != null) {
       return 0;
+    } else if (tdlib.isForum(chat.id)) {
+      // For forum chats, show unread topic count instead of message count
+      int unreadTopics = tdlib.forumUnreadTopicCount(chat.id);
+      if (unreadTopics == -1) {
+        // Not loaded yet, trigger fetch and show indicator if there are unread messages
+        tdlib.fetchForumUnreadTopicCount(chat.id, null);
+        return chat.unreadCount > 0 ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
+      }
+      return unreadTopics > 0 ? unreadTopics : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
     } else {
       return chat.unreadCount > 0 ? chat.unreadCount : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
     }
