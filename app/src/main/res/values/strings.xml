@@ -2707,7 +2707,7 @@
   <string name="message_ownerSign">owner</string>
   <string name="message_channelSign">channel</string>
   <string name="message_groupSign">group</string>
-  <string name="CustomTitle">Custom Title</string>
+  <string name="CustomTitle">Member tag</string>
   <string name="CustomTitleHint">A title that members will see instead of \'%1$s\'.</string>
   <string name="WhoCanCallMe">Who can call me</string>
   <string name="UseP2PWith">Use peer-to-peer with</string>
@@ -5082,7 +5082,7 @@
   <string name="MultiUsernamePrefix">also</string>
   <string name="MultiLinkPrefix">also</string>
 
-  <string name="SentFragmentCode">Get the code in the Anonymous Numbers section on Fragment.</string>
+  <string name="SentFragmentCode">Get the code in the Numbers section on Fragment.</string>
   <string name="OpenFragment">Open Fragment</string>
   <string name="AnonymousNumbers">&#127988;&#8205;&#9760;&#65039; Anonymous Numbers</string>
 
