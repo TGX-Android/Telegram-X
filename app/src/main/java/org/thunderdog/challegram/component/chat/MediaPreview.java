@@ -207,12 +207,13 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.LinkPreviewTypeRequestManagedBot.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
-      case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR: {
+      case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR: {
         // TODO support more types
         break;
       }
       default:
-        Td.assertLinkPreviewType_2358f218();
+        Td.assertLinkPreviewType_883de866();
         throw Td.unsupported(linkPreview.type);
     }
     return false;
@@ -299,12 +300,13 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
-            case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR: {
+            case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR: {
               // TODO support more types
               break;
             }
             default:
-              Td.assertLinkPreviewType_2358f218();
+              Td.assertLinkPreviewType_883de866();
               throw Td.unsupported(linkPreview.type);
           }
         }

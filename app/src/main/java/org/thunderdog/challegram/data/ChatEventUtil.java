@@ -627,6 +627,7 @@ public class ChatEventUtil {
                 false,
                 false,
                 false,
+                false,
                 false
               );
             }
@@ -643,6 +644,7 @@ public class ChatEventUtil {
             appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedSendPolls, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedSendEmbed, oldBan != null ? oldBan.permissions.canAddLinkPreviews : oldCanReadMessages, newBan != null ? newBan.permissions.canAddLinkPreviews : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedReactToMessages, oldBan != null ? oldBan.permissions.canReactToMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canReactToMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
@@ -786,6 +788,7 @@ public class ChatEventUtil {
             false,
             false,
             false,
+            false,
             false
           );
         }
@@ -800,6 +803,7 @@ public class ChatEventUtil {
         appendRight(b, R.string.EventLogPermissionSendStickers, permissions.oldPermissions.canSendOtherMessages, permissions.newPermissions.canSendOtherMessages, true);
         appendRight(b, R.string.EventLogPermissionSendPolls, permissions.oldPermissions.canSendPolls, permissions.newPermissions.canSendPolls, true);
         appendRight(b, R.string.EventLogPermissionSendEmbed, permissions.oldPermissions.canAddLinkPreviews, permissions.newPermissions.canAddLinkPreviews, true);
+        appendRight(b, R.string.EventLogPermissionReactToMessages, permissions.oldPermissions.canReactToMessages, permissions.newPermissions.canReactToMessages, true);
         appendRight(b, R.string.EventLogPermissionAddUsers, permissions.oldPermissions.canInviteUsers, permissions.newPermissions.canInviteUsers, true);
         appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
         appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);

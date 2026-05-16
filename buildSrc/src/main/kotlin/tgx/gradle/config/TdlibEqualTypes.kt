@@ -63,6 +63,7 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   TdlibType("VideoNote"),
   TdlibType("Video"),
   TdlibType("Audio"),
+  TdlibType("PollVoteRestrictionReason"),
 
   TdlibType("StoryList"),
   TdlibType("StoryContentType"),

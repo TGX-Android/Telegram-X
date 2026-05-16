@@ -1584,6 +1584,23 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR:
+
+      case TdApi.InternalLinkTypeCallsPage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeChatSelection.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMyProfilePage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewChannelChat.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewGroupChat.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewPrivateChat.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeOauth.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumGiftPurchase.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeRequestManagedBot.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeSavedMessages.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeSearch.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeTextCompositionStyle.CONSTRUCTOR:
         return false;
 
       case TdApi.InternalLinkTypeSettings.CONSTRUCTOR: {
@@ -1632,7 +1649,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
 
       default:
-        Td.assertInternalLinkType_d8de28b2();
+        Td.assertInternalLinkType_44babac4();
         break;
     }
     return true;

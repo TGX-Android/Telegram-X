@@ -274,11 +274,12 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeRequestManagedBot.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
           break;
 
         default: {
-          Td.assertLinkPreviewType_2358f218();
+          Td.assertLinkPreviewType_883de866();
           if (BuildConfig.DEBUG) {
             Tracer.onTdlibHandlerError(new UnsupportedOperationException(type.toString()));
           }

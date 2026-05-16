@@ -1991,6 +1991,7 @@
   <string name="UserRestrictionsSendStickers">Send Stickers &amp; GIFs</string>
   <string name="UserRestrictionsSendPolls">Send Polls</string>
   <string name="UserRestrictionsEmbedLinks">Embed Links</string>
+  <string name="UserRestrictionsReactToMessages">React to Messages</string>
   <string name="RightChangeGroupInfo">Change Group Info</string>
   <string name="RightChangeChannelInfo">Change Channel Info</string>
   <string name="EditAdminGroupDeleteMessages">Delete Messages</string>
@@ -2188,7 +2189,9 @@
   <string name="EventLogRestrictedSendVideoNotes">Send video messages</string>
   <string name="EventLogRestrictedSendMessages">Send messages</string>
   <string name="EventLogRestrictedSendEmbed">Embed links</string>
+  <string name="EventLogRestrictedReactToMessages">React to messages</string>
   <string name="EventLogPermissionSendEmbed">Embed links</string>
+  <string name="EventLogPermissionReactToMessages">React to messages</string>
   <string name="EventLogRestrictedReadMessages">Read messages</string>
   <string name="EventLogPromotedNew">promoted %1$s</string>
   <string name="EventLogPromoted">changed privileges of %1$s</string>
@@ -2704,7 +2707,7 @@
   <string name="message_ownerSign">owner</string>
   <string name="message_channelSign">channel</string>
   <string name="message_groupSign">group</string>
-  <string name="CustomTitle">Custom Title</string>
+  <string name="CustomTitle">Member tag</string>
   <string name="CustomTitleHint">A title that members will see instead of \'%1$s\'.</string>
   <string name="WhoCanCallMe">Who can call me</string>
   <string name="UseP2PWith">Use peer-to-peer with</string>
@@ -5079,7 +5082,7 @@
   <string name="MultiUsernamePrefix">also</string>
   <string name="MultiLinkPrefix">also</string>
 
-  <string name="SentFragmentCode">Get the code in the Anonymous Numbers section on Fragment.</string>
+  <string name="SentFragmentCode">Get the code in the Numbers section on Fragment.</string>
   <string name="OpenFragment">Open Fragment</string>
   <string name="AnonymousNumbers">&#127988;&#8205;&#9760;&#65039; Anonymous Numbers</string>
 

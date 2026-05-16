@@ -844,6 +844,20 @@ public class TdlibListeners {
     );
   }
 
+  // updateMessageContainsUnreadPollVotes
+
+  void updateMessageContainsUnreadPollVotes (TdApi.UpdateMessageContainsUnreadPollVotes update) {
+    List<TdApi.Message> messages = pendingMessages.get(update.chatId + "_" + update.messageId);
+    if (messages != null) {
+      for (TdApi.Message message : messages) {
+        message.containsUnreadPollVotes = update.containsUnreadPollVotes;
+      }
+    }
+    runMessageUpdate(update.chatId, listener ->
+      listener.onMessageUnreadPollVotesChanged(update.chatId, update.messageId, update.containsUnreadPollVotes, update.unreadPollVoteCount)
+    );
+  }
+
   // updateMessageUnreadReactions
 
   void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update, boolean counterChanged, boolean availabilityChanged, TdApi.Chat chat, @Nullable TdlibChatList[] chatLists) {
