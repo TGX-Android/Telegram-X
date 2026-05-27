@@ -1,6 +1,5 @@
 plugins {
   id(libs.plugins.android.library.get().pluginId)
-  alias(libs.plugins.kotlin.android)
   id("tgx-config")
   id("tgx-module")
 }
@@ -16,6 +15,10 @@ android {
     disable += "RawTypes"
   }
 
+  defaultConfig {
+    consumerProguardFiles("consumer-rules.pro")
+  }
+
   project.afterEvaluate {
     tasks.withType(JavaCompile::class.java).configureEach {
       options.compilerArgs.addAll(listOf(
@@ -26,16 +29,16 @@ android {
     }
   }
 
-  sourceSets.getByName("main") {
+  sourceSets.named<com.android.build.api.dsl.AndroidSourceSet>("main") {
     if (!config.useNTgCalls) {
       val webrtcDir = "./../app/jni/tgvoip/third_party/webrtc"
-      java.srcDirs(
+      java.directories.addAll(listOf(
         "${webrtcDir}/rtc_base/java/src",
         "${webrtcDir}/modules/audio_device/android/java/src",
         "${webrtcDir}/sdk/android/api",
         "${webrtcDir}/sdk/android/src/java",
         "../thirdparty/WebRTC/src/java"
-      )
+      ))
     }
   }
 

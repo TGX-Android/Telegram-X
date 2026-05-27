@@ -228,7 +228,7 @@ public class ImageLoader {
                 workers.remove(ImageFile.getFileLoadKey(tdlib, file.getId()));
               }
               if (!isPersistent && file.needCancellation()) {
-                tdlib.client().send(new TdApi.CancelDownloadFile(file.getId(), file.isCancellationOnlyPending()), tdlib.okHandler());
+                tdlib.send(new TdApi.CancelDownloadFile(file.getId(), file.isCancellationOnlyPending()), tdlib.typedOkHandler());
               }
             }
           }

@@ -53,13 +53,12 @@ public class EmojiLayoutTrendingController extends EmojiLayoutRecyclerController
   public void loadTrending (int offset, int limit, int cellCount) {
     if (!trendingLoading) {
       trendingLoading = true;
-      tdlib.client().send(new TdApi.GetTrendingStickerSets(stickerType, offset, limit), object -> {
+      tdlib.send(new TdApi.GetTrendingStickerSets(stickerType, offset, limit), (trendingStickerSets, error) -> {
         final ArrayList<TGStickerSetInfo> parsedStickerSets = new ArrayList<>();
         final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>();
         final int unreadItemCount;
 
-        if (object.getConstructor() == TdApi.TrendingStickerSets.CONSTRUCTOR) {
-          TdApi.TrendingStickerSets trendingStickerSets = (TdApi.TrendingStickerSets) object;
+        if (trendingStickerSets != null) {
           if (offset == 0)
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
           unreadItemCount = EmojiMediaListController.parseTrending(tdlib, parsedStickerSets, items,  cellCount, trendingStickerSets.sets, dataProvider, this, false, false, null);
@@ -241,7 +240,7 @@ public class EmojiLayoutTrendingController extends EmojiLayoutRecyclerController
             setIds[i] = pendingViewStickerSets.keyAt(i);
           }
           pendingViewStickerSets.clear();
-          tdlib.client().send(new TdApi.ViewTrendingStickerSets(setIds), tdlib.okHandler());
+          tdlib.send(new TdApi.ViewTrendingStickerSets(setIds), tdlib.typedOkHandler());
         }
       }
     };

@@ -31,7 +31,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.PollListener;
-import org.thunderdog.challegram.telegram.SenderListManager;
+import org.thunderdog.challegram.telegram.PollVoterListManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.telegram.UserListManager;
@@ -49,6 +49,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.core.ArrayUtils;
 import tgx.td.Td;
 
 public class PollResultsController extends RecyclerViewController<PollResultsController.Args> implements PollListener, UserListManager.ChangeListener, View.OnClickListener {
@@ -108,9 +109,9 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
 
   private static final boolean NEED_CENTER_DECORATION = false;
 
-  private static class ListCache implements SenderListManager.ChangeListener {
+  private static class ListCache implements PollVoterListManager.ChangeListener {
     private final Tdlib tdlib;
-    private final SenderListManager voters;
+    private final PollVoterListManager voters;
     private final SettingsAdapter adapter;
 
     public ListCache (ViewController<?> context, long chatId, long messageId, int optionId) {
@@ -123,27 +124,29 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
         }
       };
       this.adapter.setNoEmptyProgress();
-      this.voters = new SenderListManager(tdlib, 50, 50, this) {
+      this.voters = new PollVoterListManager(tdlib, 50, 50, this) {
         @Override
-        protected TdApi.Function<TdApi.MessageSenders> nextLoadFunction (boolean reverse, int itemCount, int loadCount) {
+        protected TdApi.Function<TdApi.PollVoters> nextLoadFunction (boolean reverse, int itemCount, int loadCount) {
           return new TdApi.GetPollVoters(chatId, messageId, optionId, itemCount, loadCount);
         }
       };
       this.voters.loadInitialChunk(null);
     }
 
-    private ListItem newItem (TdApi.MessageSender sender) {
-      TGFoundChat foundChat = new TGFoundChat(tdlib, sender, false)
+    private ListItem newItem (TdApi.PollVoter voter) {
+      TGFoundChat foundChat = new TGFoundChat(tdlib, voter.voterId, false)
         .setNoUnread()
         .setNoAnonymousBadge();
-      return new ListItem(ListItem.TYPE_CHAT_VERTICAL, R.id.sender).setData(foundChat).setLongId(Td.getSenderId(sender));
+      return new ListItem(ListItem.TYPE_CHAT_VERTICAL, R.id.sender)
+        .setData(foundChat)
+        .setLongId(Td.getSenderId(voter.voterId));
     }
 
     @Override
-    public void onItemsAdded (ListManager<TdApi.MessageSender> list, List<TdApi.MessageSender> items, int startIndex, boolean isInitialChunk) {
+    public void onItemsAdded (ListManager<TdApi.PollVoter> list, List<TdApi.PollVoter> items, int startIndex, boolean isInitialChunk) {
       List<ListItem> itemsToAdd = new ArrayList<>(items.size());
-      for (TdApi.MessageSender sender : items) {
-        itemsToAdd.add(newItem(sender));
+      for (TdApi.PollVoter voter : items) {
+        itemsToAdd.add(newItem(voter));
       }
       adapter.getItems().addAll(startIndex, itemsToAdd);
       adapter.notifyItemRangeInserted(startIndex, itemsToAdd.size());
@@ -153,7 +156,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
     }
 
     @Override
-    public void onItemAdded (ListManager<TdApi.MessageSender> list, TdApi.MessageSender item, int toIndex) {
+    public void onItemAdded (ListManager<TdApi.PollVoter> list, TdApi.PollVoter item, int toIndex) {
       adapter.addItem(toIndex, newItem(item));
       if (NEED_CENTER_DECORATION) {
         adapter.invalidateItemDecorations();
@@ -216,9 +219,9 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setInfo(ListItem item, int position, ListInfoView infoView) {
-        int correctOptionId = isQuiz() ? ((TdApi.PollTypeQuiz) getPoll().type).correctOptionId : -1;
+        int[] correctOptionIds = isQuiz() ? ((TdApi.PollTypeQuiz) getPoll().type).correctOptionIds : null;
         TdApi.PollOption option = getPoll().options[item.getIntValue()];
-        infoView.showInfo(Lang.formatString("%s — %d%%", null, Lang.pluralBold(isQuiz() ? (item.getIntValue() == correctOptionId ? R.string.xCorrectAnswers : R.string.xAnswers) : R.string.xVotes, option.voterCount), option.votePercentage));
+        infoView.showInfo(Lang.formatString("%s — %d%%", null, Lang.pluralBold(isQuiz() ? (correctOptionIds != null && ArrayUtils.contains(correctOptionIds, item.getIntValue()) ? R.string.xCorrectAnswers : R.string.xAnswers) : R.string.xVotes, option.voterCount), option.votePercentage));
       }
 
       @Override
@@ -260,7 +263,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
           recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-              SenderListManager listManager = ((ListCache) ((ListItem) recyclerView.getTag()).getData()).voters;
+              PollVoterListManager listManager = ((ListCache) ((ListItem) recyclerView.getTag()).getData()).voters;
               int lastVisiblePosition = ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition();
               if (lastVisiblePosition + 5 >= listManager.getCount()) {
                 listManager.loadItems(false, null);

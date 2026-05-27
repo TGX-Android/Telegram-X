@@ -498,10 +498,17 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
             case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
             case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
+            case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR:
+            case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR:
+            case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
+            case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
+            case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+            case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
+            case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_11bff7df();
+              Td.assertMessageContent_baa076bf();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
@@ -1492,6 +1499,11 @@ public final class TGMessageService extends TGMessageServiceImpl {
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventAutomaticTranslationToggled automaticTranslationToggled) {
+    super(context, msg);
+    throw new IllegalStateException("TODO"); // TODO
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventMemberTagChanged memberTagChanged) {
     super(context, msg);
     throw new IllegalStateException("TODO"); // TODO
   }

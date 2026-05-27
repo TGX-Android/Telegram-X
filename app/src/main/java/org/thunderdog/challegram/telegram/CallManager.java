@@ -189,7 +189,7 @@ public class CallManager implements GlobalCallListener {
       if (currentCall.id != call.id) {
         if (!call.isOutgoing) {
           if (call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
-            tdlib.client().send(new TdApi.DiscardCall(call.id, false, null, 0, call.isVideo, 0), tdlib.okHandler());
+            tdlib.send(new TdApi.DiscardCall(call.id, false, null, 0, call.isVideo, 0), tdlib.typedOkHandler());
           }
         }
         return;

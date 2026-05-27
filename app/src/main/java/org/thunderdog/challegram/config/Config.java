@@ -45,8 +45,6 @@ public class Config {
 
   public static final boolean NEED_SILENT_BROADCAST = false;
 
-  public static final boolean CAN_CHANGE_SELF_ADMIN_CUSTOM_TITLE = false;
-
   public static final boolean SHOW_EMOJI_TONE_PICKER_ALWAYS = true;
 
   public static final String ICONS_BUILTIN_ID = "material-baseline";

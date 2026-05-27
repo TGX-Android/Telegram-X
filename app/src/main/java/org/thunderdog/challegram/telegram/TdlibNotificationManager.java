@@ -1600,7 +1600,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         } else {
           settingsForPrivateChats = newDefaults();
         }
-        tdlib.client().send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopePrivateChats(), settingsForPrivateChats), tdlib.okHandler());
+        tdlib.send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopePrivateChats(), settingsForPrivateChats), tdlib.typedOkHandler());
       }
       if (needUpdateDefaults(settingsForGroupChats)) {
         if (settingsForGroupChats != null) {
@@ -1608,7 +1608,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         } else {
           settingsForGroupChats = newDefaults();
         }
-        tdlib.client().send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopeGroupChats(), settingsForGroupChats), tdlib.okHandler());
+        tdlib.send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopeGroupChats(), settingsForGroupChats), tdlib.typedOkHandler());
       }
       if (needUpdateDefaults(settingsForChannelChats)) {
         if (settingsForChannelChats != null) {
@@ -1616,7 +1616,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         } else {
           settingsForChannelChats = newDefaults();
         }
-        tdlib.client().send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopeChannelChats(), settingsForChannelChats), tdlib.okHandler());
+        tdlib.send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopeChannelChats(), settingsForChannelChats), tdlib.typedOkHandler());
       }
 
       updated = Settings.instance().setNeedSplitNotificationCategories(true);

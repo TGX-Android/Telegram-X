@@ -149,11 +149,13 @@ fun LinkPreview?.getRepresentationTitle (): String {
       LinkPreviewTypeGiftAuction.CONSTRUCTOR,
       LinkPreviewTypeLiveStory.CONSTRUCTOR,
       LinkPreviewTypeExternalAudio.CONSTRUCTOR,
-      LinkPreviewTypeExternalVideo.CONSTRUCTOR -> {
+      LinkPreviewTypeExternalVideo.CONSTRUCTOR,
+      LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR,
+      LinkPreviewTypeRequestManagedBot.CONSTRUCTOR -> {
         null
       }
       else -> {
-        assertLinkPreviewType_a9a3ffcd()
+        assertLinkPreviewType_883de866()
         throw unsupported(it)
       }
     }
@@ -175,7 +177,7 @@ fun LinkPreview?.getContentTitle (): String {
             it.audio?.title
           }
           else -> {
-            assertLinkPreviewType_a9a3ffcd()
+            assertLinkPreviewType_883de866()
             null
           }
         }
@@ -290,9 +292,11 @@ fun LinkPreviewType?.getMediaFile (): File? {
     LinkPreviewTypeGiftCollection.CONSTRUCTOR,
     LinkPreviewTypeGiftAuction.CONSTRUCTOR,
     LinkPreviewTypeLiveStory.CONSTRUCTOR,
+    LinkPreviewTypeRequestManagedBot.CONSTRUCTOR,
+    LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR,
     LinkPreviewTypeUnsupported.CONSTRUCTOR -> null
     else -> {
-      assertLinkPreviewType_a9a3ffcd()
+      assertLinkPreviewType_883de866()
       throw unsupported(this)
     }
   }

@@ -289,7 +289,7 @@ public class CreateChannelController extends ViewController<String[]> implements
         long chatId = remoteChat.id;
         chat = tdlib.chatStrict(chatId);
         if (currentImageFile != null) {
-          tdlib.client().send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(PhotoGenerationInfo.newFile(currentImageFile))), tdlib.okHandler());
+          tdlib.send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(PhotoGenerationInfo.newFile(currentImageFile))), tdlib.typedOkHandler());
         }
       }
       UI.post(() -> channelCreated(chat));

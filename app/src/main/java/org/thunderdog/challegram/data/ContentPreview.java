@@ -743,13 +743,20 @@ public class ContentPreview {
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
       case TdApi.MessageGiftedTon.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
+      case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+      case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
+      case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_11bff7df();
+        Td.assertMessageContent_baa076bf();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1205,13 +1212,14 @@ public class ContentPreview {
           return new ContentPreview(isChannel ? EMOJI_LIVE_STREAM : EMOJI_VIDEO_CHAT, isChannel ? R.string.ChatContentLiveStreamAddSomeone : R.string.ChatContentVideoChatAddSomeone);
         }
       }
+      case TdApi.PushMessageContentPollOptionAdded.CONSTRUCTOR:
       case TdApi.PushMessageContentChecklist.CONSTRUCTOR:
       case TdApi.PushMessageContentChecklistTasksAdded.CONSTRUCTOR:
       case TdApi.PushMessageContentChecklistTasksDone.CONSTRUCTOR: {
         return getNotificationPreview(TdApi.MessageUnsupported.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
       }
       default:
-        Td.assertPushMessageContent_366f79c5();
+        Td.assertPushMessageContent_fd03564b();
         throw Td.unsupported(push.content);
     }
   }
@@ -1575,6 +1583,13 @@ public class ContentPreview {
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
       case TdApi.MessageGiftedTon.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
+      case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+      case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
+      case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1585,7 +1600,7 @@ public class ContentPreview {
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_11bff7df();
+        Td.assertMessageContent_baa076bf();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

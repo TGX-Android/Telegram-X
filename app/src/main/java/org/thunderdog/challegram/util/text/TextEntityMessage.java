@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import android.net.Uri;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ClickableSpan;
@@ -261,6 +262,7 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
       case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
@@ -284,7 +286,7 @@ public class TextEntityMessage extends TextEntity {
         return false;
       }
       default:
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(type);
     }
   }
@@ -463,6 +465,14 @@ public class TextEntityMessage extends TextEntity {
         }
         break;
       }
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR: {
+        TdApi.TextEntityTypeDateTime type = (TdApi.TextEntityTypeDateTime) clickableEntity.type;
+        String date = Td.substring(text.getText(), clickableEntity);
+        if (callback != null && !callback.onDateClick(view, text, part, date, type, false)) {
+          Intents.openDate(type.unixTime);
+        }
+        break;
+      }
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR: {
         String cmd = Td.substring(text.getText(), clickableEntity);
         if (callback != null && !callback.onCommandClick(view, text, part, cmd, false)) {
@@ -559,7 +569,7 @@ public class TextEntityMessage extends TextEntity {
         // Non-clickable
         break;
       default:
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(clickableEntity.type);
     }
   }
@@ -619,6 +629,7 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
 
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR:
 
       case TdApi.TextEntityTypeMention.CONSTRUCTOR:
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR: {
@@ -650,7 +661,7 @@ public class TextEntityMessage extends TextEntity {
       }
 
       default: {
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(clickableEntity.type);
       }
     }
@@ -700,12 +711,13 @@ public class TextEntityMessage extends TextEntity {
           case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
           case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
           case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-          case TdApi.TextEntityTypePre.CONSTRUCTOR: {
+          case TdApi.TextEntityTypePre.CONSTRUCTOR:
+          case TdApi.TextEntityTypeDateTime.CONSTRUCTOR: {
             message = R.string.CopiedText;
             break;
           }
           default: {
-            Td.assertTextEntityType_56c1e709();
+            Td.assertTextEntityType_aefd8e69();
             message = R.string.CopiedLink;
             break;
           }

@@ -20,7 +20,6 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -31,10 +30,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -137,9 +136,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           if (args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusCreator creator = (TdApi.ChatMemberStatusCreator) args.member.status;
             targetAdmin = new TdApi.ChatMemberStatusAdministrator(
-              creator.customTitle,
               true,
               new TdApi.ChatAdministratorRights(
+                true,
                 true,
                 true,
                 true,
@@ -179,17 +178,17 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
   private TdApi.ChatMemberStatusAdministrator newTargetAdmin () {
     Args args = getArgumentsStrict();
-    switch (args.myStatus.getConstructor()) {
-      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR: {
-        TdApi.ChatMemberStatusAdministrator me = (TdApi.ChatMemberStatusAdministrator) args.myStatus;
-        return new TdApi.ChatMemberStatusAdministrator(null, true, Td.copyOf(me.rights));
-      }
-    }
-    // TODO bot defaults
-    return new TdApi.ChatMemberStatusAdministrator(
-      null,
-      true,
-      new TdApi.ChatAdministratorRights(
+    boolean isGroupChat = ChatId.isBasicGroup(args.chatId) || tdlib.isSupergroup(args.chatId);
+
+    TdApi.ChatAdministratorRights rights;
+    if (args.myStatus.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR) {
+      TdApi.ChatMemberStatusAdministrator me = (TdApi.ChatMemberStatusAdministrator) args.myStatus;
+      rights = Td.copyOf(me.rights);
+    } else if (isGroupChat) {
+      rights = Td.copyOf(TdConstants.BASIC_GROUP_ADMIN_RIGHTS);
+      rights.canManageTopics = isForum;
+    } else {
+      rights = new TdApi.ChatAdministratorRights(
         true,
         true,
         true,
@@ -198,7 +197,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         true,
         true,
         true,
-        isForum,
+        true,
+        false,
         true,
         true,
         true,
@@ -206,8 +206,23 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         true,
         true,
         false
-      )
-    );
+      );
+    }
+
+    if (args.member != null && args.member.memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+      TdApi.UserFullInfo userFull = tdlib.cache().userFull(tdlib.senderUserId(args.member.memberId));
+      if (userFull != null && userFull.botInfo != null) {
+        TdApi.BotInfo botInfo = userFull.botInfo;
+        TdApi.ChatAdministratorRights defaultRights = isGroupChat ?
+          botInfo.defaultGroupAdministratorRights :
+          botInfo.defaultChannelAdministratorRights;
+        if (defaultRights != null) {
+          Td.limitRights(rights, defaultRights);
+        }
+      }
+    }
+
+    return new TdApi.ChatMemberStatusAdministrator(true, rights);
   }
 
   @Override
@@ -229,7 +244,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     setRestrictUntilDate(duration != 0 ? (int) (tdlib.currentTimeMillis() / 1000l + duration) : 0);
   }
 
-  private ListItem customTitle;
+  private ListItem memberTag;
 
   @Override
   @SuppressWarnings("WrongConstant")
@@ -271,11 +286,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         toggleRightsGroupVisibility(option.groupRightIds);
       }
     } else if (viewId == R.id.btn_transferOwnership) {
-      if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
-        showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), this::onTransferOwnershipClick);
-      } else {
-        onTransferOwnershipClick();
-      }
+      onTransferOwnershipClick();
     } else if (viewId == R.id.btn_unblockSender) {
       final Runnable unblockRunnable = () -> {
         setCanViewMessages(true);
@@ -395,7 +406,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (!TD.hasRestrictions(targetRestrict.permissions, chatPermissions)) {
           // newStatus = targetRestrict.isMember ? new TdApi.ChatMemberStatusMember() : new TdApi.ChatMemberStatusLeft();
           if (args.member == null || !TD.isRestricted(args.member.status)) {
-            UI.showToast(R.string.NoRestrictionsHint, Toast.LENGTH_SHORT);
+            showError(Lang.getString(R.string.NoRestrictionsHint));
             return;
           }
           newStatus = targetRestrict.isMember ? new TdApi.ChatMemberStatusMember() : new TdApi.ChatMemberStatusLeft();
@@ -407,40 +418,56 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
     } else if (args.member != null && args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
       TdApi.ChatMemberStatusCreator creator = (TdApi.ChatMemberStatusCreator) args.member.status;
-      newStatus = new TdApi.ChatMemberStatusCreator(targetAdmin.customTitle, targetAdmin.rights.isAnonymous, creator.isMember);
+      newStatus = new TdApi.ChatMemberStatusCreator(targetAdmin.rights.isAnonymous, creator.isMember);
     } else if (Td.isEmpty(targetAdmin, chatPermissions)) {
       newStatus = new TdApi.ChatMemberStatusMember();
     } else {
       newStatus = targetAdmin;
     }
 
-    String newCustomTitle = Td.getCustomTitle(newStatus);
-    if (!StringUtils.isEmpty(newCustomTitle) && newCustomTitle.length() > TdConstants.MAX_CUSTOM_TITLE_LENGTH) {
-      UI.showToast(R.string.CustomTitleTooBig, Toast.LENGTH_SHORT);
+    String newTag = memberTag != null ? memberTag.getStringValue() : "";
+    boolean tagChanged = args.member != null && !StringUtils.equalsOrBothEmpty(newTag, args.member.tag);
+    if (!StringUtils.isEmpty(newTag) && newTag.length() > TdConstants.MAX_CUSTOM_TITLE_LENGTH) {
+      showError(Lang.getString(R.string.CustomTitleTooBig));
       return;
     }
+    if (Emoji.instance().hasEmoji(newTag)) {
+      showError(Lang.getString(R.string.CustomTitleEmoji));
+      return;
+    }
+
+    Tdlib.ChatMemberStatusChangeCallback onDone = (success, error, failedToAddMember) -> runOnUiThreadOptional(() -> {
+      setStackLocked(false);
+      setDoneInProgress(false);
+      if (success) {
+        ViewController<?> c = previousStackItem();
+        if (c instanceof ContactsController) {
+          destroyStackItemAt(stackSize() - 2);
+        }
+        onSaveCompleted();
+      } else {
+        showError(error != null && TD.ERROR_USER_PRIVACY.equals(error.message) ?
+          Lang.getString(R.string.errorPrivacyAddMember) :
+          TD.toErrorString(error)
+        );
+      }
+    });
 
     Runnable act = () -> {
       setDoneInProgress(true);
       setStackLocked(true);
-      tdlib.setChatMemberStatus(args.chatId, args.senderId, newStatus, args.forwardLimit, args.member != null ? args.member.status : null, (success, error) -> tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          setStackLocked(false);
-          setDoneInProgress(false);
-          if (success) {
-            ViewController<?> c = previousStackItem();
-            if (c instanceof ContactsController) {
-              destroyStackItemAt(stackSize() - 2);
+      tdlib.setChatMemberStatus(args.chatId, args.senderId, newStatus, args.forwardLimit, args.member != null ? args.member.status : null, (success, error, failedToAddMember) -> {
+        if (success && tagChanged) {
+          tdlib.setChatMemberTag(args.chatId, Td.getSenderUserId(args.senderId), newTag, tagSetError -> {
+            if (tagSetError != null) {
+              UI.showError(tagSetError);
             }
-            onSaveCompleted();
-          } else {
-            showError(error != null && TD.ERROR_USER_PRIVACY.equals(error.message) ?
-              Lang.getString(R.string.errorPrivacyAddMember) :
-              TD.toErrorString(error)
-            );
-          }
+            onDone.onMemberStatusUpdated(success, error, failedToAddMember);
+          });
+        } else {
+          onDone.onMemberStatusUpdated(success, error, failedToAddMember);
         }
-      }));
+      });
     };
 
     if (ChatId.isBasicGroup(args.chatId) && TD.needUpgradeToSupergroup(newStatus)) {
@@ -461,9 +488,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       @Override
       public void onTextChanged (MaterialEditTextGroup v, CharSequence charSequence) {
         String title = charSequence.toString();
-        if (customTitle.setStringValueIfChanged(title)) {
-          if (targetAdmin != null)
-            targetAdmin.customTitle = title;
+        if (memberTag.setStringValueIfChanged(title)) {
           checkDoneButton();
         }
       }
@@ -502,7 +527,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
           view.getToggler().setShowLock(!canEdit);
           if (needAddData) {
-            view.setData(item.getBoolValue() ? R.string.AllMembers : (isCommonRight(rightId) || rightId == RightId.MANAGE_OR_CREATE_TOPICS) ? R.string.OnlyAdminsSpecific : R.string.OnlyAdmins);
+            view.setData(item.getBoolValue() ? R.string.AllMembers : (isCommonRight(rightId) || rightId == RightId.MANAGE_OR_CREATE_TOPICS || rightId == RightId.EDIT_OR_MANAGE_TAGS) ? R.string.OnlyAdminsSpecific : R.string.OnlyAdmins);
           }
         } else if (viewId == R.id.btn_togglePermissionGroup) {
           final RightOption option = (RightOption) item.getData();
@@ -812,51 +837,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (args.mode == MODE_RESTRICTION) {
           return me.rights.canRestrictMembers;
         } else {
-          switch (id) {
-            case RightId.ADD_NEW_ADMINS:
-              return me.rights.canPromoteMembers;
-            case RightId.BAN_USERS:
-              return me.rights.canRestrictMembers;
-            case RightId.CHANGE_CHAT_INFO:
-              return me.rights.canChangeInfo;
-            case RightId.DELETE_MESSAGES:
-              return me.rights.canDeleteMessages;
-            case RightId.EDIT_MESSAGES:
-              return me.rights.canEditMessages;
-            case RightId.INVITE_USERS:
-              return me.rights.canInviteUsers;
-            case RightId.PIN_MESSAGES:
-              return me.rights.canPinMessages;
-            case RightId.MANAGE_VIDEO_CHATS:
-              return me.rights.canManageVideoChats;
-            case RightId.MANAGE_OR_CREATE_TOPICS:
-              return me.rights.canManageTopics;
-            case RightId.MANAGE_DIRECT_MESSAGES:
-              return me.rights.canManageDirectMessages;
-            case RightId.POST_STORIES:
-              return me.rights.canPostStories;
-            case RightId.EDIT_STORIES:
-              return me.rights.canEditStories;
-            case RightId.DELETE_STORIES:
-              return me.rights.canDeleteStories;
-            case RightId.REMAIN_ANONYMOUS:
-              return me.rights.isAnonymous;
-            case RightId.SEND_BASIC_MESSAGES:
-            case RightId.SEND_AUDIO:
-            case RightId.SEND_DOCS:
-            case RightId.SEND_PHOTOS:
-            case RightId.SEND_VIDEOS:
-            case RightId.SEND_VIDEO_NOTES:
-            case RightId.SEND_VOICE_NOTES:
-            case RightId.SEND_OTHER_MESSAGES:
-            case RightId.EMBED_LINKS:
-            case RightId.SEND_POLLS_OR_CHECKLISTS:
-              return me.rights.canPostMessages;
-            case RightId.READ_MESSAGES:
-              return true;
-            default:
-              throw new UnsupportedOperationException(Lang.getResourceEntryName(id));
-          }
+          return TD.checkRight(me.rights, id);
         }
       }
     }
@@ -948,7 +929,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (isDoneInProgress())
           return;
         setDoneInProgress(true);
-        Runnable act = () -> tdlib.transferOwnership(getArgumentsStrict().chatId, senderUserId, password, (success, error) -> runOnUiThreadOptional(() -> {
+        Runnable act = () -> tdlib.transferOwnership(getArgumentsStrict().chatId, senderUserId, password, (success, error, failedToAddMember) -> runOnUiThreadOptional(() -> {
           if (success) {
             setDoneInProgress(false);
             navigateBack();
@@ -971,29 +952,13 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             showError(errorMessage);
           }
         }));
-        if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
-          tdlib.upgradeToSupergroup(getArgumentsStrict().chatId, (fromChatId, toChatId, error) -> {
-            if (toChatId != 0) {
-              getArgumentsStrict().chatId = toChatId;
-              act.run();
-            } else {
-              runOnUiThreadOptional(() -> {
-                setDoneInProgress(false);
-                if (error != null) {
-                  showError(TD.toErrorString(error));
-                }
-              });
-            }
-          });
-        } else {
-          act.run();
-        }
+        act.run();
       }
     });
   }
 
   private boolean canTransferOwnership () {
-    if (targetAdmin == null || tdlib.cache().senderBot(getArgumentsStrict().senderId) || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR)
+    if (targetAdmin == null || tdlib.cache().senderBot(getArgumentsStrict().senderId) || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR || tdlib.isSelfSender(getArgumentsStrict().senderId))
       return false;
     final boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
     final TdApi.ChatAdministratorRights rights = targetAdmin.rights;
@@ -1063,8 +1028,10 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     if (args.mode == MODE_CHAT_PERMISSIONS) {
       rightIdOptions.add(new RightOption(RightId.SEND_BASIC_MESSAGES));
       rightIdOptions.add(new RightOption(R.string.RightSendMedia, SEND_MEDIA_RIGHT_IDS));
+      rightIdOptions.add(new RightOption(RightId.REACT_TO_MESSAGES));
       rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
       rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
+      rightIdOptions.add(new RightOption(RightId.EDIT_OR_MANAGE_TAGS));
       rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
       if (isForum || getValueForId(RightId.MANAGE_OR_CREATE_TOPICS)) {
         rightIdOptions.add(new RightOption(RightId.MANAGE_OR_CREATE_TOPICS));
@@ -1075,8 +1042,10 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       rightIdOptions.add(new RightOption(RightId.SEND_BASIC_MESSAGES));
       rightIdOptions.add(new RightOption(R.string.RightSendMedia, SEND_MEDIA_RIGHT_IDS));
+      rightIdOptions.add(new RightOption(RightId.REACT_TO_MESSAGES));
       rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
       rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
+      rightIdOptions.add(new RightOption(RightId.EDIT_OR_MANAGE_TAGS));
       rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
       if (isForum || getValueForId(RightId.MANAGE_OR_CREATE_TOPICS)) {
         rightIdOptions.add(new RightOption(RightId.MANAGE_OR_CREATE_TOPICS));
@@ -1096,6 +1065,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
       rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
       rightIdOptions.add(new RightOption(RightId.MANAGE_VIDEO_CHATS));
+      rightIdOptions.add(new RightOption(RightId.EDIT_OR_MANAGE_TAGS));
       if (isForum || getValueForId(RightId.MANAGE_OR_CREATE_TOPICS)) {
         rightIdOptions.add(new RightOption(RightId.MANAGE_OR_CREATE_TOPICS));
       }
@@ -1196,7 +1166,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     Args args = getArgumentsStrict();
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.CustomTitle));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(customTitle = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION, R.id.input_customTitle, 0, 0, false).setStringValue(args.member != null ? Td.getCustomTitle(args.member.status) : null));
+    items.add(memberTag = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION, R.id.input_customTitle, 0, 0, false).setStringValue(args.member != null ? args.member.tag : null));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getStringBold(R.string.CustomTitleHint, Lang.getString(args.member != null && TD.isCreator(args.member.status) ? R.string.message_ownerSign : R.string.message_adminSignPlain)), false));
     adapter.setLockFocusOn(this, !args.noFocusLock && args.member != null && TD.isCreator(args.member.status) && TD.isCreator(args.myStatus));
@@ -1264,7 +1234,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
       TdApi.ChatMemberStatusRestricted old = (TdApi.ChatMemberStatusRestricted) args.member.status;
       return old.restrictedUntilDate != targetRestrict.restrictedUntilDate  || !Td.equalsTo(targetRestrict.permissions, old.permissions, tdlib.chatPermissions(args.chatId));
-    } else if (customTitle != null && !StringUtils.equalsOrBothEmpty(Td.getCustomTitle(args.member.status), customTitle.getStringValue())) {
+    } else if (memberTag != null && !StringUtils.equalsOrBothEmpty(args.member.tag, memberTag.getStringValue())) {
       return true;
     } else if (args.member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR) {
       TdApi.ChatMemberStatusAdministrator old = (TdApi.ChatMemberStatusAdministrator) args.member.status;
@@ -1436,6 +1406,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         targetRestrict.permissions.canAddLinkPreviews = newValue;
         break;
       }
+      case RightId.REACT_TO_MESSAGES: {
+        setCanViewMessages(canViewMessages || newValue);
+        targetRestrict.permissions.canReactToMessages = newValue;
+        break;
+      }
       case RightId.CHANGE_CHAT_INFO: {
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
           targetAdmin.rights.canChangeInfo = newValue;
@@ -1484,6 +1459,13 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           targetRestrict.permissions.canCreateTopics = newValue;
         }
         break;
+      case RightId.EDIT_OR_MANAGE_TAGS:
+        if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
+          targetAdmin.rights.canManageTags = newValue;
+        } else {
+          targetRestrict.permissions.canEditTag = newValue;
+        }
+        break;
       case RightId.POST_STORIES:
         targetAdmin.rights.canPostStories = newValue;
         break;
@@ -1509,6 +1491,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       targetRestrict.isMember = canViewMessages;
       targetRestrict.permissions.canSendBasicMessages = getValueForId(RightId.SEND_BASIC_MESSAGES);
       targetRestrict.permissions.canAddLinkPreviews = getValueForId(RightId.EMBED_LINKS);
+      targetRestrict.permissions.canReactToMessages = getValueForId(RightId.REACT_TO_MESSAGES);
       targetRestrict.permissions.canSendAudios = getValueForId(RightId.SEND_AUDIO);
       targetRestrict.permissions.canSendDocuments = getValueForId(RightId.SEND_DOCS);
       targetRestrict.permissions.canSendPhotos = getValueForId(RightId.SEND_PHOTOS);
@@ -1579,6 +1562,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         }
       case RightId.EMBED_LINKS:
         return canViewMessages && targetRestrict.permissions.canSendBasicMessages && targetRestrict.permissions.canAddLinkPreviews;
+      case RightId.REACT_TO_MESSAGES:
+        return canViewMessages && targetRestrict.permissions.canReactToMessages;
       case RightId.SEND_AUDIO:
         return canViewMessages && targetRestrict.permissions.canSendAudios;
       case RightId.SEND_DOCS:
@@ -1629,6 +1614,12 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         } else {
           return canViewMessages && targetRestrict.permissions.canCreateTopics;
         }
+      case RightId.EDIT_OR_MANAGE_TAGS:
+        if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
+          return targetAdmin.rights.canManageTags;
+        } else {
+          return canViewMessages && targetRestrict.permissions.canEditTag;
+        }
       case RightId.POST_STORIES:
         return targetAdmin.rights.canPostStories;
       case RightId.EDIT_STORIES:
@@ -1667,6 +1658,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.string.UserRestrictionsSendPolls;
       case RightId.EMBED_LINKS:
         return R.string.UserRestrictionsEmbedLinks;
+      case RightId.REACT_TO_MESSAGES:
+        return R.string.UserRestrictionsReactToMessages;
       case RightId.CHANGE_CHAT_INFO:
         return isChannel ? R.string.RightChangeChannelInfo : R.string.RightChangeGroupInfo;
       case RightId.DELETE_MESSAGES:
@@ -1687,6 +1680,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.string.RightDirectMessages;
       case RightId.MANAGE_OR_CREATE_TOPICS:
         return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? R.string.RightTopics : R.string.RightTopicsCreate;
+      case RightId.EDIT_OR_MANAGE_TAGS:
+        return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? R.string.RightTags : R.string.RightTagsOwn;
       case RightId.POST_STORIES:
         return R.string.RightStoriesPost;
       case RightId.EDIT_STORIES:
@@ -1722,6 +1717,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.drawable.deproko_baseline_pin_24;
       case RightId.REMAIN_ANONYMOUS:
         return R.drawable.dot_baseline_acc_anon_24;
+      case RightId.REACT_TO_MESSAGES:
+        return R.drawable.baseline_favorite_24;
 
       case RightId.MANAGE_VIDEO_CHATS:
         return R.drawable.baseline_video_chat_24;
@@ -1729,6 +1726,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.drawable.baseline_chat_bubble_24;
       case RightId.MANAGE_OR_CREATE_TOPICS:
         return R.drawable.baseline_format_list_bulleted_type_24;
+      case RightId.EDIT_OR_MANAGE_TAGS:
+        return R.drawable.baseline_label_24;
 
       case RightId.POST_STORIES:  // todo
 
@@ -1752,13 +1751,18 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     if (tdlib.isChannel(args.chatId))
       return false;
     if (args.mode == MODE_ADMIN_PROMOTION) {
-      int promoteMode = args.member == null ? TD.PROMOTE_MODE_NEW : TD.canPromoteAdmin(args.myStatus, args.member.status);
+      int promoteMode = args.member == null ?
+        TD.PROMOTE_MODE_NEW :
+        TD.canPromoteAdmin(args.myStatus, args.member.status);
       switch (promoteMode) {
         case TD.PROMOTE_MODE_NEW:
         case TD.PROMOTE_MODE_EDIT:
           return true;
         default:
-          return !StringUtils.isEmpty(Td.getCustomTitle(args.member.status)) || (TD.isCreator(args.myStatus)) || (Config.CAN_CHANGE_SELF_ADMIN_CUSTOM_TITLE && tdlib.isSelfSender(args.member.memberId));
+          return
+            !StringUtils.isEmpty(args.member.tag) ||
+            TD.isCreator(args.myStatus) || (TD.isAdmin(args.myStatus) && ((TdApi.ChatMemberStatusAdministrator) args.myStatus).rights.canManageTags) ||
+            checkDefaultRight(RightId.EDIT_OR_MANAGE_TAGS);
       }
     }
     return false;

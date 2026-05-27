@@ -170,7 +170,7 @@ public final class N {
           VpxLibrary.getVersion(),
           FfmpegLibrary.getVersion(),
           VoIPController.getVersion(),
-          TextUtils.join("+", N.getTgCallsVersions())
+          TextUtils.join("+", N.getTgCallsLibVersions())
         ));
         VideoCodecInfo[] softwareVideoCodecs = new SoftwareVideoEncoderFactory().getSupportedCodecs();
       }

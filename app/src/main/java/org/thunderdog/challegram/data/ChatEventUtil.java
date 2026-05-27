@@ -118,6 +118,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
       case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
       case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
+      case TdApi.ChatEventMemberTagChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_SERVICE;
       // only full (native)
       case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
@@ -135,7 +136,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_FULL;
       default: {
-        Td.assertChatEventAction_53b6b01e();
+        Td.assertChatEventAction_3964b51d();
         throw Td.unsupported(action);
       }
     }
@@ -226,6 +227,8 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventMemberSubscriptionExtended) action);
       case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventAutomaticTranslationToggled) action);
+      case TdApi.ChatEventMemberTagChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMemberTagChanged) action);
       // only full (native)
       case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
@@ -242,7 +245,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_53b6b01e();
+        Td.assertChatEventAction_3964b51d();
         throw Td.unsupported(action);
       }
     }
@@ -402,7 +405,7 @@ public class ChatEventUtil {
               default:
                 if (!isAnonymous) {
                   type = 1;
-                  oldStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
+                  oldStatus = new TdApi.ChatMemberStatusAdministrator(false, new TdApi.ChatAdministratorRights());
                 } else {
                   oldStatus = e.oldStatus;
                 }
@@ -416,7 +419,7 @@ public class ChatEventUtil {
               default:
                 if (!isAnonymous) {
                   type = 2;
-                  newStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
+                  newStatus = new TdApi.ChatMemberStatusAdministrator(false, new TdApi.ChatAdministratorRights());
                 } else {
                   newStatus = e.newStatus;
                 }
@@ -570,6 +573,7 @@ public class ChatEventUtil {
               true,
               true,
               true,
+              true,
               true
             );
           }
@@ -598,7 +602,7 @@ public class ChatEventUtil {
           }
           appendRight(b, R.string.EventLogPromotedManageDirectMessages, oldAdmin.rights.canManageDirectMessages, newAdmin.rights.canManageDirectMessages, false);
           appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.rights.canPromoteMembers, newAdmin.rights.canPromoteMembers, false);
-          appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, oldAdmin.customTitle, newAdmin.customTitle, false);
+          // appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, oldAdmin.customTitle, newAdmin.customTitle, false);
         } else if (oldStatus != null && newStatus != null) {
           final boolean oldCanReadMessages = oldStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;
           final boolean newCanReadMessages = newStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;
@@ -609,6 +613,8 @@ public class ChatEventUtil {
           if (!isRegularBanUnban) {
             if (Config.COMPILE_CHECK) {
               new TdApi.ChatPermissions(
+                false,
+                false,
                 false,
                 false,
                 false,
@@ -638,6 +644,7 @@ public class ChatEventUtil {
             appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedSendPolls, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedSendEmbed, oldBan != null ? oldBan.permissions.canAddLinkPreviews : oldCanReadMessages, newBan != null ? newBan.permissions.canAddLinkPreviews : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedReactToMessages, oldBan != null ? oldBan.permissions.canReactToMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canReactToMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
@@ -686,9 +693,10 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
       case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
       case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
+      case TdApi.ChatEventMemberTagChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_53b6b01e();
+        Td.assertChatEventAction_3964b51d();
         throw Td.unsupported(action);
       }
     }
@@ -779,6 +787,8 @@ public class ChatEventUtil {
             false,
             false,
             false,
+            false,
+            false,
             false
           );
         }
@@ -793,6 +803,7 @@ public class ChatEventUtil {
         appendRight(b, R.string.EventLogPermissionSendStickers, permissions.oldPermissions.canSendOtherMessages, permissions.newPermissions.canSendOtherMessages, true);
         appendRight(b, R.string.EventLogPermissionSendPolls, permissions.oldPermissions.canSendPolls, permissions.newPermissions.canSendPolls, true);
         appendRight(b, R.string.EventLogPermissionSendEmbed, permissions.oldPermissions.canAddLinkPreviews, permissions.newPermissions.canAddLinkPreviews, true);
+        appendRight(b, R.string.EventLogPermissionReactToMessages, permissions.oldPermissions.canReactToMessages, permissions.newPermissions.canReactToMessages, true);
         appendRight(b, R.string.EventLogPermissionAddUsers, permissions.oldPermissions.canInviteUsers, permissions.newPermissions.canInviteUsers, true);
         appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
         appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
@@ -1008,11 +1019,12 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
       case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
       case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
+      case TdApi.ChatEventMemberTagChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(event.action.toString());
 
       // Unsupported
       default: {
-        Td.assertChatEventAction_53b6b01e();
+        Td.assertChatEventAction_3964b51d();
         throw Td.unsupported(event.action);
       }
     }

@@ -476,6 +476,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
         return FLAG_STRIKETHROUGH;
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR:
         return FLAG_LINK;
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         return FLAG_SPOILER;
@@ -501,7 +502,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
       // unsupported
       default:
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(type);
     }
   }

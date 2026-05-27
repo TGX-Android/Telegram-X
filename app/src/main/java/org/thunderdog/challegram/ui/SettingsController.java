@@ -1233,9 +1233,9 @@ public class SettingsController extends ViewController<Void> implements
     } else if (viewId == R.id.btn_chatFolders) {
       navigateTo(new SettingsFoldersController(context, tdlib));
     } else if (viewId == R.id.btn_faq) {
-      tdlib.ui().openUrl(this, Lang.getString(R.string.url_faq), new TdlibUi.UrlOpenParameters().forceInstantView());
+      tdlib.ui().openFaq(this);
     } else if (viewId == R.id.btn_privacyPolicy) {
-      tdlib.ui().openUrl(this, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
+      tdlib.ui().openPrivacyPolicy(this);
     } else if (viewId == R.id.btn_suggestion) {
       ListItem listItem = (ListItem) v.getTag();
       showSuggestionPopup(v, (TdApi.SuggestedAction) listItem.getData());
@@ -1389,7 +1389,7 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private void dismissSuggestion (TdApi.SuggestedAction suggestedAction) {
-    tdlib.client().send(new TdApi.HideSuggestedAction(suggestedAction), tdlib.okHandler());
+    tdlib.send(new TdApi.HideSuggestedAction(suggestedAction), tdlib.typedOkHandler());
   }
 
   private void showBuildOptions (boolean allowDebug) {

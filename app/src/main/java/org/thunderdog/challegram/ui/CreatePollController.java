@@ -633,7 +633,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     }
     boolean hasCustomEmoji = TD.hasCustomEmoji(question);
     int correctOptionId = -1;
-    List<TdApi.FormattedText> options = new ArrayList<>(tdlib.options().pollAnswerCountMax);
+    List<TdApi.InputPollOption> options = new ArrayList<>(tdlib.options().pollAnswerCountMax);
     for (ListItem optionItem : this.options) {
       CharSequence cs = StringUtils.trim(optionItem.getCharSequenceValue());
       if (StringUtils.isEmpty(cs))
@@ -651,7 +651,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       if (optionItem == correctOptionItem) {
         correctOptionId = options.size();
       }
-      options.add(option);
+      options.add(new TdApi.InputPollOption(option, null));
     }
     if (options.size() < 2)
       return;
@@ -682,8 +682,25 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     getDoneButton().setInProgress(true);
     hideSoftwareKeyboard();
 
-    TdApi.FormattedText[] optionsArray = options.toArray(new TdApi.FormattedText[0]);
-    TdApi.InputMessagePoll poll = new TdApi.InputMessagePoll(question, optionsArray, isAnonymousVoting, isQuiz ? new TdApi.PollTypeQuiz(correctOptionId, explanation) : new TdApi.PollTypeRegular(isMultiChoiceVote), 0, 0, false);
+    TdApi.InputPollOption[] optionsArray = options.toArray(new TdApi.InputPollOption[0]);
+    TdApi.InputPollType inputPollType = isQuiz ?
+      new TdApi.InputPollTypeQuiz(new int[] {correctOptionId}, explanation, null) :
+      new TdApi.InputPollTypeRegular(false);
+    TdApi.InputMessagePoll poll = new TdApi.InputMessagePoll(
+      question,
+      optionsArray,
+      null,
+      null,
+      isAnonymousVoting,
+      isMultiChoiceVote,
+      !isQuiz,
+      false,
+      null,
+      false,
+      false,
+      inputPollType,
+      0, 0, false
+    );
 
     RunnableData<TdApi.Message> after = message -> runOnUiThreadOptional(() -> {
       getDoneButton().setInProgress(false);

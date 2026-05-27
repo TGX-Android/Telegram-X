@@ -282,7 +282,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   private void removeTopChat (final TGFoundChat chat) {
     showOptions(Lang.getStringBold(R.string.ChatHintsDelete, chat.getTitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_delete) {
-        tdlib.client().send(new TdApi.RemoveTopChat(new TdApi.TopChatCategoryCalls(), chat.getChatId()), tdlib.okHandler());
+        tdlib.send(new TdApi.RemoveTopChat(new TdApi.TopChatCategoryCalls(), chat.getChatId()), tdlib.typedOkHandler());
         if (hasTopChats()) {
           if (topChats.size() == 1 && topChats.remove(chat)) {
             setTopChats(null);
