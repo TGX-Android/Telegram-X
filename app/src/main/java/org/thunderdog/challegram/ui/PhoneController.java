@@ -578,13 +578,15 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (inCountryMode) {
-      setInCountryMode(false);
-      updateCountry(storedValues.get(R.id.login_code, ""), isCountryDefault);
+      if (commit) {
+        setInCountryMode(false);
+        updateCountry(storedValues.get(R.id.login_code, ""), isCountryDefault);
+      }
       return true;
     }
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private boolean ignorePhoneChanges;
@@ -891,7 +893,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
 
     switch (mode) {
       case MODE_ADD_CONTACT:
-        function = new TdApi.ImportContacts(new TdApi.Contact[] {new TdApi.Contact(phone, getFirstName(), getLastName(), null, 0)});
+        function = new TdApi.ImportContacts(new TdApi.ImportedContact[] {new TdApi.ImportedContact(phone, getFirstName(), getLastName(), null)});
         break;
       case MODE_CHANGE_NUMBER:
         function = new TdApi.SendPhoneNumberCode(phone, tdlib.phoneNumberAuthenticationSettings(context), new TdApi.PhoneNumberCodeTypeChange());

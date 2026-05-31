@@ -82,6 +82,9 @@ public class NavigationProcessor extends Handler {
 
   public void setController (ViewController<?> controller) {
     if (checkUiThread()) {
+      if (PREVENTIVE_INSETS_APPLY) {
+        navigation.applyBottomInset(controller);
+      }
       controller.getValue();
 
       stack.clear(navigation);
@@ -123,6 +126,9 @@ public class NavigationProcessor extends Handler {
         return;
       }
 
+      if (PREVENTIVE_INSETS_APPLY) {
+        navigation.applyBottomInset(controller);
+      }
       controller.getValue();
 
       navigation.setIsAnimating(true);
@@ -162,6 +168,9 @@ public class NavigationProcessor extends Handler {
 
       navigation.hideContextualPopups();
 
+      if (PREVENTIVE_INSETS_APPLY) {
+        navigation.applyBottomInset(controller);
+      }
       controller.getValue();
 
       // stack.getCurrent().onBlur();
@@ -171,6 +180,8 @@ public class NavigationProcessor extends Handler {
       sendMessage(Message.obtain(this, NAVIGATE, 0, 0, controller));
     }
   }
+
+  private static final boolean PREVENTIVE_INSETS_APPLY = false;
 
   public void removePrevious (@NonNull ViewController<?> controller) {
     if (checkUiThread()) {

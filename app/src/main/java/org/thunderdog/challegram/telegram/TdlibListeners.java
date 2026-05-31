@@ -589,9 +589,9 @@ public class TdlibListeners {
     );
   }
 
-  private void runForumUpdate (long chatId, long messageThreadId, RunnableData<ForumTopicInfoListener> act) {
+  private void runForumUpdate (long chatId, int forumTopicId, RunnableData<ForumTopicInfoListener> act) {
     runUpdate(act,
-      specificForumTopicListeners.iterator(uniqueForumTopicKey(chatId, messageThreadId)),
+      specificForumTopicListeners.iterator(uniqueForumTopicKey(chatId, forumTopicId)),
       chatListeners.iterator(),
       specificChatListeners.iterator(chatId)
     );
@@ -844,6 +844,20 @@ public class TdlibListeners {
     );
   }
 
+  // updateMessageContainsUnreadPollVotes
+
+  void updateMessageContainsUnreadPollVotes (TdApi.UpdateMessageContainsUnreadPollVotes update) {
+    List<TdApi.Message> messages = pendingMessages.get(update.chatId + "_" + update.messageId);
+    if (messages != null) {
+      for (TdApi.Message message : messages) {
+        message.containsUnreadPollVotes = update.containsUnreadPollVotes;
+      }
+    }
+    runMessageUpdate(update.chatId, listener ->
+      listener.onMessageUnreadPollVotesChanged(update.chatId, update.messageId, update.containsUnreadPollVotes, update.unreadPollVoteCount)
+    );
+  }
+
   // updateMessageUnreadReactions
 
   void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update, boolean counterChanged, boolean availabilityChanged, TdApi.Chat chat, @Nullable TdlibChatList[] chatLists) {
@@ -883,6 +897,14 @@ public class TdlibListeners {
   void updateChatUnreadMentionCount (TdApi.UpdateChatUnreadMentionCount update, boolean availabilityChanged) {
     runChatUpdate(update.chatId, listener ->
       listener.onChatUnreadMentionCount(update.chatId, update.unreadMentionCount, availabilityChanged)
+    );
+  }
+
+  // updateChatUnreadPollVoteCount
+
+  void updateChatUnreadPollVoteCount (TdApi.UpdateChatUnreadPollVoteCount update, boolean availabilityChanged) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatUnreadPollVoteCount(update.chatId, update.unreadPollVoteCount, availabilityChanged)
     );
   }
 
@@ -976,7 +998,7 @@ public class TdlibListeners {
 
   void updateChatTheme (TdApi.UpdateChatTheme update, TdApi.Chat chat, @Nullable TdlibChatList[] chatLists) {
     runChatUpdate(update.chatId, listener ->
-      listener.onChatThemeChanged(update.chatId, update.themeName)
+      listener.onChatThemeChanged(update.chatId, update.theme)
     );
     if (chatLists != null) {
       for (TdlibChatList chatList : chatLists) {
@@ -1054,7 +1076,7 @@ public class TdlibListeners {
 
   void updateChatReplyMarkup (TdApi.UpdateChatReplyMarkup update) {
     runChatUpdate(update.chatId, listener ->
-      listener.onChatReplyMarkupChanged(update.chatId, update.replyMarkupMessageId)
+      listener.onChatReplyMarkupChanged(update.chatId, update.replyMarkupMessage)
     );
   }
 
@@ -1137,6 +1159,46 @@ public class TdlibListeners {
   void updateGroupCallParticipants (TdApi.UpdateGroupCallParticipants update) {
     runGroupCallUpdate(update.groupCallId, listener ->
       listener.onGroupCallParticipantsChanged(update.groupCallId, update.participantUserIds)
+    );
+  }
+
+  // updateNewGroupCallMessage
+
+  void updateNewGroupCallMessage (TdApi.UpdateNewGroupCallMessage update) {
+    runGroupCallUpdate(update.groupCallId, listener ->
+      listener.onNewGroupCallMessage(update.groupCallId, update.message)
+    );
+  }
+
+  // updateNewGroupCallPaidReaction
+
+  void updateNewGroupCallPaidReaction (TdApi.UpdateNewGroupCallPaidReaction update) {
+    runGroupCallUpdate(update.groupCallId, listener ->
+      listener.onNewGroupCallPaidReaction(update.groupCallId, update.senderId, update.starCount)
+    );
+  }
+
+  // updateGroupCallMessageLevels
+
+  void updateGroupCallMessageLevels (TdApi.UpdateGroupCallMessageLevels update) {
+    runUpdate(optionListeners, listener ->
+      listener.onGroupCallMessageLevelsUpdated(update.levels)
+    );
+  }
+
+  // updateGroupCallMessageSendFailed
+
+  void updateGroupCallMessageSendFailed (TdApi.UpdateGroupCallMessageSendFailed update) {
+    runGroupCallUpdate(update.groupCallId, listener ->
+      listener.onGroupCallMessageSendFailed(update.groupCallId, update.messageId, update.error)
+    );
+  }
+
+  // updateGroupCallMessagesDeleted
+
+  void updateGroupCallMessagesDeleted (TdApi.UpdateGroupCallMessagesDeleted update) {
+    runGroupCallUpdate(update.groupCallId, listener ->
+      listener.onGroupCallMessagesDeleted(update.groupCallId, update.messageIds)
     );
   }
 
@@ -1235,12 +1297,12 @@ public class TdlibListeners {
 
   // updateForumTopicInfo
 
-  private static String uniqueForumTopicKey (long chatId, long messageThreadId) {
-    return chatId + "_" + messageThreadId;
+  private static String uniqueForumTopicKey (long chatId, int forumTopicId) {
+    return chatId + "_" + forumTopicId;
   }
 
   void updateForumTopicInfo (TdApi.UpdateForumTopicInfo update) {
-    runForumUpdate(update.info.chatId, update.info.messageThreadId, listener ->
+    runForumUpdate(update.info.chatId, update.info.forumTopicId, listener ->
       listener.onForumTopicInfoChanged(update.info)
     );
   }
@@ -1248,8 +1310,8 @@ public class TdlibListeners {
   // updateForumTopic
 
   void updateForumTopic (TdApi.UpdateForumTopic update) {
-    runForumUpdate(update.chatId, update.messageThreadId, listener ->
-      listener.onForumTopicUpdated(update.chatId, update.messageThreadId, update.isPinned, update.lastReadInboxMessageId, update.lastReadOutboxMessageId, update.notificationSettings)
+    runForumUpdate(update.chatId, update.forumTopicId, listener ->
+      listener.onForumTopicUpdated(update.chatId, update.forumTopicId, update.isPinned, update.lastReadInboxMessageId, update.lastReadOutboxMessageId, update.notificationSettings)
     );
   }
 
@@ -1555,6 +1617,14 @@ public class TdlibListeners {
     );
   }
 
+  // updateTrustedMiniAppBots
+
+  void updateTrustedMiniAppBots (TdApi.UpdateTrustedMiniAppBots update) {
+    runUpdate(optionListeners, listener ->
+      listener.onTrustedMiniAppBotsUpdated(update.botUserIds)
+    );
+  }
+
   // updateSavedAnimations
 
   void updateSavedAnimations (TdApi.UpdateSavedAnimations update) {
@@ -1638,6 +1708,12 @@ public class TdlibListeners {
   void updateStarRevenueStatus (TdApi.UpdateStarRevenueStatus update) {
     runUpdate(optionListeners, listener ->
       listener.onStarRevenueStatusUpdated(update.ownerId, update.status)
+    );
+  }
+
+  void updateTonRevenueStatus (TdApi.UpdateTonRevenueStatus update) {
+    runUpdate(optionListeners, listener ->
+      listener.onTonRevenueStatusUpdated(update.status)
     );
   }
 

@@ -1077,7 +1077,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       for (TGStickerSetInfo info : stickerSets) {
         stickerSetIds[i++] = info.getId();
       }
-      tdlib.client().send(new TdApi.ReorderInstalledStickerSets(getStickerType(mode, isEmoji), stickerSetIds), tdlib.okHandler());
+      tdlib.send(new TdApi.ReorderInstalledStickerSets(getStickerType(mode, isEmoji), stickerSetIds), tdlib.typedOkHandler());
     }
   }
 }

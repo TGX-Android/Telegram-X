@@ -125,4 +125,8 @@ public class ListInfoView extends FrameLayoutFix {
       requestLayout();
     }
   }
+
+  public CharSequence getText () {
+    return textView.getText();
+  }
 }

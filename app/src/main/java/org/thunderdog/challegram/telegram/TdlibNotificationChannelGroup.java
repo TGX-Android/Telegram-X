@@ -461,7 +461,7 @@ public class TdlibNotificationChannelGroup {
           }
         }
         if (removedChannels != null) {
-          Log.e(Log.TAG_FCM, "Removed deprecated channels: %s", Strings.join(", ", removedChannels));
+          TDLib.Tag.notifications( "Removed deprecated channels: %s", Strings.join(", ", removedChannels));
         }
       }
     }

@@ -48,6 +48,7 @@ import org.thunderdog.challegram.loader.gif.GifFileLocal;
 import org.thunderdog.challegram.mediaview.MediaCellView;
 import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.tool.Screen;
@@ -637,15 +638,26 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   private TGMessage sourceMessage;
+  private TdApi.SponsoredMessage sourceSponsoredMessage;
 
   public MediaItem setSourceMessage (TGMessage message) {
     this.sourceMessage = message;
     return this;
   }
 
+  public MediaItem setSourceSponsoredMessage (TdApi.SponsoredMessage sponsoredMessage) {
+    this.sourceSponsoredMessage = sponsoredMessage;
+    return this;
+  }
+
   @Nullable
   public TGMessage getSourceMessage () {
     return sourceMessage;
+  }
+
+  @Nullable
+  public TdApi.SponsoredMessage getSourceSponsoredMessage () {
+    return sourceSponsoredMessage;
   }
 
   public long getPhotoId () {
@@ -954,6 +966,42 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return null;
   }
 
+  public static MediaItem valueOf (TGMessage message, long messageId) {
+    ViewController<?> context = message.controller();
+    TdApi.Message msg = message.getMessage(messageId);
+    if (message.isSponsoredMessage()) {
+      return MediaItem.valueOf(context.context(), context.tdlib(), msg.chatId, message.getSponsoredMessage());
+    } else {
+      return MediaItem.valueOf(context.context(), context.tdlib(), msg);
+    }
+  }
+
+  public static MediaItem valueOf (BaseActivity context, Tdlib tdlib, long chatId, TdApi.SponsoredMessage sponsoredMessage) {
+    if (sponsoredMessage == null) {
+      return null;
+    }
+    //noinspection SwitchIntDef
+    MediaItem item = switch (sponsoredMessage.content.getConstructor()) {
+      case TdApi.MessageText.CONSTRUCTOR ->
+        null;
+      case TdApi.MessagePhoto.CONSTRUCTOR ->
+        new MediaItem(context, tdlib, chatId, sponsoredMessage.messageId, null, 0, (TdApi.MessagePhoto) sponsoredMessage.content);
+      case TdApi.MessageVideo.CONSTRUCTOR ->
+        new MediaItem(context, tdlib, chatId, sponsoredMessage.messageId, null, 0, (TdApi.MessageVideo) sponsoredMessage.content, true);
+      case TdApi.MessageAnimation.CONSTRUCTOR ->
+        new MediaItem(context, tdlib, chatId, sponsoredMessage.messageId, null, 0, (TdApi.MessageAnimation) sponsoredMessage.content);
+      default -> {
+        Td.assertMessageContent_baa076bf();
+        throw Td.unsupported(sponsoredMessage.content);
+      }
+    };
+    if (item != null) {
+      item.setSourceSponsoredMessage(sponsoredMessage);
+      return item;
+    }
+    return null;
+  }
+
   public static MediaItem valueOf (BaseActivity context, Tdlib tdlib, TdApi.Message msg) {
     if (msg == null) {
       return null;
@@ -969,9 +1017,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             if (changedPhoto.oldPhoto != null || changedPhoto.newPhoto != null) {
               return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(event.event.memberId).setSourceDate(event.event.date);
             }
+            break;
           }
           default: {
-            Td.assertChatEventAction_53b6b01e();
+            Td.assertChatEventAction_3964b51d();
             break;
           }
         }
@@ -1590,6 +1639,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return sourceVideo;
   }
 
+  public TdApi.Animation getSourceAnimation () {
+    return sourceAnimation;
+  }
+
   public TdApi.Document getSourceDocument () {
     return sourceDocument;
   }
@@ -1764,10 +1817,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, caption, showCaptionAboveMedia, false);
           }
         }
-        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, showCaptionAboveMedia, null, false);
+        return new TdApi.InputMessagePhoto(file, null, null, null, 640, 640, caption, showCaptionAboveMedia, null, false);
       case TYPE_PHOTO:
       case TYPE_GALLERY_PHOTO:
-        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, showCaptionAboveMedia, null, type == TYPE_GALLERY_PHOTO && hasSpoiler);
+        return new TdApi.InputMessagePhoto(file, null, null, null, width, height, caption, showCaptionAboveMedia, null, type == TYPE_GALLERY_PHOTO && hasSpoiler);
       case TYPE_VIDEO:
         return new TdApi.InputMessageVideo(file, null, null, 0, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, showCaptionAboveMedia, null, false);
       case TYPE_GIF:

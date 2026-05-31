@@ -123,13 +123,15 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (!isCreation && hasAnyChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(null);
+      }
       return true;
     }
 
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override

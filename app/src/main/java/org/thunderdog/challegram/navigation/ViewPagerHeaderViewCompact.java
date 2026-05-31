@@ -176,7 +176,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
         int selectionHeight = Screen.dp(ViewPagerTopView.SELECTION_HEIGHT);
         int top = topView.isDrawSelectionAtTop() ? selectionHeight : 0;
         int bottom = getHeight() - (topView.isDrawSelectionAtTop() ? 0 : selectionHeight);
-        int saveCount = c.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+        int saveCount = Views.saveLayerAlpha(c, 0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
         super.draw(c);
         if (drawLeft) {
           matrix.setScale(leftLength, 1f);

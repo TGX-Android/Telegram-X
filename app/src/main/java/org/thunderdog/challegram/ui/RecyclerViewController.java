@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
@@ -99,15 +100,39 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
     }
   }
 
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  protected boolean needRecyclerBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (needRecyclerBottomInset()) {
+      Views.applyBottomInset(recyclerView, extraBottomInset);
+    }
+  }
+
+  protected FrameLayout createFrameLayout (Context context) {
+    return new FrameLayoutFix(context);
+  }
+
   @SuppressLint("InflateParams")
   @Override
   protected View onCreateView (Context context) {
-    FrameLayoutFix wrap = new FrameLayoutFix(context);
+    FrameLayout wrap = createFrameLayout(context);
     if (needContentBackground()) {
       ViewSupport.setThemedBackground(wrap, getRecyclerBackground(), this);
     }
     wrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     recyclerView = onCreateRecyclerView();
+    if (needRecyclerBottomInset()) {
+      Views.applyBottomInset(recyclerView, extraBottomInset);
+    }
     Views.setScrollBarPosition(recyclerView);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override

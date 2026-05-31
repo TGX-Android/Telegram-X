@@ -33,7 +33,7 @@ public class NavigationLayout extends FrameLayoutFix implements Destroyable, Roo
   @Override
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
-    rootView = Views.findAncestor(this, RootFrameLayout.class);
+    rootView = Views.findAncestor(this, RootFrameLayout.class, true);
     if (rootView != null) {
       rootView.addInsetsChangeListener(this);
       applyTopInset(rootView.getTopInset());
@@ -50,7 +50,7 @@ public class NavigationLayout extends FrameLayoutFix implements Destroyable, Roo
   }
 
   @Override
-  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect systemInsets, boolean isUpdate) {
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
     applyTopInset(effectiveInsets.top);
   }
 

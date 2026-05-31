@@ -40,6 +40,7 @@ public class TdlibSingleton<T extends TdApi.Object> implements CleanupStartupDel
     }
   }
 
+  @SuppressWarnings("unchecked")
   public void get (RunnableData<T> after) {
     T data;
     boolean needRequest = false;
@@ -70,7 +71,6 @@ public class TdlibSingleton<T extends TdApi.Object> implements CleanupStartupDel
           Log.e("TdlibSingleton failed for request: %s, error: %s", request, TD.toErrorString(result));
           dispatchResult(contextId, null);
         } else {
-          //noinspection unchecked
           dispatchResult(contextId, (T) result);
         }
       });

@@ -84,8 +84,10 @@ import androidx.core.os.EnvironmentCompat;
 import androidx.exifinterface.media.ExifInterface;
 import androidx.media3.common.C;
 import androidx.media3.common.Format;
+import androidx.media3.common.MediaLibraryInfo;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
+import androidx.media3.common.util.Clock;
 import androidx.media3.common.util.TimestampAdjuster;
 import androidx.media3.datasource.ByteArrayDataSource;
 import androidx.media3.datasource.DataSource;
@@ -95,6 +97,8 @@ import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlaybackException;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.RenderersFactory;
+import androidx.media3.exoplayer.analytics.AnalyticsCollector;
+import androidx.media3.exoplayer.analytics.DefaultAnalyticsCollector;
 import androidx.media3.exoplayer.analytics.PlayerId;
 import androidx.media3.exoplayer.hls.DefaultHlsExtractorFactory;
 import androidx.media3.exoplayer.hls.HlsExtractorFactory;
@@ -105,6 +109,7 @@ import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.exoplayer.source.UnrecognizedInputFormatException;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.exoplayer.util.EventLogger;
 import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.extractor.ExtractorInput;
 import androidx.recyclerview.widget.RecyclerView;
@@ -201,7 +206,7 @@ import tgx.td.Td;
 import tgx.td.data.HlsPath;
 import tgx.td.data.HlsVideo;
 
-@SuppressWarnings ("JniMissingFunction")
+@SuppressWarnings({"JniMissingFunction", "ObsoleteSdkInt"})
 public class U {
 
   public static boolean blurBitmap (Bitmap bitmap, int radius, int unpin) {
@@ -217,10 +222,10 @@ public class U {
   }
 
   public static String gzipFileToString (String path) {
-    try (BufferedSource buffer = Okio.buffer(Okio.source(new GZIPInputStream(new FileInputStream(new File(path)))))) {
+    try (BufferedSource buffer = Okio.buffer(Okio.source(new GZIPInputStream(new FileInputStream(path))))) {
       return buffer.readString(StringUtils.UTF_8);
     } catch (Throwable t) {
-      Log.w(Log.TAG_GIF_LOADER, "Cannot decode GZip, path: %s", t, path);
+      Log.w(Log.TAG_GIF_LOADER, "Cannot decode gzip, path: %s", t, path);
       return null;
     }
   }
@@ -239,7 +244,7 @@ public class U {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         android.net.Network network = cm.getActiveNetwork();
         android.net.NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
-        return !capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING);
+        return capabilities != null && !capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING);
       } else {
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         return netInfo != null && netInfo.isRoaming();
@@ -251,14 +256,14 @@ public class U {
   }
 
   public static boolean isImeDone (int actionId, KeyEvent event) {
-    switch (actionId) {
-      case EditorInfo
-        .IME_NULL:
-        return event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER;
-      case EditorInfo.IME_ACTION_DONE:
-        return true;
-    }
-    return false;
+    return switch (actionId) {
+      case EditorInfo.IME_NULL ->
+        event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER;
+      case EditorInfo.IME_ACTION_DONE ->
+        true;
+      default ->
+        false;
+    };
   }
 
   public static String getRingtoneName (@Nullable String ringtoneUri, @Nullable String fallbackName) {
@@ -267,7 +272,7 @@ public class U {
     return getRingtoneName(Uri.parse(ringtoneUri), fallbackName);
   }
 
-  public static String getRingtoneName (@Nullable Uri ringtoneUri, @Nullable String fallbackName) {
+  public static String getRingtoneName (@NonNull Uri ringtoneUri, @Nullable String fallbackName) {
     String[] projection = {MediaStore.MediaColumns.TITLE};
     try {
       try (Cursor cur = UI.getContext().getContentResolver().query(ringtoneUri, projection, null, null, null)) {
@@ -285,6 +290,7 @@ public class U {
     return fallbackName;
   }
 
+  @SuppressWarnings("SpellCheckingInspection")
   public static boolean isScreenshotFolder (String str) {
     if (StringUtils.isEmpty(str)) {
       return false;
@@ -304,31 +310,14 @@ public class U {
   }
 
   public static boolean isLocalhost (String server) {
-    switch (server) {
-      case "127.0.0.1":
-      case "::1":
-      case "localhost":
-        return true;
-    }
-    return false;
-  }
-
-  public static int removeByPrefix (Map<String,?> map, String prefix) {
-    List<String> itemsToRemove = null;
-    for (String key : map.keySet()) {
-      if (key.startsWith(prefix)) {
-        if (itemsToRemove == null)
-          itemsToRemove = new ArrayList<>();
-        itemsToRemove.add(key);
-      }
-    }
-    if (itemsToRemove != null) {
-      for (String key : itemsToRemove) {
-        map.remove(key);
-      }
-      return itemsToRemove.size();
-    }
-    return 0;
+    return switch (server) {
+      case "127.0.0.1",
+           "::1",
+           "localhost" ->
+        true;
+      default ->
+        false;
+    };
   }
 
   public static Location newFakeLocation () {
@@ -351,28 +340,6 @@ public class U {
     Location location1 = newFakeLocation(latitude1, longitude1);
     Location location2 = newFakeLocation(latitude2, longitude2);
     return Math.abs(location1.distanceTo(location2));
-  }
-
-  public static long timeSinceGenerationMs (Location location) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-      return (SystemClock.elapsedRealtimeNanos() - location.getElapsedRealtimeNanos()) / 1000000l;
-    } else {
-      return System.currentTimeMillis() - location.getTime();
-    }
-  }
-
-  private static File getRootOfInnerSdCardFolder (File file) {
-    if (file == null) {
-      return null;
-    }
-    final long totalSpace = file.getTotalSpace();
-    while (true)  {
-      final File parentFile = file.getParentFile();
-      if (parentFile == null || parentFile.getTotalSpace() != totalSpace) {
-        return file;
-      }
-      file = parentFile;
-    }
   }
 
   public static @Nullable ArrayList<String> getExternalStorageDirectories (@Nullable String ignorePath, boolean cleanupResult) {
@@ -476,7 +443,7 @@ public class U {
       }
       i += codePointSize;
     }
-    return fileName;
+    return b.toString();
   }
 
   public static String toHexString (String str) {
@@ -497,34 +464,24 @@ public class U {
         throw new IllegalArgumentException("id == " + notificationId);
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      int knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE;
       switch (notificationId) {
-        case TdlibNotificationManager.ID_MUSIC:
-          knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
-          break;
-        case TdlibNotificationManager.ID_LOCATION:
-          knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION;
-          break;
         case TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION:
-        case TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION:
-          knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
+        case TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION: {
+          int knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
           }
           knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
-          break;
+          service.startForeground(notificationId, notification, knownType);
+          return;
+        }
+        case TdlibNotificationManager.ID_MUSIC:
+        case TdlibNotificationManager.ID_LOCATION:
         case TdlibNotificationManager.ID_PENDING_TASK:
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE;
-          } else {
-            // FOREGROUND_SERVICE_TYPE_SHORT_SERVICE was added in Android 14.
-            knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST;
-          }
+          // android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST;
           break;
-      }
-      if (knownType != android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE) {
-        service.startForeground(notificationId, notification, knownType);
-        return;
+        default:
+          throw new UnsupportedOperationException(Integer.toString(notificationId));
       }
     }
     service.startForeground(notificationId, notification);
@@ -542,10 +499,6 @@ public class U {
         }
       }
     }
-  }
-
-  public static boolean isVertical (int width, int height, int rotation) {
-    return isRotated(rotation) ? width > height : height > width;
   }
 
   public static boolean isInside (float x, float y, float cx, float cy, float radius) {
@@ -660,7 +613,7 @@ public class U {
 
   public static long getLastModifiedTime (String path) {
     if (StringUtils.isEmpty(path)) {
-      return 0l;
+      return 0;
     }
     if (path.startsWith("content://")) {
       if (Config.ALLOW_DATE_MODIFIED_RESOLVING) {
@@ -720,30 +673,29 @@ public class U {
     }
   }
 
-  public static boolean isGooglePlayServicesInstalled (Context context) {
-    PackageManager pm = context.getPackageManager();
-    boolean app_installed;
-    try {
-      PackageInfo info = pm.getPackageInfo("com.android.vending", PackageManager.GET_ACTIVITIES);
-      String label = (String) info.applicationInfo.loadLabel(pm);
-      app_installed = !StringUtils.isEmpty(label) && label.startsWith("Google Play");
-    } catch(PackageManager.NameNotFoundException e) {
-      app_installed = false;
-    }
-    return app_installed;
-  }
-
   public static ExoPlayer newExoPlayer (Context context, boolean preferExtensions) {
     // new AdaptiveVideoTrackSelection.Factory(new DefaultBandwidthMeter())
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
-    final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
+    final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ?
+      DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER :
+      DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
     final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
     final MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
-    return new ExoPlayer.Builder(context, renderersFactory, mediaSourceFactory)
+    final AnalyticsCollector analyticsCollector;
+    if (BuildConfig.DEBUG) {
+      analyticsCollector = new DefaultAnalyticsCollector(Clock.DEFAULT);
+      analyticsCollector.addListener(new EventLogger("ExoPlayerImpl"));
+    } else {
+      analyticsCollector = null;
+    }
+    ExoPlayer.Builder b = new ExoPlayer.Builder(context, renderersFactory, mediaSourceFactory)
       .setTrackSelector(new DefaultTrackSelector(context))
-      .setLoadControl(new DefaultLoadControl())
-      .build();
+      .setLoadControl(new DefaultLoadControl());
+    if (analyticsCollector != null) {
+      b.setAnalyticsCollector(analyticsCollector);
+    }
+    return b.build();
   }
 
   public static boolean isUnsupportedFormat (PlaybackException e) {
@@ -802,7 +754,9 @@ public class U {
       @Override
       public DataSource redirectDataSource (Uri uri) {
         if (uri.equals(manifestUri)) {
-          String playlistData = hlsVideo.multivariantPlaylistData();
+          String playlistData = hlsVideo.multivariantPlaylistData(
+            BuildConfig.DEBUG
+          );
           return new ByteArrayDataSource(playlistData.getBytes());
         }
         return null;
@@ -815,7 +769,8 @@ public class U {
       .createMediaSource(newMediaItem(manifestUri));
   }
 
-  @NonNull private static HlsExtractorFactory newHlsExtractorFactory (@NonNull HlsVideo hlsVideo) {
+  @NonNull
+  private static HlsExtractorFactory newHlsExtractorFactory (@NonNull HlsVideo hlsVideo) {
     DefaultHlsExtractorFactory defaultHlsExtractorFactory = new DefaultHlsExtractorFactory();
     return new HlsExtractorFactory() {
       @Override
@@ -891,17 +846,15 @@ public class U {
   private static long lastTrace;
 
   public static void trace (String name) {
-    if (name == null) {
-      lastTrace = SystemClock.elapsedRealtime();
-    } else {
+    if (name != null) {
       long ms = SystemClock.elapsedRealtime() - lastTrace;
       if (ms >= 100) {
         Log.e("%s took %dms", name, (int) ms);
       } else {
         Log.v("%s took %dms", name, (int) ms);
       }
-      lastTrace = SystemClock.elapsedRealtime();
     }
+    lastTrace = SystemClock.elapsedRealtime();
   }
 
   public static long getTotalUsedSpace (List<File> files) {
@@ -1046,9 +999,9 @@ public class U {
     return b.toString();
   }
 
+  @SuppressWarnings("SpellCheckingInspection")
   private static final String MAP_DARK_STYLE = "&style=element:geometry%7Ccolor:0x212121&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x757575&style=element:labels.text.stroke%7Ccolor:0x212121&style=feature:administrative%7Celement:geometry%7Ccolor:0x757575&style=feature:administrative.country%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0x181818&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:poi.park%7Celement:labels.text.stroke%7Ccolor:0x1b1b1b&style=feature:road%7Celement:geometry.fill%7Ccolor:0x2c2c2c&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x8a8a8a&style=feature:road.arterial%7Celement:geometry%7Ccolor:0x373737&style=feature:road.highway%7Celement:geometry%7Ccolor:0x3c3c3c&style=feature:road.highway.controlled_access%7Celement:geometry%7Ccolor:0x4e4e4e&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:transit%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:water%7Celement:geometry%7Ccolor:0x000000&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x3d3d3d";
 
-  @SuppressWarnings(value = "SpellCheckingInspection")
   public static String getMapPreview (Tdlib tdlib, double lat, double lon, int zoom, boolean dark, int viewWidth, int viewHeight, int[] resultSize) {
     int scale = Screen.density() >= 2.0f ? 2 : 1;
 
@@ -1222,25 +1175,19 @@ public class U {
           }
         } else if (isDownloadsDocument(uri)) {
           final String id = DocumentsContract.getDocumentId(uri);
-          final Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
+          final Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), StringUtils.parseLong(id));
           result = getDataColumn(UI.getContext(), contentUri, null, null);
         } else if (isMediaDocument(uri)) {
           final String docId = DocumentsContract.getDocumentId(uri);
           final String[] split = docId.split(":", 2);
           final String type = split[0];
 
-          Uri contentUri = null;
-          switch (type) {
-            case "image":
-              contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-              break;
-            case "video":
-              contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-              break;
-            case "audio":
-              contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-              break;
-          }
+          Uri contentUri = switch (type) {
+            case "image" -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+            case "video" -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+            case "audio" -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+            default -> null;
+          };
 
           final String selection = "_id=?";
           final String[] selectionArgs = new String[] {
@@ -1261,7 +1208,15 @@ public class U {
   }
 
   public static void openFile (TdlibDelegate context, TdApi.Video video) {
-    openFile(context, StringUtils.isEmpty(video.fileName) ? ("video/mp4".equals(video.mimeType) ? "video.mp4" : "video/quicktime".equals(video.mimeType) ? "video.mov" : "") : video.fileName, new File(video.video.local.path), video.mimeType, 0);
+    String displayName = StringUtils.isEmpty(video.fileName) ? ("video/mp4".equals(video.mimeType) ? "video.mp4" : "video/quicktime".equals(video.mimeType) ? "video.mov" : "") : video.fileName;
+    String mimeType = video.mimeType;
+    openFile(context, displayName, new File(video.video.local.path), mimeType, 0);
+  }
+
+  public static void openFile (TdlibDelegate context, TdApi.Animation animation) {
+    String displayName = StringUtils.isEmpty(animation.fileName) ? ("video/mp4".equals(animation.mimeType) ? "animation.mp4" : "video/quicktime".equals(animation.mimeType) ? "animation.mov" : "") : animation.fileName;
+    String mimeType = animation.mimeType;
+    openFile(context, displayName, new File(animation.animation.local.path), mimeType, 0);
   }
 
   public static Uri getUri (Parcelable parcelable) {
@@ -1322,7 +1277,6 @@ public class U {
     return null;
   }
 
-  @SuppressWarnings(value = "SpellCheckingInspection")
   public static boolean isExternalStorageDocument (Uri uri) {
     return "com.android.externalstorage.documents".equals(uri.getAuthority());
   }
@@ -1390,7 +1344,7 @@ public class U {
     return generateMediaPath(isPrivate, "mp4");
   }
 
-  public static class MediaMetadata {
+  public static final class MediaMetadata {
     public final int width, height, rotation;
     public final long durationMs, bitrate;
     public final boolean hasVideo, hasAudio;
@@ -1549,7 +1503,7 @@ public class U {
     int i = fileName.lastIndexOf('.');
     if (i != -1) {
       String ext = fileName.substring(i + 1);
-      if (ext.toLowerCase().equals("crdownload")) {
+      if (ext.equalsIgnoreCase("crdownload")) {
         return getExtension(fileName.substring(0, i));
       }
       return ext;
@@ -1657,17 +1611,13 @@ public class U {
   }
 
   public static int getExifOrientationForRotation (int rotation) {
-    switch (MathUtils.modulo(rotation, 360)) {
-      case 0:
-        return ExifInterface.ORIENTATION_NORMAL;
-      case 90:
-        return ExifInterface.ORIENTATION_ROTATE_90;
-      case 180:
-        return ExifInterface.ORIENTATION_ROTATE_180;
-      case 270:
-        return ExifInterface.ORIENTATION_ROTATE_270;
-    }
-    return ExifInterface.ORIENTATION_UNDEFINED;
+    return switch (MathUtils.modulo(rotation, 360)) {
+      case 0 -> ExifInterface.ORIENTATION_NORMAL;
+      case 90 -> ExifInterface.ORIENTATION_ROTATE_90;
+      case 180 -> ExifInterface.ORIENTATION_ROTATE_180;
+      case 270 -> ExifInterface.ORIENTATION_ROTATE_270;
+      default -> ExifInterface.ORIENTATION_UNDEFINED;
+    };
   }
 
   @Deprecated
@@ -1677,28 +1627,29 @@ public class U {
 
   @Deprecated
   public static int getRotationForExifOrientation (int exifOrientation) {
-    switch (exifOrientation) {
-      case ExifInterface.ORIENTATION_ROTATE_90:
+    return switch (exifOrientation) {
+      case ExifInterface.ORIENTATION_ROTATE_90 ->
         // FIXME case ExifInterface.ORIENTATION_TRANSVERSE:
-        return 90;
-      case ExifInterface.ORIENTATION_ROTATE_180:
-        return 180;
-      case ExifInterface.ORIENTATION_ROTATE_270:
+        90;
+      case ExifInterface.ORIENTATION_ROTATE_180 -> 180;
+      case ExifInterface.ORIENTATION_ROTATE_270 ->
         // FIXME case ExifInterface.ORIENTATION_TRANSPOSE:
-        return 270;
-    }
-    return 0;
+        270;
+      default ->
+        0;
+    };
   }
 
   public static boolean isExifRotated (int orientation) {
-    switch (orientation) {
-      case ExifInterface.ORIENTATION_ROTATE_90:
-      case ExifInterface.ORIENTATION_ROTATE_270:
-      case ExifInterface.ORIENTATION_TRANSVERSE:
-      case ExifInterface.ORIENTATION_TRANSPOSE:
-        return true;
-    }
-    return false;
+    return switch (orientation) {
+      case ExifInterface.ORIENTATION_ROTATE_90,
+           ExifInterface.ORIENTATION_ROTATE_270,
+           ExifInterface.ORIENTATION_TRANSVERSE,
+           ExifInterface.ORIENTATION_TRANSPOSE ->
+        true;
+      default ->
+        false;
+    };
   }
 
   public static boolean isExifRotated (String path) {
@@ -2212,43 +2163,6 @@ public class U {
     }
   }
 
-  /*private static void measureMeasureText (CharSequence in, Paint p) {
-    if (true) {
-      try {
-        float[] widths = new float[in.length()];
-        int start = 0;
-        int end = in.length();
-        long elapsed = SystemClock.elapsedRealtime();
-        float res1 = 0f;
-        for (int i = 0; i < 1000; i++) {
-          p.getTextWidths(in, start, end, widths);
-          res1 = sum(widths);
-        }
-        long ms1 = SystemClock.elapsedRealtime() - elapsed;
-        elapsed = SystemClock.elapsedRealtime();
-        float res2 = 0f;
-        for (int i = 0; i < 1000; i++) {
-          res2 = p.getRunAdvance(in, start, end, start, end, false, end);
-        }
-        long ms2 = SystemClock.elapsedRealtime() - elapsed;
-
-        //ms1 /= 1000;
-        //ms2 /= 1000;
-
-        if (ms2 < ms1) {
-          Logger.e("getRunAdvance is faster for length=%d: %dms vs %dms, result: %f vs %f", end - start, ms1, ms2, res1, res2);
-        } else {
-          Logger.v("getTextWidths is faster for length=%d: %dms vs %dms, result: %f vs %f", end - start, ms1, ms2, res1, res2);
-        }
-      } catch (Throwable t) {
-        Logger.e(t);
-      }
-    }
-  }*/
-
-  /*private static boolean getTextRunAdvancesStr_attempted, attempted_getTextRunAdvancesChars_attempted;
-  private static Method getTextRunAdvancesStr, getTextRunAdvancesChars;*/
-
   public static float measureText (char[] in, int start, int end, @NonNull Paint p) {
     final int count = end - start;
 
@@ -2257,11 +2171,6 @@ public class U {
     }
 
     if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !BiDiUtils.requiresBidi(in, start, end)) {
-      /*
-      getTextRunAdvances(char[] chars, int index, int count,
-            int contextIndex, int contextCount, boolean isRtl, float[] advances,
-            int advancesIndex) * */
-
       return p.getRunAdvance(in, start, end, 0, in.length, false, end);
     } else {
       float[] widths = pickWidths(count, true);
@@ -2269,121 +2178,6 @@ public class U {
       return ArrayUtils.sum(widths, count);
     }
   }
-
- /* Turns out calling getTextRunAdvances 3x times slower, probably because of reflection.
-    This is a FIXME for android
-
-  @SuppressLint("PrivateApi")
-  @TargetApi(Build.VERSION_CODES.M)
-  private static float getRunAdvance (@NonNull CharSequence in, int start, int end, @NonNull Paint p) {
-    if (Config.BETA) {
-      *//* public float getTextRunAdvances(CharSequence text, int start, int end,
-            int contextStart, int contextEnd, boolean isRtl, float[] advances,
-            int advancesIndex)*//*
-      if (!getTextRunAdvancesStr_attempted) {
-        synchronized (Utils.class) {
-          if (!getTextRunAdvancesStr_attempted) {
-            try {
-              getTextRunAdvancesStr = Paint.class.getDeclaredMethod(
-                "getTextRunAdvances",
-                CharSequence.class *//*text*//*,
-                int.class *//*start*//*,
-                int.class *//*end*//*,
-                int.class *//*contextStart*//*,
-                int.class *//*contextEnd*//*,
-                boolean.class *//*isRtl*//*,
-                float[].class *//*advances*//*,
-                int.class *//*advancesIndex*//*);
-            } catch (Throwable ignored) {
-              if (Config.BETA) {
-                Logger.e(ignored);
-              }
-            }
-            getTextRunAdvancesStr_attempted = true;
-          }
-        }
-      }
-
-
-      float res1 = 0f;
-      long startMs1 = SystemClock.elapsedRealtime();
-      for (int i = 0; i < 10000; i++) {
-        float[] widths = pickWidths(end - start, true);
-        try {
-          Object ret = getTextRunAdvancesStr.invoke(p, in, start, end, 0, in.length(), Boolean.FALSE, widths, 0);
-          res1 = (Float) ret;
-        } catch (Throwable ignored) {
-          if (Config.BETA) {
-            Logger.e(ignored);
-          }
-          getTextRunAdvancesStr = null;
-        }
-      }
-      long ms1 = SystemClock.elapsedRealtime() - startMs1;
-
-      float res2 = 0f;
-      long startMs2 = SystemClock.elapsedRealtime();
-      for (int i = 0; i < 10000; i++) {
-        res2 = p.getRunAdvance(in, start, end, 0, in.length(), false, end);
-      }
-      long ms2 = SystemClock.elapsedRealtime() - startMs2;
-
-      if (ms2 < ms1) {
-        Logger.v("getRunAdvance is faster: %dms vs %dms, %f vs %f", ms1, ms2, res1, res2);
-      } else {
-        Logger.e("getTextRunAdvances is faster: %dms vs %dms %f vs %f", ms1, ms2, res1, res2);
-      }
-
-      float result = 0f;
-
-      if (getTextRunAdvancesStr != null) {
-        float[] widths = pickWidths(end - start, true);
-        try {
-          Object ret = getTextRunAdvancesStr.invoke(p, in, start, end, 0, in.length(), Boolean.FALSE, widths, 0);
-          result = (Float) ret;
-        } catch (Throwable ignored) {
-          if (Config.BETA) {
-            Logger.e(ignored);
-          }
-          getTextRunAdvancesStr = null;
-        }
-      }
-
-      if (result != 0f) {
-        return result;
-      }
-    }
-
-    return p.getRunAdvance(in, start, end, 0, in.length(), false, end);
-  }*/
-
-  /*private static void measureMeasureText (CharSequence in, int start, int end, Paint p) {
-    final int count = end - start;
-
-    long start1 = SystemClock.elapsedRealtime();
-    for (int i = 0; i < 1000; i++) {
-      boolean isRtl = false;
-      if (in instanceof String) {
-        isRtl = Strings.getTextDirection(in.toString(), start, end) == Strings.DIRECTION_RTL;
-      }
-      float res1 = p.getRunAdvance(in, start, end, 0, in.length(), isRtl, end);
-    }
-    long ms1 = SystemClock.elapsedRealtime() - start1;
-
-    long start2 = SystemClock.elapsedRealtime();
-    for (int i = 0; i < 1000; i++) {
-      float[] widths = pickWidths(count, true);
-      p.getTextWidths(in, start, end, widths);
-      float res2 = sum(widths, count);
-    }
-    long ms2 = SystemClock.elapsedRealtime() - start2;
-
-    if (ms1 < ms2) {
-      Logger.v("getRunAdvance is faster: count=%d %dms vs %dms", count, ms1, ms2);
-    } else {
-      Logger.e("getTextWidths is faster: count=%d %dms vs %dms %s", count, ms1, ms2, in.subSequence(start, end));
-    }
-  }*/
 
   public static float measureTextRun (@Nullable CharSequence in, @NonNull Paint p, boolean isRtl) {
     final int count;
@@ -2401,7 +2195,7 @@ public class U {
   public static float measureTextRun (@Nullable CharSequence in, int start, int end, @NonNull Paint p, boolean isRtl) {
     final int count = end - start;
 
-    if (in == null || in.length() == 0 || count <= 0) {
+    if (StringUtils.isEmpty(in) || count <= 0) {
       return 0;
     }
 
@@ -2412,11 +2206,10 @@ public class U {
     return measureText(in, start, end, p);
   }
 
-  @Deprecated
   public static float measureText (@Nullable CharSequence in, int start, int end, @NonNull Paint p) {
     final int count = end - start;
 
-    if (in == null || in.length() == 0 || count <= 0) {
+    if (StringUtils.isEmpty(in) || count <= 0) {
       return 0;
     }
 
@@ -2529,12 +2322,16 @@ public class U {
 
   public static String getUsefulMetadata (@Nullable Tdlib tdlib) {
     AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
-    String locale = UI.getAppContext().getResources().getConfiguration().locale.toString();
+    String locale = Lang.getConfigurationLocale().toString();
     String appLocale = Lang.locale().toString();
     String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
+      (!"none".equals(BuildConfig.TGX_EXTENSION) ? "Extension: " + BuildConfig.TGX_EXTENSION + "\n" : "") +
+      (!BuildConfig.LATEST_FLAVOR ? ("flavor: " + BuildConfig.FLAVOR_SDK + "\n") : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
+      "androidx-media3: " + MediaLibraryInfo.VERSION + " [" + MediaLibraryInfo.registeredModules().replaceAll("(?<=^| )media3\\.", "") + "]\n" +
       "tgcalls: TGX-Android/tgcalls@" + BuildConfig.TGCALLS_COMMIT + "\n" +
+      "Recaptcha: " + BuildConfig.RECAPTCHA_VERSION + "\n" +
       "WebRTC: TGX-Android/webrtc@" + BuildConfig.WEBRTC_COMMIT + "\n" +
       "Android: " + SdkVersion.getPrettyName() + " (" + Build.VERSION.SDK_INT + ")" + "\n" +
       "Device: " + Build.MANUFACTURER + " " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
@@ -2685,7 +2482,7 @@ public class U {
 
   public static Locale getDisplayLocaleOfSubtypeLocale (@NonNull final String localeString) {
     if (NO_LANGUAGE.equals(localeString)) {
-      return UI.getResources().getConfiguration().locale;
+      return Lang.getPrimaryLocale(UI.getResources().getConfiguration());
     }
     return constructLocaleFromString(localeString);
   }
@@ -2696,16 +2493,7 @@ public class U {
       // TODO: Should this be Locale.ROOT?
       return null;
     }
-    final String[] localeParams = localeStr.split("_", 3);
-    if (localeParams.length == 1) {
-      return new Locale(localeParams[0]);
-    } else if (localeParams.length == 2) {
-      return new Locale(localeParams[0], localeParams[1]);
-    } else if (localeParams.length == 3) {
-      return new Locale(localeParams[0], localeParams[1], localeParams[2]);
-    }
-    // TODO: Should return Locale.ROOT instead of null?
-    return null;
+    return Lang.obtainLocale(localeStr);
   }
 
   public static @Nullable Bitmap tryDecodeVideoThumb (String path, long timeUs, int dstWidth, int dstHeight, @Nullable int[] rotation) {
@@ -2745,7 +2533,7 @@ public class U {
 
   public static @Nullable Bitmap tryDecodeRegion (String path, Rect rect, BitmapFactory.Options opts) {
     if (Device.HAS_BUGGY_REGION_DECODER) {
-      // There's some sort of native crash otherwise on Asus Zenphone 3
+      // There's some sort of native crash otherwise on Asus Zenfone 3
       if (opts != null && Math.max(opts.outWidth, opts.outHeight) > 1024) {
         return null;
       }
@@ -2764,59 +2552,15 @@ public class U {
 
   // Array utils
 
-  /*public static <T> T[] fit (T[] array, T[] newArray) {
-    for (int i = newArray.length; i < array.length; i++) {
-      if (array[i] instanceof DestroyDelegate) {
-        ((DestroyDelegate) array[i]).onDataDestroy();
-      }
-    }
-    System.arraycopy(array, 0, newArray, 0, newArray.length);
-    return array;
-  }
-
-  public static TextWrapper[] resize (TextWrapper[] array, int newSize) {
-    return array.length == newSize ? array : fit(array, new TextWrapper[newSize]);
-  }
-
-  public static ProgressComponent[] resize (ProgressComponent[] array, int newSize) {
-    return array.length == newSize ? array : fit(array, new ProgressComponent[newSize]);
-  }
-
-  public static SimplestCheckBox[] resize (SimplestCheckBox[] array, int newSize) {
-    return array.length == newSize ? array : fit(array, new SimplestCheckBox[newSize]);
-  }
-
-  public static TGMessagePoll.OptionEntry[] resize (TGMessagePoll.OptionEntry[] array, int newSize) {
-    return array.length == newSize ? array : fit(array, new TGMessagePoll.OptionEntry[newSize]);
-  }*/
-
-  public static float[] reuseLocalFloats (LocalVar<float[]> threadLocal, int initialCapacity) {
-    float[] x = threadLocal.get();
-    if (x != null) {
-      for (int i = 0; i < x.length; i++) {
-        x[i] = 0f;
-      }
-    } else {
-      x = new float[initialCapacity];
-    }
-    return x;
-  }
-
   public static int[] reuseLocalInts (LocalVar<int[]> threadLocal, int initialCapacity) {
     int[] x = threadLocal.get();
     if (x != null) {
-      for (int i = 0; i < x.length; i++) {
-        x[i] = 0;
-      }
+      Arrays.fill(x, 0);
     } else {
       x = new int[initialCapacity];
     }
     return x;
   }
-
-  /*public static Uri makeUriForFile (File file, @Nullable String mimeType) {
-    return makeUriForFile(file, mimeType, false);
-  }*/
 
   public static void set (@Nullable boolean[] out, boolean value) {
     if (out != null && out.length > 0) {
@@ -2951,7 +2695,7 @@ public class U {
 
   private static void skipGIFBlock (InputStream in) throws IOException {
     int blockSize = in.read();
-    long count = 0;
+    long count;
     int n = 0;
     while (n < blockSize) {
       count = in.skip(blockSize - n);
@@ -2971,7 +2715,7 @@ public class U {
       throw new IllegalArgumentException("block size: " + blockSize + ", limit: " + sizeLimit);
     byte[] block = new byte[blockSize];
     if (blockSize > 0) {
-      int count = 0;
+      int count;
       while (n < blockSize) {
         count = in.read(block, n, blockSize - n);
         if (count == -1) {
@@ -3012,7 +2756,7 @@ public class U {
     int pixelAspect = in.read(); // pixel aspect ratio
 
     if (gctFlag) {
-      int nbytes = 3 * gctSize;
+      long nbytes = 3L * gctSize;
       while(nbytes > 0) {
         long skip = in.skip(nbytes);
         if (skip <= 0)
@@ -3127,48 +2871,6 @@ public class U {
     return (int) (Math.floor((double) millis / 1000d));
   }
 
-  public static class QueryMapContainer {
-    private final Map<String, List<String>> queryPairs;
-
-    public QueryMapContainer (Map<String, List<String>> queryPairs) {
-      this.queryPairs = queryPairs;
-    }
-
-    public Map<String, List<String>> get () {
-      return queryPairs;
-    }
-
-    public @Nullable String getFirst (String key) {
-      List<String> items = queryPairs != null ? queryPairs.get(key) : null;
-      return items != null && !items.isEmpty() ? items.get(0) : null;
-    }
-
-    public @Nullable String getLast (String key) {
-      List<String> items = queryPairs != null ? queryPairs.get(key) : null;
-      return items != null && !items.isEmpty() ? items.get(items.size() - 1) : null;
-    }
-  }
-
-  public static QueryMapContainer splitQuery (String link) {
-    try {
-      java.net.URI uri = java.net.URI.create(link);
-      final Map<String, List<String>> query_pairs = new LinkedHashMap<>();
-      final String[] pairs = uri.getQuery().split("&");
-      for (String pair : pairs) {
-        final int idx = pair.indexOf("=");
-        final String key = idx > 0 ? URLDecoder.decode(pair.substring(0, idx), "UTF-8") : pair;
-        if (!query_pairs.containsKey(key)) {
-          query_pairs.put(key, new LinkedList<>());
-        }
-        final String value = idx > 0 && pair.length() > idx + 1 ? URLDecoder.decode(pair.substring(idx + 1), "UTF-8") : null;
-        query_pairs.get(key).add(value);
-      }
-      return new QueryMapContainer(query_pairs);
-    } catch (Throwable ignored) {
-      return new QueryMapContainer(null);
-    }
-  }
-
   public static String normalizeFilePath (String pathString) {
     if (StringUtils.isEmpty(pathString)) {
       return pathString;
@@ -3221,7 +2923,10 @@ public class U {
 
   public static Bitmap.CompressFormat compressFormat (boolean transparent) {
     if (transparent) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        return Bitmap.CompressFormat.WEBP_LOSSY;
+      } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+        //noinspection deprecation
         return Bitmap.CompressFormat.WEBP;
       } else {
         return Bitmap.CompressFormat.PNG;
@@ -3410,7 +3115,7 @@ public class U {
   // element for calculating solar transit.
   private static final float J0 = 0.0009f;
   // correction for civil twilight
-  private static final float ALTIDUTE_CORRECTION_CIVIL_TWILIGHT = -0.104719755f;
+  private static final float ALTITUDE_CORRECTION_CIVIL_TWILIGHT = -0.104719755f;
   // coefficients for calculating Equation of Center.
   private static final float C1 = 0.0334196f;
   private static final float C2 = 0.000349066f;
@@ -3443,7 +3148,7 @@ public class U {
     // declination of sun
     double solarDec = Math.asin(Math.sin(solarLng) * Math.sin(OBLIQUITY));
     final double latRad = latitude * DEGREES_TO_RADIANS;
-    double cosHourAngle = (Math.sin(ALTIDUTE_CORRECTION_CIVIL_TWILIGHT) - Math.sin(latRad)
+    double cosHourAngle = (Math.sin(ALTITUDE_CORRECTION_CIVIL_TWILIGHT) - Math.sin(latRad)
       * Math.sin(solarDec)) / (Math.cos(latRad) * Math.cos(solarDec));
     // The day or night never ends for the given date and location, if this value is out of
     // range.
@@ -3467,7 +3172,7 @@ public class U {
   public static boolean isWiredHeadsetOn (AudioManager am) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       android.media.AudioDeviceInfo[] infos = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-      if (infos == null || infos.length == 0)
+      if (infos == null)
         return false;
       for (android.media.AudioDeviceInfo info : infos) {
         switch (info.getType()) {
@@ -3618,6 +3323,7 @@ public class U {
     }
   }
 
+  @SuppressWarnings("try")
   public static boolean canReadContentUri (Uri uri) {
     try (InputStream ignored = openInputStream(uri.toString())) {
       return true;
@@ -3725,43 +3431,6 @@ public class U {
       if (!StringUtils.isEmpty(inputLanguageCode)) {
         inputLanguages.add(inputLanguageCode);
       }
-
-      /*if (Strings.isEmpty(inputLanguageCode)) {
-        try {
-          String id = android.provider.Settings.Secure.getString(
-            UI.getAppContext().getContentResolver(),
-            android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
-          );
-          if (!Strings.isEmpty(id)) {
-            List<InputMethodInfo> list = imm.getInputMethodList();
-            lookup:
-            for (InputMethodInfo info : list) {
-              if (id.equals(info.getId())) {
-                List<InputMethodSubtype> subtypes = imm.getEnabledInputMethodSubtypeList(info, true);
-                for (InputMethodSubtype subtype : subtypes) {
-                  String languageCode = toLanguageCode(subtype);
-                  if (!Strings.isEmpty(languageCode)) {
-                    inputLanguageCode = languageCode;
-                    break lookup;
-                  }
-                }
-              }
-            }
-          }
-        } catch (Throwable ignored) { }
-      }
-      if (Strings.isEmpty(inputLanguageCode) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        try {
-          LocaleList localeList = ((InputView) callback).getImeHintLocales();
-          if (localeList != null) {
-            for (int i = 0; i < localeList.size(); i++) {
-              inputLanguageCode = U.toBcp47Language(localeList.get(i));
-              if (!Strings.isEmpty(inputLanguageCode))
-                break;
-            }
-          }
-        } catch (Throwable ignored) { }
-      }*/
     }
     if (inputLanguages.isEmpty()) {
       try {
@@ -3773,7 +3442,7 @@ public class U {
               inputLanguages.add(code);
           }
         } else {
-          String code = LocaleUtils.toBcp47Language(Resources.getSystem().getConfiguration().locale);
+          String code = LocaleUtils.toBcp47Language(Lang.getPrimaryLocale(Resources.getSystem().getConfiguration()));
           if (!StringUtils.isEmpty(code)) {
             inputLanguages.add(code);
           }
@@ -3795,12 +3464,17 @@ public class U {
           return languageTag;
         }
       }
-      String locale = ims.getLocale();
-      if (!StringUtils.isEmpty(locale)) {
-        Locale l = U.getDisplayLocaleOfSubtypeLocale(locale);
-        if (l != null) {
-          return LocaleUtils.toBcp47Language(l);
-        }
+      return toLanguageCodePreNougat(ims);
+    }
+    return null;
+  }
+
+  private static String toLanguageCodePreNougat (InputMethodSubtype ims) {
+    String locale = ims.getLocale();
+    if (!StringUtils.isEmpty(locale)) {
+      Locale l = U.getDisplayLocaleOfSubtypeLocale(locale);
+      if (l != null) {
+        return LocaleUtils.toBcp47Language(l);
       }
     }
     return null;
@@ -3870,5 +3544,23 @@ public class U {
     } else {
       return Build.CPU_ABI;
     }
+  }
+
+  public static String getPreferredAbiFlavor () {
+    final String abi = U.getCpuAbi();
+    final String flavor = switch (abi) {
+      case "arm64-v8a" -> "arm64";
+      case "armeabi-v7a" -> "arm32";
+      case "x86" -> "x86";
+      case "x86_64", "x64" -> "x64";
+      default -> null;
+    };
+    if (flavor == null) {
+      String[] flavors = new String[] {"arm64", "arm32", "x86", "x64"};
+      if (ArrayUtils.contains(flavors, BuildConfig.FLAVOR_ABI)) {
+        return BuildConfig.FLAVOR_ABI;
+      }
+    }
+    return flavor;
   }
 }

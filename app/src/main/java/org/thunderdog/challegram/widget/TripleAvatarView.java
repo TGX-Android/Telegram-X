@@ -30,6 +30,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.core.lambda.Destroyable;
 
@@ -137,7 +138,7 @@ public class TripleAvatarView extends View implements Destroyable {
 
   @Override
   protected void onDraw (Canvas canvas) {
-    canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
+    Views.saveLayerAlpha(canvas, 0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
     for (int i = (receivers.length - 1); i >= 0; i--) {
       drawReceiver(canvas, i, receivers[i]);
     }

@@ -448,6 +448,11 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
     ThemeListController c = new ThemeListController(context, tdlib);
     c.setArguments(new ThemeListController.Args(getArgumentsStrict().theme, themeSections[position]));

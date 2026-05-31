@@ -12,9 +12,9 @@
  */
 package tgx.gradle.task
 
+import org.gradle.api.DefaultTask
 import tgx.gradle.getOrThrow
 import tgx.gradle.loadProperties
-import org.gradle.api.DefaultTask
 import java.util.*
 
 abstract class BaseTask : DefaultTask() {

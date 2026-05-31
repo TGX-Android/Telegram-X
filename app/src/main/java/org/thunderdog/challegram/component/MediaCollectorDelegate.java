@@ -21,6 +21,8 @@ import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
 
 public interface MediaCollectorDelegate {
-  MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter);
+  default MediaStack collectMedias (long fromMessageId, boolean isSponsored, @Nullable TdApi.SearchMessagesFilter filter) {
+    return null;
+  }
   void modifyMediaArguments (Object cause, MediaViewController.Args args);
 }

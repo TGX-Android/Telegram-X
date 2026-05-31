@@ -284,13 +284,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       @Override
       public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
         if (adapter.getItems().isEmpty()) return false;
-        ListItem item = (ListItem) adapter.getItems().get(position);
+        ListItem item = adapter.getItems().get(position);
         return item != null && item.getId() == R.id.btn_inviteLink;
       }
 
       @Override
       public void onRemove (RecyclerView.ViewHolder viewHolder) {
-        ListItem item = (ListItem) adapter.getItems().get(viewHolder.getBindingAdapterPosition());
+        ListItem item = adapter.getItems().get(viewHolder.getBindingAdapterPosition());
         TdApi.ChatInviteLink link = (TdApi.ChatInviteLink) item.getData();
 
         if (link.isRevoked) {
@@ -299,7 +299,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
               inviteLinksRevoked.remove(link);
               smOnRevokedLinkDeleted(link);
               notifyParentIfPossible();
-              tdlib.client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), tdlib.okHandler());
+              tdlib.send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), tdlib.typedOkHandler());
             }
 
             return true;
@@ -358,7 +358,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           inviteLinksRevoked.clear();
           smOnRevokedLinksCleared(firstLink, lastLink);
           notifyParentIfPossible();
-          tdlib.client().send(new TdApi.DeleteAllRevokedChatInviteLinks(chatId, adminUserId), tdlib.okHandler());
+          tdlib.send(new TdApi.DeleteAllRevokedChatInviteLinks(chatId, adminUserId), tdlib.typedOkHandler());
         }
 
         return true;

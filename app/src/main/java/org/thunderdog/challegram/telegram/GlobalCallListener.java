@@ -18,6 +18,9 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 
 public interface GlobalCallListener {
-  void onCallUpdated (Tdlib tdlib, TdApi.Call call);
-  void onCallSettingsChanged (Tdlib tdlib, int callId, CallSettings settings);
+  default void onUpdateCall (Tdlib tdlib, TdApi.UpdateCall update) { }
+  default void onUpdateGroupCall (Tdlib tdlib, TdApi.UpdateGroupCall update) { }
+
+  default void onCallUpdated (Tdlib tdlib, TdApi.Call call) { }
+  default void onCallSettingsChanged (Tdlib tdlib, int callId, CallSettings settings) { }
 }

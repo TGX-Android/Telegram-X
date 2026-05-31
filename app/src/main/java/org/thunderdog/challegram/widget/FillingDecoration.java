@@ -29,6 +29,8 @@ import org.thunderdog.challegram.tool.Paints;
 
 import java.util.ArrayList;
 
+import me.vkryl.core.ColorUtils;
+
 public class FillingDecoration extends RecyclerView.ItemDecoration {
   private final ArrayList<int[]> ranges = new ArrayList<>();
 
@@ -163,13 +165,14 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
   }
 
   protected int getFillingColor (int i, @NonNull View view) {
+    float alpha = view.getAlpha();
     for (int[] range : ranges) {
       if (i >= range[0] && i < range[1]) {
-        return Theme.getColor(fillingColorId);
+        return ColorUtils.alphaColor(alpha, Theme.getColor(fillingColorId));
       }
     }
     if (bottomId != 0 && i < maxIndex) {
-      return Theme.getColor(fillingColorId);
+      return ColorUtils.alphaColor(alpha, Theme.getColor(fillingColorId));
     }
     return 0;
   }

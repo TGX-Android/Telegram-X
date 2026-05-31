@@ -31,6 +31,8 @@ import org.thunderdog.challegram.util.Crash;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import tgx.flavor.NLoader;
+
 public class AppState {
   private static final AtomicBoolean isInitialized = new AtomicBoolean(false);
 
@@ -122,7 +124,7 @@ public class AppState {
   public static void ensureReady () {
     if (!isInitialized.get()) {
       try {
-        throw new AssertionError("Trying to do something before application initialization. Log: \n" + NLoader.instance().collectLog());
+        throw new AssertionError("Trying to do something before application initialization. Log: \n" + NLoader.collectLog());
       } catch (AssertionError e) {
         Tracer.onLaunchError(e);
       }

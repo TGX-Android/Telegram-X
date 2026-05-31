@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.data.TD;
 
 import java.lang.annotation.Retention;
@@ -30,10 +31,11 @@ import java.util.List;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.core.reference.ReferenceList;
 import tgx.td.ChatPosition;
 import tgx.td.Td;
 
-public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterChangeListener {
+public final class TdlibChatList implements Comparator<TdlibChatList.Entry> {
   public static class Entry implements Comparable<Entry> {
     public final TdApi.Chat chat;
     public final TdApi.ChatList chatList;
@@ -82,19 +84,42 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
 
   private @State int state = State.END_NOT_REACHED;
 
+  private final RuntimeException origin;
+
   TdlibChatList (Tdlib tdlib, TdApi.ChatList chatList) {
     this.tdlib = tdlib;
     this.chatList = chatList;
+    this.origin = Log.generateException();
+  }
+
+  public RuntimeException origin () {
+    return origin;
+  }
+
+  public TdlibChatListSlice slice (Filter<TdApi.Chat> filter) {
+    return slice(filter, false, null);
+  }
+
+  public TdlibChatListSlice slice (Filter<TdApi.Chat> filter, boolean keepPositions, TdlibChatListSlice.Modifier modifier) {
+    return new TdlibChatListSlice(tdlib, this, filter, keepPositions, modifier);
   }
 
   // Listeners API
 
+  private final ReferenceList<ChatListListener> subscribedListeners = new ReferenceList<>();
+
   public void subscribeToUpdates (ChatListListener listener) {
-    tdlib.listeners().subscribeToChatListUpdates(chatList, listener);
+    synchronized (subscribedListeners) {
+      tdlib.listeners().subscribeToChatListUpdates(chatList, listener);
+      subscribedListeners.add(listener);
+    }
   }
 
   public void unsubscribeFromUpdates (ChatListListener listener) {
-    tdlib.listeners().unsubscribeFromChatListUpdates(chatList, listener);
+    synchronized (subscribedListeners) {
+      tdlib.listeners().unsubscribeFromChatListUpdates(chatList, listener);
+      subscribedListeners.remove(listener);
+    }
   }
 
   // State API
@@ -219,8 +244,9 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
   // Load API
 
   @AnyThread
-  public void initializeList (@Nullable Filter<TdApi.Chat> filter, ChatListListener listener, @NonNull RunnableData<List<Entry>> callback, int initialChunk, Runnable onLoadInitialChunk) {
+  void initializeList (@Nullable Filter<TdApi.Chat> filter, ChatListListener listener, @NonNull RunnableData<List<Entry>> callback, int initialChunk, Runnable onLoadInitialChunk) {
     getChats(filter, (list) -> {
+      tdlib.ensureTdlibThread();
       callback.runWithData(list);
       subscribeToUpdates(listener);
     });
@@ -391,9 +417,29 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
     }
   }
 
+  void clear () {
+    tdlib.ensureTdlibThread();
+    while (!list.isEmpty()) {
+      int index = list.size() - 1;
+      Entry entry = list.get(index);
+      removeChatFromList(index, new Tdlib.ChatChange(new TdApi.ChatPosition(entry.effectivePosition.list, 0, false, entry.effectivePosition.source), Tdlib.ChatChange.ORDER));
+    }
+  }
+
   // Internal
 
+  @Override
+  @NonNull
+  public String toString () {
+    return chatList +
+      "(tdlib: " + tdlib +
+      ", list: " + list +
+      ", state: " + state +
+      ')';
+  }
+
   private void addChatToList (Entry entry, Tdlib.ChatChange changeInfo) {
+    tdlib.ensureTdlibThread();
     int atIndex;
     synchronized (list) {
       atIndex = Collections.binarySearch(this.list, entry, this);

@@ -138,6 +138,7 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return drawable.getOpacity();
   }

@@ -160,6 +160,17 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     tdlib.listeners().subscribeToMessageUpdates(chatId, this);
   }
 
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.applyBottomInset(recyclerView, extraBottomInset);
+  }
+
   private TdlibMessageViewer.Viewport messageViewport;
 
   @SuppressLint("InflateParams")
@@ -168,6 +179,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     messageViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceSearch(), this);
     recyclerView = (MediaRecyclerView) Views.inflate(context(), R.layout.recycler_sharedmedia, null);
     recyclerView.setOverScrollMode(RecyclerView.OVER_SCROLL_NEVER);
+    Views.applyBottomInset(recyclerView, extraBottomInset);
     addThemeInvalidateListener(recyclerView);
     if (alternateParent != null) {
       recyclerView.setBackgroundColor(Theme.backgroundColor());
@@ -994,10 +1006,10 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     return inSelectMode;
   }
 
+  @SuppressWarnings("unchecked")
   protected final void toggleSelected (ListItem item) {
     final long messageId = item.getLongId();
 
-    //noinspection unchecked
     final T data = (T) item.getData();
 
     if (data == null || messageId == 0 || (item.getViewType() != ListItem.TYPE_SMALL_MEDIA && item.getViewType() != ListItem.TYPE_CUSTOM_INLINE)) {
@@ -1533,7 +1545,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   }
 
   @Override
-  public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
+  public MediaStack collectMedias (long fromMessageId, boolean isSponsored, @Nullable TdApi.SearchMessagesFilter filter) {
     if (data == null || data.isEmpty()) {
       return null;
     }

@@ -440,6 +440,7 @@ public class OverlayButtonWrap extends FrameLayoutFix implements View.OnClickLis
         setChildrenLayerType(LAYER_TYPE_NONE);
       }
     }
+    UI.getContext(getContext()).notifyBackPressAvailabilityChanged();
   }
 
   // Background shit
@@ -478,6 +479,7 @@ public class OverlayButtonWrap extends FrameLayoutFix implements View.OnClickLis
     public void setColorFilter (ColorFilter colorFilter) { }
 
     @Override
+    @SuppressWarnings("deprecation")
     public int getOpacity () {
       return PixelFormat.UNKNOWN;
     }

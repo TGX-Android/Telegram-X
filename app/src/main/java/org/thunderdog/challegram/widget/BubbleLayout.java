@@ -99,6 +99,7 @@ public class BubbleLayout extends AnimatedLinearLayout implements FactorAnimator
       public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
       @Override
+      @SuppressWarnings("deprecation")
       public int getOpacity () {
         return PixelFormat.UNKNOWN;
       }

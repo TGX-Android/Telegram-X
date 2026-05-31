@@ -50,13 +50,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.media3.common.MediaLibraryInfo;
+import androidx.media3.common.PlaybackException;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -138,6 +142,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SetSenderController;
 import org.thunderdog.challegram.ui.ShareController;
+import org.thunderdog.challegram.ui.TextController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -150,9 +155,11 @@ import org.thunderdog.challegram.widget.CheckView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.FileProgressComponent;
+import org.thunderdog.challegram.widget.FillingSpace;
 import org.thunderdog.challegram.widget.KeyboardFrameLayout;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TextFormattingLayout;
 import org.thunderdog.challegram.widget.VideoTimelineView;
@@ -190,7 +197,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, MoreDelegate,
   PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener,
   ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener,
-  EmojiToneHelper.Delegate, MessageListener, InputView.SelectionChangeListener, PopupLayout.ShowListener {
+  EmojiToneHelper.Delegate, MessageListener, InputView.SelectionChangeListener, PopupLayout.ShowListener,
+  RootFrameLayout.InsetsChangeListener{
 
   private static final long REVEAL_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180;
   private static final long REVEAL_OPEN_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180l;
@@ -202,7 +210,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public static final int MODE_SECRET = 4; // just single photo, no animations and etc
   public static final int MODE_SIMPLE = 5;
 
-  private static final boolean APPLY_ALL_INSETS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+  private boolean useEdgeToEdge () {
+    return Settings.instance().useEdgeToEdge();
+  }
 
   public MediaViewController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -231,8 +241,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private boolean reverseMode;
 
-    private long receiverChatId, messageThreadId;
-    private TdApi.MessageTopic topicId;
+    private long receiverChatId;
+    private @Nullable TdApi.MessageTopic topicId;
 
     private boolean areOnlyScheduled;
 
@@ -255,6 +265,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     private @AvatarPickerMode int avatarPickerMode;
+
+    public Args setCustomSubtitle (String subtitle) {
+      this.customSubtitle = subtitle;
+      return this;
+    }
 
     public Args setAvatarPickerMode (@AvatarPickerMode int avatarPickerMode) {
       if (mode != MODE_GALLERY) {
@@ -293,11 +308,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     public Args setReceiverChatId (long chatId) {
       this.receiverChatId = chatId;
-      return this;
-    }
-
-    public Args setMessageThreadId (long messageThreadId) {
-      this.messageThreadId = messageThreadId;
       return this;
     }
 
@@ -372,8 +382,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private @Nullable MediaSendDelegate sendDelegate;
   private MediaStack stack;
   private @Nullable TdApi.SearchMessagesFilter filter;
-  private TdApi.MessageTopic topicId;
-  private long messageThreadId;
+  private @Nullable TdApi.MessageTopic topicId;
 
   @Override
   public void setArguments (Args args) {
@@ -385,7 +394,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     this.stack = args.stack;
     this.reverseMode = args.reverseMode;
     this.filter = args.filter;
-    this.messageThreadId = args.messageThreadId;
     this.topicId = args.topicId;
   }
 
@@ -479,6 +487,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
     }
+    updateBottomSpaceAlpha();
   }
 
   private boolean hasCaption () {
@@ -494,15 +503,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setBottomAlpha (float alpha) {
+    float visibility = alpha * headerVisible.getFloatValue() * (1f - pipFactor);
     if (hasCaption() || mode == MODE_GALLERY) {
-      captionWrapView.setAlpha(alpha * headerVisible.getFloatValue() * (1f - pipFactor));
+      captionWrapView.setAlpha(visibility);
     }
     if (videoSliderView != null) {
-      videoSliderView.setAlpha(alpha * headerVisible.getFloatValue() * (1f - pipFactor));
+      videoSliderView.setAlpha(visibility);
     }
     if (thumbsRecyclerView != null) {
-      thumbsRecyclerView.setAlpha(alpha * headerVisible.getFloatValue() * (1f - pipFactor));
+      thumbsRecyclerView.setAlpha(visibility);
     }
+    updateBottomSpaceAlpha();
   }
 
   private void updateMainItemsAlpha () {
@@ -536,13 +547,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public int provideOffset (InlineResultsWrap v) {
-    final int offset = keyboardFrameLayout != null && keyboardFrameLayout.getVisibility() == View.VISIBLE && keyboardFrameLayout.getParent() != null ? keyboardFrameLayout.getMeasuredHeight() : 0;
-    return (captionView.getMeasuredHeight() /*- Screen.dp(50f)*/) + offset;
-  }
-
-  @Override
-  public int provideParentHeight (InlineResultsWrap v) {
-    return popupView.getMeasuredHeight();
+    final int offset = keyboardFrameLayout != null && emojiShown ? Math.max(0, keyboardFrameLayout.getMeasuredHeight() - bottomInnerMargin) : 0;
+    return (captionWrapView.getMeasuredHeight()) + offset;
   }
 
   @Override
@@ -552,19 +558,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         return;
       }
 
-      FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
-      // params.bottomMargin = Screen.dp(50f);
-      inlineResultsView = new InlineResultsWrap(context()) {
-        @Override
-        protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-          super.onMeasure(widthMeasureSpec, popupView.getMeasuredHeight());
-        }
-      };
+      inlineResultsView = new InlineResultsWrap(context());
       inlineResultsView.setListener((InlineResultsWrap.PickListener) captionView);
       inlineResultsView.setAlpha(inCaptionFactor);
       inlineResultsView.setOffsetProvider(this);
       inlineResultsView.setUseDarkMode(true);
-      inlineResultsView.setLayoutParams(params);
     }
 
     if (results != null && !results.isEmpty()) {
@@ -703,11 +701,21 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void openEmojiKeyboard () {
     if (!emojiShown) {
       if (keyboardFrameLayout == null) {
-        keyboardFrameLayout = new KeyboardFrameLayout(context());
+        keyboardFrameLayout = new KeyboardFrameLayout(context()) {
+          @Override
+          protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            if (inlineResultsView != null) {
+              inlineResultsView.updatePosition(true);
+            }
+            checkCaptionButtonsY();
+          }
+        };
         keyboardFrameLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         keyboardFrameLayout.setParentView(bottomWrap, contentView, popupView);
         keyboardFrameLayout.setUpdateTranslationListener(this::onKeyboardLayoutTranslation);
         keyboardFrameLayout.useHideByDetachView();
+        keyboardFrameLayout.setExtraBottomInset(systemInsets.bottom, systemInsets.bottom);
 
         textFormattingLayout = keyboardFrameLayout.contentView.textFormattingLayout;
         textFormattingLayout.init(this, inputView, new TextFormattingLayout.Delegate() {
@@ -807,7 +815,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private int getBottomWrapMargin () {
-    return (inCaption || mode != MODE_GALLERY ? 0 : Screen.dp(56f)) + controlsMargin;
+    return (inCaption || mode != MODE_GALLERY ? 0 : Screen.dp(56f)) + (emojiShown ? 0 : controlsMargin);
   }
 
   private void setInCaption (boolean inCaption) {
@@ -825,9 +833,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       mediaView.setDisableTouch(inCaption);
       mediaView.setButStillNeedClick(inCaption ? this : null);
 
-      Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
+      updateBottomWrapMargin();
       editWrap.setVisibility(inCaption ? View.GONE : View.VISIBLE);
       updateSliderAlpha();
+      updateBottomSpaceAlpha();
       if (this.inCaptionAnimator == null) {
         this.inCaptionAnimator = new FactorAnimator(ANIMATOR_ID_CAPTION, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, this.inCaptionFactor);
       }
@@ -1117,7 +1126,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   public void onMediaZoomStart () {
-    if (mode == MODE_GALLERY && currentSection == SECTION_PAINT) {
+    if (mode == MODE_GALLERY && currentSection == SECTION_PAINT && paintView != null) {
       paintView.getContentWrap().cancelDrawingByZoom();
     }
   }
@@ -1291,6 +1300,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           }
           onHide();
         } else if (finalFactor == 1f) {
+          context().getRootView().forceHideKeyboard();
           popupView.onCustomShowComplete();
           mediaView.setDisableAnimations(false);
           if (!SET_FULLSCREEN_ON_OPEN) {
@@ -1450,6 +1460,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (this.captionFactor != factor) {
       this.captionFactor = factor;
       captionWrapView.setAlpha(factor * headerVisible.getFloatValue());
+      updateBottomSpaceAlpha();
     }
   }
 
@@ -1795,7 +1806,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         UI.copyText(getArgumentsStrict().copyLink, R.string.CopiedLink);
       } else if (item.getSourceChatId() != 0) {
         if (tdlib.canCopyPostLink(item.getMessage())) {
-          tdlib.getMessageLink(item.getMessage(), false, messageThreadId != 0, link -> UI.copyText(link.url, link.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate));
+          tdlib.getMessageLink(item.getMessage(), false, Td.messageThreadId(topicId) != 0, link -> UI.copyText(link.url, link.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate));
         }
       }
     } else if (id == R.id.btn_open) {
@@ -1887,7 +1898,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       forceAnimationType = ANIMATION_TYPE_FADE;
 
       ViewController<?> c = context.navigation().getCurrentStackItem();
-      if (c instanceof MessagesController && c.getChatId() == item.getSourceChatId() && ((MessagesController) c).getMessageThreadId() == messageThreadId) {
+      if (c instanceof MessagesController && ((MessagesController) c).compareChat(item.getSourceChatId(), topicId)) {
         ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
       } else {
         tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
@@ -1896,13 +1907,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       close();
     } else if (id == R.id.btn_setProfilePhoto) {
       final long photoId = item.getPhotoId();
-      tdlib.client().send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoPrevious(photoId), false), tdlib.okHandler());
+      tdlib.send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoPrevious(photoId), false), tdlib.typedOkHandler());
       close();
     } else if (id == R.id.btn_deleteProfilePhoto) {
       if (mode == MODE_PROFILE) {
-        tdlib.client().send(new TdApi.DeleteProfilePhoto(item.getPhotoId()), tdlib.okHandler());
+        tdlib.send(new TdApi.DeleteProfilePhoto(item.getPhotoId()), tdlib.typedOkHandler());
       } else if (mode == MODE_CHAT_PROFILE) {
-        tdlib.client().send(new TdApi.SetChatPhoto(item.getSourceChatId(), null), tdlib.okHandler());
+        tdlib.send(new TdApi.SetChatPhoto(item.getSourceChatId(), null), tdlib.typedOkHandler());
       }
       forceAnimationType = ANIMATION_TYPE_FADE;
       close();
@@ -1956,15 +1967,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private boolean toggleHeaderVisibility () {
     if (headerView != null && needHeader()) {
       boolean isVisible = headerVisible.toggleValue(true);
-      // FIXME: currently there is a "jump" (by the height of navigation bar) effect upon entering/leaving full screen mode
-      // In order to properly fix it:
-      // 1. Bug in third-party dependency has to be fixed (caused by SubsamplingScaleImageView.java:1435-1436)
-      // 2. MediaViewController.dispatchInnerMargins should start passing non-zero values to MediaView
-      // 3. MediaCellView.setOffsets should start properly handling non-zero parameters (currently some of them are unsupported)
-      // For now, it is considered that having proper full-screen mode is more important
-      // than not seeing this visual "glitch".
-      //
-      // Leaving this comment for whoever going to invest time to properly resolve this issue in the future.
       if (isVisible) {
         context().removeHideNavigationView(this);
       } else {
@@ -1985,6 +1987,26 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
+  private void updateBottomWrapMargin () {
+    int newMargin = getBottomWrapMargin();
+    Views.setBottomMargin(bottomWrap, newMargin);
+  }
+
+  private void updateBottomSpaceAlpha () {
+    if (bottomSpace != null) {
+      float alpha;
+      if (mode == MODE_GALLERY) {
+        alpha = editWrap != null ? editWrap.getAlpha() : 0f;
+      } else {
+        float captionWrapAlpha = Views.isValid(captionWrapView) ? captionWrapView.getAlpha() : 0f;
+        float sliderAlpha = Views.isValid(videoSliderView) ? videoSliderView.getAlpha() * videoSliderView.getInnerAlpha() : 0f;
+        float thumbsAlpha = Views.isValid(thumbsRecyclerView) ? thumbsRecyclerView.getAlpha() : 0f;
+        alpha = Math.max(captionWrapAlpha, Math.max(thumbsAlpha, sliderAlpha));
+      }
+      bottomSpace.setAlpha(alpha);
+    }
+  }
+
   private void updateSliderAlpha () {
     if (videoSliderView != null) {
       float alpha = headerVisible.getFloatValue() * (1f - pipFactor) * (inCaption ? 0f : 1f);
@@ -1998,12 +2020,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (this.headerAlpha != alpha) {
       this.headerAlpha = alpha;
       updateThumbsAlpha();
+      updateBottomSpaceAlpha();
     }
   }
 
   private void updateThumbsAlpha () {
     if (thumbsRecyclerView != null) {
       thumbsRecyclerView.setAlpha(headerAlpha * headerVisible.getFloatValue() * (1f - pipFactor));
+      updateBottomSpaceAlpha();
     }
   }
 
@@ -2022,6 +2046,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     updateCaptionAlpha();
     updateSliderAlpha();
     updateThumbsAlpha();
+    updateBottomSpaceAlpha();
   }
 
   private void onMediaStackChanged (boolean itemCountChanged) {
@@ -2031,7 +2056,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         String currentIndex = Strings.buildCounter(stack.getEstimatedIndex() + 1);
         String totalIndex = Strings.buildCounter(stack.getEstimatedSize());
         if (getArgumentsStrict().noLoadMore && stack.getEstimatedSize() == 1) {
-          if (stack.getCurrent().isVideo()) {
+          TdApi.SponsoredMessage sponsoredMessage = stack.getCurrent().getSourceSponsoredMessage();
+          if (sponsoredMessage != null) {
+            headerCell.setTitle(sponsoredMessage.isRecommended ? R.string.MediaRecommendation : R.string.MediaAd);
+          } else if (stack.getCurrent().isVideo()) {
             headerCell.setTitle(R.string.Video);
           } else if (stack.getCurrent().isGif()) {
             headerCell.setTitle(R.string.Gif);
@@ -2721,6 +2749,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       updateCaptionAlpha();
       updateSliderAlpha();
       updateThumbsAlpha();
+      updateBottomSpaceAlpha();
 
       updatePhotoRevealFactor();
     }
@@ -3115,6 +3144,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private FrameLayoutFix contentView;
   private MediaView mediaView;
+  private FillingSpace bottomSpace;
   private FrameLayoutFix pipControlsWrap;
   private EditButton pipOpenButton, pipCloseButton;
   private View pipBackgroundView;
@@ -3174,31 +3204,41 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private float counterFactor;
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (inSlideMode || (slideAnimator != null && slideAnimator.isAnimating())) {
       return true;
     }
     if (showOtherMedias) {
-      setShowOtherMedias(false);
+      if (commit) {
+        setShowOtherMedias(false);
+      }
       return true;
     }
     if (currentSection != SECTION_CAPTION) {
-      goBackToCaption(true);
+      if (commit) {
+        goBackToCaption(true);
+      }
       return true;
     }
     if (emojiShown) {
-      forceCloseEmojiKeyboard();
+      if (commit) {
+        forceCloseEmojiKeyboard();
+      }
       return true;
     }
     if (mediaView.isZoomed()) {
-      mediaView.normalizeZoom();
+      if (commit) {
+        mediaView.normalizeZoom();
+      }
       return true;
     }
     if (inForceEditMode()) {
-      closeForceEditMode();
+      if (commit) {
+        closeForceEditMode();
+      }
       return true;
     }
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private void setCounterFactor (float counterFactor) {
@@ -3313,7 +3353,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     boolean needMargin = videoFactor == 1f && !inCaption;
     if (this.needVideoMargin != needMargin) {
       this.needVideoMargin = needMargin;
-      captionWrapView.setTranslationY((needMargin ? 0 : (float) -Screen.dp(56f) * videoFactor * (inCaption ? 0f : 1f)) + (thumbsFactor * Screen.dp(THUMBS_PADDING)));
+      float y = (needMargin ? 0 : (float) -Screen.dp(56f) * videoFactor * (inCaption ? 0f : 1f)) + (thumbsFactor * Screen.dp(THUMBS_PADDING));
+      captionWrapView.setTranslationY(y);
       Views.setBottomMargin(captionWrapView, (needVideoMargin ? Screen.dp(56f) : 0));
     }
   }
@@ -3323,7 +3364,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (captionWrapView != null) {
       updateCaptionLayout();
       if (!needVideoMargin) {
-        captionWrapView.setTranslationY((float) -Screen.dp(56f) * videoFactor + thumbOffset);
+        float y = (float) -Screen.dp(56f) * videoFactor + thumbOffset;
+        captionWrapView.setTranslationY(y);
       }
     }
     if (videoSliderView != null) {
@@ -3337,6 +3379,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       checkBottomComponentOffsets();
       if (videoSliderView != null) {
         videoSliderView.setInnerAlpha(factor);
+        updateBottomSpaceAlpha();
       }
     }
   }
@@ -3346,6 +3389,30 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       videoAnimator.forceFactor(factor);
     }
     setVideoFactor(factor);
+  }
+
+  @Override
+  public boolean onDisplayError (@NonNull PlaybackException error, @Nullable MediaItem item) {
+    boolean isGif = item != null && item.isGifType();
+    String info = Lang.getString(U.isUnsupportedFormat(error) ? (isGif ? R.string.GifPlaybackUnsupported : R.string.VideoPlaybackUnsupported) : (isGif ? R.string.GifPlaybackError : R.string.VideoPlaybackError));
+    showOptions(info, new int[]{R.id.btn_view, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ViewVideoError), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_bug_report_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      if (id == R.id.btn_view) {
+        forceClose();
+        TextController c = new TextController(context, tdlib);
+
+        String log =
+          Log.toPreviewString(error) +
+          "\n\n" +
+          U.getUsefulMetadata(tdlib) +
+          "\n\n" +
+          Log.toString(error, true);
+
+        c.setArguments(TextController.Arguments.fromRawText(Lang.getString(R.string.VideoErrorLog), log, "text/plain"));
+        context.navigation().navigateTo(c);
+      }
+      return true;
+    }, getForcedTheme());
+    return true;
   }
 
   @Override
@@ -3407,7 +3474,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private boolean ignoreCaptionUpdate;
 
   private boolean canRunFullscreen () {
-    if (APPLY_ALL_INSETS) {
+    if (useEdgeToEdge()) {
       return true;
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.CUTOUT_ENABLED && mode == MODE_MESSAGES) {
@@ -3460,7 +3527,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (captionFactor == 1f && captionWrapView != null) {
       height += captionWrapView.getMeasuredHeight();
     }
-    if (APPLY_ALL_INSETS) {
+    if (useEdgeToEdge()) {
       height += bottomInnerMargin;
     }
     return height;
@@ -3489,12 +3556,20 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void checkBottomWrapY () {
     int thumbsDistance = (Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT)) * (inForceEditMode() ? 0 : 1);
     float offsetDistance = (float) measureBottomWrapHeight() * dismissFactor - getKeyboardOffset();
+    float maxY = 0;
     if (bottomWrap != null) {
-      bottomWrap.setTranslationY(offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor) - appliedBottomPadding);
+      float y = offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor);
+      bottomWrap.setTranslationY(y);
+      maxY = Math.max(0, y);
     }
     if (thumbsRecyclerView != null) {
       float dy = ((float) thumbsDistance * Math.max((1f - thumbsFactor), dismissFactor));
-      thumbsRecyclerView.setTranslationY(offsetDistance + dy - appliedBottomPadding);
+      float y = offsetDistance + dy;
+      thumbsRecyclerView.setTranslationY(y);
+      maxY = Math.max(0, y);
+    }
+    if (bottomSpace != null) {
+      bottomSpace.setTranslationY(maxY);
     }
   }
 
@@ -3652,6 +3727,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       checkBottomWrapY();
       checkThumbsItemAnimator();
       updateThumbsAlpha();
+      updateBottomSpaceAlpha();
     }
   }
 
@@ -4896,6 +4972,18 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       private int lastWidth, lastHeight;
 
       @Override
+      protected void onAttachedToWindow () {
+        super.onAttachedToWindow();
+        setRootView(Views.findAncestor(this, RootFrameLayout.class, false));
+      }
+
+      @Override
+      protected void onDetachedFromWindow () {
+        super.onDetachedFromWindow();
+        setRootView(null);
+      }
+
+      @Override
       protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
         updatePipLayout(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec), true, true);
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -5081,7 +5169,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         headerView.setElevation(Screen.dp(3f));
       }
       attachHeaderViewWithoutNavigation(headerView);
-      headerView.initWithSingleController(this, APPLY_ALL_INSETS || ((SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) && !Config.CUTOUT_ENABLED));
+      headerView.initWithSingleController(this, useEdgeToEdge() || ((SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) && !Config.CUTOUT_ENABLED));
       headerView.getFilling().setShadowAlpha(0f);
       int leftMargin = Screen.dp(68f);
       int rightMargin = measureButtonsPadding();
@@ -5253,6 +5341,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
     }
 
+    bottomSpace = new FillingSpace(context);
+    bottomSpace.setThemedBackground(ColorId.transparentEditor, this);
+    bottomSpace.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.BOTTOM));
+    bottomSpace.setAlpha(0f);
+    bottomSpace.setLayoutHeight(bottomInnerMargin, false);
+    bottomSpace.setVisibility(bottomInnerMargin > 0 ? View.VISIBLE : View.GONE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !Config.DISABLE_VIEWER_ELEVATION) {
+      bottomSpace.setElevation(Screen.dp(3f));
+    }
+    contentView.addView(bottomSpace);
+
     updateVideoState(false);
     updateCaption(false);
 
@@ -5302,7 +5401,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       this.controlsMargin = margin;
       Views.setBottomMargin(thumbsRecyclerView, margin);
       Views.setBottomMargin(editWrap, margin);
-      Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
+      updateBottomWrapMargin();
+      bottomSpace.setLayoutHeight(margin, false);
+      bottomSpace.setVisibility(margin > 0 && !emojiShown ? View.VISIBLE : View.GONE);
     }
   }
 
@@ -5312,21 +5413,57 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return bottomInnerMargin;
   }
 
-  private int appliedBottomPadding;
+  private int topOffset;
 
-  private void setAppliedBottomPadding (int padding) {
-    if (this.appliedBottomPadding != padding) {
-      this.appliedBottomPadding = padding;
-      checkBottomWrapY();
+  private void setTopOffset (int topOffset) {
+    if (this.topOffset != topOffset) {
+      this.topOffset = topOffset;
+      Views.setPaddingTop(othersView, topOffset);
+      if (receiverView != null) {
+        FrameLayout.LayoutParams fp = (FrameLayout.LayoutParams) receiverView.getLayoutParams();
+        if (topOffset > 0) {
+          fp.leftMargin = Screen.dp(8f);
+          fp.topMargin = topOffset + Screen.dp(4f);
+        } else {
+          fp.leftMargin = Screen.dp(12f);
+          fp.topMargin = Screen.dp(4f);
+        }
+        receiverView.setLayoutParams(fp);
+      }
+
+      Views.setTopMargin(checkView, Screen.dp(20f) - Screen.dp(9f) + topOffset / 2);
+      Views.setTopMargin(counterView, Screen.dp(26f) + topOffset / 2);
+    }
+  }
+
+  private RootFrameLayout rootView;
+
+  private void setRootView (RootFrameLayout rootView) {
+    if (this.rootView != rootView) {
+      if (this.rootView != null) {
+        this.rootView.removeInsetsChangeListener(this);
+      }
+      this.rootView = rootView;
+      if (rootView != null) {
+        rootView.addInsetsChangeListener(this);
+        setTopOffset(rootView.getSystemInsets().top);
+      }
     }
   }
 
   @Override
-  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
-    boolean changed = this.bottomInnerMargin != bottom;
-    this.bottomInnerMargin = bottom;
-    if (APPLY_ALL_INSETS || (mode == MODE_GALLERY && isFromCamera)) {
-      int controlsMargin = APPLY_ALL_INSETS || bottom <= Screen.getNavigationBarHeight() ? bottom : 0;
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
+    setTopOffset(systemInsets.top);
+  }
+
+  @Override
+  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean fitsSystemWindows) {
+    super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, systemInsets, systemInsetsWithoutIme, fitsSystemWindows);
+    int bottomInset = insets.bottom;
+    boolean changed = this.bottomInnerMargin != bottomInset;
+    this.bottomInnerMargin = bottomInset;
+    if (useEdgeToEdge() || (mode == MODE_GALLERY && isFromCamera)) {
+      int controlsMargin = useEdgeToEdge() || bottomInset <= Screen.getNavigationBarHeight() ? bottomInset : 0;
       setControlsMargin(controlsMargin);
       int bottomOffset = getSectionBottomOffset(SECTION_CROP);
       Views.setBottomMargin(cropTargetView, bottomOffset);
@@ -5334,18 +5471,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         cropAreaView.setOffsetBottom(bottomOffset);
       }
       checkBottomWrapY();
+      if (keyboardFrameLayout != null) {
+        keyboardFrameLayout.setExtraBottomInset(insets.bottom, insetsWithoutIme.bottom);
+      }
     }
     if (mediaView != null) {
       if (changed) {
         int offsetBottom = getSectionBottomOffset(currentSection);
         mediaView.setNavigationalOffsets(0, 0, offsetBottom);
-        if (canRunFullscreen() && mode != MODE_SECRET) {
-          setAppliedBottomPadding(offsetBottom);
-        }
       }
       mediaView.layoutCells();
     }
-    return super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
   }
 
   @Override
@@ -5478,10 +5614,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
       FrameLayoutFix.LayoutParams params;
 
-      params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(112f) + HeaderView.getTopOffset(), Gravity.TOP);
+      params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(112f) + topOffset, Gravity.TOP);
 
       othersView = new MediaOtherRecyclerView(context());
-      othersView.setPadding(Screen.dp(2f), HeaderView.getTopOffset(), Screen.dp(2f), 0);
+      othersView.setPadding(Screen.dp(2f), topOffset, Screen.dp(2f), 0);
       othersView.setLayoutManager(new LinearLayoutManager(context(), LinearLayoutManager.HORIZONTAL, true));
       othersView.setHasFixedSize(true);
       othersView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
@@ -5599,7 +5735,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (mode != MODE_GALLERY) {
       return 0;
     }
-    int add = APPLY_ALL_INSETS || isFromCamera ? this.bottomInnerMargin : 0;
+    int add = useEdgeToEdge() || isFromCamera ? this.bottomInnerMargin : 0;
     switch (section) {
       case SECTION_CAPTION: {
         return 0; // Screen.dp(56f);
@@ -5753,7 +5889,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void setEditBitmap (ImageFile file, Bitmap bitmap) {
     UI.post(() -> {
       if (currentTargetImageFile == file) {
-        setSourceBitmap(currentTargetImageFile, currentSourceFile, (Bitmap) bitmap);
+        setSourceBitmap(currentTargetImageFile, currentSourceFile, bitmap);
         editorView.reset(currentSourceFile, sourceBitmap.getWidth(), sourceBitmap.getHeight(), sourceBitmap, currentFiltersState, currentSourceFile.getPaintState());
         editorView.setEditorVisible(true);
       }
@@ -6515,7 +6651,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private boolean hasCropChanges () {
-    return !oldCropState.compare(currentCropState);
+    return !oldCropState.equalsTo(currentCropState);
   }
 
   private void resetCropState () {
@@ -7145,7 +7281,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       case SECTION_CROP: {
         if (oldCropState != null && !oldCropState.isEmpty()) {
-          if (!oldCropState.compare(currentCropState)) {
+          if (!oldCropState.equalsTo(currentCropState)) {
             resetCrop(false);
           }
           stack.getCurrent().setCropState(oldCropState);
@@ -7500,6 +7636,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (videoSliderView != null) {
           videoSliderView.setAlpha(factor);
         }
+        updateBottomSpaceAlpha();
 
         // setTranslationY(captionView.getMeasuredHeight() * (1f - factor));
         break;
@@ -8031,7 +8168,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public void close () {
     if (inPictureInPicture) {
       closePictureInPicture();
-    } else if (forceAnimationType != -1 || !onBackPressed(false)) {
+    } else if (forceAnimationType != -1 || !performOnBackPressed(false, true)) {
       popupView.hideWindow(true);
     }
   }
@@ -8157,7 +8294,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       filter = new TdApi.SearchMessagesFilterAnimation();
     }
     if (context instanceof MediaCollectorDelegate) {
-      stack = ((MediaCollectorDelegate) context).collectMedias(item.getSourceMessageId(), filter);
+      stack = ((MediaCollectorDelegate) context).collectMedias(item.getSourceMessageId(), false, filter);
     }
 
     if (stack == null) {
@@ -8273,7 +8410,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(message, args);
     }
-    args.noLoadMore = message.isEventLog();
+    args.noLoadMore = message.isEventLog() || message.isSponsoredMessage();
     args.areOnlyScheduled = message.isScheduled();
 
     openWithArgs(context, args);
@@ -8318,7 +8455,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
-    args.setMessageThreadId(msg.messagesController().getMessageThreadId());
+    args.setTopicId(msg.messagesController().getMessageTopicId());
 
     openWithArgs(context, args);
   }
@@ -8339,12 +8476,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public static void openFromMessage (TGMessageMedia messageContainer, long messageId) {
     ViewController<?> context = messageContainer.controller();
     TdApi.Message msg = messageContainer.getMessage(messageId);
-    MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), msg);
+    MediaItem item = MediaItem.valueOf(messageContainer, messageId);
     if (item == null) {
       return;
     }
 
-    boolean allowLoadMore = !item.isSecret() && !item.isViewOnce();
+    boolean allowLoadMore = !messageContainer.isSponsoredMessage() && !item.isSecret() && !item.isViewOnce();
     TdApi.SearchMessagesFilter filter = null;
     if (allowLoadMore) {
       //noinspection SwitchIntDef
@@ -8386,7 +8523,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return;
     }
     if (allowLoadMore && context instanceof MediaCollectorDelegate) {
-      stack = ((MediaCollectorDelegate) context).collectMedias(msg.id, filter);
+      stack = ((MediaCollectorDelegate) context).collectMedias(msg.id, messageContainer.isSponsoredMessage(), filter);
     }
 
     if (stack == null) {
@@ -8395,13 +8532,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     Args args = new Args(context, MODE_MESSAGES, stack);
-    args.noLoadMore = !allowLoadMore || messageContainer.isEventLog();
+    args.noLoadMore = !allowLoadMore || messageContainer.isEventLog() || messageContainer.isSponsoredMessage();
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
     args.setFilter(filter);
-    args.setMessageThreadId(messageContainer.messagesController().getMessageThreadId());
+    args.setTopicId(messageContainer.messagesController().getMessageTopicId());
     args.areOnlyScheduled = TD.isScheduled(msg);
+
+    if (messageContainer.isSponsoredMessage()) {
+      args.setCustomSubtitle(messageContainer.getSponsoredMessage().title);
+    }
 
     openWithArgs(context, args);
   }
@@ -8447,6 +8588,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       setTextFormattingLayoutVisible(textInputHasSelection);
       if (inputView != null) {
         inputView.setActionModeVisibility(!textInputHasSelection || !emojiShown);
+      }
+      if (inlineResultsView != null) {
+        inlineResultsView.updatePosition(false);
+      }
+      updateBottomWrapMargin();
+      if (bottomSpace != null) {
+        bottomSpace.setVisibility(bottomInnerMargin > 0 && !emojiShown ? View.VISIBLE : View.GONE);
       }
     }
   }
@@ -8525,7 +8673,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void stopFullScreenTemporarily (boolean stop) {
-    if (APPLY_ALL_INSETS) {
+    if (useEdgeToEdge()) {
       return;
     }
     if (stop) {
@@ -9173,7 +9321,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     int size = Screen.dp(20f) * 2 + Screen.dp(1f) * 2 + innerPadding * 2;
     fp = FrameLayoutFix.newParams(size, size, Gravity.TOP | Gravity.RIGHT);
     fp.rightMargin = Screen.dp(20f) - innerPadding;
-    fp.topMargin = Screen.dp(20f) - innerPadding + HeaderView.getTopOffset() / 2;
+    fp.topMargin = Screen.dp(20f) - innerPadding + topOffset / 2;
 
     checkView = new CheckView(context);
     checkView.setId(R.id.btn_check);
@@ -9185,7 +9333,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(30f), Gravity.RIGHT);
     fp.rightMargin = Screen.dp(78f);
-    fp.topMargin = Screen.dp(26f) + HeaderView.getTopOffset() / 2;
+    fp.topMargin = Screen.dp(26f) + topOffset / 2;
 
     counterView = new CounterView(context);
     counterView.setId(R.id.btn_counter);
@@ -9235,9 +9383,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     final CharSequence text = StringUtils.isEmpty(args.receiverRowText) ? (chat != null ? tdlib.chatTitle(chat) : null) : args.receiverRowText;
 
     FrameLayoutFix.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.getStatusBarHeight());
-    if (HeaderView.getTopOffset() > 0) {
+    if (topOffset > 0) {
       fp.leftMargin = Screen.dp(8f);
-      fp.topMargin = HeaderView.getTopOffset() + Screen.dp(4f);
+      fp.topMargin = topOffset + Screen.dp(4f);
     } else {
       fp.leftMargin = Screen.dp(12f);
       fp.topMargin = Screen.dp(4f);

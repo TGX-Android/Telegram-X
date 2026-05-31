@@ -178,6 +178,7 @@ public final class TdlibAccentColor {
             case UseCase.PRIMARY_BIG:
               return ColorId.file;
           }
+          break;
         case InternalId.REGULAR:
           switch (useCase) {
             case UseCase.NAME:
@@ -189,6 +190,7 @@ public final class TdlibAccentColor {
               // Unsupported
               break;
           }
+          break;
         case InternalId.INACTIVE:
           switch (useCase) {
             case UseCase.NAME:

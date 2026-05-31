@@ -749,6 +749,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     inlineQueryHandler = new CancellableResultHandler() {
       @Override
       public void processResult (TdApi.Object object) {
+        boolean fallback = false;
         switch (object.getConstructor()) {
           case TdApi.InlineQueryResults.CONSTRUCTOR: {
             final TdApi.InlineQueryResults results = (TdApi.InlineQueryResults) object;
@@ -768,17 +769,21 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
             if (TD.errorCode(object) == 502) {
               UI.showBotDown(botUsername);
             }
-            // else go to default:
-          }
-          default: {
-            tdlib.ui().post(() -> {
-              if (!isCancelled() && getInlineUsername() != null) {
-                setInProgress(false);
-                hideResults();
-              }
-            });
+            fallback = true;
             break;
           }
+          default: {
+            fallback = true;
+            break;
+          }
+        }
+        if (fallback) {
+          tdlib.ui().post(() -> {
+            if (!isCancelled() && getInlineUsername() != null) {
+              setInProgress(false);
+              hideResults();
+            }
+          });
         }
       }
     };

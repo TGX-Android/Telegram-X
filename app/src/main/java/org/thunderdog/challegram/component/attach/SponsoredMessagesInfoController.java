@@ -109,8 +109,13 @@ public class SponsoredMessagesInfoController extends MediaBottomBaseController<V
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
-    mediaLayout.hide(false);
-    return true;
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
+    if (!mediaLayout.isHidden()) {
+      if (commit) {
+        mediaLayout.hide(false);
+      }
+      return true;
+    }
+    return super.performOnBackPressed(fromTop, commit);
   }
 }

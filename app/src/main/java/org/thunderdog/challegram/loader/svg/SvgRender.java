@@ -30,6 +30,7 @@ import me.vkryl.core.StringUtils;
 /**
  * A slightly rewritten version of https://github.com/japgolly/svg-android library.
  */
+@SuppressWarnings("fallthrough")
 public class SvgRender {
   private static final Pattern TRANSFORM_SEP = Pattern.compile("[\\s,]*");
   private static final RectF arcRectf = new RectF();

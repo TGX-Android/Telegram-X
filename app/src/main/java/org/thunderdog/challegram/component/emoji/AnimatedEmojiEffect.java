@@ -208,7 +208,7 @@ public class AnimatedEmojiEffect implements Destroyable {
     }
 
     public void draw (Canvas canvas) {
-      progress += (float) Math.min(40, 1000f / Screen.refreshRate()) / duration;
+      progress += Math.min(40, 1000f / Screen.refreshRate()) / duration;
       progress = MathUtils.clamp(progress);
       float progressInternal = CubicBezierInterpolator.EASE_OUT.getInterpolation(progress);
       float cx = MathUtils.fromTo(fromX, toX, progressInternal);

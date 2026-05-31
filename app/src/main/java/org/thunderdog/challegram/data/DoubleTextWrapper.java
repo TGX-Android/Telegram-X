@@ -484,7 +484,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
 
     String adminSign = null;
     if (memberInfo != null) {
-      adminSign = Td.getCustomTitle(memberInfo.status);
+      adminSign = memberInfo.tag;
       if (StringUtils.isEmpty(adminSign) && needAdminSign) {
         switch (memberInfo.status.getConstructor()) {
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:

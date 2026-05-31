@@ -30,6 +30,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -59,11 +60,13 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.ComponentActivity;
+import androidx.activity.BackEventCompat;
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
@@ -84,16 +87,19 @@ import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
+import org.thunderdog.challegram.navigation.BackPressMode;
 import org.thunderdog.challegram.navigation.DrawerController;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.InterceptLayout;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationGestureController;
+import org.thunderdog.challegram.navigation.NavigationStack;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.OverlayView;
 import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.navigation.RootDrawable;
+import org.thunderdog.challegram.navigation.SystemBackEventListener;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.RecordAudioVideoController;
@@ -157,11 +163,10 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import nl.dionsegijn.konfetti.xml.KonfettiView;
-import tgx.app.RecaptchaContext;
 import tgx.app.RecaptchaProviderRegistry;
 
 @SuppressWarnings("deprecation")
-public abstract class BaseActivity extends ComponentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
+public abstract class BaseActivity extends FragmentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
   public static final long POPUP_SHOW_SLOW_DURATION = 240l;
 
   private static final int OPEN_CAMERA_BY_TAP = 1;
@@ -176,7 +181,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   protected @Nullable DrawerController drawer;
   protected OverlayView overlayView;
   protected Invalidator invalidator;
-  protected RecaptchaContext recaptcha;
 
   private final ReferenceList<ActivityListener> activityListeners = new ReferenceList<>();
 
@@ -235,13 +239,19 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
           return new ClickBait(R.drawable.baseline_sim_card_alert_14, true);
         case Tdlib.ResolvableProblem.SET_BIRTHDATE:
           return new ClickBait(R.drawable.baseline_cake_variant_14, false);
+        case Tdlib.ResolvableProblem.SET_LOGIN_EMAIL:
+          return new ClickBait(R.drawable.baseline_alternate_email_14, false);
       }
     }
     return null;
   }
 
   public boolean isAnimating (boolean intercept) {
-    return (navigation != null && (intercept ? navigation.isAnimatingWithEffect() : navigation.isAnimating())) || (drawer != null && drawer.isAnimating()) || isProgressShowing || (cameraAnimator != null && cameraAnimator.isAnimating());
+    return
+      (navigation != null && (intercept ? navigation.isAnimatingWithEffect() : navigation.isAnimating())) ||
+      (drawer != null && drawer.isAnimating()) ||
+      isProgressShowing ||
+      (cameraAnimator != null && cameraAnimator.isAnimating());
   }
 
   public boolean processTouchEvent (MotionEvent event) {
@@ -249,7 +259,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void addToRoot (View view, boolean ignoreStatusBar) {
-    int i = passcodeController != null && isPasscodeShowing ? rootView.indexOfChild(passcodeController.getValue()) : -1;
+    int i = passcodeController != null && isPasscodeShowing && view != tooltipOverlayView ? rootView.indexOfChild(passcodeController.getValue()) : -1;
 
     // TODO make some overlay for PiPs
     if (i == -1) {
@@ -346,15 +356,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
       onTdlibChanged();
       runEmulatorChecks();
-      if (tdlib.isUnauthorized()) {
-        // Pre-initialize recaptcha to possibly save some initialization time.
-        recaptcha.initialize();
-      }
     }
-  }
-
-  public final RecaptchaContext recaptche () {
-    return recaptcha;
   }
 
   private boolean ranEmulatorChecks, emulatorChecksFinished;
@@ -460,6 +462,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return 60.0f;
   }
 
+  private boolean isGestureNavigationEnabled;
+
   @Override
   public void onCreate (Bundle savedInstanceState) {
     UI.setContext(this);
@@ -467,8 +471,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     AppState.initApplication();
     AppState.ensureReady();
 
-    recaptcha = new RecaptchaContext(getApplication());
-    RecaptchaProviderRegistry.INSTANCE.addProvider(recaptcha);
+    RecaptchaProviderRegistry.setApplication(this.getApplication());
 
     appUpdater = new AppUpdater(this);
     roundVideoController = new RoundVideoController(this);
@@ -496,6 +499,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     Screen.checkDensity();
 
+    this.isGestureNavigationEnabled = Screen.isGesturalNavigationEnabled(getResources());
     mHasSoftwareKeys = hasSoftwareKeys();
 
     currentOrientation = UI.getOrientation();
@@ -565,9 +569,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     Lang.addLanguageListener(this);
 
-    /*if (BuildConfig.DEBUG) {
-      addRemoveRtlSwitch();
-    }*/
+    navigation.getStack().addChangeListener(navigationStackChangeListener);
+    backPressedCallback.setEnabled(isBackPressActionAvailable(handleOnBackPress(false, false)));
+    getOnBackPressedDispatcher().addCallback(backPressedCallback);
   }
 
   private View rtlSwitchView;
@@ -800,8 +804,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     keyEventListeners.remove(listener);
   }
 
+  private boolean backKeyDownReceived;
+
   @Override
-  public boolean onKeyDown (int keyCode, KeyEvent event) {
+  public final boolean onKeyDown (int keyCode, KeyEvent event) {
+    if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+      backKeyDownReceived = true;
+    }
     boolean handled = false;
     for (KeyEventListener listener : keyEventListeners) {
       if (!handled && listener.onKeyDown(keyCode, event)) {
@@ -812,7 +821,14 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   @Override
-  public boolean onKeyUp (int keyCode, KeyEvent event) {
+  public final boolean onKeyUp (int keyCode, KeyEvent event) {
+    if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU && !backKeyDownReceived) {
+        getOnBackPressedDispatcher().onBackPressed();
+        return true;
+      }
+      backKeyDownReceived = false;
+    }
     boolean handled = false;
     for (KeyEventListener listener : keyEventListeners) {
       if (!handled && listener.onKeyUp(keyCode, event)) {
@@ -862,19 +878,11 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void setWindowDecorSystemUiVisibility (int visibility, boolean remember) {
-    View decorView = getWindow().getDecorView();
-    int setVisibility = visibility;
-    boolean isLight = false;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Config.USE_CUSTOM_NAVIGATION_COLOR && !Theme.isDark() && (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-      setVisibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-      isLight = true;
-    }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Theme.needLightStatusBar()) {
-      setVisibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-    }
-    decorView.setSystemUiVisibility(setVisibility);
-    if (this.isWindowLight != isLight) {
-      this.isWindowLight = isLight;
+    boolean lightNavigationBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Config.USE_CUSTOM_NAVIGATION_COLOR && !Theme.isDark() && (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0;
+    boolean lightStatusBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Theme.needLightStatusBar();
+    UI.setLightSystemBars(getWindow(), lightNavigationBar, lightStatusBar, visibility, true);
+    if (this.isWindowLight != lightNavigationBar) {
+      this.isWindowLight = lightNavigationBar;
       updateNavigationBarColor();
     }
     lastWindowVisibility = visibility;
@@ -942,6 +950,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public boolean isInFullScreen () {
     return isFullscreen;
+  }
+
+  public boolean isHideNavigation () {
+    return hideNavigation;
   }
 
   private void setFullScreen (boolean isFullscreen) {
@@ -1140,6 +1152,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       throw t;
     }
     checkAutoNightMode();
+    setGestureNavigationEnabled(Screen.isGesturalNavigationEnabled(getResources()));
     Intents.revokeFileReadPermissions();
     enableFocus();
     if (timeFilter == null) {
@@ -1196,6 +1209,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
     setOrientationLockFlags(0);
     if (navigation != null) {
+      navigation.getStack().removeChangeListener(navigationStackChangeListener);
       navigation.destroy();
     }
     Lang.removeLanguageListener(this);
@@ -1312,6 +1326,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  private void setGestureNavigationEnabled (boolean isEnabled) {
+    if (this.isGestureNavigationEnabled != isEnabled) {
+      this.isGestureNavigationEnabled = isEnabled;
+      updateNavigationBarColor();
+    }
+  }
+
   @Override
   public void onConfigurationChanged (@NonNull Configuration newConfig)  {
     super.onConfigurationChanged(newConfig);
@@ -1323,6 +1344,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (camera != null) {
       camera.onConfigurationChanged(newConfig);
     }
+    setGestureNavigationEnabled(Screen.isGesturalNavigationEnabled(getResources()));
     currentOrientation = newConfig.orientation;
     Lang.checkLanguageCode();
     setSystemNightMode(newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK);
@@ -1333,57 +1355,150 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
-  @Override
-  @SuppressWarnings("deprecation")
-  public void onBackPressed () {
-    if (isPasscodeShowing) {
-      super.onBackPressed();
-    } else {
-      onBackPressed(false);
+  private final NavigationStack.ChangeListener navigationStackChangeListener = stack -> {
+    notifyBackPressAvailabilityChanged();
+  };
+
+  private final OnBackPressedCallback backPressedCallback = new OnBackPressedCallback(false) {
+    @Override
+    public void handleOnBackPressed () {
+      boolean handled = false;
+      if (backPressTarget != null) {
+        handled = backPressTarget.onSystemBackPressed();
+        backPressTarget = null;
+      }
+      if (!handled) {
+        performBackPress(false);
+      }
+    }
+
+    private boolean cancelBackPressTarget () {
+      if (backPressTarget != null) {
+        backPressTarget.onSystemBackCancelled();
+        backPressTarget = null;
+        return true;
+      }
+      return false;
+    }
+
+    private SystemBackEventListener backPressTarget;
+
+    @Override
+    public void handleOnBackStarted (@NonNull BackEventCompat backEvent) {
+      if (cancelBackPressTarget()) {
+        Log.i("System didn't dispatch onBackCancelled / onBackPressed!");
+      }
+      notifyBackPressAvailabilityChanged();
+      @BackPressMode int mode = backPressMode;
+      SystemBackEventListener target;
+      switch (mode) {
+        case BackPressMode.NAVIGATE_BACK_IN_STACK:
+          target = navigation;
+          break;
+        case BackPressMode.CLOSE_NAVIGATION_DRAWER:
+          target = drawer;
+          break;
+        case BackPressMode.CUSTOM_ACTION_PERFORMED:
+        case BackPressMode.SYSTEM_ACTION_REQUIRED:
+          target = null;
+          break;
+        default:
+          throw new AssertionError(Integer.toString(mode));
+      }
+      if (target != null && target.onSystemBackStarted(backEvent)) {
+        backPressTarget = target;
+      } else {
+        backPressTarget = null;
+      }
+    }
+
+    @Override
+    public void handleOnBackCancelled () {
+      cancelBackPressTarget();
+    }
+
+    @Override
+    public void handleOnBackProgressed (@NonNull BackEventCompat backEvent) {
+      if (backPressTarget != null) {
+        backPressTarget.onSystemBackProgressed(backEvent);
+      }
+    }
+  };
+
+  private static boolean isBackPressActionAvailable (@BackPressMode int backPressMode) {
+    return backPressMode != BackPressMode.SYSTEM_ACTION_REQUIRED;
+  }
+
+  private @BackPressMode int backPressMode = BackPressMode.SYSTEM_ACTION_REQUIRED;
+
+  public void notifyBackPressAvailabilityChanged () {
+    @BackPressMode int backPressMode = handleOnBackPress(false, false);
+    this.backPressMode = backPressMode;
+    boolean isEnabled = isBackPressActionAvailable(backPressMode);
+    if (backPressedCallback.isEnabled() != isEnabled) {
+      backPressedCallback.setEnabled(isEnabled);
     }
   }
 
-  @SuppressWarnings("deprecation")
-  public void onBackPressed (boolean fromTop) {
+  public void performBackPress (boolean fromTop) {
+    if (handleOnBackPress(fromTop, true) == BackPressMode.SYSTEM_ACTION_REQUIRED) {
+      backPressedCallback.setEnabled(false);
+      getOnBackPressedDispatcher().onBackPressed();
+    }
+  }
+
+  public @BackPressMode int handleOnBackPress (boolean fromTop, boolean commit) {
+    if (isPasscodeShowing) {
+      return BackPressMode.SYSTEM_ACTION_REQUIRED;
+    }
     if (isProgressShowing) {
-      if (progressListener != null) {
+      if (progressListener != null && commit) {
         hideProgress(true);
       }
-      return;
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
-    if (tooltipOverlayView != null && tooltipOverlayView.onBackPressed()) {
-      return;
+    if (tooltipOverlayView != null && tooltipOverlayView.handleOnBackPress(commit)) {
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
-    if (dismissLastOpenWindow(false, true, fromTop)) {
-      return;
+    if (dismissLastOpenWindow(false, true, fromTop, commit)) {
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
     if (isCameraOpen) {
-      closeCameraByBackPress();
-      return;
+      if (commit) {
+        closeCameraByBackPress();
+      }
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
     if (recordAudioVideoController.isOpen()) {
-      recordAudioVideoController.onBackPressed();
-      return;
+      if (commit) {
+        recordAudioVideoController.onBackPressed();
+      }
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
-    if (!isAnimating(false)) {
-      if (navigation.passBackPressToActivity(fromTop)) {
-        super.onBackPressed();
-        return;
-      }
-      if (navigation.onBackPressed(fromTop)) {
-        return;
-      }
-      if (drawer != null && drawer.isVisible()) {
+    if (isAnimating(false)) {
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
+    }
+    if (navigation.passBackPressToActivity(fromTop)) {
+      return BackPressMode.SYSTEM_ACTION_REQUIRED;
+    }
+    @BackPressMode int navigationBackPress = navigation.performOnBackPressed(fromTop, commit);
+    if (navigationBackPress != BackPressMode.SYSTEM_ACTION_REQUIRED) {
+      return navigationBackPress;
+    }
+    if (drawer != null && drawer.isVisible()) {
+      if (commit) {
         drawer.close(0f, null);
+      }
+      return BackPressMode.CLOSE_NAVIGATION_DRAWER;
+    } else {
+      ViewController<?> c = navigation.getCurrentStackItem();
+      if (c != null && (c.inSelectMode() || c.inSearchMode() || c.inCustomMode())) {
+        navigationBackPress = navigation.performOnBackPressed(fromTop, commit);
+        return navigationBackPress != BackPressMode.SYSTEM_ACTION_REQUIRED ?
+          navigationBackPress :
+          BackPressMode.CUSTOM_ACTION_PERFORMED;
       } else {
-        ViewController<?> c = navigation.getCurrentStackItem();
-        if (c == null) {
-          super.onBackPressed();
-        } else if (c.inSelectMode() || c.inSearchMode() || c.inCustomMode()) {
-          navigation.onBackPressed(fromTop);
-        } else {
-          super.onBackPressed();
-        }
+        return BackPressMode.SYSTEM_ACTION_REQUIRED;
       }
     }
   }
@@ -1545,7 +1660,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     passcodeController.setPasscodeMode(PasscodeController.MODE_UNLOCK);
     passcodeController.onPrepareToShow();
     rootView.removeView(contentView);
-    rootView.addView(passcodeController.getValue());
+    addToRoot(passcodeController.getValue(), true);
     passcodeController.onActivityResume();
     passcodeController.onFocus();
 
@@ -1586,6 +1701,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private void setIsPasscodeShowing (boolean isShowing) {
     if (this.isPasscodeShowing != isShowing) {
       this.isPasscodeShowing = isShowing;
+      notifyBackPressAvailabilityChanged();
       if (isShowing) {
         removeAllWindows();
       } else {
@@ -1768,6 +1884,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       return;
     }
     isProgressShowing = true;
+    notifyBackPressAvailabilityChanged();
     final boolean firstTime;
     if (progressWrap == null) {
       progressWrap = new ProgressWrap(this);
@@ -1844,6 +1961,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     isProgressShowing = false;
     isProgressAnimating = true;
+    notifyBackPressAvailabilityChanged();
 
     ValueAnimator obj;
     obj = AnimatorUtils.simpleValueAnimator();
@@ -1956,7 +2074,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public int getVisibleContentHeight () {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+    if (Settings.instance().useEdgeToEdge()) {
       return rootView.getInnerContentHeight();
     } else {
       return contentView.getMeasuredHeight();
@@ -2098,6 +2216,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       // forceTouchWindow.setNeedRootInsets();
     }
     forceTouchWindow.init(true);
+    forceTouchWindow.setNeedFullScreen(Settings.instance().useEdgeToEdge());
     if (!context.allowFullscreen()) {
       forceTouchWindow.setNeedRootInsets();
     }
@@ -2187,6 +2306,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   @Nullable
   public InlineResultsWrap getInlineResultsView () {
     return inlineResultsView;
+  }
+
+  public void destroyStickersSuggestions (StickersSuggestionsLayout layout) {
+    if (emojiSuggestionsWrap == layout) {
+      emojiSuggestionsWrap = null;
+    }
   }
 
   public void setEmojiSuggestions (MessagesController context, @Nullable ArrayList<TGStickerObj> stickers, @Nullable RecyclerView.OnScrollListener scrollCallback, StickersSuggestionsLayout.Delegate choosingDelegate) {
@@ -2345,6 +2470,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     windows.add(window);
     checkDisallowScreenshots();
     window.showBoundWindow(rootView);
+    notifyBackPressAvailabilityChanged();
   }
 
   public boolean hasAnimatingWindow () {
@@ -2369,6 +2495,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (!windows.remove(window)) {
       completelyForgetThisWindow(window);
     }
+    notifyBackPressAvailabilityChanged();
     checkDisallowScreenshots();
   }
 
@@ -2377,18 +2504,20 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return popupLayout != null ? popupLayout.getBoundController() : null;
   }
 
-  public boolean dismissLastOpenWindow (boolean byKeyPress, boolean byBackPress, boolean byHeaderBackPress) {
+  public boolean dismissLastOpenWindow (boolean byKeyPress, boolean byBackPress, boolean byHeaderBackPress, boolean commit) {
     final int size = windows.size();
     for (int i = size - 1; i >= 0; i--) {
       PopupLayout window = windows.get(i);
       if (window.isBoundWindowShowing()) {
         if (byKeyPress && window.canHideKeyboard()) {
-          return window.hideSoftwareKeyboard();
+          return commit || window.hideSoftwareKeyboard();
         }
-        if (byBackPress && window.onBackPressed(byHeaderBackPress)) {
+        if (byBackPress && window.performOnBackPressed(byHeaderBackPress, commit)) {
           return true;
         }
-        window.hideWindow(true);
+        if (commit) {
+          window.hideWindow(true);
+        }
         return true;
       }
     }
@@ -2406,6 +2535,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
       forgottenWindows.put(i, window);
     }
+    notifyBackPressAvailabilityChanged();
   }
 
   private int indexOfForgottenWindow (PopupLayout window) {
@@ -2430,6 +2560,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
       forgottenWindows.remove(oldIndex);
       checkDisallowScreenshots();
+      notifyBackPressAvailabilityChanged();
     }
   }
 
@@ -2617,6 +2748,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (grantResults.length == 0) {
       return;
     }
+    boolean fallback = false;
     switch (requestCode) {
       case REQUEST_CUSTOM_NEW:
       case REQUEST_USE_MIC_CALL: {
@@ -2683,20 +2815,25 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
           }
         }
         // else act with other cases
+        fallback = true;
+        break;
       }
 
       default: {
-        View currentPopup = getCurrentPopupWindow();
-        if (currentPopup != null && currentPopup instanceof ActivityListener) {
-          ((ActivityListener) currentPopup).onActivityPermissionResult(requestCode, grantResults[0] == PackageManager.PERMISSION_GRANTED);
-        } else {
-          ViewController<?> controller = navigation.getCurrentStackItem();
-          if (controller != null) {
-            controller.onRequestPermissionResult(requestCode, grantResults[0] == PackageManager.PERMISSION_GRANTED);
-          }
-        }
-
+        fallback = true;
         break;
+      }
+    }
+
+    if (fallback) {
+      View currentPopup = getCurrentPopupWindow();
+      if (currentPopup != null && currentPopup instanceof ActivityListener) {
+        ((ActivityListener) currentPopup).onActivityPermissionResult(requestCode, grantResults[0] == PackageManager.PERMISSION_GRANTED);
+      } else {
+        ViewController<?> controller = navigation.getCurrentStackItem();
+        if (controller != null) {
+          controller.onRequestPermissionResult(requestCode, grantResults[0] == PackageManager.PERMISSION_GRANTED);
+        }
       }
     }
   }
@@ -2773,6 +2910,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     switch (id) {
       case ANIMATOR_ID_CAMERA: {
         processCameraAnimationFinish(finalFactor);
+        notifyBackPressAvailabilityChanged();
         break;
       }
     }
@@ -3022,6 +3160,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private void setCameraOpen (ViewController.CameraOpenOptions options, boolean isOpen, boolean byDrag) {
     if (this.isCameraOpen != isOpen) {
       this.isCameraOpen = isOpen;
+      notifyBackPressAvailabilityChanged();
       if (isOpen) {
         this.cameraOptions = options;
       }
@@ -3095,6 +3234,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       } else if (toFactor == 0f && !isCameraOpen) {
         onCameraCompletelyClosed();
       }
+      notifyBackPressAvailabilityChanged();
     });
   }
 
@@ -3129,9 +3269,14 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     hideSoftwareKeyboard();
   }
 
-  public boolean dispatchCameraMargins (View view, int left, int top, int right, int bottom) {
+  public boolean dispatchCameraMargins (View view, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
     if (view != null && camera != null && camera.getWrapUnchecked() == view) {
-      camera.setControlMargins(left, top, right, bottom);
+      camera.setControlMargins(
+        insetsWithoutIme.left,
+        insetsWithoutIme.top,
+        insetsWithoutIme.right,
+        insetsWithoutIme.bottom
+      );
       return true;
     }
     return false;
@@ -3343,18 +3488,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         color = ColorUtils.fromToArgb(color, Theme.getColor(ColorId.passcode), passcodeFactor);
         isLight = isLight && passcodeFactor < .5f;
       }
-      getWindow().setNavigationBarColor(color);
+      UI.setNavigationBarColor(getWindow(), color, isGestureNavigationEnabled);
       if (this.isWindowLight != isLight) {
         this.isWindowLight = isLight;
-        int visibility = lastWindowVisibility;
-        if (isLight) {
-          visibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-        }
-        if (Theme.needLightStatusBar()) {
-          visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-        }
-        // TODO: rework to WindowInsetsControlle
-        getWindow().getDecorView().setSystemUiVisibility(visibility);
+        UI.setLightSystemBars(getWindow(), isLight, Theme.needLightStatusBar(), lastWindowVisibility, true);
       }
     }
   }

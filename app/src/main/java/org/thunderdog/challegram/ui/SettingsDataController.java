@@ -367,7 +367,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
   }
 
   @Override
-  public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
+  public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.Proxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
     if (isCurrent) {
       adapter.updateValuedSettingById(R.id.btn_proxy);
     }
@@ -548,7 +548,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
       if (sizeOption != 0) {
         sizeOptions = new String[TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS.length];
         for (int i = 0; i < sizeOptions.length; i++) {
-          sizeOptions[i] = tdlib.files().getDownloadLimitString(TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i]);
+          sizeOptions[i] = TdlibFilesManager.getDownloadLimitString(TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i]);
           if (TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i] == size) {
             currentValue = i;
           }

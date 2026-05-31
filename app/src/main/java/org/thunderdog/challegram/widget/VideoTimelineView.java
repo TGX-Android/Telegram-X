@@ -21,6 +21,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -766,9 +767,14 @@ public class VideoTimelineView extends View implements Destroyable, FactorAnimat
       }
     }
 
+    @SuppressWarnings("deprecation")
     private void invalidate () {
       if (left != 0 || top != 0 || right != 0 || bottom != 0) {
-        parent.invalidate(left, top, right, bottom);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+          parent.invalidate();
+        } else {
+          parent.invalidate(left, top, right, bottom);
+        }
       }
     }
 

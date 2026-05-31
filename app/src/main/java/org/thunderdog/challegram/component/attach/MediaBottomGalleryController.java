@@ -431,7 +431,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
-  public boolean showExitWarning (boolean isExitingSelection) {
+  public boolean showExitWarning (boolean isExitingSelection, boolean commit) {
     List<ImageFile> selectedImages = adapter.getSelectedPhotosAndVideosAsList(false);
     if (selectedImages != null && !selectedImages.isEmpty()) {
       boolean hasChanges = false, hasCaptions = false;
@@ -442,11 +442,13 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
           hasCaptions = true;
       }
       if (hasChanges || hasCaptions) {
-        int res = hasChanges && hasCaptions ? R.string.DiscardMediaHint3 : hasCaptions ? R.string.DiscardMediaHint2 : R.string.DiscardMediaHint;
-        int res2 = hasChanges && hasCaptions ? R.string.DiscardMediaMsg3 : hasCaptions ? R.string.DiscardMediaMsg2 : R.string.DiscardMediaMsg;
-        showUnsavedChangesPromptBeforeLeaving(Lang.getMarkdownString(this, res), Lang.getString(res2), () -> {
-          mediaLayout.onConfirmExit(isExitingSelection);
-        });
+        if (commit) {
+          int res = hasChanges && hasCaptions ? R.string.DiscardMediaHint3 : hasCaptions ? R.string.DiscardMediaHint2 : R.string.DiscardMediaHint;
+          int res2 = hasChanges && hasCaptions ? R.string.DiscardMediaMsg3 : hasCaptions ? R.string.DiscardMediaMsg2 : R.string.DiscardMediaMsg;
+          showUnsavedChangesPromptBeforeLeaving(Lang.getMarkdownString(this, res), Lang.getString(res2), () -> {
+            mediaLayout.onConfirmExit(isExitingSelection);
+          });
+        }
         return true;
       }
     }
@@ -799,12 +801,14 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (sectionsFactor != 0f) {
-      closeSections();
+      if (commit) {
+        closeSections();
+      }
       return true;
     }
-    return super.onBackPressed(fromTop);
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private @Nullable Media.GalleryBucket currentBucket;

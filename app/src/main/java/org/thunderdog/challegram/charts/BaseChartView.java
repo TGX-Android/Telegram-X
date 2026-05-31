@@ -40,6 +40,7 @@ import org.thunderdog.challegram.tool.Screen;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+@SuppressWarnings("unchecked")
 public abstract class BaseChartView<T extends ChartData, L extends LineViewData> extends View implements ChartPickerDelegate.Listener, ThemeInvalidateListener {
 
     public SharedUiComponents sharedUiComponents;
@@ -363,7 +364,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
     private void measureHeightThreshold() {
         int chartHeight = getMeasuredHeight() - chartBottom;
         if (animateToMaxHeight == 0 || chartHeight == 0) return;
-        thresholdMaxHeight = ((float) animateToMaxHeight / chartHeight) * SIGNATURE_TEXT_SIZE;
+        thresholdMaxHeight = (animateToMaxHeight / chartHeight) * SIGNATURE_TEXT_SIZE;
     }
 
 
@@ -562,7 +563,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
 
         float additionalOutAlpha = 1f;
         if (n > 2) {
-            float v = (a.values[1] - a.values[0]) / (float) (currentMaxHeight - currentMinHeight);
+            float v = (a.values[1] - a.values[0]) / (currentMaxHeight - currentMinHeight);
             if (v < 0.1) {
                 additionalOutAlpha = v / 0.1f;
             }
@@ -590,7 +591,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
 
         float additionalOutAlpha = 1f;
         if (n > 2) {
-            float v = (a.values[1] - a.values[0]) / (float) (currentMaxHeight - currentMinHeight);
+            float v = (a.values[1] - a.values[0]) / (currentMaxHeight - currentMinHeight);
             if (v < 0.1) {
                 additionalOutAlpha = v / 0.1f;
             }

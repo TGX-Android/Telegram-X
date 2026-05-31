@@ -408,10 +408,6 @@ public class TGFoundChat {
     this.messageThread = messageThread;
   }
 
-  public long getMessageThreadId () {
-    return messageThread != null ? messageThread.getMessageThreadId() : 0;
-  }
-
   public ThreadInfo getMessageThread () {
     return messageThread;
   }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="AppTheme" parent="@style/Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowActionBarOverlay">true</item>
         <item name="android:colorPrimaryDark">@color/status_bar</item> <!-- status bar color -->
@@ -15,7 +15,7 @@
         <item name="android:forceDarkAllowed">false</item>
     </style>
 
-    <style name="AppTheme.Dark" parent="android:Theme.Material.NoActionBar">
+    <style name="AppTheme.Dark" parent="@style/Theme.AppCompat.NoActionBar">
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowActionBarOverlay">true</item>
         <item name="android:colorPrimaryDark">@color/status_bar</item> <!-- status bar color -->

@@ -80,7 +80,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
 
   private final BaseActivity context;
   private final Tdlib tdlib;
-  private final long chatId, messageThreadId;
+  private final long chatId;
   private final @Nullable TdApi.MessageTopic topicId;
   private final @Nullable View targetView;
   private final boolean onBackground;
@@ -102,11 +102,10 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
 
   private @Nullable final Callback callback;
 
-  public LiveLocationHelper (BaseActivity context, Tdlib tdlib, long chatId, long messageThreadId, @Nullable TdApi.MessageTopic topicId, @Nullable View targetView, boolean onBackground, @Nullable Callback callback) {
+  public LiveLocationHelper (BaseActivity context, Tdlib tdlib, long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable View targetView, boolean onBackground, @Nullable Callback callback) {
     this.context = context;
     this.tdlib = tdlib;
     this.chatId = chatId;
-    this.messageThreadId = messageThreadId;
     this.topicId = topicId;
     this.targetView = targetView;
     this.onBackground = onBackground;
@@ -595,7 +594,6 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     }
 
     long chatId = this.chatId != 0 ? this.chatId : locationMessages.size() == 1 ? locationMessages.get(0).chatId : 0;
-    long messageThreadId = this.chatId != 0 || this.messageThreadId != 0 ? this.messageThreadId : locationMessages.size() == 1 ? locationMessages.get(0).messageThreadId : 0;
     TdApi.MessageTopic topicId = this.chatId != 0 || this.topicId != null ? this.topicId : locationMessages.size() == 1 ? locationMessages.get(0).topicId : null;
 
     if (chatId != 0 && !forceList) {
@@ -604,7 +602,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
       TdApi.Message sourceMessage = locationMessages.get(0);
       TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) sourceMessage.content;
 
-      MapController.Args args = new MapController.Args(messageLocation.location.latitude, messageLocation.location.longitude, sourceMessage).setChatId(chatId, messageThreadId, topicId).setNavigateBackOnStop(true);
+      MapController.Args args = new MapController.Args(messageLocation.location.latitude, messageLocation.location.longitude, sourceMessage).setChatId(chatId, topicId).setNavigateBackOnStop(true);
 
       tdlib.ui().openMap(context, args);
 
@@ -649,7 +647,6 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
       TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) message.content;
       MapController.Args args = new MapController.Args(messageLocation.location.latitude, messageLocation.location.longitude, message).setChatId(
         message.chatId,
-        message.messageThreadId,
         message.topicId
       ).setNavigateBackOnStop(true);
       tdlib.ui().openMap(new TdlibContext(context, tdlib), args);

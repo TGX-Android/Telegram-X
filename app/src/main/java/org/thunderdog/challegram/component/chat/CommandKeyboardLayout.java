@@ -189,7 +189,11 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
 
   public int getParentSize () {
     ViewParent parent = getParent();
-    return parent != null ? ((View) parent).getLayoutParams().height : 0;
+    if (parent != null) {
+      ViewGroup viewGroup = (ViewGroup) parent;
+      return viewGroup.getLayoutParams().height - viewGroup.getPaddingBottom();
+    }
+    return 0;
   }
 
   public void setSize (int size, int parentSize) {
@@ -213,7 +217,7 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    setMeasuredDimension(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.max(getParentSize(), size), MeasureSpec.EXACTLY));
+    setMeasuredDimension(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.max(getParentSize(), size) + getPaddingBottom() + getPaddingTop(), MeasureSpec.EXACTLY));
     // children measuring is inside onLayout
   }
 

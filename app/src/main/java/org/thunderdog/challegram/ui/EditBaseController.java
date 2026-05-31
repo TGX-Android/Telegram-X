@@ -72,18 +72,32 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.applyBottomInset(recyclerView, extraBottomInset);
+    Views.setBottomMargin(doneButton, Screen.dp(16f) - Screen.dp(4f) + extraBottomInset);
+  }
+
+  @Override
   protected View onCreateView (Context context) {
     contentView = new FrameLayoutFix(context);
     ViewSupport.setThemedBackground(contentView, getRecyclerBackgroundColorId(), this);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     recyclerView = onCreateRecyclerView();
+    Views.applyBottomInset(recyclerView, extraBottomInset);
     contentView.addView(recyclerView);
 
     int padding = Screen.dp(4f);
     FrameLayoutFix.LayoutParams params;
     params = FrameLayoutFix.newParams(Screen.dp(56f) + padding * 2, Screen.dp(56f) + padding * 2, (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM);
-    params.rightMargin = params.leftMargin = params.bottomMargin = Screen.dp(16f) - padding;
+    params.rightMargin = params.leftMargin = Screen.dp(16f) - padding;
+    params.bottomMargin = Screen.dp(16f) - padding + extraBottomInset;
 
     doneButton = new DoneButton(context);
     doneButton.setId(R.id.btn_done);

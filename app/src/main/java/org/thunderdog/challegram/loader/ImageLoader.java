@@ -228,7 +228,7 @@ public class ImageLoader {
                 workers.remove(ImageFile.getFileLoadKey(tdlib, file.getId()));
               }
               if (!isPersistent && file.needCancellation()) {
-                tdlib.client().send(new TdApi.CancelDownloadFile(file.getId(), file.isCancellationOnlyPending()), tdlib.okHandler());
+                tdlib.send(new TdApi.CancelDownloadFile(file.getId(), file.isCancellationOnlyPending()), tdlib.typedOkHandler());
               }
             }
           }
@@ -340,7 +340,7 @@ public class ImageLoader {
           if (Log.isEnabled(Log.TAG_IMAGE_LOADER)) {
             Log.d(Log.TAG_IMAGE_LOADER, "#%s: recycling, because there will be no references", file.toString());
           }
-          ((Bitmap) bitmap).recycle();
+          bitmap.recycle();
         }
       }
 

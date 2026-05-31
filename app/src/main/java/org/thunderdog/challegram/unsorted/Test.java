@@ -115,7 +115,7 @@ public class Test {
         final Tdlib tdlib = context.currentTdlib();
         tdlib.getAllChats(new TdApi.ChatListMain(), chat -> {
           if (chat.lastMessage != null) {
-            tdlib.sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, 0, chat.lastMessage.senderId, action));
+            tdlib.sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, null, chat.lastMessage.senderId, action));
           }
         }, null, false);
         return true;
@@ -139,7 +139,7 @@ public class Test {
         userId = Td.getSenderUserId(chat.lastMessage);
       }
       if (chat.lastMessage != null) {
-        tdlib.sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, 0, chat.lastMessage.senderId, tdlib.status().hasStatus(chat.id, 0) ? new TdApi.ChatActionCancel() : testAction != null ? testAction : new TdApi.ChatActionTyping()));
+        tdlib.sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, null, chat.lastMessage.senderId, tdlib.status().hasStatus(chat.id, null) ? new TdApi.ChatActionCancel() : testAction != null ? testAction : new TdApi.ChatActionTyping()));
       }
       return true;
     }

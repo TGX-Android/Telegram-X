@@ -39,6 +39,11 @@ public class MessageOptionsSeenController extends BottomSheetViewController.Bott
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     adapter = new SettingsAdapter(this) {
       @Override

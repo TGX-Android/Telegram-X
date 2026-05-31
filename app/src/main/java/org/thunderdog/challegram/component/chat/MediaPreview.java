@@ -183,6 +183,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.LinkPreviewTypeBackground.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeChannelBoost.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeChat.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeDirectMessagesChat.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeEmbeddedAudioPlayer.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeEmbeddedVideoPlayer.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeInvoice.CONSTRUCTOR:
@@ -191,23 +192,28 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeStickerSet.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeStoryAlbum.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeRequestManagedBot.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
-      case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR: {
+      case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR: {
         // TODO support more types
         break;
       }
-
       default:
-        Td.assertLinkPreviewType_e3ce10d5();
+        Td.assertLinkPreviewType_883de866();
         throw Td.unsupported(linkPreview.type);
     }
     return false;
@@ -270,6 +276,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             case TdApi.LinkPreviewTypeBackground.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeChannelBoost.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeChat.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeDirectMessagesChat.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeEmbeddedAudioPlayer.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeEmbeddedVideoPlayer.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeInvoice.CONSTRUCTOR:
@@ -278,22 +285,28 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeStickerSet.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeStoryAlbum.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeRequestManagedBot.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
-            case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR: {
+            case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR: {
               // TODO support more types
               break;
             }
             default:
-              Td.assertLinkPreviewType_e3ce10d5();
+              Td.assertLinkPreviewType_883de866();
               throw Td.unsupported(linkPreview.type);
           }
         }
@@ -457,6 +470,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
       case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR:
       case TdApi.MessageGameScore.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
@@ -471,6 +485,9 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageContactRegistered.CONSTRUCTOR:
       case TdApi.MessageUsersShared.CONSTRUCTOR:
@@ -489,12 +506,19 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
+      case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+      case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
+      case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR: {
         // No media preview.
         break;
       }
       default: {
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_baa076bf();
         throw Td.unsupported(message.content);
       }
     }

@@ -30,6 +30,7 @@ import org.thunderdog.challegram.tool.UI;
 import java.util.concurrent.TimeUnit;
 
 import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TdlibNotificationExtras {
   private static long[] getLongOrIntArray (Bundle bundle, String key) {
@@ -69,7 +70,7 @@ public class TdlibNotificationExtras {
     this.accountId = accountId;
     this.category = category;
     this.chatId = 0;
-    this.messageThreadId = 0;
+    this.topicId = null;
     this.maxNotificationId = 0;
     this.notificationGroupId = 0;
     this.needReply = false;
@@ -96,7 +97,7 @@ public class TdlibNotificationExtras {
     int accountId = bundle.getInt("account_id", TdlibAccount.NO_ID);
     int category = bundle.getInt("category", -1);
     long chatId = bundle.getLong("chat_id");
-    long messageThreadId = bundle.getLong("message_thread_id");
+    TdApi.MessageTopic topicId = Td.restoreMessageTopic(bundle, "topic_id");
     int maxNotificationId = bundle.getInt("max_notification_id");
     int notificationGroupId = bundle.getInt("notification_group_id");
     boolean needReply = bundle.getBoolean("need_reply");
@@ -107,13 +108,13 @@ public class TdlibNotificationExtras {
       Log.w("Incomplete notification extras: %s", bundle);
       return null;
     }
-    return new TdlibNotificationExtras(accountId, category, chatId, messageThreadId, maxNotificationId, notificationGroupId, needReply, mentions, messageIds, userIds);
+    return new TdlibNotificationExtras(accountId, category, chatId, topicId, maxNotificationId, notificationGroupId, needReply, mentions, messageIds, userIds);
   }
 
   public final int accountId;
   public final int category;
   public final long chatId;
-  public final long messageThreadId;
+  public final TdApi.MessageTopic topicId;
   public final int maxNotificationId;
   public final int notificationGroupId;
   public final boolean needReply;
@@ -122,11 +123,11 @@ public class TdlibNotificationExtras {
   public final long[] messageIds;
   public final long[] userIds;
 
-  private TdlibNotificationExtras (int accountId, int category, long chatId, long messageThreadId, int maxNotificationId, int notificationGroupId, boolean needReply, boolean areMentions, long[] messageIds, long[] userIds) {
+  private TdlibNotificationExtras (int accountId, int category, long chatId, TdApi.MessageTopic topicId, int maxNotificationId, int notificationGroupId, boolean needReply, boolean areMentions, long[] messageIds, long[] userIds) {
     this.accountId = accountId;
     this.category = category;
     this.chatId = chatId;
-    this.messageThreadId = messageThreadId;
+    this.topicId = topicId;
     this.maxNotificationId = maxNotificationId;
     this.notificationGroupId = notificationGroupId;
     this.needReply = needReply;
@@ -140,7 +141,7 @@ public class TdlibNotificationExtras {
     intent.putExtra("account_id", tdlib.id());
     intent.putExtra("category", group.getCategory());
     intent.putExtra("chat_id", group.getChatId());
-    intent.putExtra("message_thread_id", group.getMessageThreadId());
+    Td.put(intent, "topic_id", group.getMessageTopicId());
     intent.putExtra("max_notification_id", lastNotification.getId());
     intent.putExtra("notification_group_id", group.getId());
     intent.putExtra("need_reply", needReply);

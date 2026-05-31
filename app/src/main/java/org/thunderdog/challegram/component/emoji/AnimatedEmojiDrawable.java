@@ -144,6 +144,7 @@ public class AnimatedEmojiDrawable extends Drawable implements Destroyable {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.UNKNOWN;
   }

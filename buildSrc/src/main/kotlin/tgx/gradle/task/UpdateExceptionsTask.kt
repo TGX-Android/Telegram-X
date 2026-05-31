@@ -12,9 +12,9 @@
  */
 package tgx.gradle.task
 
+import org.gradle.api.tasks.TaskAction
 import tgx.gradle.getOrThrow
 import tgx.gradle.loadProperties
-import org.gradle.api.tasks.TaskAction
 import kotlin.contracts.ExperimentalContracts
 
 open class UpdateExceptionsTask : BaseTask() {

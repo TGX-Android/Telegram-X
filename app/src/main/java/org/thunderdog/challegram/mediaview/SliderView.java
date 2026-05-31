@@ -268,7 +268,7 @@ public class SliderView extends View implements FactorAnimator.Target {
       return;
     }
 
-    long duration = 180l + (long) ((float) Math.min(800, Math.max(180f, lastUpdateTimeMs == 0 ? 0 : (float) (now - lastUpdateTimeMs) * 1.5f) * Math.abs(currentFactor - value)));
+    long duration = 180l + (long) (Math.min(800f, Math.max(180f, lastUpdateTimeMs == 0 ? 0 : (float) (now - lastUpdateTimeMs) * 1.5f) * Math.abs(currentFactor - value)));
     if (smallValueAnimator == null) {
       smallValueAnimator = new FactorAnimator(ANIMATOR_SMALL, this, AnimatorUtils.LINEAR_INTERPOLATOR, duration, this.smallValue);
     } else {

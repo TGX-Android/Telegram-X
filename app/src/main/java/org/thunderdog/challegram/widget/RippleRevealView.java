@@ -46,9 +46,9 @@ public class RippleRevealView extends View {
       c.drawColor(ColorUtils.alphaColor(revealFactor, color));
 
       float width = getMeasuredWidth();
-      float height = getMeasuredHeight();
+      float height = getMeasuredHeight() - getPaddingBottom() - getPaddingTop();
       float radius = (float) Math.sqrt(width * width + height * height) * .5f;
-      c.drawCircle(width / 2, height / 2, radius * revealFactor, Paints.fillingPaint(color));
+      c.drawCircle(width / 2f, getPaddingTop() + height / 2f, radius * revealFactor, Paints.fillingPaint(color));
     }
   }
 }

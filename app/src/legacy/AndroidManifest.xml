@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:installLocation="auto">
+  <!--
+    minSdk 18:
+    com.otaliastudios.transcoder
+    com.otaliastudios.opengl
+
+    minSdk 19:
+    com.google.android.recaptcha
+    com.google.android.play.core.integrity.client
+    androidx.annotation.experimental
+    androidx.media3.datasource
+    androidx.media3.muxer
+    androidx.media3.extractor
+    androidx.media3.container
+    androidx.media3.database
+    androidx.media3.decoder
+    androidx.media3.common
+
+    minSdk 21:
+    androidx.camera.*
+    androidx.media3.transformer
+    androidx.media3.effect
+   -->
+  <uses-sdk tools:overrideLibrary="
+    com.otaliastudios.transcoder,
+    com.otaliastudios.opengl,
+    com.google.android.recaptcha,
+    com.google.android.play.core.integrity.client,
+    androidx.annotation.experimental,
+    androidx.media3.transformer,
+    androidx.media3.effect,
+    androidx.media3.datasource,
+    androidx.media3.muxer,
+    androidx.media3.extractor,
+    androidx.media3.container,
+    androidx.media3.database,
+    androidx.media3.decoder,
+    androidx.media3.common,
+    androidx.media3.exoplayer.hls,
+    androidx.media3.exoplayer,
+    androidx.camera.core,
+    androidx.camera.lifecycle,
+    androidx.camera.video,
+    androidx.camera.camera2,
+    androidx.camera.view" />
+</manifest>

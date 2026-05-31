@@ -134,9 +134,8 @@ abstract class TGMessageServiceImpl extends TGMessage {
 
   public void setDisplayMessage (long chatId, long messageId, Filter<TdApi.Message> callback) {
     originalMessageCreator = textCreator;
-    tdlib.client().send(new TdApi.GetMessage(chatId, messageId), result -> {
-      if (result.getConstructor() == TdApi.Message.CONSTRUCTOR) {
-        TdApi.Message message = (TdApi.Message) result;
+    tdlib.send(new TdApi.GetMessage(chatId, messageId), (message, error) -> {
+      if (message != null) {
         runOnUiThreadOptional(() -> {
           if (callback.accept(message)) {
             this.previewMessage = message;

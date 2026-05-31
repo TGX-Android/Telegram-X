@@ -261,7 +261,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final long chatId = group.getChatId();
     final TdApi.Chat chat = tdlib.chatSync(chatId, CHAT_MAX_DELAY);
     if (chat == null) {
-      Log.e(Log.TAG_FCM, "Doing nothing with the notification for chat %d, because it is no longer accessible");
+      TDLib.Tag.notifications( "Doing nothing with the notification for chat %d, because it is no longer accessible");
       // manager.cancel(notificationId);
       return DISPLAY_STATE_FAIL;
     }
@@ -597,7 +597,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
           behavior = needNotification ? NotificationCompat.GROUP_ALERT_CHILDREN : NotificationCompat.GROUP_ALERT_SUMMARY;
         }
         builder.setGroupAlertBehavior(behavior);
-        Log.i(Log.TAG_FCM, "displaying notification with behavior:%d", behavior);
+        TDLib.Tag.notifications("displaying notification with behavior:%d", behavior);
       }
     } else {
       builder = new NotificationCompat.Builder(UI.getAppContext());
@@ -949,7 +949,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
               switch (result.getConstructor()) {
                 case TdApi.File.CONSTRUCTOR: {
                   TdApi.File uploadingFile = (TdApi.File) result;
-                  tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(uploadingFile.id), tdlib.okHandler());
+                  tdlib.send(new TdApi.CancelPreliminaryUploadFile(uploadingFile.id), tdlib.typedOkHandler());
                   tdlib.client().send(new TdApi.DownloadFile(uploadingFile.id, TdlibFilesManager.PRIORITY_NOTIFICATION_MEDIA, 0, 0, true), downloadedFile -> {
                     switch (downloadedFile.getConstructor()) {
                       case TdApi.File.CONSTRUCTOR: {
@@ -1034,7 +1034,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     long chatId = singleChatId != 0 ? singleChatId : lastNotification.group().getChatId();
     TdApi.Chat chat = tdlib.chatSync(chatId, CHAT_MAX_DELAY);
     if (chat == null) {
-      Log.e(Log.TAG_FCM, "Not displaying notification, because chat is inaccessible: %d", chatId);
+      TDLib.Tag.notifications("Not displaying notification, because chat is inaccessible: %d", chatId);
       return null;
     }
     int displayingChatsCount = singleChatId != 0 ? 1 : helper.calculateChatsCount(category);

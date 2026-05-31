@@ -118,16 +118,16 @@ public class ImageActor implements ImageReader.Listener, AudioController.ApicLis
     if (success) {
       if (file.needPalette()) {
         try {
-          file.setPalette(Palette.from((Bitmap) result).generate().getDarkVibrantSwatch());
+          file.setPalette(Palette.from(result).generate().getDarkVibrantSwatch());
         } catch (Throwable t) {
           Log.e("Failed to generate palette", t);
         }
       }
       if (file.shouldBeCached()) {
-        ImageCache.instance().putBitmap(file, (Bitmap) result);
+        ImageCache.instance().putBitmap(file, result);
       } else if (isCancelled) {
         Log.i(Log.TAG_IMAGE_LOADER, "#%s: recycling bitmap because associated actor is canceled and image should not be cached", file.toString());
-        ((Bitmap) result).recycle();
+        result.recycle();
         return;
       }
       /*if (file.needOverlayCalcs()) {

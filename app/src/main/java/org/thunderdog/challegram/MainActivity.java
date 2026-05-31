@@ -90,6 +90,7 @@ import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsPrivacyKeyController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
+import org.thunderdog.challegram.ui.WaitForPremiumController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.widget.GearView;
@@ -110,6 +111,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import tgx.td.MessageId;
+import tgx.td.Td;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class MainActivity extends BaseActivity implements GlobalAccountListener, GlobalCountersListener, GlobalResolvableProblemListener {
@@ -590,6 +592,32 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
         c.setArguments(new PasswordController.Args(PasswordController.MODE_LOGIN, state));
         return c;
       }
+      case TdApi.AuthorizationStateWaitPremiumPurchase.CONSTRUCTOR: {
+        TdApi.AuthorizationStateWaitPremiumPurchase state = (TdApi.AuthorizationStateWaitPremiumPurchase) authState;
+        WaitForPremiumController c = new WaitForPremiumController(this, tdlib);
+        c.setArguments(state);
+        return c;
+      }
+      case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR: {
+        // Handled by caller
+        break;
+      }
+      case TdApi.AuthorizationStateWaitOtherDeviceConfirmation.CONSTRUCTOR: {
+        // Should never come to TGX.
+        break;
+      }
+
+      case TdApi.AuthorizationStateClosed.CONSTRUCTOR:
+      case TdApi.AuthorizationStateClosing.CONSTRUCTOR:
+      case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR:
+      case TdApi.AuthorizationStateReady.CONSTRUCTOR:
+      case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
+        break;
+
+      default: {
+        Td.assertAuthorizationState_ba756b5f();
+        throw Td.unsupported(authState);
+      }
     }
     return null;
   }
@@ -1038,11 +1066,11 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     }
 
     if (accounts.size() == 1) {
-      new LiveLocationHelper(this, accounts.get(0).tdlib(), 0, 0, null, null, false, null).init().openLiveLocationList(false).destroy();
+      new LiveLocationHelper(this, accounts.get(0).tdlib(), 0, null, null, false, null).init().openLiveLocationList(false).destroy();
       return;
     }
 
-    performAs(accounts, null, null, account -> account.tdlib().awaitInitialization(() -> handler.post(() -> new LiveLocationHelper(MainActivity.this, account.tdlib(), 0, 0, null, null, false, null).init().openLiveLocationList(true).destroy())));
+    performAs(accounts, null, null, account -> account.tdlib().awaitInitialization(() -> handler.post(() -> new LiveLocationHelper(MainActivity.this, account.tdlib(), 0, null, null, false, null).init().openLiveLocationList(true).destroy())));
   }
 
   private void resolveLiveLocationError (boolean force) {

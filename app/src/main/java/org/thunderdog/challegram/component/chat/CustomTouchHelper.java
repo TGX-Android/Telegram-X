@@ -43,6 +43,8 @@ import androidx.recyclerview.widget.RecyclerView.OnItemTouchListener;
 import androidx.recyclerview.widget.RecyclerView.ViewHolder;
 
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -426,11 +428,15 @@ public class CustomTouchHelper extends RecyclerView.ItemDecoration
     mCallback = callback;
   }
 
-  private static boolean hitTest(View child, float x, float y, float left, float top) {
-    return x >= left &&
+  private static boolean hitTest(View child, MotionEvent event, float x, float y, float left, float top) {
+    if (x >= left &&
       x <= left + child.getWidth() &&
       y >= top &&
-      y <= top + child.getHeight();
+      y <= top + child.getHeight()) {
+      RootFrameLayout rootView = Views.findAncestor(child, RootFrameLayout.class, true);
+      return (rootView == null || !rootView.isWithinSystemGesturesArea(child, event));
+    }
+    return false;
   }
 
   /**
@@ -995,14 +1001,14 @@ public class CustomTouchHelper extends RecyclerView.ItemDecoration
     final float y = event.getY();
     if (mSelected != null) {
       final View selectedView = mSelected.itemView;
-      if (hitTest(selectedView, x, y, mSelectedStartX + mDx, mSelectedStartY + mDy)) {
+      if (hitTest(selectedView, event, x, y, mSelectedStartX + mDx, mSelectedStartY + mDy)) {
         return selectedView;
       }
     }
     for (int i = mRecoverAnimations.size() - 1; i >= 0; i--) {
       final RecoverAnimation anim = mRecoverAnimations.get(i);
       final View view = anim.mViewHolder.itemView;
-      if (hitTest(view, x, y, anim.mX, anim.mY)) {
+      if (hitTest(view, event, x, y, anim.mX, anim.mY)) {
         return view;
       }
     }

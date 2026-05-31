@@ -13,46 +13,23 @@
 package tgx.gradle.task
 
 import Telegram
-import com.beust.klaxon.Json
-import com.beust.klaxon.Klaxon
 import groovy.util.Node
 import groovy.util.NodeList
 import groovy.xml.XmlParser
 import groovy.xml.XmlUtil
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.*
 import org.gradle.api.tasks.TaskAction
+import tgx.gradle.fatal
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.contracts.ExperimentalContracts
 import kotlin.system.measureTimeMillis
-import tgx.gradle.fatal
 
 open class FetchLanguagesTask : BaseTask() {
-  data class Languages (
-    @Json("lang_codes")
-    val codes: Array<String>,
-
-    @Json("date")
-    val date: Int = 0
-  ) {
-    override fun equals(other: Any?): Boolean {
-      if (this === other) return true
-      if (javaClass != other?.javaClass) return false
-
-      other as Languages
-
-      if (!codes.contentEquals(other.codes)) return false
-
-      return true
-    }
-
-    override fun hashCode(): Int {
-      return codes.contentHashCode()
-    }
-  }
-
-  @ExperimentalContracts
   @TaskAction
   fun fetchLanguages () {
     val rtlKey = "language_rtl"
@@ -153,13 +130,15 @@ open class FetchLanguagesTask : BaseTask() {
 
     // 2. Fetch languages list
 
-    val languageCodesRes = client.newCall(Request.Builder()
+    val languageCodesJson = client.newCall(Request.Builder()
       .url("https://translations.telegram.org/languages/list/${Telegram.LANGUAGE_PACK}")
       .build()
-    ).execute()
-    val languageCodes = Klaxon().parse<Languages>(languageCodesRes.body!!.string())!!.codes
-    languageCodes.sortWith { a, b -> (b == defaultLanguageCode).compareTo(a == defaultLanguageCode) }
-
+    ).execute().body.string()
+    val languageCodes = Json.parseToJsonElement(languageCodesJson).jsonObject["lang_codes"]!!.jsonArray.map {
+      it.jsonPrimitive.content
+    }.sortedWith { a, b ->
+      (b == defaultLanguageCode).compareTo(a == defaultLanguageCode)
+    }
     if (languageCodes[0] != defaultLanguageCode) {
       fatal("Default language not found: $languageCodes")
     }
@@ -191,7 +170,7 @@ open class FetchLanguagesTask : BaseTask() {
       val callback: Callback = object : Callback {
         override fun onResponse(call: Call, response: Response) {
           val time = measureTimeMillis {
-            val strings = XmlParser().parseText(response.body!!.string())
+            val strings = XmlParser().parseText(response.body.string())
 
             val threeDotFixKeys = mutableListOf<String>()
 

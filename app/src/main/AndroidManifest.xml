@@ -3,8 +3,6 @@
   xmlns:tools="http://schemas.android.com/tools"
   android:installLocation="auto">
 
-  <uses-sdk tools:overrideLibrary="androidx.media3.exoplayer, androidx.media3.exoplayer.hls, androidx.media3.common, androidx.media3.transformer, androidx.media3.extractor, androidx.media3.muxer, androidx.media3.decoder, androidx.media3.container, androidx.media3.datasource, androidx.media3.database, androidx.media3.effect, androidx.camera.camera2, androidx.camera.core, androidx.camera.video, androidx.camera.view, androidx.camera.lifecycle, androidx.camera.extensions, com.google.android.play.core.integrity.client, com.otaliastudios.transcoder, com.otaliastudios.opengl, com.google.android.recaptcha, com.google.android.gms.recaptchabase, androidx.annotation.experimental, com.google.mlkit.nl.languageid.bundled, com.google.mlkit.nl.languageid, com.google.mlkit.common, com.google.android.gms.base, com.google.android.gms.tasks, com.google.android.gms.common" />
-
   <uses-feature
     android:glEsVersion="0x00020000"
     android:required="true" />
@@ -53,7 +51,8 @@
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-  <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+  <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
+    tools:ignore="BackgroundLocationPolicy" />
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
   <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -62,20 +61,24 @@
   <uses-permission android:name="android.permission.VIBRATE" />
   <uses-permission android:name="android.permission.READ_CONTACTS" />
   <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+  <uses-permission android:name="android.permission.USE_BIOMETRIC" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
   <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
-  <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
+  <uses-permission android:name="android.permission.CHANGE_CONFIGURATION"
+    tools:ignore="ProtectedPermissions" />
   <uses-permission android:name="android.permission.READ_PHONE_STATE" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
   <uses-permission android:name="android.permission.WRITE_SETTINGS" />
   <uses-permission android:name="android.permission.BLUETOOTH" />
   <!--<uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />-->
-  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+    tools:ignore="RequestInstallPackagesPolicy" />
   <!--<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />-->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
   <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -135,7 +138,9 @@
     android:theme="@style/AppTheme"
     android:requestLegacyExternalStorage="true"
     android:preserveLegacyExternalStorage="true"
-    tools:targetApi="r">
+    android:enableOnBackInvokedCallback="true"
+    tools:targetApi="35"
+    tools:ignore="RtlEnabled">
 
     <meta-data
       android:name="firebase_analytics_collection_deactivated"
@@ -166,12 +171,16 @@
       android:name=".service.ForegroundService"
       android:enabled="true"
       android:exported="false"
-      android:foregroundServiceType="shortService"
-      android:stopWithTask="false" />
+      android:foregroundServiceType="specialUse"
+      android:stopWithTask="false">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Telegram X is a messaging app. Users expect to receive instant new message notifications, and the app to be auto-started. A foreground service is required for push messages that require one-time end-to-end encryption key exchange (such as when users receive the first message from a new Secret Chat), for which there is no Firebase Cloud Messaging integration. Other foreground service types do not fit this use case, or can't be used on Android 15 because there are time limits or auto-starting on boot is not allowed. Using the Android work manager isn't an option either." />
+    </service>
 
     <service
       android:name=".service.BootListenerService"
-      android:enabled="true"
+      android:enabled="@bool/bootServiceEnabled"
       android:exported="false"
       android:stopWithTask="false">
       <intent-filter>
@@ -240,13 +249,6 @@
       android:name=".receiver.TGRemoveAllReceiver"
       android:exported="false" />
 
-    <activity
-      android:name=".voip.gui.VoIPPermissionActivity"
-      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-      android:excludeFromRecents="true"
-      android:taskAffinity="${applicationId}.voip"
-      android:theme="@style/TransparentTheme"
-      android:exported="false" />
     <activity
       android:name=".voip.gui.VoIPFeedbackActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"

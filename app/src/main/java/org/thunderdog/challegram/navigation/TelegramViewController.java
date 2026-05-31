@@ -16,6 +16,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -144,12 +145,17 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
   }
 
   @Override
-  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
-    boolean updated = super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
+  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean fitsSystemWindows) {
+    super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, systemInsets, systemInsetsWithoutIme, fitsSystemWindows);
+    setBottomInset(insets.bottom, insetsWithoutIme.bottom);
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
     if (chatSearchView != null) {
-      chatSearchView.setPadding(0, 0, 0, bottom);
+      chatSearchView.setPadding(0, 0, 0, extraBottomInsetWithoutIme);
     }
-    return updated;
   }
 
   protected final CustomRecyclerView generateChatSearchView (@Nullable ViewGroup parent) {

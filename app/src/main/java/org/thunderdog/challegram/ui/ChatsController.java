@@ -460,12 +460,23 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   public TdlibChatListSlice list () {
     if (list == null) {
-      this.list = new TdlibChatListSlice(tdlib, chatList(), filter, false);
+      this.list = tdlib.chatList(chatList()).slice(filter);
     }
     return list;
   }
 
   private TdlibMessageViewer.Viewport chatsViewport;
+
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.applyBottomInset(chatsView, extraBottomInset);
+  }
 
   @Override
   protected View onCreateView (Context context) {
@@ -482,6 +493,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         adapter.notifyLastItemChanged();
       }
     });
+    Views.applyBottomInset(chatsView, extraBottomInset);
     chatsView.setItemAnimator(null);
     if (isInForceTouchMode()) {
       chatsView.setVerticalScrollBarEnabled(false);
@@ -711,7 +723,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     }
 
     if (filter == null) {
-      liveLocationHelper = new LiveLocationHelper(this.context, tdlib, 0, 0, null, chatsView, true, this);
+      liveLocationHelper = new LiveLocationHelper(this.context, tdlib, 0, null, chatsView, true, this);
       liveLocationHelper.init();
     }
 
@@ -2693,7 +2705,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     tdlib.settings().removeUserPreferenceChangeListener(this);
     tdlib.listeners().unsubscribeFromGlobalUpdates(this);
     tdlib.cache().unsubscribeFromGlobalUpdates(this);
-    list.unsubscribeFromUpdates(this);
+    list.performDestroy();
     TGLegacyManager.instance().removeEmojiListener(this);
     tdlib.contacts().removeListener(this);
     tdlib.context().dateManager().removeListener(this);

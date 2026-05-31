@@ -170,6 +170,10 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
     totalView.setAlpha(alpha);
   }
 
+  public float getInnerAlpha () {
+    return sliderView.getAlpha();
+  }
+
   private static void styleText (TextView textView) {
     textView.setTextColor(0xffffffff);
     textView.setPadding(Screen.dp(2f), 0, Screen.dp(2f), 0);

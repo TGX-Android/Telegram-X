@@ -184,7 +184,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     if (!isSilent && update.notificationSettingsChatId != 0 && ChatId.isUserChat(update.notificationSettingsChatId) && tdlib.settings().needMuteNonContacts()) {
       TdApi.User user = tdlib.chatUser(update.notificationSettingsChatId);
       if (user != null && !user.isContact) {
-        Log.i(Log.TAG_FCM, "Making notification from chatId=%d silent, because of user preferences for %d", update.chatId, update.notificationSettingsChatId);
+        TDLib.Tag.notifications("Making notification from chatId=%d silent, because of user preferences for %d", update.chatId, update.notificationSettingsChatId);
         isSilent = true;
       }
     }

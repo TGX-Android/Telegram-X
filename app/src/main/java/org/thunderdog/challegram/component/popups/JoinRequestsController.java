@@ -116,15 +116,23 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (mediaLayout.getHeaderView().inSearchMode()) {
-      mediaLayout.getHeaderView().closeSearchMode(true, null);
-      headerView = mediaLayout.getHeaderView();
+      if (commit) {
+        mediaLayout.getHeaderView().closeSearchMode(true, null);
+        headerView = mediaLayout.getHeaderView();
+      }
       return true;
     }
 
-    close();
-    return false;
+    if (!mediaLayout.isHidden()) {
+      if (commit) {
+        close();
+      }
+      return true;
+    }
+
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override

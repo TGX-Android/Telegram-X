@@ -109,13 +109,13 @@ public class ChatHeaderView extends ComplexHeaderView {
       setText(messageThread.chatHeaderTitle(), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : messageThread.chatHeaderSubtitle());
       setExpandedSubtitle(null);
       setUseRedHighlight(false);
-      attachChatStatus(messageThread.getChatId(), messageThread.getMessageThreadId());
+      attachChatStatus(messageThread.getChatId(), messageThread.getMessageTopicId());
     } else {
       setEmojiStatus(tdlib.isSelfChat(chat) ? null : tdlib.chatUser(chat));
       setText(tdlib.chatTitle(chat), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.status().chatStatus(chat));
       setExpandedSubtitle(tdlib.status().chatStatusExpanded(chat));
       setUseRedHighlight(tdlib.isRedTeam(chat.id));
-      attachChatStatus(chat.id, 0);
+      attachChatStatus(chat.id, null);
     }
   }
 

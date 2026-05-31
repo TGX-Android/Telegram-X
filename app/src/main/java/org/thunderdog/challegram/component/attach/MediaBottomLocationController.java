@@ -112,8 +112,8 @@ public class MediaBottomLocationController extends MediaBottomBaseController<Voi
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
-    return (mapAnimator != null && mapAnimator.isAnimating()) || super.onBackPressed(fromTop);
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
+    return (mapAnimator != null && mapAnimator.isAnimating()) || super.performOnBackPressed(fromTop, commit);
   }
 
   @Override

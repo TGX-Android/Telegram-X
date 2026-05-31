@@ -18,6 +18,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -25,6 +26,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -48,12 +50,13 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiTextView;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.Animated;
 import me.vkryl.core.StringUtils;
 
-public class OptionsLayout extends LinearLayout implements Animated {
+public class OptionsLayout extends LinearLayout implements Animated, RootFrameLayout.MarginModifier {
   private final CustomTextView textView;
   private final CustomTextView headerView;
   private final ViewController<?> parent;
@@ -97,6 +100,7 @@ public class OptionsLayout extends LinearLayout implements Animated {
       public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
       @Override
+      @SuppressWarnings("deprecation")
       public int getOpacity () {
         return PixelFormat.UNKNOWN;
       }
@@ -111,6 +115,12 @@ public class OptionsLayout extends LinearLayout implements Animated {
       parent.addThemeInvalidateListener(headerView);
       parent.addThemeInvalidateListener(this);
     }
+  }
+
+  @Override
+  public void onApplyMarginInsets (View child, FrameLayout.LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
+    Views.setMargins(params, insets.left, 0, insets.right, 0);
+    Views.setPaddingBottom(this, insetsWithoutIme.bottom);
   }
 
   @Override
@@ -276,19 +286,20 @@ public class OptionsLayout extends LinearLayout implements Animated {
     addView(text, 1);
   }
 
-  public void setInfo (ViewController<?> context, Tdlib tdlib, CharSequence info, boolean isTitle) {
+  public void setInfo (ViewController<?> context, Tdlib tdlib, CharSequence info, boolean isTitle, int maxLineCount) {
     if (!StringUtils.isEmpty(info)) {
       String str = info.toString();
       TextEntity[] parsed = TD.collectAllEntities(context, tdlib, info, false, null);
-      setInfo(str, parsed, isTitle);
+      setInfo(str, parsed, isTitle, maxLineCount);
     } else {
       textView.setVisibility(View.GONE);
     }
   }
 
-  public void setInfo (String text, TextEntity[] entities, boolean isTitle) {
+  public void setInfo (String text, TextEntity[] entities, boolean isTitle, int maxLineCount) {
     if (!StringUtils.isEmpty(text)) {
       textView.setVisibility(View.VISIBLE);
+      textView.setMaxLineCount(maxLineCount);
       if (isTitle) {
         textView.setBoldText(text, entities, false);
         textView.setTextSize(19f);

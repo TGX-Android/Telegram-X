@@ -176,17 +176,18 @@ public class KeyboardFrameLayout extends FrameLayoutFix implements ViewTreeObser
     addView(contentView);
   }
 
-  private int extraBottomInset;
+  private int extraBottomInset, extraBottomInsetWithoutIme;
 
-  public void setExtraBottomInset (int extraHeight) {
-    if (this.extraBottomInset != extraHeight) {
-      this.extraBottomInset = extraHeight;
+  public void setExtraBottomInset (int extraBottomInset, int extraBottomInsetWithoutIme) {
+    if (this.extraBottomInset != extraBottomInset || this.extraBottomInsetWithoutIme != extraBottomInsetWithoutIme) {
+      this.extraBottomInset = extraBottomInset;
+      this.extraBottomInsetWithoutIme = extraBottomInsetWithoutIme;
       ViewGroup.LayoutParams layoutParams = contentView.getLayoutParams();
       if (layoutParams.height != ViewGroup.LayoutParams.MATCH_PARENT) {
         layoutParams.height = getKeyboardHeight();
         contentView.setLayoutParams(layoutParams);
       }
-      contentView.emojiLayout.setExtraBottomInset(extraHeight);
+      contentView.emojiLayout.setExtraBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
       requestLayout();
     }
   }

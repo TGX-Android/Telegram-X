@@ -128,19 +128,46 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected boolean needRecyclerBottomInset () {
+    return false;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+
+    int buttonHeight = Screen.dp(BUTTON_HEIGHT_DP) + extraBottomInsetWithoutIme;
+
+    Views.setLayoutHeight(actionButton, buttonHeight);
+    Views.setPaddingBottom(actionButton, extraBottomInsetWithoutIme);
+    Views.setBottomMargin(getRecyclerView(), buttonHeight);
+    Views.setBottomMargin(bottomShadowView, buttonHeight);
+
+  }
+
+  private SeparatorView bottomShadowView;
+
+  @Override
   protected View onCreateView (Context context) {
     View view = super.onCreateView(context);
 
     FrameLayoutFix wrap = (FrameLayoutFix) view;
-    wrap.addView(actionButton = createActionButton(), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, BUTTON_HEIGHT_DP, Gravity.BOTTOM));
+
+    int buttonHeight = Screen.dp(BUTTON_HEIGHT_DP) + extraBottomInsetWithoutIme;
+    wrap.addView(actionButton = createActionButton(), FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, buttonHeight, Gravity.BOTTOM));
+    Views.setPaddingBottom(actionButton, extraBottomInsetWithoutIme);
     updateActionButton();
 
-    SeparatorView bottomShadowView = SeparatorView.simpleSeparator(context, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f, Gravity.BOTTOM), false);
+    bottomShadowView = SeparatorView.simpleSeparator(context, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f, Gravity.BOTTOM), false);
     addThemeInvalidateListener(bottomShadowView);
     bottomShadowView.setAlignBottom();
     wrap.addView(bottomShadowView);
 
-    int buttonHeight = Screen.dp(BUTTON_HEIGHT_DP);
     Views.setBottomMargin(getRecyclerView(), buttonHeight);
     Views.setBottomMargin(bottomShadowView, buttonHeight);
     return view;

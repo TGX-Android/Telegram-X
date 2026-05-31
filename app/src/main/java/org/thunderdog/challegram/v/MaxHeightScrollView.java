@@ -60,6 +60,6 @@ public class MaxHeightScrollView extends ScrollView {
 
   @Override
   public boolean onInterceptTouchEvent (MotionEvent ev) {
-    return super.onInterceptTouchEvent(ev) && (ev.getAction() != MotionEvent.ACTION_DOWN || (Views.isValid(this)));
+    return (super.onInterceptTouchEvent(ev) && (ev.getAction() != MotionEvent.ACTION_DOWN || Views.isValid(this))) || !Views.isValid(this);
   }
 }

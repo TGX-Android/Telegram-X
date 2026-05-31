@@ -111,19 +111,10 @@ public class MessagesSearchManagerMiddleware {
 
   private static String keyOf (TdApi.MessageTopic topicId) {
     if (topicId != null) {
-      switch (topicId.getConstructor()) {
-        case TdApi.MessageTopicForum.CONSTRUCTOR:
-          return "forum" + ((TdApi.MessageTopicForum) topicId).forumTopicId;
-        case TdApi.MessageTopicDirectMessages.CONSTRUCTOR:
-          return "direct" + ((TdApi.MessageTopicDirectMessages) topicId).directMessagesChatTopicId;
-        case TdApi.MessageTopicSavedMessages.CONSTRUCTOR:
-          return "saved" + ((TdApi.MessageTopicSavedMessages) topicId).savedMessagesTopicId;
-        default:
-          Td.assertMessageTopic_e5c08b7c();
-          throw Td.unsupported(topicId);
-      }
+      return Td.cacheKey(topicId);
+    } else {
+      return "default";
     }
-    return "default";
   }
 
   public static class BaseSearchResultManager implements SendSearchRequestManager {

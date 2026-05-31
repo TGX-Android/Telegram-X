@@ -669,7 +669,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
             ids.append(R.id.btn_editRights);
             colors.append(OptionColor.NORMAL);
             icons.append(R.drawable.baseline_edit_24);
-            strings.append(R.string.EditAdminTitle);
+            strings.append(R.string.EditOwnerTag);
           }
         } else {
           int promoteMode = TD.canPromoteAdmin(myStatus, member.status);

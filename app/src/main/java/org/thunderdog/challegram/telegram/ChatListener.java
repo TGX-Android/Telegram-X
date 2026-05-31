@@ -26,7 +26,7 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatRemovedFromList (long chatId, TdApi.ChatList chatList) { }
   default void onChatPermissionsChanged (long chatId, TdApi.ChatPermissions permissions) { }
   default void onChatTitleChanged (long chatId, String title) { }
-  default void onChatThemeChanged (long chatId, String themeName) { }
+  default void onChatThemeChanged (long chatId, TdApi.ChatTheme theme) { }
 
   default void onChatBackgroundChanged (long chatId, @Nullable TdApi.ChatBackground background) { }
   default void onChatAccentColorsChanged (long chatId,
@@ -51,9 +51,10 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatVideoChatChanged (long chatId, TdApi.VideoChat videoChat) { }
   default void onChatViewAsTopics (long chatId, boolean viewAsTopics) { }
   default void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) { }
-  default void onChatReplyMarkupChanged (long chatId, long replyMarkupMessageId) { }
+  default void onChatReplyMarkupChanged (long chatId, @Nullable TdApi.Message replyMarkupMessage) { }
   default void onChatDraftMessageChanged (long chatId, @Nullable TdApi.DraftMessage draftMessage) { }
-  default void onChatUnreadMentionCount(long chatId, int unreadMentionCount, boolean availabilityChanged) { }
+  default void onChatUnreadMentionCount (long chatId, int unreadMentionCount, boolean availabilityChanged) { }
+  default void onChatUnreadPollVoteCount (long chatId, int unreadMentionCount, boolean availabilityChanged) { }
   default void onChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged) { }
   default void onChatDefaultDisableNotifications (long chatId, boolean defaultDisableNotifications) { }
   default void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) { }

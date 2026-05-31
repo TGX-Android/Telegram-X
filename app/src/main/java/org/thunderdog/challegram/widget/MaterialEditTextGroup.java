@@ -255,7 +255,7 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
     }
   }
 
-  public void addLengthCounter (@Deprecated boolean reduceOffset) {
+  public void addLengthCounter (boolean reduceOffset) {
     if (lengthCounter == null) {
       editText.setParent(this);
 

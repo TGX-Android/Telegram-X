@@ -157,6 +157,7 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity() {
     return icon.getOpacity();
   }

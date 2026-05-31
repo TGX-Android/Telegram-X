@@ -543,7 +543,7 @@ public class TGBackground {
     if (target instanceof ImageFileRemote) {
       ((ImageFileRemote) target).extractFile(result -> {
         if (result instanceof TdApi.File) {
-          tdlib.client().send(new TdApi.DownloadFile(((TdApi.File) result).id, TdlibFilesManager.PRIORITY_CHAT_WALLPAPER, 0, 0, false), tdlib.okHandler());
+          tdlib.send(new TdApi.DownloadFile(((TdApi.File) result).id, TdlibFilesManager.PRIORITY_CHAT_WALLPAPER, 0, 0, false), tdlib.errorHandler());
         }
       });
     }

@@ -1389,7 +1389,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     final long emojiId = sticker.getCustomEmojiId();
     final int viewId = v.getId();
     if (viewId == R.id.btn_setEmojiStatus) {
-      tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0)), tdlib.okHandler());
+      tdlib.send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0)), tdlib.typedOkHandler());
       stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, 0);
       stickerSmallView.closePreviewIfNeeded();
     } else if (viewId == R.id.btn_setEmojiStatusTimed) {
@@ -1429,7 +1429,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
               long expirationDate = millis / 1000L;
               stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-              tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
+              tdlib.send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.typedOkHandler());
               stickerSmallView.closePreviewIfNeeded();
             }, null);
             return true;
@@ -1449,7 +1449,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           }
           long expirationDate = System.currentTimeMillis() / 1000L + duration;
           stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-          tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
+          tdlib.send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.typedOkHandler());
           stickerSmallView.closePreviewIfNeeded();
           return true;
         });

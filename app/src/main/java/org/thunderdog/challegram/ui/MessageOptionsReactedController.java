@@ -47,6 +47,10 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
     this.reactionType = reactionType;
   }
 
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
@@ -147,7 +151,11 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       items.add(new ListItem(ListItem.TYPE_LIST_INFO_VIEW));
     }
 
-    adapter.notifyItemRangeChanged(itemsCount, items.size() - itemsCount);
+    if (itemsCount > 0) {
+      adapter.notifyItemRangeChanged(itemsCount - 1, items.size() - itemsCount + 1);
+    } else {
+      adapter.notifyItemRangeChanged(itemsCount, items.size() - itemsCount);
+    }
   }
 
   @Override

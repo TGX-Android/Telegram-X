@@ -71,6 +71,7 @@ public class MessageViewGroup extends ViewGroup implements Destroyable, AttachDe
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public int getOpacity () {
       return PixelFormat.UNKNOWN;
     }

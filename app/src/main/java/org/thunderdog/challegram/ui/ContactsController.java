@@ -271,6 +271,17 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     return mode == MODE_NEW_CHAT || mode == MODE_CALL;
   }
 
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.applyBottomInset(recyclerView, extraBottomInset);
+  }
+
   @SuppressWarnings("ResourceType")
   @Override
   protected View onCreateView (Context context) {
@@ -278,6 +289,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     ViewSupport.setThemedBackground(contentView, ColorId.filling, this);
 
     recyclerView = new SectionedRecyclerView(context);
+    Views.applyBottomInset(recyclerView, extraBottomInset);
     recyclerView.setSectionedAdapter(adapter = new ContactsAdapter(recyclerView, this));
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override

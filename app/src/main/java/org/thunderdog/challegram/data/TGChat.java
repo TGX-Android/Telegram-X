@@ -1299,9 +1299,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       return;
     }
 
-    String restrictionReason = tdlib.chatRestrictionReason(chat);
-    if (restrictionReason != null) {
-      setContentPreview(new ContentPreview(ContentPreview.EMOJI_ERROR, 0, restrictionReason, false));
+    String restrictionText = Lang.getRestrictionText(tdlib.chatRestriction(chat));
+    if (!StringUtils.isEmpty(restrictionText)) {
+      setContentPreview(new ContentPreview(ContentPreview.EMOJI_ERROR, 0, restrictionText, false));
       return;
     }
 
@@ -1532,7 +1532,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       flags = BitwiseUtils.setFlag(flags, FLAG_ATTACHED, isAttached);
       if (statusHelper != null) {
         if (isAttached) {
-          statusHelper.attachToChat(chat.id, 0);
+          statusHelper.attachToChat(chat.id, null);
         } else {
           statusHelper.detachFromAnyChat();
         }

@@ -46,6 +46,11 @@ public class SetSenderController extends BottomSheetViewController<SetSenderCont
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager) {
     pager.setOffscreenPageLimit(1);
     tdlib.ui().post(this::launchOpenAnimation);

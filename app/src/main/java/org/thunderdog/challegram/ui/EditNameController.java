@@ -335,8 +335,13 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
         case Mode.RENAME_CONTACT: {
           if (user != null) {
             setDoneInProgress(true);
-            TdApi.Contact contact = new TdApi.Contact(!StringUtils.isEmpty(knownPhoneNumber) ? knownPhoneNumber : user.phoneNumber, firstName, lastName, null, user.id);
-            tdlib.client().send(new TdApi.AddContact(contact, shareMyNumber != null && shareMyNumber.isSelected()), this);
+            TdApi.ImportedContact contact = new TdApi.ImportedContact(
+              !StringUtils.isEmpty(knownPhoneNumber) ? knownPhoneNumber : user.phoneNumber,
+              firstName, lastName,
+              null
+            );
+            boolean sharePhoneNumber = shareMyNumber != null && shareMyNumber.isSelected();
+            tdlib.client().send(new TdApi.AddContact(user.id, contact, sharePhoneNumber), this);
           }
           break;
         }

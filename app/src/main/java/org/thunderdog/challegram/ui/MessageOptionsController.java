@@ -80,6 +80,11 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     adapter = new OptionsAdapter(context, this, options, emojiPackFirstEmoji, emojiPackIds, listener, themeProvider);
     LinearLayoutManager manager = new LinearLayoutManager(context);

@@ -36,6 +36,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.biometric.BiometricPrompt;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -45,7 +46,7 @@ import org.thunderdog.challegram.component.passcode.PasscodeView;
 import org.thunderdog.challegram.component.passcode.PinInputLayout;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
-import org.thunderdog.challegram.core.FingerprintPassword;
+import org.thunderdog.challegram.core.BiometricAuthentication;
 import org.thunderdog.challegram.core.GesturePassword;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -53,8 +54,10 @@ import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.ToggleHeaderView;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.ChatPasscode;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
@@ -76,18 +79,19 @@ import org.thunderdog.challegram.widget.SwirlView;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 
-public class PasscodeController extends ViewController<PasscodeController.Args> implements Menu, TextView.OnEditorActionListener, PasscodeView.Callback, PinInputLayout.Callback, ToggleDelegate, Unlockable, GestureOverlayView.OnGesturePerformedListener, GesturePassword.Callback, FingerprintPassword.Callback, BaseActivity.SimpleStateListener, Settings.PasscodeTickListener {
+public class PasscodeController extends ViewController<PasscodeController.Args> implements Menu, TextView.OnEditorActionListener, PasscodeView.Callback, PinInputLayout.Callback, ToggleDelegate, Unlockable, GestureOverlayView.OnGesturePerformedListener, GesturePassword.Callback, BiometricAuthentication.Callback, BaseActivity.SimpleStateListener, Settings.PasscodeTickListener {
   public static class Args {
     public final TdApi.Chat chat;
-    public final Tdlib.ChatPasscode passcode;
+    public final ChatPasscode passcode;
     public final TdlibUi.ChatOpenParameters chatOpenParameters;
 
-    public Args (TdApi.Chat chat, Tdlib.ChatPasscode passcode, TdlibUi.ChatOpenParameters parameters) {
+    public Args (TdApi.Chat chat, ChatPasscode passcode, TdlibUi.ChatOpenParameters parameters) {
       this.chat = chat;
-      this.passcode = passcode != null ? passcode : new Tdlib.ChatPasscode(Passcode.MODE_NONE, 0, "", null);
+      this.passcode = passcode != null ? passcode : new ChatPasscode(Passcode.MODE_NONE, 0, "", null);
       this.chatOpenParameters = parameters;
     }
   }
@@ -109,7 +113,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     if (chatId == 0 || tdlib == null)
       return false;
     TdApi.Chat chat = tdlib.chatSync(chatId);
-    Tdlib.ChatPasscode passcode = tdlib.chatPasscode(chat);
+    ChatPasscode passcode = tdlib.chatPasscode(chat);
     if (passcode == null)
       return false;
     super.restoreInstanceState(in, keyPrefix);
@@ -135,7 +139,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
   private PasscodeView passcodeView;
 
   private TdApi.Chat specificChat;
-  private Tdlib.ChatPasscode chatPasscode;
+  private ChatPasscode chatPasscode;
   private TdlibUi.ChatOpenParameters chatOpenParameters;
 
   @Override
@@ -160,10 +164,10 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     controllerMode = mode;
   }
 
-  private boolean inFingerprintSetup;
-  public void setInFingerprintSetup () {
-    inFingerprintSetup = true;
-    forcedMode = Passcode.MODE_FINGERPRINT;
+  private boolean inBiometricsSetup;
+  public void setInBiometricsSetup () {
+    inBiometricsSetup = true;
+    forcedMode = Passcode.MODE_BIOMETRICS;
   }
 
   private int forcedMode;
@@ -210,12 +214,13 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
       setMode(forcedMode != 0 ? forcedMode : isPasscodeEnabled() ? getPasscodeMode() : Passcode.MODE_PINCODE);
     } else {
       setMode(getPasscodeMode());
-      if (mode != Passcode.MODE_FINGERPRINT && needUnlockByFingerprint()) {
+      if (mode != Passcode.MODE_BIOMETRICS && needUnlockWithBiometrics()) {
         swirlView = new SwirlView(context);
+        swirlView.setOnClickListener(v -> checkBiometricsNeeded());
         swirlView.setColorFilter(ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(ColorId.passcodeIcon)));
         addThemeFilterListener(swirlView, ColorId.passcodeIcon).setIsSubtitle(true);
         swirlView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(36f), Screen.dp(36f), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, Screen.dp(18f)));
-        setNeedFinger(true);
+        setNeedBiometrics(true);
         contentView.addView(swirlView);
       }
     }
@@ -238,8 +243,8 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     if (this.mode == mode) return;
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (mode == Passcode.MODE_FINGERPRINT && !FingerprintPassword.hasFingerprints()) {
-        UI.showToast(R.string.fingerprint_hint3, Toast.LENGTH_SHORT);
+      if (mode == Passcode.MODE_BIOMETRICS && BiometricAuthentication.isMissingEnrolledData(needStrongBiometrics())) {
+        UI.showToast(BiometricAuthentication.ONLY_FINGERPRINT ? R.string.fingerprint_hint3 : R.string.biometrics_hint3, Toast.LENGTH_SHORT);
         if (controllerMode == MODE_SETUP) {
           return;
         }
@@ -263,8 +268,8 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
           hideGestureWrap();
           break;
         }
-        case Passcode.MODE_FINGERPRINT: {
-          hideFingerprintIcon();
+        case Passcode.MODE_BIOMETRICS: {
+          hideBiometricsIcon();
           break;
         }
       }
@@ -272,6 +277,9 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
 
     this.mode = mode;
 
+    if (mode == Passcode.MODE_BIOMETRICS) {
+      passcodeView.setExtraData(BitwiseUtils.optional(Passcode.BIOMETRICS_OPTION_ONLY_STRONG, needStrongBiometrics()));
+    }
     passcodeView.setModeAndState(mode, controllerMode == MODE_SETUP ? Passcode.STATE_CHOOSE : Passcode.STATE_UNLOCK);
 
     switch (mode) {
@@ -287,8 +295,8 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         showGestureWrap();
         break;
       }
-      case Passcode.MODE_FINGERPRINT: {
-        showFingerprintIcon();
+      case Passcode.MODE_BIOMETRICS: {
+        showBiometricsIcon();
         break;
       }
     }
@@ -485,11 +493,11 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     ignoreGesture = false;
   }
 
-  // Fingerprint
+  // Biometrics
 
-  private SwirlView fingerprintView;
+  private SwirlView biometricsView;
 
-  private void updateFingerprintParams (FrameLayoutFix.LayoutParams params, int orientation) {
+  private void updateBiometricsViewParams (FrameLayoutFix.LayoutParams params, int orientation) {
     params.gravity = orientation == Configuration.ORIENTATION_LANDSCAPE ? Gravity.RIGHT | Gravity.CENTER_VERTICAL : Gravity.CENTER_HORIZONTAL | Gravity.TOP;
     params.leftMargin = params.rightMargin = Screen.dp(44f);
     if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -502,25 +510,26 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     }
   }
 
-  private void showFingerprintIcon () {
-    if (fingerprintView == null) {
-      fingerprintView = new SwirlView(context);
-      fingerprintView.setColorFilter(ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(ColorId.passcodeIcon)));
-      addThemeFilterListener(fingerprintView, ColorId.passcodeIcon).setIsSubtitle(true);
+  private void showBiometricsIcon () {
+    if (biometricsView == null) {
+      biometricsView = new SwirlView(context);
+      biometricsView.setOnClickListener(v -> checkBiometricsNeeded());
+      biometricsView.setColorFilter(ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(ColorId.passcodeIcon)));
+      addThemeFilterListener(biometricsView, ColorId.passcodeIcon).setIsSubtitle(true);
 
       int orientation = UI.getOrientation();
 
       FrameLayoutFix.LayoutParams params;
 
       params = FrameLayoutFix.newParams(Screen.dp(82f), Screen.dp(82f));
-      updateFingerprintParams(params, orientation);
+      updateBiometricsViewParams(params, orientation);
 
-      fingerprintView.setLayoutParams(params);
+      biometricsView.setLayoutParams(params);
     } else if (inSetupMode()) {
-      fingerprintView.setState(SwirlView.State.OFF, false);
+      biometricsView.setState(SwirlView.State.OFF, false);
     }
-    contentView.addView(fingerprintView);
-    setNeedFinger(true);
+    contentView.addView(biometricsView);
+    setNeedBiometrics(true);
   }
 
   @Override
@@ -528,52 +537,60 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     return context.isPasscodeShowing();
   }
 
-  private int confirmFingerId;
+  private long confirmBiometricsId;
+  private boolean confirmBiometricsStrong;
+  private boolean biometricsScanCompleted;
 
   @Override
-  public void onAuthenticated (final int fingerId) {
-    fingerUsed = false;
+  public void onAuthenticated (BiometricPrompt.AuthenticationResult result, boolean strong) {
+    final int biometricsId = 0; // strong ? 1 : 0;
+    isBiometricAuthenticationActive = false;
     if (controllerMode != MODE_SETUP) {
-      if (controllerMode == MODE_UNLOCK_SETUP && Passcode.instance().compareFinger(fingerId)) {
+      if (controllerMode == MODE_UNLOCK_SETUP && Passcode.instance().compareBiometrics(biometricsId, strong)) {
+        biometricsScanCompleted = true;
         navigateTo(new PasscodeSetupController(context, tdlib));
       } else {
-        if (controllerMode == MODE_UNLOCK && unlockByFinger(fingerId)) {
+        if (controllerMode == MODE_UNLOCK && unlockByBiometrics(biometricsId, strong)) {
+          biometricsScanCompleted = true;
           UI.unlock(PasscodeController.this);
         } else {
-          UI.showToast(R.string.fingerprint_fail, Toast.LENGTH_SHORT);
+          UI.showToast(BiometricAuthentication.ONLY_FINGERPRINT ? R.string.fingerprint_fail : R.string.biometrics_fail, Toast.LENGTH_SHORT);
         }
-        checkFingerprintNeeded();
+        checkBiometricsNeeded();
       }
     } else {
       if (passcodeView.getState() == Passcode.STATE_CONFIRM) {
-        if (confirmFingerId == fingerId) {
+        if (confirmBiometricsId == biometricsId && confirmBiometricsStrong == strong) {
+          biometricsScanCompleted = true;
           Background.instance().post(() -> {
-            if (inFingerprintSetup) {
-              enableUnlockByFingerprint(fingerId);
+            if (inBiometricsSetup) {
+              enableUnlockByBiometrics(biometricsId, strong);
             } else {
-              setFingerprint(fingerId);
+              setBiometrics(biometricsId, strong);
             }
             postNavigateBack();
           });
         } else {
-          UI.showToast(getMismatchString(Passcode.MODE_FINGERPRINT), Toast.LENGTH_SHORT);
-          checkFingerprintNeeded();
+          UI.showToast(getMismatchString(Passcode.MODE_BIOMETRICS), Toast.LENGTH_SHORT);
+          checkBiometricsNeeded();
         }
       } else {
-        this.confirmFingerId = fingerId;
+        this.confirmBiometricsId = biometricsId;
+        this.confirmBiometricsStrong = strong;
+        passcodeView.setExtraData(BitwiseUtils.optional(Passcode.BIOMETRICS_OPTION_ONLY_STRONG, strong));
         passcodeView.setState(Passcode.STATE_CONFIRM);
-        setNeedFinger(true);
-        if (fingerprintView != null) {
-          fingerprintView.showDelayed(0);
+        setNeedBiometrics(true);
+        if (biometricsView != null) {
+          biometricsView.showDelayed(0);
         }
-        checkFingerprintNeeded();
+        checkBiometricsNeeded();
       }
     }
   }
 
-  private void hideFingerprintIcon () {
-    setNeedFinger(false);
-    contentView.removeView(fingerprintView);
+  private void hideBiometricsIcon () {
+    setNeedBiometrics(false);
+    contentView.removeView(biometricsView);
   }
 
   @Override
@@ -581,8 +598,8 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     if (requestCode == BaseActivity.REQUEST_USE_FINGERPRINT) {
       if (controllerMode == MODE_SETUP) {
         if (success) {
-          if (FingerprintPassword.isAvailable()) {
-            setMode(Passcode.MODE_FINGERPRINT);
+          if (BiometricAuthentication.isAvailable()) {
+            setMode(Passcode.MODE_BIOMETRICS);
           } else {
             // UI.showToast(R.string.fingerprint_unavailable, Toast.LENGTH_LONG);
           }
@@ -597,10 +614,10 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     }
   }
 
-  public void updateFingerprintOrientation () {
-    FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) fingerprintView.getLayoutParams();
-    updateFingerprintParams(params, UI.getOrientation());
-    fingerprintView.setLayoutParams(params);
+  public void updateBiometricsViewOrientation () {
+    FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) biometricsView.getLayoutParams();
+    updateBiometricsViewParams(params, UI.getOrientation());
+    biometricsView.setLayoutParams(params);
   }
 
   // Other stuff
@@ -693,8 +710,12 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         return R.string.PasscodeMismatchPassword;
       case Passcode.MODE_PATTERN:
         return R.string.PasscodeMismatchPattern;
-      case Passcode.MODE_FINGERPRINT:
-        return R.string.PasscodeMismatchFingerprint;
+      case Passcode.MODE_BIOMETRICS:
+        if (BiometricAuthentication.ONLY_FINGERPRINT) {
+          return R.string.PasscodeMismatchFingerprint;
+        } else {
+          return R.string.PasscodeMismatchBiometrics;
+        }
     }
     throw new IllegalArgumentException("mode == " + mode);
   }
@@ -864,9 +885,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
   }
 
   public void unlockInterface () {
-    if (mode == Passcode.MODE_PASSWORD) {
-      Keyboard.hide(passwordView);
-    }
+    hideTooltipsAndPopUps();
     if (specificChat != null) {
       tdlib.ui().openChat(this, specificChat, (chatOpenParameters != null ? chatOpenParameters : new TdlibUi.ChatOpenParameters()).passcodeUnlocked());
     } else {
@@ -930,11 +949,17 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         updatePincodeOrientation();
         break;
       }
-      case Passcode.MODE_FINGERPRINT: {
-        updateFingerprintOrientation();
+      case Passcode.MODE_BIOMETRICS: {
+        updateBiometricsViewOrientation();
         break;
       }
     }
+  }
+
+  @Override
+  protected void onFocusStateChanged () {
+    super.onFocusStateChanged();
+    checkBiometricsNeeded();
   }
 
   @Override
@@ -943,31 +968,67 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     if (mode == Passcode.MODE_PASSWORD) {
       UI.showKeyboardDelayed(passwordView);
     }
-    int fingerprintDelay = controllerMode == MODE_UNLOCK_SETUP || specificChat != null ? 0 : controllerMode == MODE_UNLOCK ? 300 : 100;
+    int biometricsDelay = controllerMode == MODE_UNLOCK_SETUP || specificChat != null ? 0 : controllerMode == MODE_UNLOCK ? 300 : 100;
     if (swirlView != null) {
-      swirlView.showDelayed(fingerprintDelay);
+      swirlView.showDelayed(biometricsDelay);
     }
-    if (fingerprintView != null && controllerMode != MODE_SETUP) {
-      fingerprintView.showDelayed(fingerprintDelay);
+    if (biometricsView != null && controllerMode != MODE_SETUP) {
+      biometricsView.showDelayed(biometricsDelay);
     }
   }
 
+  private TooltipOverlayView.TooltipInfo tooltipInfo;
+
   @Override
-  public void onAuthenticationError (String error, boolean isFatal) {
-    UI.showToast(error, Toast.LENGTH_SHORT); // TODO better UI
+  public void onAuthenticationError (CharSequence error, boolean isFatal) {
+    if (tooltipInfo != null) {
+      tooltipInfo.hideNow();
+      tooltipInfo = null;
+    }
+    View target = Views.isValid(swirlView) ? swirlView : Views.isValid(biometricsView) ? biometricsView : null;
+    if (target != null && isFocused()) {
+      tooltipInfo = context.tooltipManager().builder(target).icon(R.drawable.baseline_error_24).show(tdlib, error);
+    } else {
+      UI.showToast(error, Toast.LENGTH_SHORT);
+      tooltipInfo = null;
+    }
     if (swirlView != null) {
       swirlView.showError(isFatal);
     }
-    if (fingerprintView != null) {
-      fingerprintView.showError(isFatal);
+    if (biometricsView != null) {
+      biometricsView.showError(isFatal);
     }
+    runOnUiThreadOptional(() -> {
+      if (tooltipInfo != null) {
+        tooltipInfo.hideNow();
+      }
+      if (isFatal && (controllerMode == MODE_SETUP || controllerMode == MODE_UNLOCK_SETUP)) {
+        navigateBack();
+      } else {
+        isBiometricAuthenticationActive = false;
+        if (swirlView != null) {
+          swirlView.setState(SwirlView.State.ON, true);
+        }
+        if (biometricsView != null) {
+          biometricsView.setState(SwirlView.State.ON, true);
+        }
+      }
+    }, null, 2000L);
   }
 
   @Override
   public void onBlur () {
     super.onBlur();
+    hideTooltipsAndPopUps();
+  }
+
+  private void hideTooltipsAndPopUps () {
     if (mode == Passcode.MODE_PASSWORD) {
       Keyboard.hide(passwordView);
+    }
+    if (tooltipInfo != null) {
+      tooltipInfo.hideNow();
+      tooltipInfo = null;
     }
   }
 
@@ -998,7 +1059,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         headerCell.setSubtitle(Lang.getStringBold(R.string.SecretChatWithUser, tdlib.chatTitle(specificChat)));
         this.headerCell = headerCell;
       }
-    } else if (controllerMode == MODE_SETUP && !inFingerprintSetup) {
+    } else if (controllerMode == MODE_SETUP && !inBiometricsSetup) {
       if (headerCell == null) {
         headerCell = this.context.navigation().getHeaderView().genToggleTitle(context(), this);
       }
@@ -1014,37 +1075,52 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     setMode(section + 1);
   }
 
-  private boolean needFinger;
+  private boolean needBiometrics;
 
-  private void setNeedFinger (boolean need) {
-    if (this.needFinger != need) {
-      this.needFinger = need;
-      checkFingerprintNeeded();
+  private void setNeedBiometrics (boolean need) {
+    if (this.needBiometrics != need) {
+      this.needBiometrics = need;
+      checkBiometricsNeeded();
     }
   }
 
-  private boolean fingerUsed;
+  private boolean isBiometricAuthenticationActive;
 
-  private void checkFingerprintNeeded () {
-    boolean need = this.needFinger && context.getActivityState() == UI.State.RESUMED;
-    if (fingerUsed != need) {
-      if (need) {
-        FingerprintPassword.authenticate(this);
+  private boolean needStrongBiometrics () {
+    if (controllerMode == MODE_SETUP) {
+      return passcodeView.getState() == Passcode.STATE_CONFIRM ?
+        confirmBiometricsStrong :
+        BiometricAuthentication.isStrongAvailable(true);
+    } else if (specificChat != null) {
+      return chatPasscode != null && chatPasscode.requireStrongBiometrics();
+    } else {
+      return Passcode.instance().useStrongBiometrics();
+    }
+  }
+
+  private void checkBiometricsNeeded () {
+    boolean needBiometricsAuthentication = !this.biometricsScanCompleted && this.needBiometrics && context.getActivityState() == UI.State.RESUMED/* && isFocused()*/;
+    if (isBiometricAuthenticationActive != needBiometricsAuthentication) {
+      if (needBiometricsAuthentication) {
+        boolean isStrong = needStrongBiometrics();
+        String title = Passcode.getActionName(Passcode.MODE_BIOMETRICS, passcodeView.getState(), false, BitwiseUtils.optional(Passcode.BIOMETRICS_OPTION_ONLY_STRONG, isStrong));
+        String cancel = Lang.getString(R.string.CancelBiometrics);
+        BiometricAuthentication.authenticate(context, title, cancel, isStrong, this);
       } else {
-        FingerprintPassword.cancelAuthentication();
+        BiometricAuthentication.cancelAuthentication();
       }
-      fingerUsed = need;
+      isBiometricAuthenticationActive = needBiometricsAuthentication;
     }
   }
 
   @Override
   public void onActivityStateChanged (BaseActivity activity, int newState, int prevState) {
-    checkFingerprintNeeded();
+    checkBiometricsNeeded();
   }
 
   @Override
   public void destroy () {
-    setNeedFinger(false);
+    setNeedBiometrics(false);
     context.removeSimpleStateListener(this);
     Settings.instance().removePasscodeTickListener(this);
     super.destroy();
@@ -1056,14 +1132,14 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
   public String[] getToggleSections () {
     if (sections == null) {
       StringList strings;
-      boolean fingerprintAvailable = FingerprintPassword.isAvailable();
-      strings = new StringList(fingerprintAvailable ? 5 : 4);
+      boolean biometricsAvailable = BiometricAuthentication.isAvailable();
+      strings = new StringList(biometricsAvailable ? 5 : 4);
       strings.append(R.string.PasscodePIN);
       strings.append(R.string.login_Password);
       strings.append(R.string.PasscodePattern);
       strings.append(R.string.PasscodeGesture);
-      if (fingerprintAvailable) {
-        strings.append(R.string.PasscodeFingerprint);
+      if (biometricsAvailable) {
+        strings.append(BiometricAuthentication.ONLY_FINGERPRINT ? R.string.PasscodeFingerprint : R.string.PasscodeBiometrics);
       }
       sections = strings.get();
     }
@@ -1088,43 +1164,43 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     }
   }
 
-  private boolean needUnlockByFingerprint () {
+  private boolean needUnlockWithBiometrics () {
     if (specificChat != null) {
-      return chatPasscode != null && chatPasscode.mode != Passcode.MODE_FINGERPRINT && !StringUtils.isEmpty(chatPasscode.fingerHash);
+      return chatPasscode != null && chatPasscode.mode != Passcode.MODE_BIOMETRICS && !StringUtils.isEmpty(chatPasscode.biometricsHash);
     } else {
-      return Passcode.instance().needUnlockByFingerprint();
+      return Passcode.instance().needUnlockWithBiometrics();
     }
   }
 
-  private boolean unlockByFinger (int fingerId) {
+  private boolean unlockByBiometrics (long biometricsId, boolean strong) {
     if (specificChat != null) {
-      String hash = Passcode.getPasscodeHash(String.valueOf(fingerId));
-      if (chatPasscode.mode == Passcode.MODE_FINGERPRINT) {
-        return chatPasscode.hash.equals(hash);
+      String hash = Passcode.getPasscodeHash(String.valueOf(biometricsId));
+      if (chatPasscode.mode == Passcode.MODE_BIOMETRICS) {
+        return chatPasscode.hash.equals(hash) && (!chatPasscode.requireStrongBiometrics() || strong);
       } else {
-        return chatPasscode.fingerHash != null && chatPasscode.fingerHash.equals(hash);
+        return chatPasscode.unlockWitBiometrics(hash, strong);
       }
     } else {
-      return Passcode.instance().unlockByFinger(fingerId);
+      return Passcode.instance().unlockByBiometrics(biometricsId, strong);
     }
   }
 
-  private void enableUnlockByFingerprint (int fingerId) {
+  private void enableUnlockByBiometrics (long biometricsId, boolean strong) {
     if (specificChat != null) {
-      chatPasscode.fingerHash = Passcode.getPasscodeHash(String.valueOf(fingerId));
+      chatPasscode.setBiometrics(Passcode.getPasscodeHash(String.valueOf(biometricsId)), strong);
       tdlib.setPasscode(specificChat, chatPasscode);
     } else {
-      Passcode.instance().enableUnlockByFingerprint(fingerId);
+      Passcode.instance().enableUnlockByBiometrics(biometricsId, strong);
     }
   }
 
-  private void setFingerprint (int fingerId) {
+  private void setBiometrics (long biometricsId, boolean strong) {
     if (specificChat != null) {
-      chatPasscode.hash = Passcode.getPasscodeHash(String.valueOf(fingerId));
-      chatPasscode.mode = Passcode.MODE_FINGERPRINT;
+      chatPasscode.hash = Passcode.getPasscodeHash(String.valueOf(biometricsId));
+      chatPasscode.mode = Passcode.MODE_BIOMETRICS;
       tdlib.setPasscode(specificChat, chatPasscode);
     } else {
-      Passcode.instance().setFingerprint(fingerId);
+      Passcode.instance().setBiometrics(biometricsId, strong);
     }
   }
 

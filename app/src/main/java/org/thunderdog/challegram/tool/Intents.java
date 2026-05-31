@@ -152,6 +152,23 @@ public class Intents {
       openUri("https://play.google.com/store/apps/details?id=" + packageName);
   }
 
+  public static boolean openDate (int unixTime) {
+    Uri uri = TD.toDateUri(unixTime);
+    try {
+      Intent intent = new Intent(Intent.ACTION_VIEW)
+        .setData(uri)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      final BaseActivity context = UI.getUiContext();
+      if (context != null) {
+        context.startActivity(intent);
+        return true;
+      }
+    } catch (Throwable t) {
+      Log.w("Cannot open uri: %s", t, uri);
+    }
+    return false;
+  }
+
   public static boolean openSelfGooglePlay () {
     return Intents.openGooglePlay(BuildConfig.APPLICATION_ID);
   }

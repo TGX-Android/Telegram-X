@@ -15,6 +15,7 @@ package org.thunderdog.challegram.loader.svg;
  *
  * @author Apache Software Foundation, Larva Labs LLC
  */
+@SuppressWarnings("fallthrough")
 public class ParserHelper {
   private final char[] s;
   private final int n;

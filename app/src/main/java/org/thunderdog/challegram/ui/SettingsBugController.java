@@ -81,6 +81,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.unit.ByteUnit;
+import tgx.extension.TelegramXExtension;
 import tgx.td.ChatPosition;
 import tgx.td.Td;
 
@@ -497,6 +498,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           view.getToggler().setRadioEnabled(Settings.instance().forceTdlibRestart(), isUpdate);
         } else if (itemId == R.id.btn_switchRtl) {
           view.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
+        } else if (itemId == R.id.btn_toggleNewSetting) {
+          updateSettingView(view, item, isUpdate);
         } else if (itemId == R.id.btn_experiment) {
           view.getToggler().setRadioEnabled(Settings.instance().isExperimentEnabled(item.getLongValue()), isUpdate);
         } else if (itemId == R.id.btn_secret_pushToken) {
@@ -518,7 +521,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
               break;
           }
         } else if (itemId == R.id.btn_secret_pushConfig) {
-          String configuration = TdlibNotificationUtils.getTokenRetriever().getConfiguration();
+          String configuration = TdlibNotificationUtils.getDeviceTokenRetriever().getConfiguration();
           view.setData(!StringUtils.isEmpty(configuration) ? configuration : "Unavailable");
         } else if (itemId == R.id.btn_secret_appFingerprint) {
           view.setData(U.getApkFingerprint("SHA1"));
@@ -742,6 +745,33 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_PeerIds).setLongValue(Settings.EXPERIMENT_FLAG_SHOW_PEER_IDS));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_PeerIdsInfo));
+        }
+
+        if (Config.EDGE_TO_EDGE_AVAILABLE && (testerLevel >= Tdlib.TesterLevel.ADMIN || Settings.instance().getNewSetting(Settings.SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE))) {
+          if (!items.isEmpty()) {
+            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          }
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.RightSwipeEdgeAnimation).setLongId(Settings.SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE).setBoolValue(true));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.RightSwipeEdgeAnimationInfo));
+        }
+
+        if (Config.EDGE_TO_EDGE_CUSTOMIZABLE) {
+          if (!items.isEmpty()) {
+            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          }
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_NoEdgeToEdge).setLongValue(Settings.EXPERIMENT_FLAG_NO_EDGE_TO_EDGE));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_NoEdgeToEdgeInfo));
+        }
+
+        if (TelegramXExtension.INSTANCE.isNotEmpty()) {
+          if (!items.isEmpty()) {
+            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          }
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_ForceAltPushService).setLongValue(Settings.EXPERIMENT_FLAG_FORCE_ALTERNATIVE_PUSH_SERVICE));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_ForceAltPushServiceInfo));
         }
 
         if (items.isEmpty()) {
@@ -1151,6 +1181,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       navigateTo(c);
     } else if (viewId == R.id.btn_switchRtl) {
       Settings.instance().setNeedRtl(Lang.packId(), adapter.toggleView(v));
+    } else if (viewId == R.id.btn_toggleNewSetting) {
+      handleSettingClick(v, adapter);
     } else if (viewId == R.id.btn_experiment) {
       ListItem item = (ListItem) v.getTag();
       if (Settings.instance().setExperimentEnabled(item.getLongValue(), adapter.toggleView(v))) {
@@ -1161,7 +1193,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         UI.copyText(toHumanRepresentation(tdlib.context().getToken()), R.string.CopiedText);
       }
     } else if (viewId == R.id.btn_secret_pushConfig) {
-      String configuration = TdlibNotificationUtils.getTokenRetriever().getConfiguration();
+      String configuration = TdlibNotificationUtils.getDeviceTokenRetriever().getConfiguration();
       if (!StringUtils.isEmpty(configuration)) {
         UI.copyText(configuration, R.string.CopiedText);
       }
@@ -1388,9 +1420,9 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     } else if (viewId == R.id.btn_secret_resetLocalNotificationSettings) {
       tdlib.notifications().resetNotificationSettings(true);
     } else if (viewId == R.id.btn_secret_attest) {
-      tdlib.requestPlayIntegrity(-1, StringUtils.random("0123456789abcdef", 32), (result, isError) -> {
+      tdlib.requestPlayIntegrity(-1, StringUtils.random("0123456789abcdef", 32), (data) -> {
         runOnUiThread(() -> {
-          openAlert(R.string.AppName, result);
+          openAlert(R.string.AppName, data);
         });
       });
     } else if (viewId == R.id.btn_secret_databaseStats) {
@@ -1419,8 +1451,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     } else if (viewId == R.id.btn_secret_deleteProfilePhoto) {
       TdApi.User user = tdlib.myUser();
       if (user != null && user.profilePhoto != null) {
-        tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.small.id), tdlib.okHandler());
-        tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.big.id), tdlib.okHandler());
+        tdlib.send(new TdApi.DeleteFile(user.profilePhoto.small.id), tdlib.typedOkHandler());
+        tdlib.send(new TdApi.DeleteFile(user.profilePhoto.big.id), tdlib.typedOkHandler());
       }
     } else if (viewId == R.id.btn_secret_dropSavedScrollPositions) {
       Settings.instance().removeScrollPositions(tdlib.accountId(), null);

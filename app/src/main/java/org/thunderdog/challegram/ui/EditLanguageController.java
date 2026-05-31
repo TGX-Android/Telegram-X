@@ -446,7 +446,7 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
     return !madeChanges && getArgumentsStrict().stack == null;
   }
 
-  private boolean navigateToPreviousString () {
+  private boolean navigateToPreviousString (boolean commit) {
     Args args = getArgumentsStrict();
     List<Lang.PackString> stack = args.stack;
     if (stack != null && !stack.isEmpty()) {
@@ -455,11 +455,13 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
         i = stack.size();
       }
       if (i > 0) {
-        Args nextArgs = new Args(args.delegate, args.langPack, args.stack.get(i - 1));
-        nextArgs.stack = stack;
-        EditLanguageController c = new EditLanguageController(context, tdlib);
-        c.setArguments(nextArgs);
-        navigateTo(c);
+        if (commit) {
+          Args nextArgs = new Args(args.delegate, args.langPack, args.stack.get(i - 1));
+          nextArgs.stack = stack;
+          EditLanguageController c = new EditLanguageController(context, tdlib);
+          c.setArguments(nextArgs);
+          navigateTo(c);
+        }
         return true;
       }
     }
@@ -474,7 +476,7 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
             return true;
           }
         }
-        if (forceBack || !navigateToPreviousString())
+        if (forceBack || !navigateToPreviousString(true))
           navigateBack();
       }
       return true;
@@ -482,12 +484,14 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (madeChanges) {
-      exit(false);
+      if (commit) {
+        exit(false);
+      }
       return true;
     }
-    return navigateToPreviousString() || super.onBackPressed(fromTop);
+    return navigateToPreviousString(commit) || super.performOnBackPressed(fromTop, commit);
   }
 
   private boolean fastAnimation;

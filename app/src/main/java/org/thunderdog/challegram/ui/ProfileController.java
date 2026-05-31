@@ -146,6 +146,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.FutureBool;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
 import tgx.td.ChatId;
 import tgx.td.Td;
@@ -944,6 +945,19 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private RtlViewPager pager;
   private ViewControllerPagerAdapter pagerAdapter;
+
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    iterateControllers(c ->
+      c.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme)
+    );
+  }
 
   @Override
   protected int getBackButton () {
@@ -3396,7 +3410,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
                 tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
                   if (newChatId != 0) {
-                    tdlib.client().send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(ChatId.toSupergroupId(newChatId), visible), tdlib.okHandler());
+                    tdlib.send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(ChatId.toSupergroupId(newChatId), visible), tdlib.typedOkHandler());
                   }
                 })
               );
@@ -3404,7 +3418,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               if (supergroupFull != null && supergroupFull.linkedChatId != 0) {
                 tdlib.client().send(new TdApi.SetChatDiscussionGroup(0, chat.id), ignored -> tdlib.client().send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(supergroup.id, visible), tdlib.okHandler()));
               } else {
-                tdlib.client().send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(supergroup.id, visible), tdlib.okHandler());
+                tdlib.send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(supergroup.id, visible), tdlib.typedOkHandler());
               }
               baseAdapter.updateValuedSettingById(R.id.btn_prehistoryMode);
             }
@@ -4346,7 +4360,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onSenderConfirm (ContactsController context, TdApi.MessageSender senderId, int option) {
-    tdlib.client().send(new TdApi.SetChatMemberStatus(chat.id, senderId, new TdApi.ChatMemberStatusMember()), tdlib.okHandler());
+    tdlib.send(new TdApi.SetChatMemberStatus(chat.id, senderId, new TdApi.ChatMemberStatusMember()), tdlib.typedOkHandler());
   }
 
   private void addMember (View view) {
@@ -4467,7 +4481,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private void addMember (final int mode, final ContactsController context, final View view,
                           final TdApi.ChatMember member, final int forwardLimit,
                           final boolean needConfirm) {
-    final Tdlib.ChatMemberStatusChangeCallback callback = (success, error) -> tdlib.ui().post(() -> {
+    final Tdlib.ChatMemberStatusChangeCallback callback = (success, error, failedToAddMember) -> tdlib.ui().post(() -> {
       if (success) {
         context.navigateBack();
       } else {
@@ -4587,7 +4601,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (isBasicGroup() || isChannel()) {
           showOptions(Lang.getStringBold(isBasicGroup() ? R.string.MemberCannotJoinGroup : R.string.MemberCannotJoinChannel, memberName), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.BlockUser), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
             if (id == R.id.btn_blockSender) {
-              tdlib.setChatMemberStatus(chat.id, member.memberId, new TdApi.ChatMemberStatusBanned(), member.status, (success, error) -> {
+              tdlib.setChatMemberStatus(chat.id, member.memberId, new TdApi.ChatMemberStatusBanned(), member.status, (success, error, failedToAddMember) -> {
                 if (success) {
                   context.navigateBack();
                 } else
@@ -4650,7 +4664,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     switch (mode) {
       case Mode.CHANNEL:
       case Mode.SUPERGROUP: {
-        tdlib.client().send(new TdApi.AddChatMember(chat.id, tdlib.myUserId(), 0), tdlib.okHandler());
+        tdlib.send(new TdApi.AddChatMember(chat.id, tdlib.myUserId(), 0), tdlib.errorHandler());
         break;
       }
     }
@@ -4717,7 +4731,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             new int[] {OptionColor.RED, OptionColor.NORMAL},
             new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
             if (resultId == R.id.btn_destroyChat) {
-              tdlib.client().send(new TdApi.DeleteChat(getChatId()), tdlib.okHandler());
+              tdlib.send(new TdApi.DeleteChat(getChatId()), tdlib.typedOkHandler());
               tdlib.ui().exitToChatScreen(this, getChatId());
             }
             return true;
@@ -4820,12 +4834,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           new String[] {Lang.getString(R.string.Copy)},
           null,
           new int[] {R.drawable.baseline_content_copy_24},
+          Config.MAX_COPY_TEXT_LINE_COUNT,
           (optionItemView, id) -> {
             if (id == R.id.btn_copyText) {
               UI.copyText(text, R.string.CopiedText);
             }
             return true;
-          }
+          },
+          null
         );
       }
     } else if (viewId == R.id.btn_description) {
@@ -5198,26 +5214,32 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public boolean closeSearchModeByBackPress (boolean fromTop) {
-    clearSearchInput();
+  public boolean closeSearchModeByBackPress (boolean fromTop, boolean commit) {
+    if (commit) {
+      clearSearchInput();
+    }
     return false;
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (isTransforming() || (expandAnimator != null && expandAnimator.isAnimating())) {
       return true;
     }
     if (inSelectMode) {
-      clearSelectMode();
+      if (commit) {
+        clearSelectMode();
+      }
       return true;
     }
     if (isEditing() && hasUnsavedChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(null);
+      }
       return true;
     }
 
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override
@@ -5511,12 +5533,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void stopCachedScrolls () {
-    for (int i = 0; i < pagerAdapter.getCount(); i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).stopScroll();
-      }
-    }
+    iterateControllers(SharedBaseController::stopScroll);
   }
 
   private boolean belongsToBaseRecycler (int width, float y) {
@@ -5548,13 +5565,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void onItemsHeightProbablyChanged () {
     cachedItemsWidth = cachedItemsHeight = 0;
+    iterateControllers(SharedBaseController::onItemsHeightProbablyChanged);
+    checkTopViewPosition();
+  }
+
+  private void iterateControllers (RunnableData<SharedBaseController<?>> callback) {
     for (int i = 0; i < pagerAdapter.getCount(); i++) {
       ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
       if (c != null) {
-        ((SharedBaseController<?>) c).onItemsHeightProbablyChanged();
+        callback.runWithData((SharedBaseController<?>) c);
       }
     }
-    checkTopViewPosition();
   }
 
   private void onGlobalHeightChanged () {
@@ -5562,12 +5583,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       onItemsHeightProbablyChanged();
     }
     baseRecyclerView.invalidateItemDecorations();
-    for (int i = 0; i < pagerAdapter.getCount(); i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).onGlobalHeightChanged();
-      }
-    }
+    iterateControllers(SharedBaseController::onGlobalHeightChanged);
   }
 
   private boolean eventsBelongToPager;
@@ -5707,13 +5723,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // Shared stuff
 
   @Override
-  public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
+  public MediaStack collectMedias (long fromMessageId, boolean isSponsored, @Nullable TdApi.SearchMessagesFilter filter) {
     if (currentPositionOffset != 0f) {
       return null;
     }
     ViewController<?> c = pagerAdapter.findCachedControllerByPosition(currentMediaPosition);
     if (c instanceof MediaCollectorDelegate) {
-      return ((MediaCollectorDelegate) c).collectMedias(fromMessageId, filter);
+      return ((MediaCollectorDelegate) c).collectMedias(fromMessageId, isSponsored, filter);
     }
     return null;
   }
@@ -5778,7 +5794,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           break;
         }
         default: {
-          String restrictionReason = tdlib.chatRestrictionReason(chat);
+          String restrictionText = Lang.getRestrictionText(tdlib.chatRestriction(chat));
 
           if (mode == Mode.GROUP) {
             controllers.add(new SharedMembersController(context, tdlib));
@@ -5796,7 +5812,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
           }
 
-          if (restrictionReason == null) {
+          if (StringUtils.isEmpty(restrictionText)) {
             if (Config.HIDE_EMPTY_TABS) {
               int syncTabCount = SYNC_TAB_COUNT;
               TdApi.SearchMessagesFilter[] filters = getFiltersOrder();
@@ -5820,7 +5836,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             getSimilarChatsCount(false, true);
             getSimilarChatsCount(true, true);
           } else {
-            controllers.add(new SharedRestrictionController(context, tdlib).setRestrictionReason(restrictionReason));
+            controllers.add(new SharedRestrictionController(context, tdlib).setRestrictionReason(restrictionText));
           }
 
           switch (mode) {
@@ -6127,6 +6143,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onPrepareToShow (int position, ViewController<?> controller) {
     super.onPrepareToShow();
+    controller.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     if (baseRecyclerView.getMeasuredWidth() != 0) {
       checkContentScrollY(controller);
     }
@@ -6402,6 +6419,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (mode == Mode.GROUP || mode == Mode.EDIT_GROUP) {
       runOnUiThreadOptional(() -> {
         if (ProfileController.this.group != null && ProfileController.this.group.id == basicGroup.id) {
+          ProfileController.this.group = basicGroup;
           setHeaderText();
           if (migratedToSupergroup) {
             replaceWithSupergroup(basicGroup.upgradedToSupergroupId);
@@ -6674,36 +6692,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     }
 
-    final int size = pagerAdapter.getCount();
-    for (int i = 0; i < size; i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).addMessage(message);
-      }
-    }
+    iterateControllers(c ->
+      c.addMessage(message)
+    );
   }
 
   @UiThread
   private void removeMessages (long[] messageIds) {
-    final int size = pagerAdapter.getCount();
-    for (int i = 0; i < size; i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).removeMessages(messageIds);
-      }
-    }
+    iterateControllers(c ->
+      c.removeMessages(messageIds)
+    );
     refreshCounters();
   }
 
   @UiThread
   private void editMessage (long messageId, TdApi.MessageContent content) {
-    final int size = pagerAdapter.getCount();
-    for (int i = 0; i < size; i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).editMessage(messageId, content);
-      }
-    }
+    iterateControllers(c ->
+      c.editMessage(messageId, content)
+    );
   }
 
   public static boolean filterMediaMessage (TdApi.Message message) {
