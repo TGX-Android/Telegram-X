@@ -19,3 +19,6 @@
 
 -keep class io.github.pytgcalls.** { *; }
 -keepclassmembers class io.github.pytgcalls.** { *; }
+
+-dontwarn org.jni_zero.JniZeroJni
+-keep class org.jni_zero.JniZeroJni { *; }
