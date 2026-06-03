@@ -22,7 +22,7 @@ import io.github.pytgcalls.media.StreamMode;
 import io.github.pytgcalls.media.VideoDescription;
 import io.github.pytgcalls.p2p.RTCServer;
 
-import org.pytgcalls.ntgcalls.BuildConfig;
+import io.github.pytgcalls.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;

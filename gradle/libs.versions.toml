@@ -104,7 +104,7 @@ transcoder = "ba8f098c94"
 sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
-pytgcalls-ntgcalls = "2.1.0"
+pytgcalls-ntgcalls = "2.2.1"
 
 annotations-checkerframework = "4.0.0"
 annotations-errorprone = "2.49.0"
