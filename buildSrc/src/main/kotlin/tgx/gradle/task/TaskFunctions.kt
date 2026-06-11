@@ -17,6 +17,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.Writer
 import java.nio.channels.FileChannel
+import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import java.util.*
 
@@ -139,15 +140,10 @@ fun editFile(path: String, block: (String) -> String) {
 }
 
 fun areFileContentsIdentical(a: File, b: File): Boolean {
-  val areIdentical: Boolean
-  FileChannel.open(a.toPath(), StandardOpenOption.READ).use { fileChannelA ->
-    FileChannel.open(b.toPath(), StandardOpenOption.READ).use { fileChannelB ->
-      val mapA = fileChannelA.map(FileChannel.MapMode.READ_ONLY, 0, fileChannelA.size())
-      val mapB = fileChannelB.map(FileChannel.MapMode.READ_ONLY, 0, fileChannelB.size())
-      areIdentical = mapA == mapB
-    }
-  }
-  return areIdentical
+  // Files.mismatch does not memory-map the files. FileChannel.map leaves a
+  // MappedByteBuffer mapped until GC, which on Windows blocks the subsequent
+  // truncate-write of the same file ("user-mapped section open").
+  return Files.mismatch(a.toPath(), b.toPath()) == -1L
 }
 
 fun String.camelCaseToUpperCase(): String {
