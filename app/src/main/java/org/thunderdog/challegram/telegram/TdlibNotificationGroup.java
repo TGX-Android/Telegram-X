@@ -131,6 +131,65 @@ public class TdlibNotificationGroup implements Iterable<TdlibNotification> {
     return 0;
   }
 
+  public long findForumTopicId () {
+    for (TdlibNotification notification : this) {
+      long topicId = notification.findForumTopicId();
+      if (topicId != 0)
+        return topicId;
+    }
+    return 0;
+  }
+
+  /**
+   * Get all unique forum topic IDs from notifications in this group.
+   * @return Set of topic IDs, empty if no forum topics found
+   */
+  public Set<Long> getAllForumTopicIds () {
+    Set<Long> topicIds = new HashSet<>();
+    for (TdlibNotification notification : this) {
+      long topicId = notification.findForumTopicId();
+      if (topicId != 0) {
+        topicIds.add(topicId);
+      }
+    }
+    return topicIds;
+  }
+
+  /**
+   * Get notifications filtered by a specific forum topic ID.
+   * @param topicId The topic ID to filter by
+   * @return List of notifications for this topic
+   */
+  public List<TdlibNotification> getNotificationsForTopic (long topicId) {
+    List<TdlibNotification> result = new ArrayList<>();
+    for (TdlibNotification notification : this) {
+      long notifTopicId = notification.findForumTopicId();
+      if (notifTopicId == topicId) {
+        result.add(notification);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Check if this notification group has notifications from multiple forum topics.
+   * @return true if there are 2+ different topic IDs
+   */
+  public boolean hasMultipleForumTopics () {
+    long firstTopicId = 0;
+    for (TdlibNotification notification : this) {
+      long topicId = notification.findForumTopicId();
+      if (topicId != 0) {
+        if (firstTopicId == 0) {
+          firstTopicId = topicId;
+        } else if (firstTopicId != topicId) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   public int firstNotificationId () {
     return !notifications.isEmpty() ? notifications.get(0).getId() : 0;
   }
@@ -439,5 +498,189 @@ public class TdlibNotificationGroup implements Iterable<TdlibNotification> {
       }
     }
     return !Settings.instance().checkNotificationFlag(notificationFlag);
+  }
+
+  /**
+   * A view of notifications for a specific forum topic within a notification group.
+   * Used to display separate notifications per topic.
+   */
+  public static class TopicView implements Iterable<TdlibNotification> {
+    private final TdlibNotificationGroup parent;
+    private final long topicId;
+    private final List<TdlibNotification> notifications;
+
+    public TopicView (TdlibNotificationGroup parent, long topicId, List<TdlibNotification> notifications) {
+      this.parent = parent;
+      this.topicId = topicId;
+      this.notifications = notifications;
+    }
+
+    public TdlibNotificationGroup parent () {
+      return parent;
+    }
+
+    public long getTopicId () {
+      return topicId;
+    }
+
+    public long getChatId () {
+      return parent.getChatId();
+    }
+
+    public int getId () {
+      return parent.getId();
+    }
+
+    public int getTotalCount () {
+      return notifications.size();
+    }
+
+    public int getCategory () {
+      return parent.getCategory();
+    }
+
+    public boolean isMention () {
+      return parent.isMention();
+    }
+
+    public boolean isEmpty () {
+      return notifications.isEmpty();
+    }
+
+    public int visualSize () {
+      int count = 0;
+      for (TdlibNotification notification : notifications) {
+        if (!notification.isHidden()) {
+          count++;
+        }
+      }
+      return count;
+    }
+
+    public TdlibNotification lastNotification () {
+      return notifications.isEmpty() ? null : notifications.get(notifications.size() - 1);
+    }
+
+    public long findTargetMessageId () {
+      if (!parent.isMention())
+        return 0;
+      for (TdlibNotification notification : notifications) {
+        if (!notification.isHidden()) {
+          long messageId = notification.findMessageId();
+          if (messageId != 0)
+            return messageId;
+        }
+      }
+      return 0;
+    }
+
+    public long[] getAllMessageIds () {
+      LongList ids = new LongList(notifications.size());
+      for (TdlibNotification notification : notifications) {
+        if (!notification.isHidden()) {
+          long messageId = notification.findMessageId();
+          if (messageId != 0)
+            ids.append(messageId);
+        }
+      }
+      return ids.get();
+    }
+
+    public long[] getAllUserIds () {
+      Set<Long> userIds = new HashSet<>();
+      for (TdlibNotification notification : notifications) {
+        if (!notification.isHidden()) {
+          long chatId = notification.findSenderId();
+          if (ChatId.isPrivate(chatId)) {
+            userIds.add(ChatId.toUserId(chatId));
+          }
+        }
+      }
+      if (!userIds.isEmpty()) {
+        long[] result = new long[userIds.size()];
+        int i = 0;
+        for (Long userId : userIds) {
+          result[i++] = userId;
+        }
+        return result;
+      }
+      return null;
+    }
+
+    public boolean isOnlyPinned () {
+      boolean first = true;
+      for (TdlibNotification notification : notifications) {
+        if (!notification.isHidden()) {
+          if (!notification.isPinnedMessage()) {
+            return false;
+          }
+          first = false;
+        }
+      }
+      return !first;
+    }
+
+    public boolean isOnlyScheduled () {
+      boolean first = true;
+      for (TdlibNotification notification : notifications) {
+        if (!notification.isHidden()) {
+          if (!notification.isScheduled()) {
+            return false;
+          }
+          first = false;
+        }
+      }
+      return !first;
+    }
+
+    public boolean isOnlyInitiallySilent () {
+      boolean first = true;
+      for (TdlibNotification notification : notifications) {
+        if (!notification.isHidden()) {
+          if (!notification.isVisuallySilent()) {
+            return false;
+          }
+          first = false;
+        }
+      }
+      return !first;
+    }
+
+    public long singleSenderId () {
+      TdlibNotification prevNotification = null;
+      for (TdlibNotification notification : notifications) {
+        if (!notification.isHidden()) {
+          if (prevNotification != null && !prevNotification.isSameSender(notification))
+            return 0;
+          prevNotification = notification;
+        }
+      }
+      return prevNotification != null ? prevNotification.findSenderId() : 0;
+    }
+
+    @NonNull
+    @Override
+    public Iterator<TdlibNotification> iterator () {
+      return new FilteredIterator<>(notifications, notification -> !notification.isHidden());
+    }
+  }
+
+  /**
+   * Create TopicView objects for each forum topic in this group.
+   * @return List of TopicView objects, one per unique topic ID
+   */
+  public List<TopicView> splitByForumTopics () {
+    Set<Long> topicIds = getAllForumTopicIds();
+    if (topicIds.isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<TopicView> result = new ArrayList<>(topicIds.size());
+    for (Long topicId : topicIds) {
+      List<TdlibNotification> topicNotifications = getNotificationsForTopic(topicId);
+      if (!topicNotifications.isEmpty()) {
+        result.add(new TopicView(this, topicId, topicNotifications));
+      }
+    }
+    return result;
   }
 }

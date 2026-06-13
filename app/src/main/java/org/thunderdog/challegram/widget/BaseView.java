@@ -318,6 +318,10 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
         case FORCE_TOUCH_CHAT: {
           TdApi.Chat chat = tdlib.chat(chatId);
           if (chat != null) {
+            // Forums don't support preview mode - skip to normal long-press menu
+            if (tdlib.isForum(chat.id)) {
+              break;
+            }
             if (threadMessages != null && threadMessages.length > 0) {
               cancelAsyncPreview();
               tdlib.send(new TdApi.GetMessageThread(chatId, threadMessages[0].id), (threadInfo, error) -> {

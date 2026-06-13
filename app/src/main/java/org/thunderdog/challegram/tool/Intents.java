@@ -692,12 +692,19 @@ public class Intents {
   }
 
   public static Intent valueOfLocalChatId (int accountId, long localChatId, long specificMessageId) {
+    return valueOfLocalChatId(accountId, localChatId, specificMessageId, 0);
+  }
+
+  public static Intent valueOfLocalChatId (int accountId, long localChatId, long specificMessageId, long messageThreadId) {
     Intent intent = new Intent(UI.getContext(), MainActivity.class);
     secureIntent(intent, true);
     intent.setAction(Intents.ACTION_OPEN_CHAT + "." + accountId + "." + localChatId + "." + Math.random());
     intent.putExtra("account_id", accountId);
     intent.putExtra("local_id", localChatId);
     intent.putExtra("message_id", specificMessageId);
+    if (messageThreadId != 0) {
+      intent.putExtra("message_thread_id", messageThreadId);
+    }
     // intent.setFlags(32768);
     return intent;
   }

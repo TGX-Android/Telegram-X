@@ -206,6 +206,22 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
 
       int visualChangeCount = group.updateGroup(update, addedNotifications, removedNotifications);
 
+      // Filter out notifications from muted forum topics and make silent if all are muted
+      if (addedNotifications != null && !addedNotifications.isEmpty()) {
+        Iterator<TdlibNotification> iter = addedNotifications.iterator();
+        while (iter.hasNext()) {
+          TdlibNotification notification = iter.next();
+          if (notification.isFromMutedForumTopic(tdlib)) {
+            TDLib.Tag.notifications("Filtering notification from muted forum topic, chatId=%d", update.chatId);
+            iter.remove();
+            visualChangeCount--;
+          }
+        }
+        if (addedNotifications.isEmpty()) {
+          isSilent = true;
+        }
+      }
+
       if (removedNotifications != null && !removedNotifications.isEmpty()) {
         notifications.removeAll(removedNotifications);
       }
@@ -264,8 +280,23 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
       group = new TdlibNotificationGroup(tdlib, update);
       if (group.isEmpty())
         return;
+
+      // Filter out notifications from muted forum topics for new groups
+      List<TdlibNotification> groupNotifications = new ArrayList<>(group.notifications());
+      Iterator<TdlibNotification> iter = groupNotifications.iterator();
+      while (iter.hasNext()) {
+        TdlibNotification notification = iter.next();
+        if (notification.isFromMutedForumTopic(tdlib)) {
+          TDLib.Tag.notifications("Filtering notification from muted forum topic (new group), chatId=%d", update.chatId);
+          iter.remove();
+        }
+      }
+      if (groupNotifications.isEmpty()) {
+        isSilent = true;
+      }
+
       groups.put(update.notificationGroupId, group);
-      notifications.addAll(group.notifications());
+      notifications.addAll(groupNotifications);
       Collections.sort(notifications);
     }
     boolean needNotification = !isSilent && context.allowNotificationSound(update.chatId);
@@ -326,6 +357,18 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
 
   public int getNotificationIdForGroup (int groupId) {
     return baseNotificationId + (/*category_count*/ TdlibNotificationGroup.MAX_CATEGORY + 1) + groupId;
+  }
+
+  /**
+   * Generate a unique notification ID for a specific forum topic within a group.
+   * Uses a hash-based approach to avoid ID collisions.
+   */
+  public int getNotificationIdForTopicView (int groupId, long topicId) {
+    // Combine groupId with topicId hash to generate unique ID
+    // Use a large offset to avoid collisions with regular group IDs
+    int topicHash = Long.hashCode(topicId) & 0x7FFFFFFF; // Ensure positive
+    int topicOffset = (topicHash % 100000) + 100000; // Range: 100000-199999
+    return baseNotificationId + (TdlibNotificationGroup.MAX_CATEGORY + 1) + groupId * 200000 + topicOffset;
   }
 
   public boolean isEmpty () {
