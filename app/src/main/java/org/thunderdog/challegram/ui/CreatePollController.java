@@ -682,8 +682,30 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     getDoneButton().setInProgress(true);
     hideSoftwareKeyboard();
 
-    TdApi.FormattedText[] optionsArray = options.toArray(new TdApi.FormattedText[0]);
-    TdApi.InputMessagePoll poll = new TdApi.InputMessagePoll(question, optionsArray, isAnonymousVoting, isQuiz ? new TdApi.PollTypeQuiz(correctOptionId, explanation) : new TdApi.PollTypeRegular(isMultiChoiceVote), 0, 0, false);
+    TdApi.InputPollOption[] optionsArray = new TdApi.InputPollOption[options.size()];
+    for (int i = 0; i < optionsArray.length; i++) {
+      optionsArray[i] = new TdApi.InputPollOption(options.get(i), /* media */ null); // TODO: poll option media support
+    }
+    TdApi.InputPollType pollType = isQuiz ?
+      new TdApi.InputPollTypeQuiz(new int[] {correctOptionId}, explanation, /* explanationMedia */ null) :
+      new TdApi.InputPollTypeRegular(/* allowAddingOptions */ false);
+    TdApi.InputMessagePoll poll = new TdApi.InputMessagePoll(
+      question,
+      optionsArray,
+      /* description */ null,
+      /* media */ null, // TODO: poll media support
+      isAnonymousVoting,
+      /* allowsMultipleAnswers */ !isQuiz && isMultiChoiceVote,
+      /* allowsRevoting */ !isQuiz, // preserve pre-upgrade behavior: regular poll votes could be retracted/changed
+      /* membersOnly */ false,
+      /* countryCodes */ new String[0],
+      /* shuffleOptions */ false,
+      /* hideResultsUntilCloses */ false,
+      pollType,
+      /* openPeriod */ 0,
+      /* closeDate */ 0,
+      /* isClosed */ false
+    );
 
     RunnableData<TdApi.Message> after = message -> runOnUiThreadOptional(() -> {
       getDoneButton().setInProgress(false);

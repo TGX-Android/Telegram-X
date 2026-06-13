@@ -494,6 +494,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR: // not user-creatable: excluded from formatting actions
       case TdApi.TextEntityTypeMention.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
@@ -501,7 +502,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
       // unsupported
       default:
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(type);
     }
   }

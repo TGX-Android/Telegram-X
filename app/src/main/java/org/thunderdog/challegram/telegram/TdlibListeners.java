@@ -1053,8 +1053,9 @@ public class TdlibListeners {
   // updateChatReplyMarkup
 
   void updateChatReplyMarkup (TdApi.UpdateChatReplyMarkup update) {
+    final long replyMarkupMessageId = update.replyMarkupMessage != null ? update.replyMarkupMessage.id : 0;
     runChatUpdate(update.chatId, listener ->
-      listener.onChatReplyMarkupChanged(update.chatId, update.replyMarkupMessageId)
+      listener.onChatReplyMarkupChanged(update.chatId, replyMarkupMessageId)
     );
   }
 

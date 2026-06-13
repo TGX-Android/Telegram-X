@@ -1414,8 +1414,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return -1;
   }
 
-  void updateLiveLocation (long chatId, long messageId, TdApi.MessageLocation location) {
-    if (location.livePeriod == 0) {
+  void updateLiveLocation (long chatId, long messageId, TdApi.MessageLiveLocation location) {
+    if (location.location.livePeriod == 0) {
       return;
     }
     synchronized (outputLocations) {
@@ -1468,7 +1468,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       for (int i = size - 1; i >= 0; i--) {
         TdApi.Message msg = outputLocations.get(i);
         if (chatId == 0 || msg.chatId == chatId) {
-          tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null, 0, 0, 0), tdlib.silentHandler());
+          tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null), tdlib.silentHandler());
         }
       }
     }
@@ -1505,17 +1505,24 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     synchronized (outputLocations) {
       Log.v("Updating %d live location messages", outputLocations.size());
       for (final TdApi.Message message : outputLocations) {
-        tdlib.send(new TdApi.EditMessageLiveLocation(message.chatId, message.id, message.replyMarkup, location, 0, heading, 0), (resultMessage, error) -> {
+        final TdApi.MessageLiveLocation currentContent = message.content != null && message.content.getConstructor() == TdApi.MessageLiveLocation.CONSTRUCTOR ? (TdApi.MessageLiveLocation) message.content : null;
+        final TdApi.LiveLocation newLocation = new TdApi.LiveLocation(
+          location,
+          currentContent != null ? currentContent.location.livePeriod : 0,
+          heading,
+          currentContent != null ? currentContent.location.proximityAlertRadius : 0
+        );
+        tdlib.send(new TdApi.EditMessageLiveLocation(message.chatId, message.id, message.replyMarkup, newLocation), (resultMessage, error) -> {
           if (error != null) {
             Log.e("Error broadcasting location: %s", TD.toErrorString(error));
           } else {
             message.editDate = resultMessage.editDate;
-            if (Td.isLocation(resultMessage.content)) {
-              TdApi.MessageLocation in = (TdApi.MessageLocation) resultMessage.content;
-              TdApi.MessageLocation out = (TdApi.MessageLocation) message.content;
-              out.expiresIn = in.livePeriod;
-              out.location.latitude = in.location.latitude;
-              out.location.longitude = in.location.longitude;
+            if (resultMessage.content != null && resultMessage.content.getConstructor() == TdApi.MessageLiveLocation.CONSTRUCTOR && message.content != null && message.content.getConstructor() == TdApi.MessageLiveLocation.CONSTRUCTOR) {
+              TdApi.MessageLiveLocation in = (TdApi.MessageLiveLocation) resultMessage.content;
+              TdApi.MessageLiveLocation out = (TdApi.MessageLiveLocation) message.content;
+              out.expiresIn = in.location.livePeriod;
+              out.location.location.latitude = in.location.location.latitude;
+              out.location.location.longitude = in.location.location.longitude;
               onLiveLocationChanged(message);
             }
           }

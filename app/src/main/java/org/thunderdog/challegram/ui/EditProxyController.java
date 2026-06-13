@@ -148,7 +148,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     adapter.setTextChangeListener(this);
 
     final Settings.Proxy localProxy = getArgumentsStrict().existingProxy;
-    final TdApi.InternalLinkTypeProxy proxy = localProxy != null ? localProxy.proxy : null;
+    final TdApi.Proxy proxy = localProxy != null ? localProxy.proxy : null;
     final int mode = getArgumentsStrict().mode;
 
     int baseFillCount = 2;
@@ -293,15 +293,15 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     }
   }
 
-  private void addProxy (@NonNull TdApi.InternalLinkTypeProxy proxy) {
+  private void addProxy (@NonNull TdApi.Proxy proxy) {
     setInProgress(true);
     // Calling TDLib method just to validate input
-    tdlib.client().send(new TdApi.AddProxy(proxy.server, proxy.port, false, proxy.type), result -> runOnUiThreadOptional(() -> {
+    tdlib.client().send(new TdApi.AddProxy(proxy, false, ""), result -> runOnUiThreadOptional(() -> {
       setInProgress(false);
       switch (result.getConstructor()) {
-        case TdApi.Proxy.CONSTRUCTOR: {
+        case TdApi.AddedProxy.CONSTRUCTOR: {
           int proxyId = getArgumentsStrict().existingProxy != null ? getArgumentsStrict().existingProxy.id : Settings.PROXY_ID_NONE;
-          // Assuming values passed to AddProxy do not differ from the received TdApi.Proxy object
+          // Assuming values passed to AddProxy do not differ from the received TdApi.AddedProxy object
           Settings.instance().addOrUpdateProxy(proxy, null, true, proxyId);
           if (navigationController != null) {
             ViewController<?> c = navigationController.getPreviousStackItem();
@@ -360,7 +360,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
       default:
         throw new IllegalStateException();
     }
-    addProxy(new TdApi.InternalLinkTypeProxy(server, StringUtils.parseInt(port), type));
+    addProxy(new TdApi.Proxy(server, StringUtils.parseInt(port), type));
     return true;
   }
 }

@@ -966,10 +966,12 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
             case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeRequestManagedBot.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
               break;
             default:
-              Td.assertLinkPreviewType_a9a3ffcd();
+              Td.assertLinkPreviewType_883de866();
               throw Td.unsupported(linkPreview.type);
           }
         }

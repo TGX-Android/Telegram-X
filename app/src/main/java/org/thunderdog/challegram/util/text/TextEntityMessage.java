@@ -273,6 +273,7 @@ public class TextEntityMessage extends TextEntity {
         return true;
       }
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR: // TODO: relative date rendering
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
       case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
@@ -284,7 +285,7 @@ public class TextEntityMessage extends TextEntity {
         return false;
       }
       default:
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(type);
     }
   }
@@ -549,6 +550,7 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
       case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR: // TODO: relative date rendering
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
@@ -559,7 +561,7 @@ public class TextEntityMessage extends TextEntity {
         // Non-clickable
         break;
       default:
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(clickableEntity.type);
     }
   }
@@ -638,6 +640,7 @@ public class TextEntityMessage extends TextEntity {
       }
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR: // Unreachable because of the condition above
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR: // TODO: relative date rendering
 
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
@@ -650,7 +653,7 @@ public class TextEntityMessage extends TextEntity {
       }
 
       default: {
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(clickableEntity.type);
       }
     }
@@ -705,7 +708,7 @@ public class TextEntityMessage extends TextEntity {
             break;
           }
           default: {
-            Td.assertTextEntityType_56c1e709();
+            Td.assertTextEntityType_aefd8e69();
             message = R.string.CopiedLink;
             break;
           }

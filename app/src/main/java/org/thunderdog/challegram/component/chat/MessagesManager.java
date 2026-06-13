@@ -191,7 +191,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             }
           } else {
             // Add admin
-            chatAdmins.put(userId, new TdApi.ChatAdministrator(userId, Td.getCustomTitle(member.status), TD.isCreator(member.status)));
+            chatAdmins.put(userId, new TdApi.ChatAdministrator(userId, Td.getCustomTitle(member.status), TD.isCreator(member.status), false));
             changed = true;
           }
         } else {
@@ -1568,7 +1568,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case TdApi.InternalLinkTypeBotAddToChannel.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStoryAlbum.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
+      // internalLinkTypeDefaultMessageAutoDeleteTimerSettings is now internalLinkTypeSettings(sectionAutoDeleteMessages),
+      // which can't be filtered by constructor alone
 
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
       case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
@@ -1576,24 +1577,23 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
 
-      case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
-      case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumGiftPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
-      case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
-      case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeLiveStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyToncoins.CONSTRUCTOR:
+      // internalLinkTypeMyStars and internalLinkTypeMyToncoins no longer exist in TDLib
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR:
         return false;
 
       default:
-        Td.assertInternalLinkType_fbab3129();
+        Td.assertInternalLinkType_44babac4();
         return true;
     }
   }

@@ -120,7 +120,7 @@ public final class TranslationsManager {
   }
 
   private void requestTranslationImpl (TdApi.FormattedText originalText, String toLanguage, Client.ResultHandler callback) {
-    tdlib.client().send(new TdApi.TranslateText(originalText, toLanguage), callback);
+    tdlib.client().send(new TdApi.TranslateText(originalText, toLanguage, null), callback);
   }
 
 

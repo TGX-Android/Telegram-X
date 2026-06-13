@@ -242,7 +242,21 @@ public class ThreadInfo {
   }
 
   public @Nullable TdApi.InputMessageContent getDraftContent () {
-    return threadInfo.draftMessage != null ? threadInfo.draftMessage.inputMessageText : null;
+    TdApi.DraftMessage draftMessage = threadInfo.draftMessage;
+    if (draftMessage == null || draftMessage.content == null) {
+      return null;
+    }
+    switch (draftMessage.content.getConstructor()) {
+      case TdApi.DraftMessageContentText.CONSTRUCTOR: {
+        TdApi.DraftMessageContentText text = (TdApi.DraftMessageContentText) draftMessage.content;
+        return new TdApi.InputMessageText(text.text, text.linkPreviewOptions, false);
+      }
+      case TdApi.DraftMessageContentRichMessage.CONSTRUCTOR:
+        // TODO: restore rich message drafts once rich message editing is supported
+        return null;
+      default:
+        return null;
+    }
   }
 
   public String chatHeaderTitle () {

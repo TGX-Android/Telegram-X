@@ -19,6 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
@@ -124,9 +125,24 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
       };
       this.adapter.setNoEmptyProgress();
       this.voters = new SenderListManager(tdlib, 50, 50, this) {
+        @SuppressWarnings("unchecked")
         @Override
         protected TdApi.Function<TdApi.MessageSenders> nextLoadFunction (boolean reverse, int itemCount, int loadCount) {
-          return new TdApi.GetPollVoters(chatId, messageId, optionId, itemCount, loadCount);
+          // GetPollVoters now returns TdApi.PollVoters; converted to TdApi.MessageSenders in processResponse below
+          return (TdApi.Function<TdApi.MessageSenders>) (TdApi.Function<?>) new TdApi.GetPollVoters(chatId, messageId, optionId, itemCount, loadCount);
+        }
+
+        @Override
+        protected Response<TdApi.MessageSender> processResponse (TdApi.Object response, Client.ResultHandler retryHandler, int retryLoadCount, boolean reverse) {
+          if (response.getConstructor() == TdApi.PollVoters.CONSTRUCTOR) {
+            TdApi.PollVoters pollVoters = (TdApi.PollVoters) response;
+            TdApi.MessageSender[] senders = new TdApi.MessageSender[pollVoters.voters.length];
+            for (int i = 0; i < senders.length; i++) {
+              senders[i] = pollVoters.voters[i].voterId;
+            }
+            response = new TdApi.MessageSenders(pollVoters.totalCount, senders);
+          }
+          return super.processResponse(response, retryHandler, retryLoadCount, reverse);
         }
       };
       this.voters.loadInitialChunk(null);
@@ -216,9 +232,20 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setInfo(ListItem item, int position, ListInfoView infoView) {
-        int correctOptionId = isQuiz() ? ((TdApi.PollTypeQuiz) getPoll().type).correctOptionId : -1;
+        boolean isCorrectOption = false;
+        if (isQuiz()) {
+          int[] correctOptionIds = ((TdApi.PollTypeQuiz) getPoll().type).correctOptionIds;
+          if (correctOptionIds != null) {
+            for (int correctOptionId : correctOptionIds) {
+              if (correctOptionId == item.getIntValue()) {
+                isCorrectOption = true;
+                break;
+              }
+            }
+          }
+        }
         TdApi.PollOption option = getPoll().options[item.getIntValue()];
-        infoView.showInfo(Lang.formatString("%s — %d%%", null, Lang.pluralBold(isQuiz() ? (item.getIntValue() == correctOptionId ? R.string.xCorrectAnswers : R.string.xAnswers) : R.string.xVotes, option.voterCount), option.votePercentage));
+        infoView.showInfo(Lang.formatString("%s — %d%%", null, Lang.pluralBold(isQuiz() ? (isCorrectOption ? R.string.xCorrectAnswers : R.string.xAnswers) : R.string.xVotes, option.voterCount), option.votePercentage));
       }
 
       @Override

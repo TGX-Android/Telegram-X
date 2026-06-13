@@ -2565,7 +2565,7 @@ public class Settings {
     File proxyFile = getProxyConfigFile();
     if (proxyFile.exists()) {
       if (proxyFile.length() > 0) {
-        TdApi.InternalLinkTypeProxy proxy = null;
+        TdApi.Proxy proxy = null;
         try (RandomAccessFile r = new RandomAccessFile(proxyFile, "r")) {
           proxy = readProxy(r);
         } catch (IOException e) {
@@ -2589,7 +2589,7 @@ public class Settings {
   }
 
   @Deprecated
-  private static TdApi.InternalLinkTypeProxy readProxy (RandomAccessFile file) throws IOException {
+  private static TdApi.Proxy readProxy (RandomAccessFile file) throws IOException {
     switch (Blob.readVarint(file)) {
       case 1456461592: {
         String server = Blob.readString(file);
@@ -2597,7 +2597,7 @@ public class Settings {
         byte flags = Blob.readByte(file);
         String username = (flags & 1) != 0 ? Blob.readString(file) : "";
         String password = (flags & 2) != 0 ? Blob.readString(file) : "";
-        return new TdApi.InternalLinkTypeProxy(
+        return new TdApi.Proxy(
           server,
           port,
           new TdApi.ProxyTypeSocks5(username, password)
@@ -4588,7 +4588,7 @@ public class Settings {
       }
       pmc.putByte(KEY_PROXY_SETTINGS, (byte) newSettings);
       if (proxy != null) {
-        dispatchProxyConfiguration(proxyId, proxy.proxy, proxy.description, true, false);
+        dispatchProxyConfiguration(proxyId, new TdApi.InternalLinkTypeProxy(proxy.proxy), proxy.description, true, false);
       } else {
         dispatchProxyConfiguration(PROXY_ID_NONE, null, null, true, false);
       }
@@ -4667,7 +4667,7 @@ public class Settings {
           throw new UnsupportedOperationException(Integer.toString(typeId));
       }
 
-      return new Proxy(proxyId, new TdApi.InternalLinkTypeProxy(server, port, type), null);
+      return new Proxy(proxyId, new TdApi.Proxy(server, port, type), null);
     } catch (Throwable t) {
       Log.w("Unable to read proxy configuration", t);
     }
@@ -4732,7 +4732,7 @@ public class Settings {
     }
   }
 
-  private static byte[] serializeProxy (@NonNull TdApi.InternalLinkTypeProxy proxy) {
+  private static byte[] serializeProxy (@NonNull TdApi.Proxy proxy) {
     @Proxy.Type int typeId = getProxyType(proxy.type);
 
     final Blob blob;
@@ -4820,7 +4820,7 @@ public class Settings {
    * @param proxy Proxy information
    * @return Proxy identifier, or {@link #PROXY_ID_NONE} if not found
    */
-  public int getExistingProxyId (@NonNull TdApi.InternalLinkTypeProxy proxy) {
+  public int getExistingProxyId (@NonNull TdApi.Proxy proxy) {
     final byte[] data = serializeProxy(proxy);
     if (data != null) {
       String existingKey = pmc.findByValue(KEY_PROXY_PREFIX_CONFIG, data);
@@ -4847,7 +4847,7 @@ public class Settings {
     }
   }
 
-  public int addOrUpdateProxy (@NonNull TdApi.InternalLinkTypeProxy proxy, @Nullable String proxyDescription, boolean setAsCurrent) {
+  public int addOrUpdateProxy (@NonNull TdApi.Proxy proxy, @Nullable String proxyDescription, boolean setAsCurrent) {
     return addOrUpdateProxy(proxy, proxyDescription, setAsCurrent, PROXY_ID_NONE);
   }
 
@@ -4860,7 +4860,7 @@ public class Settings {
    * @param existingProxyId  Existing proxy identifier to be modified or {@link #PROXY_ID_NONE}
    * @return proxy identifier
    */
-  public int addOrUpdateProxy (@NonNull TdApi.InternalLinkTypeProxy proxy, @Nullable String proxyDescription, boolean setAsCurrent, int existingProxyId) {
+  public int addOrUpdateProxy (@NonNull TdApi.Proxy proxy, @Nullable String proxyDescription, boolean setAsCurrent, int existingProxyId) {
     final byte[] data = serializeProxy(proxy);
     final int proxyId;
     if (proxyDescription != null) {
@@ -4924,7 +4924,7 @@ public class Settings {
     if (isNewAdd) {
       dispatchProxyAdded(new Proxy(proxyId, proxy, proxyDescription), setAsCurrent);
     }
-    dispatchProxyConfiguration(proxyId, proxy, proxyDescription, setAsCurrent || (availableProxyId == proxyId && (proxySettings & PROXY_FLAG_ENABLED) != 0), isNewAdd);
+    dispatchProxyConfiguration(proxyId, new TdApi.InternalLinkTypeProxy(proxy), proxyDescription, setAsCurrent || (availableProxyId == proxyId && (proxySettings & PROXY_FLAG_ENABLED) != 0), isNewAdd);
     if (availableProxyId == PROXY_ID_NONE) {
       dispatchProxyAvailabilityChanged(true);
     }
@@ -5023,7 +5023,7 @@ public class Settings {
 
     public final int id;
 
-    public @Nullable TdApi.InternalLinkTypeProxy proxy;
+    public @Nullable TdApi.Proxy proxy;
 
     public int order = ORDER_UNSET;
     public @Nullable String description;
@@ -5037,7 +5037,7 @@ public class Settings {
     public int pingErrorCount;
     public int winState;
 
-    public Proxy (int id, @Nullable TdApi.InternalLinkTypeProxy proxy, @Nullable String description) {
+    public Proxy (int id, @Nullable TdApi.Proxy proxy, @Nullable String description) {
       if (id != PROXY_ID_NONE && proxy == null)
         throw new IllegalArgumentException();
       this.id = id;

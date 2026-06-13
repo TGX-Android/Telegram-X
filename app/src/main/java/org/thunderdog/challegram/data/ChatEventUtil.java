@@ -133,9 +133,10 @@ public class ChatEventUtil {
       case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
       case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
+      case TdApi.ChatEventMemberTagChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_FULL;
       default: {
-        Td.assertChatEventAction_53b6b01e();
+        Td.assertChatEventAction_3964b51d();
         throw Td.unsupported(action);
       }
     }
@@ -240,9 +241,10 @@ public class ChatEventUtil {
       case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
       case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
+      case TdApi.ChatEventMemberTagChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_53b6b01e();
+        Td.assertChatEventAction_3964b51d();
         throw Td.unsupported(action);
       }
     }
@@ -402,7 +404,7 @@ public class ChatEventUtil {
               default:
                 if (!isAnonymous) {
                   type = 1;
-                  oldStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
+                  oldStatus = new TdApi.ChatMemberStatusAdministrator(false, new TdApi.ChatAdministratorRights());
                 } else {
                   oldStatus = e.oldStatus;
                 }
@@ -416,7 +418,7 @@ public class ChatEventUtil {
               default:
                 if (!isAnonymous) {
                   type = 2;
-                  newStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
+                  newStatus = new TdApi.ChatMemberStatusAdministrator(false, new TdApi.ChatAdministratorRights());
                 } else {
                   newStatus = e.newStatus;
                 }
@@ -570,6 +572,7 @@ public class ChatEventUtil {
               true,
               true,
               true,
+              true,
               true
             );
           }
@@ -598,7 +601,8 @@ public class ChatEventUtil {
           }
           appendRight(b, R.string.EventLogPromotedManageDirectMessages, oldAdmin.rights.canManageDirectMessages, newAdmin.rights.canManageDirectMessages, false);
           appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.rights.canPromoteMembers, newAdmin.rights.canPromoteMembers, false);
-          appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, oldAdmin.customTitle, newAdmin.customTitle, false);
+          // customTitle removed from ChatMemberStatusAdministrator: member tag changes are reported via chatEventMemberTagChanged
+          // TODO: dedicated string for canManageTags admin right changes
         } else if (oldStatus != null && newStatus != null) {
           final boolean oldCanReadMessages = oldStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;
           final boolean newCanReadMessages = newStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;
@@ -609,6 +613,8 @@ public class ChatEventUtil {
           if (!isRegularBanUnban) {
             if (Config.COMPILE_CHECK) {
               new TdApi.ChatPermissions(
+                false,
+                false,
                 false,
                 false,
                 false,
@@ -653,6 +659,22 @@ public class ChatEventUtil {
         fullMessage = new TGMessageText(context, msg, formattedText);
         break;
       }
+      case TdApi.ChatEventMemberTagChanged.CONSTRUCTOR: {
+        // TODO: dedicated strings for member tag changes (reusing admin custom title strings for now)
+        TdApi.ChatEventMemberTagChanged e = (TdApi.ChatEventMemberTagChanged) action;
+        TdApi.MessageSender memberId = new TdApi.MessageSenderUser(e.userId);
+        String userName = tdlib.senderName(memberId);
+        StringBuilder b = new StringBuilder(userName);
+        ArrayList<TdApi.TextEntity> entities = new ArrayList<>(1);
+        if (!StringUtils.isEmpty(userName)) {
+          entities.add(new TdApi.TextEntity(0, userName.length(), new TdApi.TextEntityTypeMentionName(e.userId)));
+        }
+        b.append('\n');
+        appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, e.oldTag, e.newTag, false);
+        TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), entities.isEmpty() ? null : entities.toArray(new TdApi.TextEntity[0]));
+        fullMessage = new TGMessageText(context, msg, formattedText);
+        break;
+      }
       // only service message
       case TdApi.ChatEventAccentColorChanged.CONSTRUCTOR:
       case TdApi.ChatEventProfileAccentColorChanged.CONSTRUCTOR:
@@ -688,7 +710,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_53b6b01e();
+        Td.assertChatEventAction_3964b51d();
         throw Td.unsupported(action);
       }
     }
@@ -766,6 +788,8 @@ public class ChatEventUtil {
 
         if (Config.COMPILE_CHECK) {
           new TdApi.ChatPermissions(
+            false,
+            false,
             false,
             false,
             false,
@@ -1008,11 +1032,12 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
       case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
       case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
+      case TdApi.ChatEventMemberTagChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(event.action.toString());
 
       // Unsupported
       default: {
-        Td.assertChatEventAction_53b6b01e();
+        Td.assertChatEventAction_3964b51d();
         throw Td.unsupported(event.action);
       }
     }

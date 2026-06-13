@@ -79,6 +79,17 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     return from + (to - from) * factor;
   }
 
+  private static int firstCorrectOptionId (TdApi.PollType type) {
+    // TODO: support quizzes with multiple correct answer options (correctOptionIds is now an array)
+    if (type != null && type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
+      int[] correctOptionIds = ((TdApi.PollTypeQuiz) type).correctOptionIds;
+      if (correctOptionIds != null && correctOptionIds.length > 0) {
+        return correctOptionIds[0];
+      }
+    }
+    return -1;
+  }
+
   private static class PollState {
     private final TdApi.Poll poll;
     private final int maxVoterCount;
@@ -118,7 +129,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         TdApi.PollOption toOption = toState.poll.options[i];
         int voterCount = fromTo(fromOption.voterCount, toOption.voterCount, factor);
         int votePercentage = fromTo(fromOption.votePercentage, toOption.votePercentage, factor);
-        TdApi.PollOption option = new TdApi.PollOption(toOption.text, voterCount, votePercentage, toOption.isChosen, toOption.isBeingChosen);
+        TdApi.PollOption option = new TdApi.PollOption(toOption.id, toOption.text, toOption.media, voterCount, votePercentage, toOption.recentVoterIds, toOption.isChosen, toOption.isBeingChosen, toOption.author, toOption.additionDate);
         options[i] = option;
         this.options[i] = new PollOption(
           option,
@@ -126,7 +137,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
           fromTo(fromState.options[i].progress, toState.options[i].progress, factor)
         );
       }
-      this.poll = new TdApi.Poll(toState.poll.id, toState.poll.question, options, toState.poll.totalVoterCount, toState.poll.recentVoterIds, toState.poll.isAnonymous, toState.poll.type, toState.poll.openPeriod, toState.poll.closeDate, toState.poll.isClosed);
+      this.poll = new TdApi.Poll(toState.poll.id, toState.poll.question, options, toState.poll.totalVoterCount, toState.poll.recentVoterIds, toState.poll.canGetVoters, toState.poll.canSeeResults, toState.poll.isAnonymous, toState.poll.allowsMultipleAnswers, toState.poll.allowsRevoting, toState.poll.membersOnly, toState.poll.countryCodes, toState.poll.optionOrder, toState.poll.type, toState.poll.openPeriod, toState.poll.closeDate, toState.poll.isClosed, toState.poll.voteRestrictionReason);
     }
 
     public int size () {
@@ -670,9 +681,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     boolean isQuiz = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
     int correctOptionId;
     if (isQuiz) {
-      correctOptionId = ((TdApi.PollTypeQuiz) state.poll.type).correctOptionId;
+      correctOptionId = firstCorrectOptionId(state.poll.type);
       if (correctOptionId == -1 && futureState != null && futureState.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
-        correctOptionId = ((TdApi.PollTypeQuiz) futureState.poll.type).correctOptionId;
+        correctOptionId = firstCorrectOptionId(futureState.poll.type);
       }
     } else {
       correctOptionId = -1;
@@ -746,7 +757,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
       if (selectionFactor > 0f) {
         float moveFactor = option.getMoveFactor();
-        float squareFactor = (state.poll.type.getConstructor() == TdApi.PollTypeRegular.CONSTRUCTOR && ((TdApi.PollTypeRegular) state.poll.type).allowMultipleAnswers ? 1f : 0f);
+        float squareFactor = (state.poll.type.getConstructor() == TdApi.PollTypeRegular.CONSTRUCTOR && state.poll.allowsMultipleAnswers ? 1f : 0f);
         if (option.checkBox == null) {
           option.checkBox = SimplestCheckBox.newInstance(selectionFactor, null, lineColor, contentColor, isQuiz && optionId != correctOptionId, moveFactor);
         }
@@ -1023,7 +1034,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         }
         int correctOptionId;
         if (updatedPoll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
-          correctOptionId = ((TdApi.PollTypeQuiz) updatedPoll.type).correctOptionId;
+          correctOptionId = firstCorrectOptionId(updatedPoll.type);
         } else {
           correctOptionId = 0;
         }
@@ -1168,7 +1179,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       setTotalVoterCount(state.poll);
       setPollStatus(state.poll.isClosed ? POLL_STATUS_CLOSED : POLL_STATUS_ANONYMOUS);
       setPercentages(needShowResults(state.poll), state.poll.options);
-      int correctOptionId = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) state.poll.type).correctOptionId : -1;
+      int correctOptionId = firstCorrectOptionId(state.poll.type);
       for (int optionId = 0; optionId < state.poll.options.length; optionId++) {
         options[optionId].selectionFactor = optionId == correctOptionId || state.poll.options[optionId].isChosen ? 1f : 0f;
       }
@@ -1177,8 +1188,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       if (state.poll.isClosed != futureState.poll.isClosed) {
         setPollStatus(futureState.poll.isClosed ? POLL_STATUS_CLOSED : POLL_STATUS_ANONYMOUS);
       }
-      int fromCorrectOptionId = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) state.poll.type).correctOptionId : -1;
-      int toCorrectOptionId = futureState.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) futureState.poll.type).correctOptionId : -1;
+      int fromCorrectOptionId = firstCorrectOptionId(state.poll.type);
+      int toCorrectOptionId = firstCorrectOptionId(futureState.poll.type);
       for (int optionId = 0; optionId < state.poll.options.length; optionId++) {
         int fromPercentage = state.resultsVisible ? state.votePercentage(optionId) : 0;
         int toPercentage = futureState.resultsVisible ? futureState.votePercentage(optionId) : 0;

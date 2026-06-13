@@ -108,6 +108,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
   private TdApi.ChatMemberStatusAdministrator targetAdmin;
   private TdApi.ChatMemberStatusRestricted targetRestrict;
+  private @Nullable String targetCustomTitle; // Stored separately: TDLib moved customTitle from member statuses to chatMember.tag
   private boolean canViewMessages, isForum;
 
   @Override
@@ -134,12 +135,13 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       case MODE_ADMIN_PROMOTION: {
         if (args.member != null) {
+          targetCustomTitle = args.member.tag;
           if (args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusCreator creator = (TdApi.ChatMemberStatusCreator) args.member.status;
             targetAdmin = new TdApi.ChatMemberStatusAdministrator(
-              creator.customTitle,
               true,
               new TdApi.ChatAdministratorRights(
+                true,
                 true,
                 true,
                 true,
@@ -182,12 +184,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     switch (args.myStatus.getConstructor()) {
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR: {
         TdApi.ChatMemberStatusAdministrator me = (TdApi.ChatMemberStatusAdministrator) args.myStatus;
-        return new TdApi.ChatMemberStatusAdministrator(null, true, Td.copyOf(me.rights));
+        return new TdApi.ChatMemberStatusAdministrator(true, Td.copyOf(me.rights));
       }
     }
     // TODO bot defaults
     return new TdApi.ChatMemberStatusAdministrator(
-      null,
       true,
       new TdApi.ChatAdministratorRights(
         true,
@@ -199,6 +200,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         true,
         true,
         isForum,
+        true,
         true,
         true,
         true,
@@ -407,14 +409,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
     } else if (args.member != null && args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
       TdApi.ChatMemberStatusCreator creator = (TdApi.ChatMemberStatusCreator) args.member.status;
-      newStatus = new TdApi.ChatMemberStatusCreator(targetAdmin.customTitle, targetAdmin.rights.isAnonymous, creator.isMember);
+      newStatus = new TdApi.ChatMemberStatusCreator(targetAdmin.rights.isAnonymous, creator.isMember);
     } else if (Td.isEmpty(targetAdmin, chatPermissions)) {
       newStatus = new TdApi.ChatMemberStatusMember();
     } else {
       newStatus = targetAdmin;
     }
 
-    String newCustomTitle = Td.getCustomTitle(newStatus);
+    String newCustomTitle = args.mode == MODE_ADMIN_PROMOTION ? targetCustomTitle : null;
     if (!StringUtils.isEmpty(newCustomTitle) && newCustomTitle.length() > TdConstants.MAX_CUSTOM_TITLE_LENGTH) {
       UI.showToast(R.string.CustomTitleTooBig, Toast.LENGTH_SHORT);
       return;
@@ -428,6 +430,13 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           setStackLocked(false);
           setDoneInProgress(false);
           if (success) {
+            // Custom title moved from member statuses to chatMember.tag, set it separately
+            if (args.mode == MODE_ADMIN_PROMOTION && !StringUtils.equalsOrBothEmpty(args.member != null ? args.member.tag : null, newCustomTitle)) {
+              long userId = Td.getSenderUserId(args.senderId);
+              if (userId != 0) {
+                tdlib.client().send(new TdApi.SetChatMemberTag(args.chatId, userId, !StringUtils.isEmpty(newCustomTitle) ? newCustomTitle : ""), tdlib.okHandler());
+              }
+            }
             ViewController<?> c = previousStackItem();
             if (c instanceof ContactsController) {
               destroyStackItemAt(stackSize() - 2);
@@ -463,7 +472,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         String title = charSequence.toString();
         if (customTitle.setStringValueIfChanged(title)) {
           if (targetAdmin != null)
-            targetAdmin.customTitle = title;
+            targetCustomTitle = title;
           checkDoneButton();
         }
       }
@@ -1196,7 +1205,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     Args args = getArgumentsStrict();
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.CustomTitle));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(customTitle = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION, R.id.input_customTitle, 0, 0, false).setStringValue(args.member != null ? Td.getCustomTitle(args.member.status) : null));
+    items.add(customTitle = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION, R.id.input_customTitle, 0, 0, false).setStringValue(args.member != null ? Td.getCustomTitle(args.member) : null));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getStringBold(R.string.CustomTitleHint, Lang.getString(args.member != null && TD.isCreator(args.member.status) ? R.string.message_ownerSign : R.string.message_adminSignPlain)), false));
     adapter.setLockFocusOn(this, !args.noFocusLock && args.member != null && TD.isCreator(args.member.status) && TD.isCreator(args.myStatus));
@@ -1264,7 +1273,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
       TdApi.ChatMemberStatusRestricted old = (TdApi.ChatMemberStatusRestricted) args.member.status;
       return old.restrictedUntilDate != targetRestrict.restrictedUntilDate  || !Td.equalsTo(targetRestrict.permissions, old.permissions, tdlib.chatPermissions(args.chatId));
-    } else if (customTitle != null && !StringUtils.equalsOrBothEmpty(Td.getCustomTitle(args.member.status), customTitle.getStringValue())) {
+    } else if (customTitle != null && !StringUtils.equalsOrBothEmpty(Td.getCustomTitle(args.member), customTitle.getStringValue())) {
       return true;
     } else if (args.member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR) {
       TdApi.ChatMemberStatusAdministrator old = (TdApi.ChatMemberStatusAdministrator) args.member.status;

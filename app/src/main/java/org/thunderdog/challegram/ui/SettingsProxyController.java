@@ -821,7 +821,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
 
     Settings.Proxy localProxy = findProxyById(proxyId);
     if (localProxy != null) {
-      localProxy.proxy = proxy;
+      localProxy.proxy = proxy != null ? proxy.proxy : null;
       localProxy.description = description;
     }
 
@@ -831,7 +831,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
       setProxyLocked(true);
       adapter.updateValuedSettingByPosition(newIndex);
     }
-    setCanUseForCalls(proxy != null && Settings.Proxy.canUseForCalls(proxy.type));
+    setCanUseForCalls(proxy != null && proxy.proxy != null && Settings.Proxy.canUseForCalls(proxy.proxy.type));
   }
 
   private Settings.Proxy findProxyById (int proxyId) {

@@ -483,8 +483,73 @@ public class FormattedText {
         break;
       }
       case TdApi.RichTextReference.CONSTRUCTOR: {
+        // Reference definition: register an anchor under its name and render the referenced text as-is
         TdApi.RichTextReference reference = (TdApi.RichTextReference) in;
-        parseRichText(context, reference.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_REFERENCE, null, false, reference.anchorName, reference.url, openParameters);
+        TextEntityCustom referenceAnchor = new TextEntityCustom(context, context.tdlib(), "", offset[0], offset[0], TextEntityCustom.FLAG_ANCHOR, null).setAnchorName(reference.name);
+        entities.add(referenceAnchor);
+        parseRichText(context, reference.text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
+      case TdApi.RichTextReferenceLink.CONSTRUCTOR: {
+        // Clickable link to a reference on the same page
+        TdApi.RichTextReferenceLink referenceLink = (TdApi.RichTextReferenceLink) in;
+        parseRichText(context, referenceLink.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_REFERENCE, null, false, referenceLink.referenceName, referenceLink.url, openParameters);
+        break;
+      }
+      case TdApi.RichTextSpoiler.CONSTRUCTOR: {
+        // TODO: hide contents behind a spoiler effect, like TextEntityTypeSpoiler (requires spoiler support in TextEntityCustom)
+        parseRichText(context, ((TdApi.RichTextSpoiler) in).text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
+      case TdApi.RichTextCustomEmoji.CONSTRUCTOR: {
+        TdApi.RichTextCustomEmoji customEmoji = (TdApi.RichTextCustomEmoji) in;
+        // TODO: render the actual custom emoji (customEmoji.customEmojiId); alternative text is rendered for now
+        parseRichText(context, new TdApi.RichTextPlain(customEmoji.alternativeText), out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
+      case TdApi.RichTextDateTime.CONSTRUCTOR: {
+        // TODO: format dateTime.unixTime according to dateTime.formattingType instead of the original text
+        TdApi.RichTextDateTime dateTime = (TdApi.RichTextDateTime) in;
+        parseRichText(context, dateTime.text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
+      case TdApi.RichTextMention.CONSTRUCTOR: {
+        // Mention by username: open the corresponding chat, like TextEntityTypeMention
+        TdApi.RichTextMention mention = (TdApi.RichTextMention) in;
+        String username = mention.username.startsWith("@") ? mention.username.substring(1) : mention.username;
+        parseRichText(context, mention.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_URL, context.tdlib().tMeUrl(username), false, referenceAnchorName, null, openParameters);
+        break;
+      }
+      case TdApi.RichTextMentionName.CONSTRUCTOR: {
+        // Mention of a user without username: open the user profile, like TextEntityTypeMentionName
+        TdApi.RichTextMentionName mentionName = (TdApi.RichTextMentionName) in;
+        parseRichText(context, mentionName.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_URL, "tg://user?id=" + mentionName.userId, false, referenceAnchorName, null, openParameters);
+        break;
+      }
+      case TdApi.RichTextHashtag.CONSTRUCTOR: {
+        // TODO: hashtag search, like TextEntityTypeHashtag; rendered as plain text for now
+        parseRichText(context, ((TdApi.RichTextHashtag) in).text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
+      case TdApi.RichTextCashtag.CONSTRUCTOR: {
+        // TODO: cashtag search, like TextEntityTypeCashtag; rendered as plain text for now
+        parseRichText(context, ((TdApi.RichTextCashtag) in).text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
+      case TdApi.RichTextBotCommand.CONSTRUCTOR: {
+        // TODO: send bot command on click, like TextEntityTypeBotCommand; rendered as plain text for now
+        parseRichText(context, ((TdApi.RichTextBotCommand) in).text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
+      case TdApi.RichTextBankCardNumber.CONSTRUCTOR: {
+        // TODO: show bank card actions on click, like TextEntityTypeBankCardNumber; rendered as plain text for now
+        parseRichText(context, ((TdApi.RichTextBankCardNumber) in).text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
+      case TdApi.RichTextMathematicalExpression.CONSTRUCTOR: {
+        // TODO: proper rendering of LaTeX markup; rendered as monospace text for now
+        TdApi.RichTextMathematicalExpression mathematicalExpression = (TdApi.RichTextMathematicalExpression) in;
+        parseRichText(context, new TdApi.RichTextPlain(mathematicalExpression.expression), out, entities, offset, flags | TextEntityCustom.FLAG_MONOSPACE, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
         break;
       }
       case TdApi.RichTexts.CONSTRUCTOR: {

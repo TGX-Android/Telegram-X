@@ -617,9 +617,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR: // TODO: relative date rendering
         break;
       default:
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(entity.type);
     }
     return false;

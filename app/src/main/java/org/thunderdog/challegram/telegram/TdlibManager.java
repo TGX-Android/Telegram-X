@@ -217,9 +217,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       if (extras.needReply) {
         long messageId = extras.messageIds[extras.messageIds.length - 1];
         if (extras.forceExternalReply) {
-          replyTo = new TdApi.InputMessageReplyToExternalMessage(extras.chatId, messageId, null, 0);
+          replyTo = new TdApi.InputMessageReplyToExternalMessage(extras.chatId, messageId, null, 0, null);
         } else {
-          replyTo = new TdApi.InputMessageReplyToMessage(messageId, null, 0);
+          replyTo = new TdApi.InputMessageReplyToMessage(messageId, null, 0, null);
         }
       } else {
         replyTo = null;

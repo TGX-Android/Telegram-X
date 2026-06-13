@@ -158,7 +158,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
   public PageBlockMedia (ViewController<?> context, TdApi.PageBlockCollage collage) {
     super(context, collage);
     setCaption(collage.caption);
-    parseWrappers(collage.pageBlocks);
+    parseWrappers(collage.blocks);
     if (wrappers != null && !wrappers.isEmpty()) {
       collageContext = new CollageContext(wrappers, Screen.dp(2f));
     }
@@ -170,7 +170,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     super(context, slideshow);
     this.isList = true;
     setCaption(slideshow.caption);
-    parseWrappers(slideshow.pageBlocks);
+    parseWrappers(slideshow.blocks);
   }
 
   private void initWrapper (MediaWrapper wrapper) {

@@ -741,7 +741,15 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   }
 
   public boolean showDraft () {
-    return !isArchive() && chat.unreadCount == 0 && chat.draftMessage != null && chat.draftMessage.inputMessageText.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR;
+    // TODO: preview fallbacks for draftMessageContentRichMessage/VideoNote/VoiceNote (currently fall through to last message preview)
+    return !isArchive() && chat.unreadCount == 0 && getTextDraft(chat.draftMessage) != null;
+  }
+
+  private static @Nullable TdApi.DraftMessageContentText getTextDraft (@Nullable TdApi.DraftMessage draftMessage) {
+    if (draftMessage != null && draftMessage.content != null && draftMessage.content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR) {
+      return (TdApi.DraftMessageContentText) draftMessage.content;
+    }
+    return null;
   }
 
   public boolean isUnread () {
@@ -1217,8 +1225,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       final String prefix;
       boolean needSuffix = true;
       if (showDraft()) {
-        TdApi.DraftMessage draftMessage = chat.draftMessage;
-        needSuffix = draftMessage != null && draftMessage.inputMessageText.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR && !Td.isEmpty(((TdApi.InputMessageText) chat.draftMessage.inputMessageText).text);
+        TdApi.DraftMessageContentText textDraft = getTextDraft(chat.draftMessage);
+        needSuffix = textDraft != null && !Td.isEmpty(textDraft.text);
         prefix = Lang.getString(R.string.Draft);
         flags |= FLAG_CONTENT_STRING;
       } else if (isOutgoing()) {
@@ -1330,7 +1338,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
     if (chat.draftMessage != null && showDraft()) {
       flags |= FLAG_TEXT_DRAFT | FLAG_HAS_PREFIX;
-      TdApi.FormattedText text = ((TdApi.InputMessageText) chat.draftMessage.inputMessageText).text;
+      TdApi.FormattedText text = getTextDraft(chat.draftMessage).text;
       setTextValue(text.text, text.entities, false);
       setPrefix();
       return;

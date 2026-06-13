@@ -107,6 +107,21 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   TdlibType("TextEntityType"),
   TdlibType("TextEntity"),
 
+  TdlibType("Location"),
+  TdlibType("Venue"),
+  TdlibType("Proxy"),
+  TdlibType("PollMedia", isExperimental = true, ignoredFields = setOf(
+    "PollMediaVideo.alternativeVideos",
+    "PollMediaVideo.storyboards"
+  )),
+  TdlibType("PollVoteRestrictionReason"),
+  TdlibType("ButtonStyle"),
+  TdlibType("UpgradedGiftAttributeRarity"),
+  TdlibType("StoryContentType"),
+  TdlibType("SettingsSection"),
+  TdlibType("DateTimeFormattingType"),
+  TdlibType("DateTimePartPrecision"),
+
   TdlibType("OptionValue"),
 
   TdlibType("ChatFolderName", isExperimental = true),

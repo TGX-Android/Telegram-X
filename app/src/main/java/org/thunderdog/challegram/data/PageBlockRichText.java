@@ -342,26 +342,47 @@ public class PageBlockRichText extends PageBlock {
     }
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockBlockQuote blockQuote, boolean isCredit, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  // Credit of a block quote. The quote body is now represented with nested page blocks parsed in PageBlock.parse
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockBlockQuote blockQuote, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, blockQuote);
-    if (isCredit) {
-      setText(blockQuote.credit, getCaptionProvider(), TextColorSets.InstantView.CAPTION, Text.FLAG_ARTICLE, openParameters);
-      if (!Td.isEmpty(blockQuote.text)) {
-        paddingTop = 3f;
-      } else {
-        paddingTop = 12f;
-      }
-      paddingBottom = 12f;
+    setText(blockQuote.credit, getCaptionProvider(), TextColorSets.InstantView.CAPTION, Text.FLAG_ARTICLE, openParameters);
+    if (blockQuote.blocks.length > 0) {
+      paddingTop = 3f;
     } else {
-      setText(blockQuote.text, getBlockQuoteProvider(), TextColorSets.InstantView.BLOCK_QUOTE, Text.FLAG_ARTICLE, openParameters);
-      if (!Td.isEmpty(blockQuote.credit)) {
-        paddingBottom = 3f;
-      } else {
-        paddingBottom = 12f;
-      }
       paddingTop = 12f;
     }
+    paddingBottom = 12f;
     this.needQuote = true;
+  }
+
+  // Section heading; size: 1-6, 1 is the largest, 6 is the smallest
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockSectionHeading sectionHeading, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, sectionHeading);
+    if (sectionHeading.size <= 2) {
+      setText(new TdApi.RichTextBold(sectionHeading.text), getHeaderProvider(), TextColorSets.InstantView.HEADER, Text.FLAG_ARTICLE, openParameters);
+      this.paddingTop = 14f;
+      this.paddingBottom = 8f;
+    } else if (sectionHeading.size <= 4) {
+      setText(new TdApi.RichTextBold(sectionHeading.text), getSubheaderProvider(), TextColorSets.InstantView.SUBHEADER, Text.FLAG_ARTICLE, openParameters);
+      this.paddingTop = 8f;
+    } else {
+      setText(new TdApi.RichTextBold(sectionHeading.text), getParagraphProvider(), TextColorSets.InstantView.SUBHEADER, Text.FLAG_ARTICLE, openParameters);
+      this.paddingTop = 8f;
+    }
+  }
+
+  // "Thinking..." placeholder; for pending rich messages only
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockThinking thinking, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, thinking);
+    // TODO: shimmer animation instead of a plain italic paragraph
+    setText(new TdApi.RichTextItalic(thinking.text), getParagraphProvider(), TextColorSets.InstantView.NORMAL, Text.FLAG_ARTICLE, openParameters);
+  }
+
+  // Mathematical expression in LaTeX format
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockMathematicalExpression mathematicalExpression, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, mathematicalExpression);
+    // TODO: proper rendering of LaTeX markup; rendered as a monospace paragraph for now
+    setText(new TdApi.RichTextFixed(new TdApi.RichTextPlain(mathematicalExpression.expression)), getPreformattedProvider(), TextColorSets.InstantView.NORMAL, Text.FLAG_ARTICLE, openParameters);
   }
 
   public PageBlockRichText (ViewController<?> context, TdApi.PageBlockPullQuote pullQuote, boolean isCredit, @Nullable TdlibUi.UrlOpenParameters openParameters) {

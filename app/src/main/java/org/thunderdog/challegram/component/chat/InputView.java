@@ -1196,7 +1196,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     updateMessageHint(chat, messageThread, customInputField, isSilent);
     setDraft(forceDraft != null ? forceDraft : !tdlib.canSendBasicMessage(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
-      chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
+      chat.draftMessage != null ? toDraftInputContent(chat.draftMessage.content) : null
     );
   }
 
@@ -1250,6 +1250,15 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       text = customInputField;
     }
     setInputPlaceholder(text, subplaceholder, icon);
+  }
+
+  private static @Nullable TdApi.InputMessageContent toDraftInputContent (@Nullable TdApi.DraftMessageContent content) {
+    if (content != null && content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR) {
+      TdApi.DraftMessageContentText text = (TdApi.DraftMessageContentText) content;
+      return new TdApi.InputMessageText(text.text, text.linkPreviewOptions, false);
+    }
+    // TODO: support other draft content types (rich message, video note, voice note)
+    return null;
   }
 
   public void setDraft (@Nullable TdApi.InputMessageContent draftContent) {
@@ -1571,13 +1580,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           final boolean isSecretChat = ChatId.isSecret(chatId);
           if (mediaType == MediaType.GIF && isAnimatedGif) {
             TdApi.InputFileGenerated generated = TD.newGeneratedFile(null, path, 0, timestamp);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(generated, null, null, 0, imageWidth, imageHeight, null, false, false), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(new TdApi.InputAnimation(generated, null, null, 0, imageWidth, imageHeight), null, false, false), isSecretChat);
           } else if ((mediaType != MediaType.JPEG && (mediaType == MediaType.WEBP || path.contains("sticker") || Math.max(imageWidth, imageHeight) <= 512))) {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, true, 512);
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageSticker(generated, null, imageWidth, imageHeight, null), isSecretChat);
           } else {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, false, null, false), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(new TdApi.InputPhoto(generated, null, null, null, imageWidth, imageHeight), null, false, null, false), isSecretChat);
           }
 
           UI.post(() -> {

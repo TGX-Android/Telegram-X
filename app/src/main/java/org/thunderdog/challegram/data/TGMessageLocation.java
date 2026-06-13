@@ -66,7 +66,6 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import tgx.td.Td;
 
 public class TGMessageLocation extends TGMessage implements LiveLocationManager.UserLocationChangeListener {
   private final TdApi.Location point;
@@ -124,8 +123,8 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
       updateTimer();
     }
     if (!isInitial) {
-      if (Td.isLocation(msg.content)) {
-        ((TdApi.MessageLocation) msg.content).expiresIn = expiresInSeconds;
+      if (msg.content != null && msg.content.getConstructor() == TdApi.MessageLiveLocation.CONSTRUCTOR) {
+        ((TdApi.MessageLiveLocation) msg.content).expiresIn = expiresInSeconds;
       }
       checkAlive(true);
     }
@@ -410,11 +409,23 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
         newExpiresIn = initialExpiresIn;
         break;
       case TdApi.MessageLocation.CONSTRUCTOR:
-        TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) newContent;
-        location = messageLocation.location;
-        newLivePeriod = messageLocation.livePeriod;
-        newExpiresIn = messageLocation.expiresIn;
+        location = ((TdApi.MessageLocation) newContent).location;
+        newLivePeriod = 0;
+        newExpiresIn = 0;
         break;
+      case TdApi.MessageLiveLocation.CONSTRUCTOR: {
+        TdApi.MessageLiveLocation messageLiveLocation = (TdApi.MessageLiveLocation) newContent;
+        TdApi.Location liveLocationPoint = messageLiveLocation.location.location;
+        if (liveLocationPoint.latitude == 0 && liveLocationPoint.longitude == 0) {
+          // Empty location inside a live location means it has stopped: keep the last known point
+          location = this.point;
+        } else {
+          location = liveLocationPoint;
+        }
+        newLivePeriod = messageLiveLocation.location.livePeriod;
+        newExpiresIn = messageLiveLocation.expiresIn;
+        break;
+      }
       default:
         return false;
     }
@@ -444,7 +455,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
 
   public void stopLiveLocation () {
     if (canStopAlive()) {
-      tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, msg.replyMarkup, null, 0, 0, 0), tdlib.silentHandler());
+      tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, msg.replyMarkup, null), tdlib.silentHandler());
     }
   }
 

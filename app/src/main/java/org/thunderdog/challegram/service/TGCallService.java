@@ -460,7 +460,7 @@ public class TGCallService extends Service implements
       updateStats();
       if (!sentDebugLog && ((TdApi.CallStateDiscarded) call.state).needDebugInformation && !StringUtils.isEmpty(lastDebugLog)) {
         sentDebugLog = true;
-        tdlib.client().send(new TdApi.SendCallDebugInformation(call.id, lastDebugLog.toString()), tdlib.okHandler());
+        tdlib.client().send(new TdApi.SendCallDebugInformation(new TdApi.InputCallDiscarded(call.id), lastDebugLog.toString()), tdlib.okHandler());
       }
       if (!sentRating && (((TdApi.CallStateDiscarded) call.state).needRating || BuildConfig.EXPERIMENTAL)) {
         sentRating = true;
