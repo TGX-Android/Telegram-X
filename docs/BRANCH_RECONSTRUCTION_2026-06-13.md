@@ -39,33 +39,43 @@ Method that worked: branch off `origin/main`, pin new submodules, `git apply --r
 the upgrade's PURE diff (`git diff 1b1978f48 86c2582a7 -- <file>`) so feature-region
 hunks reject, then compiler-guided fixes. **Zero feature code in the core** (verified).
 
-### 6 features cleanly rebased onto `core/tdlib`
+### 12 features rebased onto `core/tdlib` (all compile green)
 | branch | base it was on | commits | status |
 |--------|---------------|---------|--------|
 | `feature/playback-speed` | base/tdlib-main | +1 | ✅ compiles |
-| `feature/profile-notes` | base/tdlib-main | +1 | ✅ clean rebase |
-| `feature/disposable-voices` | base/tdlib-main | +1 | ✅ clean rebase |
-| `feature/reactions-improvements` | base/tdlib-main | +2 | ✅ clean rebase |
-| `feature/rich-messages` | base/tdlib | +1 | ✅ compiles (1 conflict resolved) |
+| `feature/profile-notes` | base/tdlib-main | +1 | ✅ compiles |
+| `feature/disposable-voices` | base/tdlib-main | +1 | ✅ compiles |
+| `feature/reactions-improvements` | base/tdlib-main | +2 | ✅ compiles |
+| `feature/rich-messages` | base/tdlib | +1 | ✅ compiles |
 | `feature/saved-tags` | origin/main | +1 | ✅ compiles (stripped RestrictionListener contamination) |
+| `feature/voice-transcription` | origin/main | +1 | ✅ compiles (stale-TdApi hunks dropped) |
+| `feature/premium-billing` | origin/main | +1 | ✅ compiles (BuyStars deep-link dropped — type gone) |
+| `stories-implementation` | origin/main | +1 | ✅ compiles (ChatsAdapter story-bar recovered from main) |
+| `feature/community-features` | origin/main | +1 | ✅ compiles (me.vkryl.td→tgx.td, transcoder/icon/listener fixes) |
+| `forum-topics-implementation` | origin/main | +1 | ✅ compiles (ForumTopicView from main, messageThreadId→forumTopicId) |
+| `feature/quotes` | origin/main | +1 | ✅ compiles (stripped ReX + forum, restored CounterTextPart) |
 
-Rebase command: `git rebase --onto core/tdlib <BASE> <branch>` where BASE is the
-feature's real base (see table). Originals backed up as `backup/pre-rebase/<branch>` tags.
+All 12 above are rebased onto `core/tdlib` and **compile green** individually
+(`compileLatestX64DebugJavaWithJavac`). Most use the **net-diff-reject** method:
+reset branch to core, `git diff <BASE> <branch> | git apply --reject`, discard the
+pure-TdApi-divergence rejects (core has the correct versions), re-apply real feature
+hooks, compiler-fix old-API usage + cross-feature contamination, commit. Originals
+backed up as `backup/pre-rebase/<branch>` tags.
 
-## REMAINING (TODO) — the hard part
+Key recurring fixes: assert-hash renames are in core; old `Message`/`InputMessagePhoto`/
+`InputMessageReplyToMessage` ctors → core's new ones; `me.vkryl.td`→`tgx.td`; strip
+contamination (ReX, forum `forumTopic`/`selectedForumTopics`, `RestrictionListener`,
+transcoder import); incomplete branches need pieces recovered from `main`
+(`ChatsAdapter` story bar, `ForumTopicView`).
 
-Each is reset to its `backup/pre-rebase/*` tag (untouched). Bases:
+## REMAINING (TODO) — 2 hardest features
 
-| branch | base | commits | difficulty |
-|--------|------|---------|-----------|
-| `feature/voice-transcription` | origin/main | +2 | old-TdApi migration |
-| `feature/quotes` | origin/main | +2 | **contaminated** (see below) |
-| `feature/premium-billing` | origin/main | +7 | old-TdApi migration |
-| `stories-implementation` | origin/main | +7 | old-TdApi migration |
-| `feature/community-features` | origin/main | +7 | old-TdApi + ni.shikatu.rex? |
-| `forum-topics-implementation` | origin/main | +15 | old-TdApi migration |
-| `feature/mini-apps` | origin/main | +86 | **huge** old-TdApi migration |
-| `feature/gifts` | base/tdlib | +17 | **pile-polluted** (see below) |
+Both reset to `backup/pre-rebase/*` (untouched, clean). Bases:
+
+| branch | base | commits | why hard |
+|--------|------|---------|----------|
+| `feature/gifts` | base/tdlib | +17 | Full gift-economy sub-system (auctions/resale/craft/collections). Pile-polluted. Needs main's gift FILES (already migrated) + main's shared-file hooks extracted gift-only: Tdlib gift-auction listener infra (~9171-9235 + update-switch cases at 10972-10977), ProfileController gift entry, ContentPreview gift dedup, TGMessage gift renderer wiring (recipe in git history of this branch's earlier attempt). |
+| `feature/mini-apps` | origin/main | +86 | **NOT a clean feature** — it's the OLD all-features integration (forum + stories + premium-billing **were merged into it**, per CLAUDE.md). Must be SLIMMED to web-apps-only (WebAppController/WebAppProxy/web-app UI + the `WebAppUrl`/`ShareUsersWithBot` TdApi adaptations), dropping the forum/stories/premium content (now on their own branches). Applying it whole would duplicate those and break all-features-combined. |
 
 ### Two contamination patterns discovered (the reason these are hard)
 
