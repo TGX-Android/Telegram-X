@@ -793,7 +793,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
               textRes = R.string.ShareTextPlain;
               break;
             default:
-              Td.assertMessageContent_11bff7df();
+              Td.assertMessageContent_bb294b24();
               title1Res = R.string.ShareTitleMedia;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextMedia;
@@ -3432,7 +3432,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           }
 
           if (messageReplyIncluded) {
-            replyTo = new TdApi.InputMessageReplyToMessage(contentfulMediaMessageId != 0 ? contentfulMediaMessageId : args.messages[0].id, null, 0);
+            replyTo = new TdApi.InputMessageReplyToMessage(contentfulMediaMessageId != 0 ? contentfulMediaMessageId : args.messages[0].id, null, 0, null);
           }
         }
         functions.addAll(TD.sendMessageText(chatId, null, replyTo, sendOptions, new TdApi.InputMessageText(comment, null, false), tdlib.maxMessageTextLength()));
@@ -3454,7 +3454,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         case MODE_FILES  : {
           List<TdApi.InputMessageContent> contents = new ArrayList<>(args.files.length);
           for (FileInfo fileInfo : args.files) {
-            TdApi.InputMessageDocument document = new TdApi.InputMessageDocument(TD.createInputFile(fileInfo.path), null, false, null);
+            TdApi.InputMessageDocument document = new TdApi.InputMessageDocument(new TdApi.InputDocument(TD.createInputFile(fileInfo.path), null, false), null);
             contents.add(document);
           }
           TdApi.Function<?> function;

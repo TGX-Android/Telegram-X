@@ -5149,7 +5149,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public boolean canBeForwarded () {
     TdApi.MessageProperties properties = lastMessageProperties();
-    return properties.canBeForwarded && (msg.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR || ((TdApi.MessageLocation) msg.content).expiresIn == 0) && !isEventLog();
+    return properties.canBeForwarded && (msg.content.getConstructor() != TdApi.MessageLiveLocation.CONSTRUCTOR || ((TdApi.MessageLiveLocation) msg.content).expiresIn == 0) && !isEventLog();
   }
 
   public boolean canBeReacted () {
@@ -8065,7 +8065,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     fakeMessage.replyMarkup = new TdApi.ReplyMarkupInlineKeyboard(new TdApi.InlineKeyboardButton[][]{
       new TdApi.InlineKeyboardButton[] {
-        new TdApi.InlineKeyboardButton(sponsoredMessage.buttonText, type)
+        new TdApi.InlineKeyboardButton(sponsoredMessage.buttonText, 0, new TdApi.ButtonStyleDefault(), type)
       }
     });
     return fakeMessage;
@@ -8236,7 +8236,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
         case TdApi.MessageLocation.CONSTRUCTOR: {
           TdApi.MessageLocation location = (TdApi.MessageLocation) content;
-          return new TGMessageLocation(context, msg, nonNull(location.location), location.livePeriod, location.expiresIn);
+          return new TGMessageLocation(context, msg, nonNull(location.location), 0, 0);
+        }
+        case TdApi.MessageLiveLocation.CONSTRUCTOR: {
+          TdApi.MessageLiveLocation liveLocation = (TdApi.MessageLiveLocation) content;
+          return new TGMessageLocation(context, msg, nonNull(liveLocation.location.location), liveLocation.location.livePeriod, liveLocation.expiresIn);
         }
         case TdApi.MessageVenue.CONSTRUCTOR: {
           return new TGMessageLocation(context, msg, ((TdApi.MessageVenue) content).venue);
@@ -8415,6 +8419,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;
           break;
+        // TODO(rich-messages): render via PageBlock-based TGMessageRichText instead of the unsupported placeholder
+        case TdApi.MessageRichMessage.CONSTRUCTOR:
+          unsupportedStringRes = R.string.UnsupportedMessageType;
+          break;
         // bots only
         case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
         case TdApi.MessageWebAppDataReceived.CONSTRUCTOR: {
@@ -8422,7 +8430,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         default: {
-          Td.assertMessageContent_11bff7df();
+          Td.assertMessageContent_bb294b24();
           throw Td.unsupported(msg.content);
         }
       }

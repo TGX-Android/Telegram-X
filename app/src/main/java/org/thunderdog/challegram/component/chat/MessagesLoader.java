@@ -980,7 +980,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       TdApi.MessageContent content;
       if (photo != null)
-        content = new TdApi.MessagePhoto(photo, text, false, false, false);
+        content = new TdApi.MessagePhoto(photo, null, text, false, false, false);
       else if (sticker != null)
         content = new TdApi.MessageSticker(sticker, false);
       else if (audio != null)
@@ -1228,18 +1228,44 @@ public class MessagesLoader implements Client.ResultHandler {
       event.id,
       event.memberId,
       chatId,
-      null,
-      null,
-      tdlib.isSelfSender(event.memberId),
-      false, false, canBeSaved, false,
-      isChannel, false, false, false,
-      event.date, 0,
-      null, null, null, null,
-      null, null, null, null,
-      null, 0, 0,
-      0, 0, 0, 0, null,
-      0, 0,
-      null, null, null, null
+      null, // sendingState
+      null, // schedulingState
+      tdlib.isSelfSender(event.memberId), // isOutgoing
+      false, // isPinned
+      false, // isFromOffline
+      canBeSaved, // canBeSaved
+      false, // hasTimestampedMedia
+      isChannel, // isChannelPost
+      false, // isPaidStarSuggestedPost
+      false, // isPaidTonSuggestedPost
+      false, // containsUnreadMention
+      false, // containsUnreadPollVotes
+      event.date, // date
+      0, // editDate
+      null, // forwardInfo
+      null, // importInfo
+      null, // interactionInfo
+      null, // unreadReactions
+      null, // factCheck
+      null, // suggestedPostInfo
+      null, // replyTo
+      null, // topicId (MessageTopic)
+      null, // selfDestructType
+      0, // selfDestructIn
+      0, // autoDeleteIn
+      0, // viaBotUserId
+      null, // guestBotCallerId
+      0, // senderBusinessBotUserId
+      0, // senderBoostCount
+      null, // senderTag
+      0, // paidMessageStarCount
+      null, // authorSignature
+      0, // mediaAlbumId
+      0, // effectId
+      null, // restrictionInfo
+      null, // summaryLanguageCode
+      null, // content
+      null // replyMarkup
     );
   }
 

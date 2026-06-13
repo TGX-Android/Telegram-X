@@ -1142,7 +1142,10 @@ public class Lang {
         res = R.string.ActionPinnedChecklist;
         break;
       case TdApi.MessageLocation.CONSTRUCTOR:
-        res = ((TdApi.MessageLocation) message.content).livePeriod > 0 ? R.string.ActionPinnedGeoLive : R.string.ActionPinnedGeo;
+        res = R.string.ActionPinnedGeo;
+        break;
+      case TdApi.MessageLiveLocation.CONSTRUCTOR:
+        res = R.string.ActionPinnedGeoLive;
         break;
       case TdApi.MessageVenue.CONSTRUCTOR:
         res = R.string.ActionPinnedGeo;
@@ -1232,7 +1235,7 @@ public class Lang {
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_11bff7df();
+        Td.assertMessageContent_bb294b24();
         throw Td.unsupported(message.content);
     }
     if (format == null) {

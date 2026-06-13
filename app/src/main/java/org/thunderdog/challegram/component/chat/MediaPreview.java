@@ -206,12 +206,14 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeRequestManagedBot.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR: {
         // TODO support more types
         break;
       }
       default:
-        Td.assertLinkPreviewType_a9a3ffcd();
+        Td.assertLinkPreviewType_883de866();
         throw Td.unsupported(linkPreview.type);
     }
     return false;
@@ -297,12 +299,14 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeRequestManagedBot.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR: {
               // TODO support more types
               break;
             }
             default:
-              Td.assertLinkPreviewType_a9a3ffcd();
+              Td.assertLinkPreviewType_883de866();
               throw Td.unsupported(linkPreview.type);
           }
         }
@@ -346,6 +350,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageLocation.CONSTRUCTOR: {
         // map preview
         return valueOf(tdlib, ((TdApi.MessageLocation) message.content).location, null, size, cornerRadius);
+      }
+      case TdApi.MessageLiveLocation.CONSTRUCTOR: {
+        // map preview
+        return valueOf(tdlib, ((TdApi.MessageLiveLocation) message.content).location.location, null, size, cornerRadius);
       }
       case TdApi.MessageVenue.CONSTRUCTOR: {
         // map preview
@@ -507,7 +515,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         break;
       }
       default: {
-        Td.assertMessageContent_11bff7df();
+        Td.assertMessageContent_bb294b24();
         throw Td.unsupported(message.content);
       }
     }
