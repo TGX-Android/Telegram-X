@@ -68,14 +68,25 @@ contamination (ReX, forum `forumTopic`/`selectedForumTopics`, `RestrictionListen
 transcoder import); incomplete branches need pieces recovered from `main`
 (`ChatsAdapter` story bar, `ForumTopicView`).
 
-## REMAINING (TODO) — 2 hardest features
+### gifts + mini-apps — ✅ DONE (the 2 hardest)
 
-Both reset to `backup/pre-rebase/*` (untouched, clean). Bases:
+| branch | how |
+|--------|-----|
+| `feature/gifts` | ✅ compiles. Full gift-economy sub-system. main's migrated gift FILES (20) + gift-only shared-file hooks: Tdlib gift-auction listener block (inserted verbatim) + update-switch wiring; TGMessage renderer wiring; TGMessageGiveawayBase gift-card support (taken from main); gift ids/strings; `isStarsBalanceLowError`/`showStarsBalanceLowPrompt` (buy-Stars action → toast, since `SettingsStarsController` is premium-billing's); `onOwnedTonCountChanged` on TdlibOptionListener. **Method that worked**: copy gift files from main, then *insert self-contained blocks verbatim* + edit switch-wiring manually (the gift-hunk auto-filter corrupted files — main's diff context is too far from core). |
+| `feature/mini-apps` | ✅ compiles. SLIMMED to web-apps-only (the forum/stories/premium it had merged in now live on their own branches). 3 web-app files from main (WebAppController/WebAppProxy/WebAppSecureStorage) + Tdlib web-app-message listener block + `isTrustedMiniAppBot` + TGInlineKeyboard web-app button entry point + web-app ids/strings + `switchInline`/camera-builder adaptations. Cross-feature payment/share-to-story stubbed with `FEATURE-DEP` markers (combined build re-wires). |
 
-| branch | base | commits | why hard |
-|--------|------|---------|----------|
-| `feature/gifts` | base/tdlib | +17 | Full gift-economy sub-system (auctions/resale/craft/collections). Pile-polluted. Needs main's gift FILES (already migrated) + main's shared-file hooks extracted gift-only: Tdlib gift-auction listener infra (~9171-9235 + update-switch cases at 10972-10977), ProfileController gift entry, ContentPreview gift dedup, TGMessage gift renderer wiring (recipe in git history of this branch's earlier attempt). |
-| `feature/mini-apps` | origin/main | +86 | **NOT a clean feature** — it's the OLD all-features integration (forum + stories + premium-billing **were merged into it**, per CLAUDE.md). Must be SLIMMED to web-apps-only (WebAppController/WebAppProxy/web-app UI + the `WebAppUrl`/`ShareUsersWithBot` TdApi adaptations), dropping the forum/stories/premium content (now on their own branches). Applying it whole would duplicate those and break all-features-combined. |
+**ALL 14 FEATURES ✅ rebased onto core and compile green individually.**
+
+## REMAINING — Step 3 + Step 4
+
+- **Step 3** (not started): branch the unbranched NEW work off core — payments cluster
+  (formatPrice/tips/order-info/shipping/receipts/withdrawal/paid-reaction-amount/boosts),
+  parity (quick-replies/downloads/monetization/business/stickers/saved-msg-topics/fact-check-edit),
+  group-calls (slices 1-3), and today's audit-fix commit. These are currently only on `main`.
+- **Step 4** (not started): rebuild `all-features-combined` = fresh branch off core, merge
+  every feature, resolve cross-feature conflicts, **un-stub** the mini-apps FEATURE-DEP
+  markers (PaymentFormController/StoryPreviewController are present in combined), full
+  local build (Java + native + APK). THEN — only after green — push. Update CLAUDE.md branch table.
 
 ### Two contamination patterns discovered (the reason these are hard)
 
