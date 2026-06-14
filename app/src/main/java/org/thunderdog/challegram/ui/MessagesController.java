@@ -1043,7 +1043,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     reactionsButton.setOnLongClickListener(v -> {
       long chatId = getChatId();
       if (chatId != 0 && !isDestroyed()) {
-        tdlib.client().send(new TdApi.ReadAllChatReactions(chatId), tdlib.okHandler());
+        TdApi.MessageTopic topicId = getMessageTopicId();
+        if (topicId != null && topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+          tdlib.client().send(new TdApi.ReadAllForumTopicReactions(chatId, ((TdApi.MessageTopicForum) topicId).forumTopicId), tdlib.okHandler());
+        } else {
+          tdlib.client().send(new TdApi.ReadAllChatReactions(chatId), tdlib.okHandler());
+        }
         return true;
       }
       return false;
@@ -1825,7 +1830,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Nullable
   public TdApi.DraftMessage getDraftMessage () {
-    return messageThread != null ? messageThread.getDraft() : chat != null ? chat.draftMessage : null;
+    if (forumTopic != null) {
+      return forumTopic.draftMessage;
+    }
+    if (messageThread != null) {
+      return messageThread.getDraft();
+    }
+    TdApi.MessageTopic topicId = getMessageTopicId();
+    if (topicId != null && topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+      // Topic-scoped controller whose ForumTopic is not yet loaded — do not apply the chat-level draft.
+      return null;
+    }
+    return chat != null ? chat.draftMessage : null;
   }
 
   public long getChatUserId () {
