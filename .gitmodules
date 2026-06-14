@@ -48,9 +48,9 @@
 	shallow = true
 [submodule "tdlib"]
 	path = tdlib
-	url = https://github.com/TGX-Android/tdlib
+	url = https://github.com/japananimetime/tdlib
 	shallow = true
-	branch = main
+	branch = tgx/tdlib-flat
 [submodule "jni-utils"]
 	path = app/jni/third_party/jni-utils
 	url = https://github.com/TGX-Android/jni-utils
@@ -73,9 +73,9 @@
 	branch = main
 [submodule "vkryl/td"]
 	path = vkryl/td
-	url = https://github.com/TGX-Android/tdlib-utils
+	url = https://github.com/japananimetime/tdlib-utils
 	shallow = true
-	branch = main
+	branch = tgx/td-richmessages-bindings
 [submodule "vkryl/android"]
 	path = vkryl/android
 	url = https://github.com/TGX-Android/X-Android
