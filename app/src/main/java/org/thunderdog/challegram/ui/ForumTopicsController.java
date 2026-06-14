@@ -22,6 +22,7 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -96,6 +97,7 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
   private FrameLayoutFix contentView;
   private CustomRecyclerView recyclerView;
   private ForumTopicsAdapter adapter;
+  private ItemTouchHelper pinReorderTouchHelper;
   private ListInfoView emptyView;
   private CircleButton createTopicButton;
   private ChatHeaderView headerCell;
@@ -612,6 +614,11 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
     recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
     recyclerView.setAdapter(adapter);
     recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
+    // Admin-only drag-reorder of PINNED topics (#845). Drag is restricted to the
+    // contiguous pinned prefix; on drop we send TdApi.SetPinnedForumTopics with the
+    // new order. canManageTopics() is the same gate used for pin/unpin.
+    pinReorderTouchHelper = new ItemTouchHelper(new PinReorderCallback());
+    pinReorderTouchHelper.attachToRecyclerView(recyclerView);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -1645,6 +1652,140 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
         return ((TdApi.ChatMemberStatusAdministrator) status).rights.canManageTopics;
       default:
         return false;
+    }
+  }
+
+  // ---- Pinned topic drag-reorder (#845) ----
+
+  // Pinned topics form a contiguous prefix of `topics` (see resortTopics()).
+  private int pinnedTopicCount () {
+    if (topics == null) return 0;
+    int count = 0;
+    for (TdApi.ForumTopic topic : topics) {
+      if (topic.isPinned) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  }
+
+  // True when the topic at `position` is a pinned topic the admin may reorder.
+  private boolean canReorderPinnedTopicAt (int position) {
+    if (!canManageTopics() || adapter == null || adapter.isMessageSearchMode) {
+      return false;
+    }
+    int pinnedCount = pinnedTopicCount();
+    // Need at least two pinned topics for reordering to make sense.
+    return pinnedCount > 1 && position >= 0 && position < pinnedCount;
+  }
+
+  // Collects the current visual order of pinned topic ids and pushes it to TDLib.
+  private void sendPinnedTopicsOrder () {
+    int pinnedCount = pinnedTopicCount();
+    if (pinnedCount == 0) return;
+    int[] orderedTopicIds = new int[pinnedCount];
+    for (int i = 0; i < pinnedCount; i++) {
+      orderedTopicIds[i] = topics.get(i).info.forumTopicId;
+    }
+    tdlib.client().send(new TdApi.SetPinnedForumTopics(chatId, orderedTopicIds), result -> {
+      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+        UI.post(() -> {
+          if (isDestroyed()) return;
+          UI.showError(result);
+          // The server rejected the order; reload to restore the authoritative state.
+          isLoading = false;
+          loadTopics();
+        });
+      }
+    });
+  }
+
+  // Reorders a pinned topic within the pinned prefix, keeping `topics` and
+  // `allTopics` consistent. Returns true if a move was applied.
+  private boolean movePinnedTopic (int fromPosition, int toPosition) {
+    int pinnedCount = pinnedTopicCount();
+    if (fromPosition < 0 || toPosition < 0 ||
+        fromPosition >= pinnedCount || toPosition >= pinnedCount ||
+        fromPosition == toPosition) {
+      return false;
+    }
+    TdApi.ForumTopic moved = topics.remove(fromPosition);
+    topics.add(toPosition, moved);
+    // Mirror the new order into allTopics so leaving/re-entering search keeps it.
+    if (allTopics != null) {
+      int allFrom = indexOfTopic(allTopics, moved.info.forumTopicId);
+      if (allFrom != -1) {
+        allTopics.remove(allFrom);
+        int allTo = Math.min(toPosition, allTopics.size());
+        allTopics.add(allTo, moved);
+      }
+    }
+    return true;
+  }
+
+  private class PinReorderCallback extends ItemTouchHelper.Callback {
+    private int dragFrom = -1;
+    private int dragTo = -1;
+
+    @Override
+    public boolean isLongPressDragEnabled () {
+      // Movement flags below still gate whether any given row is draggable.
+      return true;
+    }
+
+    @Override
+    public boolean isItemViewSwipeEnabled () {
+      return false; // Drag only — no swipe.
+    }
+
+    @Override
+    public int getMovementFlags (@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+      if (!canReorderPinnedTopicAt(viewHolder.getBindingAdapterPosition())) {
+        return 0;
+      }
+      return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
+    }
+
+    @Override
+    public boolean canDropOver (@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder current, @NonNull RecyclerView.ViewHolder target) {
+      // Confine drops to the pinned section.
+      int pinnedCount = pinnedTopicCount();
+      int targetPosition = target.getBindingAdapterPosition();
+      return targetPosition >= 0 && targetPosition < pinnedCount;
+    }
+
+    @Override
+    public boolean onMove (@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+      int fromPosition = viewHolder.getBindingAdapterPosition();
+      int toPosition = target.getBindingAdapterPosition();
+      if (movePinnedTopic(fromPosition, toPosition)) {
+        if (dragFrom == -1) {
+          dragFrom = fromPosition;
+        }
+        dragTo = toPosition;
+        adapter.notifyItemMoved(fromPosition, toPosition);
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    public void onSwiped (@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+      // No-op: swipe is disabled.
+    }
+
+    @Override
+    public void clearView (@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+      super.clearView(recyclerView, viewHolder);
+      if (dragFrom != -1 && dragTo != -1 && dragFrom != dragTo) {
+        if (!isDestroyed()) {
+          sendPinnedTopicsOrder();
+          tdlib.updateForumTopicsCache(chatId, topics);
+        }
+      }
+      dragFrom = dragTo = -1;
     }
   }
 
