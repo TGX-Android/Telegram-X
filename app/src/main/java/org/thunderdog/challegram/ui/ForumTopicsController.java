@@ -1591,6 +1591,9 @@ public class ForumTopicsController extends TelegramViewController<ForumTopicsCon
     if (chatId != this.chatId || topics == null || freshTopic == null) return;
 
     UI.post(() -> {
+      if (isDestroyed() || topics == null) {
+        return;
+      }
       for (int i = 0; i < topics.size(); i++) {
         if (topics.get(i).info.forumTopicId == freshTopic.info.forumTopicId) {
           topics.set(i, freshTopic);
