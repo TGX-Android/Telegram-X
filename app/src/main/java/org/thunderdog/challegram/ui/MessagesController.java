@@ -962,7 +962,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mentionButton.setOnLongClickListener(v -> {
       long chatId = getChatId();
       if (chatId != 0 && !isDestroyed()) {
-        tdlib.client().send(new TdApi.ReadAllChatMentions(chatId), tdlib.okHandler());
+        TdApi.MessageTopic topicId = getMessageTopicId();
+        if (topicId != null && topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+          tdlib.client().send(new TdApi.ReadAllForumTopicMentions(chatId, ((TdApi.MessageTopicForum) topicId).forumTopicId), tdlib.okHandler());
+        } else {
+          tdlib.client().send(new TdApi.ReadAllChatMentions(chatId), tdlib.okHandler());
+        }
         return true;
       }
       return false;
@@ -2949,6 +2954,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     ignoreDraftLoad = false;
     discardAttachedFiles(false);
+    // One-shot message effect must not survive a chat rebind in a reused controller.
+    setPendingMessageEffectId(0);
     updateBottomBar(false);
 
     closeCommandsKeyboard(false);
