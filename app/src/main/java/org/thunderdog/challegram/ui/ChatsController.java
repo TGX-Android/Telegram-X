@@ -2109,7 +2109,12 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     int highlightMode;
     Object shareItem = pickerDelegate != null ? pickerDelegate.getShareItem() : null;
     TdlibUi.ChatOpenParameters params;
-    if ((highlightMode = MessagesManager.getAnchorHighlightMode(tdlib.id(), chat, null)) != MessagesManager.HIGHLIGHT_MODE_NONE) {
+    // Don't attach a flat-chat scroll anchor for forums: the anchor is a payload that makes
+    // openChat() skip the topic-list view and open the unified message list instead, so a forum
+    // with unread messages would wrongly render as a plain chat. Forums that actually open as a
+    // unified chat (view-as-messages mode) still get their scroll anchor recomputed inside
+    // TdlibUi.openChat(), so nothing is lost here.
+    if (!tdlib.isForum(chat.id) && (highlightMode = MessagesManager.getAnchorHighlightMode(tdlib.id(), chat, null)) != MessagesManager.HIGHLIGHT_MODE_NONE) {
       params = new TdlibUi.ChatOpenParameters().shareItem(shareItem).highlightMessage(highlightMode, MessagesManager.getAnchorMessageId(tdlib.id(), chat, null, highlightMode));
     } else {
       params = new TdlibUi.ChatOpenParameters().shareItem(shareItem);
