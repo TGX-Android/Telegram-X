@@ -10278,6 +10278,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateGiftAuctionState.CONSTRUCTOR:
       case TdApi.UpdateActiveGiftAuctions.CONSTRUCTOR:
       case TdApi.UpdateStakeDiceState.CONSTRUCTOR:
+      // Updates emitted by this (fork) TDLib build that no UI consumes yet — several of
+      // these (e.g. text-composition styles, web-browser settings) are pushed automatically
+      // on startup. Ignore them so they don't fall through to the unsupported() default and
+      // crash the app. Revisit if/when a feature actually needs to react to one of them.
+      case TdApi.UpdateTextCompositionStyles.CONSTRUCTOR:
+      case TdApi.UpdateWebBrowserSettings.CONSTRUCTOR:
+      case TdApi.UpdateChatJoinResult.CONSTRUCTOR:
+      case TdApi.UpdateChatUnreadPollVoteCount.CONSTRUCTOR:
+      case TdApi.UpdateMessageContainsUnreadPollVotes.CONSTRUCTOR:
+      case TdApi.UpdatePendingMessage.CONSTRUCTOR:
+      case TdApi.UpdateNewOauthRequest.CONSTRUCTOR:
+      case TdApi.UpdateManagedBot.CONSTRUCTOR:
+      case TdApi.UpdateNewGuestQuery.CONSTRUCTOR:
         break;
 
       // for bots only.
