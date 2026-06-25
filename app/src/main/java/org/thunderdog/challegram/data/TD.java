@@ -741,19 +741,39 @@ public class TD {
   }
 
   public static boolean canRetractVote (TdApi.Poll poll) {
-    switch (poll.type.getConstructor()) {
-      case TdApi.PollTypeRegular.CONSTRUCTOR: {
-        for (TdApi.PollOption option : poll.options) {
-          if (option.isChosen) {
-            return true;
-          }
+    if (poll.allowsRevoting) {
+      for (TdApi.PollOption option : poll.options) {
+        if (option.isChosen) {
+          return true;
         }
-        break;
       }
-      case TdApi.PollTypeQuiz.CONSTRUCTOR:
-        return false;
     }
     return false;
+  }
+
+  public static final int ANSWER_UNKNOWN = 0;
+  public static final int ANSWER_WRONG = 1;
+  public static final int ANSWER_CORRECT = 2;
+  public static int isAnsweredCorrectly (TdApi.Poll poll) {
+    if (poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
+      TdApi.PollTypeQuiz quiz = (TdApi.PollTypeQuiz) poll.type;
+      if (quiz.correctOptionIds != null && quiz.correctOptionIds.length > 0) {
+        int optionId = 0;
+        int correctAnswersCount = 0;
+        for (TdApi.PollOption option : poll.options) {
+          if (option.isChosen) {
+            if (ArrayUtils.contains(quiz.correctOptionIds, optionId)) {
+              correctAnswersCount++;
+            } else {
+              return ANSWER_WRONG;
+            }
+          }
+          optionId++;
+        }
+        return correctAnswersCount == quiz.correctOptionIds.length ? ANSWER_CORRECT : ANSWER_WRONG;
+      }
+    }
+    return ANSWER_UNKNOWN;
   }
 
   public static TextEntity[] collectAllEntities (ViewController<?> context, Tdlib tdlib, CharSequence cs, boolean onlyLinks, @Nullable TdlibUi.UrlOpenParameters openParameters) {
@@ -789,6 +809,38 @@ public class TD {
 
   public static String getPhoneNumber (String in) {
     return StringUtils.isEmpty(in) || in.startsWith("+") ? in : "+" + in;
+  }
+
+  public static String getPhoneNumberCountryCode (String in) {
+    String formattedPhone = Strings.formatPhone(in);
+    int i = formattedPhone.indexOf(' ');
+    if (i != -1) {
+      return formattedPhone.substring(1, i);
+    }
+    return null;
+  }
+
+  private static final String[] HARDCODED_CALLING_CODES = {"888", "42"};
+
+  public static String[] getPhoneNumberParts (String in) {
+    String formattedPhone = Strings.formatPhone(in);
+    int i = formattedPhone.indexOf(' ');
+    if (i != -1) {
+      return new String[] {
+        formattedPhone.substring(1, i),
+        Strings.getNumber(formattedPhone.substring(i + 1))
+      };
+    }
+    String numeric = Strings.getNumber(in);
+    for (String hardcoded : HARDCODED_CALLING_CODES) {
+      if (numeric.startsWith(hardcoded)) {
+        return new String[] {
+          hardcoded,
+          numeric.substring(hardcoded.length())
+        };
+      }
+    }
+    return null;
   }
 
   public static void saveMessageThreadInfo (Bundle bundle, String prefix, @Nullable TdApi.MessageThreadInfo threadInfo) {
@@ -2954,6 +3006,23 @@ public class TD {
 
   public static TdApi.FormattedText getExplanation (TdApi.Poll poll) {
     return poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) poll.type).explanation : null;
+  }
+
+  public static boolean areResultsHidden (TdApi.Poll poll) {
+    if (poll.isClosed) {
+      return false;
+    }
+    boolean hasNonEmpty = false;
+    boolean hasAnswer = false;
+    for (TdApi.PollOption option : poll.options) {
+      if (option.voterCount > 0) {
+        hasNonEmpty = true;
+      }
+      if (option.isChosen) {
+        hasAnswer = true;
+      }
+    }
+    return hasAnswer && !hasNonEmpty;
   }
 
   public static boolean hasAnswer (TdApi.Poll poll) {

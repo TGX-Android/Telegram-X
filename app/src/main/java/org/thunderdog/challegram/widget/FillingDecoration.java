@@ -15,8 +15,10 @@
 package org.thunderdog.challegram.widget;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.view.View;
 
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -30,9 +32,11 @@ import org.thunderdog.challegram.tool.Paints;
 import java.util.ArrayList;
 
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.collection.IntSet;
 
 public class FillingDecoration extends RecyclerView.ItemDecoration {
   private final ArrayList<int[]> ranges = new ArrayList<>();
+  private final IntSet ids = new IntSet();
 
   private @ColorId int fillingColorId = ColorId.filling;
 
@@ -40,6 +44,16 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(view);
     }
+  }
+
+  public FillingDecoration addId (@IdRes int id) {
+    ids.add(id);
+    return this;
+  }
+
+  public FillingDecoration removeId (@IdRes int id) {
+    ids.remove(id);
+    return this;
   }
 
   public FillingDecoration addRange (int fromIndex, int toIndex) {
@@ -68,17 +82,14 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
     return ranges.get(ranges.size() - 1);
   }
 
-  public int rangesCount () {
-    return ranges.size();
+  public void offsetLastRange (int by) {
+    int[] range = lastRange();
+    range[0] += by;
+    range[1] += by;
   }
 
-  private int bottomId = View.NO_ID;
-  private int maxIndex = -1;
-
-  public FillingDecoration addBottom (int bottomId, int maxIndex) {
-    this.bottomId = bottomId;
-    this.maxIndex = maxIndex;
-    return this;
+  public int rangesCount () {
+    return ranges.size();
   }
 
   @Override
@@ -91,65 +102,46 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
       return;
     }
 
-    int fillingTop = -1, fillingBottom = -1;
-
-    int openFillingColor = 0;
-
-    boolean searchById = bottomId != View.NO_ID && maxIndex != -1;
-    boolean bottomFound = false;
-    View view = null;
-    for (int position = 0; position <= last; position++) {
-      view = manager.findViewByPosition(position);
-
-      int fillingColor = view != null ? getFillingColor(position, view) : 0;
-      if (fillingColor == 0 && view == null && (searchById && position < maxIndex && !bottomFound)) {
-        fillingColor = Theme.getColor(this.fillingColorId);
-      }
-
-      if (searchById && fillingColor != 0 && view != null && view.getId() == bottomId) {
-        fillingColor = 0;
-        bottomFound = true;
-      }
-
-      if (fillingColor != openFillingColor) {
-        if (openFillingColor != 0) {
-          drawFilling(c, parent, view, fillingTop, fillingBottom, openFillingColor);
-        }
-        if (fillingColor != 0) {
-          fillingTop = view != null ? (int) (manager.getDecoratedTop(view) + view.getTranslationY()) : fillingBottom;
-        }
-        openFillingColor = fillingColor;
-      }
+    int fillingCount = 0;
+    View view;
+    boolean extrasEnabled = needSeparateDecorations();
+    for (int i = 0; i < parent.getChildCount(); i++) {
+      view = parent.getChildAt(i);
+      int adapterPosition = view != null ? parent.getChildAdapterPosition(view) : RecyclerView.NO_POSITION;
+      if (view == null)
+        continue;
+      int fillingColor = getFillingColor(parent, adapterPosition, view);
       if (fillingColor != 0) {
-        fillingBottom = view != null ? (int) (manager.getDecoratedBottom(view) + view.getTranslationY()) : parent.getMeasuredHeight();
-      }
-    }
-
-    if (openFillingColor != 0) {
-      drawFilling(c, parent, view, fillingTop, fillingBottom, openFillingColor);
-    }
-    if (needSeparateDecorations()) {
-      for (int i = 0; i < parent.getChildCount(); i++) {
-        view = parent.getChildAt(i);
-        int adapterPosition = view != null ? parent.getChildAdapterPosition(view) : RecyclerView.NO_POSITION;
-        if (view == null || adapterPosition != RecyclerView.NO_POSITION)
-          continue;
-        int fillingColor = getFillingColor(adapterPosition, view);
-        if (fillingColor != 0) {
-          drawFilling(c, parent, view, manager.getDecoratedTop(view) + (int) view.getTranslationY(), manager.getDecoratedBottom(view) + (int) view.getTranslationY(), fillingColor);
+        drawFilling(c, parent, view, manager.getDecoratedTop(view) + view.getTranslationY(), manager.getDecoratedBottom(view) + view.getTranslationY(), fillingColor);
+        if (adapterPosition != RecyclerView.NO_POSITION) {
+          fillingCount++;
         }
+      }
+      if (extrasEnabled) {
         drawDecorationForView(c, parent, state, view);
       }
+    }
+
+    if (fillingCount > 1) {
+      // Fill gaps within filling range that do not have underlying view
+      int openColor = 0;
+      float lastBottom = -1;
       for (int i = first; i <= last; i++) {
         view = manager.findViewByPosition(i);
-        if (view != null) {
-          drawDecorationForView(c, parent, state, view);
+        int fillingColor = view != null ? getFillingColor(parent, i, view) : 0;
+        float bottom = view != null ? view.getBottom() + view.getTranslationY() : -1;
+        float top = view != null ? view.getTop() + view.getTranslationY() : -1;
+        if (fillingColor != openColor) {
+          openColor = fillingColor;
+        } else if (view != null && Color.alpha(openColor) != 0 && top != lastBottom) {
+          drawFilling(c, parent, view, lastBottom, top, openColor);
         }
+        lastBottom = bottom;
       }
     }
   }
 
-  private void drawFilling (Canvas c, RecyclerView parent, View view, int fillingTop, int fillingBottom, int fillingColor) {
+  private void drawFilling (Canvas c, RecyclerView parent, View view, float fillingTop, float fillingBottom, int fillingColor) {
     if (view instanceof ShadowView) {
       fillingBottom += ((ShadowView) view).getShadowTop();
     }
@@ -164,15 +156,25 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
     // Override
   }
 
-  protected int getFillingColor (int i, @NonNull View view) {
+  protected int getFillingColor (RecyclerView parent, int position, View view) {
     float alpha = view.getAlpha();
-    for (int[] range : ranges) {
-      if (i >= range[0] && i < range[1]) {
-        return ColorUtils.alphaColor(alpha, Theme.getColor(fillingColorId));
-      }
-    }
-    if (bottomId != 0 && i < maxIndex) {
+    @IdRes int id = view.getId();
+    if (id != View.NO_ID && ids.has(id)) {
       return ColorUtils.alphaColor(alpha, Theme.getColor(fillingColorId));
+    }
+    for (int[] range : ranges) {
+      if (position >= range[0] && position < range[1]) {
+        float maxAlpha = alpha;
+        for (int i = range[0]; i < range[1] && maxAlpha < 1.0f; i++) {
+          if (i != position) {
+            View childView = parent.getLayoutManager().findViewByPosition(i);
+            if (childView != null) {
+              maxAlpha = Math.max(maxAlpha, childView.getAlpha());
+            }
+          }
+        }
+        return ColorUtils.alphaColor(maxAlpha, Theme.getColor(fillingColorId));
+      }
     }
     return 0;
   }

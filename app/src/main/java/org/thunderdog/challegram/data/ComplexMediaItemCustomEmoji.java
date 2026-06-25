@@ -114,7 +114,7 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
   }
 
   @Override
-  public void draw (Canvas c, Rect rect, ComplexReceiver mediaReceiver, long displayMediaKey, boolean translate) {
+  public void draw (Canvas c, Rect rect, int alpha, ComplexReceiver mediaReceiver, long displayMediaKey, boolean translate) {
     if (translate && (rect.left == 0 && rect.top == 0)) {
       translate = false;
     }

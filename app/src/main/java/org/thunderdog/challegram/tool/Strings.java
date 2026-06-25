@@ -221,7 +221,7 @@ public class Strings {
   }*/
 
   public interface Modifier<T> {
-    T modify (T item);
+    String modify (T item);
   }
 
   public static <T> String join (CharSequence delimiter, T[] tokens, Modifier<T> itemModifier) {
@@ -948,6 +948,38 @@ public class Strings {
         return true;
     }
     return false;
+  }
+
+  public static String buildDurationFull (long duration, TimeUnit unit) {
+    StringBuilder builder = new StringBuilder(4);
+
+    String separator = " ";
+    long days = unit.toDays(duration);
+    if (days > 0) {
+      builder.append(Lang.plural(R.string.xDaysShort, days));
+      duration -= unit.convert(days, TimeUnit.DAYS);
+    }
+    long hours = unit.toHours(duration);
+    if (hours > 0) {
+      if (builder.length() > 0)
+        builder.append(separator);
+      builder.append(Lang.plural(R.string.xHoursShort, hours));
+      duration -= unit.convert(hours, TimeUnit.HOURS);
+    }
+    long minutes = unit.toMinutes(duration);
+    if (minutes > 0) {
+      if (builder.length() > 0)
+        builder.append(separator);
+      builder.append(Lang.plural(R.string.xMinutesShort, minutes));
+      duration -= unit.convert(minutes, TimeUnit.MINUTES);
+    }
+    long seconds = unit.toSeconds(duration);
+    if (builder.length() > 0)
+      builder.append(separator);
+    builder.append(Lang.plural(R.string.xSecondsShort, seconds));
+    duration -= unit.convert(seconds, TimeUnit.MINUTES);
+
+    return builder.toString();
   }
 
   public static String buildDuration (long durationSeconds) {

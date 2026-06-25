@@ -98,16 +98,19 @@ public class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiMana
     });
   }
 
+  private int emojiAlpha = 255;
+
   @Override
-  protected void drawEmoji (Canvas c, float centerX, float centerY, int emojiSize) {
+  protected void drawEmoji (Canvas c, float centerX, float centerY, int emojiSize, int alpha) {
     int left = (int) (centerX - emojiSize / 2f);
     int top = (int) (centerY - emojiSize / 2f);
     int right = left + emojiSize;
     int bottom = top + emojiSize;
     drawRect.set(left, top, right, bottom);
+    emojiAlpha = alpha;
     prepareCustomEmoji(emojiSize);
     if (customEmoji != null && customEmoji.isNotFound()) {
-      super.drawEmoji(c, drawRect.centerX(), drawRect.centerY(), size.getSize());
+      super.drawEmoji(c, drawRect.centerX(), drawRect.centerY(), size.getSize(), alpha);
     }
   }
 
@@ -131,6 +134,7 @@ public class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiMana
     boolean haveDuplicateMedia = surfaceProvider.getDuplicateMediaItemCount(this, mediaItem) > 1;
     mediaItem.draw(c,
       drawRect,
+      emojiAlpha,
       receiver,
       attachedToMediaKey,
       haveDuplicateMedia

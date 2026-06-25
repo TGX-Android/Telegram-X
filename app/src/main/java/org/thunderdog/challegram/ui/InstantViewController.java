@@ -368,7 +368,7 @@ public class InstantViewController extends ViewController<InstantViewController.
 
     recyclerView.addItemDecoration(new FillingDecoration(recyclerView, this) {
       @Override
-      protected int getFillingColor (int i, @NonNull View view) {
+      protected int getFillingColor (RecyclerView parent, int i, @NonNull View view) {
         PageBlock pageBlock = getPageBlock(view);
         int colorId = pageBlock != null ? pageBlock.getBackgroundColorId() : ColorId.NONE;
         if (colorId == ColorId.NONE) {

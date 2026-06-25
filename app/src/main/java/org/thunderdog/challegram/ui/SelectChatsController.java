@@ -864,7 +864,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   private String lastQuery = "";
 
   @Override
-  public void searchUser (String query) {
+  public void searchForItems (String query) {
     if (query.equals(lastQuery)) {
         return;
     }
