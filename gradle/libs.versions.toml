@@ -104,6 +104,7 @@ transcoder = "ba8f098c94"
 sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
+pytgcalls-ntgcalls = "2.2.1"
 
 annotations-checkerframework = "4.2.0"
 annotations-errorprone = "2.50.0"
@@ -243,6 +244,7 @@ transcoder = { module = "com.github.natario1:Transcoder", version.ref = "transco
 sunriseSunsetCalculator = { module = "com.luckycatlabs:SunriseSunsetCalculator", version.ref = "sunrise-sunset-calculator" }
 subsamplingScaleImageView = { module = "com.davemorrissey.labs:subsampling-scale-image-view-androidx", version.ref = "subsampling-scale-image-view" }
 mp4parser-isoparser = { module = "com.googlecode.mp4parser:isoparser", version.ref = "mp4parser-isoparser" }
+pytgcalls-ntgcalls = { module = "io.github.pytgcalls:ntgcalls", version.ref = "pytgcalls-ntgcalls" }
 
 annotations-checkerframework = { module = "org.checkerframework:checker-qual", version.ref = "annotations-checkerframework" }
 annotations-errorprone = { module = "com.google.errorprone:error_prone_annotations", version.ref = "annotations-errorprone" }

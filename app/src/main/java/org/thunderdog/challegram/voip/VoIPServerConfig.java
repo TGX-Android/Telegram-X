@@ -2,6 +2,7 @@ package org.thunderdog.challegram.voip;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 
 /**
@@ -15,7 +16,9 @@ public class VoIPServerConfig{
 	public static void setConfig(String json){
 		try{
 			config=new JSONObject(json);
-			nativeSetConfig(json);
+      if (!BuildConfig.USE_NTGCALLS) {
+        nativeSetConfig(json);
+      }
 		}catch(JSONException x){
 			Log.e(Log.TAG_VOIP, "Error parsing VoIP config", x);
 		}
