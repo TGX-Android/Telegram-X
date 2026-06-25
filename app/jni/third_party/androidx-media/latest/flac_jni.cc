@@ -83,6 +83,29 @@ struct Context {
   }
 };
 
+static jstring createSafeString(JNIEnv* env, const std::string& str,
+                                jclass stringClass, jmethodID stringConstructor,
+                                jstring charsetName) {
+  if (env->PushLocalFrame(10) < 0) {
+    return nullptr;
+  }
+  jbyteArray bytes = env->NewByteArray(str.size());
+  if (!bytes || env->ExceptionCheck()) {
+    return static_cast<jstring>(env->PopLocalFrame(nullptr));
+  }
+  env->SetByteArrayRegion(bytes, 0, str.size(),
+                          reinterpret_cast<const jbyte*>(str.data()));
+  if (env->ExceptionCheck()) {
+    return static_cast<jstring>(env->PopLocalFrame(nullptr));
+  }
+  jobject result =
+      env->NewObject(stringClass, stringConstructor, bytes, charsetName);
+  if (env->ExceptionCheck()) {
+    return static_cast<jstring>(env->PopLocalFrame(nullptr));
+  }
+  return static_cast<jstring>(env->PopLocalFrame(result));
+}
+
 DECODER_FUNC(jlong, flacInit) {
   Context* context = new Context;
   if (!context->parser->init()) {
@@ -96,7 +119,21 @@ DECODER_FUNC(jobject, flacDecodeMetadata, jlong jContext) {
   Context* context = reinterpret_cast<Context*>(jContext);
   context->source->setFlacDecoderJni(env, thiz);
   if (!context->parser->decodeMetadata()) {
-    return NULL;
+    return nullptr;
+  }
+
+  jclass stringClass = env->FindClass("java/lang/String");
+  if (!stringClass || env->ExceptionCheck()) {
+    return nullptr;
+  }
+  jmethodID stringConstructor =
+      env->GetMethodID(stringClass, "<init>", "([BLjava/lang/String;)V");
+  if (!stringConstructor || env->ExceptionCheck()) {
+    return nullptr;
+  }
+  jstring charsetName = env->NewStringUTF("UTF-8");
+  if (!charsetName || env->ExceptionCheck()) {
+    return nullptr;
   }
 
   jclass arrayListClass = env->FindClass("java/util/ArrayList");
@@ -112,9 +149,12 @@ DECODER_FUNC(jobject, flacDecodeMetadata, jlong jContext) {
     for (std::vector<std::string>::const_iterator vorbisComment =
              vorbisComments.begin();
          vorbisComment != vorbisComments.end(); ++vorbisComment) {
-      jstring commentString = env->NewStringUTF((*vorbisComment).c_str());
-      env->CallBooleanMethod(commentList, arrayListAddMethod, commentString);
-      env->DeleteLocalRef(commentString);
+      jstring commentString = createSafeString(env, *vorbisComment, stringClass,
+                                               stringConstructor, charsetName);
+      if (commentString != nullptr) {
+        env->CallBooleanMethod(commentList, arrayListAddMethod, commentString);
+        env->DeleteLocalRef(commentString);
+      }
     }
   }
 
@@ -129,9 +169,29 @@ DECODER_FUNC(jobject, flacDecodeMetadata, jlong jContext) {
                          "(ILjava/lang/String;Ljava/lang/String;IIII[B)V");
     for (std::vector<FlacPicture>::const_iterator picture = pictures.begin();
          picture != pictures.end(); ++picture) {
-      jstring mimeType = env->NewStringUTF(picture->mimeType.c_str());
-      jstring description = env->NewStringUTF(picture->description.c_str());
+      jstring mimeType = createSafeString(env, picture->mimeType, stringClass,
+                                          stringConstructor, charsetName);
+      if (mimeType == nullptr) {
+        if (env->ExceptionCheck()) return nullptr;
+        continue;
+      }
+
+      jstring description =
+          createSafeString(env, picture->description, stringClass,
+                           stringConstructor, charsetName);
+      if (description == nullptr) {
+        env->DeleteLocalRef(mimeType);
+        if (env->ExceptionCheck()) return nullptr;
+        continue;
+      }
+
       jbyteArray pictureData = env->NewByteArray(picture->data.size());
+      if (pictureData == nullptr) {
+        env->DeleteLocalRef(mimeType);
+        env->DeleteLocalRef(description);
+        if (env->ExceptionCheck()) return nullptr;
+        continue;
+      }
       env->SetByteArrayRegion(pictureData, 0, picture->data.size(),
                               (signed char*)&picture->data[0]);
       jobject pictureFrame = env->NewObject(

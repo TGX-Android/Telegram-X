@@ -9,7 +9,7 @@ kotlinx-serialization = "1.11.0"
 
 androidx-core-legacy = "1.12.0" # 1.13.0+ requires minSdk 19
 androidx-core-lollipop = "1.17.0"
-androidx-core-latest = "1.18.0"
+androidx-core-latest = "1.19.0"
 
 androidx-activity-legacy = "1.8.2" # 1.9.0+ requires minSdk 19
 androidx-activity-lollipop = "1.11.0" # 1.12.2+ requires minSdk 23
@@ -40,11 +40,11 @@ androidx-exifinterface-legacy = "1.3.7" # 1.4.0+ requires minSdk 21
 androidx-exifinterface-latest = "1.4.2"
 
 androidx-camera-legacy = "1.4.2" # 1.6.0+ requires minSdk 23
-androidx-camera-latest = "1.6.0"
+androidx-camera-latest = "1.6.1"
 
 androidx-media-legacy = "1.2.1" # 1.3.0+ requires minSdk 19, 1.5.0+ requires minSdk 21
 androidx-media-lollipop = "1.8.0" # 1.9.0+ requires minSdk 23
-androidx-media-latest = "1.10.0"
+androidx-media-latest = "1.10.1"
 
 androidx-multidex = "2.0.1"
 androidx-annotation = "1.10.0"
@@ -55,7 +55,7 @@ androidx-interpolator = "1.0.0"
 
 firebase-messaging-legacy = "22.0.0" # 23.0.0+ requires minSdk 19
 firebase-messaging-lollipop = "24.1.2" # 25.0.0+ requires minSdk 23
-firebase-messaging-latest = "25.0.2"
+firebase-messaging-latest = "25.1.0"
 
 google-recaptcha-legacy = "18.4.0" # 18.5.0+ requires minSdk 21
 google-recaptcha-lollipop = "18.7.1" # 18.8.0+ requires minSdk 23
@@ -75,7 +75,7 @@ google-play-services-maps-lollipop = "19.2.0"
 google-play-services-maps-latest = "20.0.0"
 
 google-play-services-location-legacy = "18.0.0"
-google-play-services-location-latest = "21.3.0"
+google-play-services-location-latest = "21.4.0"
 
 google-play-services-safetynet-legacy = "18.0.1" # 18.1.0+ requires minSdk 21
 google-play-services-safetynet-latest = "18.1.0"
@@ -89,13 +89,13 @@ google-mlkit-language-id-latest = "17.0.6"
 google-zxing = "3.5.4"
 google-play-app-update = "2.1.0"
 
-google-services-plugin = "4.4.4"
+google-services-plugin = "4.5.0"
 
 huawei-agcp = "1.9.3.302"
 huawei-hms = "6.13.0.300"
 
 okhttp-legacy = "4.12.0" # 5.x+ requires minSdk 21
-okhttp-latest = "5.3.2"
+okhttp-latest = "5.4.0"
 
 shortcutbadger = "1.1.22"
 relinker = "1.4.5"
@@ -105,8 +105,8 @@ sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
 
-annotations-checkerframework = "4.0.0"
-annotations-errorprone = "2.49.0"
+annotations-checkerframework = "4.2.0"
+annotations-errorprone = "2.50.0"
 annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
 annotations-kotlin = "2.1.20"
