@@ -21,6 +21,7 @@ popd
 # Downloading packages
 BUILD_TOOLS_VERSION=$(read-property.sh version.properties version.build_tools)
 COMPILE_SDK_VERSION=$(read-property.sh version.properties version.sdk_compile)
+SDK_PACKAGE=$(read-property.sh version.properties version.sdk_package)
 CMAKE_VERSION=$(read-property.sh version.properties version.cmake)
 ANDROID_NDK_VERSION_PRIMARY=$(read-property.sh version.properties version.ndk_primary)
 ANDROID_NDK_VERSION_LEGACY=$(read-property.sh version.properties version.ndk_legacy)
@@ -28,7 +29,7 @@ ANDROID_NDK_VERSION_LEGACY=$(read-property.sh version.properties version.ndk_leg
 yes | "$ANDROID_SDK_ROOT"/cmdline-tools/latest/bin/sdkmanager --licenses
 yes | "$ANDROID_SDK_ROOT"/cmdline-tools/latest/bin/sdkmanager --update
 yes | "$ANDROID_SDK_ROOT"/cmdline-tools/latest/bin/sdkmanager --install \
-  "platforms;android-$COMPILE_SDK_VERSION" \
+  "platforms;$SDK_PACKAGE" \
   "build-tools;$BUILD_TOOLS_VERSION" \
   "ndk;$ANDROID_NDK_VERSION_PRIMARY" \
   "ndk;$ANDROID_NDK_VERSION_LEGACY" \
