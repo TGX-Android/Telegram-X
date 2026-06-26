@@ -26,7 +26,7 @@ if [[ ! -x "${ASM_CONVERTER}" ]]; then
   exit
 fi
 
-while read file; do
+while read -r file; do
   # This check is required because the ASM conversion script doesn't seem to be
   # idempotent.
   if [[ ! "${file}" =~ .*_gnu\.s$ ]]; then

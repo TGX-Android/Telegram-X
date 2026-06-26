@@ -1,8 +1,19 @@
 #!/bin/bash
 set -e
 
+if [ -z "$FLAVORS" ]; then
+  echo -e "${STYLE_ERROR}Failed! FLAVORS is empty. Run 'export FLAVORS=[version.flavors]'${STYLE_END}"
+  exit
+fi
+
+if [ -z "$ANDROID_SDK_ROOT" ]; then
+  echo -e "${STYLE_ERROR}Failed! SDK is empty. Run 'export ANDROID_SDK_ROOT=[PATH_TO_SDK]'${STYLE_END}"
+  exit
+fi
+validate_dir "$ANDROID_SDK_ROOT"
+
 function build_one {
-  if [ -z "$ANDROID_NDK_ROOT" -a "$ANDROID_NDK_ROOT" == "" ]; then
+  if [ -z "$ANDROID_NDK_ROOT" ]; then
     echo -e "${STYLE_ERROR}Failed! NDK is empty. Run 'export ANDROID_NDK_ROOT=[PATH_TO_NDK]'${STYLE_END}"
     exit
   fi
@@ -102,7 +113,7 @@ function build_one {
   --enable-demuxer=matroska \
   --enable-demuxer=gif \
   --enable-hwaccels \
-  $ADDITIONAL_CONFIGURE_FLAG
+  "${ADDITIONAL_CONFIGURE_FLAGS[@]}"
 
   make -j"$CPU_COUNT"
   make install
@@ -130,186 +141,148 @@ popd > /dev/null
 
 pushd "$THIRDPARTY_LIBRARIES/ffmpeg"
 
-# 64-bit, minSdk 21
-ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_PRIMARY
-ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION"
-PREBUILT="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$BUILD_PLATFORM"
-SYSROOT="$PREBUILT/sysroot"
+configure_and_build() {
+  FLAVOR=$1
+  ABI=$2
 
-validate_dir "$ANDROID_NDK_ROOT"
-validate_dir "$PREBUILT"
-validate_dir "$SYSROOT"
+  case ${FLAVOR} in
+    legacy)
+      ANDROID_API=16
+    ;;
+    lollipop)
+      ANDROID_API=21
+    ;;
+    marshmallow)
+      ANDROID_API=23
+    ;;
+    latest)
+      ANDROID_API=24
+    ;;
+    *)
+      echo "Unknown flavor: ${FLAVOR}" >&2
+      exit 1
+    ;;
+  esac
 
-# arm64-v8a
-CROSS_PREFIX=$PREBUILT/bin/aarch64-linux-android
-ARCH=aarch64
-CPU=armv8-a
-PLATFORM=arm64-v8a
-ADDITIONAL_CONFIGURE_FLAG="--enable-optimizations --disable-x86asm"
-OPTIMIZE_CFLAGS=""
-EXTRA_LIBS="-lunwind"
-EXTRA_LDFLAGS=""
-# FIXME ADDITIONAL_CONFIGURE_FLAG="--enable-neon --enable-optimizations"
+  case ${FLAVOR} in
+    legacy)
+      ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
+    ;;
+    *)
+      ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_PRIMARY
+    ;;
+  esac
 
-# latest-arm64
-FLAVOR="latest"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=23
-LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=$CC
-AS=$CC
-build_one
+  ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION"
+  PREBUILT="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$BUILD_PLATFORM"
+  SYSROOT="$PREBUILT/sysroot"
 
-# lollipop-arm64
-FLAVOR="lollipop"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=21
-LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=$CC
-AS=$CC
-build_one
+  validate_dir "$ANDROID_NDK_ROOT"
+  validate_dir "$PREBUILT"
+  validate_dir "$SYSROOT"
 
-# x86_64
-CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android
-ARCH=x86_64
-CPU=x86_64
-PLATFORM=x86_64
-ADDITIONAL_CONFIGURE_FLAG="--disable-asm --disable-x86asm"
-OPTIMIZE_CFLAGS=""
-EXTRA_LIBS="-lunwind"
-EXTRA_LDFLAGS=""
+  case ${ABI} in
+    arm64-v8a)
+      CROSS_PREFIX=$PREBUILT/bin/aarch64-linux-android
+      ARCH=aarch64
+      CPU=armv8-a
+      PLATFORM=arm64-v8a
+      ADDITIONAL_CONFIGURE_FLAGS=(--enable-optimizations --disable-x86asm)
+      OPTIMIZE_CFLAGS=""
+      EXTRA_LIBS="-lunwind"
+      EXTRA_LDFLAGS=""
+      # FIXME ADDITIONAL_CONFIGURE_FLAGS="--enable-neon --enable-optimizations"
 
-# latest-x64
-FLAVOR="latest"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=23
-LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=$CC
-AS=$CC
-build_one
+      PREFIX=./build/$FLAVOR/$PLATFORM
+      LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
+      CC=${CROSS_PREFIX}${ANDROID_API}-clang
+      CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+      LD=$CC
+      AS=$CC
+    ;;
+    x86_64)
+      CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android
+      ARCH=x86_64
+      CPU=x86_64
+      PLATFORM=x86_64
+      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --disable-x86asm)
+      OPTIMIZE_CFLAGS=""
+      EXTRA_LIBS="-lunwind"
+      EXTRA_LDFLAGS=""
 
-# lollipop-x64
-FLAVOR="lollipop"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=21
-LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=$CC
-AS=$CC
-build_one
+      PREFIX=./build/$FLAVOR/$PLATFORM
+      LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
+      CC=${CROSS_PREFIX}${ANDROID_API}-clang
+      CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+      LD=$CC
+      AS=$CC
+    ;;
+	  armeabi-v7a)
+      CROSS_PREFIX=$PREBUILT/bin/arm-linux-androideabi
+      ARCH=arm
+      CPU=armv7-a
+      PLATFORM=armv7-a
+      ADDITIONAL_CONFIGURE_FLAGS=(--enable-neon --disable-x86asm)
+      OPTIMIZE_CFLAGS="-marm -march=$CPU -mfloat-abi=softfp"
+      if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
+        LD=$CC
+        LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
+        validate_dir "$LIBS_DIR"
+        EXTRA_LDFLAGS="-L${LIBS_DIR} -Wl,--fix-cortex-a8"
+        EXTRA_LIBS="-lunwind -lclang_rt.builtins-arm-android"
+      else
+        LD="${PREBUILT}/arm-linux-androideabi/bin/ld.gold"
+        EXTRA_LDFLAGS=""
+        EXTRA_LIBS="-lgcc"
+      fi
 
-# 32-bit, minSdk 16
-ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
-ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION"
-PREBUILT="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$BUILD_PLATFORM"
-SYSROOT="$PREBUILT/sysroot"
+      PREFIX=./build/$FLAVOR/$PLATFORM
+      LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
+      CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
+      CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
+      AS=$CC
+    ;;
+    x86)
+      CROSS_PREFIX=$PREBUILT/bin/i686-linux-android
+      ARCH=x86
+      CPU=i686
+      PLATFORM=i686
+      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --disable-x86asm)
+      OPTIMIZE_CFLAGS="-march=$CPU"
+      if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
+        LD=$CC
+        LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
+        validate_dir "$LIBS_DIR"
+        EXTRA_LDFLAGS="-L${LIBS_DIR}"
+        EXTRA_LIBS=-lclang_rt.builtins-i686-android
+      else
+        LD="${PREBUILT}/i686-linux-android/bin/ld.gold"
+        EXTRA_LDFLAGS=""
+        EXTRA_LIBS="-lgcc"
+      fi
+      PREFIX=./build/$FLAVOR/$PLATFORM
+      LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
+      CC=${CROSS_PREFIX}${ANDROID_API}-clang
+      CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+      AS=$CC
+    ;;
+    *)
+      echo "Unknown abi: ${ABI}" >&2
+      exit 1
+    ;;
+  esac
 
-validate_dir "$PREBUILT"
-validate_dir "$SYSROOT"
+  build_one
+}
 
-# armeabi-v7a
-CROSS_PREFIX=$PREBUILT/bin/arm-linux-androideabi
-ARCH=arm
-CPU=armv7-a
-PLATFORM=armv7-a
-ADDITIONAL_CONFIGURE_FLAG="--enable-neon --disable-x86asm"
-OPTIMIZE_CFLAGS="-marm -march=$CPU -mfloat-abi=softfp"
-if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
-  LD=$CC
-  LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
-  validate_dir "$LIBS_DIR"
-  EXTRA_LDFLAGS="-L${LIBS_DIR} -Wl,--fix-cortex-a8"
-  EXTRA_LIBS="-lunwind -lclang_rt.builtins-arm-android"
-else
-  LD="${PREBUILT}/arm-linux-androideabi/bin/ld.gold"
-  EXTRA_LDFLAGS=""
-  EXTRA_LIBS="-lgcc"
-fi
-
-# latest-arm32
-FLAVOR="latest"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=23
-LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
-CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
-CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
-AS=$CC
-build_one
-
-# lollipop-arm32
-FLAVOR="lollipop"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=21
-LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
-CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
-CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
-AS=$CC
-build_one
-
-# legacy-arm32
-FLAVOR="legacy"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=16
-LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
-CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
-CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
-AS=$CC
-build_one
-
-# x86
-CROSS_PREFIX=$PREBUILT/bin/i686-linux-android
-ARCH=x86
-CPU=i686
-PLATFORM=i686
-ADDITIONAL_CONFIGURE_FLAG="--disable-asm --disable-x86asm"
-OPTIMIZE_CFLAGS="-march=$CPU"
-if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
-  LD=$CC
-  LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
-  validate_dir "$LIBS_DIR"
-  EXTRA_LDFLAGS="-L${LIBS_DIR}"
-  EXTRA_LIBS=-lclang_rt.builtins-i686-android
-else
-  LD="${PREBUILT}/i686-linux-android/bin/ld.gold"
-  EXTRA_LDFLAGS=""
-  EXTRA_LIBS="-lgcc"
-fi
-
-# latest-x86
-FLAVOR="latest"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=23
-LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-AS=$CC
-build_one
-
-# lollipop-x86
-FLAVOR="lollipop"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=21
-LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-AS=$CC
-build_one
-
-# legacy-x86
-FLAVOR="legacy"
-PREFIX=./build/$FLAVOR/$PLATFORM
-ANDROID_API=16
-LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-AS=$CC
-build_one
+for ABI in arm64-v8a x86_64 armeabi-v7a x86 ; do
+  for FLAVOR in $FLAVORS; do
+    if [[ "$FLAVOR" != "legacy" || $ABI == "armeabi-v7a" || $ABI == "x86" ]]; then
+      echo -e "${STYLE_INFO}- ffmpeg build start: ${ABI} ${FLAVOR}${STYLE_END}"
+      configure_and_build "$FLAVOR" "$ABI"
+      echo -e "${STYLE_INFO}- ffmpeg build finish: ${ABI} ${FLAVOR}${STYLE_END}"
+    fi
+  done
+done
 
 popd

@@ -4,47 +4,8 @@ android-gradle-plugin = "9.2.1"
 ksp = "2.3.4"
 desugaring = "2.1.5"
 
-kotlinx-coroutines = "1.10.2"
+kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
-
-androidx-core-legacy = "1.12.0" # 1.13.0+ requires minSdk 19
-androidx-core-lollipop = "1.17.0"
-androidx-core-latest = "1.19.0"
-
-androidx-activity-legacy = "1.8.2" # 1.9.0+ requires minSdk 19
-androidx-activity-lollipop = "1.11.0" # 1.12.2+ requires minSdk 23
-androidx-activity-latest = "1.13.0"
-
-androidx-work-legacy = "2.9.1"
-androidx-work-lollipop = "2.10.5" # 2.11.0+ requires minSdk 23
-androidx-work-latest = "2.11.2"
-
-androidx-room-latest = "2.8.4"
-
-androidx-gridlayout-legacy = "1.0.0" # 1.1.0+ requires minSdk 21
-androidx-gridlayout-latest = "1.1.0"
-
-androidx-recyclerview-legacy = "1.3.2" # 1.4.0+ requires minSdk 21
-androidx-recyclerview-latest = "1.4.0"
-
-androidx-constraintlayout-legacy = "2.1.4" # 2.2.0+ requires minSdk 21
-androidx-constraintlayout-latest = "2.2.1"
-
-androidx-viewpager-legacy = "1.0.0" # 1.1.0+ requires minSdk 21
-androidx-viewpager-latest = "1.1.0"
-androidx-browser-legacy = "1.5.0" # 1.7.0+ requires minSdk 19
-androidx-browser-lollipop = "1.9.0"
-androidx-browser-latest = "1.10.0"
-
-androidx-exifinterface-legacy = "1.3.7" # 1.4.0+ requires minSdk 21
-androidx-exifinterface-latest = "1.4.2"
-
-androidx-camera-legacy = "1.4.2" # 1.6.0+ requires minSdk 23
-androidx-camera-latest = "1.6.1"
-
-androidx-media-legacy = "1.2.1" # 1.3.0+ requires minSdk 19, 1.5.0+ requires minSdk 21
-androidx-media-lollipop = "1.8.0" # 1.9.0+ requires minSdk 23
-androidx-media-latest = "1.10.1"
 
 androidx-multidex = "2.0.1"
 androidx-annotation = "1.10.0"
@@ -53,39 +14,6 @@ androidx-palette = "1.0.0"
 androidx-collection = "1.6.0"
 androidx-interpolator = "1.0.0"
 
-firebase-messaging-legacy = "22.0.0" # 23.0.0+ requires minSdk 19
-firebase-messaging-lollipop = "24.1.2" # 25.0.0+ requires minSdk 23
-firebase-messaging-latest = "25.1.0"
-
-google-recaptcha-legacy = "18.4.0" # 18.5.0+ requires minSdk 21
-google-recaptcha-lollipop = "18.7.1" # 18.8.0+ requires minSdk 23
-google-recaptcha-latest = "18.8.0"
-
-google-play-integrity-legacy = "1.3.0" # 1.4.0+ requires minSdk 21
-google-play-integrity-lollipop = "1.4.0" # 1.5.0+ requires minSdk 23
-google-play-integrity-latest = "1.6.0"
-
-google-play-services-base-legacy = "17.6.0" # 18.0.0+ requires minSdk 21
-google-play-services-base-lollipop = "18.7.2" # 18.8.0+ requires minSdk 23
-google-play-services-basement-lollipop = "18.7.1" # 18.7.2 was not released
-google-play-services-base-latest = "18.10.0"
-
-google-play-services-maps-legacy = "17.0.1"
-google-play-services-maps-lollipop = "19.2.0"
-google-play-services-maps-latest = "20.0.0"
-
-google-play-services-location-legacy = "18.0.0"
-google-play-services-location-latest = "21.4.0"
-
-google-play-services-safetynet-legacy = "18.0.1" # 18.1.0+ requires minSdk 21
-google-play-services-safetynet-latest = "18.1.0"
-
-google-play-services-mlkit-barcode-scanning-legacy = "16.2.1" # 18.3.0+ requires minSdk 21, 18.3.1+ requires minSdk 26
-google-play-services-mlkit-barcode-scanning-latest = "18.3.1"
-
-google-mlkit-language-id-legacy = "16.1.1"
-google-mlkit-language-id-latest = "17.0.6"
-
 google-zxing = "3.5.4"
 google-play-app-update = "2.1.0"
 
@@ -93,9 +21,6 @@ google-services-plugin = "4.5.0"
 
 huawei-agcp = "1.9.3.302"
 huawei-hms = "6.13.0.300"
-
-okhttp-legacy = "4.12.0" # 5.x+ requires minSdk 21
-okhttp-latest = "5.4.0"
 
 shortcutbadger = "1.1.22"
 relinker = "1.4.5"
@@ -110,6 +35,87 @@ annotations-errorprone = "2.50.0"
 annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
 annotations-kotlin = "2.1.20"
+
+# legacy
+
+okhttp-legacy = "4.12.0" # 5.x+ requires minSdk 21
+
+androidx-core-legacy = "1.12.0" # 1.13.0+ requires minSdk 19
+androidx-activity-legacy = "1.8.2" # 1.9.0+ requires minSdk 19
+androidx-work-legacy = "2.9.1"
+androidx-gridlayout-legacy = "1.0.0" # 1.1.0+ requires minSdk 21
+androidx-recyclerview-legacy = "1.3.2" # 1.4.0+ requires minSdk 21
+androidx-constraintlayout-legacy = "2.1.4" # 2.2.0+ requires minSdk 21
+androidx-viewpager-legacy = "1.0.0" # 1.1.0+ requires minSdk 21
+androidx-browser-legacy = "1.5.0" # 1.7.0+ requires minSdk 19
+androidx-exifinterface-legacy = "1.3.7" # 1.4.0+ requires minSdk 21
+androidx-camera-legacy = "1.4.2" # 1.6.0+ requires minSdk 23
+androidx-media-legacy = "1.2.1" # 1.3.0+ requires minSdk 19, 1.5.0+ requires minSdk 21
+
+firebase-messaging-legacy = "22.0.0" # 23.0.0+ requires minSdk 19
+
+google-recaptcha-legacy = "18.4.0" # 18.5.0+ requires minSdk 21
+
+google-play-integrity-legacy = "1.3.0" # 1.4.0+ requires minSdk 21
+google-play-services-base-legacy = "17.6.0" # 18.0.0+ requires minSdk 21
+google-play-services-maps-legacy = "17.0.1"
+google-play-services-location-legacy = "18.0.0"
+google-play-services-safetynet-legacy = "18.0.1" # 18.1.0+ requires minSdk 21
+google-play-services-mlkit-barcode-scanning-legacy = "16.2.1" # 18.3.0+ requires minSdk 21, 18.3.1+ requires minSdk 26
+
+google-mlkit-language-id-legacy = "16.1.1"
+
+# lollipop
+
+androidx-core-lollipop = "1.17.0"
+androidx-activity-lollipop = "1.11.0" # 1.12.2+ requires minSdk 23
+androidx-work-lollipop = "2.10.5" # 2.11.0+ requires minSdk 23
+androidx-browser-lollipop = "1.9.0"
+androidx-media-lollipop = "1.8.0" # 1.9.0+ requires minSdk 23
+
+firebase-messaging-lollipop = "24.1.2" # 25.0.0+ requires minSdk 23
+
+google-recaptcha-lollipop = "18.7.1" # 18.8.0+ requires minSdk 23
+
+google-play-integrity-lollipop = "1.4.0" # 1.5.0+ requires minSdk 23
+google-play-services-base-lollipop = "18.7.2" # 18.8.0+ requires minSdk 23
+google-play-services-basement-lollipop = "18.7.1" # 18.7.2 was not released
+google-play-services-maps-lollipop = "19.2.0"
+google-play-services-location-lollipop = "21.3.0"
+
+# marshmallow
+
+google-recaptcha-marshmallow = "18.8.0"
+
+# latest
+
+okhttp-latest = "5.4.0"
+
+androidx-core-latest = "1.19.0"
+androidx-activity-latest = "1.13.0"
+androidx-work-latest = "2.11.2"
+androidx-room-latest = "2.8.4"
+androidx-gridlayout-latest = "1.1.0"
+androidx-recyclerview-latest = "1.4.0"
+androidx-constraintlayout-latest = "2.2.1"
+androidx-viewpager-latest = "1.1.0"
+androidx-browser-latest = "1.10.0"
+androidx-exifinterface-latest = "1.4.2"
+androidx-camera-latest = "1.6.1"
+androidx-media-latest = "1.10.1"
+
+firebase-messaging-latest = "25.1.0"
+
+google-recaptcha-latest = "18.9.1"
+
+google-play-integrity-latest = "1.6.0"
+google-play-services-base-latest = "18.10.0"
+google-play-services-maps-latest = "20.0.0"
+google-play-services-location-latest = "21.4.0"
+google-play-services-safetynet-latest = "18.1.0"
+google-play-services-mlkit-barcode-scanning-latest = "18.3.1"
+
+google-mlkit-language-id-latest = "17.0.6"
 
 [libraries]
 desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugaring" }
@@ -194,6 +200,7 @@ androidx-media-effect-latest = { module = "androidx.media3:media3-effect", versi
 
 google-recaptcha-legacy = { module = "com.google.android.recaptcha:recaptcha", version.ref = "google-recaptcha-legacy" }
 google-recaptcha-lollipop = { module = "com.google.android.recaptcha:recaptcha", version.ref = "google-recaptcha-lollipop" }
+google-recaptcha-marshmallow = { module = "com.google.android.recaptcha:recaptcha", version.ref = "google-recaptcha-marshmallow" }
 google-recaptcha-latest = { module = "com.google.android.recaptcha:recaptcha", version.ref = "google-recaptcha-latest" }
 
 google-firebase-messaging-legacy = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging-legacy" }
@@ -219,6 +226,7 @@ google-play-services-maps-lollipop = { module = "com.google.android.gms:play-ser
 google-play-services-maps-latest = { module = "com.google.android.gms:play-services-maps", version.ref = "google-play-services-maps-latest" }
 
 google-play-services-location-legacy = { module = "com.google.android.gms:play-services-location", version.ref = "google-play-services-location-legacy" }
+google-play-services-location-lollipop = { module = "com.google.android.gms:play-services-location", version.ref = "google-play-services-location-lollipop" }
 google-play-services-location-latest = { module = "com.google.android.gms:play-services-location", version.ref = "google-play-services-location-latest" }
 
 google-play-services-mlkit-barcode-scanning-legacy = { module = "com.google.android.gms:play-services-mlkit-barcode-scanning", version.ref = "google-play-services-mlkit-barcode-scanning-legacy" }
