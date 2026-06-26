@@ -235,8 +235,8 @@ android {
 
   sourceSets.getByName("main") {
     // TODO: Exclude in FOSS variant
-    kotlin.directories += "src/google/java"
-    java.directories += "src/google/java"
+    kotlin.directories += "src/google/main/java"
+    java.directories += "src/google/main/java"
   }
 
   lint {
@@ -310,6 +310,10 @@ android {
           extraFolders.forEach { folderName ->
             kotlin.directories += "src/$folderName/kotlin"
             java.directories += "src/$folderName/java"
+
+            // TODO: Exclude in FOSS variant
+            kotlin.directories += "src/google/$folderName/kotlin"
+            java.directories += "src/google/$folderName/java"
           }
         }
 
@@ -446,6 +450,10 @@ android {
       extraFolders.forEach { folderName ->
         variant.sources.manifests.addStaticManifestFile(
           "src/$folderName/AndroidManifest.xml"
+        )
+        // TODO: Exclude in FOSS variant
+        variant.sources.manifests.addStaticManifestFile(
+          "src/google/$folderName/AndroidManifest.xml"
         )
       }
 
