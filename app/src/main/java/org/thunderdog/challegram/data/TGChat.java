@@ -78,6 +78,8 @@ import tgx.td.Td;
 import tgx.td.TdExt;
 
 public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.RefreshCallback, Counter.Callback, ReactionLoadListener, Destroyable, TdlibUi.MessageProvider {
+  private static final int ARCHIVE_PREVIEW_CHAT_LIMIT = 3;
+
   private static final int FLAG_HAS_PREFIX = 1;
   private static final int FLAG_TEXT_DRAFT = 1 << 4;
   private static final int FLAG_SHOW_VERIFY = 1 << 5;
@@ -1308,7 +1310,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     if (isArchive()) {
       List<TextEntity> entities = new ArrayList<>();
       StringBuilder b = new StringBuilder();
+      final int[] addedChatCount = new int[1];
       archive.iterate(chat -> {
+        if (addedChatCount[0] >= ARCHIVE_PREVIEW_CHAT_LIMIT) {
+          return;
+        }
         if (b.length() > 0) {
           b.append(Lang.getConcatSeparator());
         }
@@ -1319,6 +1325,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
             .setCustomColorSet(TextColorSets.Regular.NORMAL)
           );
         }
+        addedChatCount[0]++;
       });
       if (b.length() == 0) {
         b.append(Lang.pluralBold(R.string.xChats, archive.totalCount()));
