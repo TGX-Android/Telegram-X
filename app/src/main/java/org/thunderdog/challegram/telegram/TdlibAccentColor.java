@@ -43,7 +43,8 @@ public final class TdlibAccentColor {
     InternalId.ARCHIVE,
     InternalId.ARCHIVE_PINNED,
     InternalId.REGULAR,
-    InternalId.FILE_REGULAR
+    InternalId.FILE_REGULAR,
+    InternalId.PLACEHOLDER
   })
   public @interface InternalId {
     int
@@ -53,7 +54,8 @@ public final class TdlibAccentColor {
       ARCHIVE = -4,
       ARCHIVE_PINNED = -5,
       REGULAR = -6,
-      FILE_REGULAR = -7;
+      FILE_REGULAR = -7,
+      PLACEHOLDER = -8;
   }
 
   @Retention(RetentionPolicy.SOURCE)
@@ -244,6 +246,16 @@ public final class TdlibAccentColor {
             case UseCase.PRIMARY:
             case UseCase.PRIMARY_BIG:
               return ColorId.avatarArchivePinned;
+          }
+          break;
+        case InternalId.PLACEHOLDER:
+          switch (useCase) {
+            case UseCase.NAME:
+            case UseCase.LINE:
+              break; // unsupported
+            case UseCase.PRIMARY:
+            case UseCase.PRIMARY_BIG:
+              return ColorId.placeholder;
           }
           break;
       }

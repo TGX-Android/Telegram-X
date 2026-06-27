@@ -14,6 +14,7 @@ import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.extra
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.the
+import tgx.gradle.findExtraFolders
 import tgx.gradle.getIntOrThrow
 import tgx.gradle.getOrThrow
 import tgx.gradle.loadProperties
@@ -111,6 +112,13 @@ open class ModulePlugin : Plugin<Project> {
                   "-DANDROID_PLATFORM=android-${variant.minSdk}",
                   "-DTGX_FLAVOR=${variant.flavor}"
                 )
+                sourceSets.getByName(variant.flavor) {
+                  val extraFolders = findExtraFolders(variant)
+                  extraFolders.forEach { folderName ->
+                    kotlin.directories += "src/$folderName/kotlin"
+                    java.directories += "src/$folderName/java"
+                  }
+                }
               }
             }
           }

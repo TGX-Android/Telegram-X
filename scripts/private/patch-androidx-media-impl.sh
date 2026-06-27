@@ -3,6 +3,11 @@ set -e
 
 test "$SED" || (echo "\$SED is not set!" && exit 1)
 
+if [ -z "$FLAVORS" ]; then
+  echo -e "${STYLE_ERROR}Failed! FLAVORS is empty. Run 'export FLAVORS=[version.flavors]'${STYLE_END}"
+  exit
+fi
+
 sed_rules=\
 '$!N;s/^(#include <)android\/(log\.h>)/\1\2/g;'\
 '$!N;s/^#define LOG_TAG "[^"]+"\n//g;'\
@@ -11,8 +16,7 @@ sed_rules=\
 '$!N;s/^(#define A?LOGD\(\.\.\.\) (\\\n *)*\((\(void\))?)[a-zA-Z_]+\([^\\)]+(\\\n[^\\)]+)*\)/\1logd(TAG_NDK, __VA_ARGS__)/g;'\
 '$!N;s/^(#define LOG_ALWAYS_FATAL\(\.\.\.\) (\\\n *)*\((\(void\))?)[a-zA-Z_]+\([^\\)]+(\\\n[^\\)]+)*\)/\1loga(TAG_NDK, __VA_ARGS__)/g;'
 
-flavors=( legacy lollipop latest )
-for FLAVOR in ${flavors[@]}; do
+for FLAVOR in $FLAVORS; do
   DESTINATION_DIR="$THIRDPARTY_LIBRARIES/androidx-media/${FLAVOR}"
   SOURCE_DIR="thirdparty/androidx-media/$FLAVOR/libraries"
   SOURCE_FILES=(
@@ -24,7 +28,7 @@ for FLAVOR in ${flavors[@]}; do
     "${SOURCE_DIR}/decoder_vp9/src/main/jni/vpx_jni.cc"
   )
 
-  for SOURCE_FILE in ${SOURCE_FILES[@]}; do
+  for SOURCE_FILE in "${SOURCE_FILES[@]}"; do
     test -f "$SOURCE_FILE" || test -d "$SOURCE_FILE" || (echo "$SOURCE_FILE not found!" && exit 1)
   done
 
@@ -32,7 +36,7 @@ for FLAVOR in ${flavors[@]}; do
 
   echo "Copying androidx-media files to ${DESTINATION_DIR}..."
 
-  for SOURCE_FILE in ${SOURCE_FILES[@]}; do
+  for SOURCE_FILE in "${SOURCE_FILES[@]}"; do
     cp -pfr "$SOURCE_FILE" "$DESTINATION_DIR"
   done
 

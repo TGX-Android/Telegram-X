@@ -493,7 +493,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     // Override
   }
 
-  protected void onEditTextRadioClick (ListItem item, ViewGroup parent, MaterialEditTextGroup editText, RadioView radioView) {
+  protected void onEditTextCheckBoxClick (ListItem item, ViewGroup parent, MaterialEditTextGroup editText, CheckBoxView checkBoxView) {
     // Override
   }
 
@@ -1489,6 +1489,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_EDITTEXT:
       case ListItem.TYPE_EDITTEXT_REUSABLE:
       case ListItem.TYPE_EDITTEXT_POLL_OPTION:
+      case ListItem.TYPE_EDITTEXT_POLL_OPTION_ADD:
       case ListItem.TYPE_EDITTEXT_NO_PADDING:
       case ListItem.TYPE_EDITTEXT_NO_PADDING_REUSABLE:
       case ListItem.TYPE_EDITTEXT_COUNTERED:
@@ -1556,7 +1557,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         break;
       }
       case ListItem.TYPE_INFO: {
-        ((CustomTextView) holder.itemView).setText(item.getString(), null, false);
+        ((CustomTextView) holder.itemView).setText(item.getString(), null, item.getHighlight(), false);
         break;
       }
       case ListItem.TYPE_SLIDER_BRIGHTNESS: {
@@ -1826,8 +1827,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_COUNTRY: {
         ViewGroup group = (ViewGroup) holder.itemView;
-        ((TextView) group.getChildAt(0)).setText(item.getString());
-        ((TextView) group.getChildAt(1)).setText((String) item.getData());
+        CustomTextView nameView = (CustomTextView) group.getChildAt(0);
+        TextView numberView = (TextView) group.getChildAt(1);
+        nameView.setText(item.getString(), null, item.getHighlight(), false);
+        numberView.setText("+" + item.getStringValue());
         break;
       }
       case ListItem.TYPE_DESCRIPTION:

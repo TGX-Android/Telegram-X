@@ -79,6 +79,20 @@ public class Highlight {
     this(text, 0, text.length(), highlight, 0, highlight.length());
   }
 
+  private Highlight (List<Part> parts, int offset) {
+    for (Part part : parts) {
+      this.parts.add(new Part(
+        part.start + offset,
+        part.end + offset,
+        part.missingCount
+      ));
+    }
+  }
+
+  public Highlight offset (int offset) {
+    return new Highlight(parts, offset);
+  }
+
   public TextColorSet getColorSet () {
     return customColorSet != null ? customColorSet : TextColorSets.Regular.SEARCH_HIGHLIGHT;
   }
@@ -200,6 +214,12 @@ public class Highlight {
   }
 
   @Nullable
+  public static Highlight valueOfExactWord (String text, String highlight) {
+    Highlight result = valueOf(text, highlight);
+    return isExactWordMatch(text, result) ? result : null;
+  }
+
+  @Nullable
   public static Highlight valueOf (String text, String highlight) {
     return valueOf(text, highlight, null);
   }
@@ -282,6 +302,20 @@ public class Highlight {
     }
     result.setCustomColorSet(customColorSet);
     return result;
+  }
+
+  public static boolean isExactWordMatch (String source, @Nullable Highlight highlight) {
+    if (highlight == null) {
+      return false;
+    }
+
+    for (Part part : highlight.parts) {
+      if (part.isExactMatch() && (part.start == 0 || isWeakCodePoint(source.codePointAt(part.start - 1)))) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public static boolean isExactMatch (@Nullable Highlight highlight) {
@@ -396,15 +430,18 @@ public class Highlight {
     }
   }
 
-  public static CharSequence toSpannable (String text, String highlight) {
-    Highlight h = valueOf(text, highlight);
-    if (h == null) {
+  public static CharSequence toSpannable (String text, Highlight highlight) {
+    if (highlight == null) {
       return text;
     }
     SpannableStringBuilder b = new SpannableStringBuilder(text);
-    for (Highlight.Part part : h.parts) {
+    for (Highlight.Part part : highlight.parts) {
       b.setSpan(new CustomTypefaceSpan(null, ColorId.textSearchQueryHighlight), part.start, part.end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
     return b;
+  }
+
+  public static CharSequence toSpannable (String text, String highlight) {
+    return toSpannable(text, valueOf(text, highlight));
   }
 }

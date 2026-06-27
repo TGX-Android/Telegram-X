@@ -811,6 +811,14 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     return super.performOnBackPressed(fromTop, commit);
   }
 
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (cameraBadgeView != null) {
+      Views.setBottomMargin(cameraBadgeView, Screen.dp(12) + mediaLayout.getCameraButtonOffset() + extraBottomInsetWithoutIme);
+    }
+  }
+
   private @Nullable Media.GalleryBucket currentBucket;
 
   @Override

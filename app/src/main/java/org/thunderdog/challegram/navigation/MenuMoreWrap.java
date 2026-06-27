@@ -264,7 +264,7 @@ public class MenuMoreWrap extends MenuMoreWrapAbstract implements Animated {
             Screen.dp(29f), getMeasuredHeight() / 2,
             selectionFactor, null, null,
             fillingColor, checkColor,
-            false, 1f
+            SimplestCheckBox.MODE_NORMAL, 1f
           );
         } else if (finalIcon != null) {
           canvas.save();

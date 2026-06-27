@@ -13,6 +13,7 @@
 package tgx.gradle
 
 import Sdk
+import SdkVariant
 import com.android.build.api.dsl.BaseFlavor
 import com.android.build.api.dsl.VariantDimension
 import org.gradle.api.Action
@@ -43,31 +44,60 @@ fun DependencyHandlerScope.legacyImplementation(
 ) =
   this.flavorImplementation("legacy", dependency, dependencyConfiguration)
 
+fun DependencyHandlerScope.postLegacyImplementation(
+  dependency: Provider<MinimalExternalModuleDependency>,
+  dependencyConfiguration: Action<ExternalModuleDependency>? = null
+) =
+  this.flavorImplementation(null, dependency, dependency, dependency, dependencyConfiguration)
+
 fun DependencyHandlerScope.lollipopImplementation(
   dependency: Provider<MinimalExternalModuleDependency>,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation("lollipop", dependency, dependencyConfiguration)
 
-fun DependencyHandlerScope.latestImplementation(
+fun DependencyHandlerScope.postLollipopImplementation(
   dependency: Provider<MinimalExternalModuleDependency>,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
-  this.flavorImplementation("latest", dependency, dependencyConfiguration)
+  this.flavorImplementation(null, null, dependency, dependency, dependencyConfiguration)
 
-fun DependencyHandlerScope.preLatestImplementation(
+fun DependencyHandlerScope.preMarshmallowImplementation(
   dependency: Provider<MinimalExternalModuleDependency>,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
-  this.flavorImplementation(dependency, dependency, null, dependencyConfiguration)
+  this.flavorImplementation(dependency, dependency, null, null, dependencyConfiguration)
 
-fun DependencyHandlerScope.postLegacyImplementation(
-  dependency: Provider<MinimalExternalModuleDependency>,
-  dependencyConfiguration: Action<ExternalModuleDependency>? = null
-) =
-  this.flavorImplementation(null, dependency, dependency, dependencyConfiguration)
+fun findExtraFolders(variant: SdkVariant): Set<String> =
+  mutableSetOf<String>().apply {
+    if (variant.minSdk >= 21) {
+      this += "sinceLollipop"
+    }
+    if (variant.minSdk < 23) {
+      this += "preMarshmallow"
+    }
+    if (variant.minSdk >= 23) {
+      this += "sinceMarshmallow"
+    }
+    this += "only${variant.flavor.replaceFirstChar { it.uppercase() }}"
+  }.toSet()
 
-fun DependencyHandlerScope.flavorImplementation(
+fun selectImplementation(
+  variant: SdkVariant,
+  legacy: Provider<MinimalExternalModuleDependency>?,
+  lollipop: Provider<MinimalExternalModuleDependency>?,
+  marshmallow: Provider<MinimalExternalModuleDependency>?,
+  latest: Provider<MinimalExternalModuleDependency>?
+): Provider<MinimalExternalModuleDependency>? =
+  when (variant.flavor) {
+    "legacy" -> legacy
+    "lollipop" -> lollipop
+    "marshmallow" -> marshmallow
+    "latest" -> latest
+    else -> error(variant.flavor)
+  }
+
+private fun DependencyHandlerScope.flavorImplementation(
   flavor: String,
   dependency: Provider<MinimalExternalModuleDependency>?,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
@@ -85,17 +115,46 @@ fun DependencyHandlerScope.flavorImplementation(
 
 fun DependencyHandlerScope.flavorImplementation(
   legacy: Provider<MinimalExternalModuleDependency>?,
+  postLegacy: Provider<MinimalExternalModuleDependency>?,
+  dependencyConfiguration: Action<ExternalModuleDependency>? = null
+) =
+  this.flavorImplementation(
+    legacy,
+    postLegacy,
+    postLegacy,
+    postLegacy,
+    dependencyConfiguration
+  )
+
+fun DependencyHandlerScope.flavorImplementation(
+  legacy: Provider<MinimalExternalModuleDependency>?,
   lollipop: Provider<MinimalExternalModuleDependency>?,
-  latest: Provider<MinimalExternalModuleDependency>? = lollipop,
+  postLollipop: Provider<MinimalExternalModuleDependency>?,
+  dependencyConfiguration: Action<ExternalModuleDependency>? = null
+) =
+  this.flavorImplementation(
+    legacy,
+    lollipop,
+    postLollipop,
+    postLollipop,
+    dependencyConfiguration
+  )
+
+fun DependencyHandlerScope.flavorImplementation(
+  legacy: Provider<MinimalExternalModuleDependency>?,
+  lollipop: Provider<MinimalExternalModuleDependency>?,
+  marshmallow: Provider<MinimalExternalModuleDependency>?,
+  latest: Provider<MinimalExternalModuleDependency>?,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) {
   Sdk.VARIANTS.values.forEach { sdkVariant ->
-    val library = when (sdkVariant.flavor) {
-      "legacy" -> legacy
-      "lollipop" -> lollipop
-      "latest" -> latest
-      else -> error(sdkVariant.flavor)
-    }
+    val library = selectImplementation(
+      sdkVariant,
+      legacy,
+      lollipop,
+      marshmallow,
+      latest
+    )
     flavorImplementation(sdkVariant.flavor, library, dependencyConfiguration)
   }
 }

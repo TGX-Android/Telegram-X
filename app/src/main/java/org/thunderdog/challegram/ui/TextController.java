@@ -616,6 +616,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
     }
 
     @Override
+    @NonNull
     public String getSectionName (int section) {
       return lines.get(section).getIdStr();
     }
@@ -661,7 +662,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
     }
 
     @Override
-    public void updateView (SectionedRecyclerView.SectionViewHolder holder, int position) {
+    public void updateView (SectionedRecyclerView.SectionViewHolder holder, int position, boolean isUpdate) {
       ((LineView) holder.itemView).setCell(lines.get(position));
     }
   }

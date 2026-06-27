@@ -117,6 +117,7 @@
   <string name="login_LastDigits_other">Last %1$s digits</string>
   <string name="login_Password">Password</string>
   <string name="Country">Country</string>
+  <string name="CountryCode">Country code</string>
   <string name="login_SmsHint">We will send an SMS with a confirmation code to your phone number.</string>
   <string name="Registration">Registration</string>
   <string name="login_FirstName">First name</string>
@@ -761,7 +762,7 @@
   <string name="ApproveNewMembers">Approve New Members</string>
   <string name="ApproveNewMembersInfo">Turn this on if you want new members to join only after they are approved by an admin.</string>
   <string name="RestrictSaving">Restrict Saving Content</string>
-  <string name="RestrictSavingBotInfo">Copying and forwarding is not allowed from this bot.</string>
+  <string name="RestrictSavingBotInfo">Copying or forwarding messages from this bot is restricted.</string>
   <string name="RestrictSavingUserInfo">Copying and forwarding of this message is restricted.</string>
   <string name="RestrictSavingGroupInfo">Copying and forwarding is restricted by group admins</string>
   <string name="RestrictSavingChannelInfo">Copying and forwarding is restricted by channel admins</string>
@@ -2973,6 +2974,8 @@
   <string name="xWeeksShort_one">%1$sw</string>
   <string name="xWeeksShort_other">%1$sw</string>
 
+  <string name="EndsInDuration">ends in %1$s</string>
+
   <string name="ErrorPinnedChatsLimit_one">Sorry, you can pin up to %1$s chat and %1$s secret chat at once.</string>
   <string name="ErrorPinnedChatsLimit_other">Sorry, you can pin up to %1$s chats and %1$s secret chats at once.</string>
 
@@ -4123,10 +4126,50 @@
   <string name="OpenArchive">Archived Chats</string>
   <string name="OpenArchiveHint">**No chats to show**\n\nAll of your chats are in the archive</string>
 
-  <string name="PollSettingAnonymous">Anonymous Voting</string>
+  <string name="PollSettingShowVoters">Show Who Voted</string>
+  <string name="PollSettingShowVotersOff">Voters are anonymous</string>
+  <string name="PollSettingShowVotersOn">Display voter on each option</string>
+
   <string name="PollSettingMultiple">Multiple Answers</string>
+  <string name="PollSettingMultipleOff">Only one option can be selected</string>
+  <string name="PollSettingMultipleOn">More than one option can be selected</string>
+
+  <string name="PollSettingRevoting">Allow Revoting</string>
+  <string name="PollSettingRevotingOff">Voters can vote only once</string>
+  <string name="PollSettingRevotingOn">Voters can change their vote</string>
+
+  <string name="PollSettingShuffle">Shuffle Options</string>
+  <string name="PollSettingShuffleOff">Voters see options in the same order</string>
+  <string name="PollSettingShuffleOn">Options are shuffled for each voter</string>
+
+  <string name="PollSettingDuration">Limit Duration</string>
+  <string name="PollSettingDurationOff">Automatically close voting at the set time</string>
+  <string name="PollSettingDurationOn">Voting closes at %1$s</string>
+
+  <string name="PollSettingMembers">Restrict to Subscribers</string>
+  <string name="PollSettingMembersOff">Non-subscribed users can vote</string>
+  <string name="PollSettingMembersOn">Only subscribers joined 24+ hours ago can vote</string>
+
+  <string name="PollSettingCountries">Limit by Country</string>
+  <string name="PollSettingCountriesOff">Users from all countries can vote</string>
+  <string name="PollSettingCountriesOn">Only users from selected countries can vote</string>
+  <string name="PollSettingCountriesOnSpecific">Only users from %1$s</string>
+
+  <string name="PollSettingAdding">Allow Adding Options</string>
+  <string name="PollSettingAddingOff">Participants can\'t suggest new options</string>
+  <string name="PollSettingAddingOn">Participants can suggest new options</string>
+
   <string name="PollSettingQuiz">Quiz Mode</string>
-  <string name="PollSettingQuizInfo">Polls in Quiz Mode have one correct answer. Users can\'t revoke their answers.</string>
+  <string name="PollSettingQuizOn">Choose the only right answer</string>
+  <string name="PollSettingQuizOff">Enable to set the right answer</string>
+
+  <string name="PollSettingHideResults">Hide Results</string>
+  <string name="PollSettingHideResultsOn">Results are shown once voting is closed</string>
+  <string name="PollSettingHideResultsOff">Results are shown upon voting</string>
+
+  <string name="CountryLimit_one">You can select only up to %1$s country</string>
+  <string name="CountryLimit_other">You can select only up to %1$s countries</string>
+  <string name="SearchCountry">Search…</string>
 
   <string name="PollPublicForwardHint">Sorry, polls with visible votes can\'t be forwarded to channels.</string>
   <string name="xCorrectAnswers_one">%1$s correct answer</string>
@@ -4363,6 +4406,11 @@
   <string name="QuizExplanationEmpty">Add an explanation</string>
   <string name="QuizExplanationInfo">Quiz participants will see this text after choosing the wrong option (good for educational purposes).</string>
 
+  <string name="QuizDescriptionInfo">Description will be displayed above the quiz title.</string>
+  <string name="PollDescriptionInfo">Description will be displayed above the poll title.</string>
+  <string name="PollDescription">Description (optional)</string>
+  <string name="PollDescriptionEmpty">Add a description</string>
+
   <string name="ZoomOut">Zoom Out</string>
 
   <string name="StatsRange">Overview based on %1$s period.</string>
@@ -4428,6 +4476,9 @@
 
   <string name="NoVotesResult">No votes</string>
   <string name="NoAnswersResult">No answers</string>
+
+  <string name="WaitingResultsPoll">Results will be revealed once voting is closed</string>
+  <string name="WaitingResultsQuiz">Results will be revealed once quiz is stopped</string>
 
   <string name="HoldToSendAsCopy">Hold to forward without quoting and other options.</string>
   <string name="HoldToSendAsFile">Hold to send as a file and other options.</string>
@@ -4642,7 +4693,7 @@
   <string name="ScanQR">Scan QR</string>
   <string name="ScanQRLogInInfo">Use camera to sign in on the desktop app.</string>
   <string name="PrivacyPolicy">Privacy Policy</string>
-  <string name="ScanQRLinkHint">Use Settings — Devices — Scan QR to sign in with QR code.</string>
+  <string name="ScanQRLinkHint">Go to Settings &gt; Devices &gt; Add Device to sign in with QR code.</string>
   <string name="ScanQRAuthorizedToast">Authorized %1$s</string>
   <string name="ScanQRAuthorizedToastPasswordPending">Authorized %1$s. You still have to enter your password there.</string>
   <string name="ScanQRFullTitle">Scan QR Code</string>

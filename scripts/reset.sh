@@ -3,6 +3,11 @@ set -e
 # shellcheck source=set-env.sh
 source "$(dirname "$0")"/set-env.sh
 
+if [ -z "$FLAVORS" ]; then
+  echo -e "${STYLE_ERROR}Failed! FLAVORS is empty. Run 'export FLAVORS=[version.flavors]'${STYLE_END}"
+  exit
+fi
+
 validate_dir "$THIRDPARTY_LIBRARIES"
 
 # shellcheck source=force-clean.sh
@@ -44,7 +49,6 @@ git reset --hard
 popd > /dev/null
 
 echo "Resetting androidx-media..."
-flavors=( legacy lollipop latest )
-for FLAVOR in ${flavors[@]}; do
+for FLAVOR in $FLAVORS; do
   (test -d "$THIRDPARTY_LIBRARIES/androidx-media/$FLAVOR" && rm -rf "$THIRDPARTY_LIBRARIES/androidx-media/$FLAVOR") || true
 done

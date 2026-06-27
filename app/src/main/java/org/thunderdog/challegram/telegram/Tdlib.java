@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
+import android.telephony.TelephonyManager;
 import android.util.SparseIntArray;
 import android.widget.Toast;
 
@@ -74,6 +75,7 @@ import org.thunderdog.challegram.sync.SyncHelper;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.tool.TGCountry;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EditRightsController;
 import org.thunderdog.challegram.unsorted.Passcode;
@@ -99,6 +101,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -3437,10 +3440,56 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void withChannelBotUserId (RunnableLong runnable) {
-    client().send(new TdApi.SearchPublicChat("Channel_Bot"), result -> ui().post(() -> {
-      long userId = result.getConstructor() == TdApi.Chat.CONSTRUCTOR ? chatUserId((TdApi.Chat) result) : 0;
+    send(new TdApi.SearchPublicChat("Channel_Bot"), (chat, error) -> ui().post(() -> {
+      long userId = chat != null ? chatUserId(chat) : 0;
       runnable.runWithLong(userId != 0 ? userId : telegramChannelBotUserId());
     }));
+  }
+
+  private TdApi.Countries countries;
+
+  public void getCountries (@Nullable RunnableData<TdApi.CountryInfo[]> callback) {
+    TdApi.Countries cachedCountries;
+    synchronized (dataLock) {
+      cachedCountries = this.countries;
+    }
+    if (cachedCountries != null) {
+      if (callback != null) {
+        callback.runWithData(cachedCountries.countries);
+      }
+    } else {
+      send(new TdApi.GetCountries(), (countries, error) -> {
+        synchronized (dataLock) {
+          this.countries = countries;
+        }
+        if (callback != null) {
+          if (countries != null) {
+            callback.runWithData(countries.countries);
+          } else {
+            callback.runWithData(new TdApi.CountryInfo[0]);
+          }
+        }
+      });
+    }
+  }
+
+  public String getCountryName (String countryCode) {
+    TdApi.Countries cachedCountries;
+    synchronized (dataLock) {
+      cachedCountries = this.countries;
+    }
+    if (cachedCountries != null) {
+      for (TdApi.CountryInfo country : cachedCountries.countries) {
+        if (country.countryCode.equals(countryCode)) {
+          return country.name;
+        }
+      }
+    }
+    TGCountry.Country info = TGCountry.instance().find(countryCode);
+    if (info != null) {
+      return info.name;
+    }
+    return countryCode;
   }
 
   public boolean canCopyPublicMessageLinks (long chatId) {
@@ -5711,6 +5760,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       this.languagePackId = languagePackId;
       if (dispatch) {
         updateLanguageParameters(client(), false);
+        this.countries = null; // Reset locale-specific names.
       }
       return true;
     }
@@ -6103,6 +6153,50 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public String language () {
     return parameters.systemLanguageCode;
+  }
+
+  public String possibleCountryCode (String countryCode) {
+    Set<String> countryCodes = possibleCountryCodes(countryCode);
+    for (String code : countryCodes) {
+      return code;
+    }
+    return null;
+  }
+
+  public Set<String> possibleCountryCodes (String countryCode) {
+    Set<String> set = new LinkedHashSet<>();
+
+    if (!StringUtils.isEmptyOrBlank(countryCode)) {
+      set.add(countryCode);
+    }
+
+    TelephonyManager tm = (TelephonyManager) UI.getContext().getSystemService(Context.TELEPHONY_SERVICE);
+    if (tm != null) {
+      try {
+        String simCountryIso = tm.getSimCountryIso();
+        if (!StringUtils.isEmptyOrBlank(simCountryIso)) {
+          set.add(simCountryIso.toUpperCase(Locale.ROOT));
+        }
+      } catch (Throwable ignored) { }
+
+      try {
+        if (tm.getPhoneType() != TelephonyManager.PHONE_TYPE_CDMA) {
+          String networkCountryIso = tm.getNetworkCountryIso();
+          if (!StringUtils.isEmptyOrBlank(networkCountryIso)) {
+            set.add(networkCountryIso.toUpperCase(Locale.ROOT));
+          }
+        }
+      } catch (Throwable ignored) { }
+
+      try {
+        String localeCountry = Locale.getDefault().getCountry();
+        if (!StringUtils.isEmptyOrBlank(localeCountry)) {
+          set.add(localeCountry.toUpperCase(Locale.ROOT));
+        }
+      } catch (Throwable ignored) { }
+    }
+
+    return set;
   }
 
   public long timeElapsedSinceDate (long unixTime, TimeUnit unit) {

@@ -24,5 +24,5 @@ public interface ComplexMediaItem {
   void requestComplexMedia (ComplexReceiver receiver, long displayMediaKey);
   String getComplexMediaKey ();
   boolean requiresTopLayer ();
-  void draw (Canvas c, Rect rect, ComplexReceiver mediaReceiver, long displayMediaKey, boolean translate);
+  void draw (Canvas c, Rect rect, int alpha, ComplexReceiver mediaReceiver, long displayMediaKey, boolean translate);
 }

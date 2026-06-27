@@ -37,6 +37,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -103,6 +104,7 @@ import org.thunderdog.challegram.widget.ScoutFrameLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.SettingStupidView;
 import org.thunderdog.challegram.widget.ShadowView;
+import org.thunderdog.challegram.widget.SimplestCheckBox;
 import org.thunderdog.challegram.widget.SliderWrapView;
 import org.thunderdog.challegram.widget.SmallChatView;
 import org.thunderdog.challegram.widget.TimerView;
@@ -177,6 +179,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_SEPARATOR_FULL:
       case ListItem.TYPE_SEPARATOR: {
         return Screen.dp(1f);
+      }
+      case ListItem.TYPE_COUNTRY: {
+        return Screen.dp(56f) + Screen.dp(1f);
       }
       case ListItem.TYPE_BUTTON: {
         return Screen.dp(57f);
@@ -971,6 +976,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           }
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER: {
             settingView.addToggler();
+            settingView.forcePadding(0, Screen.dp(49f));
             break;
           }
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX: {
@@ -1098,7 +1104,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             editText.getEditText().setCursorVisible(false);
           editText.setLayoutParams(params);
           editText.setOnRadioClickListener((v, radioView) -> {
-            adapter.onEditTextRadioClick((ListItem) frameLayout.getTag(), frameLayout, v, radioView);
+            adapter.onEditTextCheckBoxClick((ListItem) frameLayout.getTag(), frameLayout, v, radioView);
           });
         }
         frameLayout.addView(editText);
@@ -1799,52 +1805,77 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         return new SettingHolder(frameLayout);
       }
       case ListItem.TYPE_COUNTRY: {
-        FrameLayoutFix frameLayout = new FrameLayoutFix(context);
-        frameLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f) + Screen.dp(1f)));
-        frameLayout.setPadding(Screen.dp(16f), 0, Screen.dp(16f), 0);
-        frameLayout.setOnClickListener(onClickListener);
-        Views.setClickable(frameLayout);
-        RippleSupport.setSimpleWhiteBackground(frameLayout, themeProvider);
+        int innerHorizontalPadding = Screen.dp(16f);
+        int contentSpacing = Screen.dp(6f);
 
-        FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f), Gravity.LEFT);
-        params.topMargin = params.leftMargin = Screen.dp(1f);
-        params.rightMargin = Screen.dp(60f);
+        ConstraintLayout parent = new ConstraintLayout(context);
+        parent.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f) + Screen.dp(1f)));
+        parent.setOnClickListener(onClickListener);
+        Views.setClickable(parent);
+        RippleSupport.setSimpleWhiteBackground(parent, themeProvider);
 
-        TextView nameView = new NoScrollTextView(context);
-        nameView.setTypeface(Fonts.getRobotoRegular());
-        nameView.setTextColor(Theme.textAccentColor());
+        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(
+          ConstraintLayout.LayoutParams.MATCH_CONSTRAINT,
+          ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        params.topToTop = ConstraintLayout.LayoutParams.PARENT_ID;
+        params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID;
+        params.leftToLeft = ConstraintLayout.LayoutParams.PARENT_ID;
+        params.rightToLeft = R.id.code;
+        params.leftMargin = innerHorizontalPadding;
+        params.rightMargin = contentSpacing;
+
+        CustomTextView nameView = new CustomTextView(context, tdlib);
         if (themeProvider != null) {
           themeProvider.addThemeTextAccentColorListener(nameView);
         }
-        nameView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        nameView.setLayoutParams(params);
-        nameView.setEllipsize(TextUtils.TruncateAt.END);
+        nameView.setId(R.id.name);
+        nameView.setTextSize(17f);
         nameView.setSingleLine(true);
-        nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17f);
-        frameLayout.addView(nameView);
+        nameView.setAllowAsync(false);
+        nameView.setLayoutParams(params);
+        parent.addView(nameView);
 
-        params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(56f), Gravity.RIGHT);
-        params.topMargin = params.rightMargin = Screen.dp(1f);
+        params = new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.topToTop = ConstraintLayout.LayoutParams.PARENT_ID;
+        params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID;
+        params.rightToRight = ConstraintLayout.LayoutParams.PARENT_ID;
+        params.rightMargin = innerHorizontalPadding;
 
         TextView codeView = new NoScrollTextView(context);
+        codeView.setId(R.id.code);
         codeView.setTypeface(Fonts.getRobotoRegular());
         codeView.setTextColor(Theme.textDecentColor());
         if (themeProvider != null) {
           themeProvider.addThemeTextDecentColorListener(codeView);
         }
-        codeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17f);
+        codeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f);
         codeView.setSingleLine(true);
-        codeView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        frameLayout.addView(codeView);
+        codeView.setLayoutParams(params);
+        parent.addView(codeView);
 
+        CheckBoxView checkBoxView = CheckBoxView.simpleCheckBox(context, false);
+        checkBoxView.setId(R.id.btn_check);
+        ViewGroup.LayoutParams originalParams = checkBoxView.getLayoutParams();
+        params = new ConstraintLayout.LayoutParams(originalParams.width, originalParams.height);
+        params.topToTop = ConstraintLayout.LayoutParams.PARENT_ID;
+        params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID;
+        params.rightToRight = ConstraintLayout.LayoutParams.PARENT_ID;
+        params.rightMargin = innerHorizontalPadding;
+        checkBoxView.setLayoutParams(params);
+        checkBoxView.setVisibility(View.GONE);
+        parent.addView(checkBoxView);
+
+        params = new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f));
+        params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID;
         SeparatorView separatorView = new SeparatorView(context);
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(separatorView);
         }
-        separatorView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f), Gravity.BOTTOM));
-        frameLayout.addView(separatorView);
+        separatorView.setLayoutParams(params);
+        parent.addView(separatorView);
 
-        return new SettingHolder(frameLayout);
+        return new SettingHolder(parent);
       }
       case ListItem.TYPE_2FA_EMAIL: {
         FrameLayoutFix frameLayout = new FrameLayoutFix(context);

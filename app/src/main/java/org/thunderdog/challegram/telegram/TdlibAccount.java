@@ -584,6 +584,15 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     return info != null ? info.getPhoneNumber() : "…";
   }
 
+  public String getPhoneNumberCountryCode () {
+    TdApi.User user = getUser();
+    if (user != null) {
+      return TD.getPhoneNumberCountryCode(user.phoneNumber);
+    }
+    DisplayInformation info = getDisplayInformation();
+    return info != null ? TD.getPhoneNumberCountryCode(info.getPhoneNumber()) : null;
+  }
+
   public AvatarPlaceholder.Metadata getAvatarPlaceholderMetadata () {
     TdApi.User user = getUser();
     if (user != null)

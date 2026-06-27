@@ -34,6 +34,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -41,21 +42,28 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.FillingDecoration;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
-import org.thunderdog.challegram.widget.RadioView;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.text.RestrictFilter;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableData;
 import tgx.td.Td;
 import tgx.td.TdConstants;
@@ -111,8 +119,8 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
   private SettingsAdapter adapter;
   private FillingDecoration decoration;
-  private ListItem addItem, descriptionItem;
-  private ListItem questionItem, explanationItem;
+  private ListItem addItem, itemsListHint;
+  private ListItem questionItem, descriptionItem, descriptionHintItem, explanationItem, explanationHintItem;
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
@@ -120,9 +128,11 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       @Override
       protected void modifyEditText (ListItem item, ViewGroup parent, MaterialEditTextGroup editText) {
         final int itemId = item.getId();
-        if (itemId == R.id.text_subtitle) {
+        if (itemId == R.id.text_subtitle || itemId == R.id.text_explanation) {
+          boolean isExplanation = itemId == R.id.text_explanation;
           editText.addLengthCounter(false);
-          editText.setEmptyHint(R.string.QuizExplanationEmpty);
+          editText.setEmptyHint(isExplanation ? R.string.QuizExplanationEmpty : R.string.PollDescriptionEmpty);
+          editText.setHint(isExplanation ? R.string.QuizExplanation : R.string.PollDescription);
           editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
           Views.setSingleLine(editText.getEditText(), false);
           editText.setMaxLength(TdConstants.MAX_QUIZ_EXPLANATION_LENGTH);
@@ -132,18 +142,21 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
           editText.setEmptyHint(R.string.PollQuestionEmpty);
           editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
           Views.setSingleLine(editText.getEditText(), false);
+          editText.addLengthCounter(false);
           editText.setMaxLength(TdConstants.MAX_POLL_QUESTION_LENGTH);
           editText.setAlwaysActive(true);
+          editText.addCheckbox().setEnabled(true);
           editText.getEditText().setLineDisabled(true);
         } else if (itemId == R.id.optionAdd) {
-          editText.setRadioVisible(isQuiz, false);
+          editText.setCheckboxVisible(isQuiz, !isMultiAnswers(),false);
+          editText.addCheckbox().setEnabled(false);
           editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
           Views.setSingleLine(editText.getEditText(), false);
           editText.getEditText().setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_NEXT);
           editText.setNeedNextButton(v -> true);
         } else if (itemId == R.id.option) {
-          editText.setRadioVisible(isQuiz, false);
-          editText.setRadioActive(item == correctOptionItem, false);
+          editText.setCheckboxVisible(isQuiz,  !isMultiAnswers(),false);
+          editText.setCheckboxSelected(correctOptionItems.contains(item), false);
           editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
           Views.setSingleLine(editText.getEditText(), false);
           editText.setAlwaysActive(true);
@@ -171,9 +184,9 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       }
 
       @Override
-      protected void onEditTextRadioClick (ListItem item, ViewGroup parent, MaterialEditTextGroup editText, RadioView radioView) {
+      protected void onEditTextCheckBoxClick (ListItem item, ViewGroup parent, MaterialEditTextGroup editText, CheckBoxView checkBoxVIew) {
         if (item.getId() == R.id.option) {
-          setCorrectOption(item);
+          toggleCorrectOptionEnabled(item);
         }
       }
 
@@ -188,14 +201,48 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       @Override
       protected void setValuedSetting(ListItem item, SettingView view, boolean isUpdate) {
         int itemId = item.getId();
-        if (itemId == R.id.btn_pollSetting_anonymous) {
-          view.getToggler().setRadioEnabled(isAnonymousVoting, isUpdate);
-        } else if (itemId == R.id.btn_pollSetting_multi) {
-          view.getToggler().setRadioEnabled(isMultiChoiceVote, isUpdate);
-          view.setEnabledAnimated(!isQuiz, isUpdate);
+        if (
+          itemId == R.id.btn_pollSetting_duration ||
+          itemId == R.id.btn_pollSetting_hideResults ||
+          itemId == R.id.btn_pollSetting_multiAnswers ||
+          itemId == R.id.btn_pollSetting_revoting ||
+          itemId == R.id.btn_pollSetting_shuffle ||
+          itemId == R.id.btn_pollSetting_members ||
+          itemId == R.id.btn_pollSetting_countries ||
+          itemId == R.id.btn_pollSetting_showVoters ||
+          itemId == R.id.btn_pollSetting_quiz
+        ) {
+          view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
+        } else if (
+          itemId == R.id.btn_pollSetting_additions
+        ) {
+          view.getToggler().setRadioEnabled(!isQuiz && item.getBoolValue(), isUpdate);
+        }
+
+        if (itemId == R.id.btn_pollSetting_showVoters) {
+          view.setData(item.getBoolValue() ? R.string.PollSettingShowVotersOn : R.string.PollSettingShowVotersOff);
+        } else if (itemId == R.id.btn_pollSetting_multiAnswers) {
+          view.setData(item.getBoolValue() ? R.string.PollSettingMultipleOn : R.string.PollSettingMultipleOff);
+        } else if (itemId == R.id.btn_pollSetting_revoting) {
+          view.setData(item.getBoolValue() ? R.string.PollSettingRevotingOn : R.string.PollSettingRevotingOff);
+        } else if (itemId == R.id.btn_pollSetting_shuffle) {
+          view.setData(item.getBoolValue() ? R.string.PollSettingShuffleOn : R.string.PollSettingShuffleOff);
+        } else if (itemId == R.id.btn_pollSetting_members) {
+          view.setData(item.getBoolValue() ? R.string.PollSettingMembersOn : R.string.PollSettingMembersOff);
+        } else if (itemId == R.id.btn_pollSetting_countries) {
+          if (item.getBoolValue()) {
+            view.setData(Lang.getString(R.string.PollSettingCountriesOnSpecific, Strings.join(Lang.getConcatSeparator(), selectedCountries.values(), country -> Emoji.getEmojiFlagFromCountry(country.countryCode) + " " + country.countryCode)));
+          } else {
+            view.setData(item.getBoolValue() ? R.string.PollSettingCountriesOn : R.string.PollSettingCountriesOff);
+          }
+        } else if (itemId == R.id.btn_pollSetting_hideResults) {
+          view.setData(item.getBoolValue() ? R.string.PollSettingHideResultsOn : R.string.PollSettingHideResultsOff);
         } else if (itemId == R.id.btn_pollSetting_quiz) {
-          view.getToggler().setRadioEnabled(isQuiz, isUpdate);
           view.setEnabledAnimated(canChangePollType(), isUpdate);
+          view.setData(item.getBoolValue() ? R.string.PollSettingQuizOn : R.string.PollSettingQuizOff);
+        } else if (itemId == R.id.btn_pollSetting_additions) {
+          view.setEnabledAnimated(!isQuiz, isUpdate);
+          view.setData(!isQuiz && item.getBoolValue() ? R.string.PollSettingAddingOn : R.string.PollSettingAddingOff);
         }
       }
     };
@@ -207,15 +254,17 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         int i = parent.getChildAdapterPosition(view);
-        outRect.top = view.getId() == R.id.text_subtitle ? Screen.dp(10f) : 0;
+        outRect.top = view.getId() == R.id.text_subtitle || view.getId() == R.id.text_explanation ? Screen.dp(10f) : 0;
         outRect.bottom = i != -1 && i == adapter.getItemCount() - 1 ? Screen.dp(56f) : 0;
       }
     };
+    decoration.addId(R.id.text_subtitle);
+    decoration.addId(R.id.text_explanation);
 
-    items.add(questionItem = new ListItem(ListItem.TYPE_EDITTEXT_COUNTERED, R.id.title, 0, R.string.PollQuestion));
+    items.add(questionItem = new ListItem(ListItem.TYPE_EDITTEXT, R.id.title, 0, R.string.PollQuestion));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-    decoration.addRange(0, 1);
+    decoration.addId(R.id.title);
 
     items.add(new ListItem(ListItem.TYPE_HEADER, R.id.text_title, 0, isQuiz ? R.string.QuizOptions : R.string.PollOptions));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -226,41 +275,89 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     decoration.addRange(items.size() - 3, items.size());
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(descriptionItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.plural(R.string.PollOptionsLimit, tdlib.options().pollAnswerCountMax - options.size()), false));
+    items.add(itemsListHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.plural(R.string.PollOptionsLimit, tdlib.options().pollAnswerCountMax - options.size()), false));
+
+    final boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     int settingCount = 0;
-    if (!tdlib.isChannel(getArgumentsStrict().chatId)) {
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_pollSetting_anonymous, 0, R.string.PollSettingAnonymous));
+    if (!isChannel) {
+      items.add(settingShowVoters = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_showVoters, 0, R.string.PollSettingShowVoters).setBoolValue(true));
       settingCount++;
-    } else {
-      isAnonymousVoting = true;
     }
+
     if (!getArgumentsStrict().forceQuiz) {
       if (settingCount > 0)
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_pollSetting_multi, 0, R.string.PollSettingMultiple));
+      items.add(settingMultiAnswers = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_multiAnswers, 0, R.string.PollSettingMultiple));
       settingCount++;
     }
+
+    if (!getArgumentsStrict().forceQuiz && !isChannel) {
+      if (settingCount > 0)
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(settingAdditions = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_additions, 0, R.string.PollSettingAdding));
+      settingCount++;
+    }
+
     if (settingCount > 0)
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_pollSetting_quiz, 0, R.string.PollSettingQuiz));
+    items.add(settingRevoting = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_revoting, 0, R.string.PollSettingRevoting).setBoolValue(true));
     settingCount++;
+
+    if (settingCount > 0)
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(settingQuiz = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_quiz, 0, R.string.PollSettingQuiz));
+    settingCount++;
+
+    if (settingCount > 0)
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(settingShuffle = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_shuffle, 0, R.string.PollSettingShuffle).setBoolValue(true));
+    settingCount++;
+
+    if (false) {
+      // TODO: limit duration
+      if (settingCount > 0)
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(settingDuration = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_duration, 0, R.string.PollSettingDuration));
+      settingCount++;
+    }
+
+    if (isChannel) {
+      if (settingCount > 0)
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(settingOnlyMembers = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_members, 0, R.string.PollSettingMembers));
+      settingCount++;
+
+      if (settingCount > 0)
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(settingCountries = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_countries, 0, R.string.PollSettingCountries));
+      settingCount++;
+    }
+
+    if (settingCount > 0)
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(settingHideResults = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_hideResults, 0, R.string.PollSettingHideResults));
+    settingCount++;
+
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.PollSettingQuizInfo));
+
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(descriptionItem = newDescriptionItem(false));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(descriptionHintItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, isQuiz ? R.string.QuizDescriptionInfo : R.string.PollDescriptionInfo));
 
     if (isQuiz) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(explanationItem = newExplanationItem());
+      items.add(explanationItem = newDescriptionItem(true));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0,0, R.string.QuizExplanationInfo));
-      decoration.addRange(items.size() - 3, items.size() - 2);
+      items.add(explanationHintItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.QuizExplanationInfo));
     }
 
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
 
     adapter.setItems(items, false);
-    adapter.setLockFocusOn(this, true);
+    adapter.setLockFocusOn(this, false);
 
     recyclerView.setAdapter(adapter);
     recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
@@ -281,31 +378,48 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     }
   }
 
-  private boolean isAnonymousVoting, isMultiChoiceVote, isQuiz;
-  private ListItem correctOptionItem;
 
-  private void setCorrectOption (final ListItem option) {
-    if (this.correctOptionItem != option) {
-      ListItem oldOptionItem = this.correctOptionItem;
-      if (oldOptionItem != null) {
-        setRadioActive(oldOptionItem, false);
-      }
-      this.correctOptionItem = option;
-      if (option != null) {
-        setRadioActive(option, true);
-      }
-      checkSend();
-    }
+  private boolean isQuiz;
+  private ListItem settingQuiz, settingShowVoters, settingMultiAnswers, settingRevoting, settingShuffle, settingHideResults, settingAdditions, settingDuration, settingOnlyMembers, settingCountries;
+  private Set<ListItem> correctOptionItems = new LinkedHashSet<>();
+
+  private void toggleCorrectOptionEnabled (final ListItem option) {
+    boolean wasEnabled = correctOptionItems.contains(option);
+    boolean multiAnswers = isMultiAnswers();
+    boolean nowEnabled = !multiAnswers || !wasEnabled;
+    setCorrectOptionEnabled(option, nowEnabled);
   }
 
-  private void setRadioActive (ListItem item, boolean isActive) {
+  private void setCorrectOptionEnabled (final ListItem option, boolean nowEnabled) {
+    boolean wasEnabled = correctOptionItems.contains(option);
+    if (wasEnabled == nowEnabled) {
+      return;
+    }
+    boolean multiAnswers = isMultiAnswers();
+    if (!multiAnswers && nowEnabled) {
+      while (!correctOptionItems.isEmpty()) {
+        ListItem item = correctOptionItems.iterator().next();
+        correctOptionItems.remove(item);
+        setCheckboxActive(item, false);
+      }
+    }
+    if (nowEnabled) {
+      correctOptionItems.add(option);
+    } else {
+      correctOptionItems.remove(option);
+    }
+    setCheckboxActive(option, nowEnabled);
+    checkSend();
+  }
+
+  private void setCheckboxActive (ListItem item, boolean isActive) {
     int adapterPosition = adapter.indexOfView(item);
     if (adapterPosition == -1) {
       return;
     }
     View view = getRecyclerView().getLayoutManager().findViewByPosition(adapterPosition);
     if (view != null && view.getTag() == item) {
-      ((MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0)).setRadioActive(isActive, true);
+      ((MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0)).setCheckboxSelected(isActive, true);
     } else {
       adapter.notifyItemChanged(adapterPosition);
     }
@@ -337,27 +451,99 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     return super.performOnBackPressed(fromTop, commit);
   }
 
-  private static ListItem newExplanationItem () {
-    return new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING_REUSABLE, R.id.text_subtitle, 0, R.string.QuizExplanation);
+  private static ListItem newDescriptionItem (boolean isQuizExplanation) {
+    return new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING_REUSABLE, isQuizExplanation ? R.id.text_explanation : R.id.text_subtitle, 0, R.string.PollDescription);
   }
+
+  private final Map<String, TdApi.CountryInfo> selectedCountries = new LinkedHashMap<>();
 
   @Override
   public void onClick (View v) {
-    int viewId = v.getId();
-    if (viewId == R.id.optionAdd) {
-      addOption();
-    } else if (viewId == R.id.btn_pollSetting_anonymous) {
-      isAnonymousVoting = adapter.toggleView(v);
-    } else if (viewId == R.id.btn_pollSetting_multi) {
-      isMultiChoiceVote = adapter.toggleView(v);
-    } else if (viewId == R.id.btn_pollSetting_quiz) {
-      if (canChangePollType()) {
-        isQuiz = adapter.toggleView(v);
+    int itemId = v.getId();
+    ListItem item = (ListItem) v.getTag();
 
-        int explanationIndex = adapter.indexOfViewById(R.id.text_subtitle);
+    if (itemId == R.id.optionAdd) {
+      addOption();
+    } else if (itemId == R.id.btn_pollSetting_countries) {
+      // Open country picker
+      CountryController c = new CountryController(context, tdlib);
+      c.setArguments(new CountryController.Args(new CountryController.Callback() {
+        @Override
+        public void onCountryUnselected (CountryController context, View view, TdApi.CountryInfo country) {
+          selectedCountries.remove(country.countryCode);
+          settingCountries.setBoolValue(!selectedCountries.isEmpty());
+          adapter.updateValuedSettingById(R.id.btn_pollSetting_countries);
+        }
+
+        @Override
+        public boolean onCountrySelected (CountryController context, View view, TdApi.CountryInfo country) {
+          if (selectedCountries.size() >= tdlib.options().pollCountryCountMax) {
+            context.showErrorTooltip(view, Lang.getMarkdownPlural(CreatePollController.this, R.string.CountryLimit, tdlib.options().pollCountryCountMax));
+            return false;
+          }
+          selectedCountries.put(country.countryCode, country);
+          settingCountries.setBoolValue(true);
+          adapter.updateValuedSettingById(R.id.btn_pollSetting_countries);
+          return true;
+        }
+      }, selectedCountries.values().toArray(new TdApi.CountryInfo[0])));
+      navigateTo(c);
+    } else if (
+      itemId == R.id.btn_pollSetting_duration ||
+      itemId == R.id.btn_pollSetting_hideResults ||
+      itemId == R.id.btn_pollSetting_members ||
+      itemId == R.id.btn_pollSetting_multiAnswers ||
+      itemId == R.id.btn_pollSetting_shuffle ||
+      itemId == R.id.btn_pollSetting_revoting ||
+      itemId == R.id.btn_pollSetting_showVoters ||
+      (itemId == R.id.btn_pollSetting_quiz && canChangePollType()) ||
+      (itemId == R.id.btn_pollSetting_additions && !isQuiz)
+    ) {
+      if (!item.getBoolValue() && itemId == R.id.btn_pollSetting_duration) {
+        long maxCloseDate = tdlib.currentTime(TimeUnit.SECONDS) + tdlib.options().pollOpenPeriodMax;
+
+        // TODO Open up duration picker
+
+        return;
+      }
+
+      boolean value = adapter.toggleView(v);
+
+      item.setBoolValue(value);
+      adapter.updateValuedSetting(item);
+
+      if (itemId == R.id.btn_pollSetting_multiAnswers) {
+        if (!value) {
+          while (correctOptionItems.size() > 1) {
+            setCorrectOptionEnabled(correctOptionItems.iterator().next(), false);
+          }
+        }
+        updateCheckBoxes();
+      } else if (itemId == R.id.btn_pollSetting_quiz) {
+        isQuiz = value;
+
+        if (value) {
+          // Add items
+          int index = adapter.indexOfView(descriptionItem);
+          if (index != -1) {
+            index = Math.max(0, index - 1);
+            adapter.addItems(index,
+              new ListItem(ListItem.TYPE_SHADOW_TOP),
+              explanationItem != null ? explanationItem : (explanationItem = newDescriptionItem(true)),
+              new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+              explanationHintItem != null ? explanationHintItem : (explanationHintItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.QuizExplanationInfo))
+            );
+          }
+        } else {
+          // Remove items
+          int index = adapter.indexOfView(explanationItem);
+          if (index != -1) {
+            adapter.removeRange(index - 1, 4);
+          }
+        }
+
         if (isQuiz) {
           // Show hint
-
           int i = ((LinearLayoutManager) getRecyclerView().getLayoutManager()).findFirstVisibleItemPosition();
           if (i != RecyclerView.NO_POSITION) {
             i = adapter.indexOfViewById(R.id.option, i);
@@ -375,35 +561,20 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
                 View view = getRecyclerView().getLayoutManager().findViewByPosition(i);
                 if (view instanceof ViewGroup && view.getTag() == options.get(firstVisibleOptionId)) {
                   MaterialEditTextGroup editTextGroup = ((MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0));
-                  editTextGroup.showRadioHint(this, tdlib, R.string.QuizOptionHint);
+                  editTextGroup.showCheckboxHint(this, tdlib, R.string.QuizOptionHint);
                 }
               }
             }
           }
+        }
 
-          // Add explanation item
-          if (explanationIndex == -1) {
-            if (explanationItem == null)
-              explanationItem = newExplanationItem();
-            int index = adapter.getItems().size();
-            adapter.addItems(index - 1,
-              new ListItem(ListItem.TYPE_SHADOW_TOP),
-              explanationItem,
-              new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
-              new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.QuizExplanationInfo)
-            );
-            decoration.addRange(index, index + 1);
-            getRecyclerView().invalidateItemDecorations();
-            // adapter.notifyItemChanged(index - 2);
-          }
-        } else {
-          // Remove explanation item
-          if (explanationIndex != -1) {
-            decoration.removeLastRange();
-            adapter.removeRange(explanationIndex - 1, 4);
-            getRecyclerView().invalidateItemDecorations();
-            // adapter.notifyItemChanged(explanationIndex - 2);
-          }
+        if (settingAdditions != null) {
+          adapter.updateValuedSetting(settingAdditions);
+        }
+
+        if (settingRevoting != null) {
+          settingRevoting.setBoolValue(!value);
+          adapter.updateValuedSetting(settingRevoting);
         }
 
         int titleIndex = adapter.indexOfViewById(R.id.text_title);
@@ -411,30 +582,40 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
           adapter.notifyItemChanged(titleIndex);
         }
 
-        if (isQuiz) {
-          isMultiChoiceVote = false;
+        int descHintIndex = adapter.indexOfView(descriptionHintItem);
+        if (descHintIndex != -1 && descriptionHintItem.setStringIfChanged(isQuiz ? R.string.QuizDescriptionInfo : R.string.PollDescriptionInfo)) {
+          adapter.notifyItemChanged(descHintIndex);
         }
-        adapter.updateValuedSettingById(R.id.btn_pollSetting_multi);
+
+        descHintIndex = adapter.indexOfView(descriptionItem);
+        if (descHintIndex != -1 && descriptionItem.setStringIfChanged(isQuiz ? R.string.QuizExplanation : R.string.PollDescription)) {
+          adapter.updateValuedSetting(descriptionItem);
+        }
 
         if (headerView != null)
           headerView.updateTextTitle(getId(), getName());
 
         checkSend();
 
-        int position = 0;
-        for (ListItem item : adapter.getItems()) {
-          int itemId = item.getId();
-          if (itemId == R.id.option || itemId == R.id.optionAdd) {
-            View view = getRecyclerView().getLayoutManager().findViewByPosition(position);
-            if (view != null && view.getTag() == item) {
-              ((MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0)).setRadioVisible(isQuiz, true);
-            } else {
-              adapter.notifyItemChanged(position);
-            }
-          }
-          position++;
+        updateCheckBoxes();
+      }
+    }
+  }
+
+  private void updateCheckBoxes () {
+    int position = 0;
+    for (ListItem otherItem : adapter.getItems()) {
+      int otherItemId = otherItem.getId();
+      if (otherItemId == R.id.option || otherItemId == R.id.optionAdd) {
+        View view = getRecyclerView().getLayoutManager().findViewByPosition(position);
+        if (view != null && view.getTag() == otherItem) {
+          MaterialEditTextGroup editTextGroup = (MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0);
+          editTextGroup.setCheckboxVisible(isQuiz, !isMultiAnswers(), true);
+        } else {
+          adapter.notifyItemChanged(position);
         }
       }
+      position++;
     }
   }
 
@@ -457,14 +638,10 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     } else {
       adapter.getItems().add(i - 1, createNewOption());
       adapter.getItems().add(i - 1, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      decoration.rangeAt(1)[1] += 2;
-      if (isQuiz) {
-        decoration.lastRange()[0] += 2;
-        decoration.lastRange()[1] += 2;
-      }
+      decoration.lastRange()[1] += 2;
       targetIndex = i;
       adapter.notifyItemRangeInserted(i, 2);
-      getRecyclerView().invalidateItemDecorations();
+      // getRecyclerView().invalidateItemDecorations();
     }
     updateLimit();
     tdlib.ui().postDelayed(() -> {
@@ -481,9 +658,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     final int i = options.indexOf(option);
     if (i == -1)
       return;
-    if (correctOptionItem == option) {
-      correctOptionItem = null;
-    }
+    setCorrectOptionEnabled(option, false);
     options.remove(i);
     boolean hideKeyboard = true;
     if (!options.isEmpty()) {
@@ -508,13 +683,8 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
         adapter.notifyItemRangeInserted(lastAdapterPosition + 1, 2);
       }
     } else {
-      decoration.rangeAt(1)[1] -= 2;
-      if (isQuiz) {
-        decoration.lastRange()[0] -= 2;
-        decoration.lastRange()[1] -= 2;
-      }
+      decoration.lastRange()[1] -= 2;
       adapter.removeRange(adapterPosition, 2);
-      getRecyclerView().invalidateItemDecorations();
     }
     if (hideKeyboard) {
       hideSoftwareKeyboard();
@@ -529,8 +699,8 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
   private void updateLimit () {
     final int maxPollOptionCount = tdlib.options().pollAnswerCountMax;
-    if (descriptionItem.setStringIfChanged(maxPollOptionCount <= options.size() ? Lang.getString(R.string.PollOptionsMax) : Lang.plural(R.string.PollOptionsLimit, maxPollOptionCount - options.size()))) {
-      adapter.updateValuedSetting(descriptionItem);
+    if (itemsListHint.setStringIfChanged(maxPollOptionCount <= options.size() ? Lang.getString(R.string.PollOptionsMax) : Lang.plural(R.string.PollOptionsLimit, maxPollOptionCount - options.size()))) {
+      adapter.updateValuedSetting(itemsListHint);
     }
   }
 
@@ -547,7 +717,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   }
 
   private boolean canSendPoll () {
-    if (isQuiz && correctOptionItem == null)
+    if (isQuiz && correctOptionItems.isEmpty())
       return false;
     CharSequence title = StringUtils.trim(questionItem.getCharSequenceValue());
     if (StringUtils.isEmpty(title))
@@ -558,16 +728,21 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
         return false;
     }
     int count = 0;
-    boolean foundCorrectOption = !isQuiz;
+    int correctOptionCount = 0;
     for (ListItem optionItem : options) {
       CharSequence option = StringUtils.trim(optionItem.getCharSequenceValue());
       if (!StringUtils.isEmpty(option)) {
-        if (correctOptionItem == optionItem)
-          foundCorrectOption = true;
+        if (correctOptionItems.contains(optionItem))
+          correctOptionCount++;
         count++;
       }
     }
-    return foundCorrectOption && count > 1;
+    boolean multiAnswers = isMultiAnswers();
+    return count > 1 && !isQuiz || (correctOptionCount == 1) || (correctOptionCount > 1 && multiAnswers);
+  }
+
+  private boolean isMultiAnswers () {
+    return settingMultiAnswers != null && settingMultiAnswers.getBoolValue();
   }
 
   private boolean hasUnsavedPoll () {
@@ -612,8 +787,19 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     send(Td.newSendOptions(), false);
   }
 
+  @Nullable
   private TdApi.FormattedText getExplanation (boolean parseMarkdown) {
-    CharSequence explanationText = isQuiz && explanationItem != null ? explanationItem.getCharSequenceValue() : null;
+    return isQuiz ? getFormattedText(explanationItem, parseMarkdown) : null;
+  }
+
+  @Nullable
+  private TdApi.FormattedText getDescription (boolean parseMarkdown) {
+    return getFormattedText(descriptionItem, parseMarkdown);
+  }
+
+  @Nullable
+  private TdApi.FormattedText getFormattedText (ListItem item, boolean parseMarkdown) {
+    CharSequence explanationText = item != null ? item.getCharSequenceValue() : null;
     if (!StringUtils.isEmpty(explanationText)) {
       TdApi.FormattedText explanation = TD.toFormattedText(explanationText, false);
       if (parseMarkdown)
@@ -632,7 +818,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       return;
     }
     boolean hasCustomEmoji = TD.hasCustomEmoji(question);
-    int correctOptionId = -1;
+    IntList correctOptionIds = new IntList(tdlib.options().pollAnswerCountMax);
     List<TdApi.InputPollOption> options = new ArrayList<>(tdlib.options().pollAnswerCountMax);
     for (ListItem optionItem : this.options) {
       CharSequence cs = StringUtils.trim(optionItem.getCharSequenceValue());
@@ -648,8 +834,9 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       if (!hasCustomEmoji && TD.hasCustomEmoji(option)) {
         hasCustomEmoji = true;
       }
-      if (optionItem == correctOptionItem) {
-        correctOptionId = options.size();
+      if (correctOptionItems.contains(optionItem)) {
+        int correctOptionId = options.size();
+        correctOptionIds.append(correctOptionId);
       }
       options.add(new TdApi.InputPollOption(option, null));
     }
@@ -676,7 +863,13 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       return;
     }
 
-    TdApi.FormattedText explanation = getExplanation(!disableMarkdown);
+    TdApi.FormattedText description = getDescription(!disableMarkdown);
+
+    // @param openPeriod Amount of time the poll will be active after creation, in seconds; 0-getOption(&quot;poll_open_period_max&quot;); pass 0 if not specified.
+    // @param closeDate Point in time (Unix timestamp) when the poll will automatically be closed; must be 0-getOption(&quot;poll_open_period_max&quot;) seconds in the future; pass 0 if not specified.
+    // The list of two-letter ISO 3166-1 alpha-2 codes of countries, users from which will be able to vote; for channel chats only. If empty, then all users can participate in the poll. There can be up to getOption(&quot;poll_country_count_max&quot;) chosen countries.
+    int openPeriod = 0;
+    int closeDate = 0;
 
     // TODO lock texts
     getDoneButton().setInProgress(true);
@@ -684,22 +877,24 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
     TdApi.InputPollOption[] optionsArray = options.toArray(new TdApi.InputPollOption[0]);
     TdApi.InputPollType inputPollType = isQuiz ?
-      new TdApi.InputPollTypeQuiz(new int[] {correctOptionId}, explanation, null) :
-      new TdApi.InputPollTypeRegular(false);
+      new TdApi.InputPollTypeQuiz(correctOptionIds.get(), getExplanation(!disableMarkdown), null) :
+      new TdApi.InputPollTypeRegular(settingAdditions != null && settingAdditions.getBoolValue());
     TdApi.InputMessagePoll poll = new TdApi.InputMessagePoll(
       question,
       optionsArray,
+      description,
       null,
-      null,
-      isAnonymousVoting,
-      isMultiChoiceVote,
-      !isQuiz,
-      false,
-      null,
-      false,
-      false,
+      settingShowVoters == null || !settingShowVoters.getBoolValue(),
+      isMultiAnswers(),
+      settingRevoting != null && settingRevoting.getBoolValue(),
+      settingOnlyMembers != null && settingOnlyMembers.getBoolValue(),
+      settingCountries != null && settingCountries.getBoolValue() ? selectedCountries.keySet().toArray(new String[0]) : new String[0],
+      settingShuffle != null && settingShuffle.getBoolValue(),
+      settingHideResults != null && settingHideResults.getBoolValue(),
       inputPollType,
-      0, 0, false
+      openPeriod,
+      closeDate,
+      false
     );
 
     RunnableData<TdApi.Message> after = message -> runOnUiThreadOptional(() -> {
