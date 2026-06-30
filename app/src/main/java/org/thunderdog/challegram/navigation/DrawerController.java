@@ -818,6 +818,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
             context.currentTdlib().ui().addAccount(context, true, true);
           }
         });
+      } else if (itemId == R.id.btn_calls) {
+        context.currentTdlib().ui().showClearCallHistoryOptions(this);
+        return true;
       }
       return false;
     }

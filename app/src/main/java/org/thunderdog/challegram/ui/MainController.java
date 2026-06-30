@@ -1482,6 +1482,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       TdApi.ChatList chatList = pagerChatLists.get(index);
       showChatListOptions(chatList);
       return true;
+    } else if (index == POSITION_CALLS) {
+      ViewController<?> controller = getCachedControllerForPosition(index);
+      if (controller instanceof CallListController && ((CallListController) controller).hasRecentCalls()) {
+        tdlib.ui().showClearCallHistoryOptions(this);
+        return true;
+      }
     }
     return false;
   }
