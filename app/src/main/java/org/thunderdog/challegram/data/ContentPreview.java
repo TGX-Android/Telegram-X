@@ -1573,6 +1573,7 @@ public class ContentPreview {
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
       case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageChecklist.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
@@ -1594,6 +1595,7 @@ public class ContentPreview {
       case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
       case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
       case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
+      case TdApi.MessageRichMessage.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
