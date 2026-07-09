@@ -1034,6 +1034,7 @@
   <item type="id" name="btn_ffmpeg" />
   <item type="id" name="btn_webp" />
   <item type="id" name="btn_tgcalls" />
+  <item type="id" name="btn_openssl" />
   <item type="id" name="btn_pushService" />
   <item type="id" name="btn_tdlib_verbosity" />
   <item type="id" name="btn_tdlib_resetLogSettings" />

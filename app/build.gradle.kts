@@ -150,6 +150,14 @@ android {
       config.pullRequests.joinToString(", ") { "\"${it.author}\"" }
     }}")
 
+    // OpenSSL version
+
+    val openSslGit = providers.of(GitVersionValueSource::class) {
+      parameters.module = layout.projectDirectory.dir("../tdlib/source/openssl")
+    }.get()
+    buildConfigString("OPENSSL_COMMIT", openSslGit.commitHashShort)
+    buildConfigString("OPENSSL_COMMIT_URL", openSslGit.commitUrl)
+
     // WebRTC version
 
     val webrtcGit = providers.of(GitVersionValueSource::class) {
