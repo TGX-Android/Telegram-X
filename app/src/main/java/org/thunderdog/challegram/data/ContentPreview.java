@@ -279,6 +279,11 @@ public class ContentPreview {
         }
         break;
       }
+      case TdApi.MessageRichMessage.CONSTRUCTOR: {
+        TdApi.MessageRichMessage richMessage = (TdApi.MessageRichMessage) message.content;
+        // TODO rich message text representation
+        break;
+      }
       case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
         TdApi.MessageAnimatedEmoji animatedEmoji = (TdApi.MessageAnimatedEmoji) message.content;
         alternativeText = animatedEmoji.emoji;
@@ -322,11 +327,6 @@ public class ContentPreview {
             arg1 = ((TdApi.MessageCall) message.content).duration;
             break;
         }
-        break;
-      }
-      case TdApi.MessageLocation.CONSTRUCTOR: {
-        TdApi.MessageLocation location = ((TdApi.MessageLocation) message.content);
-        alternativeText = location.livePeriod == 0 || location.expiresIn == 0 ? null : "live";
         break;
       }
       case TdApi.MessageGame.CONSTRUCTOR:
@@ -694,6 +694,8 @@ public class ContentPreview {
       }
 
       // Handled by getSimpleContentPreview
+      case TdApi.MessageLocation.CONSTRUCTOR:
+      case TdApi.MessageLiveLocation.CONSTRUCTOR:
       case TdApi.MessageVenue.CONSTRUCTOR:
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
       case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
@@ -756,7 +758,7 @@ public class ContentPreview {
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_baa076bf();
+        Td.assertMessageContent_bb294b24();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -996,7 +998,7 @@ public class ContentPreview {
           if (((TdApi.PushMessageContentLocation) push.content).isPinned)
             return getNotificationPinned(R.string.ActionPinnedGeoLive, TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
           else
-            return getNotificationPreview(TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, "live");
+            return getNotificationPreview(TdApi.MessageLiveLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
         } else {
           if (((TdApi.PushMessageContentLocation) push.content).isPinned)
             return getNotificationPinned(R.string.ActionPinnedGeo, TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
@@ -1272,7 +1274,9 @@ public class ContentPreview {
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GIF, R.string.ChatContentAnimation, formattedArgument, argumentTranslatable);
       case TdApi.MessageLocation.CONSTRUCTOR:
-        return new ContentPreview(EMOJI_LOCATION, "live".equals(Td.getText(formattedArgument)) ? R.string.AttachLiveLocation : R.string.Location);
+        return new ContentPreview(EMOJI_LOCATION, R.string.Location);
+      case TdApi.MessageLiveLocation.CONSTRUCTOR:
+        return new ContentPreview(EMOJI_LOCATION, R.string.AttachLiveLocation);
       case TdApi.MessageVenue.CONSTRUCTOR:
         return new ContentPreview(EMOJI_LOCATION, R.string.Location);
       case TdApi.MessageSticker.CONSTRUCTOR: {
@@ -1600,7 +1604,7 @@ public class ContentPreview {
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_baa076bf();
+        Td.assertMessageContent_bb294b24();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

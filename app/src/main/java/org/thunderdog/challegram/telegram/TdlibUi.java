@@ -6449,7 +6449,7 @@ public class TdlibUi extends Handler {
     if (!StringUtils.isEmpty(author)) {
       conversion += "," + author;
     }
-    TdApi.InputMessageContent content = new TdApi.InputMessageDocument(new TdApi.InputFileGenerated(fileName, conversion, 0), null, false, null);
+    TdApi.InputMessageContent content = new TdApi.InputMessageDocument(new TdApi.InputDocument(new TdApi.InputFileGenerated(fileName, conversion, 0), null, false), null);
     ShareController c = new ShareController(context.context(), context.tdlib());
     c.setArguments(new ShareController.Args(content));
     c.show();
@@ -7492,8 +7492,11 @@ public class TdlibUi extends Handler {
       case TdApi.PremiumLimitTypeShareableChatFolderCount.CONSTRUCTOR:
         effectiveLimit = tdlib.addedShareableChatFolderCountMax();
         break;
+      case TdApi.PremiumLimitTypeMessageTextLength.CONSTRUCTOR:
+        effectiveLimit = tdlib.maxMessageTextLength();
+        break;
       default:
-        Td.assertPremiumLimitType_8710e45f();
+        Td.assertPremiumLimitType_f8cc4a60();
         throw Td.unsupported(premiumLimitType);
     }
 

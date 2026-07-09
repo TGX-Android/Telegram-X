@@ -741,7 +741,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   }
 
   public boolean showDraft () {
-    return !isArchive() && chat.unreadCount == 0 && chat.draftMessage != null && chat.draftMessage.inputMessageText.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR;
+    // TODO rich message
+    return !isArchive() && chat.unreadCount == 0 && chat.draftMessage != null && chat.draftMessage.content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR;
   }
 
   public boolean isUnread () {
@@ -1218,7 +1219,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       boolean needSuffix = true;
       if (showDraft()) {
         TdApi.DraftMessage draftMessage = chat.draftMessage;
-        needSuffix = draftMessage != null && draftMessage.inputMessageText.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR && !Td.isEmpty(((TdApi.InputMessageText) chat.draftMessage.inputMessageText).text);
+        Td.assertDraftMessageContent_b637f166();
+        needSuffix = draftMessage != null && draftMessage.content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR && !Td.isEmpty(((TdApi.DraftMessageContentText) draftMessage.content).text);
         prefix = Lang.getString(R.string.Draft);
         flags |= FLAG_CONTENT_STRING;
       } else if (isOutgoing()) {
@@ -1330,7 +1332,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
     if (chat.draftMessage != null && showDraft()) {
       flags |= FLAG_TEXT_DRAFT | FLAG_HAS_PREFIX;
-      TdApi.FormattedText text = ((TdApi.InputMessageText) chat.draftMessage.inputMessageText).text;
+      // TODO rich message
+      Td.assertDraftMessageContent_b637f166();
+      TdApi.FormattedText text = ((TdApi.DraftMessageContentText) chat.draftMessage.content).text;
       setTextValue(text.text, text.entities, false);
       setPrefix();
       return;

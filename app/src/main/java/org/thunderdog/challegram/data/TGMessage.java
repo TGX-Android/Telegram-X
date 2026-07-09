@@ -5149,7 +5149,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public boolean canBeForwarded () {
     TdApi.MessageProperties properties = lastMessageProperties();
-    return properties.canBeForwarded && (msg.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR || ((TdApi.MessageLocation) msg.content).expiresIn == 0) && !isEventLog();
+    return properties.canBeForwarded && !isEventLog();
   }
 
   public boolean canBeReacted () {
@@ -8234,8 +8234,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           return new TGMessagePoll(context, msg, nonNull((TdApi.MessagePoll) content).poll);
         }
         case TdApi.MessageLocation.CONSTRUCTOR: {
-          TdApi.MessageLocation location = (TdApi.MessageLocation) content;
-          return new TGMessageLocation(context, msg, nonNull(location.location), location.livePeriod, location.expiresIn);
+          return new TGMessageLocation(context, msg, (TdApi.MessageLocation) content);
+        }
+        case TdApi.MessageLiveLocation.CONSTRUCTOR: {
+          return new TGMessageLocation(context, msg, (TdApi.MessageLiveLocation) content);
         }
         case TdApi.MessageVenue.CONSTRUCTOR: {
           return new TGMessageLocation(context, msg, ((TdApi.MessageVenue) content).venue);
@@ -8379,6 +8381,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           return new TGMessageGiveaway(context, msg, (TdApi.MessageGiveaway) content);
         }
         // unsupported
+        case TdApi.MessageRichMessage.CONSTRUCTOR:
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
         case TdApi.MessageStory.CONSTRUCTOR:
@@ -8428,7 +8431,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         default: {
-          Td.assertMessageContent_baa076bf();
+          Td.assertMessageContent_bb294b24();
           throw Td.unsupported(msg.content);
         }
       }

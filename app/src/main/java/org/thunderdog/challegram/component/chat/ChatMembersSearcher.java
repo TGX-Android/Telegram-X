@@ -76,10 +76,10 @@ public class ChatMembersSearcher {
 
     if (currentFilter == FILTER_TYPE_GLOBAL_GLOBAL) {
       Log.ensureReturnType(TdApi.SearchPublicChats.class, TdApi.Chats.class);
-      tdlib.client().send(new TdApi.SearchPublicChats(query), o -> onResult(contextId, o));
+      tdlib.client().send(new TdApi.SearchPublicChats(query, null), o -> onResult(contextId, o));
     } else if (currentFilter == FILTER_TYPE_GLOBAL_LOCAL) {
       Log.ensureReturnType(TdApi.SearchChatsOnServer.class, TdApi.Chats.class);
-      tdlib.client().send(new TdApi.SearchChatsOnServer(query, 50), o -> onResult(contextId, o));
+      tdlib.client().send(new TdApi.SearchChatsOnServer(query, null, 50), o -> onResult(contextId, o));
     } else if (isSupergroup) {
       Log.ensureReturnType(TdApi.GetSupergroupMembers.class, TdApi.ChatMembers.class);
       tdlib.client().send(new TdApi.GetSupergroupMembers(supergroupId, makeSupergroupFilter(query, currentFilter), currentOffset, LIMIT), o -> onResult(contextId, o));

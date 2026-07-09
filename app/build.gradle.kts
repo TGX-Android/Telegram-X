@@ -96,40 +96,6 @@ android {
 
     // Library versions in BuildConfig.java
 
-    var openSslVersion = ""
-    var openSslVersionFull = ""
-    val openSslVersionFile = File(project.rootDir.absoluteFile, "tdlib/source/openssl/include/openssl/opensslv.h")
-    openSslVersionFile.bufferedReader().use { reader ->
-      val regex = Regex("^#\\s*define OPENSSL_VERSION_NUMBER\\s*((?:0x)[0-9a-fAF]+)L?\$")
-      while (true) {
-        val line = reader.readLine() ?: break
-        val result = regex.find(line)
-        if (result != null) {
-          val rawVersion = result.groupValues[1]
-          val version = if (rawVersion.startsWith("0x")) {
-            rawVersion.substring(2).toLong(16)
-          } else {
-            rawVersion.toLong()
-          }
-          // MNNFFPPS: major minor fix patch status
-          val major = ((version shr 28) and 0xf).toInt()
-          val minor = ((version shr 20) and 0xff).toInt()
-          val fix = ((version shr 12) and 0xff).toInt()
-          val patch = ((version shr 4) and 0xff).toInt()
-          val status = (version and 0xf).toInt()
-          if (status != 0xf) {
-            fatal("Using non-stable OpenSSL version: $rawVersion (status = ${status.toString(16)})")
-          }
-          openSslVersion = "${major}.${minor}"
-          openSslVersionFull = "${major}.${minor}.${fix}${('a'.code - 1 + patch).toChar()}"
-          break
-        }
-      }
-    }
-    if (openSslVersion.isEmpty()) {
-      fatal("OpenSSL not found!")
-    }
-
     var tdlibVersion = ""
     val tdlibCommit = File(project.rootDir.absoluteFile, "tdlib/version.txt").bufferedReader().readLine().take(7)
     val tdlibVersionFile = File(project.rootDir.absoluteFile, "tdlib/source/td/CMakeLists.txt")
@@ -148,8 +114,6 @@ android {
       fatal("TDLib not found!")
     }
 
-    buildConfigString("OPENSSL_VERSION", openSslVersion)
-    buildConfigString("OPENSSL_VERSION_FULL", openSslVersionFull)
     buildConfigString("TDLIB_VERSION", tdlibVersion)
 
     val tgxGitVersionProvider = providers.of(GitVersionValueSource::class) {
@@ -443,6 +407,38 @@ android {
         ))
         put("ORIGINAL_VERSION_NAME", BuildConfigField(
           "String", "\"$baseVersionName.$baseVersionCode\"", null
+        ))
+
+        var openSslVersionFull = ""
+        var openSslReleaseDate = ""
+        val openSslVersionFile = File(project.rootDir.absoluteFile, "tdlib/openssl/${abiVariant.filters.first()}/include/openssl/opensslv.h")
+        openSslVersionFile.bufferedReader().use { reader ->
+          val regex = Regex("^# define (OPENSSL_FULL_VERSION_STR|OPENSSL_RELEASE_DATE)\\s*\"([^\"]+)\"$")
+          while (true) {
+            val line = reader.readLine() ?: break
+            val result = regex.find(line)
+            if (result != null) {
+              val varName = result.groupValues[1]
+              val value = result.groupValues[2]
+              when (varName) {
+                "OPENSSL_FULL_VERSION_STR" -> openSslVersionFull = value
+                "OPENSSL_RELEASE_DATE" -> openSslReleaseDate = value
+                else -> error(varName)
+              }
+              if (openSslVersionFull.isNotEmpty() && openSslReleaseDate.isNotEmpty()) {
+                break
+              }
+            }
+          }
+        }
+        if (openSslVersionFull.isEmpty()) {
+          fatal("OpenSSL not found!")
+        }
+        put("OPENSSL_VERSION_FULL", BuildConfigField(
+          "String", "\"$openSslVersionFull\"", null
+        ))
+        put("OPENSSL_RELEASE_DATE", BuildConfigField(
+          "String", "\"$openSslReleaseDate\"", null
         ))
       }
 

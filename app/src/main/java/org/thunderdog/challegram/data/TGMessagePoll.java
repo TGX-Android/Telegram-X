@@ -147,6 +147,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         toState.poll.totalVoterCount,
         toState.poll.recentVoterIds,
         toState.poll.canGetVoters,
+        toState.poll.canSeeResults,
         toState.poll.isAnonymous,
         toState.poll.allowsMultipleAnswers,
         toState.poll.allowsRevoting,

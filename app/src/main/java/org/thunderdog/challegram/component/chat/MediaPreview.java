@@ -312,6 +312,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         }
         break;
       }
+      case TdApi.MessageRichMessage.CONSTRUCTOR: {
+        // TODO extract first big photo
+        return null;
+      }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) message.content;
         return valueOf(tdlib, messagePhoto.photo, size, cornerRadius, messagePhoto.isSecret || messagePhoto.hasSpoiler);
@@ -350,6 +354,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageLocation.CONSTRUCTOR: {
         // map preview
         return valueOf(tdlib, ((TdApi.MessageLocation) message.content).location, null, size, cornerRadius);
+      }
+      case TdApi.MessageLiveLocation.CONSTRUCTOR: {
+        // map preview
+        return valueOf(tdlib, ((TdApi.MessageLiveLocation) message.content).location.location, null, size, cornerRadius);
       }
       case TdApi.MessageVenue.CONSTRUCTOR: {
         // map preview
@@ -518,7 +526,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         break;
       }
       default: {
-        Td.assertMessageContent_baa076bf();
+        Td.assertMessageContent_bb294b24();
         throw Td.unsupported(message.content);
       }
     }

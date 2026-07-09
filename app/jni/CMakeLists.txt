@@ -127,7 +127,7 @@ add_library(tdjni SHARED IMPORTED)
 set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
   ${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so
 )
-target_link_libraries(tdjni INTERFACE ssl crypto)
+target_link_libraries(tdjni INTERFACE crypto ssl)
 
 # opus
 include("${PROJECT_SOURCE_DIR}/BuildOpus.cmake")

@@ -110,12 +110,12 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     }
 
     public Args (double latitude, double longitude, @Nullable TdApi.Message message) {
-      this.mode = message != null && ((TdApi.MessageLocation) message.content).expiresIn == 0 ? MODE_DROPPED_PIN : MODE_LIVE_LOCATION;
+      this.mode = message != null && ((TdApi.MessageLiveLocation) message.content).expiresIn == 0 ? MODE_DROPPED_PIN : MODE_LIVE_LOCATION;
       this.latitude = latitude;
       this.longitude = longitude;
       this.message = message;
       if (message != null) {
-        messageExpiresAt = SystemClock.uptimeMillis() + (long) ((TdApi.MessageLocation) message.content).expiresIn * 1000l;
+        messageExpiresAt = SystemClock.uptimeMillis() + (long) ((TdApi.MessageLiveLocation) message.content).expiresIn * 1000l;
       }
     }
 
@@ -216,7 +216,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     public LocationPoint<D> setSourceMessage (@Nullable TdApi.Message liveLocation, boolean isLiveLocation) {
       this.message = liveLocation;
       this.isLiveLocation = isLiveLocation;
-      this.expiresAt = liveLocation != null ? SystemClock.uptimeMillis() + (long) ((TdApi.MessageLocation) liveLocation.content).expiresIn * 1000l : 0;
+      this.expiresAt = liveLocation != null ? SystemClock.uptimeMillis() + (long) ((TdApi.MessageLiveLocation) liveLocation.content).expiresIn * 1000l : 0;
       return this;
     }
   }
@@ -391,9 +391,9 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
           final TdApi.Message msg = tdlib.cache().findOutputLiveLocationMessage(getArgumentsStrict().chatId);
           if (msg != null) {
             TGMessageLocation.TimeResult result = TGMessageLocation.buildLiveLocationSubtitle(tdlib, Math.max(msg.date, msg.editDate));
-            TdApi.MessageLocation location = ((TdApi.MessageLocation) msg.content);
-            long expiresIn = Math.max(0, (long) (msg.date + location.livePeriod) * 1000l - System.currentTimeMillis());
-            view.setLiveLocation(Lang.getString(R.string.StopSharingLiveLocation), result.text, true, true, location.expiresIn == 0, location.livePeriod, expiresIn > 0 ? SystemClock.uptimeMillis() + expiresIn : 0);
+            TdApi.MessageLiveLocation location = ((TdApi.MessageLiveLocation) msg.content);
+            long expiresIn = Math.max(0, (long) (msg.date + location.location.livePeriod) * 1000l - System.currentTimeMillis());
+            view.setLiveLocation(Lang.getString(R.string.StopSharingLiveLocation), result.text, true, true, location.expiresIn == 0, location.location.livePeriod, expiresIn > 0 ? SystemClock.uptimeMillis() + expiresIn : 0);
             view.setInProgress(inShareProgress, isUpdate);
             if (result.nextLiveLocationUpdateTime != -1) {
               view.scheduleSubtitleUpdater(new Runnable() {
@@ -488,7 +488,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
           items.add(newShareLiveLocationCell());
         }
         if (sharingMessage != null) {
-          TdApi.Location location = ((TdApi.MessageLocation) sharingMessage.content).location;
+          TdApi.Location location = ((TdApi.MessageLiveLocation) sharingMessage.content).location.location;
           myLocation = new LocationPoint<>(this, location.latitude, location.longitude);
           myLocation.isSelfLocation = true;
         }
@@ -602,8 +602,8 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     view.setRoundedLocationImage(sender.getAvatar());
 
     TGMessageLocation.TimeResult result = buildLocationSubtitle(msg, isBase);
-    TdApi.MessageLocation location = (TdApi.MessageLocation) msg.content;
-    view.setLocation(sender.getName(), result.text, sender.getAccentColor(), sender.getLetters(), expiresAt == 0 || SystemClock.uptimeMillis() >= expiresAt, location.livePeriod, expiresAt);
+    TdApi.MessageLiveLocation location = (TdApi.MessageLiveLocation) msg.content;
+    view.setLocation(sender.getName(), result.text, sender.getAccentColor(), sender.getLetters(), expiresAt == 0 || SystemClock.uptimeMillis() >= expiresAt, location.location.livePeriod, expiresAt);
     if (result.nextLiveLocationUpdateTime != -1) {
       view.scheduleSubtitleUpdater(new Runnable() {
         @Override
@@ -622,8 +622,8 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
   }
 
   private TGMessageLocation.TimeResult buildLocationSubtitle (TdApi.Message msg, boolean isBase) {
-    TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) msg.content;
-    TdApi.Location location = messageLocation.location;
+    TdApi.MessageLiveLocation messageLocation = (TdApi.MessageLiveLocation) msg.content;
+    TdApi.Location location = messageLocation.location.location;
     LocationPoint<T> targetPoint;
     targetPoint = myLocation;
     if (!isBase && hasFocusPoint()) {
@@ -634,7 +634,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
 
     StringBuilder b = new StringBuilder();
 
-    /*if (((TdApi.MessageLocation) msg.content).expiresIn > 0) {
+    /*if (((TdApi.MessageLiveLocation) msg.content).expiresIn > 0) {
 
     } else {
       String ago = Lang.getAgo(Math.max(msg.date, msg.editDate), System.currentTimeMillis(), false, true, true);
@@ -797,8 +797,14 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
                 null,
                 tdlib.chatDefaultDisableNotifications(args.chatId)
               ),
-              new TdApi.InputMessageLocation(
-                new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0)
+              new TdApi.InputMessageLiveLocation(
+                new TdApi.LiveLocation(
+                  new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy),
+                  arg1,
+                  myLocation.heading,
+                  0
+                )
+              )
             );
           }
         });
@@ -1239,7 +1245,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
       this.inShareProgress = true;
       adapter.updateValuedSettingById(R.id.liveLocationSelf);
       if (msg != null) {
-        tdlib.send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null, 0, 0, 0), tdlib.errorHandler());
+        tdlib.send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null), tdlib.errorHandler());
       } else {
         locationHelper.receiveLocation(REQUEST_SHARE_LIVE, null, 10000, true);
       }
@@ -1552,8 +1558,8 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     if (point.message == null) {
       return;
     }
-    TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) point.message.content;
-    TdApi.Location location = messageLocation.location;
+    TdApi.MessageLiveLocation messageLocation = (TdApi.MessageLiveLocation) point.message.content;
+    TdApi.Location location = messageLocation.location.location;
     point.expiresAt = SystemClock.uptimeMillis() + (long) messageLocation.expiresIn * 1000l;
     if (location.latitude != point.latitude || location.longitude != point.longitude) {
       point.latitude = location.latitude;
@@ -1565,7 +1571,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
         updateCameraAutomatically();
       }
     } else {
-      onPointOfInterestActiveStateMightChanged(point, ((TdApi.MessageLocation) point.message.content).expiresIn > 0);
+      onPointOfInterestActiveStateMightChanged(point, ((TdApi.MessageLiveLocation) point.message.content).expiresIn > 0);
     }
   }
 
@@ -1604,7 +1610,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
 
     int cellStartIndex = liveLocationsStartIndex();
 
-    TdApi.Location location = ((TdApi.MessageLocation) message.content).location;
+    TdApi.Location location = ((TdApi.MessageLiveLocation) message.content).location.location;
     LocationPoint<T> point = new LocationPoint<>(this, location.latitude, location.longitude);
     point.setSourceMessage(message, true);
 
@@ -1670,7 +1676,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     onLivePersonListChanged(true, true);
   }
 
-  private void updateLiveLocationMessage (long messageId, @NonNull TdApi.MessageLocation location) {
+  private void updateLiveLocationMessage (long messageId, @NonNull TdApi.MessageLiveLocation location) {
     int currentPosition = indexOfLiveLocation(messageId);
     if (currentPosition != -1) {
       LocationPoint<T> point = pointsOfInterest.get(currentPosition);
@@ -1719,7 +1725,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
         if (messages.length > 0) {
           final ArrayList<LocationPoint<T>> list = new ArrayList<>(messages.length);
           for (TdApi.Message message : messages) {
-            if (!Td.isLocation(message.content)) {
+            if (!Td.isLiveLocation(message.content)) {
               continue;
             }
             if (message.isOutgoing || tdlib.isSelfSender(message)) {
@@ -1727,9 +1733,9 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
             }
             LocationPoint<T> ignorePoint = pointsOfInterest.isEmpty() ? null : pointsOfInterest.get(0);
             TdApi.Message ignoreMessage = ignorePoint != null ? ignorePoint.message : null;
-            TdApi.MessageLocation location = (TdApi.MessageLocation) message.content;
-            if (location.livePeriod > 0 && (ignoreMessage == null || ignoreMessage.id != message.id) && (location.expiresIn > 0 || ignoreMessage == null || getArgumentsStrict().mode == MODE_LIVE_LOCATION)) {
-              list.add(new LocationPoint<>(this, location.location.latitude, location.location.longitude).setSourceMessage(message, true));
+            TdApi.MessageLiveLocation location = (TdApi.MessageLiveLocation) message.content;
+            if (location.location.livePeriod > 0 && (ignoreMessage == null || ignoreMessage.id != message.id) && (location.expiresIn > 0 || ignoreMessage == null || getArgumentsStrict().mode == MODE_LIVE_LOCATION)) {
+              list.add(new LocationPoint<>(this, location.location.location.latitude, location.location.location.longitude).setSourceMessage(message, true));
             }
           }
           if (list.isEmpty()) {
@@ -1756,13 +1762,13 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     if (isDestroyed()) {
       return;
     }
-    if (!Td.isLocation(message.content)) {
+    if (!Td.isLiveLocation(message.content)) {
       return;
     }
     if (message.schedulingState != null || tdlib.isSelfSender(message)) {
       return;
     }
-    if (((TdApi.MessageLocation) message.content).livePeriod <= 0) {
+    if (((TdApi.MessageLiveLocation) message.content).location.livePeriod <= 0) {
       return;
     }
     executeOnUiThread(() -> {
@@ -1772,11 +1778,11 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     });
   }
 
-  private void updateMessageIfNeeded (final long chatId, final long messageId, final TdApi.MessageLocation location) {
+  private void updateMessageIfNeeded (final long chatId, final long messageId, final TdApi.MessageLiveLocation location) {
     if (isDestroyed()) {
       return;
     }
-    if (location.livePeriod <= 0) {
+    if (location.location.livePeriod <= 0) {
       return;
     }
     executeOnUiThread(() -> {
@@ -1801,8 +1807,8 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
 
   @Override
   public void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
-    if (Td.isLocation(newContent)) {
-      updateMessageIfNeeded(chatId, messageId, (TdApi.MessageLocation) newContent);
+    if (Td.isLiveLocation(newContent)) {
+      updateMessageIfNeeded(chatId, messageId, (TdApi.MessageLiveLocation) newContent);
     }
   }
 
@@ -1862,12 +1868,12 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     TdApi.Message m1 = o1.message;
     TdApi.Message m2 = o2.message;
 
-    TdApi.MessageLocation l1 = (TdApi.MessageLocation) m1.content;
-    TdApi.MessageLocation l2 = (TdApi.MessageLocation) m2.content;
+    TdApi.MessageLiveLocation l1 = (TdApi.MessageLiveLocation) m1.content;
+    TdApi.MessageLiveLocation l2 = (TdApi.MessageLiveLocation) m2.content;
 
     if (needCompareDistance) {
-      float d1 = U.distanceBetween(compareToLatitude, compareToLongitude, l1.location.latitude, l1.location.longitude);
-      float d2 = U.distanceBetween(compareToLatitude, compareToLongitude, l2.location.latitude, l2.location.longitude);
+      float d1 = U.distanceBetween(compareToLatitude, compareToLongitude, l1.location.location.latitude, l1.location.location.longitude);
+      float d2 = U.distanceBetween(compareToLatitude, compareToLongitude, l2.location.location.latitude, l2.location.location.longitude);
       if (d1 != d2) {
         return (d1 < d2) ? -1 : 1;
       }
