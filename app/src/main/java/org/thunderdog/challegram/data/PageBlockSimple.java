@@ -26,7 +26,7 @@ public class PageBlockSimple extends PageBlock {
   private final int viewType, backgroundColorId;
 
   public PageBlockSimple (ViewController<?> context, int viewType, int backgroundColorId) {
-    super(context, null);
+    super(context, null, 0);
     this.viewType = viewType;
     this.backgroundColorId = backgroundColorId;
   }

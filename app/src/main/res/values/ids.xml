@@ -253,6 +253,8 @@
   <item type="id" name="controller_editChatFolders" />
   <item type="id" name="controller_selectChats" />
 
+  <item type="id" name="controller_country" />
+
   <item type="id" name="separator" />
 
   <item type="id" name="msg_input" />
@@ -463,6 +465,7 @@
   <item type="id" name="text_recoveryInactive" />
   <item type="id" name="text_title" />
   <item type="id" name="text_subtitle" />
+  <item type="id" name="text_explanation" />
   <item type="id" name="btn_sessionsEmpty_image" />
   <item type="id" name="btn_sessionsEmpty_title" />
   <item type="id" name="btn_currentSession" />
@@ -1031,6 +1034,7 @@
   <item type="id" name="btn_ffmpeg" />
   <item type="id" name="btn_webp" />
   <item type="id" name="btn_tgcalls" />
+  <item type="id" name="btn_openssl" />
   <item type="id" name="btn_pushService" />
   <item type="id" name="btn_tdlib_verbosity" />
   <item type="id" name="btn_tdlib_resetLogSettings" />
@@ -1216,14 +1220,23 @@
 
   <item type="id" name="input" />
   <item type="id" name="title" />
+  <item type="id" name="name" />
+  <item type="id" name="code" />
   <item type="id" name="option" />
   <item type="id" name="optionAdd" />
   <item type="id" name="description" />
   <item type="id" name="state" />
 
-  <item type="id" name="btn_pollSetting_anonymous" />
-  <item type="id" name="btn_pollSetting_multi" />
+  <item type="id" name="btn_pollSetting_showVoters" />
+  <item type="id" name="btn_pollSetting_multiAnswers" />
+  <item type="id" name="btn_pollSetting_additions" />
+  <item type="id" name="btn_pollSetting_revoting" />
+  <item type="id" name="btn_pollSetting_shuffle" />
   <item type="id" name="btn_pollSetting_quiz" />
+  <item type="id" name="btn_pollSetting_duration" />
+  <item type="id" name="btn_pollSetting_members" />
+  <item type="id" name="btn_pollSetting_countries" />
+  <item type="id" name="btn_pollSetting_hideResults" />
 
   <item type="id" name="secret_icon" />
   <item type="id" name="secret_title" />

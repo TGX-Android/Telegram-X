@@ -85,8 +85,8 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
   private boolean useGif;
   private boolean isCover;
 
-  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockPhoto photo, @Nullable EmbeddedService nativeEmbed, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) {
-    super(context, photo);
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockPhoto photo, int quoteLevel, @Nullable EmbeddedService nativeEmbed, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) {
+    super(context, photo, quoteLevel);
     this.urlOpenParameters = urlOpenParameters;
     if (photo.photo != null) {
       wrapper = new MediaWrapper(context.context(), context.tdlib(), photo.photo, 0, 0, null, false, false, nativeEmbed);
@@ -96,8 +96,8 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     }
   }
 
-  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockMap map) {
-    super(context, map);
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockMap map, int quoteLevel) {
+    super(context, map, quoteLevel);
     this.map = map;
     setCaption(map.caption);
     switch (Settings.instance().getMapProviderType(true)) {
@@ -132,8 +132,8 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     this.mapFile.setScaleType(ImageFile.CENTER_CROP);
   }
 
-  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockAnimation animation) {
-    super(context, animation);
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockAnimation animation, int quoteLevel) {
+    super(context, animation, quoteLevel);
     this.useGif = true;
     if (animation.animation != null) {
       wrapper = new MediaWrapper(context.context(), context.tdlib(), animation.animation, 0, 0, null, false, true, !animation.needAutoplay, null);
@@ -142,8 +142,8 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     }
   }
 
-  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockVideo video) {
-    super(context, video);
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockVideo video, int quoteLevel) {
+    super(context, video, quoteLevel);
     if (video.video != null) {
       wrapper = new MediaWrapper(context.context(), context.tdlib(), video.video, null, 0, 0, null, false);
       initWrapper(wrapper);
@@ -155,10 +155,10 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
 
   private CollageContext collageContext;
 
-  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockCollage collage) {
-    super(context, collage);
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockCollage collage, int quoteLevel) {
+    super(context, collage, quoteLevel);
     setCaption(collage.caption);
-    parseWrappers(collage.pageBlocks);
+    parseWrappers(collage.blocks);
     if (wrappers != null && !wrappers.isEmpty()) {
       collageContext = new CollageContext(wrappers, Screen.dp(2f));
     }
@@ -166,11 +166,11 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
 
   // Slideshow
 
-  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockSlideshow slideshow) {
-    super(context, slideshow);
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockSlideshow slideshow, int quoteLevel) {
+    super(context, slideshow, quoteLevel);
     this.isList = true;
     setCaption(slideshow.caption);
-    parseWrappers(slideshow.pageBlocks);
+    parseWrappers(slideshow.blocks);
   }
 
   private void initWrapper (MediaWrapper wrapper) {
@@ -229,8 +229,8 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
   private TdApi.PageBlockEmbedded embedded;
   private ImageFile embeddedMiniThumbnail, embeddedPreview, embeddedPoster;
 
-  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockEmbedded embedded) {
-    super(context, embedded);
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockEmbedded embedded, int quoteLevel) {
+    super(context, embedded, quoteLevel);
     this.embedded = embedded;
     if (embedded.posterPhoto != null) {
       if (embedded.posterPhoto.minithumbnail != null) {

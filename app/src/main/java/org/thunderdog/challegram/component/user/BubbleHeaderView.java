@@ -292,7 +292,7 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
   @Override
   public void onTextChanged (CharSequence s, int start, int before, int count) {
     if (callback != null) {
-      callback.searchUser(s.toString());
+      callback.searchForItems(s.toString());
     }
   }
 
@@ -340,7 +340,7 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
 
   public interface Callback {
     View getTranslationView ();
-    void searchUser (String q);
+    void searchForItems (String q);
     void onBubbleRemoved (@NonNull BubbleView.Entry entry);
     void setHeaderOffset (int offset);
     void applyHeaderOffset ();

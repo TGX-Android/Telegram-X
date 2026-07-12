@@ -85,6 +85,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     private final PollOption[] options;
     private final float resultsVisibility, timerVisibility, hintVisibility;
     private final boolean resultsVisible, timerVisible, hintVisible;
+    private final int isAnsweredCorrectly;
 
     public PollState (Tdlib tdlib, TdApi.Poll poll, boolean resultsVisible) {
       this.poll = poll;
@@ -99,6 +100,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       for (int i = 0; i < poll.options.length; i++) {
         this.options[i] = new PollOption(poll.options[i], voteRatio(i), poll.options[i].isBeingChosen ? 1f : 0f);
       }
+      this.isAnsweredCorrectly = TD.isAnsweredCorrectly(poll);
     }
 
     public PollState (Tdlib tdlib, PollState fromState, PollState toState, float factor) {
@@ -111,6 +113,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       this.hintVisibility = fromTo(fromState.hintVisibility, toState.hintVisibility, factor);
       this.hintVisible = hintVisibility > 0f;
       this.maxVoterCount = fromTo(fromState.maxVoterCount, toState.maxVoterCount, factor);
+      this.isAnsweredCorrectly = TD.isAnsweredCorrectly(toState.poll);
       this.options = new PollOption[toState.options.length];
       TdApi.PollOption[] options = new TdApi.PollOption[toState.options.length];
       for (int i = 0; i < options.length; i++) {
@@ -144,6 +147,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         toState.poll.totalVoterCount,
         toState.poll.recentVoterIds,
         toState.poll.canGetVoters,
+        toState.poll.canSeeResults,
         toState.poll.isAnonymous,
         toState.poll.allowsMultipleAnswers,
         toState.poll.allowsRevoting,
@@ -216,11 +220,11 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       return isSelected != null && isSelected.getValue();
     }
 
-    public float getMoveFactor () {
+    public float getMoveFactor (float resultsVisibility) {
       if (isSelected != null) {
-        return 1f - this.selectionFactor;
+        return (1f - this.selectionFactor * resultsVisibility);
       } else {
-        return 0f;
+        return 1f - resultsVisibility;
       }
     }
 
@@ -247,6 +251,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   }
 
   private OptionEntry[] options;
+  private int[] displayOrder;
   private ProgressComponent commonProgress;
   private ProgressComponent timerProgress;
 
@@ -339,7 +344,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
   // Impl
 
-  private void prepareOptions (TdApi.PollOption[] options) {
+  private void prepareOptions (TdApi.PollOption[] options, int[] displayOrder) {
+    this.displayOrder = displayOrder;
     int count = options.length;
     if (this.options == null) {
       this.options = new OptionEntry[count];
@@ -397,8 +403,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
   }
 
-  private void setOptions (TdApi.PollOption[] options) {
-    prepareOptions(options);
+  private void setOptions (TdApi.PollOption[] options, int[] order) {
+    prepareOptions(options, order);
     int optionId = 0;
     for (TdApi.PollOption option : options) {
       TdApi.FormattedText optionToSet = (translatedTexts != null ? Td.trim(translatedTexts[optionId + 1]) : option.text);
@@ -437,8 +443,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
   }
 
-  private void prepareProgress (TdApi.PollOption[] options) {
-    prepareOptions(options);
+  private void prepareProgress (TdApi.PollOption[] options, int[] order) {
+    prepareOptions(options, order);
     if (isMultiChoicePoll()) {
       if (commonProgress != null)
         return;
@@ -464,8 +470,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     if (questionText == null) {
       setRecentVoters(state.poll.recentVoterIds, false);
       setQuestion(state.poll.question);
-      setOptions(state.poll.options);
-      prepareProgress(state.poll.options);
+      setOptions(state.poll.options, state.poll.optionOrder);
+      prepareProgress(state.poll.options, state.poll.optionOrder);
       setTexts();
       setButton(false);
     }
@@ -606,6 +612,19 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
   }
 
+  private int[] getCorrectOptionIds () {
+    if (state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
+      int[] correctOptionIds = ((TdApi.PollTypeQuiz) state.poll.type).correctOptionIds;
+      if (correctOptionIds.length == 0 && futureState != null && futureState.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
+        correctOptionIds = ((TdApi.PollTypeQuiz) futureState.poll.type).correctOptionIds;
+      }
+      if (correctOptionIds != null && correctOptionIds.length > 0) {
+        return correctOptionIds;
+      }
+    }
+    return null;
+  }
+
   private int timerTime = -1;
   private String timerStr;
   private float timerWidth;
@@ -683,7 +702,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
       TextPaint paint = Paints.getRegularTextPaint(12f, ColorUtils.alphaColor(timerVisibility, color));
       if (this.timerTime != remainingSeconds || this.timerStr == null) {
-        this.timerStr = Strings.buildDuration(remainingSeconds);
+        this.timerStr = Lang.getString(R.string.EndsInDuration, Strings.buildDurationFull(remainingTime, TimeUnit.MILLISECONDS));
         this.timerTime = remainingSeconds;
         this.timerWidth = U.measureText(timerStr, paint);
       }
@@ -696,20 +715,14 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
     // Then, draw options
 
-    boolean isQuiz = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
-    int[] correctOptionIds;
-    if (isQuiz) {
-      correctOptionIds = ((TdApi.PollTypeQuiz) state.poll.type).correctOptionIds;
-      if (correctOptionIds.length == 0 && futureState != null && futureState.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR) {
-        correctOptionIds = ((TdApi.PollTypeQuiz) futureState.poll.type).correctOptionIds;
-      }
-    } else {
-      correctOptionIds = null;
-    }
+    final boolean isQuiz = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
+    final int[] correctOptionIds = getCorrectOptionIds();
 
     float visibility = getResultsVisibility();
-    int optionId = 0;
-    for (OptionEntry option : options) {
+    for (int i = 0; i < options.length; i++) {
+      final int optionId = findOptionId(i, displayOrder);
+      OptionEntry option = options[optionId];
+
       int optionHeight = getOptionHeight(option.text);
       int rightX = startX + maxWidth + (useBubbles() ? getBubblePaddingRight() : 0);
 
@@ -756,14 +769,20 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       int contentColor = getVerticalLineContentColor();
       float selectionFactor = option.getSelectionFactor();
 
+      boolean isCorrectOption = ArrayUtils.contains(correctOptionIds, optionId);
+      boolean isChosen = futureState != null ?
+        futureState.poll.options[optionId].isChosen :
+        state.poll.options[optionId].isChosen;
+
+      boolean hasAnswer = futureState != null ?
+        futureState.resultsVisible :
+        state.resultsVisible;
+
       if (correctOptionIds != null) {
-        for (int correctOptionId : correctOptionIds) {
-          boolean isChosen = getPoll().options[correctOptionId].isChosen;
-          int secondaryColor = optionId == correctOptionId ? getCorrectLineColor(isChosen) : getNegativeLineColor();
-          int secondaryContentColor = optionId == correctOptionId ? getCorrectLineContentColor(isChosen) : getNegativeLineContentColor();
-          lineColor = ColorUtils.fromToArgb(lineColor, secondaryColor, selectionFactor);
-          contentColor = ColorUtils.fromToArgb(contentColor, secondaryContentColor, selectionFactor);
-        }
+        int secondaryColor = isCorrectOption ? getCorrectLineColor(isChosen) : getNegativeLineColor();
+        int secondaryContentColor = isCorrectOption ? getCorrectLineContentColor(isChosen) : getNegativeLineContentColor();
+        lineColor = ColorUtils.fromToArgb(lineColor, secondaryColor, selectionFactor * visibility);
+        contentColor = ColorUtils.fromToArgb(contentColor, secondaryContentColor, selectionFactor * visibility);
       }
 
       int lineY = startY + optionHeight - Screen.separatorSize() - Screen.dp(2.5f);
@@ -776,19 +795,11 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       }
 
       if (selectionFactor > 0f) {
-        float moveFactor = option.getMoveFactor();
-        float squareFactor = (state.poll.type.getConstructor() == TdApi.PollTypeRegular.CONSTRUCTOR && state.poll.allowsMultipleAnswers ? 1f : 0f);
-        boolean isNegative = isQuiz;
-        if (isNegative && correctOptionIds != null) {
-          for (int correctOptionId : correctOptionIds) {
-            if (optionId == correctOptionId) {
-              isNegative = false;
-              break;
-            }
-          }
-        }
+        float moveFactor = option.getMoveFactor(visibility);
+        float squareFactor = state.poll.allowsMultipleAnswers ? 1f : 0f;
+        int checkBoxMode = isQuiz && hasAnswer && correctOptionIds != null ? (!isCorrectOption ? SimplestCheckBox.MODE_NEGATIVE : !isChosen ? SimplestCheckBox.MODE_MISSING : SimplestCheckBox.MODE_NORMAL) : SimplestCheckBox.MODE_NORMAL;
         if (option.checkBox == null) {
-          option.checkBox = SimplestCheckBox.newInstance(selectionFactor, null, lineColor, contentColor, isQuiz && isNegative, moveFactor);
+          option.checkBox = SimplestCheckBox.newInstance(selectionFactor, null, lineColor, contentColor, checkBoxMode, moveFactor);
         }
         float scale = .75f;
         int cx = fromX - (int) (SimplestCheckBox.size() * scale) / 2 - Screen.dp(8f) + (int) (Screen.dp(2f) * scale);
@@ -806,14 +817,13 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         } else {
           restoreToCount = -1;
         }
-        SimplestCheckBox.draw(c, cx, cy, selectionFactor, null, option.checkBox, lineColor, contentColor, isNegative, squareFactor);
+        SimplestCheckBox.draw(c, cx, cy, selectionFactor, null, option.checkBox, lineColor, contentColor, checkBoxMode, squareFactor);
         if (needScale) {
           Views.restore(c, restoreToCount);
         }
       }
 
       startY += optionHeight;
-      optionId++;
     }
 
     if (highlightOptionId == HIGHLIGHT_BUTTON) {
@@ -844,7 +854,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         // int dy = (int) (!isMultiChoicePoll() && !isAnonymous() ? Screen.dp(7f) * getResultsVisibility() : 0);
         entry.item.text.draw(c, x, y, null, (1f - .4f * (1f - isButtonActive.getFloatValue())) * entry.getVisibility());
         if (commonProgress != null && entry.item.id == R.id.btn_vote) {
-          final float stateVisibility = getResultsVisibility() >= .5f ? 0f : 1f - getResultsVisibility() / .5f;
+          final float stateVisibility = visibility >= .5f ? 0f : 1f - visibility / .5f;
           commonProgress.forceColor(ColorUtils.alphaColor(stateVisibility * getCommonProgress() * entry.getVisibility(), Theme.getColor(getProgressColorId())));
           int radius = Screen.dp(3);
           x += entry.item.text.getWidth() + radius + Screen.dp(7f);
@@ -974,6 +984,11 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   }
 
   private boolean canVote (TdApi.Poll poll) {
+    for (TdApi.PollOption option : poll.options) {
+      if (option.isChosen) {
+        return false;
+      }
+    }
     return !needShowResults(poll);
   }
 
@@ -981,12 +996,16 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     if (poll.isClosed)
       return true;
     boolean haveVoters = false;
+    boolean haveChosenOption = false;
     for (TdApi.PollOption option : poll.options) {
       if (option.isChosen)
-        return true;
+        haveChosenOption = true;
       if (option.voterCount > 0) {
         haveVoters = true;
       }
+    }
+    if (haveChosenOption) {
+      return haveVoters;
     }
     // show results for anonymous admin
     // FIXME TDLib/server: poll information never returned to anonymous admin
@@ -1055,7 +1074,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         for (TdApi.PollOption option : updatedPoll.options) {
           TdApi.PollOption oldOption = oldPoll.options[optionId];
           if (oldOption.isBeingChosen && option.isChosen && quiz != null) {
-            boolean isCorrect = ArrayUtils.contains(quiz.correctOptionIds, optionId);
+            boolean isCorrect = TD.isAnsweredCorrectly(updatedPoll) == TD.ANSWER_CORRECT;
             if (isCorrect) {
               performConfettiAnimation(getConfettiCenterX(optionId), getConfettiCenterY(optionId));
             }
@@ -1098,8 +1117,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       setTexts();
       if (changed) {
         setQuestion(updatedPoll.question);
-        setOptions(updatedPoll.options);
-        prepareProgress(updatedPoll.options);
+        setOptions(updatedPoll.options, updatedPoll.optionOrder);
+        prepareProgress(updatedPoll.options, updatedPoll.optionOrder);
         rebuildAndUpdateContent();
       } else {
         invalidate();
@@ -1129,15 +1148,15 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   private CharSequence getCounter (TdApi.Poll poll, int count) {
     switch (getPoll().type.getConstructor()) {
       case TdApi.PollTypeRegular.CONSTRUCTOR:
-        return count > 0 ? Lang.pluralBold(R.string.xVotes, count) : Lang.getString(poll.isClosed ? R.string.NoVotesResult : R.string.NoVotes);
+        return count > 0 ? Lang.pluralBold(R.string.xVotes, count) : Lang.getString(TD.areResultsHidden(poll) ? R.string.WaitingResultsPoll : poll.isClosed ? R.string.NoVotesResult : R.string.NoVotes);
       case TdApi.PollTypeQuiz.CONSTRUCTOR:
-        return count > 0 ? Lang.pluralBold(R.string.xAnswers, count) : Lang.getString(poll.isClosed ? R.string.NoAnswersResult : R.string.NoAnswers);
+        return count > 0 ? Lang.pluralBold(R.string.xAnswers, count) : Lang.getString(TD.areResultsHidden(poll) ? R.string.WaitingResultsQuiz : poll.isClosed ? R.string.NoAnswersResult : R.string.NoAnswers);
       default:
         throw new IllegalArgumentException(getPoll().type.toString());
     }
   }
 
-  private void setTotalVoterCount (TdApi.Poll poll) {
+  private void setTotalVoterCount (TdApi.Poll poll, boolean force) {
     int count = poll.totalVoterCount;
     if (!poll.isAnonymous) {
       if (TD.hasAnswer(poll))
@@ -1146,7 +1165,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       if (!TD.hasAnswer(poll))
         count++;
     }
-    if (this.totalVoterCount != count) {
+    if (this.totalVoterCount != count || force) {
       this.totalVoterCount = count;
       this.totalVoterCountStr = getCounter(poll, count).toString();
       this.totalVoterCountStrWidth = (int) U.measureText(totalVoterCountStr, Paints.getRegularTextPaint(12f));
@@ -1183,8 +1202,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
   }
 
-  private void setPercentages (boolean visible, TdApi.PollOption[] options) {
-    prepareOptions(options);
+  private void setPercentages (boolean visible, TdApi.PollOption[] options, int[] order) {
+    prepareOptions(options, order);
     for (int i = 0; i < options.length; i++) {
       setPercentage(i, visible ? options[i].votePercentage : 0);
     }
@@ -1192,28 +1211,23 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
   private void setTexts () {
     if (futureState == null) {
-      setTotalVoterCount(state.poll);
+      boolean showResults = needShowResults(state.poll);
+      setTotalVoterCount(state.poll, true);
       setPollStatus(state.poll.isClosed ? POLL_STATUS_CLOSED : POLL_STATUS_ANONYMOUS);
-      setPercentages(needShowResults(state.poll), state.poll.options);
+      setPercentages(showResults, state.poll.options, state.poll.optionOrder);
       int[] correctOptionIds = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) state.poll.type).correctOptionIds : null;
       for (int optionId = 0; optionId < state.poll.options.length; optionId++) {
-        boolean isCorrect = false;
-        if (correctOptionIds != null) {
-          for (int correctOptionId : correctOptionIds) {
-            if (optionId == correctOptionId) {
-              isCorrect = true;
-              break;
-            }
-          }
-        }
-        options[optionId].selectionFactor = isCorrect || state.poll.options[optionId].isChosen ? 1f : 0f;
+        boolean isCorrect = correctOptionIds != null && ArrayUtils.contains(correctOptionIds, optionId);
+        options[optionId].selectionFactor = (showResults && isCorrect) || state.poll.options[optionId].isChosen ? 1f : 0f;
       }
     } else {
-      setTotalVoterCount(futureState.poll);
+      setTotalVoterCount(futureState.poll, state.poll.isClosed != futureState.poll.isClosed || TD.areResultsHidden(state.poll) != TD.areResultsHidden(futureState.poll));
       if (state.poll.isClosed != futureState.poll.isClosed) {
         setPollStatus(futureState.poll.isClosed ? POLL_STATUS_CLOSED : POLL_STATUS_ANONYMOUS);
       }
+      boolean fromShowResults = needShowResults(state.poll);
       int[] fromCorrectOptionIds = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) state.poll.type).correctOptionIds : null;
+      boolean toShowResults = needShowResults(futureState.poll);
       int[] toCorrectOptionIds = futureState.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) futureState.poll.type).correctOptionIds : null;
       for (int optionId = 0; optionId < state.poll.options.length; optionId++) {
         int fromPercentage = state.resultsVisible ? state.votePercentage(optionId) : 0;
@@ -1223,8 +1237,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         }
 
         options[optionId].selectionFactor = fromTo(
-          (ArrayUtils.contains(fromCorrectOptionIds, optionId)) || state.poll.options[optionId].isChosen ? 1f : 0f,
-          (ArrayUtils.contains(toCorrectOptionIds, optionId)) || futureState.poll.options[optionId].isChosen ? 1f : 0f,
+          (fromShowResults && ArrayUtils.contains(fromCorrectOptionIds, optionId)) || state.poll.options[optionId].isChosen ? 1f : 0f,
+          (toShowResults && ArrayUtils.contains(toCorrectOptionIds, optionId)) || futureState.poll.options[optionId].isChosen ? 1f : 0f,
           changeFactor
         );
       }
@@ -1259,6 +1273,14 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         }
         optionId++;
       }
+    }
+  }
+
+  private static int findOptionId (int optionIndex, int[] order) {
+    if (order != null && order.length > 0) {
+      return order[optionIndex];
+    } else {
+      return optionIndex;
     }
   }
 
@@ -1430,7 +1452,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     return (!isEventLog() && clickHelper.onTouchEvent(view, e)) || res;
   }
 
-  private int clickOptionId = -1;
+  private int clickOptionId = HIGHLIGHT_NONE;
 
   @Override
   public boolean performLongPress (View view, float x, float y) {
@@ -1464,16 +1486,16 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
     startY += Screen.dp(18f);
 
-    int optionId = 0;
+    for (int i = 0; i < options.length; i++) {
+      final int optionId = findOptionId(i, displayOrder);
+      OptionEntry option = options[optionId];
 
-    for (OptionEntry option : options) {
       int optionHeight = getOptionHeight(option.text);
       if (y >= startY && y < startY + optionHeight) {
         clickOptionId = optionId;
         return true;
       }
       startY += optionHeight;
-      optionId++;
     }
 
     if (isButtonActive != null && isButtonActive.getValue() && button.singleton() != null && !button.singleton().item.isInactive && y >= startY && y < getContentHeight() + (useBubbles() ? getBubbleContentPadding() : 0)) {
@@ -1587,8 +1609,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         showContentHint(view, (targetView, outRect) -> {
           int startY = getQuestionTitleHeight();
           startY += Screen.dp(18f);
-          int optionId = 0;
-          for (OptionEntry option : options) {
+          for (int i = 0; i < options.length; i++) {
+            final int optionId = findOptionId(i, displayOrder);
+            OptionEntry option = options[optionId];
             int optionHeight = getOptionHeight(option.text);
             if (selectedOptionId == optionId) {
               int progressCx = Screen.dp(12f);
@@ -1598,7 +1621,6 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
               return;
             }
             startY += optionHeight;
-            optionId++;
           }
           outRect.set(0, 0, 0, 0);
         }, R.string.ErrorScheduled);
@@ -1607,8 +1629,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         showContentHint(view, (targetView, outRect) -> {
           int startY = getQuestionTitleHeight();
           startY += Screen.dp(18f);
-          int optionId = 0;
-          for (OptionEntry option : options) {
+          for (int i = 0; i < options.length; i++) {
+            final int optionId = findOptionId(i, displayOrder);
+            OptionEntry option = options[optionId];
             int optionHeight = getOptionHeight(option.text);
             if (selectedOptionId == optionId) {
               startY += Screen.dp(15f);
@@ -1616,7 +1639,6 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
               return;
             }
             startY += optionHeight;
-            optionId++;
           }
           outRect.set(0, 0, 0, 0);
         }, TD.toFormattedText(getCounter(getPoll(), getPoll().options[selectedOptionId].voterCount), false));
@@ -1696,8 +1718,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   private TooltipOverlayView.LocationProvider makeButtonLocationProvider (int selectedOptionId, boolean needOffset) {
     return (targetView, outRect) -> {
       int startY = getQuestionTitleHeight();
-      int optionId = 0;
-      for (OptionEntry option : options) {
+      for (int i = 0; i < options.length; i++) {
+        final int optionId = findOptionId(i, displayOrder);
+        OptionEntry option = options[optionId];
         int optionHeight = getOptionHeight(option.text);
         if (selectedOptionId == optionId) {
           startY += Screen.dp(15f + 12f);
@@ -1708,7 +1731,6 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
           return;
         }
         startY += optionHeight;
-        optionId++;
       }
       outRect.set(0, 0, 0, 0);
     };

@@ -19,6 +19,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 
 import org.thunderdog.challegram.core.Lang;
@@ -31,12 +32,14 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 
 public class CheckBoxView extends View {
   private final BoolAnimator isChecked = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isHidden = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isPartially = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isDisabled = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
+  private final BoolAnimator isCircle = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   // TODO isIntermediate state, when check angle smoothly changes from 90 to 180 degrees
 
   private final RectF rect;
@@ -64,6 +67,10 @@ public class CheckBoxView extends View {
     isPartially.setValue(partially, animated);
   }
 
+  public void setCircular (boolean circular, boolean animated) {
+    isCircle.setValue(circular, animated);
+  }
+
   public boolean toggle () {
     return isChecked.toggleValue(true);
   }
@@ -85,6 +92,9 @@ public class CheckBoxView extends View {
       return;
     }
 
+    final int paddingLeft = getPaddingLeft();
+    final int paddingTop = getPaddingTop();
+
     final float factor = isChecked.getFloatValue();
     final int alpha = (int) (255f * showFactor);
 
@@ -97,12 +107,13 @@ public class CheckBoxView extends View {
     float partFactor = isPartially.getFloatValue(); // <= FACTOR_DIFF ? 0f : (partiallyFactor - FACTOR_DIFF) / (1f - FACTOR_DIFF);
     float scaleFactor = 1f - (rectFactor == 1f ? 1f - checkFactor : rectFactor) * SCALE_DIFF;
 
-    final int radius = Screen.dp(2f);
-    final int offset = (int) ((float) radius * .5f);
+    int size = Math.min(getMeasuredWidth() - paddingLeft - getPaddingRight(), getMeasuredHeight() - paddingTop - getPaddingBottom());
 
-    outerPaint.setStrokeWidth(radius);
+    int strokeWidth = Screen.dp(2f);
+    final int offset = (int) ((float) strokeWidth * .5f);
+    final int radius = MathUtils.fromTo(strokeWidth, size / 2, isCircle.getFloatValue());
 
-    int size = Math.min(getMeasuredWidth(), getMeasuredHeight());
+    outerPaint.setStrokeWidth(strokeWidth);
 
     rect.left = offset;
     rect.top = offset;
@@ -113,6 +124,9 @@ public class CheckBoxView extends View {
     float cy = (rect.top + rect.bottom) * .5f;
 
     final int restoreToCount = Views.save(c);
+    if (paddingLeft != 0 || paddingTop != 0) {
+      c.translate(paddingLeft, paddingTop);
+    }
     c.scale(scaleFactor, scaleFactor, cx, cy);
 
     int color = ColorUtils.fromToArgb(Theme.radioOutlineColor(), Theme.radioFillingColor(), rectFactor * (1f - isDisabled.getFloatValue()));
@@ -135,6 +149,11 @@ public class CheckBoxView extends View {
       c.drawRect(left, rect.bottom - offset - h, right, rect.bottom - offset, Paints.fillingPaint(alphaColor));
 
       if (checkFactor != 0f) {
+        float extraScale = 1f - .15f * isCircle.getFloatValue();
+        if (extraScale != 1f) {
+          c.scale(extraScale, extraScale, cx, cy);
+        }
+
         c.translate(-Screen.dp(.5f) * (1f - partFactor), 0);
         c.translate(-Screen.dp(1.5f) * partFactor, -Screen.dp(1.5f) * partFactor);
         c.rotate(-45f * (1f - partFactor), cx, cy);
@@ -149,6 +168,12 @@ public class CheckBoxView extends View {
     }
 
     Views.restore(c, restoreToCount);
+  }
+
+  @Override
+  public boolean onTouchEvent (MotionEvent event) {
+    boolean isEnabled = isEnabled();
+    return isEnabled && super.onTouchEvent(event);
   }
 
   public static CheckBoxView simpleCheckBox (Context context) {

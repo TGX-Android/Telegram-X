@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 project(tgx VERSION 1.0.0 LANGUAGES C CXX)
 message(STATUS "Building ${PROJECT_NAME} platform: ${ANDROID_PLATFORM} abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
 
-if (NOT ${TGX_FLAVOR} MATCHES "legacy|lollipop|latest")
+if (NOT ${TGX_FLAVOR} MATCHES "legacy|lollipop|marshmallow|latest")
   message(FATAL_ERROR "Unknown flavor: ${TGX_FLAVOR}")
 endif()
 
@@ -127,7 +127,7 @@ add_library(tdjni SHARED IMPORTED)
 set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
   ${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so
 )
-target_link_libraries(tdjni INTERFACE ssl crypto)
+target_link_libraries(tdjni INTERFACE crypto ssl)
 
 # opus
 include("${PROJECT_SOURCE_DIR}/BuildOpus.cmake")

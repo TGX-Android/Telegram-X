@@ -1812,6 +1812,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return device;
   }
 
+  private static final String JOB_TYPE_EVENT_REPORT = "event";
+  private static final String JOB_TYPE_CRASH_REPORT = "crash";
+
   private void reportEvent (String type, Map<String, Object> event) {
     AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
 
@@ -1824,9 +1827,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     event.put("device_id", Settings.instance().crashDeviceId());
 
     Tdlib tdlib = serviceTdlib();
-    tdlib.incrementJobReferenceCount();
-    tdlib.client().send(new TdApi.SaveApplicationLogEvent(type, appBuildInfo.maxCommitDate(), JSON.toObject(event)), result -> {
-      tdlib.decrementJobReferenceCount();
+    tdlib.incrementJobReferenceCount(JOB_TYPE_EVENT_REPORT);
+    tdlib.send(new TdApi.SaveApplicationLogEvent(type, appBuildInfo.maxCommitDate(), JSON.toObject(event)), (ok, error) -> {
+      tdlib.decrementJobReferenceCount(JOB_TYPE_EVENT_REPORT);
     });
   }
 
@@ -1844,7 +1847,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
             if (pendingRequests.get() != 0)
               return;
           }
-          tdlib.decrementJobReferenceCount();
+          tdlib.decrementJobReferenceCount(JOB_TYPE_CRASH_REPORT);
         };
         boolean isEmpty = true;
         for (Crash crash : savingCrashes) {
@@ -1852,7 +1855,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           if (saveFunction != null) {
             if (isEmpty) {
               isEmpty = false;
-              tdlib.incrementJobReferenceCount();
+              tdlib.incrementJobReferenceCount(JOB_TYPE_CRASH_REPORT);
             }
             synchronized (pendingRequests) {
               pendingRequests.incrementAndGet();

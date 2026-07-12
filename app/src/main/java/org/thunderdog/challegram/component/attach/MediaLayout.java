@@ -1360,9 +1360,11 @@ public class MediaLayout extends FrameLayoutFix implements
       if (target != null) {
         TdApi.Location location = new TdApi.Location(latitude, longitude, accuracy);
         if (inSpecificMode()) {
-          target.sendPickedLocation(location, heading, sendOptions);
+          target.sendPickedLocation(location, sendOptions);
+        } else if (livePeriod != 0) {
+          target.send(new TdApi.InputMessageLiveLocation(new TdApi.LiveLocation(location, livePeriod, heading, 0)), true, sendOptions, null);
         } else {
-          target.send(new TdApi.InputMessageLocation(location, livePeriod, heading, 0), true, sendOptions, null);
+          target.send(new TdApi.InputMessageLocation(location), true, sendOptions, null);
         }
       }
       hide(false);

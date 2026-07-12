@@ -1142,7 +1142,10 @@ public class Lang {
         res = R.string.ActionPinnedChecklist;
         break;
       case TdApi.MessageLocation.CONSTRUCTOR:
-        res = ((TdApi.MessageLocation) message.content).livePeriod > 0 ? R.string.ActionPinnedGeoLive : R.string.ActionPinnedGeo;
+        res = R.string.ActionPinnedGeo;
+        break;
+      case TdApi.MessageLiveLocation.CONSTRUCTOR:
+        res =  R.string.ActionPinnedGeoLive;
         break;
       case TdApi.MessageVenue.CONSTRUCTOR:
         res = R.string.ActionPinnedGeo;
@@ -1158,6 +1161,7 @@ public class Lang {
         break;
       }
       case TdApi.MessageText.CONSTRUCTOR:
+      case TdApi.MessageRichMessage.CONSTRUCTOR:
       case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
       case TdApi.MessageDice.CONSTRUCTOR:
       case TdApi.MessageGameScore.CONSTRUCTOR:
@@ -1239,7 +1243,7 @@ public class Lang {
       case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_baa076bf();
+        Td.assertMessageContent_bb294b24();
         throw Td.unsupported(message.content);
     }
     if (format == null) {

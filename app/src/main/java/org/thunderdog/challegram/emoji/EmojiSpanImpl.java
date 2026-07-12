@@ -116,10 +116,10 @@ class EmojiSpanImpl extends ReplacementSpan implements EmojiSpan {
       }
     }
 
-    drawEmoji(canvas, centerX, centerY, emojiSize);
+    drawEmoji(canvas, centerX, centerY, emojiSize, Color.alpha(paint.getColor()));
   }
 
-  protected void drawEmoji (Canvas canvas, float centerX, float centerY, int emojiSize) {
+  protected void drawEmoji (Canvas canvas, float centerX, float centerY, int emojiSize, int alpha) {
     Rect rect = Paints.getRect();
 
     int reduce = Emoji.instance().getReduceSize();
@@ -129,6 +129,6 @@ class EmojiSpanImpl extends ReplacementSpan implements EmojiSpan {
     rect.right = rect.left + emojiSize - reduce / 2 - reduce % 2;
     rect.bottom = rect.top + emojiSize - reduce / 2 - reduce % 2;
 
-    this.needInvalidate = !Emoji.instance().draw(canvas, info, rect);
+    this.needInvalidate = !Emoji.instance().draw(canvas, info, rect, alpha);
   }
 }

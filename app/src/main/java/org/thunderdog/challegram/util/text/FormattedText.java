@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 
 import me.vkryl.core.StringUtils;
+import tgx.td.Td;
 
 public class FormattedText {
   @NonNull
@@ -413,6 +414,28 @@ public class FormattedText {
         offset[0] += text.length();
         break;
       }
+      case TdApi.RichTextCustomEmoji.CONSTRUCTOR: {
+        TdApi.RichTextCustomEmoji customEmoji = (TdApi.RichTextCustomEmoji) in;
+        TextEntityCustom custom = new TextEntityCustom(context, context.tdlib(), "", offset[0], offset[0], flags, linkCached ? new TdlibUi.UrlOpenParameters(openParameters).forceInstantView() : openParameters)
+          .setReferenceAnchorName(referenceAnchorName).setCopyLink(copyLink)
+          .setEmoji(customEmoji);
+        if (linkType != TextEntityCustom.LINK_TYPE_NONE) {
+          custom.setLink(linkOffset, linkLength, linkType, link, linkCached);
+        }
+        entities.add(custom);
+        break;
+      }
+      case TdApi.RichTextMathematicalExpression.CONSTRUCTOR: {
+        TdApi.RichTextMathematicalExpression mathematicalExpression = (TdApi.RichTextMathematicalExpression) in;
+        TextEntityCustom custom = new TextEntityCustom(context, context.tdlib(), "", offset[0], offset[0], flags, linkCached ? new TdlibUi.UrlOpenParameters(openParameters).forceInstantView() : openParameters)
+          .setReferenceAnchorName(referenceAnchorName).setCopyLink(copyLink)
+          .setMathematicalExpression(mathematicalExpression);
+        if (linkType != TextEntityCustom.LINK_TYPE_NONE) {
+          custom.setLink(linkOffset, linkLength, linkType, link, linkCached);
+        }
+        entities.add(custom);
+        break;
+      }
       case TdApi.RichTextIcon.CONSTRUCTOR: {
         TdApi.RichTextIcon icon = (TdApi.RichTextIcon) in;
         TextEntityCustom custom = new TextEntityCustom(context, context.tdlib(), "", offset[0], offset[0], flags, linkCached ? new TdlibUi.UrlOpenParameters(openParameters).forceInstantView() : openParameters)
@@ -426,7 +449,13 @@ public class FormattedText {
       }
       case TdApi.RichTextAnchor.CONSTRUCTOR: {
         TdApi.RichTextAnchor anchor = (TdApi.RichTextAnchor) in;
-        TextEntityCustom custom = new TextEntityCustom(context, context.tdlib(), "", offset[0], offset[0], TextEntityCustom.FLAG_ANCHOR, null).setAnchorName(anchor.name);
+        TextEntityCustom custom = new TextEntityCustom(context, context.tdlib(), "", offset[0], offset[0], TextEntityCustom.FLAG_ANCHOR, null).setAnchorOrReferenceName(anchor.name, false);
+        entities.add(custom);
+        break;
+      }
+      case TdApi.RichTextReference.CONSTRUCTOR: {
+        TdApi.RichTextReference reference = (TdApi.RichTextReference) in;
+        TextEntityCustom custom = new TextEntityCustom(context, context.tdlib(), "", offset[0], offset[0], TextEntityCustom.FLAG_REFERENCE, null).setAnchorOrReferenceName(reference.name, true);
         entities.add(custom);
         break;
       }
@@ -462,9 +491,48 @@ public class FormattedText {
         parseRichText(context, ((TdApi.RichTextMarked) in).text, out, entities, offset, flags | TextEntityCustom.FLAG_MARKED, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
         break;
       }
+      case TdApi.RichTextSpoiler.CONSTRUCTOR: {
+        parseRichText(context, ((TdApi.RichTextSpoiler) in).text, out, entities, offset, flags | TextEntityCustom.FLAG_SPOILER, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
       case TdApi.RichTextPhoneNumber.CONSTRUCTOR: {
         TdApi.RichTextPhoneNumber phoneNumber = (TdApi.RichTextPhoneNumber) in;
         parseRichText(context, phoneNumber.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_PHONE_NUMBER, phoneNumber.phoneNumber, linkCached, referenceAnchorName, null, openParameters);
+        break;
+      }
+      case TdApi.RichTextBankCardNumber.CONSTRUCTOR: {
+        TdApi.RichTextBankCardNumber bankCardNumber = (TdApi.RichTextBankCardNumber) in;
+        parseRichText(context, bankCardNumber.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_BANK_CARD_NUMBER, bankCardNumber.bankCardNumber, linkCached, referenceAnchorName, null, openParameters);
+        break;
+      }
+      case TdApi.RichTextBotCommand.CONSTRUCTOR: {
+        TdApi.RichTextBotCommand botCommand = (TdApi.RichTextBotCommand) in;
+        parseRichText(context, botCommand.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_BOT_COMMAND, botCommand.botCommand, linkCached, referenceAnchorName, null, openParameters);
+        break;
+      }
+      case TdApi.RichTextCashtag.CONSTRUCTOR: {
+        TdApi.RichTextCashtag cashtag = (TdApi.RichTextCashtag) in;
+        parseRichText(context, cashtag.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_CASHTAG, cashtag.cashtag, linkCached, referenceAnchorName, null, openParameters);
+        break;
+      }
+      case TdApi.RichTextDateTime.CONSTRUCTOR: {
+        TdApi.RichTextDateTime dateTime = (TdApi.RichTextDateTime) in;
+        parseRichText(context, dateTime.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_DATE_TIME, Integer.toString(dateTime.unixTime), linkCached, referenceAnchorName, null, openParameters);
+        break;
+      }
+      case TdApi.RichTextHashtag.CONSTRUCTOR: {
+        TdApi.RichTextHashtag dateTime = (TdApi.RichTextHashtag) in;
+        parseRichText(context, dateTime.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_HASHTAG, dateTime.hashtag, linkCached, referenceAnchorName, null, openParameters);
+        break;
+      }
+      case TdApi.RichTextMention.CONSTRUCTOR: {
+        TdApi.RichTextMention mention = (TdApi.RichTextMention) in;
+        parseRichText(context, mention.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_MENTION, mention.username, linkCached, referenceAnchorName, null, openParameters);
+        break;
+      }
+      case TdApi.RichTextMentionName.CONSTRUCTOR: {
+        TdApi.RichTextMentionName mention = (TdApi.RichTextMentionName) in;
+        parseRichText(context, mention.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_MENTION_NAME, Long.toString(mention.userId), linkCached, referenceAnchorName, null, openParameters);
         break;
       }
       case TdApi.RichTextEmailAddress.CONSTRUCTOR: {
@@ -482,9 +550,9 @@ public class FormattedText {
         parseRichText(context, anchorLink.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_ANCHOR, anchorLink.anchorName, false, referenceAnchorName, anchorLink.url, openParameters);
         break;
       }
-      case TdApi.RichTextReference.CONSTRUCTOR: {
-        TdApi.RichTextReference reference = (TdApi.RichTextReference) in;
-        parseRichText(context, reference.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_REFERENCE, null, false, reference.anchorName, reference.url, openParameters);
+      case TdApi.RichTextReferenceLink.CONSTRUCTOR: {
+        TdApi.RichTextReferenceLink reference = (TdApi.RichTextReferenceLink) in;
+        parseRichText(context, reference.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_REFERENCE, null, false, reference.referenceName, reference.url, openParameters);
         break;
       }
       case TdApi.RichTexts.CONSTRUCTOR: {
@@ -493,6 +561,10 @@ public class FormattedText {
           parseRichText(context, concatenatedText, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
         }
         break;
+      }
+      default: {
+        Td.assertRichText_1c4c4279();
+        throw Td.unsupported(in);
       }
     }
   }

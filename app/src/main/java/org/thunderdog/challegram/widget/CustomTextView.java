@@ -41,6 +41,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSetThemed;
@@ -131,7 +132,9 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   private final Tdlib tdlib;
 
   private @Nullable String rawText;
+  private @Nullable Highlight highlight;
   private @Nullable TextEntity[] entities;
+  private boolean allowAsync = true;
 
   private final ReplaceAnimator<TextEntry> text = new ReplaceAnimator<>(animator -> {
     if (getMeasuredHeight() != getCurrentHeight())
@@ -245,25 +248,34 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     if (entities == null) {
       entities = TextEntity.toEntities(sequence);
     }
-    setText(sequence, entities, Text.FLAG_ALL_BOLD, animated);
+    setText(sequence, entities, null, Text.FLAG_ALL_BOLD, animated);
   }
 
   public void setText (CharSequence sequence, TextEntity[] entities, boolean animated) {
-    setText(sequence, entities, 0, animated);
+    setText(sequence, entities, null, animated);
+  }
+
+  public void setText (CharSequence sequence, TextEntity[] entities, @Nullable Highlight highlight, boolean animated) {
+    setText(sequence, entities, highlight, 0, animated);
   }
 
   public void setText (CharSequence sequence, TextEntity[] entities, int extraTextFlags, boolean animated) {
+    setText(sequence, entities, null, extraTextFlags, animated);
+  }
+
+  public void setText (CharSequence sequence, TextEntity[] entities, @Nullable Highlight highlight, int extraTextFlags, boolean animated) {
     String text = sequence != null ? sequence.toString() : null;
     if (sequence instanceof Spannable && (entities == null || entities.length == 0)) {
       entities = TD.collectAllEntities(null, tdlib, sequence, false, null);
     }
-    if (!ObjectsCompat.equals(rawText, text) || this.extraTextFlags != extraTextFlags) {
+    if (!ObjectsCompat.equals(rawText, text) || this.highlight != highlight || this.extraTextFlags != extraTextFlags) {
       this.rawText = text;
+      this.highlight = highlight;
       this.extraTextFlags = extraTextFlags;
       this.entities = entities;
       cancelAsyncLayout();
       if (lastMeasuredWidth > 0) {
-        layoutText(lastMeasuredWidth, animated, false, true);
+        layoutText(lastMeasuredWidth, animated, false, allowAsync);
       }
       invalidate();
     }
@@ -277,6 +289,14 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     this.maxLineCount = maxLineCount;
   }
 
+  public void setAllowAsync (boolean allowAsync) {
+    this.allowAsync = allowAsync;
+  }
+
+  public void setSingleLine (boolean isSingleLine) {
+    setMaxLineCount(isSingleLine ? 1 : -1);
+  }
+
   private void cancelAsyncLayout () {
     if (asyncContextId == Long.MAX_VALUE) {
       asyncContextId = 0;
@@ -287,10 +307,11 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
 
   private long asyncContextId;
 
-  private static Text createText (final View view, final String text, final int textWidth, final TextStyleProvider provider, final int maxLineCount, final TextEntity[] entities, final int extraTextFlags, TextColorSet colorSet, Text.TextMediaListener textMediaListener) {
+  private static Text createText (final View view, final String text, final @Nullable Highlight highlight, final int textWidth, final TextStyleProvider provider, final int maxLineCount, final TextEntity[] entities, final int extraTextFlags, TextColorSet colorSet, Text.TextMediaListener textMediaListener) {
     return new Text.Builder(text, textWidth, provider, colorSet)
       .entities(entities, textMediaListener)
       .view(view)
+      .highlight(highlight)
       .textFlags(
         Text.FLAG_BOUNDS_NOT_STRICT |
         Text.FLAG_CUSTOM_LONG_PRESS |
@@ -304,10 +325,14 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   }
 
   public static int measureHeight (ViewController<?> controller, CharSequence text, int extraTextFlags, float textSize, int width) {
+    return measureHeight(controller, text, null, extraTextFlags, textSize, width);
+  }
+
+  public static int measureHeight (ViewController<?> controller, CharSequence text, Highlight highlight, int extraTextFlags, float textSize, int width) {
     TextEntity[] entities = TD.collectAllEntities(controller, controller.tdlib(), text, false, null);
     Text measuredText = CustomTextView.createText(
       null,
-      text.toString(), width,
+      text.toString(), highlight, width,
       Paints.robotoStyleProvider(textSize),
       -1,
       entities,
@@ -318,12 +343,12 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     return measuredText.getHeight();
   }
 
-  private void dispatchAsyncText (final String text, final int textWidth, final boolean animated, final TextStyleProvider provider, final int maxLineCount, final int extraTextFlags, final int linkFlags, final TextEntity[] entities) {
+  private void dispatchAsyncText (final String text, final @Nullable Highlight highlight, final int textWidth, final boolean animated, final TextStyleProvider provider, final int maxLineCount, final int extraTextFlags, final int linkFlags, final TextEntity[] entities) {
     final long contextId = asyncContextId;
     Background.instance().post(() -> {
       final Text newText = createText(
         this,
-        text, textWidth, provider,
+        text, highlight, textWidth, provider,
         maxLineCount,
         Text.makeEntities(text, linkFlags, entities, tdlib, null),
         extraTextFlags,
@@ -392,12 +417,12 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
         cancelAsyncLayout();
 
         if (async) {
-          dispatchAsyncText(rawText, textWidth, animated, textStyleProvider, maxLineCount, extraTextFlags, linkFlags, entities);
+          dispatchAsyncText(rawText, highlight, textWidth, animated, textStyleProvider, maxLineCount, extraTextFlags, linkFlags, entities);
         } else {
           final TextEntity[] newEntities = Text.makeEntities(rawText, linkFlags, entities, tdlib, null);
           final Text newText = createText(
             this,
-            rawText, textWidth, textStyleProvider,
+            rawText, highlight, textWidth, textStyleProvider,
             maxLineCount,
             newEntities,
             extraTextFlags,

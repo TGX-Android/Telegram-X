@@ -48,15 +48,25 @@ public class TextEntityCustom extends TextEntity {
   public static final int FLAG_SUBSCRIPT = 1 << 5;
   public static final int FLAG_SUPERSCRIPT = 1 << 6;
   public static final int FLAG_MARKED = 1 << 7;
-  public static final int FLAG_CLICKABLE = 1 << 10;
-  public static final int FLAG_ANCHOR = 1 << 11;
+  public static final int FLAG_SPOILER = 1 << 9;
+  public static final int FLAG_CLICKABLE = 1 << 20;
+  public static final int FLAG_ANCHOR = 1 << 21;
+  public static final int FLAG_REFERENCE = 1 << 22;
 
   public static final int LINK_TYPE_NONE = 0;
   public static final int LINK_TYPE_EMAIL = 1;
   public static final int LINK_TYPE_URL = 2;
   public static final int LINK_TYPE_PHONE_NUMBER = 3;
-  public static final int LINK_TYPE_ANCHOR = 4;
-  public static final int LINK_TYPE_REFERENCE = 5;
+  public static final int LINK_TYPE_BANK_CARD_NUMBER = 4;
+  public static final int LINK_TYPE_BOT_COMMAND = 5;
+  public static final int LINK_TYPE_DATE_TIME = 6;
+  public static final int LINK_TYPE_CASHTAG = 7;
+  public static final int LINK_TYPE_HASHTAG = 8;
+  public static final int LINK_TYPE_MENTION = 9;
+  public static final int LINK_TYPE_MENTION_NAME = 10;
+
+  public static final int LINK_TYPE_ANCHOR = 100;
+  public static final int LINK_TYPE_REFERENCE = 101;
 
   private final ViewController<?> context; // TODO move to TextEntity
 
@@ -69,9 +79,12 @@ public class TextEntityCustom extends TextEntity {
   private boolean linkCached;
 
   private ClickableSpan onClickListener;
-  private String anchorName;
+  private String anchorOrReferenceName;
+  private boolean anchorIsReference;
   private String referenceAnchorName;
   private TdApi.RichTextIcon icon;
+  private TdApi.RichTextCustomEmoji emoji;
+  private TdApi.RichTextMathematicalExpression mathematicalExpression;
   private String copyLink;
 
   public TextEntityCustom (@Nullable ViewController<?> context, @Nullable Tdlib tdlib, String in, int offset, int end, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
@@ -89,8 +102,19 @@ public class TextEntityCustom extends TextEntity {
     return this;
   }
 
-  public TextEntityCustom setAnchorName (String anchorName) {
-    this.anchorName = anchorName;
+  public TextEntityCustom setEmoji (TdApi.RichTextCustomEmoji emoji) {
+    this.emoji = emoji;
+    return this;
+  }
+
+  public TextEntityCustom setMathematicalExpression (TdApi.RichTextMathematicalExpression mathematicalExpression) {
+    this.mathematicalExpression = mathematicalExpression;
+    return this;
+  }
+
+  public TextEntityCustom setAnchorOrReferenceName (String name, boolean isReference) {
+    this.anchorOrReferenceName = name;
+    this.anchorIsReference = isReference;
     return this;
   }
 
@@ -142,11 +166,17 @@ public class TextEntityCustom extends TextEntity {
     if (referenceAnchorName != null) {
       copy.setReferenceAnchorName(referenceAnchorName);
     }
-    if (anchorName != null) {
-      copy.setAnchorName(anchorName);
+    if (anchorOrReferenceName != null) {
+      copy.setAnchorOrReferenceName(anchorOrReferenceName, anchorIsReference);
     }
     if (icon != null) {
       copy.setIcon(icon);
+    }
+    if (emoji != null) {
+      copy.setEmoji(emoji);
+    }
+    if (mathematicalExpression != null) {
+      copy.setMathematicalExpression(mathematicalExpression);
     }
     return copy;
   }
@@ -305,7 +335,7 @@ public class TextEntityCustom extends TextEntity {
 
   @Override
   public boolean hasAnchor (String anchor) {
-    return !StringUtils.isEmpty(this.anchorName) && this.anchorName.equals(anchor);
+    return !StringUtils.isEmpty(this.anchorOrReferenceName) && this.anchorOrReferenceName.equals(anchor);
   }
 
   @Override

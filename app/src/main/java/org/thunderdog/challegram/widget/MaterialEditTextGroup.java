@@ -43,7 +43,6 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.HeightChangeListener;
 import org.thunderdog.challegram.v.EditText;
 
@@ -301,43 +300,52 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
       if (lengthCounter != null) {
         themeProvider.addThemeTextColorListener(lengthCounter, ColorId.textLight);
       }
-      if (radioView != null) {
-        themeProvider.addThemeInvalidateListener(radioView);
+      if (checkboxView != null) {
+        themeProvider.addThemeInvalidateListener(checkboxView);
       }
     }
   }
 
   private static final int ANIMATOR_RADIO_VISIBILITY = 6;
-  private RadioView radioView;
-  private BoolAnimator radioVisible;
+  private CheckBoxView checkboxView;
+  private BoolAnimator checkboxVisible;
 
-  public void setRadioVisible (boolean visible, boolean animated) {
-    if (radioView != null || visible) {
-      addRadio();
-      radioVisible.setValue(visible, animated);
+  public void setCheckboxVisible (boolean visible, boolean circular, boolean animated) {
+    if (checkboxView != null || visible) {
+      addCheckbox();
+      checkboxView.setCircular(circular, animated && checkboxVisible.getFloatValue() > 0f);
+      checkboxVisible.setValue(visible, animated);
     }
   }
 
   private TooltipOverlayView.TooltipInfo radioTooltip;
 
-  public void showRadioHint (ViewController<?> controller, Tdlib tdlib, int stringRes) {
-    if (radioView == null) {
-      addRadio();
+  public void showCheckboxHint (ViewController<?> controller, Tdlib tdlib, int stringRes) {
+    if (checkboxView == null) {
+      addCheckbox();
     }
     if (radioTooltip != null)
       radioTooltip.hide(true);
-    radioTooltip = UI.getContext(getContext()).tooltipManager().builder(radioView).controller(controller).offset(outRect -> outRect.offset(-Screen.dp(40f) * (1f - radioVisible.getFloatValue()), 0)).show(tdlib, stringRes).hideDelayed();
+    radioTooltip = UI.getContext(getContext())
+      .tooltipManager()
+      .builder(checkboxView)
+      .controller(controller)
+      .offset(outRect ->
+        outRect.offset(-Screen.dp(40f) * (1f - checkboxVisible.getFloatValue()), 0)
+      )
+      .show(tdlib, stringRes)
+      .hideDelayed();
   }
 
-  public void setRadioActive (boolean isActive, boolean animated) {
-    if (radioView != null || isActive) {
-      addRadio();
-      radioView.setChecked(isActive, animated);
+  public void setCheckboxSelected (boolean isActive, boolean animated) {
+    if (checkboxVisible != null || isActive) {
+      addCheckbox();
+      checkboxView.setChecked(isActive, animated);
     }
   }
 
   public interface RadioClickListener {
-    void onRadioClick (MaterialEditTextGroup editText, RadioView radioView);
+    void onCheckboxClick (MaterialEditTextGroup editText, CheckBoxView radioView);
   }
 
   private RadioClickListener radioClickListener;
@@ -346,27 +354,29 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
     this.radioClickListener = radioClickListener;
   }
 
-  public void addRadio () {
-    if (radioView == null) {
-      radioView = RadioView.simpleRadioView(getContext(), true);
-      Views.translateMarginsToPadding(radioView);
-      radioView.setOnClickListener(v -> {
+  public CheckBoxView addCheckbox () {
+    if (checkboxView == null) {
+      int size = Screen.dp(18f);
+      int padding = Screen.dp(19f);
+      checkboxView = CheckBoxView.simpleCheckBox(getContext(), true);
+      checkboxView.setLayoutParams(FrameLayoutFix.newParams(size + padding * 2, size + padding * 2, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+      checkboxView.setPadding(padding, padding, padding, padding);
+      checkboxView.setOnClickListener(v -> {
         if (radioClickListener != null) {
-          radioClickListener.onRadioClick(this, radioView);
+          radioClickListener.onCheckboxClick(this, checkboxView);
         }
       });
-      // Views.setTopMargin(radioView, Screen.dp(4f));
-      // radioView.setPadding(radioView.getPaddingLeft(), editText.getPaddingTop(), radioView.getPaddingRight(), editText.getPaddingBottom());
-      radioView.setAlpha(0f);
-      ((ViewGroup) getParent()).addView(radioView);
+      checkboxView.setAlpha(0f);
+      ((ViewGroup) getParent()).addView(checkboxView);
 
-      radioVisible = new BoolAnimator(ANIMATOR_RADIO_VISIBILITY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+      checkboxVisible = new BoolAnimator(ANIMATOR_RADIO_VISIBILITY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
     }
+    return checkboxView;
   }
 
   private void setRadioVisibility (float factor) {
-    radioView.setAlpha(factor);
-    radioView.setTranslationX(-Screen.dp(40f) * (1f - factor));
+    checkboxView.setAlpha(factor);
+    checkboxView.setTranslationX(-Screen.dp(40f) * (1f - factor));
     editText.setTranslationX(Screen.dp(40f) * factor);
     if (radioTooltip != null) {
       radioTooltip.reposition();

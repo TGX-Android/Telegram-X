@@ -1127,9 +1127,14 @@ public class Emoji {
 
   public static String getEmojiFlagFromCountry (String countryCode) {
     try {
-      return Client.execute(new TdApi.GetCountryFlagEmoji(countryCode)).text;
-    } catch (Client.ExecutionException e) {
-      return null;
+      String emoji = Client.execute(new TdApi.GetCountryFlagEmoji(countryCode)).text;
+      if (!StringUtils.isEmpty(emoji)) {
+        return emoji;
+      }
+    } catch (Client.ExecutionException ignored) { }
+    if ("YL".equals(countryCode)) {
+      return "\uD83D\uDD2E";
     }
+    return null;
   }
 }

@@ -241,8 +241,8 @@ public class ThreadInfo {
     threadInfo.draftMessage = draftMessage;
   }
 
-  public @Nullable TdApi.InputMessageContent getDraftContent () {
-    return threadInfo.draftMessage != null ? threadInfo.draftMessage.inputMessageText : null;
+  public @Nullable TdApi.DraftMessageContent getDraftContent () {
+    return threadInfo.draftMessage != null ? threadInfo.draftMessage.content : null;
   }
 
   public String chatHeaderTitle () {
