@@ -31,6 +31,7 @@ import java.util.List;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.reference.ReferenceList;
 import tgx.td.ChatPosition;
 import tgx.td.Td;
@@ -237,6 +238,19 @@ public final class TdlibChatList implements Comparator<TdlibChatList.Entry> {
     synchronized (list) {
       for (Entry entry : list) {
         callback.runWithData(entry.chat);
+      }
+    }
+  }
+
+  public void iterate (RunnableData<TdApi.Chat> callback, int limit, RunnableInt limitExceededCallback) {
+    int count = 0;
+    synchronized (list) {
+      for (Entry entry : list) {
+        callback.runWithData(entry.chat);
+        if (++count >= limit && list.size() > 1) {
+          limitExceededCallback.runWithInt(list.size() - count);
+          break;
+        }
       }
     }
   }

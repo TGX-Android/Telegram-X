@@ -21,6 +21,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Shader;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.util.SparseIntArray;
@@ -103,6 +104,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.Poller;
+import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.ChatsRecyclerView;
 import org.thunderdog.challegram.widget.BaseView;
@@ -684,10 +686,14 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         archiveListListener = new ChatListListener() {
           @Override
           public void onChatListChanged (TdlibChatList chatList, @ChangeFlags int changeFlags) {
-            if (BitwiseUtils.setFlag(changeFlags, ChangeFlags.ITEM_METADATA_CHANGED, false) != 0) {
+            if (BitwiseUtils.hasFlag(changeFlags,
+              ChangeFlags.ITEM_ADDED |
+                ChangeFlags.ITEM_REMOVED |
+                ChangeFlags.ITEM_MOVED
+            )) {
               runOnUiThreadOptional(() -> {
                 adapter.setNeedArchive(chatList.totalCount() > 0);
-                adapter.updateArchive(ChatsAdapter.ARCHIVE_UPDATE_ALL);
+                scheduleArchiveUpdate(ChatsAdapter.ArchiveUpdate.ALL);
               });
             }
           }
@@ -698,20 +704,20 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             switch (changeType) {
               case ItemChangeType.TITLE:
               case ItemChangeType.UNREAD_AVAILABILITY_CHANGED:
-                reason = ChatsAdapter.ARCHIVE_UPDATE_ALL;
+                reason = ChatsAdapter.ArchiveUpdate.ALL;
                 break;
               case ItemChangeType.READ_INBOX:
-                reason = ChatsAdapter.ARCHIVE_UPDATE_COUNTER;
+                reason = ChatsAdapter.ArchiveUpdate.COUNTER;
                 break;
               case ItemChangeType.LAST_MESSAGE:
               case ItemChangeType.DRAFT:
-                reason = ChatsAdapter.ARCHIVE_UPDATE_MESSAGE;
+                reason = ChatsAdapter.ArchiveUpdate.MESSAGE;
                 break;
               default:
                 return;
             }
             runOnUiThreadOptional(() ->
-              adapter.updateArchive(reason)
+              scheduleArchiveUpdate(reason)
             );
           }
         };
@@ -730,6 +736,27 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     initializationTime = SystemClock.uptimeMillis();
 
     return contentView;
+  }
+
+  private int archiveUpdateReasons = ChatsAdapter.ArchiveUpdate.NONE;
+  private final RateLimiter archiveUpdater = new RateLimiter(() -> {
+    int reasons = this.archiveUpdateReasons;
+    this.archiveUpdateReasons = ChatsAdapter.ArchiveUpdate.NONE;
+    if (BitwiseUtils.hasFlag(reasons, ChatsAdapter.ArchiveUpdate.ALL)) {
+      adapter.updateArchive(ChatsAdapter.ArchiveUpdate.ALL);
+    } else {
+      BitwiseUtils.iterateFlags(reasons, (reason) ->
+        adapter.updateArchive(reason)
+      );
+    }
+  }, 15L, Looper.getMainLooper()).setDelayFirstExecution(true);
+
+  private void scheduleArchiveUpdate (int reason) {
+    int newReasons = BitwiseUtils.setFlag(archiveUpdateReasons, reason, true);
+    if (this.archiveUpdateReasons != newReasons) {
+      this.archiveUpdateReasons = newReasons;
+      archiveUpdater.run();
+    }
   }
 
   @Override

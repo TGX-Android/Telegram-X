@@ -91,6 +91,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   private static final int FLAG_SHOW_FAKE = 1 << 16;
   private static final int FLAG_MESSAGE = 1 << 17;
 
+  private static final int ARCHIVE_PREVIEW_LIMIT = 9;
+
   private int flags, listMode;
 
   private final ViewController<?> context;
@@ -1321,6 +1323,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
             .setCustomColorSet(TextColorSets.Regular.NORMAL)
           );
         }
+      }, ARCHIVE_PREVIEW_LIMIT, (remainingCount) -> {
+        b.append(Lang.getConcatSeparatorLast(false));
+        b.append(Lang.plural(R.string.xOtherChatTitles, remainingCount));
       });
       if (b.length() == 0) {
         b.append(Lang.pluralBold(R.string.xChats, archive.totalCount()));
