@@ -27,6 +27,7 @@ import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.util.DrawModifier;
+import org.thunderdog.challegram.util.text.Highlight;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -176,7 +177,8 @@ public class ListItem {
   private final int checkId;
   private int flags;
   private long longId;
-  private String highlight;
+  private String highlightValue;
+  private Highlight highlight;
 
   private @Nullable String[] sliderValues;
   private int sliderValue;
@@ -450,7 +452,12 @@ public class ListItem {
   }
 
   public ListItem setHighlightValue (String highlight) {
-    this.highlight = highlight;
+    this.highlightValue = highlight;
+    return this;
+  }
+
+  public ListItem setHighlight (Highlight highlightValue) {
+    this.highlight = highlightValue;
     return this;
   }
 
@@ -553,6 +560,10 @@ public class ListItem {
   }
 
   public String getHighlightValue () {
+    return highlightValue;
+  }
+
+  public Highlight getHighlight () {
     return highlight;
   }
 

@@ -1723,6 +1723,12 @@ public class TdlibListeners {
     );
   }
 
+  void updateWebBrowserSettings (TdApi.UpdateWebBrowserSettings update) {
+    runUpdate(optionListeners, listener ->
+      listener.onWebBrowserSettingsChanged(update.settings)
+    );
+  }
+
   void updateContactCloseBirthdayUsers (TdApi.UpdateContactCloseBirthdays update) {
     runUpdate(optionListeners, listener ->
       listener.onContactCloseBirthdayUsersChanged(update.closeBirthdayUsers)

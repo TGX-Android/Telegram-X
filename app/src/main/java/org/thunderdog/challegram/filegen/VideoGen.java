@@ -117,6 +117,8 @@ public class VideoGen {
     private long readyBytes;
     private long reportedBytesCount, reportedExpectedBytesCount;
 
+    private int inputVideoRotation;
+
     private final VideoGen context;
     private final long generationId;
     private Future<Void> task;
@@ -220,7 +222,7 @@ public class VideoGen {
     final String sourcePath = info.getOriginalPath();
     final String destinationPath = info.getDestinationPath();
 
-    boolean sendOriginalInCaseFileSizeGrows = !Config.MODERN_VIDEO_TRANSCODING_ENABLED && info.canTakeSimplePath();
+    boolean sendOriginalInCaseFileSizeGrows = !Config.MODERN_VIDEO_TRANSCODING_ENABLED && info.canTakeSimplePath() && (entry.inputVideoRotation == 0 || !Config.TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT);
 
     long sourceSize = getBytesCount(sourcePath, true);
     ProgressCallback onProgress = new ProgressCallback() {
@@ -384,6 +386,7 @@ public class VideoGen {
     } else {
       inputVideoRotation = 0;
     }
+    entry.inputVideoRotation = inputVideoRotation;
     long inputVideoBitrate = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
     U.closeRetriever(retriever);
 
@@ -446,6 +449,11 @@ public class VideoGen {
       editedMediaItemBuilder.setEffects(new Effects(
         Collections.emptyList(),
         videoEffects
+      ));
+    } else if (Config.TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT && inputVideoRotation != 0) {
+      editedMediaItemBuilder.setEffects(new Effects(
+        Collections.emptyList(),
+        Collections.emptyList()
       ));
     }
 

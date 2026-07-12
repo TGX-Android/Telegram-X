@@ -43,6 +43,7 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
@@ -52,13 +53,15 @@ import tgx.td.Td;
 public abstract class PageBlock {
   protected final ViewController<?> context;
   protected final TdApi.PageBlock block;
+  protected final int quoteLevel;
   protected MultipleViewProvider currentViews;
 
   protected boolean mergeBottom, mergeTop;
 
-  public PageBlock (ViewController<?> context, TdApi.PageBlock block) {
+  public PageBlock (ViewController<?> context, TdApi.PageBlock block, int quoteLevel) {
     this.context = context;
     this.block = block;
+    this.quoteLevel = quoteLevel;
     this.currentViews = new MultipleViewProvider();
   }
 
@@ -352,6 +355,7 @@ public abstract class PageBlock {
 
     private ListItemInfo[] openedList;
     private PageBlock detailsBlock;
+    private final List<TdApi.PageBlockBlockQuote> openQuotes = new ArrayList<>();
 
     public ParseContext (String url, TdApi.WebPageInstantView instantView, TGPlayerController.PlayListBuilder playListBuilder) {
       this.url = url;
@@ -360,18 +364,23 @@ public abstract class PageBlock {
       this.playListBuilder = playListBuilder;
     }
 
-    private void processCaption (ViewController<?> parent, @NonNull TdApi.PageBlock mediaBlock, TdApi.PageBlockCaption caption, @Nullable TdlibUi.UrlOpenParameters openParameters, ArrayList<PageBlock> out) {
+    private int quoteLevel () {
+      return openQuotes.size();
+    }
+
+    private void processCaption (ViewController<?> parent, @NonNull TdApi.PageBlock mediaBlock, TdApi.PageBlockCaption caption, @Nullable TdlibUi.UrlOpenParameters openParameters, List<PageBlock> out) {
+      final int quoteLevel = quoteLevel();
       PageBlockRichText captionBlock = null;
       boolean needMerge = (lastBlock != null && lastBlock.block == mediaBlock) || mediaBlock.getConstructor() == TdApi.PageBlockEmbeddedPost.CONSTRUCTOR;
       if (!Td.isEmpty(caption.text)) {
-        captionBlock = new PageBlockRichText(parent, mediaBlock, caption, false, isCover, openParameters);
+        captionBlock = new PageBlockRichText(parent, mediaBlock, quoteLevel, caption, false, isCover, openParameters);
         if (needMerge) {
           captionBlock.mergeWith(lastBlock);
         }
         process(captionBlock, out);
       }
       if (!Td.isEmpty(caption.credit)) {
-        PageBlockRichText credit = new PageBlockRichText(parent, mediaBlock, caption, true, isCover, openParameters);
+        PageBlockRichText credit = new PageBlockRichText(parent, mediaBlock, quoteLevel, caption, true, isCover, openParameters);
         if (captionBlock != null || needMerge) {
           credit.mergeWith(captionBlock != null ? captionBlock : lastBlock);
         }
@@ -381,7 +390,7 @@ public abstract class PageBlock {
 
     private boolean hasKicker;
 
-    private void setClosed (boolean isClosed, ViewController<?> context, ArrayList<PageBlock> out, boolean needOffset) {
+    private void setClosed (boolean isClosed, ViewController<?> context, List<PageBlock> out, boolean needOffset) {
       if (this.isClosed != isClosed) {
         this.isClosed = isClosed;
         if (needOffset && isClosed && !((lastBlock != null && lastBlock.block != null) && (lastBlock.block.getConstructor() == TdApi.PageBlockDetails.CONSTRUCTOR || lastBlock.block.getConstructor() == TdApi.PageBlockChatLink.CONSTRUCTOR))) {
@@ -394,7 +403,7 @@ public abstract class PageBlock {
       }
     }
 
-    private void process (PageBlock block, ArrayList<PageBlock> out) {
+    private void process (PageBlock block, List<PageBlock> out) {
       TdApi.PageBlock pageBlock = block.block;
       if (pageBlock != null) {
         setClosed(!isPost && openedList == null && detailsBlock == null && (pageBlock.getConstructor() == TdApi.PageBlockFooter.CONSTRUCTOR), block.context, out, pageBlock.getConstructor() != TdApi.PageBlockChatLink.CONSTRUCTOR);
@@ -405,7 +414,7 @@ public abstract class PageBlock {
       processImpl(block, out);
     }
 
-    private void processImpl (PageBlock block, ArrayList<PageBlock> out) {
+    private void processImpl (PageBlock block, List<PageBlock> out) {
       if (nextAnchor != null) {
         block.setAnchor(nextAnchor, false);
         nextAnchor = null;
@@ -442,16 +451,16 @@ public abstract class PageBlock {
     }
   }
 
-  public static ArrayList<PageBlock> parse (ViewController<?> parent, String url, @NonNull TdApi.WebPageInstantView instantView, @Nullable PageBlock detailsBlock, TGPlayerController.PlayListBuilder playListBuilder, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) throws UnsupportedPageBlockException {
+  public static List<PageBlock> parse (ViewController<?> parent, String url, @NonNull TdApi.WebPageInstantView instantView, @Nullable PageBlock detailsBlock, TGPlayerController.PlayListBuilder playListBuilder, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) throws UnsupportedPageBlockException {
     PageBlock.ParseContext context = new PageBlock.ParseContext(url, instantView, playListBuilder);
     context.detailsBlock = context.lastBlock = detailsBlock;
-    TdApi.PageBlock[] pageBlocks = detailsBlock != null ? ((TdApi.PageBlockDetails) detailsBlock.getOriginalBlock()).pageBlocks : instantView.pageBlocks;
-    boolean needPadding = (detailsBlock != null && pageBlocks.length > 0);
-    ArrayList<PageBlock> out = new ArrayList<>(pageBlocks.length);
+    TdApi.PageBlock[] blocks = detailsBlock != null ? ((TdApi.PageBlockDetails) detailsBlock.getOriginalBlock()).blocks : instantView.blocks;
+    boolean needPadding = (detailsBlock != null && blocks.length > 0);
+    List<PageBlock> out = new ArrayList<>(blocks.length);
     if (needPadding) {
       context.process(new PageBlockSimple(parent, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, ColorId.filling), out);
     }
-    for (TdApi.PageBlock rawPageBlock : pageBlocks) {
+    for (TdApi.PageBlock rawPageBlock : blocks) {
       parse(parent, out, context, rawPageBlock, urlOpenParameters);
     }
     if (needPadding) {
@@ -469,7 +478,7 @@ public abstract class PageBlock {
 
   public static class UnsupportedPageBlockException extends Exception { }
 
-  private static void parse (ViewController<?> parent, ArrayList<PageBlock> out, ParseContext context, TdApi.PageBlock block, @Nullable TdlibUi.UrlOpenParameters openParameters) throws UnsupportedPageBlockException {
+  private static void parse (ViewController<?> parent, List<PageBlock> out, ParseContext context, TdApi.PageBlock block, @Nullable TdlibUi.UrlOpenParameters openParameters) throws UnsupportedPageBlockException {
     switch (block.getConstructor()) {
       // Page cover
       case TdApi.PageBlockCover.CONSTRUCTOR: {
@@ -489,43 +498,43 @@ public abstract class PageBlock {
 
       // Different variations of text blocks
       case TdApi.PageBlockTitle.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockTitle) block, out.isEmpty(), context.hasKicker, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockTitle) block, context.quoteLevel(), out.isEmpty(), context.hasKicker, openParameters);
         context.process(text, out);
         break;
       }
       case TdApi.PageBlockSubtitle.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockSubtitle) block, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockSubtitle) block, context.quoteLevel(), openParameters);
         context.process(text, out);
         break;
       }
       case TdApi.PageBlockAuthorDate.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockAuthorDate) block, context.viewCount, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockAuthorDate) block, context.quoteLevel(), context.viewCount, openParameters);
         context.process(text, out);
         break;
       }
       case TdApi.PageBlockKicker.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockKicker) block, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockKicker) block, context.quoteLevel(), openParameters);
         context.process(text, out);
         context.hasKicker = true;
         break;
       }
       case TdApi.PageBlockHeader.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockHeader) block, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockHeader) block, context.quoteLevel(), openParameters);
         context.process(text, out);
         break;
       }
       case TdApi.PageBlockSubheader.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockSubheader) block, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockSubheader) block, context.quoteLevel(), openParameters);
         context.process(text, out);
         break;
       }
       case TdApi.PageBlockParagraph.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockParagraph) block, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockParagraph) block, context.quoteLevel(), openParameters);
         context.process(text, out);
         break;
       }
       case TdApi.PageBlockPreformatted.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockPreformatted) block, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockPreformatted) block, context.quoteLevel(), openParameters);
         context.process(text, out);
         break;
       }
@@ -535,7 +544,7 @@ public abstract class PageBlock {
           switch (context.coverBlock.getRelatedViewType()) {
             case ListItem.TYPE_PAGE_BLOCK_MEDIA:
             case ListItem.TYPE_PAGE_BLOCK_GIF:
-              PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockChatLink) block, true, context.viewCount, openParameters);
+              PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockChatLink) block, context.quoteLevel(), true, context.viewCount, openParameters);
               text.currentViews = context.coverBlock.currentViews;
               context.coverBlock.chatLinkBlock = text;
               added = true;
@@ -543,32 +552,36 @@ public abstract class PageBlock {
           }
         }
         if (!added) {
-          context.process(new PageBlockRichText(parent, (TdApi.PageBlockChatLink) block, false, context.viewCount, openParameters), out);
+          context.process(new PageBlockRichText(parent, (TdApi.PageBlockChatLink) block, context.quoteLevel(), false, context.viewCount, openParameters), out);
         }
         break;
       }
       case TdApi.PageBlockFooter.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockFooter) block, context.isPost, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockFooter) block, context.quoteLevel(), context.isPost, openParameters);
         context.process(text, out);
         break;
       }
       case TdApi.PageBlockBlockQuote.CONSTRUCTOR: {
         TdApi.PageBlockBlockQuote quoteRaw = (TdApi.PageBlockBlockQuote) block;
-        PageBlockRichText quote = new PageBlockRichText(parent, quoteRaw, false, openParameters);
-        context.process(quote, out);
+        context.openQuotes.add(quoteRaw);
+        for (int i = 0; i < quoteRaw.blocks.length; i++) {
+          TdApi.PageBlock quoteBlock = quoteRaw.blocks[i];
+          parse(parent, out, context, quoteBlock, openParameters);
+        }
         if (!Td.isEmpty(quoteRaw.credit)) {
-          PageBlockRichText credit = new PageBlockRichText(parent, quoteRaw, true, openParameters);
-          credit.mergeWith(quote);
+          PageBlockRichText credit = new PageBlockRichText(parent, quoteRaw, context.quoteLevel(), openParameters);
+          credit.mergeWith(out.get(out.size() - 1));
           context.process(credit, out);
         }
+        context.openQuotes.remove(context.openQuotes.size() - 1);
         break;
       }
       case TdApi.PageBlockPullQuote.CONSTRUCTOR: {
         TdApi.PageBlockPullQuote quoteRaw = (TdApi.PageBlockPullQuote) block;
-        PageBlockRichText quote = new PageBlockRichText(parent, quoteRaw, false, openParameters);
+        PageBlockRichText quote = new PageBlockRichText(parent, quoteRaw, context.quoteLevel(), false, openParameters);
         context.process(quote, out);
         if (!Td.isEmpty(quoteRaw.credit)) {
-          PageBlockRichText credit = new PageBlockRichText(parent, quoteRaw, true, openParameters);
+          PageBlockRichText credit = new PageBlockRichText(parent, quoteRaw, context.quoteLevel(), true, openParameters);
           credit.mergeWith(quote);
           context.process(credit, out);
         }
@@ -592,11 +605,11 @@ public abstract class PageBlock {
             context.openedList[lastListItemInfo.length] = itemInfo;
           }
           int lastSize = out.size();
-          for (TdApi.PageBlock pageBlock : item.pageBlocks) {
+          for (TdApi.PageBlock pageBlock : item.blocks) {
             parse(parent, out, context, pageBlock, openParameters);
           }
           if (out.size() - lastSize == 0) { // Empty list item
-            context.process(new PageBlockRichText(parent, listRaw, openParameters), out);
+            context.process(new PageBlockRichText(parent, listRaw, context.quoteLevel(), openParameters), out);
           }
           context.openedList = lastListItemInfo;
           itemIndex++;
@@ -608,20 +621,20 @@ public abstract class PageBlock {
       case TdApi.PageBlockTable.CONSTRUCTOR: {
         TdApi.PageBlockTable tableRaw = (TdApi.PageBlockTable) block;
         if (!Td.isEmpty(tableRaw.caption)) {
-          context.process(new PageBlockRichText(parent, tableRaw, openParameters), out);
+          context.process(new PageBlockRichText(parent, tableRaw, context.quoteLevel(), openParameters), out);
         }
-        context.process(new PageBlockTable(parent, tableRaw, openParameters), out);
+        context.process(new PageBlockTable(parent, tableRaw, context.quoteLevel(), openParameters), out);
         break;
       }
 
       case TdApi.PageBlockDetails.CONSTRUCTOR: {
         TdApi.PageBlockDetails detailsRaw = (TdApi.PageBlockDetails) block;
-        PageBlockRichText details = new PageBlockRichText(parent, detailsRaw, openParameters);
+        PageBlockRichText details = new PageBlockRichText(parent, detailsRaw, context.quoteLevel(), openParameters);
         if (detailsRaw.isOpen) {
           context.process(details, out);
           PageBlock prevDetails = context.detailsBlock;
           context.detailsBlock = details;
-          for (TdApi.PageBlock pageBlock : detailsRaw.pageBlocks) {
+          for (TdApi.PageBlock pageBlock : detailsRaw.blocks) {
             parse(parent, out, context, pageBlock, openParameters);
           }
           context.detailsBlock = prevDetails;
@@ -633,35 +646,35 @@ public abstract class PageBlock {
 
       // Divider
       case TdApi.PageBlockDivider.CONSTRUCTOR: {
-        context.process(new PageBlockDivider(parent,  block), out);
+        context.process(new PageBlockDivider(parent, block, context.quoteLevel()), out);
         break;
       }
 
       // Media
       case TdApi.PageBlockAnimation.CONSTRUCTOR: {
         TdApi.PageBlockAnimation mediaRaw = (TdApi.PageBlockAnimation) block;
-        PageBlockMedia media = new PageBlockMedia(parent, mediaRaw);
+        PageBlockMedia media = new PageBlockMedia(parent, mediaRaw, context.quoteLevel());
         context.process(media, out);
         context.processCaption(parent, mediaRaw, mediaRaw.caption, openParameters, out);
         break;
       }
       case TdApi.PageBlockPhoto.CONSTRUCTOR: {
         TdApi.PageBlockPhoto mediaRaw = (TdApi.PageBlockPhoto) block;
-        PageBlockMedia media = new PageBlockMedia(parent, mediaRaw, null, openParameters);
+        PageBlockMedia media = new PageBlockMedia(parent, mediaRaw, context.quoteLevel(), null, openParameters);
         context.process(media, out);
         context.processCaption(parent, mediaRaw, mediaRaw.caption, openParameters, out);
         break;
       }
       case TdApi.PageBlockMap.CONSTRUCTOR: {
         TdApi.PageBlockMap mapRaw = (TdApi.PageBlockMap) block;
-        PageBlockMedia map = new PageBlockMedia(parent, mapRaw);
+        PageBlockMedia map = new PageBlockMedia(parent, mapRaw, context.quoteLevel());
         context.process(map, out);
         context.processCaption(parent, mapRaw, mapRaw.caption, openParameters, out);
         break;
       }
       case TdApi.PageBlockVideo.CONSTRUCTOR: {
         TdApi.PageBlockVideo mediaRaw = (TdApi.PageBlockVideo) block;
-        PageBlockMedia media = new PageBlockMedia(parent, mediaRaw);
+        PageBlockMedia media = new PageBlockMedia(parent, mediaRaw, context.quoteLevel());
         context.process(media, out);
         context.processCaption(parent, mediaRaw, mediaRaw.caption, openParameters, out);
         break;
@@ -671,7 +684,7 @@ public abstract class PageBlock {
         context.setClosed(true, parent, out, true);
         if (!Td.isEmpty(relatedRaw.header)) {
           context.setClosed(false, parent, out, true);
-          PageBlockRichText header = new PageBlockRichText(parent, relatedRaw, openParameters);
+          PageBlockRichText header = new PageBlockRichText(parent, relatedRaw, context.quoteLevel(), openParameters);
           context.process(header, out);
         } else {
           context.setClosed(false, parent, out, false);
@@ -681,7 +694,7 @@ public abstract class PageBlock {
           if (index > 0) {
             context.process(new PageBlockSimple(parent, ListItem.TYPE_SEPARATOR_FULL, ColorId.filling), out);
           }
-          context.process(new PageBlockRelatedArticle(parent, relatedRaw, related, openParameters), out);
+          context.process(new PageBlockRelatedArticle(parent, relatedRaw, context.quoteLevel(), related, openParameters), out);
           index++;
         }
         context.setClosed(true, parent, out, false);
@@ -689,11 +702,11 @@ public abstract class PageBlock {
       }
       case TdApi.PageBlockCollage.CONSTRUCTOR: {
         TdApi.PageBlockCollage collageRaw = (TdApi.PageBlockCollage) block;
-        if (collageRaw.pageBlocks.length == 0) {
+        if (collageRaw.blocks.length == 0) {
           break;
         }
         boolean isOk = true;
-        for (TdApi.PageBlock pageBlock : collageRaw.pageBlocks) {
+        for (TdApi.PageBlock pageBlock : collageRaw.blocks) {
           switch (pageBlock.getConstructor()) {
             case TdApi.PageBlockPhoto.CONSTRUCTOR:
             case TdApi.PageBlockVideo.CONSTRUCTOR:
@@ -705,7 +718,7 @@ public abstract class PageBlock {
           break;
         }
         if (isOk) {
-          PageBlockMedia collage = new PageBlockMedia(parent, collageRaw);
+          PageBlockMedia collage = new PageBlockMedia(parent, collageRaw, context.quoteLevel());
           context.process(collage, out);
           context.processCaption(parent, collageRaw, collageRaw.caption, openParameters, out);
         }
@@ -714,12 +727,12 @@ public abstract class PageBlock {
       case TdApi.PageBlockSlideshow.CONSTRUCTOR: {
         TdApi.PageBlockSlideshow slideshowRaw = (TdApi.PageBlockSlideshow) block;
 
-        if (slideshowRaw.pageBlocks.length == 0) {
+        if (slideshowRaw.blocks.length == 0) {
           break;
         }
 
         boolean isOk = true;
-        for (TdApi.PageBlock pageBlock : slideshowRaw.pageBlocks) {
+        for (TdApi.PageBlock pageBlock : slideshowRaw.blocks) {
           switch (pageBlock.getConstructor()) {
             case TdApi.PageBlockPhoto.CONSTRUCTOR:
             case TdApi.PageBlockVideo.CONSTRUCTOR:
@@ -731,7 +744,7 @@ public abstract class PageBlock {
           break;
         }
         if (isOk) {
-          PageBlockMedia slideshow = new PageBlockMedia(parent, slideshowRaw);
+          PageBlockMedia slideshow = new PageBlockMedia(parent, slideshowRaw, context.quoteLevel());
           context.process(slideshow, out);
           context.processCaption(parent, slideshowRaw, slideshowRaw.caption, openParameters, out);
         }
@@ -742,7 +755,7 @@ public abstract class PageBlock {
       case TdApi.PageBlockAudio.CONSTRUCTOR: {
         TdApi.PageBlockAudio audioRaw = (TdApi.PageBlockAudio) block;
         if (audioRaw.audio != null) {
-          PageBlockFile audio = new PageBlockFile(parent, audioRaw, context.url, context.playListBuilder);
+          PageBlockFile audio = new PageBlockFile(parent, audioRaw, context.quoteLevel(), context.url, context.playListBuilder);
           context.process(audio, out);
         }
         context.processCaption(parent, audioRaw, audioRaw.caption, openParameters, out);
@@ -751,7 +764,7 @@ public abstract class PageBlock {
       case TdApi.PageBlockVoiceNote.CONSTRUCTOR: {
         TdApi.PageBlockVoiceNote voiceNoteRaw = (TdApi.PageBlockVoiceNote) block;
         if (voiceNoteRaw.voiceNote != null) {
-          PageBlockFile voiceNote = new PageBlockFile(parent, voiceNoteRaw, context.url, context.playListBuilder);
+          PageBlockFile voiceNote = new PageBlockFile(parent, voiceNoteRaw, context.quoteLevel(), context.url, context.playListBuilder);
           context.process(voiceNote, out);
         }
         context.processCaption(parent, voiceNoteRaw, voiceNoteRaw.caption, openParameters, out);
@@ -772,12 +785,12 @@ public abstract class PageBlock {
         if (embeddedRaw.posterPhoto != null) {
           EmbeddedService service = EmbeddedService.parse(embeddedRaw);
           if (service != null) {
-            TdApi.PageBlockPhoto fakePhoto = new TdApi.PageBlockPhoto(embeddedRaw.posterPhoto, embeddedRaw.caption, null);
-            embedded = new PageBlockMedia(parent, fakePhoto, service, null);
+            TdApi.PageBlockPhoto fakePhoto = new TdApi.PageBlockPhoto(embeddedRaw.posterPhoto, embeddedRaw.caption, null, false);
+            embedded = new PageBlockMedia(parent, fakePhoto, context.quoteLevel(), service, null);
           }
         }
         if (embedded == null) {
-          embedded = new PageBlockMedia(parent, embeddedRaw);
+          embedded = new PageBlockMedia(parent, embeddedRaw, context.quoteLevel());
         }
         context.process(embedded, out);
         context.processCaption(parent, embeddedRaw, embeddedRaw.caption, openParameters, out);
@@ -789,9 +802,9 @@ public abstract class PageBlock {
         context.isPost = true;
         context.lastBlock = null;
 
-        PageBlockRichText author = new PageBlockRichText(parent, postRaw, openParameters);
+        PageBlockRichText author = new PageBlockRichText(parent, postRaw, context.quoteLevel(), openParameters);
         context.process(author, out);
-        for (TdApi.PageBlock pageBlock : postRaw.pageBlocks) {
+        for (TdApi.PageBlock pageBlock : postRaw.blocks) {
           parse(parent, out, context, pageBlock, openParameters);
         }
         context.processCaption(parent, postRaw, postRaw.caption, openParameters, out);

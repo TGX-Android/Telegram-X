@@ -173,8 +173,20 @@ data class TdlibOptions(
   @JvmField var messageCaptionLengthMax: Int = 1024,
   @JvmField var messageReplyQuoteLengthMax: Int = 1024,
 
+  @JvmField var richMessageTextLengthMax: Int = 32768,
+  @JvmField var richMessageBlockCountMax: Int = 500,
+  @JvmField var richMessageDepthMax: Int = 16,
+  @JvmField var richMessageMediaCountMax: Int = 50,
+  @JvmField var richMessageTableColumnCountMax: Int = 20,
+
+  @JvmField var textCompositionStyleExampleCount: Int = 3,
+  @JvmField var textCompositionStylePromptLengthMax: Int = 1024,
+  @JvmField var textCompositionStyleTitleLengthMax: Int = 12,
+  @JvmField var addedTextCompositionStyleMax: Int = 5,
+
   @JvmField var pollAnswerCountMax: Int = 12,
   @JvmField var pollOpenPeriodMax: Int = 2628000,
+  @JvmField var pollCountryCountMax: Int = 12,
 
   @JvmField var checklistTaskCountMax: Int = 30,
   @JvmField var checklistTaskTextLengthMax: Int = 200,
@@ -217,6 +229,7 @@ data class TdlibOptions(
 
   @JvmField var forceInAppUpdate: Boolean = false,
   @JvmField var youtubePipDisabled: Boolean = false,
+  @JvmField var richMessagePostingDisabled: Boolean = false,
 
   @JvmField var qrLoginCamera: Boolean = true,
 
@@ -516,10 +529,32 @@ data class TdlibOptions(
       "message_reply_quote_length_max" ->
         messageReplyQuoteLengthMax = value.intValue()
 
+      "rich_message_text_length_max" ->
+        richMessageTextLengthMax = value.intValue()
+      "rich_message_block_count_max" ->
+        richMessageBlockCountMax = value.intValue()
+      "rich_message_depth_max" ->
+        richMessageDepthMax = value.intValue()
+      "rich_message_media_count_max" ->
+        richMessageMediaCountMax = value.intValue()
+      "rich_message_table_column_count_max" ->
+        richMessageTableColumnCountMax = value.intValue()
+
+      "text_composition_style_example_count" ->
+        textCompositionStyleExampleCount = value.intValue()
+      "text_composition_style_prompt_length_max" ->
+        textCompositionStylePromptLengthMax = value.intValue()
+      "text_composition_style_title_length_max" ->
+        textCompositionStyleTitleLengthMax = value.intValue()
+      "added_text_composition_style_max" ->
+        addedTextCompositionStyleMax = value.intValue()
+
       "poll_answer_count_max" ->
         pollAnswerCountMax = value.intValue()
       "poll_open_period_max" ->
         pollOpenPeriodMax = value.intValue()
+      "poll_country_count_max" ->
+        pollCountryCountMax = value.intValue()
 
       "checklist_task_count_max" ->
         checklistTaskCountMax = value.intValue()
@@ -636,6 +671,8 @@ data class TdlibOptions(
         forceInAppUpdate = value.boolValue()
       "youtube_pip" ->
         youtubePipDisabled = value.stringValue() == "disabled"
+      "rich_message_posting" ->
+        richMessagePostingDisabled = value.stringValue() == "disabled"
 
       "qr_login_camera" ->
         qrLoginCamera = value.boolValue()

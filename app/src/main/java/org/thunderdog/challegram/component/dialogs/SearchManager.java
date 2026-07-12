@@ -567,7 +567,7 @@ public class SearchManager {
     final int[] state = new int[2]; // 1 - step, 2 - disallowSelf
     final LongList foundChatIds = new LongList(16);
 
-    tdlib.client().send(new TdApi.SearchChats(query, StringUtils.isEmpty(query) ? 20 : isFiltered() ? 50 : 30), new Client.ResultHandler() {
+    tdlib.client().send(new TdApi.SearchChats(query, null, StringUtils.isEmpty(query) ? 20 : isFiltered() ? 50 : 30), new Client.ResultHandler() {
       @Override
       public void onResult (final TdApi.Object object) {
         if (contextId != currentContextId) {
@@ -640,7 +640,7 @@ public class SearchManager {
             case 1:
               if (sentRequest = foundChatIds.size() < 100) {
                 Log.ensureReturnType(TdApi.SearchChatsOnServer.class, TdApi.Chats.class);
-                tdlib.client().send(new TdApi.SearchChatsOnServer(query, 100 - foundChatIds.size()), this);
+                tdlib.client().send(new TdApi.SearchChatsOnServer(query, null, 100 - foundChatIds.size()), this);
               }
               break;
             case 2:
@@ -869,7 +869,7 @@ public class SearchManager {
 
     tdlib.ui().post(runnable);
 
-    tdlib.send(new TdApi.SearchPublicChats(usernameQuery), (remoteChats, error) -> {
+    tdlib.send(new TdApi.SearchPublicChats(usernameQuery, null), (remoteChats, error) -> {
       if (contextId == currentContextId) {
         runnable.cancel();
         final ArrayList<TGFoundChat> foundChats;

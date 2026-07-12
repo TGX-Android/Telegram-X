@@ -13,27 +13,27 @@ plugins {
   id("tgx-module")
 }
 
-val generateResourcesAndThemes by tasks.registering(GenerateResourcesAndThemesTask::class) {
+val generateResourcesAndThemes = tasks.register<GenerateResourcesAndThemesTask>("generateResourcesAndThemes") {
   group = "Setup"
   description = "Generates fresh strings, ids, theme resources and utility methods based on current static files"
 }
-val updateLanguages by tasks.registering(FetchLanguagesTask::class) {
+val updateLanguages = tasks.register<FetchLanguagesTask>("updateLanguages") {
   group = "Setup"
   description = "Generates and updates all strings.xml resources based on translations.telegram.org"
 }
-val validateApiTokens by tasks.registering(ValidateApiTokensTask::class) {
+val validateApiTokens = tasks.register<ValidateApiTokensTask>("validateApiTokens") {
   group = "Setup"
   description = "Validates some API tokens to make sure they work properly and won't cause problems"
 }
-val updateExceptions by tasks.registering(UpdateExceptionsTask::class) {
+val updateExceptions = tasks.register<UpdateExceptionsTask>("updateExceptions") {
   group = "Setup"
   description = "Updates exception class names with the app or TDLib version number in order to have separate group on Google Play Developer Console"
 }
-val generatePhoneFormat by tasks.registering(GeneratePhoneFormatTask::class) {
+val generatePhoneFormat = tasks.register<GeneratePhoneFormatTask>("generatePhoneFormat") {
   group = "Setup"
   description = "Generates utility methods for phone formatting, e.g. +12345678901 -> +1 (234) 567 89-01"
 }
-val checkEmojiKeyboard by tasks.registering(CheckEmojiKeyboardTask::class) {
+val checkEmojiKeyboard = tasks.register<CheckEmojiKeyboardTask>("checkEmojiKeyboard") {
   group = "Setup"
   description = "Checks that all supported emoji can be entered from the keyboard"
 }
@@ -96,40 +96,6 @@ android {
 
     // Library versions in BuildConfig.java
 
-    var openSslVersion = ""
-    var openSslVersionFull = ""
-    val openSslVersionFile = File(project.rootDir.absoluteFile, "tdlib/source/openssl/include/openssl/opensslv.h")
-    openSslVersionFile.bufferedReader().use { reader ->
-      val regex = Regex("^#\\s*define OPENSSL_VERSION_NUMBER\\s*((?:0x)[0-9a-fAF]+)L?\$")
-      while (true) {
-        val line = reader.readLine() ?: break
-        val result = regex.find(line)
-        if (result != null) {
-          val rawVersion = result.groupValues[1]
-          val version = if (rawVersion.startsWith("0x")) {
-            rawVersion.substring(2).toLong(16)
-          } else {
-            rawVersion.toLong()
-          }
-          // MNNFFPPS: major minor fix patch status
-          val major = ((version shr 28) and 0xf).toInt()
-          val minor = ((version shr 20) and 0xff).toInt()
-          val fix = ((version shr 12) and 0xff).toInt()
-          val patch = ((version shr 4) and 0xff).toInt()
-          val status = (version and 0xf).toInt()
-          if (status != 0xf) {
-            fatal("Using non-stable OpenSSL version: $rawVersion (status = ${status.toString(16)})")
-          }
-          openSslVersion = "${major}.${minor}"
-          openSslVersionFull = "${major}.${minor}.${fix}${('a'.code - 1 + patch).toChar()}"
-          break
-        }
-      }
-    }
-    if (openSslVersion.isEmpty()) {
-      fatal("OpenSSL not found!")
-    }
-
     var tdlibVersion = ""
     val tdlibCommit = File(project.rootDir.absoluteFile, "tdlib/version.txt").bufferedReader().readLine().take(7)
     val tdlibVersionFile = File(project.rootDir.absoluteFile, "tdlib/source/td/CMakeLists.txt")
@@ -148,8 +114,6 @@ android {
       fatal("TDLib not found!")
     }
 
-    buildConfigString("OPENSSL_VERSION", openSslVersion)
-    buildConfigString("OPENSSL_VERSION_FULL", openSslVersionFull)
     buildConfigString("TDLIB_VERSION", tdlibVersion)
 
     val tgxGitVersionProvider = providers.of(GitVersionValueSource::class) {
@@ -185,6 +149,14 @@ android {
     buildConfigField("String[]", "PULL_REQUEST_AUTHOR", "{${
       config.pullRequests.joinToString(", ") { "\"${it.author}\"" }
     }}")
+
+    // OpenSSL version
+
+    val openSslGit = providers.of(GitVersionValueSource::class) {
+      parameters.module = layout.projectDirectory.dir("../tdlib/source/openssl")
+    }.get()
+    buildConfigString("OPENSSL_COMMIT", openSslGit.commitHashShort)
+    buildConfigString("OPENSSL_COMMIT_URL", openSslGit.commitUrl)
 
     // WebRTC version
 
@@ -235,8 +207,8 @@ android {
 
   sourceSets.getByName("main") {
     // TODO: Exclude in FOSS variant
-    kotlin.directories += "src/google/java"
-    java.directories += "src/google/java"
+    kotlin.directories += "src/google/main/java"
+    java.directories += "src/google/main/java"
   }
 
   lint {
@@ -306,13 +278,14 @@ android {
           Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
             java.directories += "../thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/src/main/java"
           }
-          if (variant.flavor != "legacy") {
-            kotlin.directories += "src/postLegacy/kotlin"
-            java.directories += "src/postLegacy/java"
-          }
-          if (variant.flavor != "latest") {
-            kotlin.directories += "src/preLatest/kotlin"
-            java.directories += "src/preLatest/java"
+          val extraFolders = findExtraFolders(variant)
+          extraFolders.forEach { folderName ->
+            kotlin.directories += "src/$folderName/kotlin"
+            java.directories += "src/$folderName/java"
+
+            // TODO: Exclude in FOSS variant
+            kotlin.directories += "src/google/$folderName/kotlin"
+            java.directories += "src/google/$folderName/java"
           }
         }
 
@@ -422,12 +395,13 @@ android {
       }
       require(baseVersionCode != null && baseVersionName != null && fileName != null)
 
-      val recaptchaVersion = when (sdkVariant.flavor) {
-        "legacy" -> libs.google.recaptcha.legacy
-        "lollipop" -> libs.google.recaptcha.lollipop
-        "latest" -> libs.google.recaptcha.latest
-        else -> error(sdkVariant.flavor)
-      }.get().version!!
+      val recaptchaVersion = selectImplementation(
+        sdkVariant,
+        libs.google.recaptcha.legacy,
+        libs.google.recaptcha.lollipop,
+        libs.google.recaptcha.marshmallow,
+        libs.google.recaptcha.latest
+      )
 
       variant.buildConfigFields!!.apply {
         put("ABI", BuildConfigField(
@@ -442,10 +416,56 @@ android {
         put("ORIGINAL_VERSION_NAME", BuildConfigField(
           "String", "\"$baseVersionName.$baseVersionCode\"", null
         ))
+
+        var openSslVersionFull = ""
+        var openSslReleaseDate = ""
+        val openSslVersionFile = File(project.rootDir.absoluteFile, "tdlib/openssl/${abiVariant.filters.first()}/include/openssl/opensslv.h")
+        openSslVersionFile.bufferedReader().use { reader ->
+          val regex = Regex("^# define (OPENSSL_FULL_VERSION_STR|OPENSSL_RELEASE_DATE)\\s*\"([^\"]+)\"$")
+          while (true) {
+            val line = reader.readLine() ?: break
+            val result = regex.find(line)
+            if (result != null) {
+              val varName = result.groupValues[1]
+              val value = result.groupValues[2]
+              when (varName) {
+                "OPENSSL_FULL_VERSION_STR" -> openSslVersionFull = value
+                "OPENSSL_RELEASE_DATE" -> openSslReleaseDate = value
+                else -> error(varName)
+              }
+              if (openSslVersionFull.isNotEmpty() && openSslReleaseDate.isNotEmpty()) {
+                break
+              }
+            }
+          }
+        }
+        if (openSslVersionFull.isEmpty()) {
+          fatal("OpenSSL not found!")
+        }
+        put("OPENSSL_VERSION_FULL", BuildConfigField(
+          "String", "\"$openSslVersionFull\"", null
+        ))
+        put("OPENSSL_RELEASE_DATE", BuildConfigField(
+          "String", "\"$openSslReleaseDate\"", null
+        ))
+      }
+
+      val extraFolders = findExtraFolders(sdkVariant)
+      extraFolders.forEach { folderName ->
+        variant.sources.manifests.addStaticManifestFile(
+          "src/$folderName/AndroidManifest.xml"
+        )
+        // TODO: Exclude in FOSS variant
+        variant.sources.manifests.addStaticManifestFile(
+          "src/google/$folderName/AndroidManifest.xml"
+        )
       }
 
       if (variant.isMinifyEnabled) {
-        val copyTask = project.tasks.register<Copy>("copy${variant.name.replaceFirstChar { it.uppercase() }}MappingFile") {
+        val copyTask = project.tasks.register<Copy>(
+          "copy${variant.name.replaceFirstChar { it.uppercase() }}MappingFile"
+        ) {
+          description = "Creates a copy of mapping.txt with a build name"
           from(variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE))
           into(project.layout.buildDirectory.dir("outputs/mapping/${variant.name}"))
           rename("mapping.txt", "$fileName.txt")
@@ -583,6 +603,7 @@ dependencies {
   )
   flavorImplementation(
     libs.google.play.services.location.legacy,
+    libs.google.play.services.location.lollipop,
     libs.google.play.services.location.latest
   )
   flavorImplementation(
@@ -618,6 +639,7 @@ dependencies {
   flavorImplementation(
     libs.google.recaptcha.legacy,
     libs.google.recaptcha.lollipop,
+    libs.google.recaptcha.marshmallow,
     libs.google.recaptcha.latest
   )
   // AndroidX/media: https://github.com/androidx/media/blob/release/RELEASENOTES.md
@@ -646,7 +668,7 @@ dependencies {
     libs.androidx.media.exoplayer.hls.lollipop,
     libs.androidx.media.exoplayer.hls.latest
   )
-  latestImplementation(libs.androidx.media.inspector.latest)
+  postLollipopImplementation(libs.androidx.media.inspector.latest)
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation(libs.google.play.app.update)
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
@@ -661,7 +683,7 @@ dependencies {
     artifact { type = "aar" }
   }
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
-  preLatestImplementation(libs.relinker)
+  preMarshmallowImplementation(libs.relinker)
   // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/main/README.md
   implementation(libs.konfetti)
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md

@@ -11,7 +11,12 @@ function checkPreRequisites {
     exit
   fi
 
-  if [ -z "$ANDROID_SDK_ROOT" -a "$ANDROID_SDK_ROOT" == "" ]; then
+  if [ -z "$FLAVORS" ]; then
+    echo -e "${STYLE_ERROR}Failed! FLAVORS is empty. Run 'export FLAVORS=[version.flavors]'${STYLE_END}"
+    exit
+  fi
+
+  if [ -z "$ANDROID_SDK_ROOT" ]; then
     echo -e "${STYLE_ERROR}Failed! ANDROID_SDK_ROOT is empty. Run 'export ANDROID_SDK_ROOT=[PATH_TO_SDK]'${STYLE_END}"
     exit
   fi
@@ -36,14 +41,21 @@ configure_abi() {
   CFLAGS_="-DANDROID -fpic -fpie"
   LDFLAGS_=""
   case ${FLAVOR} in
-    latest)
-      ANDROID_API=23
+    legacy)
+      ANDROID_API=16
     ;;
     lollipop)
       ANDROID_API=21
     ;;
-    legacy)
-      ANDROID_API=16
+    marshmallow)
+      ANDROID_API=23
+    ;;
+    latest)
+      ANDROID_API=24
+    ;;
+    *)
+      echo "Unknown flavor: ${FLAVOR}" >&2
+      exit 1
     ;;
   esac
   case ${ABI} in
@@ -55,10 +67,12 @@ configure_abi() {
       LDFLAGS="${LDFLAGS_}"
       ASFLAGS=""
       CPU=arm64-v8a
+      EXTRA_PARAMS=( )
     ;;
 	  armeabi-v7a)
       ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
-      TARGET="armv7-android-gcc --enable-neon --disable-neon-asm"
+      TARGET="armv7-android-gcc"
+      EXTRA_PARAMS=(--enable-neon --disable-neon-asm)
       NDK_ABIARCH="armv7a-linux-androideabi"
       CFLAGS="${CFLAGS_} -Os -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__ -I${CPUFEATURES_DIR}"
       LDFLAGS="${LDFLAGS_}"
@@ -73,6 +87,7 @@ configure_abi() {
       LDFLAGS=""
       ASFLAGS="-D__ANDROID__"
       CPU=x86_64
+      EXTRA_PARAMS=( )
     ;;
     x86)
       ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
@@ -82,6 +97,11 @@ configure_abi() {
       LDFLAGS="-m32"
       ASFLAGS="-D__ANDROID__"
       CPU=i686
+      EXTRA_PARAMS=( )
+    ;;
+    *)
+      echo "Unknown abi: ${ABI}" >&2
+      exit 1
     ;;
   esac
 
@@ -141,9 +161,10 @@ configure_make() {
   fi
 
   ./configure \
-    --libc=${SYSROOT} \
-    --prefix=${PREFIX} \
-    --target=${TARGET} \
+    --libc="${SYSROOT}" \
+    --prefix="${PREFIX}" \
+    --target="${TARGET}" \
+    "${EXTRA_PARAMS[@]}" \
     ${CPU_DETECT} \
     --as=auto \
     --disable-docs \
@@ -166,7 +187,7 @@ configure_make() {
 }
 
 for ABI in arm64-v8a armeabi-v7a x86_64 x86 ; do
-  for FLAVOR in latest lollipop legacy ; do
+  for FLAVOR in $FLAVORS; do
     if [[ "$FLAVOR" != "legacy" || $ABI == "armeabi-v7a" || $ABI == "x86" ]]; then
       echo -e "${STYLE_INFO}- libvpx build start: ${ABI} ${FLAVOR}${STYLE_END}"
       configure_make "$FLAVOR" "$ABI"

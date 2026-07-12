@@ -21,16 +21,20 @@ import android.view.View;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
@@ -117,6 +121,16 @@ public class BubbleView implements AttachDelegate, Destroyable {
       return new Entry(
         tdlib, "sender_" + Td.getSenderId(senderId), senderId,
         name, shortName, loader
+      );
+    }
+
+    public static Entry valueOf (Tdlib tdlib, TdApi.CountryInfo country, String emoji) {
+      RunnableData<AvatarReceiver> loader = receiver -> {
+        TdlibAccentColor accentColor = new TdlibAccentColor(TdlibAccentColor.InternalId.PLACEHOLDER); // tdlib.accentColorForString(country.countryCode);
+        receiver.requestPlaceholder(tdlib, new AvatarPlaceholder.Metadata(accentColor, new Letters(emoji)), AvatarReceiver.Options.NONE);
+      };
+      return new Entry(
+        tdlib, "country_" + country.countryCode, null, country.name, null, loader
       );
     }
   }

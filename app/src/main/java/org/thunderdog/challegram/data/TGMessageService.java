@@ -389,9 +389,10 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedChecklist;
               break;
             case TdApi.MessageLocation.CONSTRUCTOR:
-              staticResId = ((TdApi.MessageLocation) message.content).livePeriod > 0 ?
-                R.string.ActionPinnedGeoLive :
-                R.string.ActionPinnedGeo;
+              staticResId = R.string.ActionPinnedGeo;
+              break;
+            case TdApi.MessageLiveLocation.CONSTRUCTOR:
+              staticResId = R.string.ActionPinnedGeoLive;
               break;
             case TdApi.MessageVenue.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedGeo;
@@ -429,6 +430,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               // unreachable
             case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
             case TdApi.MessageText.CONSTRUCTOR:
+            case TdApi.MessageRichMessage.CONSTRUCTOR:
               // cannot be pinned
             case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
             case TdApi.MessageCall.CONSTRUCTOR:
@@ -508,7 +510,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_baa076bf();
+              Td.assertMessageContent_bb294b24();
               throw Td.unsupported(message.content);
           }
           if (format == null) {

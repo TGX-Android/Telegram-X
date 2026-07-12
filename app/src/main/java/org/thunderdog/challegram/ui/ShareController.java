@@ -787,13 +787,15 @@ public class ShareController extends TelegramViewController<ShareController.Args
               title2Res = R.string.ShareTitleFileX;
               textRes = R.string.ShareTextFile;
               break;
+            case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
             case TdApi.MessageText.CONSTRUCTOR:
+            case TdApi.MessageRichMessage.CONSTRUCTOR:
               title1Res = R.string.ShareTitleText;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextPlain;
               break;
             default:
-              Td.assertMessageContent_baa076bf();
+              Td.assertMessageContent_bb294b24();
               title1Res = R.string.ShareTitleMedia;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextMedia;
@@ -3454,7 +3456,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         case MODE_FILES  : {
           List<TdApi.InputMessageContent> contents = new ArrayList<>(args.files.length);
           for (FileInfo fileInfo : args.files) {
-            TdApi.InputMessageDocument document = new TdApi.InputMessageDocument(TD.createInputFile(fileInfo.path), null, false, null);
+            TdApi.InputMessageDocument document = new TdApi.InputMessageDocument(new TdApi.InputDocument(TD.createInputFile(fileInfo.path), null, false), null);
             contents.add(document);
           }
           TdApi.Function<?> function;

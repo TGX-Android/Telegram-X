@@ -52,8 +52,8 @@ public class PageBlockTable extends PageBlock implements Destroyable {
   private final int totalColumnsCount;
   private final int totalRowsCount;
 
-  public PageBlockTable (ViewController<?> context, TdApi.PageBlockTable block, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, block);
+  public PageBlockTable (ViewController<?> context, TdApi.PageBlockTable block, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, block, quoteLevel);
 
     final LongSparseIntArray keys = new LongSparseIntArray(50);
     final ArrayList<Cell> cellsList = new ArrayList<>();

@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
+import android.telephony.TelephonyManager;
 import android.util.SparseIntArray;
 import android.widget.Toast;
 
@@ -74,6 +75,7 @@ import org.thunderdog.challegram.sync.SyncHelper;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.tool.TGCountry;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EditRightsController;
 import org.thunderdog.challegram.unsorted.Passcode;
@@ -99,6 +101,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -671,31 +674,50 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     TDLib.Tag.notifications("Registering device token... accountId:%d", accountId);
     context.setDeviceRegistered(accountId, false);
-    incrementReferenceCount(REFERENCE_TYPE_JOB);
+    incrementJobReferenceCount(JOB_ID_CHECK_DEVICE_TOKEN);
     send(new TdApi.RegisterDevice(deviceToken, otherUserIds), (pushReceiverId, error) -> {
-      if (pushReceiverId != null) {
-        TDLib.Tag.notifications("Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
-        Settings.instance().putNotificationReceiverId(pushReceiverId.id, accountId);
-        TdlibSettingsManager.setRegisteredDevice(accountId, myUserId, deviceToken, otherUserIds);
-        context().setDeviceRegistered(accountId, true);
-        context().unregisterDevices(instanceMode, accountId, availableUserIds);
-        U.run(onDone);
-      } else {
-        int seconds = Math.max(5, TD.getFloodErrorSeconds(error.code, error.message, 5));
-        if (seconds > 60 && isDebugInstance()) {
-          TDLib.Tag.notifications("Unable to register device token, flood is %d seconds, ignoring: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
-          context.setDeviceRegistered(accountId, true);
+      try {
+        if (pushReceiverId != null) {
+          TDLib.Tag.notifications("Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
+          Settings.instance().putNotificationReceiverId(pushReceiverId.id, accountId);
+          TdlibSettingsManager.setRegisteredDevice(accountId, myUserId, deviceToken, otherUserIds);
+          context().setDeviceRegistered(accountId, true);
+          context().unregisterDevices(instanceMode, accountId, availableUserIds);
           U.run(onDone);
         } else {
-          TDLib.Tag.notifications("Unable to register device token, retrying in %d seconds: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
-          client().send(new TdApi.SetAlarm(seconds), ignored -> checkDeviceTokenImpl(onDone));
+          int seconds = Math.max(5, TD.getFloodErrorSeconds(error.code, error.message, 5));
+          if (seconds > 60 && isDebugInstance()) {
+            TDLib.Tag.notifications("Unable to register device token, flood is %d seconds, ignoring: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
+            context.setDeviceRegistered(accountId, true);
+            U.run(onDone);
+          } else {
+            TDLib.Tag.notifications("Unable to register device token, retrying in %d seconds: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
+            client().send(new TdApi.SetAlarm(seconds), ignored -> checkDeviceTokenImpl(onDone));
+          }
         }
+      } finally {
+        decrementJobReferenceCount(JOB_ID_CHECK_DEVICE_TOKEN);
       }
-      decrementReferenceCount(REFERENCE_TYPE_JOB);
     });
   }
 
   // Use count
+
+  private static final String JOB_ID_CHECK_DEVICE_TOKEN = "checkDeviceToken";
+  private static final String JOB_ID_LIVE_LOCATION = "liveLocation";
+  private static final String JOB_ID_ACTIVE_CALL = "activeCall";
+  private static final String JOB_ID_UI = "ui";
+  private static final String JOB_ID_NOTIFICATION = "notification";
+  private static final String JOB_ID_CLEAN_UP = "unauth";
+  private static final String JOB_ID_SIGN_OUT = "signOut";
+  private static final String JOB_ID_CHANGE_LOG = "change_log";
+  private static final String JOB_ID_RUNNABLE = "runnable";
+  private static final String JOB_ID_EXECUTE = "execute";
+  private static final String JOB_ID_SYNC = "sync";
+  private static final String JOB_ID_MESSAGE = "message";
+  private static final String JOB_ID_VERIFICATION = "verification";
+  private static final String JOB_ID_RECAPTCHA = "recaptcha";
+  private static final String JOB_ID_JOB = "job";
 
   private static final int REFERENCE_TYPE_UI = 0;
   private static final int REFERENCE_TYPE_JOB = 1;
@@ -711,54 +733,54 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public void changeLocationReferenceCount (int deltaCount) {
     if (deltaCount > 0) {
       do {
-        incrementReferenceCount(REFERENCE_TYPE_LOCATION);
+        incrementReferenceCount(REFERENCE_TYPE_LOCATION, JOB_ID_LIVE_LOCATION);
       } while (--deltaCount > 0);
     } else if (deltaCount < 0) {
       do {
-        decrementReferenceCount(REFERENCE_TYPE_LOCATION);
+        decrementReferenceCount(REFERENCE_TYPE_LOCATION, JOB_ID_LIVE_LOCATION);
       } while (++deltaCount < 0);
     }
   }
 
   public void incrementCallReferenceCount () {
-    incrementReferenceCount(REFERENCE_TYPE_CALL);
+    incrementReferenceCount(REFERENCE_TYPE_CALL, JOB_ID_ACTIVE_CALL);
   }
 
   public void decrementCallReferenceCount () {
-    decrementReferenceCount(REFERENCE_TYPE_CALL);
+    decrementReferenceCount(REFERENCE_TYPE_CALL, JOB_ID_ACTIVE_CALL);
   }
 
   public void incrementUiReferenceCount () {
-    incrementReferenceCount(REFERENCE_TYPE_UI);
+    incrementReferenceCount(REFERENCE_TYPE_UI, JOB_ID_UI);
   }
 
   public void decrementUiReferenceCount () {
-    decrementReferenceCount(REFERENCE_TYPE_UI);
+    decrementReferenceCount(REFERENCE_TYPE_UI, JOB_ID_UI);
   }
 
   void incrementNotificationReferenceCount () {
-    incrementReferenceCount(REFERENCE_TYPE_NOTIFICATION);
+    incrementReferenceCount(REFERENCE_TYPE_NOTIFICATION, JOB_ID_NOTIFICATION);
   }
 
   void decrementNotificationReferenceCount () {
-    decrementReferenceCount(REFERENCE_TYPE_NOTIFICATION);
+    decrementReferenceCount(REFERENCE_TYPE_NOTIFICATION, JOB_ID_NOTIFICATION);
   }
 
-  void incrementJobReferenceCount () {
-    incrementReferenceCount(REFERENCE_TYPE_JOB);
+  void incrementJobReferenceCount (String id) {
+    incrementReferenceCount(REFERENCE_TYPE_JOB, id);
   }
 
-  void decrementJobReferenceCount () {
-    decrementReferenceCount(REFERENCE_TYPE_JOB);
+  void decrementJobReferenceCount (String id) {
+    decrementReferenceCount(REFERENCE_TYPE_JOB, id);
   }
 
-  private void incrementReferenceCount (int type) {
+  private void incrementReferenceCount (int type, String id) {
     boolean wakeup;
     int referenceCount;
     synchronized (clientLock) {
       referenceCount = this.referenceCount.incrementAndGet();
       wakeup = referenceCount == 1;
-      Log.v(Log.TAG_ACCOUNTS, "accountId:%d, referenceCount:%d, type:%d", accountId, referenceCount, type);
+      Log.v(Log.TAG_ACCOUNTS, "+ accountId:%d, referenceCount:%d, type:%d, id:%s", accountId, referenceCount, type, id);
       if (type == REFERENCE_TYPE_UI)
         account().markAsUsed();
       schedulePause();
@@ -773,7 +795,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  private void decrementReferenceCount (int type) {
+  private void decrementReferenceCount (int type, String id) {
     int referenceCount;
     synchronized (clientLock) {
       referenceCount = this.referenceCount.decrementAndGet();
@@ -782,7 +804,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         Tracer.onOtherError(e);
         throw e;
       }
-      Log.v(Log.TAG_ACCOUNTS, "accountId:%d, referenceCount:%d, type:%d", accountId, referenceCount, type);
+      Log.v(Log.TAG_ACCOUNTS, "- accountId:%d, referenceCount:%d, type:%d, id:%s", accountId, referenceCount, type, id);
       schedulePause();
     }
     if (referenceCount == 0) {
@@ -898,12 +920,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         if (after != null)
           after.run();
       } else {
-        incrementReferenceCount(REFERENCE_TYPE_JOB);
+        incrementJobReferenceCount(JOB_ID_CLEAN_UP);
         deleteAllFiles(success -> {
           if (success) {
             context().markNoPrivateData(accountId);
           }
-          decrementReferenceCount(REFERENCE_TYPE_JOB);
+          decrementJobReferenceCount(JOB_ID_CLEAN_UP);
         });
       }
     });
@@ -1119,13 +1141,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     switchToNextAuthorizedAccount();
     boolean isMulti = context().isMultiUser();
     String name = isMulti ? TD.getUserName(account().getFirstName(), account().getLastName()) : null;
-    incrementReferenceCount(REFERENCE_TYPE_JOB);
-    /*deleteAllFiles(ignored -> */client().send(new TdApi.LogOut(), result -> {
+    incrementJobReferenceCount(JOB_ID_SIGN_OUT);
+    send(new TdApi.LogOut(), (ok, error) -> {
       if (isMulti) {
         UI.showToast(Lang.getString(R.string.SignedOutAs, name), Toast.LENGTH_SHORT);
       }
-      decrementReferenceCount(REFERENCE_TYPE_JOB);
-    })/*)*/;
+      decrementJobReferenceCount(JOB_ID_SIGN_OUT);
+    });
   }
 
   public void destroy () {
@@ -1395,7 +1417,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       List<TdApi.Function<?>> functions = new ArrayList<>();
       ChangeLogList.collectChangeLogs(prevVersion, functions, updates, test);
       if (!updates.isEmpty()) {
-        incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
+        incrementJobReferenceCount(JOB_ID_CHANGE_LOG); // starting task
         functions.add(new TdApi.CreatePrivateChat(TdConstants.TELEGRAM_ACCOUNT_ID, false));
         if (options.telegramServiceNotificationsChatId != 0 && options.telegramServiceNotificationsChatId != TdConstants.TELEGRAM_ACCOUNT_ID) {
           functions.add(new TdApi.GetChat(options.telegramServiceNotificationsChatId));
@@ -1413,7 +1435,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
                 Log.e("Received error while sending change log: %s", TD.toErrorString(object));
               }
               if (remainingUpdates.decrementAndGet() == 0) {
-                decrementReferenceCount(REFERENCE_TYPE_JOB); // ending task
+                decrementJobReferenceCount(JOB_ID_CHANGE_LOG); // ending task
               }
             };
             for (TdApi.InputMessageContent content : updates) {
@@ -1775,18 +1797,31 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public void runOnTdlibThread (@NonNull Runnable runnable) {
+  public void executeOnTdlibThread (@NonNull Runnable runnable) {
+    if (inTdlibThread()) {
+      runnable.run();
+    } else {
+      postOnTdlibThread(runnable);
+    }
+  }
+
+  public void postOnTdlibThread (@NonNull Runnable runnable) {
     runOnTdlibThread(runnable, 0, true);
+  }
+
+  @Deprecated
+  public void runOnTdlibThread (@NonNull Runnable runnable) {
+    postOnTdlibThread(runnable);
   }
 
   public void runOnTdlibThread (@NonNull Runnable runnable, double timeoutSeconds, boolean acquireReference) {
     if (acquireReference) {
-      incrementReferenceCount(REFERENCE_TYPE_JOB);
+      incrementJobReferenceCount(JOB_ID_RUNNABLE + "_" + Log.toString(Log.generateException(1)));
     }
     clientHolder().runOnTdlibThread(() -> {
       runnable.run();
       if (acquireReference) {
-        decrementReferenceCount(REFERENCE_TYPE_JOB);
+        decrementJobReferenceCount(JOB_ID_RUNNABLE);
       }
     }, timeoutSeconds);
   }
@@ -1923,7 +1958,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean isBadInstantView (TdApi.WebPageInstantView instantView) {
-    return instantView == null || !instantView.isFull || instantView.pageBlocks == null || instantView.pageBlocks.length == 0 || !TD.hasInstantView(instantView.version);
+    return instantView == null || !instantView.isFull || instantView.blocks == null || instantView.blocks.length == 0 || !TD.hasInstantView(instantView.version);
   }
 
   public void fetchInstantView (String url, ResultHandler<TdApi.WebPageInstantView> callback) {
@@ -2255,7 +2290,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     final AtomicReference<TdApi.Object> response = new AtomicReference<>();
     Runnable act = () -> {
       if (requiresTdlibInitialization) {
-        incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+        incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION, JOB_ID_EXECUTE);
       }
       client().send(function, object -> {
         synchronized (response) {
@@ -2263,7 +2298,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           latch.countDown();
         }
         if (requiresTdlibInitialization) {
-          decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+          decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION, JOB_ID_EXECUTE);
         }
       });
     };
@@ -3437,10 +3472,56 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void withChannelBotUserId (RunnableLong runnable) {
-    client().send(new TdApi.SearchPublicChat("Channel_Bot"), result -> ui().post(() -> {
-      long userId = result.getConstructor() == TdApi.Chat.CONSTRUCTOR ? chatUserId((TdApi.Chat) result) : 0;
+    send(new TdApi.SearchPublicChat("Channel_Bot"), (chat, error) -> ui().post(() -> {
+      long userId = chat != null ? chatUserId(chat) : 0;
       runnable.runWithLong(userId != 0 ? userId : telegramChannelBotUserId());
     }));
+  }
+
+  private TdApi.Countries countries;
+
+  public void getCountries (@Nullable RunnableData<TdApi.CountryInfo[]> callback) {
+    TdApi.Countries cachedCountries;
+    synchronized (dataLock) {
+      cachedCountries = this.countries;
+    }
+    if (cachedCountries != null) {
+      if (callback != null) {
+        callback.runWithData(cachedCountries.countries);
+      }
+    } else {
+      send(new TdApi.GetCountries(), (countries, error) -> {
+        synchronized (dataLock) {
+          this.countries = countries;
+        }
+        if (callback != null) {
+          if (countries != null) {
+            callback.runWithData(countries.countries);
+          } else {
+            callback.runWithData(new TdApi.CountryInfo[0]);
+          }
+        }
+      });
+    }
+  }
+
+  public String getCountryName (String countryCode) {
+    TdApi.Countries cachedCountries;
+    synchronized (dataLock) {
+      cachedCountries = this.countries;
+    }
+    if (cachedCountries != null) {
+      for (TdApi.CountryInfo country : cachedCountries.countries) {
+        if (country.countryCode.equals(countryCode)) {
+          return country.name;
+        }
+      }
+    }
+    TGCountry.Country info = TGCountry.instance().find(countryCode);
+    if (info != null) {
+      return info.name;
+    }
+    return countryCode;
   }
 
   public boolean canCopyPublicMessageLinks (long chatId) {
@@ -4688,12 +4769,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Animation animation) {
-    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false, false);
+    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height), null, false, false);
     sendMessage(chatId, topicId, replyTo, options, inputMessageContent);
   }
 
   public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Audio audio) {
-    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAudio(new TdApi.InputFileId(audio.audio.id), null, audio.duration, audio.title, audio.performer, null);
+    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAudio(new TdApi.InputAudio(new TdApi.InputFileId(audio.audio.id), null, audio.duration, audio.title, audio.performer), null);
     sendMessage(chatId, topicId, replyTo, options, inputMessageContent);
   }
 
@@ -4742,7 +4823,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_baa076bf();
+        Td.assertMessageContent_bb294b24();
         break;
     }
 
@@ -4826,7 +4907,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_baa076bf();
+      Td.assertMessageContent_bb294b24();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -5711,6 +5792,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       this.languagePackId = languagePackId;
       if (dispatch) {
         updateLanguageParameters(client(), false);
+        this.countries = null; // Reset locale-specific names.
       }
       return true;
     }
@@ -6105,6 +6187,50 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return parameters.systemLanguageCode;
   }
 
+  public String possibleCountryCode (String countryCode) {
+    Set<String> countryCodes = possibleCountryCodes(countryCode);
+    for (String code : countryCodes) {
+      return code;
+    }
+    return null;
+  }
+
+  public Set<String> possibleCountryCodes (String countryCode) {
+    Set<String> set = new LinkedHashSet<>();
+
+    if (!StringUtils.isEmptyOrBlank(countryCode)) {
+      set.add(countryCode);
+    }
+
+    TelephonyManager tm = (TelephonyManager) UI.getContext().getSystemService(Context.TELEPHONY_SERVICE);
+    if (tm != null) {
+      try {
+        String simCountryIso = tm.getSimCountryIso();
+        if (!StringUtils.isEmptyOrBlank(simCountryIso)) {
+          set.add(simCountryIso.toUpperCase(Locale.ROOT));
+        }
+      } catch (Throwable ignored) { }
+
+      try {
+        if (tm.getPhoneType() != TelephonyManager.PHONE_TYPE_CDMA) {
+          String networkCountryIso = tm.getNetworkCountryIso();
+          if (!StringUtils.isEmptyOrBlank(networkCountryIso)) {
+            set.add(networkCountryIso.toUpperCase(Locale.ROOT));
+          }
+        }
+      } catch (Throwable ignored) { }
+
+      try {
+        String localeCountry = Locale.getDefault().getCountry();
+        if (!StringUtils.isEmptyOrBlank(localeCountry)) {
+          set.add(localeCountry.toUpperCase(Locale.ROOT));
+        }
+      } catch (Throwable ignored) { }
+    }
+
+    return set;
+  }
+
   public long timeElapsedSinceDate (long unixTime, TimeUnit unit) {
     long now = System.currentTimeMillis();
     long unixTimeMs = unit.toMillis(unixTime);
@@ -6467,7 +6593,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public void sync (long pushId, @Nullable Runnable after, boolean needNotifications, boolean needNetworkRequest) {
     TDLib.Tag.notifications(pushId, accountId, "Performing sync needNotification: %b, needNetworkRequest: %b, hasAfter: %b. Awaiting connection. Connection state: %d, status: %d", needNotifications, needNetworkRequest, after != null, connectionState, authorizationStatus());
-    incrementReferenceCount(REFERENCE_TYPE_SYNC);
+    incrementReferenceCount(REFERENCE_TYPE_SYNC, JOB_ID_SYNC);
     Runnable onDone = () -> {
       if (after != null) {
         if (needNotifications) {
@@ -6483,7 +6609,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       } else {
         TDLib.Tag.notifications(pushId, accountId, "Sync task finished, but there's no callback.");
       }
-      decrementReferenceCount(REFERENCE_TYPE_SYNC);
+      decrementReferenceCount(REFERENCE_TYPE_SYNC, JOB_ID_SYNC);
     };
     if (Config.NEED_NETWORK_SYNC_REQUEST || needNetworkRequest) {
       awaitConnection(() -> {
@@ -7366,13 +7492,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     if (delta > 0) {
       for (int i = 0; i < delta; i++) {
-        incrementReferenceCount(REFERENCE_TYPE_MESSAGE);
+        incrementReferenceCount(REFERENCE_TYPE_MESSAGE, JOB_ID_MESSAGE);
       }
     } else if (delta < 0) {
       for (int i = 0; i < -delta; i++) {
-        decrementReferenceCount(REFERENCE_TYPE_MESSAGE);
+        decrementReferenceCount(REFERENCE_TYPE_MESSAGE, JOB_ID_MESSAGE);
       }
     }
+  }
+
+  private void updatePendingMessage (TdApi.UpdatePendingMessage update) {
+
   }
 
   private void updateNewMessage (TdApi.UpdateNewMessage update, boolean isUpdate) {
@@ -7451,13 +7581,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     context.global().notifyUpdateMessageContent(this, update);
 
     switch (update.newContent.getConstructor()) {
-      case TdApi.MessageLocation.CONSTRUCTOR: {
-        cache().updateLiveLocation(update.chatId, update.messageId, (TdApi.MessageLocation) update.newContent);
+      case TdApi.MessageLiveLocation.CONSTRUCTOR: {
+        cache().updateLiveLocation(update.chatId, update.messageId, (TdApi.MessageLiveLocation) update.newContent);
         break;
       }
       case TdApi.MessagePoll.CONSTRUCTOR: {
         TdApi.Poll poll = ((TdApi.MessagePoll) update.newContent).poll;
         listeners().updatePoll(poll);
+        break;
+      }
+      default: {
+        Td.assertMessageContent_bb294b24();
         break;
       }
     }
@@ -9146,8 +9280,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateApplicationVerificationRequired (TdApi.UpdateApplicationVerificationRequired update) {
-    incrementJobReferenceCount();
-    Runnable after = this::decrementJobReferenceCount;
+    incrementJobReferenceCount(JOB_ID_VERIFICATION);
+    Runnable after = () -> this.decrementJobReferenceCount(JOB_ID_VERIFICATION);
     requestPlayIntegrity(update.verificationId, update.nonce, data ->
       send(new TdApi.SetApplicationVerificationToken(update.verificationId, data), typedOkHandler(after))
     );
@@ -9155,8 +9289,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateApplicationRecaptchaVerificationRequired (TdApi.UpdateApplicationRecaptchaVerificationRequired update) {
-    incrementJobReferenceCount();
-    Runnable after = this::decrementJobReferenceCount;
+    incrementJobReferenceCount(JOB_ID_RECAPTCHA);
+    Runnable after = () -> this.decrementJobReferenceCount(JOB_ID_RECAPTCHA);
     requestRecaptcha(update.verificationId, update.action, update.recaptchaKeyId, data ->
       send(new TdApi.SetApplicationVerificationToken(update.verificationId, data), typedOkHandler(after))
     );
@@ -9183,6 +9317,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     listeners().updateSuggestedActions(update);
     context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
+  }
+
+  private TdApi.WebBrowserSettings webBrowserSettings;
+
+  @Nullable
+  public TdApi.WebBrowserSettings webBrowserSettings () {
+    synchronized (dataLock) {
+      return webBrowserSettings;
+    }
+  }
+
+  @TdlibThread
+  private void updateWebBrowserSettings (TdApi.UpdateWebBrowserSettings update) {
+    synchronized (dataLock) {
+      this.webBrowserSettings = update.settings;
+    }
+    listeners().updateWebBrowserSettings(update);
   }
 
   @TdlibThread
@@ -9238,6 +9389,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
 
     listeners.updateChatBackground(update);
+  }
+
+  @TdlibThread
+  private void updateChatJoinResult (TdApi.UpdateChatJoinResult update) {
+    // TODO
   }
 
   private <T extends TdApi.Update> void updateChat (T update, long chatId, RunnableData<TdApi.Chat> chatModifier, RunnableData<T> updateDispatcher) {
@@ -9681,6 +9837,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateSavedNotificationSounds.CONSTRUCTOR:
         onUpdateSavedNotificationSounds((TdApi.UpdateSavedNotificationSounds) update);
         break;
+
+      // Pending messages
+      case TdApi.UpdatePendingMessage.CONSTRUCTOR: {
+        updatePendingMessage((TdApi.UpdatePendingMessage) update);
+        break;
+      }
 
       // Messages
       case TdApi.UpdateNewMessage.CONSTRUCTOR: {
@@ -10274,6 +10436,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateSuggestedActions((TdApi.UpdateSuggestedActions) update);
         break;
       }
+      case TdApi.UpdateWebBrowserSettings.CONSTRUCTOR: {
+        updateWebBrowserSettings((TdApi.UpdateWebBrowserSettings) update);
+        break;
+      }
       case TdApi.UpdateSpeedLimitNotification.CONSTRUCTOR: {
         updateSpeedLimitNotification((TdApi.UpdateSpeedLimitNotification) update);
         break;
@@ -10288,6 +10454,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
       case TdApi.UpdateChatBackground.CONSTRUCTOR: {
         updateChatBackground((TdApi.UpdateChatBackground) update);
+        break;
+      }
+      case TdApi.UpdateChatJoinResult.CONSTRUCTOR: {
+        updateChatJoinResult((TdApi.UpdateChatJoinResult) update);
         break;
       }
       case TdApi.UpdateChatAccentColors.CONSTRUCTOR: {
@@ -10321,8 +10491,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
 
-
-      case TdApi.UpdatePendingTextMessage.CONSTRUCTOR:
       case TdApi.UpdateLiveStoryTopDonors.CONSTRUCTOR:
       case TdApi.UpdateGiftAuctionState.CONSTRUCTOR:
       case TdApi.UpdateActiveGiftAuctions.CONSTRUCTOR:
@@ -10359,7 +10527,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_ad02591();
+        Td.assertUpdate_17f693d6();
         throw Td.unsupported(update);
       }
     }
@@ -10498,11 +10666,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   // Events
 
   private void onJobAdded (boolean isAboutToExecute) {
-    incrementReferenceCount(isAboutToExecute ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK);
+    incrementReferenceCount(isAboutToExecute ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK, JOB_ID_JOB);
   }
 
   private void onJobRemoved (boolean justFinishedExecution) {
-    decrementReferenceCount(justFinishedExecution ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK);
+    decrementReferenceCount(justFinishedExecution ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK, JOB_ID_JOB);
   }
 
   private final ConditionalExecutor
@@ -11292,9 +11460,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           return getDefaultRestrictionText(chat, RightId.SEND_VOICE_NOTES);
         // RightId.SEND_BASIC_MESSAGES
         case TdApi.MessageText.CONSTRUCTOR:
+        case TdApi.MessageRichMessage.CONSTRUCTOR:
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
         case TdApi.MessageVenue.CONSTRUCTOR:
         case TdApi.MessageLocation.CONSTRUCTOR:
+        case TdApi.MessageLiveLocation.CONSTRUCTOR:
         case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
         case TdApi.MessageContact.CONSTRUCTOR:
         case TdApi.MessageInvoice.CONSTRUCTOR:
@@ -11383,7 +11553,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_baa076bf();
+          Td.assertMessageContent_bb294b24();
           throw Td.unsupported(message.content);
       }
     }
@@ -11423,7 +11593,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.InputMessageForwarded.CONSTRUCTOR,
              TdApi.InputMessageInvoice.CONSTRUCTOR,
              TdApi.InputMessageLocation.CONSTRUCTOR,
+             TdApi.InputMessageLiveLocation.CONSTRUCTOR,
              TdApi.InputMessageText.CONSTRUCTOR,
+             TdApi.InputMessageRichMessage.CONSTRUCTOR,
              TdApi.InputMessageVenue.CONSTRUCTOR,
              TdApi.InputMessageContact.CONSTRUCTOR,
              TdApi.InputMessageStory.CONSTRUCTOR,
@@ -11431,7 +11603,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
              TdApi.InputMessageStakeDice.CONSTRUCTOR ->
           getBasicMessageRestrictionText(chat);
         default -> {
-          Td.assertInputMessageContent_eb9f33ef();
+          Td.assertInputMessageContent_7c412303();
           throw Td.unsupported(content);
         }
       };

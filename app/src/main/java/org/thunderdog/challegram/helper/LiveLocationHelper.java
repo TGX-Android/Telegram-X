@@ -126,7 +126,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
           TdApi.Message[] msgs = ((TdApi.Messages) object).messages;
           messages.ensureCapacity(msgs.length);
           for (TdApi.Message message : msgs) {
-            if (!Td.isLocation(message.content) || ((TdApi.MessageLocation) message.content).expiresIn == 0) {
+            if (!Td.isLiveLocation(message.content) || ((TdApi.MessageLiveLocation) message.content).expiresIn == 0) {
               continue;
             }
             messages.add(message);
@@ -600,9 +600,9 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
       TdlibContext context = new TdlibContext(this.context, tdlib);
 
       TdApi.Message sourceMessage = locationMessages.get(0);
-      TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) sourceMessage.content;
+      TdApi.MessageLiveLocation messageLocation = (TdApi.MessageLiveLocation) sourceMessage.content;
 
-      MapController.Args args = new MapController.Args(messageLocation.location.latitude, messageLocation.location.longitude, sourceMessage).setChatId(chatId, topicId).setNavigateBackOnStop(true);
+      MapController.Args args = new MapController.Args(messageLocation.location.location.latitude, messageLocation.location.location.longitude, sourceMessage).setChatId(chatId, topicId).setNavigateBackOnStop(true);
 
       tdlib.ui().openMap(context, args);
 
@@ -631,7 +631,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
       view.setText(tdlib.chatTitle(chat));
       view.setPreviewChatId(null, message.chatId, null, new MessageId(message.chatId, message.id), null);
       view.setPreviewActionListProvider(LiveLocationHelper.this);
-      int livePeriod = ((TdApi.MessageLocation) message.content).livePeriod;
+      int livePeriod = ((TdApi.MessageLiveLocation) message.content).location.livePeriod;
       long expiresInMs = Math.max((long) (message.date + livePeriod) * 1000l - System.currentTimeMillis(), 0l);
       timerView.setLivePeriod(livePeriod, expiresInMs > 0 ? SystemClock.uptimeMillis() + expiresInMs : 0);
     });
@@ -644,8 +644,8 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     });
     b.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
       TdApi.Message message = (TdApi.Message) item.getData();
-      TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) message.content;
-      MapController.Args args = new MapController.Args(messageLocation.location.latitude, messageLocation.location.longitude, message).setChatId(
+      TdApi.MessageLiveLocation messageLocation = (TdApi.MessageLiveLocation) message.content;
+      MapController.Args args = new MapController.Args(messageLocation.location.location.latitude, messageLocation.location.location.longitude, message).setChatId(
         message.chatId,
         message.topicId
       ).setNavigateBackOnStop(true);
@@ -750,7 +750,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     updateText(true);
   }
 
-  private void editChatMessage (long messageId, TdApi.MessageLocation newContent) {
+  private void editChatMessage (long messageId, TdApi.MessageLiveLocation newContent) {
     if (isDestroyed) {
       return;
     }
@@ -776,7 +776,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
 
   private void scheduleRemoval (TdApi.Message message, boolean schedule) {
     if (schedule) {
-      handler.sendMessageDelayed(Message.obtain(handler, 0, message), (long) ((TdApi.MessageLocation) message.content).expiresIn * 1000l);
+      handler.sendMessageDelayed(Message.obtain(handler, 0, message), (long) ((TdApi.MessageLiveLocation) message.content).expiresIn * 1000l);
     } else {
       handler.removeMessages(0, message);
     }
@@ -824,22 +824,22 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
 
   @Override
   public void onNewMessage (TdApi.Message message) {
-    if (!message.isOutgoing && message.sendingState == null && message.schedulingState == null && Td.isLocation(message.content) && ((TdApi.MessageLocation) message.content).livePeriod > 0 && ((TdApi.MessageLocation) message.content).expiresIn > 0) {
+    if (!message.isOutgoing && message.sendingState == null && message.schedulingState == null && Td.isLiveLocation(message.content) && ((TdApi.MessageLiveLocation) message.content).location.livePeriod > 0 && ((TdApi.MessageLiveLocation) message.content).expiresIn > 0) {
       UI.post(() -> addChatMessage(message));
     }
   }
 
   @Override
   public void onMessageSendSucceeded (TdApi.Message message, long oldMessageId) {
-    if (Td.isLocation(message.content) && message.schedulingState == null && ((TdApi.MessageLocation) message.content).livePeriod > 0 && ((TdApi.MessageLocation) message.content).expiresIn > 0) {
+    if (Td.isLiveLocation(message.content) && message.schedulingState == null && ((TdApi.MessageLiveLocation) message.content).location.livePeriod > 0 && ((TdApi.MessageLiveLocation) message.content).expiresIn > 0) {
       UI.post(() -> addChatMessage(message));
     }
   }
 
   @Override
   public void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
-    if (Td.isLocation(newContent) && ((TdApi.MessageLocation) newContent).livePeriod > 0) {
-      UI.post(() -> editChatMessage(messageId, (TdApi.MessageLocation) newContent));
+    if (Td.isLiveLocation(newContent) && ((TdApi.MessageLiveLocation) newContent).location.livePeriod > 0) {
+      UI.post(() -> editChatMessage(messageId, (TdApi.MessageLiveLocation) newContent));
     }
   }
 

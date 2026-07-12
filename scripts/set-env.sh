@@ -68,8 +68,11 @@ if [ ! "$IGNORE_SDK" ]; then
 
   PATH="$ANDROID_SDK_ROOT/cmake/$CMAKE_VERSION/bin:$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
 
-  (test -d "$ANDROID_SDK_ROOT") || echo -e "${STYLE_WARN}Android SDK is not installed.${STYLE_END}"
+  test -d "$ANDROID_SDK_ROOT" || echo -e "${STYLE_WARN}Android SDK is not installed.${STYLE_END}"
 fi
+
+FLAVORS=$(scripts/./read-property.sh version.properties version.flavors)
+export FLAVORS
 
 # Export
 

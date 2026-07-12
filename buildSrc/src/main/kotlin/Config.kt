@@ -148,7 +148,8 @@ data class SdkVariant(
 object Sdk {
   const val LEGACY = 0
   const val LOLLIPOP = 1
-  const val LATEST = 2
+  const val MARSHMALLOW = 2
+  const val LATEST = 3
 
   val VARIANTS = mapOf(
     Pair(LEGACY, SdkVariant(
@@ -161,9 +162,14 @@ object Sdk {
       minSdk = 21,
       maxSdk = 22
     )),
+    Pair(MARSHMALLOW, SdkVariant(
+      flavor = "marshmallow",
+      minSdk = 23,
+      maxSdk = 23
+    )),
     Pair(LATEST, SdkVariant(
       flavor = "latest",
-      minSdk = 23,
+      minSdk = 24,
       displayName = null
     ))
   )

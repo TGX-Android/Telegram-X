@@ -2189,7 +2189,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
       if (mimeType.equals("image/gif")) {
         BitmapFactory.Options options = ImageReader.getImageSize(filePath);
-        out.add(new TdApi.InputMessageAnimation(TD.createInputFile(filePath), null, null, 0, options.outWidth, options.outHeight, messageCaption, false, false));
+        out.add(new TdApi.InputMessageAnimation(new TdApi.InputAnimation(TD.createInputFile(filePath), null, null, 0, options.outWidth, options.outHeight), messageCaption, false, false));
         return messageCaption != null;
       }
 
@@ -2202,7 +2202,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         int height = rotation == 90 || rotation == 270 ? opts.outWidth / inSampleSize : opts.outHeight / inSampleSize;
 
         TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(filePath, rotation);
-        out.add(new TdApi.InputMessagePhoto(inputFile, null, null, null, width, height, messageCaption, false, null, false));
+        out.add(new TdApi.InputMessagePhoto(new TdApi.InputPhoto(inputFile, null, null, null, width, height), messageCaption, false, null, false));
         return messageCaption != null;
       }
 
@@ -2240,7 +2240,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
           U.closeRetriever(media);
 
-          out.add(new TdApi.InputMessageVideo(inputVideo, null, null, 0, null, duration, width, height, U.canStreamVideo(inputVideo), messageCaption, false, null, false));
+          out.add(new TdApi.InputMessageVideo(new TdApi.InputVideo(inputVideo, null, null, 0, null, duration, width, height, U.canStreamVideo(inputVideo)), messageCaption, false, null, false));
           return messageCaption != null;
         }
       }

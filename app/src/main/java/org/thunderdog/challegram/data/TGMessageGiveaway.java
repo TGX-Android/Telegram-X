@@ -34,7 +34,6 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.tool.TGCountry;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
@@ -117,13 +116,12 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
         if (sb.length() > 0) {
           sb.append(Lang.getConcatSeparator());
         }
-        String[] info = TGCountry.instance().find(countryCode);
         String flag = Emoji.getEmojiFlagFromCountry(countryCode);
         if (!StringUtils.isEmpty(flag)) {
           sb.append(flag);
           sb.append(' ');
         }
-        sb.append(info != null ? info[2] : countryCode);
+        sb.append(tdlib.getCountryName(countryCode));
       }
       content.padding(Screen.dp(6));
       content.add(Lang.getString(R.string.GiveawayCountries, sb), getTextColorSet(), currentViews);

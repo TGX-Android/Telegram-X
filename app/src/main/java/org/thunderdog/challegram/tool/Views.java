@@ -1113,4 +1113,26 @@ public class Views {
     }
     return Gravity.NO_GRAVITY;
   }
+
+  public static boolean isFocusedViewVisible (RecyclerView recyclerView, View view) {
+    View target = view;
+    while (target != null && target.getParent() != recyclerView) {
+      target = (View) target.getParent();
+    }
+    if (target == null) {
+      return false;
+    }
+    RecyclerView.ViewHolder holder = recyclerView.findContainingViewHolder(target);
+    if (holder == null) {
+      return false;
+    }
+    int position = holder.getBindingAdapterPosition();
+    if (position == RecyclerView.NO_POSITION) {
+      return false;
+    }
+    LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+    int first = manager.findFirstVisibleItemPosition();
+    int last = manager.findLastVisibleItemPosition();
+    return position >= first && position <= last;
+  }
 }

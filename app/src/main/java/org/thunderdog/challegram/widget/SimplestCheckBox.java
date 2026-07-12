@@ -27,6 +27,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -55,19 +56,19 @@ public class SimplestCheckBox {
     return Screen.dp(20f) + Screen.dp(2f) * 2;
   }
 
-  private SimplestCheckBox (float initialFactor, String counter, float counterWidth, int fillingColor, int contentColor, boolean isNegative, float squareFactor) {
+  private SimplestCheckBox (float initialFactor, String counter, float counterWidth, int fillingColor, int contentColor, int checkBoxMode, float squareFactor) {
     int size = size();
     this.bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
     this.c = new Canvas(bitmap);
-    drawInBitmap(initialFactor, true, counter, counterWidth, fillingColor, contentColor, isNegative, squareFactor);
+    drawInBitmap(initialFactor, true, counter, counterWidth, fillingColor, contentColor, checkBoxMode, squareFactor);
   }
 
   public static SimplestCheckBox newInstance (float initialFactor, String counter) {
-    return newInstance(initialFactor, counter, ColorId.checkActive, ColorId.checkContent, false, 0f);
+    return newInstance(initialFactor, counter, ColorId.checkActive, ColorId.checkContent, MODE_NORMAL, 0f);
   }
 
-  public static SimplestCheckBox newInstance (float initialFactor, String counter, int fillingColor, int contentColor, boolean isNegative, float squareFactor) {
-    return new SimplestCheckBox(initialFactor, counter, getCounterWidth(counter), fillingColor, contentColor, isNegative, squareFactor);
+  public static SimplestCheckBox newInstance (float initialFactor, String counter, int fillingColor, int contentColor, int checkBoxMode, float squareFactor) {
+    return new SimplestCheckBox(initialFactor, counter, getCounterWidth(counter), fillingColor, contentColor, checkBoxMode, squareFactor);
   }
 
   public void destroy () {
@@ -96,7 +97,7 @@ public class SimplestCheckBox {
     }
   }
 
-  private void drawInBitmap (@FloatRange(from = 0.0, to = 1.0) final float factor, boolean force, String counter, float counterWidth, int fillingColor, int contentColor, boolean isNegative, float squareFactor) {
+  private void drawInBitmap (@FloatRange(from = 0.0, to = 1.0) final float factor, boolean force, String counter, float counterWidth, int fillingColor, int contentColor, int checkBoxMode, float squareFactor) {
     if (!force && this.lastDrawnFactor == factor && this.lastFillingColor == fillingColor && this.lastCheckColor == contentColor && this.lastDrawnSquareFactor == squareFactor && StringUtils.equalsOrBothEmpty(this.lastCounter, counter)) {
       return;
     }
@@ -128,7 +129,16 @@ public class SimplestCheckBox {
       }
 
       if (StringUtils.isEmpty(counter)) {
-        if (isNegative) {
+        if (checkBoxMode == MODE_MISSING) {
+          Paint paint = Paints.fillingPaint(contentColor);
+          // int rectWidth = Screen.dp(2f)
+          int height = Screen.dp(10f);
+          int width = Screen.dp(2f);
+          c.drawRect(centerX - width / 2f, centerY - height / 2f, centerX + width / 2f, centerY + height / 2f, paint);
+          // c.drawLine(centerX, centerY - height / 2f, centerX, centerY + height / 2f, paint);
+          paint = Paints.fillingPaint(fillingColor);
+          c.drawRect(centerX - width / 2f, centerY, centerX + width / 2f, centerY + height / 4f, paint);
+        } else if (checkBoxMode == MODE_NEGATIVE) {
           DrawAlgorithms.drawAnimatedCross(c, centerX, centerY, factor, contentColor, Screen.dp(8f));
         } else {
           final float fx = factor <= .2f ? 0f : (factor - .2f) / .8f;
@@ -237,10 +247,14 @@ public class SimplestCheckBox {
   }
 
   public static void draw (Canvas c, int centerX, int centerY, float factor, String counter, SimplestCheckBox frame) {
-    draw(c, centerX, centerY, factor, counter, frame, Theme.checkFillingColor(), Theme.checkCheckColor(), false, 0f);
+    draw(c, centerX, centerY, factor, counter, frame, Theme.checkFillingColor(), Theme.checkCheckColor(), MODE_NORMAL, 0f);
   }
 
-  public static void draw (Canvas c, int centerX, int centerY, float factor, String counter, SimplestCheckBox frame, int fillingColor, int checkColor, boolean isNegative, float squareFactor) {
+  public static final int MODE_NORMAL = 0;
+  public static final int MODE_NEGATIVE = 1;
+  public static final int MODE_MISSING = 2;
+
+  public static void draw (Canvas c, int centerX, int centerY, float factor, String counter, SimplestCheckBox frame, int fillingColor, int checkColor, int checkBoxMode, float squareFactor) {
     boolean draw = true;
     if (frame == null) {
       final int index = frameIndex(factor);
@@ -251,7 +265,7 @@ public class SimplestCheckBox {
         frames = new SimplestCheckBox[FRAMES_COUNT];
       }
       if (frames[index] == null) {
-        frames[index] = frame = new SimplestCheckBox((float) index / (float) (FRAMES_COUNT - 1), counter, getCounterWidth(counter), fillingColor, checkColor, isNegative, squareFactor);
+        frames[index] = frame = new SimplestCheckBox((float) index / (float) (FRAMES_COUNT - 1), counter, getCounterWidth(counter), fillingColor, checkColor, checkBoxMode, squareFactor);
         draw = false;
       } else {
         frame = frames[index];
@@ -264,7 +278,7 @@ public class SimplestCheckBox {
       } else {
         counterWidth = getCounterWidth(counter);
       }
-      frame.drawInBitmap(factor, false, counter, counterWidth, fillingColor, checkColor, isNegative, squareFactor);
+      frame.drawInBitmap(factor, false, counter, counterWidth, fillingColor, checkColor, checkBoxMode, squareFactor);
     }
     c.drawBitmap(frame.bitmap, centerX - frame.bitmap.getWidth() / 2f, centerY - frame.bitmap.getHeight() / 2f, Paints.getBitmapPaint());
   }

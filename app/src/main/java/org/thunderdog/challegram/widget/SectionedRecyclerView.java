@@ -23,6 +23,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -621,7 +622,7 @@ public class SectionedRecyclerView extends RecyclerView implements Runnable {
       return getItemHeight();
     }
     public abstract View createView (int viewType);
-    public abstract void updateView (SectionViewHolder holder, int position);
+    public abstract void updateView (SectionViewHolder holder, int position, boolean isUpdate);
     public final int getSeparatorHeight () {
       return Screen.dp(22f);
     }
@@ -643,9 +644,8 @@ public class SectionedRecyclerView extends RecyclerView implements Runnable {
       }
     }
 
-    public String getSectionName (int section) {
-      return null;
-    }
+    @NonNull
+    public abstract String getSectionName (int section);
 
     public boolean isSeparator (int index) {
       return needSeparators && getSectionedPosition(index) == -1;
@@ -668,10 +668,22 @@ public class SectionedRecyclerView extends RecyclerView implements Runnable {
       }
     }
 
+    public void updateViewByPosition (int position) {
+      View view = parent.getLayoutManager().findViewByPosition(position);
+      if (view != null) {
+        SectionViewHolder holder = (SectionViewHolder) parent.getChildViewHolder(view);
+        if (holder != null) {
+          updateView(holder, position, true);
+          return;
+        }
+      }
+      notifyItemChanged(position);
+    }
+
     @Override
-    public void onBindViewHolder (SectionViewHolder holder, int position) {
+    public void onBindViewHolder (@NonNull SectionViewHolder holder, int position) {
       if (!isSeparator(position)) {
-        updateView(holder, position);
+        updateView(holder, position, false);
       }
     }
 

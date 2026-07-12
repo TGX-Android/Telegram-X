@@ -103,6 +103,19 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   TdlibType("ThemeSettings"),
   TdlibType("BuiltInTheme"),
 
+  TdlibType("RichMessage"),
+  TdlibType("RichText"),
+  TdlibType("PageBlock"),
+  TdlibType("PageBlockCaption"),
+  TdlibType("PageBlockListItem"),
+  TdlibType("PageBlockRelatedArticle"),
+  TdlibType("PageBlockTableCell"),
+  TdlibType("PageBlockHorizontalAlignment"),
+  TdlibType("PageBlockVerticalAlignment"),
+  TdlibType("ChatPhotoInfo"),
+
+  TdlibType("DraftMessageContent", isExperimental = true),
+
   TdlibType("CanSendMessageToUserResult"),
   TdlibType("MessageSelfDestructType"),
   TdlibType("MessageSender"),

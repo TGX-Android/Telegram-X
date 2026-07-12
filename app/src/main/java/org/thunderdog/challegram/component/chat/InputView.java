@@ -1191,12 +1191,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private boolean textChangedSinceChatOpened;
 
-  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.InputMessageContent forceDraft, @Nullable String customInputField, boolean isSilent) {
+  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.DraftMessageContent forceDraft, @Nullable String customInputField, boolean isSilent) {
     textChangedSinceChatOpened = false;
     updateMessageHint(chat, messageThread, customInputField, isSilent);
     setDraft(forceDraft != null ? forceDraft : !tdlib.canSendBasicMessage(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
-      chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
+      chat.draftMessage != null ? chat.draftMessage.content : null
     );
   }
 
@@ -1252,11 +1252,31 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     setInputPlaceholder(text, subplaceholder, icon);
   }
 
-  public void setDraft (@Nullable TdApi.InputMessageContent draftContent) {
+  public void setDraft (@Nullable TdApi.DraftMessageContent draftContent) {
     CharSequence draft;
-    if (draftContent != null && draftContent.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR) {
-      TdApi.InputMessageText textDraft = (TdApi.InputMessageText) draftContent;
-      draft = TD.toCharSequence(textDraft.text);
+    if (draftContent != null) {
+      switch (draftContent.getConstructor()) {
+        case TdApi.DraftMessageContentText.CONSTRUCTOR: {
+          TdApi.DraftMessageContentText textDraft = (TdApi.DraftMessageContentText) draftContent;
+          draft = TD.toCharSequence(textDraft.text);
+          break;
+        }
+        case TdApi.DraftMessageContentRichMessage.CONSTRUCTOR: {
+          TdApi.DraftMessageContentRichMessage richMessage = (TdApi.DraftMessageContentRichMessage) draftContent;
+          // TODO
+          draft = "";
+          break;
+        }
+        case TdApi.DraftMessageContentVoiceNote.CONSTRUCTOR:
+        case TdApi.DraftMessageContentVideoNote.CONSTRUCTOR: {
+          draft = "";
+          break;
+        }
+        default: {
+          Td.assertDraftMessageContent_b637f166();
+          throw Td.unsupported(draftContent);
+        }
+      }
     } else {
       draft = "";
     }
@@ -1571,13 +1591,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           final boolean isSecretChat = ChatId.isSecret(chatId);
           if (mediaType == MediaType.GIF && isAnimatedGif) {
             TdApi.InputFileGenerated generated = TD.newGeneratedFile(null, path, 0, timestamp);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(generated, null, null, 0, imageWidth, imageHeight, null, false, false), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(new TdApi.InputAnimation(generated, null, null, 0, imageWidth, imageHeight), null, false, false), isSecretChat);
           } else if ((mediaType != MediaType.JPEG && (mediaType == MediaType.WEBP || path.contains("sticker") || Math.max(imageWidth, imageHeight) <= 512))) {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, true, 512);
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageSticker(generated, null, imageWidth, imageHeight, null), isSecretChat);
           } else {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, null, imageWidth, imageHeight, null, false, null, false), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(new TdApi.InputPhoto(generated, null, null, null, imageWidth, imageHeight), null, false, null, false), isSecretChat);
           }
 
           UI.post(() -> {
