@@ -674,31 +674,50 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     TDLib.Tag.notifications("Registering device token... accountId:%d", accountId);
     context.setDeviceRegistered(accountId, false);
-    incrementReferenceCount(REFERENCE_TYPE_JOB);
+    incrementJobReferenceCount(JOB_ID_CHECK_DEVICE_TOKEN);
     send(new TdApi.RegisterDevice(deviceToken, otherUserIds), (pushReceiverId, error) -> {
-      if (pushReceiverId != null) {
-        TDLib.Tag.notifications("Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
-        Settings.instance().putNotificationReceiverId(pushReceiverId.id, accountId);
-        TdlibSettingsManager.setRegisteredDevice(accountId, myUserId, deviceToken, otherUserIds);
-        context().setDeviceRegistered(accountId, true);
-        context().unregisterDevices(instanceMode, accountId, availableUserIds);
-        U.run(onDone);
-      } else {
-        int seconds = Math.max(5, TD.getFloodErrorSeconds(error.code, error.message, 5));
-        if (seconds > 60 && isDebugInstance()) {
-          TDLib.Tag.notifications("Unable to register device token, flood is %d seconds, ignoring: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
-          context.setDeviceRegistered(accountId, true);
+      try {
+        if (pushReceiverId != null) {
+          TDLib.Tag.notifications("Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
+          Settings.instance().putNotificationReceiverId(pushReceiverId.id, accountId);
+          TdlibSettingsManager.setRegisteredDevice(accountId, myUserId, deviceToken, otherUserIds);
+          context().setDeviceRegistered(accountId, true);
+          context().unregisterDevices(instanceMode, accountId, availableUserIds);
           U.run(onDone);
         } else {
-          TDLib.Tag.notifications("Unable to register device token, retrying in %d seconds: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
-          client().send(new TdApi.SetAlarm(seconds), ignored -> checkDeviceTokenImpl(onDone));
+          int seconds = Math.max(5, TD.getFloodErrorSeconds(error.code, error.message, 5));
+          if (seconds > 60 && isDebugInstance()) {
+            TDLib.Tag.notifications("Unable to register device token, flood is %d seconds, ignoring: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
+            context.setDeviceRegistered(accountId, true);
+            U.run(onDone);
+          } else {
+            TDLib.Tag.notifications("Unable to register device token, retrying in %d seconds: %s, accountId:%d", seconds, TD.toErrorString(error), accountId);
+            client().send(new TdApi.SetAlarm(seconds), ignored -> checkDeviceTokenImpl(onDone));
+          }
         }
+      } finally {
+        decrementJobReferenceCount(JOB_ID_CHECK_DEVICE_TOKEN);
       }
-      decrementReferenceCount(REFERENCE_TYPE_JOB);
     });
   }
 
   // Use count
+
+  private static final String JOB_ID_CHECK_DEVICE_TOKEN = "checkDeviceToken";
+  private static final String JOB_ID_LIVE_LOCATION = "liveLocation";
+  private static final String JOB_ID_ACTIVE_CALL = "activeCall";
+  private static final String JOB_ID_UI = "ui";
+  private static final String JOB_ID_NOTIFICATION = "notification";
+  private static final String JOB_ID_CLEAN_UP = "unauth";
+  private static final String JOB_ID_SIGN_OUT = "signOut";
+  private static final String JOB_ID_CHANGE_LOG = "change_log";
+  private static final String JOB_ID_RUNNABLE = "runnable";
+  private static final String JOB_ID_EXECUTE = "execute";
+  private static final String JOB_ID_SYNC = "sync";
+  private static final String JOB_ID_MESSAGE = "message";
+  private static final String JOB_ID_VERIFICATION = "verification";
+  private static final String JOB_ID_RECAPTCHA = "recaptcha";
+  private static final String JOB_ID_JOB = "job";
 
   private static final int REFERENCE_TYPE_UI = 0;
   private static final int REFERENCE_TYPE_JOB = 1;
@@ -714,54 +733,54 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public void changeLocationReferenceCount (int deltaCount) {
     if (deltaCount > 0) {
       do {
-        incrementReferenceCount(REFERENCE_TYPE_LOCATION);
+        incrementReferenceCount(REFERENCE_TYPE_LOCATION, JOB_ID_LIVE_LOCATION);
       } while (--deltaCount > 0);
     } else if (deltaCount < 0) {
       do {
-        decrementReferenceCount(REFERENCE_TYPE_LOCATION);
+        decrementReferenceCount(REFERENCE_TYPE_LOCATION, JOB_ID_LIVE_LOCATION);
       } while (++deltaCount < 0);
     }
   }
 
   public void incrementCallReferenceCount () {
-    incrementReferenceCount(REFERENCE_TYPE_CALL);
+    incrementReferenceCount(REFERENCE_TYPE_CALL, JOB_ID_ACTIVE_CALL);
   }
 
   public void decrementCallReferenceCount () {
-    decrementReferenceCount(REFERENCE_TYPE_CALL);
+    decrementReferenceCount(REFERENCE_TYPE_CALL, JOB_ID_ACTIVE_CALL);
   }
 
   public void incrementUiReferenceCount () {
-    incrementReferenceCount(REFERENCE_TYPE_UI);
+    incrementReferenceCount(REFERENCE_TYPE_UI, JOB_ID_UI);
   }
 
   public void decrementUiReferenceCount () {
-    decrementReferenceCount(REFERENCE_TYPE_UI);
+    decrementReferenceCount(REFERENCE_TYPE_UI, JOB_ID_UI);
   }
 
   void incrementNotificationReferenceCount () {
-    incrementReferenceCount(REFERENCE_TYPE_NOTIFICATION);
+    incrementReferenceCount(REFERENCE_TYPE_NOTIFICATION, JOB_ID_NOTIFICATION);
   }
 
   void decrementNotificationReferenceCount () {
-    decrementReferenceCount(REFERENCE_TYPE_NOTIFICATION);
+    decrementReferenceCount(REFERENCE_TYPE_NOTIFICATION, JOB_ID_NOTIFICATION);
   }
 
-  void incrementJobReferenceCount () {
-    incrementReferenceCount(REFERENCE_TYPE_JOB);
+  void incrementJobReferenceCount (String id) {
+    incrementReferenceCount(REFERENCE_TYPE_JOB, id);
   }
 
-  void decrementJobReferenceCount () {
-    decrementReferenceCount(REFERENCE_TYPE_JOB);
+  void decrementJobReferenceCount (String id) {
+    decrementReferenceCount(REFERENCE_TYPE_JOB, id);
   }
 
-  private void incrementReferenceCount (int type) {
+  private void incrementReferenceCount (int type, String id) {
     boolean wakeup;
     int referenceCount;
     synchronized (clientLock) {
       referenceCount = this.referenceCount.incrementAndGet();
       wakeup = referenceCount == 1;
-      Log.v(Log.TAG_ACCOUNTS, "accountId:%d, referenceCount:%d, type:%d", accountId, referenceCount, type);
+      Log.v(Log.TAG_ACCOUNTS, "+ accountId:%d, referenceCount:%d, type:%d, id:%s", accountId, referenceCount, type, id);
       if (type == REFERENCE_TYPE_UI)
         account().markAsUsed();
       schedulePause();
@@ -776,7 +795,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  private void decrementReferenceCount (int type) {
+  private void decrementReferenceCount (int type, String id) {
     int referenceCount;
     synchronized (clientLock) {
       referenceCount = this.referenceCount.decrementAndGet();
@@ -785,7 +804,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         Tracer.onOtherError(e);
         throw e;
       }
-      Log.v(Log.TAG_ACCOUNTS, "accountId:%d, referenceCount:%d, type:%d", accountId, referenceCount, type);
+      Log.v(Log.TAG_ACCOUNTS, "- accountId:%d, referenceCount:%d, type:%d, id:%s", accountId, referenceCount, type, id);
       schedulePause();
     }
     if (referenceCount == 0) {
@@ -901,12 +920,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         if (after != null)
           after.run();
       } else {
-        incrementReferenceCount(REFERENCE_TYPE_JOB);
+        incrementJobReferenceCount(JOB_ID_CLEAN_UP);
         deleteAllFiles(success -> {
           if (success) {
             context().markNoPrivateData(accountId);
           }
-          decrementReferenceCount(REFERENCE_TYPE_JOB);
+          decrementJobReferenceCount(JOB_ID_CLEAN_UP);
         });
       }
     });
@@ -1122,13 +1141,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     switchToNextAuthorizedAccount();
     boolean isMulti = context().isMultiUser();
     String name = isMulti ? TD.getUserName(account().getFirstName(), account().getLastName()) : null;
-    incrementReferenceCount(REFERENCE_TYPE_JOB);
-    /*deleteAllFiles(ignored -> */client().send(new TdApi.LogOut(), result -> {
+    incrementJobReferenceCount(JOB_ID_SIGN_OUT);
+    send(new TdApi.LogOut(), (ok, error) -> {
       if (isMulti) {
         UI.showToast(Lang.getString(R.string.SignedOutAs, name), Toast.LENGTH_SHORT);
       }
-      decrementReferenceCount(REFERENCE_TYPE_JOB);
-    })/*)*/;
+      decrementJobReferenceCount(JOB_ID_SIGN_OUT);
+    });
   }
 
   public void destroy () {
@@ -1398,7 +1417,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       List<TdApi.Function<?>> functions = new ArrayList<>();
       ChangeLogList.collectChangeLogs(prevVersion, functions, updates, test);
       if (!updates.isEmpty()) {
-        incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
+        incrementJobReferenceCount(JOB_ID_CHANGE_LOG); // starting task
         functions.add(new TdApi.CreatePrivateChat(TdConstants.TELEGRAM_ACCOUNT_ID, false));
         if (options.telegramServiceNotificationsChatId != 0 && options.telegramServiceNotificationsChatId != TdConstants.TELEGRAM_ACCOUNT_ID) {
           functions.add(new TdApi.GetChat(options.telegramServiceNotificationsChatId));
@@ -1416,7 +1435,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
                 Log.e("Received error while sending change log: %s", TD.toErrorString(object));
               }
               if (remainingUpdates.decrementAndGet() == 0) {
-                decrementReferenceCount(REFERENCE_TYPE_JOB); // ending task
+                decrementJobReferenceCount(JOB_ID_CHANGE_LOG); // ending task
               }
             };
             for (TdApi.InputMessageContent content : updates) {
@@ -1778,18 +1797,31 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public void runOnTdlibThread (@NonNull Runnable runnable) {
+  public void executeOnTdlibThread (@NonNull Runnable runnable) {
+    if (inTdlibThread()) {
+      runnable.run();
+    } else {
+      postOnTdlibThread(runnable);
+    }
+  }
+
+  public void postOnTdlibThread (@NonNull Runnable runnable) {
     runOnTdlibThread(runnable, 0, true);
+  }
+
+  @Deprecated
+  public void runOnTdlibThread (@NonNull Runnable runnable) {
+    postOnTdlibThread(runnable);
   }
 
   public void runOnTdlibThread (@NonNull Runnable runnable, double timeoutSeconds, boolean acquireReference) {
     if (acquireReference) {
-      incrementReferenceCount(REFERENCE_TYPE_JOB);
+      incrementJobReferenceCount(JOB_ID_RUNNABLE + "_" + Log.toString(Log.generateException(1)));
     }
     clientHolder().runOnTdlibThread(() -> {
       runnable.run();
       if (acquireReference) {
-        decrementReferenceCount(REFERENCE_TYPE_JOB);
+        decrementJobReferenceCount(JOB_ID_RUNNABLE);
       }
     }, timeoutSeconds);
   }
@@ -2258,7 +2290,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     final AtomicReference<TdApi.Object> response = new AtomicReference<>();
     Runnable act = () -> {
       if (requiresTdlibInitialization) {
-        incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+        incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION, JOB_ID_EXECUTE);
       }
       client().send(function, object -> {
         synchronized (response) {
@@ -2266,7 +2298,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           latch.countDown();
         }
         if (requiresTdlibInitialization) {
-          decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+          decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION, JOB_ID_EXECUTE);
         }
       });
     };
@@ -6561,7 +6593,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public void sync (long pushId, @Nullable Runnable after, boolean needNotifications, boolean needNetworkRequest) {
     TDLib.Tag.notifications(pushId, accountId, "Performing sync needNotification: %b, needNetworkRequest: %b, hasAfter: %b. Awaiting connection. Connection state: %d, status: %d", needNotifications, needNetworkRequest, after != null, connectionState, authorizationStatus());
-    incrementReferenceCount(REFERENCE_TYPE_SYNC);
+    incrementReferenceCount(REFERENCE_TYPE_SYNC, JOB_ID_SYNC);
     Runnable onDone = () -> {
       if (after != null) {
         if (needNotifications) {
@@ -6577,7 +6609,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       } else {
         TDLib.Tag.notifications(pushId, accountId, "Sync task finished, but there's no callback.");
       }
-      decrementReferenceCount(REFERENCE_TYPE_SYNC);
+      decrementReferenceCount(REFERENCE_TYPE_SYNC, JOB_ID_SYNC);
     };
     if (Config.NEED_NETWORK_SYNC_REQUEST || needNetworkRequest) {
       awaitConnection(() -> {
@@ -7460,11 +7492,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     if (delta > 0) {
       for (int i = 0; i < delta; i++) {
-        incrementReferenceCount(REFERENCE_TYPE_MESSAGE);
+        incrementReferenceCount(REFERENCE_TYPE_MESSAGE, JOB_ID_MESSAGE);
       }
     } else if (delta < 0) {
       for (int i = 0; i < -delta; i++) {
-        decrementReferenceCount(REFERENCE_TYPE_MESSAGE);
+        decrementReferenceCount(REFERENCE_TYPE_MESSAGE, JOB_ID_MESSAGE);
       }
     }
   }
@@ -9248,8 +9280,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateApplicationVerificationRequired (TdApi.UpdateApplicationVerificationRequired update) {
-    incrementJobReferenceCount();
-    Runnable after = this::decrementJobReferenceCount;
+    incrementJobReferenceCount(JOB_ID_VERIFICATION);
+    Runnable after = () -> this.decrementJobReferenceCount(JOB_ID_VERIFICATION);
     requestPlayIntegrity(update.verificationId, update.nonce, data ->
       send(new TdApi.SetApplicationVerificationToken(update.verificationId, data), typedOkHandler(after))
     );
@@ -9257,8 +9289,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateApplicationRecaptchaVerificationRequired (TdApi.UpdateApplicationRecaptchaVerificationRequired update) {
-    incrementJobReferenceCount();
-    Runnable after = this::decrementJobReferenceCount;
+    incrementJobReferenceCount(JOB_ID_RECAPTCHA);
+    Runnable after = () -> this.decrementJobReferenceCount(JOB_ID_RECAPTCHA);
     requestRecaptcha(update.verificationId, update.action, update.recaptchaKeyId, data ->
       send(new TdApi.SetApplicationVerificationToken(update.verificationId, data), typedOkHandler(after))
     );
@@ -10634,11 +10666,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   // Events
 
   private void onJobAdded (boolean isAboutToExecute) {
-    incrementReferenceCount(isAboutToExecute ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK);
+    incrementReferenceCount(isAboutToExecute ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK, JOB_ID_JOB);
   }
 
   private void onJobRemoved (boolean justFinishedExecution) {
-    decrementReferenceCount(justFinishedExecution ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK);
+    decrementReferenceCount(justFinishedExecution ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK, JOB_ID_JOB);
   }
 
   private final ConditionalExecutor
