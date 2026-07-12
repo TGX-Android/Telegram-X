@@ -173,6 +173,12 @@ data class TdlibOptions(
   @JvmField var messageCaptionLengthMax: Int = 1024,
   @JvmField var messageReplyQuoteLengthMax: Int = 1024,
 
+  @JvmField var richMessageTextLengthMax: Int = 32768,
+  @JvmField var richMessageBlockCountMax: Int = 500,
+  @JvmField var richMessageDepthMax: Int = 16,
+  @JvmField var richMessageMediaCountMax: Int = 50,
+  @JvmField var richMessageTableColumnCountMax: Int = 20,
+
   @JvmField var textCompositionStyleExampleCount: Int = 3,
   @JvmField var textCompositionStylePromptLengthMax: Int = 1024,
   @JvmField var textCompositionStyleTitleLengthMax: Int = 12,
@@ -223,6 +229,7 @@ data class TdlibOptions(
 
   @JvmField var forceInAppUpdate: Boolean = false,
   @JvmField var youtubePipDisabled: Boolean = false,
+  @JvmField var richMessagePostingDisabled: Boolean = false,
 
   @JvmField var qrLoginCamera: Boolean = true,
 
@@ -522,6 +529,17 @@ data class TdlibOptions(
       "message_reply_quote_length_max" ->
         messageReplyQuoteLengthMax = value.intValue()
 
+      "rich_message_text_length_max" ->
+        richMessageTextLengthMax = value.intValue()
+      "rich_message_block_count_max" ->
+        richMessageBlockCountMax = value.intValue()
+      "rich_message_depth_max" ->
+        richMessageDepthMax = value.intValue()
+      "rich_message_media_count_max" ->
+        richMessageMediaCountMax = value.intValue()
+      "rich_message_table_column_count_max" ->
+        richMessageTableColumnCountMax = value.intValue()
+
       "text_composition_style_example_count" ->
         textCompositionStyleExampleCount = value.intValue()
       "text_composition_style_prompt_length_max" ->
@@ -653,6 +671,8 @@ data class TdlibOptions(
         forceInAppUpdate = value.boolValue()
       "youtube_pip" ->
         youtubePipDisabled = value.stringValue() == "disabled"
+      "rich_message_posting" ->
+        richMessagePostingDisabled = value.stringValue() == "disabled"
 
       "qr_login_camera" ->
         qrLoginCamera = value.boolValue()
