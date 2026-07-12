@@ -57,6 +57,11 @@ public class Config {
   // Allow stretch bounce in places where the glow looks ugly
   public static final boolean HAS_NICE_OVER_SCROLL_EFFECT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
 
+  // Telegram for iOS has a long-established bug and doesn't play rotated videos properly
+  // This affects all rotated videos (which even Telegram for iOS produces too).
+  // The only way around for the sender is to transcode video fully even when there's no need at all.
+  public static final boolean TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT = true;
+
   private static Boolean hasWebpSupport;
   public static boolean useBundledWebp () {
     if (BuildConfig.WEBP_ENABLED) {
