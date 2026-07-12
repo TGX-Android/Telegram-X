@@ -596,21 +596,28 @@ public class TdlibUi extends Handler {
   }
 
   public void showClearCallHistoryOptions (ViewController<?> context) {
-    context.showSettings(new SettingsWrapBuilder(R.id.btn_delete)
-      .addHeaderItem(Lang.getString(R.string.AreYouSureClearCalls))
-      .setRawItems(new ListItem[] {
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteForEveryone, false)
-      })
-      .setIntDelegate((id, result) -> {
-        if (id == R.id.btn_delete) {
-          boolean revoke = result.get(R.id.btn_deleteAll) != 0;
-          tdlib.clearCallsHistory(revoke, () ->
-            UI.showToast(R.string.Done, Toast.LENGTH_SHORT)
-          );
-        }
-      })
-      .setSaveStr(R.string.Delete)
-      .setSaveColorId(ColorId.textNegative));
+    tdlib.send(new TdApi.SearchCallMessages("", 1, false), (result, error) -> {
+      if (error != null || result.messages.length == 0) {
+        return;
+      }
+      context.runOnUiThreadOptional(() ->
+        context.showSettings(new SettingsWrapBuilder(R.id.btn_delete)
+          .addHeaderItem(Lang.getString(R.string.AreYouSureClearCalls))
+          .setRawItems(new ListItem[] {
+            new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteCallsForEveryone, false)
+          })
+          .setIntDelegate((id, result2) -> {
+            if (id == R.id.btn_delete) {
+              boolean revoke = result2.get(R.id.btn_deleteAll) != 0;
+              tdlib.clearCallsHistory(revoke, () ->
+                UI.showToast(R.string.Done, Toast.LENGTH_SHORT)
+              );
+            }
+          })
+          .setSaveStr(R.string.Delete)
+          .setSaveColorId(ColorId.textNegative))
+      );
+    });
   }
 
   public void showDeleteOptions (final ViewController<?> context, final MessageWithProperties[] messages, final @Nullable Runnable after) {
