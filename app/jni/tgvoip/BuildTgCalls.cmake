@@ -3,10 +3,10 @@
 set(TGCALLS_DIR "${TGCALLS_DEPS_DIR}/tgcalls")
 
 # Commit Telegram X currently relies on:
-# https://github.com/TelegramMessenger/tgcalls/tree/c89f009c29e7142f1935383a978f2ad7c46da4d1
+# https://github.com/TelegramMessenger/tgcalls/tree/2faee3b5524f54d56c91c2058c00e11c656a74b3
 
 # Source files list:
-# https://github.com/TelegramMessenger/Telegram-iOS/blob/1f869f309f183a5d91bc24387c1cb0ffbb302f5d/submodules/TgVoipWebrtc/BUILD
+# https://github.com/TelegramMessenger/Telegram-iOS/blob/6e370e06d147b091b07903071cb1b8a22152492d/submodules/TgVoipWebrtc/BUILD
 
 add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/utils/gzip.cpp"
@@ -49,6 +49,7 @@ add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/group/AudioStreamingPartPersistentDecoder.cpp"
   "${TGCALLS_DIR}/tgcalls/group/AVIOContextImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/group/GroupInstanceCustomImpl.cpp"
+  "${TGCALLS_DIR}/tgcalls/group/GroupInstanceReferenceImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/group/GroupJoinPayloadInternal.cpp"
   "${TGCALLS_DIR}/tgcalls/group/GroupNetworkManager.cpp"
   "${TGCALLS_DIR}/tgcalls/group/StreamingMediaContext.cpp"
@@ -58,6 +59,7 @@ add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/v2/DirectNetworkingImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/ExternalSignalingConnection.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/InstanceV2Impl.cpp"
+  "${TGCALLS_DIR}/tgcalls/v2/InstanceV2CompatImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/InstanceV2ReferenceImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/NativeNetworkingImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/RawTcpSocket.cpp"
@@ -67,6 +69,7 @@ add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/v2/SignalingEncryption.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/SignalingConnection.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/SignalingSctpConnection.cpp"
+  "${TGCALLS_DIR}/tgcalls/v2/CustomDcSctpSocket.cpp"
 )
 
 target_include_directories(tgcalls PRIVATE
