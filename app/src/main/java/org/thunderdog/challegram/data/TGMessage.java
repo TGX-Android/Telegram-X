@@ -7257,7 +7257,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private boolean needHideEventDate () {
     //noinspection WrongConstant
-    return (event != null & event.hideDate) || (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR && ((TdApiExt.MessageChatEvent) msg.content).hideDate);
+    return (event != null && event.hideDate) || (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR && ((TdApiExt.MessageChatEvent) msg.content).hideDate);
   }
 
   public final boolean isEventLog () {
