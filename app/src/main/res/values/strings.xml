@@ -2174,7 +2174,9 @@
   <string name="EventLogRestrictedSendPolls">Send polls</string>
   <string name="EventLogPermissionSendPolls">Send polls</string>
   <string name="EventLogRestrictedChangeInfo">Change info</string>
+  <string name="EventLogRestrictedEditTag">Edit own tag</string>
   <string name="EventLogPermissionChangeInfo">Change info</string>
+  <string name="EventLogPermissionEditTag">Edit own tag</string>
   <string name="EventLogPermissionTopicsCreate">Create topics</string>
   <string name="EventLogRestrictedTopics">Create topics</string>
   <string name="EventLogRestrictedPinMessages">Pin messages</string>
@@ -2218,6 +2220,7 @@
   <string name="EventLogPromotedBanUsers">Ban users</string>
   <string name="EventLogPromotedAddUsers">Add users</string>
   <string name="EventLogPromotedPinMessages">Pin messages</string>
+  <string name="EventLogPromotedManageTags">Edit member tags</string>
   <string name="EventLogFilterAll">All actions</string>
   <string name="EventLogFilterNewRestrictions">New restrictions</string>
   <string name="EventLogFilterNewAdmins">Admin rights</string>

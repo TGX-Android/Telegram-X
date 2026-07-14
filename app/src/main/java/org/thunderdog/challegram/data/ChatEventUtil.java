@@ -590,6 +590,7 @@ public class ChatEventUtil {
           appendRight(b, R.string.EventLogPromotedAddUsers, oldAdmin.rights.canInviteUsers, newAdmin.rights.canInviteUsers, false);
           if (!msg.isChannelPost) {
             appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.rights.canPinMessages, newAdmin.rights.canPinMessages, false);
+            appendRight(b, R.string.EventLogPromotedManageTags, oldAdmin.rights.canManageTags, newAdmin.rights.canManageTags, false);
           }
           appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.rights.canManageVideoChats, newAdmin.rights.canManageVideoChats, false);
           if (msg.isChannelPost) {
@@ -647,6 +648,7 @@ public class ChatEventUtil {
             appendRight(b, R.string.EventLogRestrictedReactToMessages, oldBan != null ? oldBan.permissions.canReactToMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canReactToMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedEditTag, oldBan != null ? oldBan.permissions.canEditTag : oldCanReadMessages, newBan != null ? newBan.permissions.canEditTag : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedTopics, oldBan != null ? oldBan.permissions.canCreateTopics : oldCanReadMessages, newBan != null ? newBan.permissions.canCreateTopics : newCanReadMessages, false);
           }
@@ -804,6 +806,7 @@ public class ChatEventUtil {
         appendRight(b, R.string.EventLogPermissionSendPolls, permissions.oldPermissions.canSendPolls, permissions.newPermissions.canSendPolls, true);
         appendRight(b, R.string.EventLogPermissionSendEmbed, permissions.oldPermissions.canAddLinkPreviews, permissions.newPermissions.canAddLinkPreviews, true);
         appendRight(b, R.string.EventLogPermissionReactToMessages, permissions.oldPermissions.canReactToMessages, permissions.newPermissions.canReactToMessages, true);
+        appendRight(b, R.string.EventLogPermissionEditTag, permissions.oldPermissions.canEditTag, permissions.newPermissions.canEditTag, true);
         appendRight(b, R.string.EventLogPermissionAddUsers, permissions.oldPermissions.canInviteUsers, permissions.newPermissions.canInviteUsers, true);
         appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
         appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
