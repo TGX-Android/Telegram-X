@@ -1502,12 +1502,60 @@ public final class TGMessageService extends TGMessageServiceImpl {
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventAutomaticTranslationToggled automaticTranslationToggled) {
     super(context, msg);
-    throw new IllegalStateException("TODO"); // TODO
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getText(
+          automaticTranslationToggled.hasAutomaticTranslation ?
+            R.string.EventLogTranslationOnYou :
+            R.string.EventLogTranslationOffYou
+        );
+      } else {
+        return getText(
+          automaticTranslationToggled.hasAutomaticTranslation ?
+            R.string.EventLogTranslationOn :
+            R.string.EventLogTranslationOff
+        );
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventMemberTagChanged memberTagChanged) {
     super(context, msg);
-    throw new IllegalStateException("TODO"); // TODO
+    TdlibSender targetSender = new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(memberTagChanged.userId));
+    setTextCreator(() -> {
+      boolean isRemoval = StringUtils.isEmpty(memberTagChanged.newTag);
+      final FormattedArgument tag = new BoldArgument(
+        isRemoval ?
+          memberTagChanged.oldTag :
+          memberTagChanged.newTag
+      );
+      if (msg.isOutgoing) {
+        return getText(
+          isRemoval ?
+            R.string.EventLogTagYouRemoved :
+            R.string.EventLogTagYouSet,
+          tag,
+          new SenderArgument(targetSender)
+        );
+      } else if (targetSender.isSelf()) {
+        return getText(
+          isRemoval ?
+            R.string.EventLogTagRemovedYour :
+            R.string.EventLogTagSetYour,
+          tag,
+          new SenderArgument(sender)
+        );
+      } else {
+        return getText(
+          isRemoval ?
+            R.string.EventLogTagRemoved :
+            R.string.EventLogTagSet,
+          tag,
+          new SenderArgument(sender),
+          new SenderArgument(targetSender)
+        );
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicCreated forumTopicCreated) {

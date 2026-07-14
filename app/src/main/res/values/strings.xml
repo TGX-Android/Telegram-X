@@ -2270,6 +2270,18 @@
   <string name="EventLogUsernamesDeactivatedYou_one">You deactivated %1$s username: %2$s</string>
   <string name="EventLogUsernamesDeactivatedYou_other">You deactivated %1$s usernames: %2$s</string>
 
+  <string name="EventLogTagYouRemoved">You removed tag for %2$s "%1$s"</string>
+  <string name="EventLogTagYouSet">You set tag for %2$s "%1$s"</string>
+  <string name="EventLogTagRemovedYour">%2$s removed your tag "%1$s"</string>
+  <string name="EventLogTagRemoved">%2$s removed tag for %3$s "%1$s"</string>
+  <string name="EventLogTagSetYour">%2$s set your tag "%1$s"</string>
+  <string name="EventLogTagSet">%2$s set tag for %3$s "%1$s"</string>
+
+  <string name="EventLogTranslationOn">%1$s enabled auto-translation</string>
+  <string name="EventLogTranslationOff">%1$s disabled auto-translation</string>
+  <string name="EventLogTranslationOnYou">You enabled auto-translation</string>
+  <string name="EventLogTranslationOffYou">You disabled auto-translation</string>
+
   <string name="EventLogForumEnabled">%1$s enabled topics</string>
   <string name="EventLogForumDisabled">%1$s disabled topics</string>
   <string name="EventLogForumEnabledYou">You enabled topics</string>
