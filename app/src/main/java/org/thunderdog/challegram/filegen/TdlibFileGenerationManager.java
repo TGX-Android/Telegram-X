@@ -1699,7 +1699,8 @@ public final class TdlibFileGenerationManager {
         break;
       }
       case TdApi.InputMessageVideoNote.CONSTRUCTOR: {
-        TdApi.InputMessageVideoNote videoNote = (TdApi.InputMessageVideoNote) content;
+        TdApi.InputMessageVideoNote messageVideoNote = (TdApi.InputMessageVideoNote) content;
+        TdApi.InputVideoNote videoNote = messageVideoNote.videoNote;
         if (videoNote.thumbnail == null) {
           TdApi.InputFile thumbnail = newThumbnailFile(videoNote.videoNote, file, (originalPath, originalConversion) -> ThumbGenerationInfo.makeConversion(ThumbGenerationInfo.TYPE_VIDEO, originalConversion, resolution));
           if (thumbnail != null) {
@@ -1709,7 +1710,8 @@ public final class TdlibFileGenerationManager {
         break;
       }
       case TdApi.InputMessageSticker.CONSTRUCTOR: {
-        TdApi.InputMessageSticker sticker = (TdApi.InputMessageSticker) content;
+        TdApi.InputMessageSticker messageSticker = (TdApi.InputMessageSticker) content;
+        TdApi.InputSticker sticker = messageSticker.sticker;
         if (sticker.thumbnail == null) {
           TdApi.InputFile thumbnail = newThumbnailFile(sticker.sticker, file, (originalPath, originalConversion) -> originalConversion != null ? PhotoGenerationInfo.editResolutionLimit(originalConversion, resolution) : PhotoGenerationInfo.makeConversion(0, 0, true, resolution));
           if (thumbnail != null) {

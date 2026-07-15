@@ -2177,7 +2177,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (!StringUtils.isEmpty(mimeType)) {
       if (mimeType.equals("image/webp")) {
         BitmapFactory.Options options = ImageReader.getImageWebpSize(filePath);
-        out.add(new TdApi.InputMessageSticker(TD.createInputFile(filePath), null, options.outWidth, options.outHeight, null));
+        out.add(new TdApi.InputMessageSticker(new TdApi.InputSticker(TD.createInputFile(filePath), null, options.outWidth, options.outHeight), null));
         return false;
       }
 

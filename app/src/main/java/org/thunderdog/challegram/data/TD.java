@@ -2449,14 +2449,6 @@ public class TD {
     return "not an error";
   }
 
-  /*public static String makeErrorString (TonApi.Object object) {
-    if (object.getConstructor() == TonApi.Error.CONSTRUCTOR) {
-      TonApi.Error error = (TonApi.Error) object;
-      return translateError(error.code, error.message);
-    }
-    return "not an error";
-  }*/
-
   public static final String ERROR_USER_PRIVACY = "USER_PRIVACY_RESTRICTED";
   public static final String ERROR_USER_CHANNELS_TOO_MUCH = "USER_CHANNELS_TOO_MUCH";
   public static final String ERROR_CHANNELS_ADMIN_PUBLIC_TOO_MUCH = "CHANNELS_ADMIN_PUBLIC_TOO_MUCH";
@@ -3706,7 +3698,7 @@ public class TD {
         // TODO rich message
         break;
       default:
-        Td.assertMessageContent_bb294b24();
+        Td.assertMessageContent_a80283cf();
         break;
     }
     return false;
@@ -5511,7 +5503,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_bb294b24();
+        Td.assertMessageContent_a80283cf();
         break;
     }
     return false;
@@ -5986,11 +5978,11 @@ public class TD {
       case TdApi.InputMessageAudio.CONSTRUCTOR:
         return ((TdApi.InputMessageAudio) content).audio.audio;
       case TdApi.InputMessageSticker.CONSTRUCTOR:
-        return ((TdApi.InputMessageSticker) content).sticker;
+        return ((TdApi.InputMessageSticker) content).sticker.sticker;
       case TdApi.InputMessageVideoNote.CONSTRUCTOR:
-        return ((TdApi.InputMessageVideoNote) content).videoNote;
+        return ((TdApi.InputMessageVideoNote) content).videoNote.videoNote;
       case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
-        return ((TdApi.InputMessageVoiceNote) content).voiceNote;
+        return ((TdApi.InputMessageVoiceNote) content).voiceNote.voiceNote;
       case TdApi.InputMessageLocation.CONSTRUCTOR:
       case TdApi.InputMessageLiveLocation.CONSTRUCTOR:
       case TdApi.InputMessageContact.CONSTRUCTOR:
@@ -6071,13 +6063,13 @@ public class TD {
         ((TdApi.InputMessageAudio) content).audio.audio = inputFile;
         return;
       case TdApi.InputMessageSticker.CONSTRUCTOR:
-        ((TdApi.InputMessageSticker) content).sticker = inputFile;
+        ((TdApi.InputMessageSticker) content).sticker.sticker = inputFile;
         return;
       case TdApi.InputMessageVideoNote.CONSTRUCTOR:
-        ((TdApi.InputMessageVideoNote) content).videoNote = inputFile;
+        ((TdApi.InputMessageVideoNote) content).videoNote.videoNote = inputFile;
         return;
       case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
-        ((TdApi.InputMessageVoiceNote) content).voiceNote = inputFile;
+        ((TdApi.InputMessageVoiceNote) content).voiceNote.voiceNote = inputFile;
         return;
       case TdApi.InputMessageLocation.CONSTRUCTOR:
       case TdApi.InputMessageLiveLocation.CONSTRUCTOR:
@@ -6114,9 +6106,9 @@ public class TD {
       case TdApi.InputMessageAudio.CONSTRUCTOR:
         return ((TdApi.InputMessageAudio) content).audio.albumCoverThumbnail;
       case TdApi.InputMessageSticker.CONSTRUCTOR:
-        return ((TdApi.InputMessageSticker) content).thumbnail;
+        return ((TdApi.InputMessageSticker) content).sticker.thumbnail;
       case TdApi.InputMessageVideoNote.CONSTRUCTOR:
-        return ((TdApi.InputMessageVideoNote) content).thumbnail;
+        return ((TdApi.InputMessageVideoNote) content).videoNote.thumbnail;
       case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
       case TdApi.InputMessageLocation.CONSTRUCTOR:
       case TdApi.InputMessageLiveLocation.CONSTRUCTOR:

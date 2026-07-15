@@ -6740,9 +6740,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case TdApi.InputMessageReplyToStory.CONSTRUCTOR: // Unreachable.
+      case TdApi.InputMessageReplyToEphemeralMessage.CONSTRUCTOR: // Unreachable
         return;
       default:
-        Td.assertInputMessageReplyTo_acef6f3a();
+        Td.assertInputMessageReplyTo_a271ad89();
         throw Td.unsupported(replyTo);
     }
     if (replyToChatId == currentChatId) {
@@ -6988,7 +6989,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return !Td.equalsTo(oldText, newText);
         }
         default: {
-          Td.assertMessageContent_bb294b24();
+          Td.assertMessageContent_a80283cf();
           break;
         }
       }
@@ -7404,7 +7405,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       default: {
-        Td.assertMessageContent_bb294b24();
+        Td.assertMessageContent_a80283cf();
         throw Td.unsupported(editContext.message.content);
       }
     }
@@ -9225,11 +9226,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       inputView.onCustomEmojiSelected(sticker);
       return false;
     }
-    return sendContent(view, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
+    return sendContent(view, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0), emoji));
   }
 
   private void sendSticker (String path, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    sendContent(null, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(TD.createInputFile(path), null, 0, 0, null));
+    sendContent(null, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputSticker(TD.createInputFile(path), null, 0, 0), null));
   }
 
   private boolean sendAnimation (View view, TdApi.Animation animation, boolean allowReply) {
@@ -10947,8 +10948,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           break;
         }
         case TdApi.InputMessageReplyToStory.CONSTRUCTOR: // Unreachable
+        case TdApi.InputMessageReplyToEphemeralMessage.CONSTRUCTOR: // Unreachable
         default:
-          Td.assertInputMessageReplyTo_acef6f3a();
+          Td.assertInputMessageReplyTo_a271ad89();
           throw Td.unsupported(replyTo);
       }
       tdlib.send(new TdApi.GetMessage(replyChatId, replyMessageId), (remoteMessage, error) -> tdlib.send(new TdApi.GetMessageProperties(replyChatId, replyMessageId), (properties, error1) -> {

@@ -4779,7 +4779,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Sticker sticker, @Nullable String emoji) {
-    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji);
+    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageSticker(new TdApi.InputSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0), emoji);
     sendMessage(chatId, topicId, replyTo, options, inputMessageContent);
   }
 
@@ -4823,7 +4823,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_bb294b24();
+        Td.assertMessageContent_a80283cf();
         break;
     }
 
@@ -4907,7 +4907,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_bb294b24();
+      Td.assertMessageContent_a80283cf();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -7591,7 +7591,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
       default: {
-        Td.assertMessageContent_bb294b24();
+        Td.assertMessageContent_a80283cf();
         break;
       }
     }
@@ -9443,8 +9443,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
   
   @TdlibThread
-  private void updateTonRevenueStatus (TdApi.UpdateTonRevenueStatus update) {
-    listeners.updateTonRevenueStatus(update);
+  private void updateGramRevenueStatus (TdApi.UpdateGramRevenueStatus update) {
+    listeners.updateGramRevenueStatus(update);
   }
 
   @AnyThread
@@ -9557,8 +9557,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
-  private void updateOwnedTonCount (TdApi.UpdateOwnedTonCount update) {
-    // TODO(ton)
+  private void updateOwnedGramCount (TdApi.UpdateOwnedGramCount update) {
+    // TODO(gram)
   }
 
   @TdlibThread
@@ -10237,6 +10237,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
 
+      // Communities
+      case TdApi.UpdateCommunity.CONSTRUCTOR: {
+        cache.onUpdateCommunity((TdApi.UpdateCommunity) update);
+        break;
+      }
+
       // Groups
       case TdApi.UpdateBasicGroup.CONSTRUCTOR: {
         cache.onUpdateBasicGroup((TdApi.UpdateBasicGroup) update);
@@ -10324,8 +10330,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateOwnedStarCount((TdApi.UpdateOwnedStarCount) update);
         break;
       }
-      case TdApi.UpdateOwnedTonCount.CONSTRUCTOR: {
-        updateOwnedTonCount((TdApi.UpdateOwnedTonCount) update);
+      case TdApi.UpdateOwnedGramCount.CONSTRUCTOR: {
+        updateOwnedGramCount((TdApi.UpdateOwnedGramCount) update);
         break;
       }
       case TdApi.UpdateSpeechRecognitionTrial.CONSTRUCTOR: {
@@ -10476,8 +10482,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateStarRevenueStatus((TdApi.UpdateStarRevenueStatus) update);
         break;
       }
-      case TdApi.UpdateTonRevenueStatus.CONSTRUCTOR: {
-        updateTonRevenueStatus((TdApi.UpdateTonRevenueStatus) update);
+      case TdApi.UpdateGramRevenueStatus.CONSTRUCTOR: {
+        updateGramRevenueStatus((TdApi.UpdateGramRevenueStatus) update);
         break;
       }
 
@@ -10522,12 +10528,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateBusinessMessagesDeleted.CONSTRUCTOR:
       case TdApi.UpdateNewBusinessCallbackQuery.CONSTRUCTOR:
       case TdApi.UpdateNewGuestQuery.CONSTRUCTOR:
-      case TdApi.UpdatePaidMediaPurchased.CONSTRUCTOR: {
+      case TdApi.UpdatePaidMediaPurchased.CONSTRUCTOR:
+      case TdApi.UpdateUserSubscription.CONSTRUCTOR: {
         // Must never come from TDLib. If it does, there's a bug on TDLib side.
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_17f693d6();
+        Td.assertUpdate_d96eca42();
         throw Td.unsupported(update);
       }
     }
@@ -11545,11 +11552,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
         case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
         case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
+        case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
+        case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
           // None of these messages ever passed to this method,
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_bb294b24();
+          Td.assertMessageContent_a80283cf();
           throw Td.unsupported(message.content);
       }
     }

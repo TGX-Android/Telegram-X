@@ -507,10 +507,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
             case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
             case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
+            case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
+            case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_bb294b24();
+              Td.assertMessageContent_a80283cf();
               throw Td.unsupported(message.content);
           }
           if (format == null) {

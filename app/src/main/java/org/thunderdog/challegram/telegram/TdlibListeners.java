@@ -1711,9 +1711,9 @@ public class TdlibListeners {
     );
   }
 
-  void updateTonRevenueStatus (TdApi.UpdateTonRevenueStatus update) {
+  void updateGramRevenueStatus (TdApi.UpdateGramRevenueStatus update) {
     runUpdate(optionListeners, listener ->
-      listener.onTonRevenueStatusUpdated(update.status)
+      listener.onGramRevenueStatusUpdated(update.status)
     );
   }
 

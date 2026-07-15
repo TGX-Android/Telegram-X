@@ -4009,7 +4009,7 @@ public class TdlibUi extends Handler {
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
             case TdApi.SettingsSectionSearch.CONSTRUCTOR:
             case TdApi.SettingsSectionMyStars.CONSTRUCTOR:
-            case TdApi.SettingsSectionMyToncoins.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
             case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
             case TdApi.SettingsSectionPremium.CONSTRUCTOR:
             case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
@@ -4020,7 +4020,7 @@ public class TdlibUi extends Handler {
               break;
             }
             default: {
-              Td.assertSettingsSection_94405f42();
+              Td.assertSettingsSection_c6f544dd();
               throw Td.unsupported(section);
             }
           }

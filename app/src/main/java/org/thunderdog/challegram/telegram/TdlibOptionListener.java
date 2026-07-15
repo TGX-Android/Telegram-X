@@ -22,15 +22,15 @@ public interface TdlibOptionListener {
   default void onSuggestedLanguagePackChanged (String suggestedLanguagePackId, TdApi.LanguagePackInfo suggestedLanguagePack) { }
   default void onContactRegisteredNotificationsDisabled (boolean areDisabled) { }
   default void onSuggestedActionsChanged (TdApi.SuggestedAction[] addedActions, TdApi.SuggestedAction[] removedActions) { }
-  default void onChatRevenueUpdated (long chatId, TdApi.ChatRevenueAmount revenueAmount)                { }
+  default void onChatRevenueUpdated (long chatId, TdApi.ChatRevenueAmount revenueAmount) { }
   default void onStarRevenueStatusUpdated (TdApi.MessageSender ownerId, TdApi.StarRevenueStatus status) { }
-  default void onTonRevenueStatusUpdated (TdApi.TonRevenueStatus status) { }
-  default void onSpeedLimitNotification (boolean isUpload)                                              { }
+  default void onGramRevenueStatusUpdated (TdApi.GramRevenueStatus status) { }
+  default void onSpeedLimitNotification (boolean isUpload) { }
   default void onContactCloseBirthdayUsersChanged (TdApi.CloseBirthdayUser[] birthdayUsers) { }
   default void onWebBrowserSettingsChanged (TdApi.WebBrowserSettings webBrowserSettings) { }
   default void onArchiveAndMuteChatsFromUnknownUsersEnabled (boolean enabled) { }
   default void onAccentColorsChanged (TdApi.AccentColor[] colors, int[] availableAccentColorIds) { }
   default void onProfileAccentColorsChanged (boolean listChanged) { }
-  default void onTrustedMiniAppBotsUpdated (long[] botUserIds)                        { }
+  default void onTrustedMiniAppBotsUpdated (long[] botUserIds) { }
   default void onGroupCallMessageLevelsUpdated (TdApi.GroupCallMessageLevel[] levels) { }
 }
