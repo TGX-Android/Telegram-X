@@ -1,5 +1,5 @@
 [versions]
-android-gradle-plugin = "9.2.1"
+android-gradle-plugin = "9.3.0"
 
 ksp = "2.3.4"
 desugaring = "2.1.5"
@@ -30,11 +30,63 @@ sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
 
-annotations-checkerframework = "4.2.0"
+annotations-checkerframework = "4.2.1"
 annotations-errorprone = "2.50.0"
 annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
 annotations-kotlin = "2.1.20"
+
+# latest
+
+okhttp-latest = "5.4.0"
+
+androidx-core-latest = "1.19.0"
+androidx-activity-latest = "1.13.0"
+androidx-work-latest = "2.11.2"
+androidx-room-latest = "2.8.4"
+androidx-gridlayout-latest = "1.1.0"
+androidx-recyclerview-latest = "1.4.0"
+androidx-constraintlayout-latest = "2.2.1"
+androidx-viewpager-latest = "1.1.0"
+androidx-browser-latest = "1.10.0"
+androidx-exifinterface-latest = "1.4.2"
+androidx-camera-latest = "1.6.1"
+androidx-media-latest = "1.10.1"
+
+firebase-messaging-latest = "25.1.1"
+
+google-recaptcha-latest = "18.9.2"
+
+google-play-integrity-latest = "1.6.0"
+google-play-services-base-latest = "18.10.0"
+google-play-services-maps-latest = "20.0.0"
+google-play-services-location-latest = "21.4.0"
+google-play-services-safetynet-latest = "18.1.0"
+google-play-services-mlkit-barcode-scanning-latest = "18.3.1"
+
+google-mlkit-language-id-latest = "17.0.6"
+
+# marshmallow
+
+google-recaptcha-marshmallow = "18.8.0"
+
+# lollipop
+
+androidx-core-lollipop = "1.17.0"
+androidx-activity-lollipop = "1.11.0" # 1.12.2+ requires minSdk 23
+androidx-work-lollipop = "2.10.5" # 2.11.0+ requires minSdk 23
+androidx-browser-lollipop = "1.9.0"
+androidx-media-lollipop = "1.8.0" # 1.9.0+ requires minSdk 23
+
+firebase-messaging-lollipop = "24.1.2" # 25.0.0+ requires minSdk 23
+
+google-recaptcha-lollipop = "18.7.1" # 18.8.0+ requires minSdk 23
+
+google-play-integrity-lollipop = "1.4.0" # 1.5.0+ requires minSdk 23
+google-play-services-base-lollipop = "18.7.2" # 18.8.0+ requires minSdk 23
+google-play-services-basement-lollipop = "18.7.1" # 18.7.2 was not released
+google-play-services-maps-lollipop = "19.2.0"
+google-play-services-location-lollipop = "21.3.0"
 
 # legacy
 
@@ -64,58 +116,6 @@ google-play-services-safetynet-legacy = "18.0.1" # 18.1.0+ requires minSdk 21
 google-play-services-mlkit-barcode-scanning-legacy = "16.2.1" # 18.3.0+ requires minSdk 21, 18.3.1+ requires minSdk 26
 
 google-mlkit-language-id-legacy = "16.1.1"
-
-# lollipop
-
-androidx-core-lollipop = "1.17.0"
-androidx-activity-lollipop = "1.11.0" # 1.12.2+ requires minSdk 23
-androidx-work-lollipop = "2.10.5" # 2.11.0+ requires minSdk 23
-androidx-browser-lollipop = "1.9.0"
-androidx-media-lollipop = "1.8.0" # 1.9.0+ requires minSdk 23
-
-firebase-messaging-lollipop = "24.1.2" # 25.0.0+ requires minSdk 23
-
-google-recaptcha-lollipop = "18.7.1" # 18.8.0+ requires minSdk 23
-
-google-play-integrity-lollipop = "1.4.0" # 1.5.0+ requires minSdk 23
-google-play-services-base-lollipop = "18.7.2" # 18.8.0+ requires minSdk 23
-google-play-services-basement-lollipop = "18.7.1" # 18.7.2 was not released
-google-play-services-maps-lollipop = "19.2.0"
-google-play-services-location-lollipop = "21.3.0"
-
-# marshmallow
-
-google-recaptcha-marshmallow = "18.8.0"
-
-# latest
-
-okhttp-latest = "5.4.0"
-
-androidx-core-latest = "1.19.0"
-androidx-activity-latest = "1.13.0"
-androidx-work-latest = "2.11.2"
-androidx-room-latest = "2.8.4"
-androidx-gridlayout-latest = "1.1.0"
-androidx-recyclerview-latest = "1.4.0"
-androidx-constraintlayout-latest = "2.2.1"
-androidx-viewpager-latest = "1.1.0"
-androidx-browser-latest = "1.10.0"
-androidx-exifinterface-latest = "1.4.2"
-androidx-camera-latest = "1.6.1"
-androidx-media-latest = "1.10.1"
-
-firebase-messaging-latest = "25.1.1"
-
-google-recaptcha-latest = "18.9.1"
-
-google-play-integrity-latest = "1.6.0"
-google-play-services-base-latest = "18.10.0"
-google-play-services-maps-latest = "20.0.0"
-google-play-services-location-latest = "21.4.0"
-google-play-services-safetynet-latest = "18.1.0"
-google-play-services-mlkit-barcode-scanning-latest = "18.3.1"
-
-google-mlkit-language-id-latest = "17.0.6"
 
 [libraries]
 desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugaring" }
