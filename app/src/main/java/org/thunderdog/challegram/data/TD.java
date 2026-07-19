@@ -2436,6 +2436,46 @@ public class TD {
     return "";
   }
 
+  public static @Nullable TdApi.ChecklistTask findTask (TdApi.ChecklistTask[] tasks, int taskId) {
+    for (TdApi.ChecklistTask task : tasks) {
+      if (task.id == taskId) {
+        return task;
+      }
+    }
+    return null;
+  }
+
+  public static TdApi.FormattedText format (String format, TdApi.FormattedText... formattedArguments) {
+    List<TdApi.TextEntity> entities = new ArrayList<>();
+    Object[] args = new Object[formattedArguments.length];
+    for (int i = 0; i < formattedArguments.length; i++) {
+      args[i] = formattedArguments[i].text;
+    }
+    String result = Lang.formatString(format, (target, argStart, argEnd, argIndex, needFakeBold) -> {
+      TdApi.FormattedText formattedArgument = formattedArguments[argIndex];
+      if (argStart > 0) {
+        for (TdApi.TextEntity entity : formattedArgument.entities) {
+          entities.add(new TdApi.TextEntity(entity.offset + argStart, entity.length, entity.type));
+        }
+      } else {
+        Collections.addAll(entities, formattedArgument.entities);
+      }
+      return null;
+    }, args).toString();
+    entities.sort((a, b) -> {
+      int aOffset = a.offset;
+      int bOffset = b.offset;
+      if (aOffset < bOffset) {
+        return -1;
+      }
+      if (aOffset > bOffset) {
+        return 1;
+      }
+      return 0;
+    });
+    return new TdApi.FormattedText(result, entities.toArray(new TdApi.TextEntity[0]));
+  }
+
   public static String toErrorString (@Nullable TdApi.Object object) {
     if (object == null)
       return "Unknown error (null)";

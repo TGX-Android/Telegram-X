@@ -1354,6 +1354,69 @@
   <string name="ActionPinnedXPaidMedia_one">%2$s pinned **%1$s paid media**</string>
   <string name="ActionPinnedXPaidMedia_other">%2$s pinned **%1$s paid medias**</string>
 
+  <string name="ActionAddedPollOption">%1$s added "%2$s" to the poll</string>
+  <string name="ActionAddedPollOptionMsg">%1$s added "%2$s" to the poll "%3$s"</string>
+  <string name="ActionAddedPollOutOption">You added "%1$s" to the poll</string>
+  <string name="ActionAddedPollOutOptionMsg">You added "%1$s" to the poll "%2$s"</string>
+
+  <string name="ActionDeletedPollOption">%1$s removed "%2$s" from the poll</string>
+  <string name="ActionDeletedPollOptionMsg">%1$s removed "%2$s" from the poll "%3$s"</string>
+  <string name="ActionDeletedPollOutOption">You removed "%1$s" from the poll</string>
+  <string name="ActionDeletedPollOutOptionMsg">You removed "%1$s" from the poll "%2$s"</string>
+
+  <string name="ActionChecklistMarkDoneTasksOut_one">You marked %1$s task as done</string>
+  <string name="ActionChecklistMarkDoneTasksOut_other">You marked %1$s tasks as done</string>
+  <string name="ActionChecklistMarkNotDoneTasksOut_one">You marked %1$s task as not done</string>
+  <string name="ActionChecklistMarkNotDoneTasksOut_other">You marked %1$s tasks as not done</string>
+  <string name="format_ActionChecklistMarkTasksOut">You marked %1$s and %2$s</string>
+  <string name="format_ActionChecklistMarkTasksOutDone_one">%1$s task as done</string>
+  <string name="format_ActionChecklistMarkTasksOutDone_other">%1$s tasks as done</string>
+  <string name="format_ActionChecklistMarkTasksOutNotDone_one">%1$s as not done</string>
+  <string name="format_ActionChecklistMarkTasksOutNotDone_other">%1$s as not done</string>
+
+  <string name="ActionChecklistMarkDoneTasks_one">%2$s marked %1$s task as done</string>
+  <string name="ActionChecklistMarkDoneTasks_other">%2$s marked %1$s tasks as done</string>
+  <string name="ActionChecklistMarkNotDoneTasks_one">%2$s marked %1$s task as not done</string>
+  <string name="ActionChecklistMarkNotDoneTasks_other">%2$s marked %1$s tasks as not done</string>
+  <string name="format_ActionChecklistMarkTasks">%1$s marked %2$s and %3$s</string>
+  <string name="format_ActionChecklistMarkTasksDone_one">%1$s task as done</string>
+  <string name="format_ActionChecklistMarkTasksDone_other">%1$s tasks as done</string>
+  <string name="format_ActionChecklistMarkTasksNotDone_one">%1$s as not done</string>
+  <string name="format_ActionChecklistMarkTasksNotDone_other">%1$s as not done</string>
+
+  <string name="ActionChecklistMarkDone">%1$s marked %2$s as done</string>
+  <string name="ActionChecklistMarkDoneOut">You marked %1$s as done</string>
+  <string name="ActionChecklistMarkNotDone">%1$s marked %2$s as not done</string>
+  <string name="ActionChecklistMarkNotDoneOut">You marked %1$s as not done</string>
+  <string name="ActionChecklistMark">%1$s marked %2$s as done, and %3$s as not done</string>
+  <string name="ActionChecklistMarkOut">You marked %1$s as done, and %2$s as not done</string>
+
+  <string name="ActionChecklistAdd">%1$s added %2$s to checklist</string>
+  <string name="ActionChecklistAddOut">You added %1$s to checklist</string>
+
+  <string name="ActionChecklistAddMsg">%1$s added %2$s to "%3$s" checklist</string>
+  <string name="ActionChecklistAddOutMsg">You added %1$s to "%3$s" checklist</string>
+
+  <string name="format_ActionChecklistItem">\"%1$s\"</string>
+  <string name="format_ActionChecklistItemSeparator">, </string>
+  <string name="format_ActionChecklistItemSeparatorLast">" and "</string>
+
+  <string name="ActionChatAddedToCommunity">This chat was added to community "%1$s"</string>
+  <string name="ActionChatAddedToCommunityUnknown">This chat was added to community</string>
+  <string name="ActionChatRemovedFromCommunity">This chat was removed from community</string>
+
+  <string name="ActionSharingRequestExpired">Sharing request has expired</string>
+  <string name="ActionSharingRequestOut">You suggested to enable sharing in this chat</string>
+  <string name="ActionSharingRequest">%1$s would like to enable sharing in this chat</string>
+  <string name="ActionSharingEnabled">%1$s enabled sharing in this chat</string>
+  <string name="ActionSharingEnabledOut">You enabled sharing in this chat</string>
+  <string name="ActionSharingDisabled">%1$s disabled sharing in this chat</string>
+  <string name="ActionSharingDisabledOut">You disabled sharing in this chat</string>
+  <string name="ActionSharingStillEnabled">Sharing in this chat is still enabled</string>
+  <string name="ActionSharingStillDisabled">Sharing in this chat is still disabled</string>
+
+  <string name="ActionCreatedManagedBot">You created %1$s bot for %2$s to manage</string>
+
   <string name="ActionPinnedVideo">%1$s pinned a **video**</string>
   <string name="ActionPinnedRound">%1$s pinned a **video message**</string>
   <string name="ActionPinnedVoice">%1$s pinned a **voice message**</string>

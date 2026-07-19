@@ -617,8 +617,16 @@ abstract class TGMessageServiceImpl extends TGMessage {
     }
   }
 
-  protected abstract class FormattedTextArgument implements FormattedArgument {
-    protected abstract TdApi.FormattedText getFormattedText ();
+  protected class FormattedTextArgument implements FormattedArgument {
+    private final TdApi.FormattedText formattedText;
+
+    public FormattedTextArgument (TdApi.FormattedText formattedText) {
+      this.formattedText = formattedText;
+    }
+
+    protected TdApi.FormattedText getFormattedText () {
+      return formattedText;
+    }
 
     @Override
     public final FormattedText buildArgument () {
@@ -631,7 +639,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
     private final String text;
     private final TdApi.TextEntityType entityType;
 
-    public TextEntityArgument (String text, TdApi.TextEntityType entityType) {
+    public TextEntityArgument (String text, @Nullable TdApi.TextEntityType entityType) {
       this.text = text;
       this.entityType = entityType;
     }
@@ -640,9 +648,11 @@ abstract class TGMessageServiceImpl extends TGMessage {
     public FormattedText buildArgument () {
       final TdApi.FormattedText formattedText;
       if (text.length() > 0) {
-        formattedText = new TdApi.FormattedText(text, new TdApi.TextEntity[] {
-          new TdApi.TextEntity(0, text.length(), entityType)
-        });
+        formattedText = new TdApi.FormattedText(text, entityType != null ?
+          new TdApi.TextEntity[] {
+            new TdApi.TextEntity(0, text.length(), entityType)
+          } :
+          new TdApi.TextEntity[0]);
       } else {
         formattedText = new TdApi.FormattedText("", new TdApi.TextEntity[0]);
       }
@@ -653,6 +663,12 @@ abstract class TGMessageServiceImpl extends TGMessage {
   protected final class BoldArgument extends TextEntityArgument {
     public BoldArgument (String text) {
       super(text, new TdApi.TextEntityTypeBold());
+    }
+  }
+
+  protected final class PlainArgument extends TextEntityArgument {
+    public PlainArgument (String text) {
+      super(text, null);
     }
   }
 

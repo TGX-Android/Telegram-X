@@ -1173,6 +1173,13 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @Nullable
+  public TdApi.Community community (long communityId) {
+    synchronized (dataLock) {
+      return communities.get(communityId);
+    }
+  }
+
+  @Nullable
   public TdApi.BasicGroup basicGroup (long basicGroupId) {
     synchronized (dataLock) {
       return basicGroup.get(basicGroupId);

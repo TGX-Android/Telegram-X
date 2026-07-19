@@ -8371,6 +8371,46 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageChatBoost.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatBoost) content);
         }
+        case TdApi.MessagePollOptionAdded.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePollOptionAdded) content);
+        }
+        case TdApi.MessagePollOptionDeleted.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePollOptionDeleted) content);
+        }
+        case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePaidMessagesRefunded) content);
+        }
+        case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePaidMessagePriceChanged) content);
+        }
+        case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChecklistTasksAdded) content);
+        }
+        case TdApi.MessageChecklistTasksDone.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChecklistTasksDone) content);
+        }
+        case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatHasProtectedContentDisableRequested) content);
+        }
+        case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatHasProtectedContentToggled) content);
+        }
+        case TdApi.MessageChatOwnerChanged.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatOwnerChanged) content);
+        }
+        case TdApi.MessageChatOwnerLeft.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatOwnerLeft) content);
+        }
+        case TdApi.MessageManagedBotCreated.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageManagedBotCreated) content);
+        }
+        case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatAddedToCommunity) content);
+        }
+        case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatRemovedFromCommunity) content);
+        }
+
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
           return new TGMessageGift(context, msg, (TdApi.MessagePremiumGiftCode) content);
         }
@@ -8400,11 +8440,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageStakeDice.CONSTRUCTOR:
 
         case TdApi.MessageGroupCall.CONSTRUCTOR: // TODO TGMessageCall
-        case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR: // TODO TGMessageService
         case TdApi.MessageChecklist.CONSTRUCTOR: // TODO TGMessagePoll
-        case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChecklistTasksDone.CONSTRUCTOR: // TODO TGMessageService
         case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
         case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
         case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
@@ -8412,15 +8448,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
         case TdApi.MessageGiftedTon.CONSTRUCTOR:
         case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
-        case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChatOwnerChanged.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChatOwnerLeft.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageManagedBotCreated.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessagePollOptionAdded.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessagePollOptionDeleted.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR: // TODO TGMessageService
           break;
 
         case TdApi.MessageUnsupported.CONSTRUCTOR:

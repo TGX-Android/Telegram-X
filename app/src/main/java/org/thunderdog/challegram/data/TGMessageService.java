@@ -838,6 +838,66 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatHasProtectedContentDisableRequested chatHasProtectedContentDisableRequested) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (chatHasProtectedContentDisableRequested.isExpired) {
+        return getText(
+          R.string.ActionSharingRequestExpired
+        );
+      } else if (msg.isOutgoing) {
+        return getText(
+          R.string.ActionSharingRequestOut
+        );
+      } else {
+        return getText(
+          R.string.ActionSharingRequest,
+          new SenderArgument(sender)
+        );
+      }
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatHasProtectedContentToggled chatHasProtectedContentToggled) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (chatHasProtectedContentToggled.oldHasProtectedContent != chatHasProtectedContentToggled.newHasProtectedContent) {
+        if (msg.isOutgoing) {
+          return getText(
+            chatHasProtectedContentToggled.newHasProtectedContent ?
+              R.string.ActionSharingDisabledOut :
+              R.string.ActionSharingEnabledOut
+          );
+        } else {
+          return getText(
+            chatHasProtectedContentToggled.newHasProtectedContent ?
+              R.string.ActionSharingDisabled :
+              R.string.ActionSharingEnabled,
+            new SenderArgument(sender)
+          );
+        }
+      } else {
+        return getText(
+          chatHasProtectedContentToggled.newHasProtectedContent ?
+            R.string.ActionSharingStillDisabled :
+            R.string.ActionSharingStillEnabled
+        );
+      }
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageManagedBotCreated botCreated) {
+    super(context, msg);
+    setTextCreator(() -> {
+      TdlibSender targetSender = new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(botCreated.botUserId));
+      return getText(
+        R.string.ActionCreatedManagedBot,
+        new SenderArgument(targetSender),
+        new SenderArgument(sender)
+      );
+    });
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageBotWriteAccessAllowed botWriteAccessAllowed) {
     super(context, msg);
     switch (botWriteAccessAllowed.reason.getConstructor()) {
@@ -1155,6 +1215,43 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  // Unsupported service message (any)
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageUnsupported unsupported) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  private void setUnsupportedTextCreator () {
+    setTextCreator(() ->
+      getText(R.string.UnsupportedMessage)
+    );
+  }
+
+  // Chat owner changes
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatOwnerChanged chatOwnerChanged) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatOwnerLeft chatOwnerLeft) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  // Paid messages
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePaidMessagesRefunded content) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePaidMessagePriceChanged content) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
   // Forum Topics
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicCreated forumTopicCreated) {
@@ -1177,9 +1274,235 @@ public final class TGMessageService extends TGMessageServiceImpl {
     setUnsupportedTextCreator();
   }
 
-  private void setUnsupportedTextCreator () {
+  // Poll
+  
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePollOptionAdded pollOptionAdded) {
+    super(context, msg);
+    setPollOptionAddDeleteTextCreator(false, pollOptionAdded.text, pollOptionAdded.pollMessageId);
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePollOptionDeleted pollOptionDeleted) {
+    super(context, msg);
+    setPollOptionAddDeleteTextCreator(true, pollOptionDeleted.text, pollOptionDeleted.pollMessageId);
+  }
+
+  private void setPollOptionAddDeleteTextCreator (boolean isDelete, TdApi.FormattedText text, long pollMessageId) {
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getText(isDelete ? R.string.ActionDeletedPollOutOption : R.string.ActionAddedPollOutOption,
+          new FormattedTextArgument(text)
+        );
+      } else {
+        return getText(isDelete ? R.string.ActionDeletedPollOption : R.string.ActionAddedPollOption,
+          new SenderArgument(sender),
+          new FormattedTextArgument(text)
+        );
+      }
+    });
+    setDisplayMessage(msg.chatId, pollMessageId, message -> {
+      if (Td.isPoll(message.content)) {
+        return false;
+      }
+      setTextCreator(() -> {
+        if (msg.isOutgoing) {
+          return getText(isDelete ? R.string.ActionDeletedPollOutOptionMsg : R.string.ActionAddedPollOutOptionMsg,
+            new FormattedTextArgument(text),
+            new MessageArgument(message, ((TdApi.MessagePoll) message.content).poll.question)
+          );
+        } else {
+          return getText(isDelete ? R.string.ActionDeletedPollOptionMsg : R.string.ActionAddedPollOptionMsg,
+            new SenderArgument(sender),
+            new FormattedTextArgument(text),
+            new MessageArgument(message, ((TdApi.MessagePoll) message.content).poll.question)
+          );
+        }
+      });
+      return true;
+    });
+  }
+
+  // Checklist
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChecklistTasksAdded checklistTasksAdded) {
+    super(context, msg);
+    setTextCreator(() -> {
+      TdApi.FormattedText tasksList = buildChecklistTasksList(checklistTasksAdded.tasks, null);
+      if (msg.isOutgoing) {
+        return getText(
+          R.string.ActionChecklistAdd,
+          new FormattedTextArgument(tasksList)
+        );
+      } else {
+        return getText(
+          R.string.ActionChecklistAdd,
+          new SenderArgument(sender),
+          new FormattedTextArgument(tasksList)
+        );
+      }
+    });
+    setDisplayMessage(msg.chatId, checklistTasksAdded.checklistMessageId, message -> {
+      if (!Td.isChecklist(message.content)) {
+        return false;
+      }
+      setTextCreator(() -> {
+        TdApi.FormattedText tasksList = buildChecklistTasksList(checklistTasksAdded.tasks, null);
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.ActionChecklistAddMsg,
+            new FormattedTextArgument(tasksList),
+            new MessageArgument(message, ((TdApi.MessageChecklist) message.content).list.title)
+          );
+        } else {
+          return getText(
+            R.string.ActionChecklistAddMsg,
+            new SenderArgument(sender),
+            new FormattedTextArgument(tasksList),
+            new MessageArgument(message, ((TdApi.MessageChecklist) message.content).list.title)
+          );
+        }
+      });
+      return true;
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChecklistTasksDone checklistTasksDone) {
+    super(context, msg);
+    setTextCreator(() -> {
+      int doneTasksCount = checklistTasksDone.markedAsDoneTaskIds.length;
+      int notDoneTasksCount = checklistTasksDone.markedAsNotDoneTaskIds.length;
+      if (msg.isOutgoing) {
+        if (doneTasksCount == 0 || notDoneTasksCount == 0) {
+          return getPlural(
+            notDoneTasksCount == 0 ?
+              R.string.ActionChecklistMarkDoneTasksOut :
+              R.string.ActionChecklistMarkNotDoneTasksOut,
+            doneTasksCount
+          );
+        } else {
+          return getText(
+            R.string.format_ActionChecklistMarkTasksOut,
+            new PlainArgument(Lang.plural(R.string.format_ActionChecklistMarkTasksOutDone, doneTasksCount)),
+            new PlainArgument(Lang.plural(R.string.format_ActionChecklistMarkTasksOutNotDone, notDoneTasksCount))
+          );
+        }
+      } else {
+        if (doneTasksCount == 0 || notDoneTasksCount == 0) {
+          return getPlural(
+            notDoneTasksCount == 0 ?
+              R.string.ActionChecklistMarkDoneTasks :
+              R.string.ActionChecklistMarkNotDoneTasks,
+            doneTasksCount,
+            new SenderArgument(sender)
+          );
+        } else {
+          return getText(
+            R.string.format_ActionChecklistMarkTasksOut,
+            new SenderArgument(sender),
+            new PlainArgument(Lang.plural(R.string.format_ActionChecklistMarkTasksDone, doneTasksCount)),
+            new PlainArgument(Lang.plural(R.string.format_ActionChecklistMarkTasksNotDone, notDoneTasksCount))
+          );
+        }
+      }
+    });
+    setDisplayMessage(msg.chatId, checklistTasksDone.checklistMessageId, message -> {
+      if (!Td.isChecklist(message.content)) {
+        return false;
+      }
+      setTextCreator(() -> {
+        TdApi.Checklist checklist = ((TdApi.MessageChecklist) message.content).list;
+        TdApi.FormattedText doneItems = buildChecklistTasksList(checklist.tasks, checklistTasksDone.markedAsDoneTaskIds);
+        TdApi.FormattedText undoneItems = buildChecklistTasksList(checklist.tasks, checklistTasksDone.markedAsNotDoneTaskIds);
+        if (msg.isOutgoing) {
+          if (undoneItems == null || doneItems == null) {
+            return getText(undoneItems == null ?
+                R.string.ActionChecklistMarkDoneOut :
+                R.string.ActionChecklistMarkNotDoneOut,
+              new FormattedTextArgument(undoneItems == null ? doneItems : undoneItems)
+            );
+          } else {
+            return getText(
+              R.string.ActionChecklistMarkOut,
+              new FormattedTextArgument(doneItems),
+              new FormattedTextArgument(undoneItems)
+            );
+          }
+        } else {
+          if (undoneItems == null || doneItems == null) {
+            return getText(undoneItems == null ?
+                R.string.ActionChecklistMarkDone :
+                R.string.ActionChecklistMarkNotDone,
+              new SenderArgument(sender),
+              new FormattedTextArgument(undoneItems == null ? doneItems : undoneItems)
+            );
+          } else {
+            return getText(
+              R.string.ActionChecklistMark,
+              new SenderArgument(sender),
+              new FormattedTextArgument(doneItems),
+              new FormattedTextArgument(undoneItems)
+            );
+          }
+        }
+      });
+      return true;
+    });
+  }
+
+  private static TdApi.FormattedText buildChecklistTasksList (TdApi.ChecklistTask[] tasks, int[] taskIds) {
+    int tasksCount = taskIds != null ? taskIds.length : tasks.length;
+    if (tasksCount == 0) {
+      return null;
+    }
+    TdApi.FormattedText formattedText = Td.emptyFormattedText();
+    for (int i = 0; i < tasksCount; i++) {
+      int taskId = taskIds != null ? taskIds[i] : tasks[i].id;
+      boolean isLast = i + 1 == tasksCount;
+      if (i > 0) {
+        String separator = Lang.getString(
+          isLast ?
+            R.string.format_ActionChecklistItemSeparatorLast :
+            R.string.format_ActionChecklistItemSeparator
+        );
+        formattedText = Td.concat(
+          formattedText,
+          new TdApi.FormattedText(separator, new TdApi.TextEntity[0])
+        );
+      }
+      TdApi.ChecklistTask item = taskIds != null ? TD.findTask(tasks, taskId) : tasks[i];
+      TdApi.FormattedText text = TD.format(
+        Lang.getString(R.string.format_ActionChecklistItem),
+        item != null ? item.text : new TdApi.FormattedText("?", new TdApi.TextEntity[0])
+      );
+      if (Td.isEmpty(formattedText)) {
+        formattedText = text;
+      } else {
+        formattedText = Td.concat(
+          formattedText,
+          text
+        );
+      }
+    }
+    return formattedText;
+  }
+
+  // Community
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatAddedToCommunity chatAddedToCommunity) {
+    super(context, msg);
+    setTextCreator(() -> {
+      TdApi.Community community = tdlib().cache().community(chatAddedToCommunity.communityId);
+      if (community != null) {
+        return getText(R.string.ActionChatAddedToCommunity, new BoldArgument(community.name));
+      } else {
+        return getText(R.string.ActionChatAddedToCommunityUnknown);
+      }
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatRemovedFromCommunity chatRemovedFromCommunity) {
+    super(context, msg);
     setTextCreator(() ->
-      getText(R.string.UnsupportedMessage)
+      getText(R.string.ActionChatRemovedFromCommunity)
     );
   }
 
