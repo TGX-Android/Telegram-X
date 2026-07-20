@@ -278,6 +278,10 @@ public class FormattedText {
     return new FormattedText(this.text, newEntities.toArray(new TextEntity[0]));
   }
 
+  public static FormattedText valueOfEmpty () {
+    return new FormattedText("");
+  }
+
   public static FormattedText valueOf (TdlibDelegate context, @Nullable TdApi.FormattedText formattedText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (formattedText == null)
       return null;

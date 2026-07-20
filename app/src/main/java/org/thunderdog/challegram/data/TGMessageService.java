@@ -1232,46 +1232,203 @@ public final class TGMessageService extends TGMessageServiceImpl {
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatOwnerChanged chatOwnerChanged) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() -> {
+      TdlibSender targetSender = new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(chatOwnerChanged.newOwnerUserId));
+      return getText(
+        R.string.ActionChatOwnerChanged,
+        new SenderArgument(targetSender)
+      );
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatOwnerLeft chatOwnerLeft) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() -> {
+      if (chatOwnerLeft.newOwnerUserId != 0) {
+        TdlibSender targetSender = new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(chatOwnerLeft.newOwnerUserId));
+        return getText(
+          R.string.ActionChatOwnerLeftTo,
+          new SenderArgument(targetSender)
+        );
+      } else {
+        return getText(
+          R.string.ActionChatOwnerLeft
+        );
+      }
+    });
   }
 
   // Paid messages
 
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePaidMessagesRefunded content) {
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePaidMessagesRefunded paidMessagesRefunded) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getPlural(
+          R.string.ActionPaidMessagesRefundedOut,
+          paidMessagesRefunded.messageCount,
+          new BoldArgument(Lang.plural(R.string.format_refundedStars, paidMessagesRefunded.starCount))
+        );
+      } else {
+        return getPlural(
+          R.string.ActionPaidMessagesRefunded,
+          paidMessagesRefunded.messageCount,
+          new SenderArgument(sender),
+          new BoldArgument(Lang.plural(R.string.format_refundedStars, paidMessagesRefunded.starCount))
+        );
+      }
+    });
   }
 
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePaidMessagePriceChanged content) {
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePaidMessagePriceChanged paidMessagePriceChanged) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getPlural(
+          R.string.ActionPriceChangedOut,
+          paidMessagePriceChanged.paidMessageStarCount
+        );
+      } else {
+        return getPlural(
+          R.string.ActionPriceChanged,
+          paidMessagePriceChanged.paidMessageStarCount,
+          new SenderArgument(sender)
+        );
+      }
+    });
   }
 
   // Forum Topics
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicCreated forumTopicCreated) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() -> {
+      boolean needName = !sender.isBot() && sender.isUser();
+      if (forumTopicCreated.icon.customEmojiId != 0) {
+        return getText(
+          needName ? (
+            msg.isOutgoing ?
+              R.string.ActionTopicCreateIconOut :
+              R.string.ActionTopicCreateIcon
+          ) :
+            R.string.ActionTopicCreatedIcon,
+          new CustomEmojiArgument(tdlib, forumTopicCreated.icon.customEmojiId, null),
+          new BoldArgument(forumTopicCreated.name),
+          new SenderArgument(sender)
+        );
+      } else {
+        return getText(
+          needName ? (
+            msg.isOutgoing ?
+              R.string.ActionTopicCreateOut :
+              R.string.ActionTopicCreate
+            ) :
+            R.string.ActionTopicCreated,
+          new BoldArgument(forumTopicCreated.name),
+          new SenderArgument(sender)
+        );
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicEdited forumTopicEdited) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() -> {
+      if (forumTopicEdited.editIconCustomEmojiId) {
+        if (StringUtils.isEmpty(forumTopicEdited.name)) {
+          return getText(
+            (msg.isOutgoing ?
+              R.string.ActionTopicChangedIconOut :
+              R.string.ActionTopicChangedIcon
+            ),
+            new CustomEmojiArgument(tdlib, forumTopicEdited.iconCustomEmojiId, null),
+            new SenderArgument(sender)
+          );
+        } else {
+          return getText(
+            (msg.isOutgoing ?
+              R.string.ActionTopicChangedIconNameOut :
+              R.string.ActionTopicChangedIconName
+            ),
+            new CustomEmojiArgument(tdlib, forumTopicEdited.iconCustomEmojiId, null),
+            new BoldArgument(forumTopicEdited.name),
+            new SenderArgument(sender)
+          );
+        }
+      } else {
+        return getText(
+          msg.isOutgoing ?
+            R.string.ActionTopicRenamedOut :
+            R.string.ActionTopicRenamed,
+          new BoldArgument(forumTopicEdited.name),
+          new SenderArgument(sender)
+        );
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicIsClosedToggled forumTopicIsClosedToggled) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() ->
+      getText(
+        forumTopicIsClosedToggled.isClosed ?
+          (msg.isOutgoing ? R.string.ActionUnknownTopicClosedOut : R.string.ActionUnknownTopicClosed) :
+          (msg.isOutgoing ? R.string.ActionUnknownTopicReopenedOut : R.string.ActionUnknownTopicReopened),
+        new SenderArgument(sender)
+      )
+    );
+    withTopicInfo(inPlace -> {
+      setTextCreator(() -> {
+        TdApi.ForumTopicInfo topicInfo = topicInfo();
+        if (topicInfo.isGeneral) {
+          return getText(
+            forumTopicIsClosedToggled.isClosed ?
+              (msg.isOutgoing ? R.string.ActionGeneralTopicClosedOut : R.string.ActionGeneralTopicClosed) :
+              (msg.isOutgoing ? R.string.ActionGeneralTopicReopenedOut : R.string.ActionGeneralTopicReopened),
+            new SenderArgument(sender)
+          );
+        } else {
+          return getText(
+            forumTopicIsClosedToggled.isClosed ?
+              (msg.isOutgoing ? R.string.ActionTopicClosedOut : R.string.ActionTopicClosed) :
+              (msg.isOutgoing ? R.string.ActionTopicReopenedOut : R.string.ActionTopicReopened),
+            new CustomEmojiArgument(tdlib, topicInfo.icon.customEmojiId, null),
+            new BoldArgument(topicInfo.name),
+            new SenderArgument(sender)
+          );
+        }
+      });
+      if (!inPlace) {
+        runOnUiThreadOptional(this::updateServiceMessage);
+      }
+    });
+  }
+
+  @Override
+  protected void onTopicInfoUpdated () {
+    if (msg.content.getConstructor() == TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR) {
+      runOnUiThreadOptional(this::updateServiceMessage);
+    }
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicIsHiddenToggled forumTopicIsHiddenToggled) {
     super(context, msg);
-    setUnsupportedTextCreator();
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getText(
+          forumTopicIsHiddenToggled.isHidden ?
+            R.string.ActionTopicHiddenOut :
+            R.string.ActionTopicUnhiddenOut
+        );
+      } else {
+        return getText(
+          forumTopicIsHiddenToggled.isHidden ?
+            R.string.ActionTopicHidden :
+            R.string.ActionTopicUnhidden,
+          new SenderArgument(sender)
+        );
+      }
+    });
   }
 
   // Poll

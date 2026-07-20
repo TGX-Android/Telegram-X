@@ -1417,6 +1417,56 @@
 
   <string name="ActionCreatedManagedBot">You created %1$s bot for %2$s to manage</string>
 
+  <string name="ActionChatOwnerChanged">%1$s is a new owner of this chat</string>
+  <string name="ActionChatOwnerLeft">Chat owner has left</string>
+  <string name="ActionChatOwnerLeftTo">Chat owner has left. Unless they return to the chat, %1$s will become a new owner</string>
+
+  <string name="format_refundedStars_one">%1$s Star</string>
+  <string name="format_refundedStars_other">%1$s Stars</string>
+  <string name="ActionPaidMessagesRefunded_one">%2$s has refunded %3$s for %1$s message</string>
+  <string name="ActionPaidMessagesRefunded_other">%2$s has refunded %3$s for %1$s messages</string>
+  <string name="ActionPaidMessagesRefundedOut_one">You have refunded %2$s for %1$s message</string>
+  <string name="ActionPaidMessagesRefundedOut_other">You have refunded %2$s for %1$s messages</string>
+
+  <string name="ActionPriceChanged_one">%2$s changed price to %1$s Star per message</string>
+  <string name="ActionPriceChanged_other">%2$s changed price to %1$s Stars per message</string>
+  <string name="ActionPriceChangedOut_one">You changed price to %1$s Star per message</string>
+  <string name="ActionPriceChangedOut_other">You changed price to %1$s Stars per message</string>
+
+  <string name="ActionTopicCreatedIcon">The topic %1$s %2$s was created</string>
+  <string name="ActionTopicCreated">The topic %1$s was created</string>
+  <string name="ActionTopicCreateIcon">%3$s created the topic %1$s %2$s</string>
+  <string name="ActionTopicCreate">%2$s created the topic %1$s</string>
+  <string name="ActionTopicCreateIconOut">You created the topic %1$s %2$s</string>
+  <string name="ActionTopicCreateOut">You created the topic %1$s</string>
+
+  <string name="ActionTopicHidden">%1$s hid the general topic</string>
+  <string name="ActionTopicUnhidden">%1$s unhid the general topic</string>
+  <string name="ActionTopicHiddenOut">You hid the general topic</string>
+  <string name="ActionTopicUnhiddenOut">You unhid the general topic</string>
+
+  <string name="ActionTopicRenamed">%2$s renamed the topic to %1$s</string>
+  <string name="ActionTopicRenamedOut">You renamed the topic to %1$s</string>
+  <string name="ActionTopicChangedIcon">%2$s changed the topic icon to %1$s</string>
+  <string name="ActionTopicChangedIconOut">You changed the topic icon to %1$s</string>
+  <string name="ActionTopicChangedIconName">%3$s changed the topic name and icon to %1$s %2$s</string>
+  <string name="ActionTopicChangedIconNameOut">You changed the topic name and icon to %1$s %2$s</string>
+
+  <string name="ActionUnknownTopicClosedOut">You closed topic</string>
+  <string name="ActionUnknownTopicClosed">%1$s closed topic</string>
+  <string name="ActionUnknownTopicReopenedOut">You reopened topic</string>
+  <string name="ActionUnknownTopicReopened">%1$s reopened topic</string>
+
+  <string name="ActionTopicClosedOut">You closed %1$s %2$s</string>
+  <string name="ActionTopicClosed">%3$s closed %1$s %2$s</string>
+  <string name="ActionTopicReopenedOut">You reopened %1$s %2$s</string>
+  <string name="ActionTopicReopened">%3$s reopened %1$s %2$s</string>
+
+  <string name="ActionGeneralTopicClosedOut">You closed general topic</string>
+  <string name="ActionGeneralTopicClosed">%1$s closed general topic</string>
+  <string name="ActionGeneralTopicReopenedOut">You reopened general topic</string>
+  <string name="ActionGeneralTopicReopened">%1$s reopened general topic</string>
+
   <string name="ActionPinnedVideo">%1$s pinned a **video**</string>
   <string name="ActionPinnedRound">%1$s pinned a **video message**</string>
   <string name="ActionPinnedVoice">%1$s pinned a **voice message**</string>

@@ -147,7 +147,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
     });
   }
 
-  private void updateServiceMessage () {
+  protected final void updateServiceMessage () {
     boolean hadTextMedia = hasTextMedia();
     rebuildAndUpdateContent();
     if (hadTextMedia || hasTextMedia()) {
@@ -225,7 +225,10 @@ abstract class TGMessageServiceImpl extends TGMessage {
   protected void buildContent (int maxWidth) {
     int availWidth = Math.max(0, this.width - Screen.dp(12f) * 2);
 
-    FormattedText formattedText = textCreator.createText();
+    FormattedText formattedText =
+      textCreator != null ?
+        textCreator.createText() :
+        FormattedText.valueOfEmpty();
     if (this.lastAvailWidth == availWidth && this.currentText != null && this.currentText.equals(formattedText)) {
       return;
     }
