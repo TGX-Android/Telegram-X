@@ -203,6 +203,8 @@ public class Config {
   public static final boolean CUTOUT_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.O;
   public static final boolean EXPLICIT_DICE_AVAILABLE = false;
 
+  public static final boolean FOREGROUND_SERVICE_DEMO = false;
+
   public static boolean useCloudPlayback (TdApi.Message playPauseFile) {
     if (USE_CLOUD_PLAYER && playPauseFile != null) {
       //noinspection SwitchIntDef

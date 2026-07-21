@@ -49,6 +49,8 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.service.ForegroundService;
+import org.thunderdog.challegram.service.PushProcessor;
 import org.thunderdog.challegram.sync.SyncAdapter;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
@@ -64,6 +66,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
@@ -2181,6 +2184,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   @TdlibThread
   void onUpdateNotificationGroup (TdApi.UpdateNotificationGroup update) {
+    if (Config.FOREGROUND_SERVICE_DEMO) {
+      Context context = UI.getContext();
+      PushProcessor.showForegroundNotification(context, tdlib.context(), false, -1, tdlib.accountId(), true, new CountDownLatch(0));
+      queue.post(() -> {
+        ForegroundService.stopForegroundTask(context, -1, tdlib.accountId());
+        sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
+      }, 1500L);
+      return;
+    }
     sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
   }
 
