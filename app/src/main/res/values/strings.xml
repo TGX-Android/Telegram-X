@@ -98,6 +98,7 @@
   <string name="format_ivAuthorDateSeparator">" • "</string>
   <string name="format_ivRelatedInfo">%1$s • %2$s</string>
   <string name="format_notificationTitleShort">%1$s (%2$s)</string>
+  <string name="format_notificationTitleSecret">&#128274;&#65039; %1$s</string>
   <string name="format_channelAndSignature">%1$s (%2$s)</string>
   <string name="format_minutesAndSeconds">%1$s and %2$s</string>
   <string name="format_chatAndSignature">%1$s (%2$s)</string>
@@ -1398,7 +1399,7 @@
   <string name="ActionChecklistAddOutMsg">You added %1$s to "%2$s" checklist</string>
 
   <string name="format_ActionChecklistItem">\"%1$s\"</string>
-  <string name="format_ActionChecklistItemSeparator">, </string>
+  <string name="format_ActionChecklistItemSeparator">", "</string>
   <string name="format_ActionChecklistItemSeparatorLast">" and "</string>
 
   <string name="ActionChatAddedToCommunity">This chat was added to community "%1$s"</string>

@@ -310,7 +310,18 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final boolean onlyScheduled = group.isOnlyScheduled();
     final boolean onlySilent = group.isOnlyInitiallySilent();
     final boolean isChannel = tdlib.isChannelChat(chat);
-    final CharSequence visualChatTitle = Lang.getNotificationTitle(chat.id, chatTitle, group.getTotalCount(), tdlib.isSelfChat(group.getChatId()), tdlib.isMultiChat(chat), isChannel, group.isMention(), onlyPinned, onlyScheduled, onlySilent);
+    final CharSequence visualChatTitle = Lang.getNotificationTitle(
+      chat.id,
+      chatTitle,
+      group.getTotalCount(),
+      tdlib.isSelfChat(group.getChatId()),
+      tdlib.isMultiChat(chat),
+      isChannel,
+      group.isMention(),
+      onlyPinned,
+      onlyScheduled,
+      onlySilent
+    );
 
     // Content preview download
     List<TdApi.File> cloudReferences = null;
