@@ -1505,7 +1505,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         TdApi.FormattedText tasksList = buildChecklistTasksList(checklistTasksAdded.tasks, null);
         if (msg.isOutgoing) {
           return getText(
-            R.string.ActionChecklistAddMsg,
+            R.string.ActionChecklistAddOutMsg,
             new FormattedTextArgument(tasksList),
             new MessageArgument(message, ((TdApi.MessageChecklist) message.content).list.title)
           );

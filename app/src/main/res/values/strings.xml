@@ -1395,7 +1395,7 @@
   <string name="ActionChecklistAddOut">You added %1$s to checklist</string>
 
   <string name="ActionChecklistAddMsg">%1$s added %2$s to "%3$s" checklist</string>
-  <string name="ActionChecklistAddOutMsg">You added %1$s to "%3$s" checklist</string>
+  <string name="ActionChecklistAddOutMsg">You added %1$s to "%2$s" checklist</string>
 
   <string name="format_ActionChecklistItem">\"%1$s\"</string>
   <string name="format_ActionChecklistItemSeparator">, </string>
