@@ -280,7 +280,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
   private boolean ignoreBottomPadding;
 
   private void setCaption (TdApi.PageBlockCaption caption) {
-    if (!Td.isEmpty(caption.text) || !Td.isEmpty(caption.credit)) {
+    if (caption != null && (!Td.isEmpty(caption.text) || !Td.isEmpty(caption.credit))) {
       this.caption = caption;
       ignoreBottomPadding = true;
     }
