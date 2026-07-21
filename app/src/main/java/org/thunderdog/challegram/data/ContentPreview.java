@@ -753,6 +753,9 @@ public class ContentPreview {
       case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
       case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
       case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
+      case TdApi.MessageRichMessage.CONSTRUCTOR:
+      case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
+      case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
