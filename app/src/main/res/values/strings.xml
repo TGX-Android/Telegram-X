@@ -2579,10 +2579,14 @@
   <string name="EditMarkdownHint2">Edit text in messages using shortcuts: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
   <string name="MessageNotFound">Message not found</string>
   <string name="MessageReplyPrivate">This message is from a private chat</string>
-  <string name="SyncHintTitle">Find Contacts</string>
-  <string name="SyncHint">To help you connect with friends and family, allow %1$s access to your contacts.</string>
-  <string name="SyncHintRetry">To help you message friends and family on Telegram, allow access to your contacts.\n\nTap Settings &gt; Permissions, and turn Contacts on.</string>
-  <string name="SyncHintUnavailable">Tap Settings &gt; Permissions, and turn Contacts on to allow Telegram access to your contacts.</string>
+
+  <string name="SyncHintTitle2">Sync contacts with Telegram?</string>
+  <string name="SyncBtn">Sync</string>
+  <string name="SyncLearnMore">Privacy Policy</string>
+  <string name="SyncHint2">Contacts on your device will be seamlessly uploaded to Telegram servers so you could find them in **Contacts** section of **%1$s**.\n\nWhen you delete a contact on your device while sync is on, it will also be deleted from your contacts list on **Telegram** servers.\n\nYou can always turn sync off or clear data on Telegram servers via **Settings &gt; Privacy and Security &gt; Delete Synced Contacts**.\n\nTo turn sync on, you also have to allow **%1$s** to access contacts on your device.</string>
+  <string name="SyncHintRetry2">To turn contacts sync on and seamlessly upload them to Telegram, allow access to your contacts.\n\nTap **Settings** &gt; **Permissions**, and turn **Contacts** on.</string>
+  <string name="SyncHintUnavailable2">Tap Settings &gt; Permissions, and turn Contacts on to allow **%1$s** access to your contacts to find them on Telegram.</string>
+
   <string name="Continue">Continue</string>
   <string name="NoChatsText">**No chats to show**\n\nInvite your friends and family to&#160;join&#160;Telegram</string>
   <string name="ShowContacts">Start a chat</string>
@@ -3089,6 +3093,7 @@
   <string name="LocalizationFileNamePlaceholder">YOUR_FILE_NAME</string>
   <string name="url_faq">https://telegram.org/faq#general-questions</string>
   <string name="url_privacyPolicy">https://telegram.org/privacy</string>
+  <string name="url_contactsPrivacy">https://telegram.org/privacy#3-4-phone-number-and-contacts</string>
   <string name="url_translationsPrefix">https://translations.telegram.org/en/android_x/unsorted/</string>
   <string name="url_faqPhoneNumber">https://telegram.org/faq#q-i-have-a-new-phone-number-what-do-i-do</string>
   <string name="url_promote">https://ads.telegram.org</string>

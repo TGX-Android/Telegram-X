@@ -144,6 +144,9 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   private int getStatus () {
     if (_status == null) {
       _status = Settings.instance().getInt(key(_STATUS_KEY), STATUS_INACTIVE);
+      if (Config.TEST_SYNC_CONTACTS_PROMPT) {
+        _status = STATUS_INACTIVE;
+      }
     }
     return _status;
   }
@@ -661,6 +664,8 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     }
   }
 
+  private DialogInterface showingAlert;
+
   private void showAlert (final BaseActivity context, final int flags, final @Nullable Runnable callback) {
     if (state != STATE_NOT_STARTED || getHideOption() == HIDE_OPTION_NEVER) {
       if (callback != null) {
@@ -668,27 +673,42 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       }
       return;
     }
+
+    if (showingAlert != null && showingAlert instanceof AlertDialog && ((AlertDialog) showingAlert).isShowing()) {
+      return;
+    }
+
     final boolean isFirstTime = (flags & FLAG_NOT_FIRST_TIME) == 0;
     final boolean isRetry = (flags & FLAG_PERMISSION_DISABLED) != 0;
     final boolean allowNever = (flags & FLAG_NEED_NEVER) != 0;
     final boolean needNever = true; // allowNever; //  && hideOption == HIDE_OPTION_LATER && !isFirstTime;
 
-    int title = R.string.SyncHintTitle;
-    String message;
+    int title = R.string.SyncHintTitle2;
+    CharSequence message;
+    TdlibDelegate delegate = context.navigation().getCurrentStackItem();
+    String appName = Lang.getString(R.string.AppName);
     if (isRetry) {
       if (isFirstTime) {
-        message = Lang.getString(R.string.SyncHintRetry);
+        message = Lang.getMarkdownString(delegate, R.string.SyncHintRetry2, appName);
       } else {
-        message = Lang.getString(R.string.SyncHintUnavailable);
+        message = Lang.getMarkdownString(delegate, R.string.SyncHintUnavailable2, appName);
       }
     } else {
-      message = Lang.getString(R.string.SyncHint, Lang.getString(R.string.AppName));
+      message = Lang.getMarkdownString(delegate, R.string.SyncHint2, appName);
     }
 
     AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
     b.setTitle(Lang.getString(title));
     b.setMessage(message);
-    b.setPositiveButton(Lang.getString(!context.permissions().canReadContacts() ? (isRetry ? R.string.Settings : R.string.Continue) : R.string.Allow), (dialog, which) -> {
+    b.setNeutralButton(Lang.getString(R.string.SyncLearnMore), (dialog, which) -> {
+      tdlib.ui().openUrl(delegate, Lang.getStringSecure(R.string.url_contactsPrivacy), null);
+    });
+    b.setOnDismissListener(dialog -> {
+      if (showingAlert == dialog) {
+        showingAlert = null;
+      }
+    });
+    b.setPositiveButton(Lang.getString(!context.permissions().canReadContacts() ? (isRetry ? R.string.Settings : R.string.SyncBtn) : R.string.Allow), (dialog, which) -> {
       if (isRetry) {
         Intents.openPermissionSettings();
         return;
@@ -732,6 +752,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     }
     if (!context.isFinishing()) {
       AlertDialog dialog = context.showAlert(b);
+      showingAlert = dialog;
       if (isRetry) {
         pendingRetryDialog = dialog;
         pendingRetryCallback = callback;
