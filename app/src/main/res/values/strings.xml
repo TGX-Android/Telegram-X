@@ -1419,8 +1419,8 @@
   <string name="ActionCreatedManagedBot">You created %1$s bot for %2$s to manage</string>
 
   <string name="ActionChatOwnerChanged">%1$s is a new owner of this chat</string>
-  <string name="ActionChatOwnerLeft">Chat owner has left</string>
-  <string name="ActionChatOwnerLeftTo">Chat owner has left. Unless they return to the chat, %1$s will become a new owner</string>
+  <string name="ActionChatOwnerLeft">The chat owner left</string>
+  <string name="ActionChatOwnerLeftTo">The chat owner left. Unless they return, %1$s will become the new owner</string>
 
   <string name="format_refundedStars_one">%1$s Star</string>
   <string name="format_refundedStars_other">%1$s Stars</string>
