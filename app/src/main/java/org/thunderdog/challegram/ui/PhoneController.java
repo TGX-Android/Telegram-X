@@ -1295,7 +1295,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   private boolean oneShot;
 
   public void onAuthorizationReady () {
-    if (UI.inTestMode()) {
+    if (UI.inTestMode() && recyclerView != null) {
       makeRequest();
     }
   }
@@ -1432,6 +1432,9 @@ public class PhoneController extends EditBaseController<Void> implements Setting
         }
         break;
       }
+    }
+    if (mode == MODE_LOGIN && UI.inTestMode()) {
+      makeRequest();
     }
   }
 }
