@@ -77,17 +77,17 @@ endif()
 set(ORIGINAL_CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
 
 set(EXCLUDE_LIBS
-  libjni-utils.a
-  libyuv.a
+  "${CMAKE_CURRENT_BINARY_DIR}/libjni-utils.a"
+  "${CMAKE_CURRENT_BINARY_DIR}/third_party/libyuv/libyuv.a"
   "${VPX_LIB_PATH}"
-  libopus.a
-  libopusfile.a
-  librlottie.a
-  liblz4.a
+  "${CMAKE_CURRENT_BINARY_DIR}/libopus.a"
+  "${CMAKE_CURRENT_BINARY_DIR}/libopusfile.a"
+  "${CMAKE_CURRENT_BINARY_DIR}/librlottie.a"
+  "${CMAKE_CURRENT_BINARY_DIR}/liblz4.a"
 )
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
-    libwebpdecoder_static.a
+    "${CMAKE_CURRENT_BINARY_DIR}/libwebpdecoder_static.a"
   )
 endif()
 foreach(ffmpeg_lib ${FFMPEG_LIBS})

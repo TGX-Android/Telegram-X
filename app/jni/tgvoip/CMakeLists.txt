@@ -205,7 +205,6 @@ set(TGCALLS_EXCLUDE_LIBS
   tgvoip/libtgcalls.a
 )
 list(APPEND TGCALLS_EXCLUDE_LIBS
-  libyuv.a
   libopus.a
   "${VPX_LIB_PATH}"
   "${FFMPEG_DIR}/lib/libavcodec.a"
