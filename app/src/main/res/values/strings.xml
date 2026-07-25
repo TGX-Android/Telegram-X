@@ -2583,7 +2583,7 @@
   <string name="SyncHintTitle2">Sync contacts with Telegram?</string>
   <string name="SyncBtn">Sync</string>
   <string name="SyncLearnMore">Privacy Policy</string>
-  <string name="SyncHint2">Contacts on your device will be seamlessly uploaded to Telegram servers so you could find them in **Contacts** section of **%1$s**.\n\nWhen you delete a contact on your device while sync is on, it will also be deleted from your contacts list on **Telegram** servers.\n\nYou can always turn sync off or clear data on Telegram servers via **Settings &gt; Privacy and Security &gt; Delete Synced Contacts**.\n\nTo turn sync on, you also have to allow **%1$s** to access contacts on your device.</string>
+  <string name="SyncHint3">Contacts on your device (phone numbers, first and last names) will be continuously uploaded to Telegram servers so you could find them in **Contacts** section of **%1$s**, or receive a notification once they join.\n\nData is not shared with third-parties. When you delete a contact on your device while sync is on, it will also be deleted from your contacts list on **Telegram** servers.\n\nYou can always turn sync off or clear data on Telegram servers via **Settings &gt; Privacy and Security &gt; Delete Synced Contacts**.\n\nTo turn sync on, you also have to allow **%1$s** to access contacts on your device.</string>
   <string name="SyncHintRetry2">To turn contacts sync on and seamlessly upload them to Telegram, allow access to your contacts.\n\nTap **Settings** &gt; **Permissions**, and turn **Contacts** on.</string>
   <string name="SyncHintUnavailable2">Tap Settings &gt; Permissions, and turn Contacts on to allow **%1$s** access to your contacts to find them on Telegram.</string>
 

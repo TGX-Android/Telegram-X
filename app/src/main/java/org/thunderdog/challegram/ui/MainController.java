@@ -764,7 +764,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   public void onActivityResume () {
     super.onActivityResume();
     UI.startNotificationService();
-    showAnnoyingAlertsForCompliance();
+    showAnnoyingAlertsForCompliance(true);
   }
 
   private void makeStartupChecks () {
@@ -1300,23 +1300,35 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (UI.TEST_MODE == UI.TEST_MODE_USER) {
       UI.TEST_MODE = UI.TEST_MODE_NONE;
     }
-    showAnnoyingAlertsForCompliance();
+    showAnnoyingAlertsForCompliance(false);
   }
 
-  private void showAnnoyingAlertsForCompliance () {
+  private boolean syncContactsInitiated;
+
+  private void syncContacts () {
+    if (!syncContactsInitiated) {
+      tdlib.contacts().startSyncIfNeeded(context(), false, () -> {
+        syncContactsInitiated = true;
+      });
+    }
+  }
+
+  private void showAnnoyingAlertsForCompliance (boolean fromAppResume) {
     if (checkSyncAlert()) {
       return;
     }
     tdlib.checkDeadlocks(() -> runOnUiThreadOptional(() -> {
-      if (!context().permissions().requestPostNotifications(granted -> {
-        if (granted) {
-          tdlib.notifications().onNotificationPermissionGranted();
+      if (isFocused() && context.getActivityState() == UI.State.RESUMED) {
+        if (fromAppResume && !context().permissions().requestPostNotifications(granted -> {
+          if (granted) {
+            tdlib.notifications().onNotificationPermissionGranted();
+          }
+          syncContacts();
+        })) {
+          syncContacts();
         }
-        tdlib.contacts().startSyncIfNeeded(context(), false, null);
-      })) {
-        tdlib.contacts().startSyncIfNeeded(context(), false, null);
       }
-    }));
+    }, null, 1000L));
   }
 
   @Override
@@ -2319,7 +2331,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       SyncAdapter.turnOnSync(context, tdlib, true);
     }).setDismissListener(popup -> {
       syncAlertWrap = null;
-      showAnnoyingAlertsForCompliance();
+      showAnnoyingAlertsForCompliance(false);
     }).setOnActionButtonClick((wrap, view, isCancel) -> {
       if (isCancel) {
         int i = wrap.adapter.indexOfViewById(R.id.btn_neverAllow);

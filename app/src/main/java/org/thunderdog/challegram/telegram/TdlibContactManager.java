@@ -694,12 +694,13 @@ public class TdlibContactManager implements CleanupStartupDelegate {
         message = Lang.getMarkdownString(delegate, R.string.SyncHintUnavailable2, appName);
       }
     } else {
-      message = Lang.getMarkdownString(delegate, R.string.SyncHint2, appName);
+      message = Lang.getMarkdownString(delegate, R.string.SyncHint3, appName);
     }
 
     AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
     b.setTitle(Lang.getString(title));
     b.setMessage(message);
+    b.setCancelable(false);
     b.setNeutralButton(Lang.getString(R.string.SyncLearnMore), (dialog, which) -> {
       tdlib.ui().openUrl(delegate, Lang.getStringSecure(R.string.url_contactsPrivacy), null);
     });
@@ -708,7 +709,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
         showingAlert = null;
       }
     });
-    b.setPositiveButton(Lang.getString(!context.permissions().canReadContacts() ? (isRetry ? R.string.Settings : R.string.SyncBtn) : R.string.Allow), (dialog, which) -> {
+    b.setPositiveButton(Lang.getString(!context.permissions().canReadContacts() ? (isRetry ? R.string.Settings : R.string.SyncBtn) : R.string.SyncBtn), (dialog, which) -> {
       if (isRetry) {
         Intents.openPermissionSettings();
         return;
