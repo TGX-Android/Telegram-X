@@ -76,28 +76,11 @@ else()
 endif()
 set(ORIGINAL_CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
 
-set(EXCLUDE_LIBS
-  "${CMAKE_CURRENT_BINARY_DIR}/libjni-utils.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/third_party/libyuv/libyuv.a"
-  "${VPX_LIB_PATH}"
-  "${CMAKE_CURRENT_BINARY_DIR}/libopus.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/libopusfile.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/librlottie.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/liblz4.a"
-)
-if (${USE_WEBP})
-  list(APPEND EXCLUDE_LIBS
-    "${CMAKE_CURRENT_BINARY_DIR}/libwebpdecoder_static.a"
-  )
-endif()
-foreach(ffmpeg_lib ${FFMPEG_LIBS})
-  list(APPEND EXCLUDE_LIBS
-    "${FFMPEG_DIR}/lib/lib${ffmpeg_lib}.a"
-  )
-endforeach()
-Join(EXCLUDE_LIBS "${EXCLUDE_LIBS}" ",")
 list(APPEND ADD_LINKER_FLAGS
-  -Wl,--exclude-libs,${EXCLUDE_LIBS}
+  "-Wl,--exclude-libs,ALL"
+)
+list(APPEND ADD_LINKER_FLAGS
+  "-Wl,--gc-sections,--icf=safe"
 )
 Join(ADD_LINKER_FLAGS "${ADD_LINKER_FLAGS}" " ")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ADD_LINKER_FLAGS}")
@@ -236,6 +219,8 @@ target_compile_options(${NATIVE_LIB} PUBLIC
   -fno-math-errno -fno-strict-aliasing -funroll-loops
   -ffast-math
   -fno-rtti
+  -fvisibility=hidden
+  -fvisibility-inlines-hidden
 )
 # TODO: remove -Wno-macro-redefined -Wno-unused-variable
 # only "${THIRDPARTY_DIR}/androidx-media/ffmpeg_jni.cc" needs them.

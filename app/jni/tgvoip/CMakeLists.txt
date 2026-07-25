@@ -193,25 +193,14 @@ target_link_libraries(${TGCALLS_LIB}
   cpufeatures
 )
 
-set(TGCALLS_EXCLUDE_LIBS
-  tgvoip/libtgvoip.a
-  tgvoip/libusrsctp.a
-  tgvoip/libsrtp.a
-  tgvoip/libopenh264.a
-  tgvoip/libabsl.a
-  tgvoip/libjson11.a
-  tgvoip/librnnoise.a
-  tgvoip/libwebrtc.a
-  tgvoip/libtgcalls.a
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections,--icf=safe -Wl,--build-id=none -Wl,--exclude-libs,ALL -flto")
+target_link_options(${TGCALLS_LIB} PRIVATE
+  "-Wl,--exclude-libs,ALL"
+  "-Wl,--gc-sections,--icf=safe"
 )
-list(APPEND TGCALLS_EXCLUDE_LIBS
-  libopus.a
-  "${VPX_LIB_PATH}"
-  "${FFMPEG_DIR}/lib/libavcodec.a"
-)
-Join(TGCALLS_EXCLUDE_LIBS "${TGCALLS_EXCLUDE_LIBS}" ",")
-target_link_options(${TGCALLS_LIB} PUBLIC
-  -Wl,--exclude-libs,${TGCALLS_EXCLUDE_LIBS}
+target_compile_options(${TGCALLS_LIB} PRIVATE
+  -fvisibility=hidden
+  -fvisibility-inlines-hidden
 )
 
 if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "x86_64")
