@@ -19,8 +19,8 @@ google-play-app-update = "2.1.0"
 
 google-services-plugin = "4.5.0"
 
-huawei-agcp = "1.9.3.302"
-huawei-hms = "6.13.0.300"
+huawei-agcp = "1.9.6.300"
+huawei-hms = "6.13.0.301"
 
 shortcutbadger = "1.1.22"
 relinker = "1.4.5"
