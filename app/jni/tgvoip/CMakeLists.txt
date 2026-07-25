@@ -201,6 +201,7 @@ target_link_options(${TGCALLS_LIB} PRIVATE
 target_compile_options(${TGCALLS_LIB} PRIVATE
   -fvisibility=hidden
   -fvisibility-inlines-hidden
+  -flto
 )
 
 if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "x86_64")
