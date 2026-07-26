@@ -68,6 +68,12 @@ fun DependencyHandlerScope.preMarshmallowImplementation(
 ) =
   this.flavorImplementation(dependency, dependency, null, null, dependencyConfiguration)
 
+fun DependencyHandlerScope.postMarshmallowImplementation(
+  dependency: Provider<MinimalExternalModuleDependency>,
+  dependencyConfiguration: Action<ExternalModuleDependency>? = null
+) =
+  this.flavorImplementation(null, null, null, dependency, dependencyConfiguration)
+
 fun findExtraFolders(variant: SdkVariant): Set<String> =
   mutableSetOf<String>().apply {
     if (variant.minSdk >= 21) {
