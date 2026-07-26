@@ -243,18 +243,18 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   @SuppressWarnings("deprecation")
   protected final int displayChildNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @NonNull TdlibNotificationGroup group, TdlibNotificationSettings settings, int notificationId, boolean isSummary, boolean isRebuild) {
     if (!allowPreview || group.isEmpty()) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(), notificationId);
       return DISPLAY_STATE_HIDDEN;
     }
 
     int visualSize = group.visualSize();
     if (visualSize == 0) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(), notificationId);
       return DISPLAY_STATE_HIDDEN;
     }
 
     if (!tdlib.account().allowNotifications()) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(), notificationId);
       return DISPLAY_STATE_POSTPONED;
     }
 
@@ -720,7 +720,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       try {
         if (Config.TEST_NOTIFICATION_PROBLEM_RESOLUTION)
           throw new RuntimeException();
-        manager.notify(notificationId, notification);
+        manager.notify(helper.tag(), notificationId, notification);
         state = DISPLAY_STATE_OK;
       } catch (Throwable t) {
         Log.e("Cannot display notification", t);
@@ -782,19 +782,19 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   protected final void hideExtraSummaryNotifications (NotificationManagerCompat manager, @NonNull TdlibNotificationHelper helper, SparseIntArray displayedCategories) {
     for (int category = TdlibNotificationGroup.CATEGORY_DEFAULT; category <= TdlibNotificationGroup.MAX_CATEGORY; category++) {
       if (displayedCategories.indexOfKey(category) < 0)
-        manager.cancel(helper.getBaseNotificationId(category));
+        manager.cancel(helper.tag(), helper.getBaseNotificationId(category));
     }
   }
 
   protected final void displaySummaryNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, TdlibNotificationSettings settings, int category, boolean isRebuild) {
     int notificationId = helper.getBaseNotificationId(category);
     if (helper.isEmpty() || !tdlib.account().allowNotifications()) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(), notificationId);
       return;
     }
     List<TdlibNotification> notifications = helper.getVisibleNotifications(category);
     if (notifications.isEmpty()) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(), notificationId);
       return;
     }
     if (USE_GROUPS && allowPreview) {
@@ -809,7 +809,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         }
       }
       if (singleGroup != null) {
-        // manager.cancel(helper.getNotificationIdForGroup(singleGroup.getId()));
+        // manager.cancel(TdlibNotificationManager.TAG_MESSAGES, helper.getNotificationIdForGroup(singleGroup.getId()));
         if (displayChildNotification(manager, context, helper, badgeCount, allowPreview, singleGroup, settings, notificationId, true, isRebuild) != DISPLAY_STATE_FAIL) {
           tdlib.settings().forgetNotificationProblems();
         }
@@ -831,7 +831,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       try {
         if (Config.TEST_NOTIFICATION_PROBLEM_RESOLUTION)
           throw new RuntimeException();
-        manager.notify(notificationId, notification);
+        manager.notify(helper.tag(), notificationId, notification);
         tdlib.settings().forgetNotificationProblems();
       } catch (Throwable t) {
         Log.e("Unable to display common notification", t);

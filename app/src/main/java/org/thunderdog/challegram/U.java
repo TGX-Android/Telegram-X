@@ -159,7 +159,6 @@ import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.lang.ref.SoftReference;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -169,8 +168,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -465,8 +462,8 @@ public class U {
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       switch (notificationId) {
-        case TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION:
-        case TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION: {
+        case TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION:
+        case TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION: {
           int knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
@@ -475,8 +472,8 @@ public class U {
           service.startForeground(notificationId, notification, knownType);
           return;
         }
-        case TdlibNotificationManager.ID_MUSIC:
-        case TdlibNotificationManager.ID_LOCATION:
+        case TdlibNotificationManager.ID_FOREGROUND_MUSIC:
+        case TdlibNotificationManager.ID_FOREGROUND_LOCATION:
         case TdlibNotificationManager.ID_PENDING_TASK:
           // android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST;
           break;

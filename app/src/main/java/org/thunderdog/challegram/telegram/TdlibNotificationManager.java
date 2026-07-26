@@ -75,17 +75,24 @@ import me.vkryl.leveldb.LevelDB;
 import tgx.td.ChatId;
 
 public class TdlibNotificationManager implements UI.StateListener, Passcode.LockListener, CleanupStartupDelegate {
-  public static final int ID_MUSIC = Integer.MAX_VALUE;
-  public static final int ID_LOCATION = Integer.MAX_VALUE - 1;
-  public static final int ID_ONGOING_CALL_NOTIFICATION = Integer.MAX_VALUE - 2;
-  public static final int ID_INCOMING_CALL_NOTIFICATION = Integer.MAX_VALUE - 3;
-  public static final int ID_PENDING_TASK = Integer.MAX_VALUE - 4;
-  public static final int ID_TEMPORARY_NOTIFICATION = Integer.MAX_VALUE - 5;
-  public static final int IDS_COUNT = 6;
-  public static final int IDS_PER_ACCOUNT = (int) ((long) (Integer.MAX_VALUE - IDS_COUNT) / (long) TdlibAccount.ID_MAX) - 1;
+  public static final int ID_TEMPORARY_NOTIFICATION = Integer.MAX_VALUE;
+  public static final int ID_FOREGROUND_MUSIC = Integer.MAX_VALUE - 1;
+  public static final int ID_FOREGROUND_LOCATION = Integer.MAX_VALUE - 2;
+  public static final int ID_FOREGROUND_ONGOING_CALL_NOTIFICATION = Integer.MAX_VALUE - 3;
+  public static final int ID_FOREGROUND_INCOMING_CALL_NOTIFICATION = Integer.MAX_VALUE - 4;
+  public static final int ID_PENDING_TASK = Integer.MAX_VALUE - 5;
+  public static final int ID_BASE_NOTIFICATION = Integer.MAX_VALUE - 6;
 
-  public static int calculateBaseNotificationId (Tdlib tdlib) {
-    return 1 + IDS_PER_ACCOUNT * tdlib.id();
+  public static String getMessageNotificationTag (int accountId) {
+    if (accountId != TdlibAccount.NO_ID) {
+      return "messages" + accountId;
+    } else {
+      return "messages";
+    }
+  }
+
+  public static int getMessageNotificationId (int accountId, int notificationGroupId) {
+    return notificationGroupId;
   }
 
   @Target({ElementType.TYPE, ElementType.METHOD, ElementType.CONSTRUCTOR})

@@ -63,7 +63,7 @@ public class LiveLocationService extends Service implements LiveLocationManager.
   @Override
   public void onDestroy () {
     super.onDestroy();
-    U.stopForeground(this, true, TdlibNotificationManager.ID_LOCATION);
+    U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_LOCATION);
     TdlibManager.instance().liveLocation().removeListener(this);
   }
 
@@ -114,13 +114,13 @@ public class LiveLocationService extends Service implements LiveLocationManager.
       return;
     }
     if (!showingNotification) {
-      U.startForeground(this, TdlibNotificationManager.ID_LOCATION, buildNotification());
+      U.startForeground(this, TdlibNotificationManager.ID_FOREGROUND_LOCATION, buildNotification());
       return;
     }
     try {
       NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
       if (manager != null) {
-        manager.notify(TdlibNotificationManager.ID_LOCATION, buildNotification());
+        manager.notify(TdlibNotificationManager.ID_FOREGROUND_LOCATION, buildNotification());
       }
     } catch (Throwable ignored) { }
   }
