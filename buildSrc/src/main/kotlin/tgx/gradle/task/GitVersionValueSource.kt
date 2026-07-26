@@ -39,13 +39,16 @@ abstract class GitVersionValueSource : ValueSource<GitVersionValueSource.Details
       git[1],
       git[2].toLong(),
       git[3].let { remoteUrl ->
-        val match = Regex("^(?:(https?|ssh)://)?(?:git@)?([a-zA-Z.0-9\\-/]+)(?:.git)?$").matchEntire(remoteUrl)
-        require(match != null && match.groupValues.size == 3)
+        val match = Regex("^(?:(https?|ssh)://)?(?:git@)?([a-zA-Z.0-9]+(?::\\d+)?)[/:]([a-zA-Z.0-9\\-_][a-zA-Z.0-9\\-_/]*)(?:\\.git)?$").matchEntire(remoteUrl)
+        require(match != null && match.groupValues.size == 4) {
+          "Failed to parse URL: $remoteUrl"
+        }
         val protocol = match.groupValues[1]
-        val cleanUrl = match.groupValues[2]
+        val host = match.groupValues[2]
+        val path = match.groupValues[3]
         when (protocol) {
-          "ssh", "" -> "https://${cleanUrl}"
-          "http", "https" -> "${protocol}://${cleanUrl}"
+          "ssh", "" -> "https://${host}/${path}"
+          "http", "https" -> "${protocol}://${host}/${path}"
           else -> {
             error("Unknown protocol: $protocol")
           }
