@@ -193,15 +193,10 @@ target_link_libraries(${TGCALLS_LIB}
   cpufeatures
 )
 
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections,--icf=safe -Wl,--build-id=none -Wl,--exclude-libs,ALL -flto")
 target_link_options(${TGCALLS_LIB} PRIVATE
-  "-Wl,--exclude-libs,ALL"
-  "-Wl,--gc-sections,--icf=safe"
-)
-target_compile_options(${TGCALLS_LIB} PRIVATE
-  -fvisibility=hidden
-  -fvisibility-inlines-hidden
-  -flto
+  "$<$<CONFIG:Release>:-Wl,--gc-sections,--icf=safe>"
+  "$<$<CONFIG:Release>:-Wl,--exclude-libs,ALL>"
+  "$<$<CONFIG:Release>:-flto=full>"
 )
 
 if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "x86_64")

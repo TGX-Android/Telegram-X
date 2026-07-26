@@ -37,8 +37,7 @@ pushd "$THIRDPARTY_LIBRARIES/libvpx"
 # the function itself
 
 configure_abi() {
-  CPUFEATURES_DIR="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/sources/android/cpufeatures"
-  CFLAGS_="-DANDROID -fpic -fpie"
+  CFLAGS_="-DANDROID -O3 -fpic -fpie -ffunction-sections -fdata-sections -fvisibility=hidden -fvisibility-inlines-hidden -fno-strict-aliasing -fomit-frame-pointer"
   LDFLAGS_=""
   case ${FLAVOR} in
     legacy)
@@ -61,9 +60,11 @@ configure_abi() {
   case ${ABI} in
     arm64-v8a)
       ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_PRIMARY
+      CPUFEATURES_DIR="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/sources/android/cpufeatures"
+      validate_dir "$CPUFEATURES_DIR"
       TARGET="arm64-android-gcc"
       NDK_ABIARCH="aarch64-linux-android"
-      CFLAGS="${CFLAGS_} -O3 -march=armv8-a -I${CPUFEATURES_DIR}"
+      CFLAGS="${CFLAGS_} -march=armv8-a -I${CPUFEATURES_DIR}"
       LDFLAGS="${LDFLAGS_}"
       ASFLAGS=""
       CPU=arm64-v8a
@@ -71,30 +72,36 @@ configure_abi() {
     ;;
 	  armeabi-v7a)
       ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
+      CPUFEATURES_DIR="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/sources/android/cpufeatures"
+      validate_dir "$CPUFEATURES_DIR"
       TARGET="armv7-android-gcc"
-      EXTRA_PARAMS=(--enable-neon --disable-neon-asm)
+      EXTRA_PARAMS=(--enable-neon)
       NDK_ABIARCH="armv7a-linux-androideabi"
-      CFLAGS="${CFLAGS_} -Os -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__ -I${CPUFEATURES_DIR}"
+      CFLAGS="${CFLAGS_} -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__ -I${CPUFEATURES_DIR}"
       LDFLAGS="${LDFLAGS_}"
       ASFLAGS=""
       CPU=armv7-a
     ;;
     x86_64)
       ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_PRIMARY
+      CPUFEATURES_DIR="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/sources/android/cpufeatures"
+      validate_dir "$CPUFEATURES_DIR"
       TARGET="x86_64-android-gcc"
       NDK_ABIARCH="x86_64-linux-android"
-      CFLAGS="${CFLAGS_} -O3 -march=x86-64 -msse4.2 -mpopcnt -m64 -fPIC"
-      LDFLAGS=""
+      CFLAGS="${CFLAGS_} -march=x86-64 -msse4.2 -mpopcnt -m64 -fPIC"
+      LDFLAGS="${LDFLAGS_}"
       ASFLAGS="-D__ANDROID__"
       CPU=x86_64
       EXTRA_PARAMS=( )
     ;;
     x86)
       ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
+      CPUFEATURES_DIR="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/sources/android/cpufeatures"
+      validate_dir "$CPUFEATURES_DIR"
       TARGET="x86-android-gcc"
       NDK_ABIARCH="i686-linux-android"
-      CFLAGS="${CFLAGS_} -O3 -march=i686 -msse3 -mfpmath=sse -m32 -fPIC"
-      LDFLAGS="-m32"
+      CFLAGS="${CFLAGS_} -march=i686 -msse3 -mfpmath=sse -m32 -fPIC"
+      LDFLAGS="${LDFLAGS_} -m32"
       ASFLAGS="-D__ANDROID__"
       CPU=i686
       EXTRA_PARAMS=( )

@@ -76,14 +76,13 @@ else()
 endif()
 set(ORIGINAL_CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
 
-list(APPEND ADD_LINKER_FLAGS
-  "-Wl,--exclude-libs,ALL"
+add_compile_options(
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-ffunction-sections>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fdata-sections>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fvisibility=hidden>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fvisibility-inlines-hidden>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
 )
-list(APPEND ADD_LINKER_FLAGS
-  "-Wl,--gc-sections,--icf=safe"
-)
-Join(ADD_LINKER_FLAGS "${ADD_LINKER_FLAGS}" " ")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ADD_LINKER_FLAGS}")
 
 # == Libraries ==
 
@@ -213,14 +212,11 @@ target_compile_definitions(${NATIVE_LIB} PUBLIC
 
   TDLIB_TDAPI_CLASS_PATH="org/drinkless/tdlib/TdApi"
 )
-target_compile_options(${NATIVE_LIB} PUBLIC
+target_compile_options(${NATIVE_LIB} PRIVATE
   -Wall -Werror -Wno-deprecated-declarations
   -Wno-macro-redefined -Wno-unused-variable
   -fno-math-errno -fno-strict-aliasing -funroll-loops
-  -ffast-math
   -fno-rtti
-  -fvisibility=hidden
-  -fvisibility-inlines-hidden
 )
 # TODO: remove -Wno-macro-redefined -Wno-unused-variable
 # only "${THIRDPARTY_DIR}/androidx-media/ffmpeg_jni.cc" needs them.
@@ -257,6 +253,12 @@ target_link_libraries(${NATIVE_LIB}
   EGL
   android
   cpufeatures
+)
+
+target_link_options(${NATIVE_LIB} PRIVATE
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-Wl,--gc-sections,--icf=safe>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-Wl,--exclude-libs,ALL>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
 )
 
 if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "x86_64")

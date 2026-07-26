@@ -40,7 +40,6 @@ function build_one {
   validate_file "$STRIP"
   validate_file "$YASM"
   validate_file "$RANLIB"
-  validate_dir "$LINK"
 
   echo "Cleaning..."
   rm -f config.h
@@ -60,18 +59,15 @@ function build_one {
   --arch="$ARCH" \
   --target-os=linux \
   --enable-cross-compile \
-  --x86asmexe="$YASM" \
   --prefix="$PREFIX" \
   --enable-pic \
   --disable-shared \
   --enable-static \
-  --enable-asm \
-  --enable-inline-asm \
-  --enable-x86asm \
+  --enable-small \
   --cross-prefix="$CROSS_PREFIX"- \
   --sysroot="$SYSROOT" \
-  --extra-cflags="-fvisibility=hidden -ffunction-sections -fdata-sections -g -fno-omit-frame-pointer -w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS -I$LIBVPX_INCLUDE_DIR --static -fPIC" \
-  --extra-ldflags="-L$LIBVPX_LIB_DIR $EXTRA_LDFLAGS -L -lvpx -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
+  --extra-cflags="-ffunction-sections -fdata-sections -fvisibility=hidden -fvisibility-inlines-hidden -flto=full -fno-strict-aliasing -fno-fast-math -ftree-vectorize -funroll-loops -w -O2 -DCONFIG_LINUX_PERF=0 $OPTIMIZE_CFLAGS -I$LIBVPX_INCLUDE_DIR -fPIC" \
+  --extra-ldflags="-L$LIBVPX_LIB_DIR $EXTRA_LDFLAGS -lvpx -fPIC -flto=full" \
   --extra-libs="$EXTRA_LIBS" \
   \
   --enable-version3 \
@@ -81,7 +77,6 @@ function build_one {
   \
   --disable-doc \
   --disable-htmlpages \
-  --disable-avx \
   \
   --disable-everything \
   --disable-network \
@@ -89,10 +84,6 @@ function build_one {
   --disable-avdevice \
   --disable-debug \
   --disable-programs \
-  --disable-network \
-  --disable-ffplay \
-  --disable-ffprobe \
-  --disable-avdevice \
   \
   --enable-runtime-cpudetect \
   --enable-pthreads \
@@ -187,14 +178,12 @@ configure_and_build() {
       ARCH=aarch64
       CPU=armv8-a
       PLATFORM=arm64-v8a
-      ADDITIONAL_CONFIGURE_FLAGS=(--enable-optimizations --disable-x86asm)
-      OPTIMIZE_CFLAGS=""
-      EXTRA_LIBS="-lunwind"
+      ADDITIONAL_CONFIGURE_FLAGS=(--disable-x86asm --enable-neon)
+      OPTIMIZE_CFLAGS="-march=${CPU}"
+      EXTRA_LIBS=""
       EXTRA_LDFLAGS=""
-      # FIXME ADDITIONAL_CONFIGURE_FLAGS="--enable-neon --enable-optimizations"
 
       PREFIX=./build/$FLAVOR/$PLATFORM
-      LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
       CC=${CROSS_PREFIX}${ANDROID_API}-clang
       CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
       LD=$CC
@@ -205,25 +194,24 @@ configure_and_build() {
       ARCH=x86_64
       CPU=x86_64
       PLATFORM=x86_64
-      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --disable-x86asm)
+      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --enable-x86asm --x86asmexe="$YASM")
       OPTIMIZE_CFLAGS=""
       EXTRA_LIBS="-lunwind"
       EXTRA_LDFLAGS=""
 
       PREFIX=./build/$FLAVOR/$PLATFORM
-      LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
       CC=${CROSS_PREFIX}${ANDROID_API}-clang
       CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
       LD=$CC
       AS=$CC
     ;;
 	  armeabi-v7a)
-      CROSS_PREFIX=$PREBUILT/bin/arm-linux-androideabi
+      CROSS_PREFIX=$PREBUILT/bin/armv7a-linux-androideabi
       ARCH=arm
       CPU=armv7-a
       PLATFORM=armv7-a
       ADDITIONAL_CONFIGURE_FLAGS=(--enable-neon --disable-x86asm)
-      OPTIMIZE_CFLAGS="-marm -march=$CPU -mfloat-abi=softfp"
+      OPTIMIZE_CFLAGS="-marm -march=${CPU} -mtune=cortex-a8 -mfloat-abi=softfp"
       if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
         LD=$CC
         LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
@@ -237,7 +225,6 @@ configure_and_build() {
       fi
 
       PREFIX=./build/$FLAVOR/$PLATFORM
-      LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
       CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
       CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
       AS=$CC
@@ -247,7 +234,7 @@ configure_and_build() {
       ARCH=x86
       CPU=i686
       PLATFORM=i686
-      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --disable-x86asm)
+      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --enable-x86asm --x86asmexe="$YASM")
       OPTIMIZE_CFLAGS="-march=$CPU"
       if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
         LD=$CC
@@ -261,7 +248,6 @@ configure_and_build() {
         EXTRA_LIBS="-lgcc"
       fi
       PREFIX=./build/$FLAVOR/$PLATFORM
-      LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
       CC=${CROSS_PREFIX}${ANDROID_API}-clang
       CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
       AS=$CC
