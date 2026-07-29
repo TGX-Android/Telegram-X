@@ -46,14 +46,14 @@ import tgx.td.ChatId;
 public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup> {
   private final TdlibNotificationManager context;
   private final Tdlib tdlib;
+  private final int baseNotificationId;
 
-  private final String tag;
   private final TdlibNotificationStyleDelegate style;
 
   TdlibNotificationHelper (TdlibNotificationManager context, Tdlib tdlib) {
     this.context = context;
     this.tdlib = tdlib;
-    this.tag = TdlibNotificationManager.getMessageNotificationTag(tdlib.accountId());
+    this.baseNotificationId = TdlibNotificationManager.calculateBaseNotificationId(tdlib);
     this.style = new TdlibNotificationStyle(this, tdlib);
   }
 
@@ -123,7 +123,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     if (group != null && !group.isEmpty()) {
       tdlib.client().send(new TdApi.RemoveNotificationGroup(extras.notificationGroupId, extras.maxNotificationId), tdlib.silentHandler());
     } else {
-      String notificationTag = TdlibNotificationManager.getMessageNotificationTag(extras.accountId);
+      String notificationTag = TdlibNotificationManager.getMessageNotificationTag(extras.accountId, extras.category);
       int notificationId = getNotificationIdForGroup(extras.notificationGroupId);
       NotificationManagerCompat manager = manager();
       hideUnknownNotification(manager, notificationTag, notificationId, false, extras);
@@ -311,16 +311,22 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     return tdlib;
   }
 
-  public String tag () {
-    return tag;
+  public String tag (int category) {
+    return TdlibNotificationManager.getMessageNotificationTag(tdlib.accountId(), category);
   }
 
   public int getBaseNotificationId (int category) {
-    return 1 + category;
+    return baseNotificationId + category;
   }
 
   public int getNotificationIdForGroup (int groupId) {
-    return 1 + TdlibNotificationGroup.MAX_CATEGORY + 1 + groupId;
+    int offset = TdlibNotificationGroup.MAX_CATEGORY + 1 + groupId;
+    int available = Integer.MAX_VALUE - baseNotificationId;
+    if (offset >= available) {
+      return 1 + offset;
+    } else {
+      return baseNotificationId + offset;
+    }
   }
 
   public boolean isEmpty () {

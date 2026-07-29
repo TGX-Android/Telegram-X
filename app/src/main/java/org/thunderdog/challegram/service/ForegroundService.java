@@ -222,7 +222,7 @@ public class ForegroundService extends Service {
     if (!StringUtils.isEmpty(text)) {
       b.setContentText(text);
     }
-    U.startForeground(this, TdlibNotificationManager.ID_PENDING_TASK, b.build());
+    U.startForeground(this, TdlibNotificationManager.ID_FOREGROUND_PENDING_TASK, b.build());
   }
 
   @Nullable

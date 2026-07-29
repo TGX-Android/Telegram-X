@@ -80,19 +80,27 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   public static final int ID_FOREGROUND_LOCATION = Integer.MAX_VALUE - 2;
   public static final int ID_FOREGROUND_ONGOING_CALL_NOTIFICATION = Integer.MAX_VALUE - 3;
   public static final int ID_FOREGROUND_INCOMING_CALL_NOTIFICATION = Integer.MAX_VALUE - 4;
-  public static final int ID_PENDING_TASK = Integer.MAX_VALUE - 5;
-  public static final int ID_BASE_NOTIFICATION = Integer.MAX_VALUE - 6;
+  public static final int ID_FOREGROUND_PENDING_TASK = Integer.MAX_VALUE - 5;
 
-  public static String getMessageNotificationTag (int accountId) {
+  public static final int IDS_PER_ACCOUNT = (int) ((long) (Integer.MAX_VALUE - 6) / (long) TdlibAccount.ID_MAX) - 1;
+
+  public static String getMessageNotificationTag (int accountId, int category) {
+    String prefix = switch (category) {
+      case TdlibNotificationGroup.CATEGORY_PRIVATE -> "pm";
+      case TdlibNotificationGroup.CATEGORY_GROUPS -> "groups";
+      case TdlibNotificationGroup.CATEGORY_CHANNELS -> "channels";
+      case TdlibNotificationGroup.CATEGORY_SECRET -> "sc";
+      default -> "chats";
+    };
     if (accountId != TdlibAccount.NO_ID) {
-      return "messages" + accountId;
+      return prefix + "_" + accountId;
     } else {
-      return "messages";
+      return prefix;
     }
   }
 
-  public static int getMessageNotificationId (int accountId, int notificationGroupId) {
-    return notificationGroupId;
+  public static int calculateBaseNotificationId (Tdlib tdlib) {
+    return 1 + IDS_PER_ACCOUNT * tdlib.id();
   }
 
   @Target({ElementType.TYPE, ElementType.METHOD, ElementType.CONSTRUCTOR})

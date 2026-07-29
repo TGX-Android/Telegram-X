@@ -474,7 +474,7 @@ public class U {
         }
         case TdlibNotificationManager.ID_FOREGROUND_MUSIC:
         case TdlibNotificationManager.ID_FOREGROUND_LOCATION:
-        case TdlibNotificationManager.ID_PENDING_TASK:
+        case TdlibNotificationManager.ID_FOREGROUND_PENDING_TASK:
           // android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST;
           break;
         default:
