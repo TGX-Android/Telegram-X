@@ -192,10 +192,10 @@ configure_and_build() {
     x86_64)
       CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android
       ARCH=x86_64
-      CPU=x86_64
+      CPU=x86-64
       PLATFORM=x86_64
-      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --enable-x86asm --x86asmexe="$YASM")
-      OPTIMIZE_CFLAGS=""
+      ADDITIONAL_CONFIGURE_FLAGS=(--enable-x86asm --x86asmexe="$YASM")
+      OPTIMIZE_CFLAGS="-march=${CPU}"
       EXTRA_LIBS="-lunwind"
       EXTRA_LDFLAGS=""
 
@@ -234,7 +234,7 @@ configure_and_build() {
       ARCH=x86
       CPU=i686
       PLATFORM=i686
-      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --enable-x86asm --x86asmexe="$YASM")
+      ADDITIONAL_CONFIGURE_FLAGS=(--enable-x86asm --x86asmexe="$YASM")
       OPTIMIZE_CFLAGS="-march=$CPU"
       if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
         LD=$CC
