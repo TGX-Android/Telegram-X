@@ -234,8 +234,8 @@ configure_and_build() {
       ARCH=x86
       CPU=i686
       PLATFORM=i686
-      ADDITIONAL_CONFIGURE_FLAGS=(--enable-x86asm --x86asmexe="$YASM")
-      OPTIMIZE_CFLAGS="-march=$CPU"
+      ADDITIONAL_CONFIGURE_FLAGS=(--disable-x86asm)
+      OPTIMIZE_CFLAGS=""
       if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
         LD=$CC
         LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
