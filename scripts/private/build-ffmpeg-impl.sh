@@ -10,14 +10,14 @@ if [ -z "$ANDROID_SDK_ROOT" ]; then
   echo -e "${STYLE_ERROR}Failed! SDK is empty. Run 'export ANDROID_SDK_ROOT=[PATH_TO_SDK]'${STYLE_END}"
   exit
 fi
-validate_dir "$ANDROID_SDK_ROOT"
+validate_dir "$ANDROID_SDK_ROOT" || (echo "SDK not found!" && exit 1)
 
 function build_one {
   if [ -z "$ANDROID_NDK_ROOT" ]; then
     echo -e "${STYLE_ERROR}Failed! NDK is empty. Run 'export ANDROID_NDK_ROOT=[PATH_TO_NDK]'${STYLE_END}"
     exit
   fi
-  validate_dir "$ANDROID_NDK_ROOT"
+  validate_dir "$ANDROID_NDK_ROOT" || (echo "NDK not found!" && exit 1)
 
   LIBVPX_INCLUDE_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/$PLATFORM/include"
   LIBVPX_LIB_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/$PLATFORM/lib"
@@ -45,7 +45,7 @@ function build_one {
   rm -f config.h
   make clean || true
 
-  echo "Configuring ffmpeg: ${PLATFORM} ${FLAVOR} (${ANDROID_API}), NDK: ${ANDROID_NDK_ROOT}"
+  echo "Configuring ffmpeg: ${PLATFORM} ${FLAVOR} (${ANDROID_API}), NDK: ${ANDROID_NDK_ROOT}, extras: ${OPTIMIZE_CFLAGS}, vpx: ${LIBVPX_LIB_DIR}"
 
   ./configure \
   --nm="${NM}" \
@@ -212,6 +212,9 @@ configure_and_build() {
       PLATFORM=armv7-a
       ADDITIONAL_CONFIGURE_FLAGS=(--enable-neon --disable-x86asm)
       OPTIMIZE_CFLAGS="-marm -march=${CPU} -mtune=cortex-a8 -mfloat-abi=softfp"
+      CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
+      CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
+      AS=$CC
       if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
         LD=$CC
         LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
@@ -223,18 +226,17 @@ configure_and_build() {
         EXTRA_LDFLAGS=""
         EXTRA_LIBS="-lgcc"
       fi
-
       PREFIX=./build/$FLAVOR/$PLATFORM
-      CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
-      CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
-      AS=$CC
     ;;
     x86)
       CROSS_PREFIX=$PREBUILT/bin/i686-linux-android
+      CC=${CROSS_PREFIX}${ANDROID_API}-clang
+      CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+      AS=$CC
       ARCH=x86
       CPU=i686
       PLATFORM=i686
-      ADDITIONAL_CONFIGURE_FLAGS=(--disable-x86asm)
+      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --disable-x86asm)
       OPTIMIZE_CFLAGS=""
       if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
         LD=$CC
@@ -248,9 +250,6 @@ configure_and_build() {
         EXTRA_LIBS="-lgcc"
       fi
       PREFIX=./build/$FLAVOR/$PLATFORM
-      CC=${CROSS_PREFIX}${ANDROID_API}-clang
-      CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-      AS=$CC
     ;;
     *)
       echo "Unknown abi: ${ABI}" >&2
