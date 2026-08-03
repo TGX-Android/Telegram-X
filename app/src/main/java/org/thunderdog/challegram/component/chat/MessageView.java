@@ -111,6 +111,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final DoubleImageReceiver replyReceiver;
   private final RefreshRateLimiter refreshRateLimiter, highRefreshRateLimiter;
   private ComplexReceiver footerTextMediaReceiver;
+  private ComplexReceiver replyMarkupTextMediaReceiver;
 
   private ImageReceiver contentReceiver;
   private DoubleImageReceiver previewReceiver;
@@ -194,6 +195,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if (complexReceiver != null) {
       complexReceiver.performDestroy();
     }
+    if (replyMarkupTextMediaReceiver != null) {
+      replyMarkupTextMediaReceiver.performDestroy();
+    }
     if (msg != null) {
       msg.onDestroy();
     }
@@ -243,6 +247,15 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public void invalidateFooterTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia) {
     invalidateTextMediaReceiver(msg, text, textMedia, getFooterTextMediaReceiver(true));
+  }
+
+  public void invalidateReplyMarkupTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia) {
+    if (this.msg == msg) {
+      ComplexReceiver receiver = getReplyMarkupTextMediaReceiver(true);
+      if (!text.invalidateMediaContent(receiver, textMedia)) {
+        msg.requestReplyMarkupTextMedia(receiver);
+      }
+    }
   }
 
   private void invalidateTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia, @NonNull ComplexReceiver receiver) {
@@ -482,6 +495,19 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return footerTextMediaReceiver;
   }
 
+  public ComplexReceiver getReplyMarkupTextMediaReceiver (boolean force) {
+    if (replyMarkupTextMediaReceiver == null && force) {
+      replyMarkupTextMediaReceiver = new ComplexReceiver()
+        .setUpdateListener(refreshRateLimiter);
+      if (isAttached) {
+        replyMarkupTextMediaReceiver.attach();
+      } else {
+        replyMarkupTextMediaReceiver.detach();
+      }
+    }
+    return replyMarkupTextMediaReceiver;
+  }
+
   private boolean isAttached = true;
 
   public void onAttachedToRecyclerView () {
@@ -498,6 +524,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       emojiStatusReceiver.attach();
       replyReceiver.attach();
       replyTextMediaReceiver.attach();
+      if (replyMarkupTextMediaReceiver != null) {
+        replyMarkupTextMediaReceiver.attach();
+      }
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
         contentReceiver.attach();
         previewReceiver.attach();
@@ -521,6 +550,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       emojiStatusReceiver.detach();
       replyReceiver.detach();
       replyTextMediaReceiver.detach();
+      if (replyMarkupTextMediaReceiver != null) {
+        replyMarkupTextMediaReceiver.detach();
+      }
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
         contentReceiver.detach();
         previewReceiver.detach();

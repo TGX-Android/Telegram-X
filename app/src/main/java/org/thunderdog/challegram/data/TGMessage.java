@@ -2836,6 +2836,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     performWithViews(view -> view.invalidateReplyTextMediaReceiver(this, text, textMedia));
   }
 
+  public final void invalidateReplyMarkupTextMedia () {
+    final boolean force = inlineKeyboard != null && inlineKeyboard.needTextMedia();
+    performWithViews(view -> {
+      ComplexReceiver receiver = view.getReplyMarkupTextMediaReceiver(force);
+      if (receiver != null) {
+        requestReplyMarkupTextMedia(receiver);
+      }
+    });
+  }
+
+  public final void invalidateReplyMarkupTextMedia (@NonNull Text text, @Nullable TextMedia textMedia) {
+    performWithViews(view -> view.invalidateReplyMarkupTextMediaReceiver(this, text, textMedia));
+  }
+
   // Touch
 
   public boolean allowLongPress (float x, float y) {
@@ -4289,6 +4303,23 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (receiver != null) {
         receiver.clear();
       }
+    }
+
+    if (inlineKeyboard != null && inlineKeyboard.needTextMedia()) {
+      inlineKeyboard.requestTextMedia(view.getReplyMarkupTextMediaReceiver(true));
+    } else {
+      ComplexReceiver receiver = view.getReplyMarkupTextMediaReceiver(false);
+      if (receiver != null) {
+        receiver.clear();
+      }
+    }
+  }
+
+  public final void requestReplyMarkupTextMedia (ComplexReceiver textMediaReceiver) {
+    if (inlineKeyboard != null) {
+      inlineKeyboard.requestTextMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
     }
   }
 
@@ -6269,6 +6300,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       forwardInfo.destroy();
     if (replyData != null)
       replyData.performDestroy();
+    if (inlineKeyboard != null)
+      inlineKeyboard.performDestroy();
     messageReactions.performDestroy();
     setViewAttached(false);
     onMessageContainerDestroyed();
