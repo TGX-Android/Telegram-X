@@ -4408,6 +4408,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (emojiLayout != null) {
         emojiLayout.destroy();
       }
+      if (keyboardLayout != null) {
+        keyboardLayout.performDestroy();
+      }
       manager.release();
     }
 
@@ -7561,7 +7564,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       keyboardWrapper = new ScrollView(context());
       ViewSupport.setThemedBackground(keyboardWrapper, ColorId.chatKeyboard, this);
 
-      keyboardLayout = new CommandKeyboardLayout(context());
+      keyboardLayout = new CommandKeyboardLayout(context(), tdlib);
       keyboardLayout.setThemeProvider(this);
       keyboardLayout.setCallback(this);
 
