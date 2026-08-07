@@ -15,8 +15,11 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
+import android.os.Build;
+import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -157,6 +160,12 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
     }
     text.setGravity(Gravity.CENTER);
     text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+    text.setMaxLines(2);
+    text.setEllipsize(TextUtils.TruncateAt.END);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      text.setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
+      text.setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE);
+    }
     text.setOnClickListener(this);
     //noinspection ResourceType
     text.setLayoutParams(new MarginLayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
