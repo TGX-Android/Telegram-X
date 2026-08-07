@@ -9,11 +9,14 @@ echo "Checking Android SDK: ${ANDROID_SDK_ROOT}..." && (test -d "$ANDROID_SDK_RO
 # Fetching android CLI
 if ! command -v android >/dev/null 2>&1; then
   echo "Installing android CLI..."
-  case "$PLATFORM" in
-    mac) curl -fsSL https://dl.google.com/android/cli/latest/darwin_arm64/install.sh | bash ;;
-    linux) curl -fsSL https://dl.google.com/android/cli/latest/linux_x86_64/install.sh | bash ;;
-    *) echo "android CLI has no installer for platform: $PLATFORM" && exit 1 ;;
+  HOST_ARCH="$(uname -m)"
+  case "$PLATFORM-$HOST_ARCH" in
+    mac-arm64|mac-aarch64) CLI_PLATFORM=darwin_arm64 ;;
+    mac-x86_64) CLI_PLATFORM=darwin_x86_64 ;;
+    linux-x86_64) CLI_PLATFORM=linux_x86_64 ;;
+    *) echo "android CLI has no installer for platform: $PLATFORM ($HOST_ARCH)" && exit 1 ;;
   esac
+  curl -fsSL "https://dl.google.com/android/cli/latest/${CLI_PLATFORM}/install.sh" | bash
   PATH="$HOME/.local/bin:$PATH"
 fi
 
