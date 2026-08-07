@@ -41,7 +41,7 @@ esac
 if [ ! "$IGNORE_SDK" ]; then
   if [[ ! -d ${ANDROID_SDK_ROOT} ]]; then
     if [[ "$1" == "--default-sdk-root" ]]; then
-      ANDROID_SDK_ROOT=$DEFAULT_ANDROID_SDK
+      ANDROID_SDK_ROOT=$DEFAULT_ANDROID_SDK_ROOT
     else
       while true; do
         read -r -p "ANDROID_SDK_ROOT is not set. Default is ${DEFAULT_ANDROID_SDK_ROOT}. Proceed with default? [Y/n]: " yn
@@ -96,7 +96,7 @@ export SED
 THIRDPARTY_LIBRARIES="$(pwd)/app/jni/third_party"
 export THIRDPARTY_LIBRARIES
 
-PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$(pwd)/scripts:$(pwd)/scripts/private:$PATH"
+PATH="$(pwd)/scripts:$(pwd)/scripts/private:$PATH"
 export PATH
 
 export WIN_PATCH_REQUIRED
