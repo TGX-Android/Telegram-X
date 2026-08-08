@@ -15,6 +15,13 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
+import android.os.Build;
+import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -26,19 +33,24 @@ import android.widget.ScrollView;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.emoji.CustomEmojiId;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.v.EditText;
-import org.thunderdog.challegram.widget.EmojiTextView;
+import org.thunderdog.challegram.widget.CustomEmojiTextView;
 import org.thunderdog.challegram.widget.TextView;
 
 import me.vkryl.android.ViewUtils;
+import me.vkryl.core.lambda.Destroyable;
+import tgx.td.Td;
 
-public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver.OnPreDrawListener, View.OnClickListener {
+public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver.OnPreDrawListener, View.OnClickListener, Destroyable {
   private boolean oneTime;
   private int rowsCount;
   private int[] columnCount;
@@ -51,8 +63,11 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
 
   private Callback callback;
 
-  public CommandKeyboardLayout (Context context) {
+  private final @Nullable Tdlib tdlib;
+
+  public CommandKeyboardLayout (Context context, @Nullable Tdlib tdlib) {
     super(context);
+    this.tdlib = tdlib;
     spacingBig = Screen.dp(15f);
     spacing = Screen.dp(10f);
     minSize = Screen.dp(42f);
@@ -75,6 +90,7 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
   public void setKeyboard (TdApi.ReplyMarkupShowKeyboard keyboard) {
     oneTime = keyboard.oneTime;
     fillLayout(keyboard.rows);
+    fitPending = true;
     resizeKeyboard(keyboard.resizeKeyboard);
     layoutChildren(Screen.currentWidth(), false, 0);
     requestLayout();
@@ -103,7 +119,8 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
           text.setVisibility(View.VISIBLE);
         }
         text.setTag(c);
-        text.setText(c.text != null ? c.text : "");
+        text.setText(buildButtonText(c));
+        applyButtonStyle(text, c.style);
 
         j++;
       }
@@ -117,6 +134,9 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
         if (i > 10) {
           if (themeProvider != null) {
             themeProvider.removeThemeListenerByTarget(view);
+          }
+          if (view instanceof Destroyable) {
+            ((Destroyable) view).performDestroy();
           }
           removeViewAt(i);
         } else {
@@ -134,24 +154,126 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
 
   private @Nullable ViewController<?> themeProvider;
 
+  private static final float MAX_BUTTON_TEXT_SIZE_DP = 16f;
+  private static final float MIN_BUTTON_TEXT_SIZE_DP = 11f;
+
+  private boolean fitPending;
+
+  // Auto-size can leave mid-word breaks: a two-line layout with a split word still
+  // "fits" its constraints. Instead shrink the font until the widest word (with the
+  // emoji icon span measured through the paint) fits the button, so greedy breaking
+  // never has to split inside a word.
+  private void fitButtonText (TextView text, int availWidth) {
+    CharSequence label = text.getText();
+    if (label == null || label.length() == 0 || availWidth <= 0) {
+      return;
+    }
+    TextPaint paint = new TextPaint(text.getPaint());
+    float fitSize = MIN_BUTTON_TEXT_SIZE_DP;
+    for (float size = MAX_BUTTON_TEXT_SIZE_DP; size >= MIN_BUTTON_TEXT_SIZE_DP; size -= .5f) {
+      paint.setTextSize(Screen.dpf(size));
+      if (maxWordWidth(label, paint) <= availWidth && lineCount(label, paint, availWidth) <= 2) {
+        fitSize = size;
+        break;
+      }
+    }
+    if (text.getTextSize() != Screen.dpf(fitSize)) {
+      text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fitSize);
+    }
+  }
+
+  @SuppressWarnings("deprecation")
+  private static int lineCount (CharSequence label, TextPaint paint, int availWidth) {
+    return new StaticLayout(label, paint, Math.max(availWidth, 1), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false).getLineCount();
+  }
+
+  private static float maxWordWidth (CharSequence label, TextPaint paint) {
+    float max = 0f;
+    int length = label.length();
+    int start = 0;
+    for (int i = 0; i <= length; i++) {
+      if (i == length || label.charAt(i) == ' ') {
+        if (i > start) {
+          max = Math.max(max, Layout.getDesiredWidth(label, start, i, paint));
+        }
+        start = i + 1;
+      }
+    }
+    return max;
+  }
+
   private TextView genButton () {
-    TextView text = new EmojiTextView(getContext());
+    TextView text = new CustomEmojiTextView(getContext(), tdlib);
     text.setScrollDisabled(true);
     ViewUtils.setBackground(text, Theme.rectSelector(4f, 0f, ColorId.chatKeyboardButton));
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(text);
     }
     text.setGravity(Gravity.CENTER);
-    text.setTextColor(Theme.textAccentColor());
-    if (themeProvider != null) {
-      themeProvider.addThemeTextAccentColorListener(text);
+    text.setMaxLines(2);
+    text.setEllipsize(TextUtils.TruncateAt.END);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      text.setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
+      text.setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE);
     }
-    text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+    text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, MAX_BUTTON_TEXT_SIZE_DP);
     text.setOnClickListener(this);
     //noinspection ResourceType
     text.setLayoutParams(new MarginLayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
     Views.setClickable(text);
     return text;
+  }
+
+  private CharSequence buildButtonText (TdApi.KeyboardButton button) {
+    String text = button.text != null ? button.text : "";
+    if (button.iconCustomEmojiId != 0 && tdlib != null) {
+      SpannableStringBuilder b = new SpannableStringBuilder();
+      b.append(EmojiStatusHelper.EMOJI);
+      b.setSpan(new CustomEmojiId(button.iconCustomEmojiId, false), 0, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      if (!text.isEmpty()) {
+        b.append(' ').append(text);
+      }
+      return b;
+    }
+    return text;
+  }
+
+  private void applyButtonStyle (TextView text, @Nullable TdApi.ButtonStyle style) {
+    final @ColorId int colorId = resolveStyleColorId(style);
+    text.setTextColor(Theme.getColor(colorId));
+    if (themeProvider != null) {
+      themeProvider.addOrUpdateThemeTextColorListener(text, colorId);
+    }
+  }
+
+  private static @ColorId int resolveStyleColorId (@Nullable TdApi.ButtonStyle style) {
+    if (style == null) {
+      return ColorId.text;
+    }
+    switch (style.getConstructor()) {
+      case TdApi.ButtonStyleDefault.CONSTRUCTOR:
+        return ColorId.text;
+      case TdApi.ButtonStylePrimary.CONSTRUCTOR:
+        return ColorId.textNeutral;
+      case TdApi.ButtonStyleSuccess.CONSTRUCTOR:
+        return ColorId.iconPositive;
+      case TdApi.ButtonStyleDanger.CONSTRUCTOR:
+        return ColorId.textNegative;
+      default: {
+        Td.assertButtonStyle_da99259d();
+        throw Td.unsupported(style);
+      }
+    }
+  }
+
+  @Override
+  public void performDestroy () {
+    for (int i = getChildCount() - 1; i >= 0; i--) {
+      View view = getChildAt(i);
+      if (view instanceof Destroyable) {
+        ((Destroyable) view).performDestroy();
+      }
+    }
   }
 
   @Override
@@ -240,7 +362,8 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
       wasChanged = 0;
     }
 
-    if (changed) {
+    if (changed || fitPending) {
+      fitPending = false;
       layoutChildren(width, true, t);
     } else {
       for (int i = 0; i < getChildCount(); i++) {
@@ -275,6 +398,9 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
       View v = getChildAt(i);
       layoutChild(v, cx, cy, cw, ch);
       if (layout) {
+        if (v instanceof TextView) {
+          fitButtonText((TextView) v, cw - Screen.dp(8f));
+        }
         v.measure(MeasureSpec.makeMeasureSpec(cw, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(ch, MeasureSpec.EXACTLY));
         v.layout(cx, top + cy, cw + cx, top + cy + ch);
       }
