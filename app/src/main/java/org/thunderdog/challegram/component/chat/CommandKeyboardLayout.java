@@ -19,6 +19,8 @@ import android.os.Build;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -88,6 +90,7 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
   public void setKeyboard (TdApi.ReplyMarkupShowKeyboard keyboard) {
     oneTime = keyboard.oneTime;
     fillLayout(keyboard.rows);
+    fitPending = true;
     resizeKeyboard(keyboard.resizeKeyboard);
     layoutChildren(Screen.currentWidth(), false, 0);
     requestLayout();
@@ -151,6 +154,54 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
 
   private @Nullable ViewController<?> themeProvider;
 
+  private static final float MAX_BUTTON_TEXT_SIZE_DP = 16f;
+  private static final float MIN_BUTTON_TEXT_SIZE_DP = 11f;
+
+  private boolean fitPending;
+
+  // Auto-size can leave mid-word breaks: a two-line layout with a split word still
+  // "fits" its constraints. Instead shrink the font until the widest word (with the
+  // emoji icon span measured through the paint) fits the button, so greedy breaking
+  // never has to split inside a word.
+  private void fitButtonText (TextView text, int availWidth) {
+    CharSequence label = text.getText();
+    if (label == null || label.length() == 0 || availWidth <= 0) {
+      return;
+    }
+    TextPaint paint = new TextPaint(text.getPaint());
+    float fitSize = MIN_BUTTON_TEXT_SIZE_DP;
+    for (float size = MAX_BUTTON_TEXT_SIZE_DP; size >= MIN_BUTTON_TEXT_SIZE_DP; size -= .5f) {
+      paint.setTextSize(Screen.dpf(size));
+      if (maxWordWidth(label, paint) <= availWidth && lineCount(label, paint, availWidth) <= 2) {
+        fitSize = size;
+        break;
+      }
+    }
+    if (text.getTextSize() != Screen.dpf(fitSize)) {
+      text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fitSize);
+    }
+  }
+
+  @SuppressWarnings("deprecation")
+  private static int lineCount (CharSequence label, TextPaint paint, int availWidth) {
+    return new StaticLayout(label, paint, Math.max(availWidth, 1), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false).getLineCount();
+  }
+
+  private static float maxWordWidth (CharSequence label, TextPaint paint) {
+    float max = 0f;
+    int length = label.length();
+    int start = 0;
+    for (int i = 0; i <= length; i++) {
+      if (i == length || label.charAt(i) == ' ') {
+        if (i > start) {
+          max = Math.max(max, Layout.getDesiredWidth(label, start, i, paint));
+        }
+        start = i + 1;
+      }
+    }
+    return max;
+  }
+
   private TextView genButton () {
     TextView text = new CustomEmojiTextView(getContext(), tdlib);
     text.setScrollDisabled(true);
@@ -159,13 +210,13 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
       themeProvider.addThemeInvalidateListener(text);
     }
     text.setGravity(Gravity.CENTER);
-    text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
     text.setMaxLines(2);
     text.setEllipsize(TextUtils.TruncateAt.END);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       text.setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
       text.setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE);
     }
+    text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, MAX_BUTTON_TEXT_SIZE_DP);
     text.setOnClickListener(this);
     //noinspection ResourceType
     text.setLayoutParams(new MarginLayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
@@ -311,7 +362,8 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
       wasChanged = 0;
     }
 
-    if (changed) {
+    if (changed || fitPending) {
+      fitPending = false;
       layoutChildren(width, true, t);
     } else {
       for (int i = 0; i < getChildCount(); i++) {
@@ -346,6 +398,9 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
       View v = getChildAt(i);
       layoutChild(v, cx, cy, cw, ch);
       if (layout) {
+        if (v instanceof TextView) {
+          fitButtonText((TextView) v, cw - Screen.dp(8f));
+        }
         v.measure(MeasureSpec.makeMeasureSpec(cw, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(ch, MeasureSpec.EXACTLY));
         v.layout(cx, top + cy, cw + cx, top + cy + ch);
       }
