@@ -48,6 +48,7 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -79,6 +80,7 @@ import tgx.td.Td;
 public class TGInlineKeyboard {
   private static final float CURRENCY_TEXT_SIZE_DP = 10f;
   private static final float BUTTON_TEXT_SIZE_DP = 14f;
+  private static final float MIN_BUTTON_TEXT_SIZE_DP = 10f;
 
   private final @NonNull TGMessage context;
   private final @NonNull TGMessage parent;
@@ -472,6 +474,7 @@ public class TGInlineKeyboard {
     private @Nullable Text iconText;
     private @ColorId int styleColorId;
     private int iconTextColor;
+    private float textSizeDp = BUTTON_TEXT_SIZE_DP;
 
     public Button (TGInlineKeyboard context, @NonNull TGMessage parent, TdApi.InlineKeyboardButton button, int maxWidth) {
       this.context = context;
@@ -480,13 +483,14 @@ public class TGInlineKeyboard {
       this.dirtyRect = new Rect();
       String text = uppercase(cleanButtonText(button.text));
       this.needFakeBold = Text.needFakeBold(text);
-      TextPaint textPaint = Paints.getBoldPaint14(needFakeBold);
       this.iconCustomEmojiId = button.iconCustomEmojiId;
       if (button.iconCustomEmojiId != 0) {
         this.iconText = buildIconText(button.iconCustomEmojiId);
       }
       this.styleColorId = resolveStyleColorId(button.style);
-      this.wrapper = new EmojiString(text, Math.max(0, maxWidth - getIconFootprint()), textPaint);
+      int textMaxWidth = Math.max(0, maxWidth - getIconFootprint());
+      this.textSizeDp = fitTextSizeDp(text, textMaxWidth);
+      this.wrapper = new EmojiString(text, textMaxWidth, textPaintFor(textSizeDp));
       this.type = button.type;
       if (type.getConstructor() == TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR) {
         currencyChar = CurrencyUtils.getCurrencyChar(((TdApi.MessageInvoice) parent.getMessage().content).currency);
@@ -562,6 +566,54 @@ public class TGInlineKeyboard {
       return customColorId != ColorId.NONE ? customColorId : styleColorId;
     }
 
+    // The icon narrows the text layout, so a label that used to fit exactly may
+    // start breaking mid-word (StaticLayout splits words wider than the layout).
+    // Shrink the font until the widest word fits instead.
+    private float fitTextSizeDp (String text, int availWidth) {
+      if (availWidth <= 0 || iconText == null) {
+        return BUTTON_TEXT_SIZE_DP;
+      }
+      TextPaint paint = newTextPaint(BUTTON_TEXT_SIZE_DP);
+      for (float size = BUTTON_TEXT_SIZE_DP; size >= MIN_BUTTON_TEXT_SIZE_DP; size -= .5f) {
+        // Default size must be measured at the actual render size of
+        // Paints.getBoldPaint14, which is 15dp in both of its branches
+        paint.setTextSize(size == BUTTON_TEXT_SIZE_DP ? Screen.dp(15f) : Screen.dpf(size));
+        if (maxWordWidth(text, paint) <= availWidth) {
+          return size;
+        }
+      }
+      return MIN_BUTTON_TEXT_SIZE_DP;
+    }
+
+    private TextPaint newTextPaint (float sizeDp) {
+      TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+      paint.setTypeface(needFakeBold ? Fonts.getRobotoRegular() : Fonts.getRobotoMedium());
+      paint.setFakeBoldText(needFakeBold);
+      paint.setTextSize(Screen.dpf(sizeDp));
+      return paint;
+    }
+
+    private TextPaint textPaintFor (float sizeDp) {
+      // Shared cached paint for the default size; a dedicated instance otherwise,
+      // as EmojiString retains the paint and shared ones are mutated elsewhere
+      return sizeDp == BUTTON_TEXT_SIZE_DP ? Paints.getBoldPaint14(needFakeBold) : newTextPaint(sizeDp);
+    }
+
+    private static float maxWordWidth (String text, TextPaint paint) {
+      float max = 0f;
+      int length = text.length();
+      int start = 0;
+      for (int i = 0; i <= length; i++) {
+        if (i == length || text.charAt(i) == ' ' || text.charAt(i) == '\n') {
+          if (i > start) {
+            max = Math.max(max, paint.measureText(text, start, i));
+          }
+          start = i + 1;
+        }
+      }
+      return max;
+    }
+
     public Button (TGInlineKeyboard context, @NonNull TGMessage parent, String text, @DrawableRes int iconRes, int maxWidth) {
       this.context = context;
       this.parent = parent;
@@ -594,10 +646,11 @@ public class TGInlineKeyboard {
       String text = uppercase(cleanButtonText(button.text));
       final boolean reset = !wrapper.getText().equals(text);
       final int textMaxWidth = Math.max(0, maxWidth - getIconFootprint());
-      if (reset || wrapper.getMaxWidth() != textMaxWidth) {
-        this.needFakeBold = Text.needFakeBold(text);
-        TextPaint textPaint = Paints.getBoldPaint14(needFakeBold);
-        this.wrapper = new EmojiString(uppercase(text), textMaxWidth, textPaint);
+      this.needFakeBold = Text.needFakeBold(text);
+      final float newTextSizeDp = fitTextSizeDp(text, textMaxWidth);
+      if (reset || wrapper.getMaxWidth() != textMaxWidth || this.textSizeDp != newTextSizeDp) {
+        this.textSizeDp = newTextSizeDp;
+        this.wrapper = new EmojiString(uppercase(text), textMaxWidth, textPaintFor(newTextSizeDp));
       }
       if (reset || !Td.equalsTo(type, button.type)) {
         if (contextId == Integer.MAX_VALUE) {
@@ -749,7 +802,7 @@ public class TGInlineKeyboard {
         iconText.draw(c, iconX, cy + (buttonHeight - iconHeight) / 2, null, 1f, view.getReplyMarkupTextMediaReceiver(true));
       }
       Paints.getBoldPaint14(needFakeBold, Theme.inlineTextColor(isOutBubble));
-      wrapper.draw(c, textX, cy + Screen.dp(12f), textColor, true);
+      wrapper.draw(c, textX, cy + Screen.dp(12f + (BUTTON_TEXT_SIZE_DP - textSizeDp) / 2f), textColor, true);
 
       if (type != null) {
         int iconColor = buttonColorId != ColorId.NONE ? Theme.getColor(buttonColorId) : Theme.inlineIconColor(isOutBubble);
