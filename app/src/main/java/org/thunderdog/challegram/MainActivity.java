@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -127,14 +128,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
     Log.i("MainActivity.onCreate");
 
-    handler = new Handler();
+    handler = new Handler(Looper.getMainLooper());
 
     TdlibManager.instance().global().addAccountListener(this);
     TdlibManager.instance().global().addCountersListener(this);
     TdlibManager.instance().global().addResolvableProblemAvailabilityListener(this);
     reloadTdlib();
-
-    createMessagesController(tdlib).getValue();
 
     tempSavedInstanceState = savedInstanceState;
 
@@ -721,6 +720,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
   private boolean handleIntent (String actionRaw, final Intent intent, boolean fromCreate) {
     final String action = Intents.getCleanAction(actionRaw);
+    android.util.Log.e("tgx", "handle intent: " + action);
 
     if (StringUtils.isEmpty(action) || isNavigationBusy() || StringUtils.equalsOrBothEmpty(action, Intent.ACTION_MAIN) || TdlibManager.instance().inRecoveryMode()) {
       return false;

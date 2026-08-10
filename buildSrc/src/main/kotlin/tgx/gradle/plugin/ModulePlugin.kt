@@ -5,6 +5,7 @@ import Config
 import Sdk
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
+import com.android.build.api.dsl.TestExtension
 import com.android.build.gradle.ProguardFiles
 import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.api.Plugin
@@ -14,6 +15,7 @@ import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.extra
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.the
+import tgx.gradle.disableRudimentaryVariants
 import tgx.gradle.findExtraFolders
 import tgx.gradle.getIntOrThrow
 import tgx.gradle.getOrThrow
@@ -71,6 +73,7 @@ open class ModulePlugin : Plugin<Project> {
           "-Xlint:-overloads",
           "-Xlint:-overrides",
           "-Xlint:-this-escape",
+          "-Xlint:-dangling-doc-comments",
 
           // TODO: fix deprecation warnings by migrating to newer APIs.
           "-Xlint:-deprecation",
@@ -201,6 +204,85 @@ open class ModulePlugin : Plugin<Project> {
               }
             }
           }
+        }
+
+        is TestExtension -> {
+          buildToolsVersion = versions.buildTools
+          ndkVersion = versions.legacyNdk
+          compileSdk {
+            version = release(versions.compileSdk)
+          }
+          compileOptions {
+            isCoreLibraryDesugaringEnabled = true
+            sourceCompatibility = Config.JAVA_VERSION
+            targetCompatibility = Config.JAVA_VERSION
+          }
+          defaultConfig {
+            minSdk = Config.MIN_SDK_VERSION
+            multiDexEnabled = true
+          }
+          sourceSets.configureEach {
+            jniLibs.directories += "jniLibs"
+          }
+
+          config?.keystore?.let { keystore ->
+            signingConfigs {
+              arrayOf(
+                getByName("debug"),
+                maybeCreate("release")
+              ).forEach { config ->
+                config.storeFile = keystore.file
+                config.storePassword = keystore.password
+                config.keyAlias = keystore.keyAlias
+                config.keyPassword = keystore.keyPassword
+                config.enableV2Signing = true
+              }
+            }
+
+            buildTypes {
+              getByName("debug") {
+                signingConfig = signingConfigs["debug"]
+
+                isDebuggable = true
+                isJniDebuggable = true
+                isMinifyEnabled = false
+
+                ndk.debugSymbolLevel = "full"
+
+                if (config.forceOptimize) {
+                  proguardFiles(
+                    getDefaultProguardFile(ProguardFiles.ProguardFile.OPTIMIZE.fileName),
+                    "proguard-rules.pro"
+                  )
+                  if (config.isHuaweiBuild) {
+                    proguardFile("proguard-hms.pro")
+                  }
+                }
+              }
+
+              getByName("release") {
+                signingConfig = signingConfigs["release"]
+
+                isMinifyEnabled = !config.doNotObfuscate
+                isShrinkResources = !config.doNotObfuscate
+
+                ndk.debugSymbolLevel = "full"
+
+                proguardFiles(
+                  getDefaultProguardFile(ProguardFiles.ProguardFile.OPTIMIZE.fileName),
+                  "proguard-rules.pro"
+                )
+
+                if (config.isHuaweiBuild) {
+                  proguardFile("proguard-hms.pro")
+                }
+              }
+            }
+          }
+        }
+
+        else -> {
+          error(this)
         }
       }
     }

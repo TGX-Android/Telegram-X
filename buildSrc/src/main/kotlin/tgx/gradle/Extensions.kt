@@ -12,15 +12,21 @@
  */
 package tgx.gradle
 
+import Abi
+import AbiVariant
 import Sdk
 import SdkVariant
 import com.android.build.api.dsl.BaseFlavor
 import com.android.build.api.dsl.VariantDimension
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+import com.android.build.api.variant.TestAndroidComponentsExtension
 import org.gradle.api.Action
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
+import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.DependencyHandlerScope
+import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.task.wrapInDoubleQuotes
 
 fun BaseFlavor.buildConfigInt (name: String, value: Int) =
@@ -74,6 +80,11 @@ fun DependencyHandlerScope.postMarshmallowImplementation(
 ) =
   this.flavorImplementation(null, null, null, dependency, dependencyConfiguration)
 
+fun DependencyHandler.postMarshmallowBaselineProfile(
+  dependencyNotation: Any
+) =
+  this.flavorBaselineProfile(null, null, null, dependencyNotation)
+
 fun findExtraFolders(variant: SdkVariant): Set<String> =
   mutableSetOf<String>().apply {
     if (variant.minSdk >= 21) {
@@ -88,13 +99,13 @@ fun findExtraFolders(variant: SdkVariant): Set<String> =
     this += "only${variant.flavor.replaceFirstChar { it.uppercase() }}"
   }.toSet()
 
-fun selectImplementation(
+fun <T> selectFlavor(
   variant: SdkVariant,
-  legacy: Provider<MinimalExternalModuleDependency>?,
-  lollipop: Provider<MinimalExternalModuleDependency>?,
-  marshmallow: Provider<MinimalExternalModuleDependency>?,
-  latest: Provider<MinimalExternalModuleDependency>?
-): Provider<MinimalExternalModuleDependency>? =
+  legacy: T,
+  lollipop: T,
+  marshmallow: T,
+  latest: T
+): T =
   when (variant.flavor) {
     "legacy" -> legacy
     "lollipop" -> lollipop
@@ -154,7 +165,7 @@ fun DependencyHandlerScope.flavorImplementation(
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) {
   Sdk.VARIANTS.values.forEach { sdkVariant ->
-    val library = selectImplementation(
+    val library = selectFlavor(
       sdkVariant,
       legacy,
       lollipop,
@@ -164,3 +175,70 @@ fun DependencyHandlerScope.flavorImplementation(
     flavorImplementation(sdkVariant.flavor, library, dependencyConfiguration)
   }
 }
+
+fun isVariantEnabled(sdkVariant: SdkVariant, abiVariant: AbiVariant, isDebug: Boolean): Boolean =
+  sdkVariant.minSdk >= abiVariant.minSdk &&
+  !(abiVariant.flavor == "universal" && sdkVariant.flavor == "legacy")
+
+fun ApplicationAndroidComponentsExtension.disableRudimentaryVariants(
+  filter: (SdkVariant, AbiVariant) -> Boolean = { _, _ -> true }
+) =
+  beforeVariants { variantBuilder ->
+    val sdkFlavor = variantBuilder.productFlavors.first { it.first == "SDK" }.second
+    val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
+    val abiFlavor = variantBuilder.productFlavors.first { it.first == "ABI" }.second
+    val abiVariant = Abi.VARIANTS.values.first { it.flavor == abiFlavor }
+    if (sdkVariant.maxSdk != null) {
+      variantBuilder.maxSdk = sdkVariant.maxSdk
+    }
+    variantBuilder.enable = isVariantEnabled(sdkVariant, abiVariant, variantBuilder.buildType == "debug") && filter(sdkVariant, abiVariant)
+  }
+
+fun TestAndroidComponentsExtension.disableRudimentaryVariants(
+  filter: (SdkVariant, AbiVariant) -> Boolean = { _, _ -> true }
+) =
+  beforeVariants { variantBuilder ->
+    val sdkFlavor = variantBuilder.productFlavors.first { it.first == "SDK" }.second
+    val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
+    val abiFlavor = variantBuilder.productFlavors.first { it.first == "ABI" }.second
+    val abiVariant = Abi.VARIANTS.values.first { it.flavor == abiFlavor }
+    if (sdkVariant.maxSdk != null) {
+      variantBuilder.maxSdk = sdkVariant.maxSdk
+    }
+    variantBuilder.enable = isVariantEnabled(sdkVariant, abiVariant, variantBuilder.buildType == "debug") && filter(sdkVariant, abiVariant)
+  }
+
+private fun DependencyHandler.flavorBaselineProfile(
+  flavor: String,
+  dependencyNotation: Any?
+) =
+  dependencyNotation?.let {
+    Abi.VARIANTS.forEach { (_, abiVariant) ->
+      add("${flavor}${abiVariant.flavor.uppercaseFirstChar()}ReleaseBaselineProfile", it)
+    }
+  }
+
+fun DependencyHandler.flavorBaselineProfile(
+  legacy: Any?,
+  lollipop: Any?,
+  marshmallow: Any?,
+  latest: Any?
+) {
+  Sdk.VARIANTS.values.forEach { sdkVariant ->
+    val project = selectFlavor(
+      sdkVariant,
+      legacy,
+      lollipop,
+      marshmallow,
+      latest
+    )
+    flavorBaselineProfile(sdkVariant.flavor, project)
+  }
+}
+
+fun findHostAbi(): String =
+  if (System.getProperty("os.arch") in listOf("aarch64", "arm64")) {
+    "arm64"
+  } else {
+    "x64"
+  }

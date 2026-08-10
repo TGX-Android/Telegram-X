@@ -31,8 +31,8 @@ import java.util.List;
 
 public class NLoader {
 
-  public static boolean loadLibraries () {
-    return instance().loadLibrary();
+  public static void loadLibraries () {
+    instance().loadLibrary();
   }
 
   public static String collectLog () {
@@ -49,7 +49,6 @@ public class NLoader {
     return instance;
   }
 
-  private boolean loaded;
   private List<String> messages;
   private final ReLinker.Logger logger;
 
@@ -73,10 +72,7 @@ public class NLoader {
     android.util.Log.v("tgx", "Loaded " + library + " in " + (SystemClock.uptimeMillis() - ms) + "ms");
   }
 
-  private synchronized boolean loadLibrary () {
-    if (loaded) {
-      return true;
-    }
+  private synchronized void loadLibrary () {
     try {
       ReLinkerInstance reLinker = ReLinker.recursively().log(logger);
       if (BuildConfig.SHARED_STL) {
@@ -94,8 +90,6 @@ public class NLoader {
       e.setStackTrace(t.getStackTrace());
       throw e;
     }
-    loaded = true;
-    return true;
   }
 
   @Nullable

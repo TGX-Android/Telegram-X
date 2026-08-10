@@ -128,13 +128,15 @@ object Abi {
   const val ARM64_V8A = 2
   const val X86 = 3
   const val X64 = 4
+  const val FULL = 5
 
   val VARIANTS = mapOf(
     Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "armeabi-v7a"))),
     Pair(ARMEABI_V7A, AbiVariant("arm32", "armeabi-v7a")),
     Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
     Pair(X86, AbiVariant("x86", "x86")),
-    Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64"))
+    Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64")),
+    Pair(FULL, AbiVariant("full", displayName = "full", filters = arrayOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86"))),
   )
 }
 

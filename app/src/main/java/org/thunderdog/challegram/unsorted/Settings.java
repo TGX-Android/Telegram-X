@@ -53,6 +53,7 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.ChatFolderOptions;
 import org.thunderdog.challegram.telegram.ChatFolderStyle;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
+import org.thunderdog.challegram.telegram.SessionSnapshot;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
@@ -573,6 +574,11 @@ public class Settings {
     }
 
     private boolean checkLogSetting (int flag) {
+      if (BuildConfig.FULL_FLAVOR) {
+        if (flag == FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG) {
+          return true;
+        }
+      }
       return BitwiseUtils.hasFlag(getSettings(), flag);
     }
 
@@ -825,8 +831,19 @@ public class Settings {
 
   private final ScheduleHandler handler = new ScheduleHandler(this);
 
+  public File getDirectory () {
+    File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
+    return new File(pmcDir, "db");
+  }
+
   private Settings () {
     File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
+    boolean didNotExist = !pmcDir.exists();
+    if (Config.ENABLE_BASELINE_PROFILE_HOOKS && didNotExist) {
+      if (SessionSnapshot.restoreSnapshot()) {
+        didNotExist = false;
+      }
+    }
     boolean fatalError;
     try {
       fatalError = !FileUtils.createDirectory(pmcDir);
@@ -852,20 +869,26 @@ public class Settings {
       }
     });
     Log.load(pmc);
-    int pmcVersion = 0;
-    try {
-      pmcVersion = Math.max(0, pmc.tryGetInt(KEY_VERSION));
-    } catch (FileNotFoundException e) {
-      if (isFreshAppInstallation()) {
-        pmcVersion = VERSION;
-        pmc.putInt(KEY_VERSION, pmcVersion);
-      } else {
-        migratePrefsToPmc();
-      }
-    }
-    if (pmcVersion > VERSION) {
-      Log.e("Downgrading database version: %d -> %d", pmcVersion, VERSION);
+    int pmcVersion;
+    if (didNotExist) {
+      pmcVersion = VERSION;
       pmc.putInt(KEY_VERSION, VERSION);
+    } else {
+      pmcVersion = 0;
+      try {
+        pmcVersion = Math.max(0, pmc.tryGetInt(KEY_VERSION));
+      } catch (FileNotFoundException e) {
+        if (isFreshAppInstallation()) {
+          pmcVersion = VERSION;
+          pmc.putInt(KEY_VERSION, pmcVersion);
+        } else {
+          migratePrefsToPmc();
+        }
+      }
+      if (pmcVersion > VERSION) {
+        Log.e("Downgrading database version: %d -> %d", pmcVersion, VERSION);
+        pmc.putInt(KEY_VERSION, VERSION);
+      }
     }
     for (int version = pmcVersion + 1; version <= VERSION; version++) {
       SharedPreferences.Editor editor = pmc.edit();

@@ -66,6 +66,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
@@ -1292,6 +1293,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
   }
 
+  private boolean oneShot;
+
   @Override
   public void onFocus () {
     super.onFocus();
@@ -1300,32 +1303,59 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (UI.TEST_MODE == UI.TEST_MODE_USER) {
       UI.TEST_MODE = UI.TEST_MODE_NONE;
     }
+    if (!oneShot) {
+      oneShot = true;
+      ((MainActivity) context()).getMessagesController(tdlib, true);
+    }
     showAnnoyingAlertsForCompliance(false);
   }
 
   private boolean syncContactsInitiated;
 
-  private void syncContacts () {
+  private void syncContacts (Runnable after) {
     if (!syncContactsInitiated) {
       tdlib.contacts().startSyncIfNeeded(context(), false, () -> {
         syncContactsInitiated = true;
+        U.run(after);
       });
+    } else {
+      U.run(after);
     }
   }
 
+  private void addStartupMarker () {
+    if (Config.ENABLE_BASELINE_PROFILE_HOOKS) {
+      tdlib.awaitConnection(() -> runOnUiThreadOptional(() -> {
+        ViewGroup group = (ViewGroup) getWrapUnchecked();
+        if (group.findViewById(R.id.startup_marker) == null) {
+          group.addView(newStartupMarker());
+        }
+      }));
+    }
+  }
+
+  private boolean notificationsRequested;
+
   private void showAnnoyingAlertsForCompliance (boolean fromAppResume) {
+    if (Config.ENABLE_BASELINE_PROFILE_HOOKS) {
+      addStartupMarker();
+    }
     if (checkSyncAlert()) {
       return;
     }
     tdlib.checkDeadlocks(() -> runOnUiThreadOptional(() -> {
       if (isFocused() && context.getActivityState() == UI.State.RESUMED) {
-        if (fromAppResume && !context().permissions().requestPostNotifications(granted -> {
+        boolean needNotifications = fromAppResume || !notificationsRequested;
+        if (needNotifications && !notificationsRequested) {
+          notificationsRequested = true;
+        }
+        if (needNotifications && !context().permissions().requestPostNotifications(granted -> {
           if (granted) {
             tdlib.notifications().onNotificationPermissionGranted();
           }
-          syncContacts();
+          syncContacts(null);
         })) {
-          syncContacts();
+          syncContacts(null);
         }
       }
     }, null, 1000L));

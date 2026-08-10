@@ -24,6 +24,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "tgx"
 include(
+  ":baseline-profile",
+
   ":tdlib",
   ":tgcalls",
 

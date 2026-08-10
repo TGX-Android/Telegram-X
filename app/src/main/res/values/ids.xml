@@ -257,6 +257,8 @@
 
   <item type="id" name="separator" />
 
+  <item type="id" name="chats_list" />
+
   <item type="id" name="msg_input" />
   <item type="id" name="msg_tooltip" />
   <item type="id" name="msg_emoji" />
@@ -508,6 +510,7 @@
   <item type="id" name="btn_crop" />
   <item type="id" name="btn_crop_reset" />
   <item type="id" name="btn_paint" />
+  <item type="id" name="btn_snapshot" />
   <item type="id" name="btn_adjust" />
   <item type="id" name="btn_rotate" />
   <item type="id" name="btn_flipHorizontally" />
@@ -657,6 +660,9 @@
   <item type="id" name="btn_openGiftSender" />
   <item type="id" name="btn_openGiftReceiver" />
   <item type="id" name="btn_showGiveawayMessage" />
+  <item type="id" name="btn_startMessaging" />
+
+  <item type="id" name="startup_marker" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />

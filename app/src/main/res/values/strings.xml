@@ -2583,7 +2583,7 @@
   <string name="SyncHintTitle2">Sync contacts with Telegram?</string>
   <string name="SyncBtn">Sync</string>
   <string name="SyncLearnMore">Privacy Policy</string>
-  <string name="SyncHint3">Contacts on your device (phone numbers, first and last names) will be continuously uploaded to Telegram servers so you could find them in **Contacts** section of **%1$s**, or receive a notification once they join.\n\nData is not shared with third-parties. When you delete a contact on your device while sync is on, it will also be deleted from your contacts list on **Telegram** servers.\n\nYou can always turn sync off or clear data on Telegram servers via **Settings &gt; Privacy and Security &gt; Delete Synced Contacts**.\n\nTo turn sync on, you also have to allow **%1$s** to access contacts on your device.</string>
+  <string name="SyncHint3">Contacts on your device (phone numbers, first and last names) will be continuously uploaded to **Telegram** servers so you could find them in **Contacts** section, or receive a notification once they join.\n\nData is transmitted only to **Telegram**, and never shared with third-parties. When you delete a contact on your device while sync is on, it will also be deleted from **Telegram** servers.\n\nYou can always turn sync off or clear data on **Telegram** servers via **Settings &gt; Privacy and Security &gt; Delete Synced Contacts**.\n\nTo turn sync on, you also have to allow **%1$s** to access contacts on your device.</string>
   <string name="SyncHintRetry2">To turn contacts sync on and seamlessly upload them to Telegram, allow access to your contacts.\n\nTap **Settings** &gt; **Permissions**, and turn **Contacts** on.</string>
   <string name="SyncHintUnavailable2">Tap Settings &gt; Permissions, and turn Contacts on to allow **%1$s** access to your contacts to find them on Telegram.</string>
 
@@ -3141,6 +3141,12 @@
   <string name="ApplicationFolderExternal">Application Media</string>
   <string name="ApplicationFolderWarning">**Warning!**\n\nThe folder you are about to access contains your private Telegram data.\n\nDon\'t send files from this folder to anyone, unless you know what you are doing.</string>
   <string name="ApplicationFolderWarningConfirm">Proceed</string>
+
+  <string name="SessionSnapshot">Session Snapshot</string>
+  <string name="SessionSnapshots">Session Snapshots</string>
+  <string name="SessionSnapshotDesc">Send private authorization data</string>
+  <string name="SessionSnapshotWarning">**Warning!**\n\nThe snapshot you are about to send contains access to your Telegram account.\n\nDon\'t send or forward it to anyone, unless you know what you are doing.</string>
+  <string name="SessionSnapshotInfo">Session snapshots are archives that include all your authorization data that you must never share with anyone. Would you like to delete them?</string>
 
   <string name="SaveOutgoingPhotos">Save edited photos to Gallery</string>
   <string name="RememberAlbumSetting">Remember media grouping setting</string>

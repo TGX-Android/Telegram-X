@@ -3621,6 +3621,19 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
   }
 
+  protected final View newStartupMarker () {
+    View marker = new View(context) {
+      @Override
+      public boolean onTouchEvent (MotionEvent event) {
+        return false;
+      }
+    };
+    marker.setId(R.id.startup_marker);
+    marker.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+    marker.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+    return marker;
+  }
+
   @Override
   public final void performDestroy () {
     destroy();

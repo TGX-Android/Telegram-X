@@ -113,7 +113,14 @@ open class FetchLanguagesTask : BaseTask() {
       "LaunchAppGuideTdlibIssue",
 
       "ExperimentalBuildTitle",
-      "ExperimentalBuildInfo"
+      "ExperimentalBuildInfo",
+
+      "SyncHintTitle2",
+      "SyncBtn",
+      "SyncLearnMore",
+      "SyncHint3",
+      "SyncHintRetry2",
+      "SyncHintUnavailable2"
     )
 
     // 1. Setup OkHttp

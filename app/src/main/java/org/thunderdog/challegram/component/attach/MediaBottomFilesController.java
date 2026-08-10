@@ -39,9 +39,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
@@ -54,6 +56,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.RightId;
+import org.thunderdog.challegram.telegram.SessionSnapshot;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Intents;
@@ -66,6 +69,7 @@ import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.Permissions;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -171,6 +175,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private static final String KEY_BUCKET = "bucket";
   private static final String KEY_MUSIC = "music";
   private static final String KEY_DOWNLOADS = "downloads";
+  private static final String KEY_SNAPSHOT = "snapshot";
   private static final String KEY_FOLDER = "dir://";
   private static final String KEY_FILE = "file://";
   private static final String KEY_UPPER = "..";
@@ -203,6 +208,14 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         operation = buildDownloads();
       } else if (KEY_BUCKET.equals(currentPath)) {
         operation = buildBucket(data);
+      } else if (KEY_SNAPSHOT.equals(currentPath)) {
+        operation = buildSnapshot(view);
+        before = after -> showOptions(Lang.getMarkdownString(this, R.string.SessionSnapshotWarning), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ApplicationFolderWarningConfirm), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_warning_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_done) {
+            after.run();
+          }
+          return true;
+        });
       } else if (currentPath.startsWith(KEY_FOLDER)) {
         String path = currentPath.substring(KEY_FOLDER.length());
         operation = buildFolder(path, parentPath);
@@ -827,6 +840,27 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     });
   }
 
+  private LoadOperation buildSnapshot (View view) {
+    return new LoadOperation(this) {
+      @Override
+      Result act () {
+        try {
+          File snapshot = SessionSnapshot.createSnapshotWithAllAccounts();
+          UI.post(() -> {
+            if (!isDestroyed()) {
+              mediaLayout.sendFile(view, snapshot.getAbsolutePath());
+            }
+          });
+          return null;
+          // TODO send snapshot
+        } catch (IOException e) {
+          Log.w("Unable to create snapshot", e);
+          return null;
+        }
+      }
+    };
+  }
+
   private LoadOperation buildFolder (final String path, final String parent) {
     return new LoadOperation(this) {
       @Override
@@ -888,6 +922,10 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
       items.add(createItem(createItem(context, tdlib, KEY_FOLDER + internalPath, R.drawable.baseline_settings_24, Lang.getString(R.string.ApplicationFolder), internalPath), R.id.btn_folder));
     } catch (Throwable t) {
       Log.e(t);
+    }
+    if (Config.ENABLE_BASELINE_PROFILE_HOOKS || BuildConfig.DEBUG) {
+      InlineResultCommon snapshot = createItem(context, tdlib, KEY_SNAPSHOT, R.drawable.baseline_lock_24, Lang.getString(R.string.SessionSnapshot), Lang.getString(R.string.SessionSnapshotDesc));
+      items.add(createItem(snapshot, R.id.btn_folder));
     }
   }
 
@@ -1113,7 +1151,13 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private void navigateTo (View view, InlineResultCommon result) {
     String path = result.getId();
     if (path != null) {
-      if (KEY_GALLERY.equals(path) || KEY_MUSIC.equals(path) || KEY_DOWNLOADS.equals(path) || KEY_BUCKET.equals(path) || path.startsWith(KEY_FOLDER)) {
+      if (
+        KEY_GALLERY.equals(path) ||
+        KEY_MUSIC.equals(path) ||
+        KEY_DOWNLOADS.equals(path) ||
+        KEY_BUCKET.equals(path) ||
+        KEY_SNAPSHOT.equals(path) ||
+        path.startsWith(KEY_FOLDER)) {
         navigateInside(view, path, result);
       } else if (KEY_UPPER.equals(path)) {
         navigateUpper();

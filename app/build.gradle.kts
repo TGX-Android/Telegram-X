@@ -9,6 +9,7 @@ import java.util.*
 
 plugins {
   id(libs.plugins.android.application.get().pluginId)
+  id(libs.plugins.androidx.baselineprofile.get().pluginId)
   id("tgx-config")
   id("tgx-module")
 }
@@ -221,23 +222,19 @@ android {
   }
 
   flavorDimensions += arrayOf("SDK", "ABI")
-  androidComponents.beforeVariants { variantBuilder ->
-    val sdkFlavor = variantBuilder.productFlavors.first { it.first == "SDK" }.second
-    val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
-    val abiFlavor = variantBuilder.productFlavors.first { it.first == "ABI" }.second
-    val abiVariant = Abi.VARIANTS.values.first { it.flavor == abiFlavor }
-    if (sdkVariant.maxSdk != null) {
-      variantBuilder.maxSdk = sdkVariant.maxSdk
-    }
-    variantBuilder.enable = sdkVariant.minSdk >= abiVariant.minSdk &&
-      !(abiVariant.flavor == "universal" && sdkVariant.flavor == "legacy") &&
-      (variantBuilder.buildType != "debug" || sdkVariant.flavor == "legacy" || (abiVariant.flavor == "x86" || abiVariant.flavor == "x64" || abiVariant.flavor == "universal"))
-  }
+  androidComponents.disableRudimentaryVariants()
   productFlavors {
     Sdk.VARIANTS.forEach { (sdkIndex, variant) ->
       create(variant.flavor) {
         dimension = "SDK"
         isDefault = sdkIndex == Sdk.LATEST
+
+        if (variant.flavor != "latest") {
+          matchingFallbacks += "latest"
+        }
+        Sdk.VARIANTS.forEach { (subSdkIndex, subVariant) ->
+          buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", sdkIndex == subSdkIndex)
+        }
 
         val actualMinSdk = if (config.isHuaweiBuild) {
           maxOf(variant.minSdk, Config.MIN_SDK_VERSION_HUAWEI)
@@ -290,10 +287,6 @@ android {
           }
         }
 
-        Sdk.VARIANTS.forEach { (subSdkIndex, subVariant) ->
-          buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", sdkIndex == subSdkIndex)
-        }
-
         var extraProguardFileCount = 0
 
         arrayOf(
@@ -327,6 +320,14 @@ android {
       create(variant.flavor) {
         dimension = "ABI"
         isDefault = abiIndex == 0
+
+        if (variant.flavor != "full") {
+          matchingFallbacks += "full"
+        }
+        Abi.VARIANTS.forEach { (subAbiIndex, subVariant) ->
+          buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", abiIndex == subAbiIndex)
+        }
+
         ndkVersion = if (variant.is64Bit) {
           config.primaryNdkVersion
         } else {
@@ -396,7 +397,7 @@ android {
       }
       require(baseVersionCode != null && baseVersionName != null && fileName != null)
 
-      val recaptchaVersion = selectImplementation(
+      val recaptchaVersion = selectFlavor(
         sdkVariant,
         libs.google.recaptcha.legacy,
         libs.google.recaptcha.lollipop,
@@ -518,7 +519,19 @@ gradle.projectsEvaluated {
   }
 }
 
+baselineProfile {
+  mergeIntoMain = true
+  automaticGenerationDuringBuild = false
+  saveInSrc = true
+  warnings {
+    disabledVariants = false
+  }
+}
+
 dependencies {
+  postMarshmallowImplementation(libs.androidx.profileinstaller)
+  baselineProfile(project(":baseline-profile"))
+  implementation(libs.androidx.tracing)
   legacyImplementation(libs.androidx.multidex)
   implementation(project(":extension:${config.extension}"))
   // TDLib: https://github.com/tdlib/td/blob/master/CHANGELOG.md

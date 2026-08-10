@@ -2414,8 +2414,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   // Lang pack
 
+  public static File getLanguageDatabaseDir () {
+    return new File(UI.getContext().getFilesDir(), "langpack");
+  }
+
   public static String getLanguageDatabasePath () {
-    File languageDatabaseDir = new File(UI.getContext().getFilesDir(), "langpack");
+    File languageDatabaseDir = getLanguageDatabaseDir();
     if (!FileUtils.createDirectory(languageDatabaseDir)) {
       throw new IllegalStateException("Cannot create working directory: " + languageDatabaseDir.getPath());
     }
