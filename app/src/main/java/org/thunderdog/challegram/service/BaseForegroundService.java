@@ -46,7 +46,7 @@ import java.util.Map;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableBool;
 
-public class ForegroundService extends Service {
+public abstract class BaseForegroundService extends Service {
   private static final String EXTRA_TITLE      = "extra_title";
   private static final String EXTRA_TEXT      = "extra_subtitle";
   private static final String EXTRA_CHANNEL_ID = "extra_channel_id";
@@ -66,10 +66,10 @@ public class ForegroundService extends Service {
 
   @Override
   public int onStartCommand (Intent intent, int flags, int startId) {
-    synchronized (ForegroundService.class) {
+    synchronized (BaseForegroundService.class) {
       String callbackId = intent != null ? intent.getStringExtra(EXTRA_CALLBACK_ID) : null;
       String action = intent != null ? intent.getAction() : null;
-      TDLib.Tag.notifications("ForegroundService: handling %s, startId=%d", action, startId);
+      TDLib.Tag.notifications("%s: handling %s, startId=%d", getClass().getSimpleName(), action, startId);
       boolean success;
       if (ACTION_START.equals(action)) {
         success = handleStart(intent);
@@ -88,7 +88,7 @@ public class ForegroundService extends Service {
   @Override
   @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
   public void onTimeout (int startId) {
-    TDLib.Tag.notifications("onTimeout(%d) received for service", startId);
+    TDLib.Tag.notifications("%s.onTimeout(%d) received for service", getClass().getSimpleName(), startId);
   }
 
   private static class TaskInfo {
@@ -121,10 +121,10 @@ public class ForegroundService extends Service {
     TaskInfo info = new TaskInfo(title, text, channelId, iconRes, pushId, accountId);
     this.tasks.add(info);
 
-    TDLib.Tag.notifications(pushId, accountId, "handleStart() Title: %s  ChannelId: %s  Text: %s", title, channelId, text);
+    TDLib.Tag.notifications(pushId, accountId, "%s.handleStart() Title: %s  ChannelId: %s  Text: %s", getClass().getSimpleName(), title, channelId, text);
 
     if (tasks.size() == 1) {
-      TDLib.Tag.notifications(pushId, accountId, "First request. Title: %s  ChannelId: %s  Text: %s", title, channelId, text);
+      TDLib.Tag.notifications(pushId, accountId, "%s: First request. Title: %s  ChannelId: %s  Text: %s", getClass().getSimpleName(), title, channelId, text);
       activeTitle     = title;
       activeText      = text;
       activeChannelId = channelId;
@@ -135,10 +135,10 @@ public class ForegroundService extends Service {
       postObligatoryForegroundNotification(activeTitle, activeText, activeChannelId, activeIconRes);
       return true;
     } catch (Throwable t) {
-      TDLib.Tag.notifications(pushId, accountId, "failed handleStart() Title: %s  ChannelId: %s  Text: %s Error:\n%s", title, channelId, text, Log.toString(t));
+      TDLib.Tag.notifications(pushId, accountId, "failed %s.handleStart() Title: %s  ChannelId: %s  Text: %s Error:\n%s", getClass().getSimpleName(), title, channelId, text, Log.toString(t));
       tasks.remove(info);
       if (tasks.isEmpty()) {
-        TDLib.Tag.notifications(pushId, accountId, "Ending foreground service because of failure.");
+        TDLib.Tag.notifications(pushId, accountId, "%s: Ending foreground service because of failure.", getClass().getSimpleName());
         finishService();
       }
       return false;
@@ -157,11 +157,11 @@ public class ForegroundService extends Service {
   private boolean handleStop (@NonNull Intent intent) {
     long pushId      = intent.getLongExtra(EXTRA_PUSH_ID, 0);
     int accountId    = intent.getIntExtra(EXTRA_ACCOUNT_ID, TdlibAccount.NO_ID);
-    TDLib.Tag.notifications(pushId, accountId, "handleStop()");
+    TDLib.Tag.notifications(pushId, accountId, "%s.handleStop()", getClass().getSimpleName());
 
     TaskInfo lastTask;
     if (tasks.isEmpty()) {
-      TDLib.Tag.notifications(pushId, accountId, "Bug: handleStop() without handleStart()");
+      TDLib.Tag.notifications(pushId, accountId, "Bug: %s.handleStop() without handleStart()", getClass().getSimpleName());
       lastTask = null;
     } else {
       lastTask = tasks.remove(tasks.size() - 1);
@@ -196,11 +196,11 @@ public class ForegroundService extends Service {
       postObligatoryForegroundNotification(title, text, channelId, iconRes);
       success = true;
     } catch (Throwable t) {
-      TDLib.Tag.notifications(pushId, accountId, "Failed to update foreground notification:\n%s", Log.toString(t));
+      TDLib.Tag.notifications(pushId, accountId, "%s: Failed to update foreground notification:\n%s", getClass().getSimpleName(), Log.toString(t));
     }
 
     if (tasks.isEmpty()) {
-      TDLib.Tag.notifications(pushId, accountId, "Last request. Ending foreground service.");
+      TDLib.Tag.notifications(pushId, accountId, "%s: Last request. Ending foreground service.", getClass().getSimpleName());
       finishService();
     }
 
@@ -231,10 +231,20 @@ public class ForegroundService extends Service {
     return null;
   }
 
-  public static boolean startForegroundTask (@NonNull Context context, @NonNull CharSequence task, @Nullable CharSequence text, @NonNull String channelId, @DrawableRes int iconRes, long pushId, int accountId, RunnableBool after) {
+  public static <T extends BaseForegroundService> boolean startTask (
+    Class<T> clazz,
+    @NonNull Context context,
+    @NonNull CharSequence task,
+    @Nullable CharSequence text,
+    @NonNull String channelId,
+    @DrawableRes int iconRes,
+    long pushId,
+    int accountId,
+    RunnableBool after
+  ) {
     if (StringUtils.isEmpty(channelId))
       throw new IllegalArgumentException(channelId);
-    Intent intent = new Intent(context, ForegroundService.class);
+    Intent intent = new Intent(context, clazz);
     intent.setAction(ACTION_START);
     intent.putExtra(EXTRA_TITLE, task);
     if (!StringUtils.isEmpty(text))
@@ -252,8 +262,13 @@ public class ForegroundService extends Service {
     return startForegroundService(context, intent, pushId, accountId);
   }
 
-  public static boolean stopForegroundTask (@NonNull Context context, long pushId, int accountId) {
-    Intent intent = new Intent(context, ForegroundService.class);
+  public static <T extends BaseForegroundService> boolean stopTask (
+    Class<T> clazz,
+    @NonNull Context context,
+    long pushId,
+    int accountId
+  ) {
+    Intent intent = new Intent(context, clazz);
     intent.setAction(ACTION_STOP);
     intent.putExtra(EXTRA_PUSH_ID, pushId);
     intent.putExtra(EXTRA_ACCOUNT_ID, accountId);
@@ -263,17 +278,17 @@ public class ForegroundService extends Service {
   public static boolean startForegroundService (Context context, Intent intent, long pushId, int accountId) {
     try {
       ContextCompat.startForegroundService(context, intent);
-      TDLib.Tag.notifications(pushId, accountId, "startForegroundService(%s) executed successfully (SDK %d)", intent.getAction(), Build.VERSION.SDK_INT);
+      TDLib.Tag.notifications(pushId, accountId, "%s.startForegroundService(%s) executed successfully (SDK %d)", Intents.getIntentClassName(intent), intent.getAction(), Build.VERSION.SDK_INT);
       return true;
     } catch (Throwable t) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         // caution: do not import to avoid crashes on pre-S
         if (t instanceof android.app.ForegroundServiceStartNotAllowedException) {
-          TDLib.Tag.notifications(pushId, accountId, "startForegroundService(%s) failed due to system settings restrictions (SDK %d):\n%s", intent.getAction(), Build.VERSION.SDK_INT, Log.toString(t));
+          TDLib.Tag.notifications(pushId, accountId, "%s.startForegroundService(%s) failed due to system settings restrictions (SDK %d):\n%s", Intents.getIntentClassName(intent), intent.getAction(), Build.VERSION.SDK_INT, Log.toString(t));
           return false;
         }
       }
-      TDLib.Tag.notifications(pushId, accountId, "startForegroundService(%s) failed due to error (SDK %d):\n%s", intent.getAction(), Build.VERSION.SDK_INT, Log.toString(t));
+      TDLib.Tag.notifications(pushId, accountId, "%s.startForegroundService(%s) failed due to error (SDK %d):\n%s", Intents.getIntentClassName(intent), intent.getAction(), Build.VERSION.SDK_INT, Log.toString(t));
       return false;
     }
   }

@@ -182,7 +182,7 @@ public class PushProcessor {
       synchronized (foregroundLock) {
         if (state.compareAndSet(State.VISIBLE, State.FINISHED)) {
           TDLib.Tag.notifications(pushId, accountId, "Stopping a foreground task");
-          ForegroundService.stopForegroundTask(context, pushId, accountId);
+          FetchNotificationService.stopForegroundTask(context, pushId, accountId);
           SyncTask.cancel(accountId);
         } else {
           int currentState = state.get();
@@ -289,7 +289,7 @@ public class PushProcessor {
       text = null;
     }
     final AtomicBoolean success = new AtomicBoolean(false);
-    if (ForegroundService.startForegroundTask(context,
+    if (FetchNotificationService.startForegroundTask(context,
       Lang.getString(inRecovery ? R.string.RetrieveMessagesError : R.string.RetrievingMessages), text,
       U.getOtherNotificationChannel(),
       0,

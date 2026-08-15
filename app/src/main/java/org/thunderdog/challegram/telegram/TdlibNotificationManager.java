@@ -49,7 +49,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.service.ForegroundService;
+import org.thunderdog.challegram.service.FetchNotificationService;
 import org.thunderdog.challegram.service.PushProcessor;
 import org.thunderdog.challegram.sync.SyncAdapter;
 import org.thunderdog.challegram.theme.ColorId;
@@ -2203,7 +2203,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       Context context = UI.getContext();
       PushProcessor.showForegroundNotification(context, tdlib.context(), false, -1, tdlib.accountId(), true, new CountDownLatch(0));
       queue.post(() -> {
-        ForegroundService.stopForegroundTask(context, -1, tdlib.accountId());
+        FetchNotificationService.stopForegroundTask(context, -1, tdlib.accountId());
         sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
       }, 1500L);
       return;

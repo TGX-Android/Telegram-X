@@ -2900,6 +2900,7 @@
   <string name="ProxyRemoveInfo">Delete this proxy configuration?</string>
   <string name="ErrorUsersTooFew">You can\'t add the selected users to groups because of their privacy settings.</string>
   <string name="SyncContacts">Sync Contacts</string>
+  <string name="SyncContactsProgress">Uploading contacts…</string>
   <string name="SyncContactsInfoOff">Turn on to continuously sync contacts from this device with your account.</string>
   <string name="SyncContactsInfoOn">Contacts from this device will be added to your account.</string>
   <string name="SyncContactsDelete">Delete Synced Contacts</string>
