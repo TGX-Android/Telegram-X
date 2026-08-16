@@ -73,7 +73,7 @@ open class ModulePlugin : Plugin<Project> {
           "-Xlint:-overloads",
           "-Xlint:-overrides",
           "-Xlint:-this-escape",
-          "-Xlint:-dangling-doc-comments",
+          // "-Xlint:-dangling-doc-comments",
 
           // TODO: fix deprecation warnings by migrating to newer APIs.
           "-Xlint:-deprecation",
