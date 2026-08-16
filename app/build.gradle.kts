@@ -531,7 +531,11 @@ baselineProfile {
 dependencies {
   postMarshmallowImplementation(libs.androidx.profileinstaller)
   baselineProfile(project(":baseline-profile"))
-  implementation(libs.androidx.tracing)
+  flavorImplementation(
+    libs.androidx.tracing.legacy,
+    libs.androidx.tracing.lollipop,
+    libs.androidx.tracing.latest
+  )
   legacyImplementation(libs.androidx.multidex)
   implementation(project(":extension:${config.extension}"))
   // TDLib: https://github.com/tdlib/td/blob/master/CHANGELOG.md
@@ -685,7 +689,7 @@ dependencies {
     libs.androidx.media.exoplayer.hls.lollipop,
     libs.androidx.media.exoplayer.hls.latest
   )
-  postLollipopImplementation(libs.androidx.media.inspector.latest)
+  sinceMarshmallowImplementation(libs.androidx.media.inspector.latest)
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation(libs.google.play.app.update)
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md

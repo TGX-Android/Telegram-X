@@ -37,8 +37,7 @@ fun onInitializationAlreadyCompleted() = trace("alreadyCompleted") {
   TdlibManager.instance().watchDog().letsHelpDoge()
 }
 
-@Synchronized
-fun initApplication() = trace("tgx:init") {
+private fun initApplicationImpl() {
   if (isInitialized) {
     onInitializationAlreadyCompleted()
     return
@@ -101,6 +100,11 @@ fun initApplication() = trace("tgx:init") {
   if (BuildConfig.DEBUG) {
     Test.executeAfterAppInit()
   }
+}
+
+@Synchronized
+fun initApplication() = trace("tgx:init") {
+  initApplicationImpl()
 }
 
 fun ensureReady() {

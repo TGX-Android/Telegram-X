@@ -50,7 +50,7 @@ fun DependencyHandlerScope.legacyImplementation(
 ) =
   this.flavorImplementation("legacy", dependency, dependencyConfiguration)
 
-fun DependencyHandlerScope.postLegacyImplementation(
+fun DependencyHandlerScope.sinceLollipopImplementation(
   dependency: Provider<MinimalExternalModuleDependency>,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
@@ -62,7 +62,7 @@ fun DependencyHandlerScope.lollipopImplementation(
 ) =
   this.flavorImplementation("lollipop", dependency, dependencyConfiguration)
 
-fun DependencyHandlerScope.postLollipopImplementation(
+fun DependencyHandlerScope.sinceMarshmallowImplementation(
   dependency: Provider<MinimalExternalModuleDependency>,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
