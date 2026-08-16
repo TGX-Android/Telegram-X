@@ -21,6 +21,9 @@ private const val CHAT_URL = "https://t.me/tgx_android"
 private const val ZERO_CHANNEL_ID = -1000000000000L
 private const val CHAT_ID = ZERO_CHANNEL_ID - 1136101327
 
+private const val STABLE_ITERATIONS = 5
+private const val MAX_ITERATIONS = 20
+
 abstract class BaselineProfileGenerator {
   @get:Rule
   val rule = BaselineProfileRule()
@@ -46,7 +49,9 @@ class AuthorizedBaselineProfileGenerator : BaselineProfileGenerator() {
   fun launchDefault() = rule.collect(
     outputFilePrefix = "launch_authorized",
     packageName = getApplicationId(),
-    includeInStartupProfile = true
+    includeInStartupProfile = true,
+    stableIterations = STABLE_ITERATIONS,
+    maxIterations = MAX_ITERATIONS
   ) {
     pressHome()
     startActivityAndWait()
@@ -59,7 +64,9 @@ class AuthorizedBaselineProfileGenerator : BaselineProfileGenerator() {
   fun launchViaUrl() = rule.collect(
     outputFilePrefix = "launch_url",
     packageName = getApplicationId(),
-    includeInStartupProfile = true
+    includeInStartupProfile = true,
+    stableIterations = STABLE_ITERATIONS,
+    maxIterations = MAX_ITERATIONS
   ) {
     pressHome()
     startActivityAndWait(
@@ -77,7 +84,9 @@ class AuthorizedBaselineProfileGenerator : BaselineProfileGenerator() {
   fun launchFromNotification() = rule.collect(
     outputFilePrefix = "launch_notification",
     packageName = getApplicationId(),
-    includeInStartupProfile = true
+    includeInStartupProfile = true,
+    stableIterations = STABLE_ITERATIONS,
+    maxIterations = MAX_ITERATIONS
   ) {
     pressHome()
     val accountId = 0
@@ -101,7 +110,9 @@ class AuthorizedBaselineProfileGenerator : BaselineProfileGenerator() {
   fun openChatUrl() = rule.collect(
     outputFilePrefix = "open_url",
     packageName = getApplicationId(),
-    includeInStartupProfile = false
+    includeInStartupProfile = false,
+    stableIterations = STABLE_ITERATIONS,
+    maxIterations = MAX_ITERATIONS
   ) {
     pressHome()
     startActivityAndWait(
@@ -121,7 +132,9 @@ class AuthorizedBaselineProfileGenerator : BaselineProfileGenerator() {
   fun chatsListScroll() = rule.collect(
     outputFilePrefix = "open_chats",
     packageName = getApplicationId(),
-    includeInStartupProfile = false
+    includeInStartupProfile = false,
+    stableIterations = 5,
+    maxIterations = 15
   ) {
     pressHome()
     startActivityAndWait()
@@ -158,7 +171,9 @@ class UnauthorizedBaselineProfileGenerator : BaselineProfileGenerator() {
   fun launchDefault() = rule.collect(
     outputFilePrefix = "launch_unauthorized",
     packageName = getApplicationId(),
-    includeInStartupProfile = true
+    includeInStartupProfile = true,
+    stableIterations = STABLE_ITERATIONS,
+    maxIterations = MAX_ITERATIONS
   ) {
     pressHome()
     startActivityAndWait()
