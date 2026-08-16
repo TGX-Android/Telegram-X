@@ -270,4 +270,8 @@ for ABI in arm64-v8a x86_64 armeabi-v7a x86 ; do
   done
 done
 
+echo "Final cleaning..."
+rm -f config.h
+make clean || true
+
 popd
