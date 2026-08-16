@@ -720,7 +720,6 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
   private boolean handleIntent (String actionRaw, final Intent intent, boolean fromCreate) {
     final String action = Intents.getCleanAction(actionRaw);
-    android.util.Log.e("tgx", "handle intent: " + action);
 
     if (StringUtils.isEmpty(action) || isNavigationBusy() || StringUtils.equalsOrBothEmpty(action, Intent.ACTION_MAIN) || TdlibManager.instance().inRecoveryMode()) {
       return false;
