@@ -130,6 +130,7 @@
     android:name="org.thunderdog.challegram.BaseApplication"
     android:allowBackup="false"
     android:fullBackupContent="false"
+    android:dataExtractionRules="@xml/data_extraction_rules"
     android:hardwareAccelerated="true"
     android:icon="@mipmap/app_launcher"
     android:label="@string/AppName"
