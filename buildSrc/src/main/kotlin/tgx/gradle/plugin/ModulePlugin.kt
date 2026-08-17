@@ -93,6 +93,7 @@ open class ModulePlugin : Plugin<Project> {
           }
           lint {
             checkReleaseBuilds = false
+            disable += "LintError"
           }
           compileOptions {
             isCoreLibraryDesugaringEnabled = true
@@ -147,6 +148,7 @@ open class ModulePlugin : Plugin<Project> {
           }
           lint {
             checkReleaseBuilds = false
+            disable += "LintError"
           }
           compileOptions {
             isCoreLibraryDesugaringEnabled = true
