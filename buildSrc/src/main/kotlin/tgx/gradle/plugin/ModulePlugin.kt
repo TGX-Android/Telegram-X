@@ -91,6 +91,9 @@ open class ModulePlugin : Plugin<Project> {
           compileSdk {
             version = release(versions.compileSdk)
           }
+          lint {
+            checkReleaseBuilds = false
+          }
           compileOptions {
             isCoreLibraryDesugaringEnabled = true
             sourceCompatibility = Config.JAVA_VERSION
@@ -141,6 +144,9 @@ open class ModulePlugin : Plugin<Project> {
           ndkVersion = versions.legacyNdk
           compileSdk {
             version = release(versions.compileSdk)
+          }
+          lint {
+            checkReleaseBuilds = false
           }
           compileOptions {
             isCoreLibraryDesugaringEnabled = true
