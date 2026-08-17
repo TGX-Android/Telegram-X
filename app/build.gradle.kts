@@ -11,7 +11,6 @@ import java.util.*
 plugins {
   id("java-toolchain-convention")
   id(libs.plugins.android.application.get().pluginId)
-  id(libs.plugins.androidx.baselineprofile.get().pluginId) apply false
   id("tgx-config")
   id("tgx-module")
 }

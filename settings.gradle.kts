@@ -1,4 +1,4 @@
-@file:Suppress("UnstableApiUsage")
+@file:Suppress("UnstableApiUsage", "AvoidApplyPluginMethod")
 
 apply(from = "properties.gradle.kts")
 
@@ -23,9 +23,10 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "tgx"
+if (providers.gradleProperty("generateBaselineProfile").isPresent) {
+  include(":baseline-profile")
+}
 include(
-  ":baseline-profile",
-
   ":tdlib",
   ":tgcalls",
 
