@@ -4,6 +4,7 @@ import androidx.baselineprofile.gradle.consumer.BaselineProfileConsumerExtension
 import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.impl.VariantOutputImpl
+import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
 import tgx.gradle.task.*
 import java.util.*
@@ -347,6 +348,14 @@ android {
   }
 
   androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+      if (config.isExperimentalBuild) {
+        variant.lifecycleTasks.registerPreBuild(updateLanguages)
+      } else {
+        variant.lifecycleTasks.registerPreBuild(updateLanguages, validateApiTokens)
+      }
+    }
+
     onVariants { variant ->
       val abiFlavor = variant.productFlavors.first { it.first == "ABI" }.second
       val sdkFlavor = variant.productFlavors.first { it.first == "SDK" }.second
@@ -468,18 +477,17 @@ android {
       }
 
       if (variant.isMinifyEnabled) {
+        val variantName = variant.name.uppercaseFirstChar()
         val copyTask = project.tasks.register<Copy>(
-          "copy${variant.name.replaceFirstChar { it.uppercase() }}MappingFile"
+          "copy${variantName}MappingFile"
         ) {
           description = "Creates a copy of mapping.txt with a build name"
           from(variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE))
           into(project.layout.buildDirectory.dir("outputs/mapping/${variant.name}"))
           rename("mapping.txt", "$fileName.txt")
         }
-        tasks.named {
-          it.startsWith("assemble") && it.endsWith("Release")
-        }.configureEach {
-          finalizedBy(copyTask)
+        project.afterEvaluate {
+          project.tasks.findByName("assemble$variantName")?.finalizedBy(copyTask)
         }
       }
     }
@@ -501,23 +509,13 @@ android {
   }
 }
 
-gradle.projectsEvaluated {
-  tasks.preBuild.configure {
-    dependsOn(
-      generateResourcesAndThemes,
-      checkEmojiKeyboard,
-      generatePhoneFormat,
-      updateExceptions,
-    )
-  }
-  tasks.named {
-    it.startsWith("pre") && it.endsWith("ReleaseBuild")
-  }.configureEach {
-    dependsOn(updateLanguages)
-    if (!config.isExperimentalBuild) {
-      dependsOn(validateApiTokens)
-    }
-  }
+tasks.preBuild.configure {
+  dependsOn(
+    generateResourcesAndThemes,
+    checkEmojiKeyboard,
+    generatePhoneFormat,
+    updateExceptions
+  )
 }
 
 if (config.generateBaselineProfile) {

@@ -8,6 +8,14 @@ dependencies {
   implementation(libs.androidx.annotation)
 }
 
+tasks.withType(JavaCompile::class.java).configureEach {
+  options.compilerArgs.addAll(listOf(
+    "-Xlint:-rawtypes",
+    "-Xlint:-cast",
+    "-Xlint:-deprecation"
+  ))
+}
+
 android {
   lint {
     disable += "RawTypes"
@@ -15,16 +23,6 @@ android {
 
   defaultConfig {
     consumerProguardFiles("consumer-rules.pro")
-  }
-
-  project.afterEvaluate {
-    tasks.withType(JavaCompile::class.java).configureEach {
-      options.compilerArgs.addAll(listOf(
-        "-Xlint:-rawtypes",
-        "-Xlint:-cast",
-        "-Xlint:-deprecation"
-      ))
-    }
   }
 
   sourceSets.named<com.android.build.api.dsl.AndroidSourceSet>("main") {
