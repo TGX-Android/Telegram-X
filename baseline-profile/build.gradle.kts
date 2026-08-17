@@ -1,6 +1,7 @@
 import tgx.gradle.*
 
 plugins {
+  id("java-toolchain-convention")
   id(libs.plugins.android.test.get().pluginId)
   id(libs.plugins.androidx.baselineprofile.get().pluginId)
   id("tgx-module")

@@ -1,3 +1,5 @@
+@file:Suppress("AvoidApplyPluginMethod")
+
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
