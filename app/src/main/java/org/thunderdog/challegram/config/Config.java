@@ -62,7 +62,7 @@ public class Config {
   // The only way around for the sender is to transcode video fully even when there's no need at all.
   public static final boolean TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT = true;
 
-  public static final boolean ENABLE_BASELINE_PROFILE_HOOKS = BuildConfig.FULL_FLAVOR;
+  public static final boolean ENABLE_BASELINE_PROFILE_HOOKS = BuildConfig.LAB_FLAVOR;
 
   private static Boolean hasWebpSupport;
   public static boolean useBundledWebp () {

@@ -15,14 +15,14 @@ android {
   targetProjectPath = ":app"
 
   flavorDimensions += listOf("SDK", "ABI")
-  androidComponents.disableRudimentaryVariants { sdkVariant, abiVariant ->
-    abiVariant.flavor == "full"
+  androidComponents.disableRudimentaryVariants { _, abiVariant ->
+    abiVariant.isTestingLab
   }
   productFlavors {
     create(Sdk.VARIANTS[Sdk.LATEST]!!.flavor) {
       dimension = "SDK"
     }
-    create(Abi.VARIANTS[Abi.FULL]!!.flavor) {
+    create(Abi.VARIANTS[Abi.LAB]!!.flavor) {
       dimension = "ABI"
     }
   }

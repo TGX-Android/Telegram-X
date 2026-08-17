@@ -23,10 +23,8 @@ import com.android.build.api.variant.TestAndroidComponentsExtension
 import org.gradle.api.Action
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
-import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.DependencyHandlerScope
-import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.task.wrapInDoubleQuotes
 
 fun BaseFlavor.buildConfigInt (name: String, value: Int) =
@@ -74,16 +72,11 @@ fun DependencyHandlerScope.preMarshmallowImplementation(
 ) =
   this.flavorImplementation(dependency, dependency, null, null, dependencyConfiguration)
 
-fun DependencyHandlerScope.postMarshmallowImplementation(
+fun DependencyHandlerScope.sinceNougatImplementation(
   dependency: Provider<MinimalExternalModuleDependency>,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation(null, null, null, dependency, dependencyConfiguration)
-
-fun DependencyHandler.postMarshmallowBaselineProfile(
-  dependencyNotation: Any
-) =
-  this.flavorBaselineProfile(null, null, null, dependencyNotation)
 
 fun findExtraFolders(variant: SdkVariant): Set<String> =
   mutableSetOf<String>().apply {
@@ -99,7 +92,7 @@ fun findExtraFolders(variant: SdkVariant): Set<String> =
     this += "only${variant.flavor.replaceFirstChar { it.uppercase() }}"
   }.toSet()
 
-fun <T> selectFlavor(
+fun <T> selectApiFlavor(
   variant: SdkVariant,
   legacy: T,
   lollipop: T,
@@ -111,6 +104,25 @@ fun <T> selectFlavor(
     "lollipop" -> lollipop
     "marshmallow" -> marshmallow
     "latest" -> latest
+    else -> error(variant.flavor)
+  }
+
+fun <T> selectAbiFlavor(
+  variant: AbiVariant,
+  universal: T,
+  arm32: T,
+  arm64: T,
+  x86: T,
+  x64: T,
+  lab: T
+): T =
+  when (variant.flavor) {
+    "universal" -> universal
+    "arm32" -> arm32
+    "arm64" -> arm64
+    "x86" -> x86
+    "x64", "x86_64" -> x64
+    "lab" -> lab
     else -> error(variant.flavor)
   }
 
@@ -165,7 +177,7 @@ fun DependencyHandlerScope.flavorImplementation(
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) {
   Sdk.VARIANTS.values.forEach { sdkVariant ->
-    val library = selectFlavor(
+    val library = selectApiFlavor(
       sdkVariant,
       legacy,
       lollipop,
@@ -207,34 +219,6 @@ fun TestAndroidComponentsExtension.disableRudimentaryVariants(
     }
     variantBuilder.enable = isVariantEnabled(sdkVariant, abiVariant, variantBuilder.buildType == "debug") && filter(sdkVariant, abiVariant)
   }
-
-private fun DependencyHandler.flavorBaselineProfile(
-  flavor: String,
-  dependencyNotation: Any?
-) =
-  dependencyNotation?.let {
-    Abi.VARIANTS.forEach { (_, abiVariant) ->
-      add("${flavor}${abiVariant.flavor.uppercaseFirstChar()}ReleaseBaselineProfile", it)
-    }
-  }
-
-fun DependencyHandler.flavorBaselineProfile(
-  legacy: Any?,
-  lollipop: Any?,
-  marshmallow: Any?,
-  latest: Any?
-) {
-  Sdk.VARIANTS.values.forEach { sdkVariant ->
-    val project = selectFlavor(
-      sdkVariant,
-      legacy,
-      lollipop,
-      marshmallow,
-      latest
-    )
-    flavorBaselineProfile(sdkVariant.flavor, project)
-  }
-}
 
 fun findHostAbi(): String =
   if (System.getProperty("os.arch") in listOf("aarch64", "arm64")) {

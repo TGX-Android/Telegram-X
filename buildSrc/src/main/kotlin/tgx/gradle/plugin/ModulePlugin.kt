@@ -107,10 +107,19 @@ open class ModulePlugin : Plugin<Project> {
             minSdk = Config.MIN_SDK_VERSION
             multiDexEnabled = true
           }
-          flavorDimensions += "SDK"
+          flavorDimensions += arrayOf("SDK", "ABI")
           productFlavors {
+            Abi.VARIANTS.forEach { (_, variant) ->
+              register(variant.flavor) {
+                dimension = "ABI"
+                ndk.abiFilters.addAll(variant.filters)
+                externalNativeBuild.ndkBuild.abiFilters(*variant.filters)
+                externalNativeBuild.cmake.abiFilters(*variant.filters)
+              }
+            }
             Sdk.VARIANTS.forEach { (_, variant) ->
               register(variant.flavor) {
+                dimension = "SDK"
                 externalNativeBuild.cmake.arguments(
                   "-DANDROID_PLATFORM=android-${variant.minSdk}",
                   "-DTGX_FLAVOR=${variant.flavor}"

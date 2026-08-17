@@ -1,5 +1,6 @@
-@file:Suppress("UnstableApiUsage")
+@file:Suppress("UnstableApiUsage", "AvoidApplyPluginMethod")
 
+import androidx.baselineprofile.gradle.consumer.BaselineProfileConsumerExtension
 import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.impl.VariantOutputImpl
@@ -9,7 +10,7 @@ import java.util.*
 
 plugins {
   id(libs.plugins.android.application.get().pluginId)
-  id(libs.plugins.androidx.baselineprofile.get().pluginId)
+  id(libs.plugins.androidx.baselineprofile.get().pluginId) apply false
   id("tgx-config")
   id("tgx-module")
 }
@@ -229,7 +230,7 @@ android {
         dimension = "SDK"
         isDefault = sdkIndex == Sdk.LATEST
 
-        if (variant.flavor != "latest") {
+        if (config.generateBaselineProfile && variant.flavor != "latest") {
           matchingFallbacks += "latest"
         }
         Sdk.VARIANTS.forEach { (subSdkIndex, subVariant) ->
@@ -321,8 +322,8 @@ android {
         dimension = "ABI"
         isDefault = abiIndex == 0
 
-        if (variant.flavor != "full") {
-          matchingFallbacks += "full"
+        if (config.generateBaselineProfile && !variant.isTestingLab) {
+          matchingFallbacks += Abi.VARIANTS[Abi.LAB]!!.flavor
         }
         Abi.VARIANTS.forEach { (subAbiIndex, subVariant) ->
           buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", abiIndex == subAbiIndex)
@@ -397,7 +398,7 @@ android {
       }
       require(baseVersionCode != null && baseVersionName != null && fileName != null)
 
-      val recaptchaVersion = selectFlavor(
+      val recaptchaVersion = selectApiFlavor(
         sdkVariant,
         libs.google.recaptcha.legacy,
         libs.google.recaptcha.lollipop,
@@ -519,18 +520,23 @@ gradle.projectsEvaluated {
   }
 }
 
-baselineProfile {
-  mergeIntoMain = true
-  automaticGenerationDuringBuild = false
-  saveInSrc = true
-  warnings {
-    disabledVariants = false
+if (config.generateBaselineProfile) {
+  apply(plugin = libs.plugins.androidx.baselineprofile.get().pluginId)
+
+  extensions.configure<BaselineProfileConsumerExtension> {
+    mergeIntoMain = true
+    automaticGenerationDuringBuild = false
+    saveInSrc = true
+    warnings.disabledVariants = false
+  }
+
+  afterEvaluate {
+    dependencies.add("latestLabReleaseBaselineProfile", project(":baseline-profile"))
   }
 }
 
 dependencies {
-  postMarshmallowImplementation(libs.androidx.profileinstaller)
-  baselineProfile(project(":baseline-profile"))
+  sinceNougatImplementation(libs.androidx.profileinstaller)
   flavorImplementation(
     libs.androidx.tracing.legacy,
     libs.androidx.tracing.lollipop,

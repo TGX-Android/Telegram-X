@@ -64,6 +64,7 @@ data class ApplicationConfig(
   val isHuaweiBuild: Boolean,
   val forceOptimize: Boolean,
   val doNotObfuscate: Boolean,
+  val generateBaselineProfile: Boolean,
 
   val compileSdkVersion: Int,
   val targetSdkVersion: Int,
@@ -113,6 +114,11 @@ class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), va
       return true
     }
 
+  val isTestingLab: Boolean
+    get() {
+      return flavor == Abi.VARIANTS[Abi.LAB]!!.flavor
+    }
+
   val minSdk: Int
     get() = if (is64Bit) {
       21
@@ -128,7 +134,7 @@ object Abi {
   const val ARM64_V8A = 2
   const val X86 = 3
   const val X64 = 4
-  const val FULL = 5
+  const val LAB = 5
 
   val VARIANTS = mapOf(
     Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "armeabi-v7a"))),
@@ -136,7 +142,7 @@ object Abi {
     Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
     Pair(X86, AbiVariant("x86", "x86")),
     Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64")),
-    Pair(FULL, AbiVariant("full", displayName = "full", filters = arrayOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86"))),
+    Pair(LAB, AbiVariant("lab", displayName = "testing", filters = arrayOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86"))),
   )
 }
 

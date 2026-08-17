@@ -67,6 +67,7 @@ open class ConfigurationPlugin : Plugin<Project> {
     val isExampleBuild = applicationId.startsWith("com.example.") || applicationId.startsWith("org.example.")
     val isExperimentalBuild = isExampleBuild || keystore == null || properties.getProperty("app.experimental", "false") == "true"
     val doNotObfuscate = isExampleBuild || properties.getProperty("app.dontobfuscate", "false") == "true"
+    val generateBaselineProfile = properties.getProperty("app.generate_baseline_profile", "false") == "true"
     val forceOptimize = properties.getProperty("app.forceoptimize") == "true"
     val appExtension = getOrSample("tgx.extension")
     if (appExtension != "none" && appExtension != "hms") {
@@ -128,6 +129,7 @@ open class ConfigurationPlugin : Plugin<Project> {
       isHuaweiBuild,
       forceOptimize,
       doNotObfuscate,
+      generateBaselineProfile,
       compileSdkVersion,
       targetSdkVersion,
       buildToolsVersion,
