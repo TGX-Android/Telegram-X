@@ -530,11 +530,11 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   }
 
   public void enableSync (BaseActivity context) {
+    if (getStatus() != STATUS_INACTIVE || state != STATE_NOT_STARTED) {
+      return;
+    }
     if (getHideOption() == HIDE_OPTION_NEVER) {
       setHideOption(HIDE_OPTION_DEFAULT);
-    }
-    if (getStatus() == STATUS_INACTIVE) {
-      setStatus(STATUS_IN_FIRST_PROGRESS);
     }
     startSyncIfNeeded(context, true, null);
   }
@@ -787,14 +787,16 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     b.setTitle(Lang.getString(title));
     b.setMessage(message);
     b.setCancelable(false);
-    b.setNeutralButton(Lang.getString(R.string.SyncLearnMore), (dialog, which) -> {
+    /*b.setNeutralButton(Lang.getString(R.string.SyncLearnMore), (dialog, which) -> {
       tdlib.ui().openUrl(delegate, Lang.getStringSecure(R.string.url_contactsPrivacy), null);
-    });
-    b.setOnDismissListener(dialog -> {
-      if (showingAlert == dialog) {
-        showingAlert = null;
-      }
-    });
+    });*/
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      b.setOnDismissListener(dialog -> {
+        if (showingAlert == dialog) {
+          showingAlert = null;
+        }
+      });
+    }
     b.setPositiveButton(Lang.getString(!context.permissions().canReadContacts() ? (isRetry ? R.string.Settings : R.string.SyncBtn) : R.string.SyncBtn), (dialog, which) -> {
       if (isRetry) {
         Intents.openPermissionSettings();
