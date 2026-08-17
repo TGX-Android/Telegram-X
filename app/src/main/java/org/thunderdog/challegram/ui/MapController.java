@@ -283,7 +283,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     contentView.addView(mapView);
 
     directionButton = new CircleButton(context);
-    directionButton.setBottomText(Lang.getString(R.string.DirectionGo).toUpperCase());
+    directionButton.setBottomText(Lang.uppercase(Lang.getString(R.string.DirectionGo)));
     directionButton.setId(R.id.btn_direction);
     directionButton.setOnClickListener(this);
     directionButton.init(R.drawable.baseline_directions_24, 56f, 4f, ColorId.circleButtonRegular, ColorId.circleButtonRegularIcon);

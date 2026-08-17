@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -23,6 +22,7 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 
@@ -45,7 +45,7 @@ import me.vkryl.core.collection.SparseLongArray;
 import tgx.td.ChatId;
 import tgx.td.Td;
 
-@TargetApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.O)
 public class TdlibNotificationChannelGroup {
   private final Tdlib tdlib;
 
@@ -230,12 +230,12 @@ public class TdlibNotificationChannelGroup {
     return accountUserId;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public Object getChannel (TdlibNotificationGroup group, boolean allowDisabled) throws ChannelCreationFailureException {
     return getChannel(group.getChatId(), group.isMention(), group.singleSenderId(), allowDisabled);
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   private Object getChannel (long chatId, boolean areMentions, long singleSenderId, boolean allowDisabled) throws ChannelCreationFailureException {
     android.app.NotificationChannel channel = (android.app.NotificationChannel) getChannelImpl(chatId, areMentions, singleSenderId);
     if (channel == null) {
@@ -247,7 +247,7 @@ public class TdlibNotificationChannelGroup {
     return null;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   @NonNull
   private Object getChannelImpl (long chatId, boolean areMentions, long singleAuthorChatId) throws ChannelCreationFailureException {
     // android.app.NotificationChannel channel;
@@ -332,7 +332,7 @@ public class TdlibNotificationChannelGroup {
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public static int importanceToPriority (int importance) {
     switch (importance) {
       case NotificationManager.IMPORTANCE_MAX:
@@ -349,7 +349,7 @@ public class TdlibNotificationChannelGroup {
     return Notification.PRIORITY_DEFAULT;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public static int priorityToImportance (int priority) {
     switch (priority) {
       case Notification.PRIORITY_MAX:
@@ -404,7 +404,7 @@ public class TdlibNotificationChannelGroup {
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public static void cleanupChannels (Tdlib tdlib) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -467,7 +467,7 @@ public class TdlibNotificationChannelGroup {
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public static void cleanupChannelGroups (TdlibManager context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);

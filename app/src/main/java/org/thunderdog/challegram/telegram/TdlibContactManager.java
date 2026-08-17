@@ -1188,13 +1188,13 @@ public class TdlibContactManager implements CleanupStartupDelegate {
               if (c != 0) {
                 return c;
               }
-              String n1 = TD.getUserName(o1.contact.firstName, o1.contact.lastName).toLowerCase();
-              String n2 = TD.getUserName(o2.contact.firstName, o2.contact.lastName).toLowerCase();
+              String n1 = TD.getUserName(o1.contact.firstName, o1.contact.lastName);
+              String n2 = TD.getUserName(o2.contact.firstName, o2.contact.lastName);
               c = n1.compareTo(n2);
               if (c != 0) {
-                return c;
+                return Integer.compare(c, 0);
               }
-              return o1.contact.phoneNumber.compareTo(o2.contact.phoneNumber);
+              return Integer.compare(o1.contact.phoneNumber.compareTo(o2.contact.phoneNumber), 0);
             });
             setUnregisteredContacts(unregisteredContacts);
           } else {
@@ -1367,11 +1367,14 @@ public class TdlibContactManager implements CleanupStartupDelegate {
         if (displayName == null) {
           ok = true;
         } else if (StringUtils.isEmpty(firstNameAttempt)) {
-          ok = StringUtils.equalsOrEmptyIgnoreCase(lastNameAttempt, displayName, Lang.locale());
+          ok = StringUtils.equalsOrEmptyIgnoreCase(lastNameAttempt, displayName);
         } else if (StringUtils.isEmpty(lastNameAttempt)) {
-          ok = StringUtils.equalsOrEmptyIgnoreCase(firstNameAttempt, displayName, Lang.locale());
+          ok = StringUtils.equalsOrEmptyIgnoreCase(firstNameAttempt, displayName);
         } else {
-          ok = displayName.toLowerCase().contains(firstNameAttempt.toLowerCase()) && displayName.contains(lastNameAttempt.toLowerCase()) && displayName.length() == firstNameAttempt.length() + lastNameAttempt.length() + 1;
+          ok =
+            Strings.anyWordStartsWith(displayName, firstNameAttempt) &&
+            Strings.anyWordStartsWith(displayName, lastNameAttempt) &&
+            displayName.length() == firstNameAttempt.length() + lastNameAttempt.length() + 1;
         }
         if (ok) {
           firstName = firstNameAttempt;

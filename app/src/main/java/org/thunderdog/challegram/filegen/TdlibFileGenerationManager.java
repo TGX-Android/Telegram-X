@@ -69,6 +69,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -891,7 +892,7 @@ public final class TdlibFileGenerationManager {
             "import androidx.annotation.ColorInt;\n\n");
           b.append("public final class Theme").append(info.name).append(" extends ThemeBase {\n");
           b.append("  public Theme").append(info.name).append(" () {\n");
-          b.append("    super(ThemeId.").append(info.name.toUpperCase()).append(");\n");
+          b.append("    super(ThemeId.").append(info.name.toUpperCase(Locale.ROOT)).append(");\n");
           b.append("  }\n");
           ThemeDelegate base = ThemeSet.getBuiltinTheme(ThemeId.BLUE);
           if (!info.properties.isEmpty()) {

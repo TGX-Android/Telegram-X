@@ -23,6 +23,7 @@ import android.view.TextureView;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.R;
@@ -61,7 +62,7 @@ public class MediaGalleryCameraView extends FrameLayoutFix implements Destroyabl
 
   // Texture stuff
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void openCamera () {
 
   }

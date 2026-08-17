@@ -63,6 +63,7 @@ import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.InvalidateContentProvider;
@@ -216,7 +217,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       }
       String extension = U.getExtension(document.fileName);
       if (!StringUtils.isEmpty(extension)) {
-        extension = extension.toLowerCase();
+        extension = extension.toLowerCase(Locale.ROOT);
       }
       String alternateMimeType = TGMimeType.mimeTypeForExtension(extension);
       if (!StringUtils.isEmpty(alternateMimeType) && !alternateMimeType.equals(document.mimeType)) {

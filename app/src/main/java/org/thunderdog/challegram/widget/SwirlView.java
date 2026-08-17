@@ -12,7 +12,6 @@
  */
 package org.thunderdog.challegram.widget;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.Drawable;
@@ -20,6 +19,7 @@ import android.os.Build;
 import android.widget.ImageView;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.RequiresApi;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.tool.Drawables;
@@ -27,7 +27,7 @@ import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.core.lambda.CancellableRunnable;
 
-@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 public final class SwirlView extends ImageView {
   // Keep in sync with attrs.
   public enum State {

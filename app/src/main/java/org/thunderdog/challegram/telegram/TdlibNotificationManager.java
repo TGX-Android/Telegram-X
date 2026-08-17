@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -34,6 +33,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
@@ -336,7 +336,9 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     protected void process (Message msg) {
       switch (msg.what) {
         case CLEANUP_CHANNELS: {
-          TdlibNotificationChannelGroup.cleanupChannelGroups(context);
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            TdlibNotificationChannelGroup.cleanupChannelGroups(context);
+          }
           break;
         }
         case PLAY_SOUND: {
@@ -1195,7 +1197,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return _channelGlobalVersion;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public long getChannelVersion (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (customChatId != 0) {
       return Settings.instance().getLong(key(_CHANNEL_VERSION_CUSTOM_KEY + customChatId), 0);
@@ -1204,7 +1206,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   private void incrementChannelVersion (@Nullable TdApi.NotificationSettingsScope scope, long chatId, LevelDB editor) {
     long selfUserId = tdlib.myUserId();
     LocalScopeNotificationSettings settings = chatId != 0 ? null : getLocalNotificationSettings(scope);
@@ -1230,7 +1232,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public String getSystemChannelId (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long accountId = tdlib.myUserId();
@@ -1242,7 +1244,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return null;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   @Nullable
   public Object getSystemChannelGroup () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -1265,7 +1267,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return null;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public Object getSystemChannel (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -2050,7 +2052,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   @AnyThread
-  @TargetApi(Build.VERSION_CODES.TIRAMISU)
+  @RequiresApi(Build.VERSION_CODES.TIRAMISU)
   public void onNotificationPermissionGranted () {
     rebuildNotification();
   }

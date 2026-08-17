@@ -26,6 +26,8 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.theme.ColorId;
 
+import java.util.Locale;
+
 public class Config {
   public static final boolean SUPPORT_SYSTEM_UNDERLINE_SPAN = true;
   public static final boolean FOREGROUND_SYNC_ALWAYS_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -290,7 +292,7 @@ public class Config {
   public static final boolean TEST_CHAT_COUNTERS = false;
 
   public static boolean isThemeDoc (TdApi.Document doc) {
-    return doc != null && doc.fileName != null && doc.fileName.toLowerCase().endsWith("." + BuildConfig.THEME_FILE_EXTENSION);
+    return doc != null && doc.fileName != null && doc.fileName.toLowerCase(Locale.ROOT).endsWith("." + BuildConfig.THEME_FILE_EXTENSION);
   }
 
   public static final boolean DISABLE_PASSWORD_INVISIBILITY = true;

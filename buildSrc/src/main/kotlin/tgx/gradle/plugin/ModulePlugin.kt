@@ -20,6 +20,7 @@ import tgx.gradle.findExtraFolders
 import tgx.gradle.getIntOrThrow
 import tgx.gradle.getOrThrow
 import tgx.gradle.loadProperties
+import java.io.File
 
 private data class Versions(
   val compileSdk: Int,
@@ -94,6 +95,7 @@ open class ModulePlugin : Plugin<Project> {
           lint {
             checkReleaseBuilds = false
             disable += "LintError"
+            // baseline = File("lint-baseline.xml")
           }
           compileOptions {
             isCoreLibraryDesugaringEnabled = true
@@ -149,6 +151,7 @@ open class ModulePlugin : Plugin<Project> {
           lint {
             checkReleaseBuilds = false
             disable += "LintError"
+            baseline = File("lint-baseline.xml")
           }
           compileOptions {
             isCoreLibraryDesugaringEnabled = true

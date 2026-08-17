@@ -1350,7 +1350,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           notificationsRequested = true;
         }
         if (needNotifications && !context().permissions().requestPostNotifications(granted -> {
-          if (granted) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && granted) {
             tdlib.notifications().onNotificationPermissionGranted();
           }
           syncContacts(null);
@@ -1589,7 +1589,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         source = Lang.getString(getMainSectionNameRes(FILTER_NONE, /* hasFolders */ true));
       }
       if (upperCase) {
-        source = source.toUpperCase();
+        source = Lang.uppercase(source);
       }
       if (useGlobalFilter() && selectedFilter == globalFilter || selectedFilter == FILTER_NONE) {
         return source;
@@ -1602,7 +1602,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     } else {
       sectionName = Lang.getString(getMainSectionNameRes(selectedFilter, hasFolders));
     }
-    return upperCase ? sectionName.toUpperCase() : sectionName;
+    return upperCase ? Lang.uppercase(sectionName) : sectionName;
   }
 
   @StringRes
@@ -1798,7 +1798,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     return new CharSequence[] {
       getMenuSectionName(MAIN_PAGER_ITEM_ID, /* pagerItemPosition */ 0, /* hasFolders */ false, ChatFolderStyle.LABEL_ONLY, /* upperCase */ true),
-      Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/
+      Lang.uppercase(Lang.getString(R.string.Calls))/*, UI.getString(R.string.Contacts).toUpperCase()*/
     };
   }
 
@@ -1854,7 +1854,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private List<ViewPagerTopView.Item> getDefaultSectionItems () {
     if (defaultSectionItems == null) {
-      String callsItem = Lang.getString(R.string.Calls).toUpperCase();
+      String callsItem = Lang.uppercase(Lang.getString(R.string.Calls));
       defaultSectionItems = Arrays.asList(
         getDefaultMainItem(),
         new ViewPagerTopView.Item(callsItem)

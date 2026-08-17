@@ -5095,7 +5095,7 @@ public class Settings {
       switch (proxy.type.getConstructor()) {
         case TdApi.ProxyTypeSocks5.CONSTRUCTOR: {
           TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.type;
-          if (proxy.port == 9050 && StringUtils.isEmpty(socks5.username) && StringUtils.isEmpty(socks5.password) && U.isLocalhost(proxy.server.toLowerCase())) {
+          if (proxy.port == 9050 && StringUtils.isEmpty(socks5.username) && StringUtils.isEmpty(socks5.password) && U.isLocalhost(proxy.server)) {
             stringRes = R.string.ProxyTorNetwork;
           } else {
             stringRes = R.string.ProxySocks5;

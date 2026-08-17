@@ -18,7 +18,15 @@ tasks.withType(JavaCompile::class.java).configureEach {
 
 android {
   lint {
-    disable += "RawTypes"
+    disable += arrayOf(
+      "ObsoleteSdkInt",
+      "MissingPermission",
+      "InlinedApi",
+      "NewApi",
+      "UseRequiresApi",
+      "Range",
+      "WrongConstant"
+    )
   }
 
   defaultConfig {

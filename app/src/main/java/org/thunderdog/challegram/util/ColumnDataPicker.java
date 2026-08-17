@@ -29,6 +29,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.FillingDrawable;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
@@ -152,7 +153,7 @@ public final class ColumnDataPicker implements Destroyable {
       }
 
       EmojiTextView commitButton = newCommitButton(c, forcedTheme);
-      Views.setMediumText(commitButton, commitButtonText.toString().toUpperCase());
+      Views.setMediumText(commitButton, Lang.uppercase(commitButtonText.toString()));
 
       for (Column column : columns) {
         InfiniteRecyclerView<SimpleStringItem> picker = new InfiniteRecyclerView<SimpleStringItem>(c.context(), false);

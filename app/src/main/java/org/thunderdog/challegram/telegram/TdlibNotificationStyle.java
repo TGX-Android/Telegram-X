@@ -1053,12 +1053,16 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     long timeMs = TimeUnit.SECONDS.toMillis(lastNotification.notification().date);
 
     String commonChannelId;
-    try {
-      commonChannelId = helper.findCommonChannelId(category);
-    } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
-      TDLib.Tag.notifications("Unable to create common notification channel:\n%s", Log.toString(e));
-      tdlib.settings().trackNotificationChannelProblem(e, 0);
-      return null;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      try {
+        commonChannelId = helper.findCommonChannelId(category);
+      } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+        TDLib.Tag.notifications("Unable to create common notification channel:\n%s", Log.toString(e));
+        tdlib.settings().trackNotificationChannelProblem(e, 0);
+        return null;
+      }
+    } else {
+      commonChannelId = null;
     }
     NotificationCompat.Builder b = new NotificationCompat.Builder(context, commonChannelId);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

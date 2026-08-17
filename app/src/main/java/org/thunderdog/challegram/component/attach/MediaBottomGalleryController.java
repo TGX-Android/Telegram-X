@@ -69,6 +69,7 @@ import org.thunderdog.challegram.v.RtlGridLayoutManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -872,7 +873,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   protected void onSearchInputChanged (String query) {
-    searchImages(query.trim().toLowerCase());
+    searchImages(query.trim());
   }
 
   private String lastQuery = "";

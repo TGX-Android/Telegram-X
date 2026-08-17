@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.component.sticker;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -36,6 +35,7 @@ import android.widget.TextView;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -457,7 +457,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       menu.setElevation(Screen.dp(1f));
       menu.setTranslationZ(Screen.dp(1f));
       menu.setOutlineProvider(new android.view.ViewOutlineProvider() {
-        @TargetApi(value = 21)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
         public void getOutline (View view, android.graphics.Outline outline) {
           outline.setRoundRect(view.getPaddingLeft(), view.getPaddingTop(), view.getMeasuredWidth() - view.getPaddingRight(), view.getMeasuredHeight() - view.getPaddingBottom(), Screen.dp(2f));
@@ -588,7 +588,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     sendView.setTypeface(Fonts.getRobotoMedium());
     sendView.setTextColor(Theme.getColor(ColorId.textNeutral));
     themeListenerList.addThemeColorListener(sendView, ColorId.textNeutral);
-    Views.setMediumText(sendView, Lang.getString(isEmoji ? R.string.PasteCustomEmoji : R.string.SendSticker).toUpperCase());
+    Views.setMediumText(sendView, Lang.uppercase(Lang.getString(isEmoji ? R.string.PasteCustomEmoji : R.string.SendSticker)));
     sendView.setOnClickListener(onClickListener);
     RippleSupport.setTransparentBlackSelector(sendView);
     int paddingLeft = Screen.dp(12f);
@@ -617,7 +617,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       viewView.setTypeface(Fonts.getRobotoMedium());
       viewView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
       viewView.setTextColor(Theme.getColor(ColorId.textNeutral));
-      Views.setMediumText(viewView, Lang.getString(R.string.ViewPackPreview).toUpperCase());
+      Views.setMediumText(viewView, Lang.uppercase(Lang.getString(R.string.ViewPackPreview)));
       themeListenerList.addThemeColorListener(viewView, ColorId.textNeutral);
       viewView.setOnClickListener(onClickListener);
       RippleSupport.setTransparentBlackSelector(viewView);

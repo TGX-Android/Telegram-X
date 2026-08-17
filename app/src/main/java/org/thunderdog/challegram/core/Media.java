@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -773,7 +774,7 @@ public class Media {
     }
 
     public boolean isCameraBucket () {
-      return (name != null && (name.toLowerCase().contains("camera") || name.toLowerCase().contains("dcim")));
+      return U.isCameraFolder(name);
     }
 
     public boolean isAllPhotosBucket () {
@@ -781,11 +782,11 @@ public class Media {
     }
 
     public boolean isDownloadsBucket () {
-      return name != null && (name.toLowerCase().contains("download"));
+      return U.isDownloadsFolder(name);
     }
 
     public boolean isScreenshotBucket () {
-      return name != null && (name.toLowerCase().contains("screenshot"));
+      return U.isScreenshotFolder(name);
     }
 
     public ImageFile getPreviewImage () {

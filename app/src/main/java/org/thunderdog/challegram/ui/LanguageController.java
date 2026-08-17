@@ -146,6 +146,7 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
 
   @Override
   protected void onSearchInputChanged (String query) {
+    super.onSearchInputChanged(query);
     updateClearSearchButton(!query.isEmpty(), true);
     if (query.equals(" ")) {
       List<Lang.PackString> found = new ArrayList<>();
@@ -168,14 +169,13 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
       buildCells(found, onlyUntranslated);
       return;
     }
-    query = query.toLowerCase();
     if (StringUtils.isEmpty(query)) {
       buildCells(langPack.strings, onlyUntranslated);
     } else {
       List<Lang.PackString> found = new ArrayList<>();
       List<Lang.PackString> lookup = new ArrayList<>(langPack.strings);
       for (Lang.PackString string : lookup) {
-        if (string.string.key.toLowerCase().startsWith(query)) {
+        if (StringUtils.startsWithIgnoreCase(string.string.key, query)) {
           found.add(string);
         }
       }
@@ -183,8 +183,8 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
       for (Lang.PackString string : lookup) {
         switch (string.string.value.getConstructor()) {
           case TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR: {
-            String value = ((TdApi.LanguagePackStringValueOrdinary) string.string.value).value.toLowerCase();
-            if (value.contains(query))
+            String value = ((TdApi.LanguagePackStringValueOrdinary) string.string.value).value;
+            if (StringUtils.containsIgnoreCase(value, query))
               found.add(string);
             break;
           }
@@ -201,7 +201,7 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
         if (string.translated) {
           switch (string.string.value.getConstructor()) {
             case TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR: {
-              if (string.translated && string.getBuiltinValue().value.toLowerCase().contains(query))
+              if (string.translated && StringUtils.containsIgnoreCase(string.getBuiltinValue().value, query))
                 found.add(string);
               break;
             }
@@ -219,12 +219,12 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
   }
 
   private static boolean matches (TdApi.LanguagePackStringValuePluralized pluralized, String query) {
-    boolean ok = (!StringUtils.isEmpty(pluralized.zeroValue) && pluralized.zeroValue.toLowerCase().contains(query));
-    ok = ok || (!StringUtils.isEmpty(pluralized.oneValue) && pluralized.oneValue.toLowerCase().contains(query));
-    ok = ok || (!StringUtils.isEmpty(pluralized.twoValue) && pluralized.twoValue.toLowerCase().contains(query));
-    ok = ok || (!StringUtils.isEmpty(pluralized.fewValue) && pluralized.fewValue.toLowerCase().contains(query));
-    ok = ok || (!StringUtils.isEmpty(pluralized.manyValue) && pluralized.manyValue.toLowerCase().contains(query));
-    ok = ok || (!StringUtils.isEmpty(pluralized.otherValue) && pluralized.otherValue.toLowerCase().contains(query));
+    boolean ok = (!StringUtils.isEmpty(pluralized.zeroValue) && StringUtils.containsIgnoreCase(pluralized.zeroValue, query));
+    ok = ok || (!StringUtils.isEmpty(pluralized.oneValue) && StringUtils.containsIgnoreCase(pluralized.oneValue, query));
+    ok = ok || (!StringUtils.isEmpty(pluralized.twoValue) && StringUtils.containsIgnoreCase(pluralized.twoValue, query));
+    ok = ok || (!StringUtils.isEmpty(pluralized.fewValue) && StringUtils.containsIgnoreCase(pluralized.fewValue, query));
+    ok = ok || (!StringUtils.isEmpty(pluralized.manyValue) && StringUtils.containsIgnoreCase(pluralized.manyValue, query));
+    ok = ok || (!StringUtils.isEmpty(pluralized.otherValue) && StringUtils.containsIgnoreCase(pluralized.otherValue, query));
     return ok;
   }
 

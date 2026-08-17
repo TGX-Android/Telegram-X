@@ -14,13 +14,13 @@
  */
 package org.thunderdog.challegram.widget;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.tool.Views;
@@ -36,7 +36,7 @@ public class RectFrameLayout extends FrameLayoutFix {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !Config.DEBUG_CLIPPING) {
       setOutlineProvider(new android.view.ViewOutlineProvider() {
         @Override
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
           outline.setRect(0, top, view.getMeasuredWidth(), view.getMeasuredHeight() - bottom);
         }

@@ -487,7 +487,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     Views.setSimpleShadow(brandView);
     brandView.setEllipsize(TextUtils.TruncateAt.END);
     brandView.setLayoutParams(lp);
-    brandView.setText(Lang.getString(R.string.VoipBranding).toUpperCase());
+    brandView.setText(Lang.uppercase(Lang.getString(R.string.VoipBranding)));
     if (Log.checkLogLevel(Log.LEVEL_INFO) || BuildConfig.EXPERIMENTAL) {
       brandView.setOnClickListener(new View.OnClickListener() {
         @Override
@@ -963,7 +963,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
         }
       }
     }
-    stateView.setText(str.toUpperCase());
+    stateView.setText(Lang.uppercase(str));
     setButtonsVisible(!TD.isFinished(call) && !(call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR && !call.isOutgoing), isFocused());
     updateEmoji();
     updateFlashing();

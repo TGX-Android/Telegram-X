@@ -33,6 +33,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import me.vkryl.core.ColorUtils;
@@ -1082,7 +1083,7 @@ public class TGBackground {
   }
 
   private static String colorName (int color) {
-    return Strings.getHexColor(ColorUtils.color(255, color), false).substring(1).toLowerCase();
+    return Strings.getHexColor(ColorUtils.color(255, color), false).substring(1).toLowerCase(Locale.ROOT);
   }
 
   public static String getNameForColor (int color) {

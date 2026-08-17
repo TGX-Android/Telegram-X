@@ -110,6 +110,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -1933,19 +1934,19 @@ public class TD {
             break;
           }
         } else {
-          return in.substring(i, i + size).toUpperCase();
+          return in.substring(i, i + size).toUpperCase(Locale.ROOT);
         }
       }
       i += size;
     }
 
     if (allowTwo && b != null) {
-      return b.toString().toUpperCase();
+      return b.toString().toUpperCase(Locale.ROOT);
     }
 
     if (force) {
       int codePoint = in.codePointAt(0);
-      return in.substring(0, Character.charCount(codePoint)).toUpperCase();
+      return in.substring(0, Character.charCount(codePoint)).toUpperCase(Locale.ROOT);
     }
     return null;
   }
@@ -6223,7 +6224,7 @@ public class TD {
           retriever = U.openRetriever(file.getFilePath());
           if (!sendAsAnimation) {
             String hasAudioStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO);
-            if (StringUtils.isEmpty(hasAudioStr) || !StringUtils.equalsOrBothEmpty(hasAudioStr.toLowerCase(), "yes")) {
+            if (StringUtils.isEmpty(hasAudioStr) || !StringUtils.equalsOrBothEmpty(hasAudioStr.toLowerCase(Locale.ROOT), "yes")) {
               sendAsAnimation = true;
             }
           }

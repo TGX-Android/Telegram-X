@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.component.attach;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
@@ -34,6 +33,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -75,6 +75,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -112,7 +113,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+  @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
   private void showSystemPicker (boolean forceDownloads) {
     RunnableData<Set<Uri>> callback = uris -> {
       if (uris != null && !uris.isEmpty()) {
@@ -943,7 +944,8 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     }
 
     if (d1) {
-      return o1.compareTo(o2);
+      int res = o1.compareTo(o2);
+      return Integer.compare(res, 0);
     }
 
     final long t1 = o1.lastModified();
@@ -959,7 +961,8 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     String e2 = U.getExtension(n2);
 
     if (e1 == null && e2 == null) {
-      return n1.compareTo(n2);
+      int res = n1.compareTo(n2);
+      return Integer.compare(res, 0);
     }
     if (e1 == null) {
       return -1; // files without extension are higher
@@ -968,10 +971,10 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
       return 1;
     }
 
-    e1 = e1.toLowerCase();
-    e2 = e2.toLowerCase();
+    e1 = e1.toLowerCase(Locale.ROOT);
+    e2 = e2.toLowerCase(Locale.ROOT);
 
-    return e1.equals(e2) ? n1.compareTo(n2) : e1.compareTo(e2);
+    return Integer.compare(e1.equals(e2) ? n1.compareTo(n2) : e1.compareTo(e2), 0);
   }
 
   private void init () {

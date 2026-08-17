@@ -14,12 +14,13 @@
  */
 package org.thunderdog.challegram.core;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.SystemClock;
+
+import androidx.annotation.RequiresApi;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
@@ -242,7 +243,7 @@ public class WatchDog {
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private boolean hasRouteChanged (ConnectivityManager manager, Object rawNetwork) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && manager != null && rawNetwork != null) {
       android.net.Network network = (android.net.Network) rawNetwork;
@@ -254,7 +255,7 @@ public class WatchDog {
     return false;
   }
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void saveRoute (ConnectivityManager manager, Object rawNetwork) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && manager != null && rawNetwork != null) {
       android.net.Network network = (android.net.Network) rawNetwork;
@@ -273,7 +274,7 @@ public class WatchDog {
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private static boolean filter (NetworkInfo info) {
     return info.isConnectedOrConnecting() && info.getType() != ConnectivityManager.TYPE_VPN;
   }

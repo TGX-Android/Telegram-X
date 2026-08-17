@@ -16,6 +16,7 @@ package org.thunderdog.challegram.widget;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.os.Build;
 import android.view.View;
 
 import org.thunderdog.challegram.config.Config;
@@ -32,13 +33,13 @@ public class NoClipEditText extends EmojiEditText {
   private static final int FLAG_IGNORE_SCROLL_CHANGED = 1 << 3;
   private int flags;
 
+  @SuppressWarnings({"SoonBlockedPrivateApi", "JavaReflectionMemberAccess"})
   public NoClipEditText(Context context) {
     super(context);
     initDefault();
 
-    if (mScrollYField == null) {
+    if (mScrollYField == null && Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN) {
       try {
-        //noinspection JavaReflectionMemberAccess
         mScrollYField = View.class.getDeclaredField("mScrollY");
         mScrollYField.setAccessible(true);
       } catch (Throwable ignored) { }

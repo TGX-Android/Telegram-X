@@ -2677,7 +2677,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private static ViewPagerTopView.Item newItem (SharedBaseController<?> c) {
     return new ViewPagerTopView.Item(
-      c.getName().toString().toUpperCase(),
+      Lang.uppercase(c.getName().toString()),
       c.getIcon(),
       null
     );

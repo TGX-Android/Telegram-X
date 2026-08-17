@@ -1634,7 +1634,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         break;
       }
       case STEP_PASSWORD_HINT: {
-        if (input.toLowerCase().equals(currentPassword.toLowerCase())) {
+        if (input.equalsIgnoreCase(currentPassword)) {
           setHintText(R.string.PasswordAndHintMustBeDifferent, true);
         } else if (mode == MODE_NEW) {
           setStep(input, STEP_EMAIL_RECOVERY);

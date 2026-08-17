@@ -6011,14 +6011,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       String error = context().getTokenError();
       switch (state) {
         case TdlibManager.TokenState.ERROR: {
-          params.put("device_token", tokenProvider.toUpperCase() + "_ERROR");
+          params.put("device_token", tokenProvider.toUpperCase(Locale.ROOT) + "_ERROR");
           if (!StringUtils.isEmpty(error)) {
             params.put(tokenProvider + "_error", error);
           }
           break;
         }
         case TdlibManager.TokenState.INITIALIZING: {
-          params.put("device_token", tokenProvider.toUpperCase() + "_INITIALIZING");
+          params.put("device_token", tokenProvider.toUpperCase(Locale.ROOT) + "_INITIALIZING");
           break;
         }
         case TdlibManager.TokenState.OK: {
@@ -6991,7 +6991,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     if (uri == null) {
       return false;
     }
-    host = uri.getHost().toLowerCase();
+    host = uri.getHost().toLowerCase(Locale.ROOT);
     for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
       if (StringUtils.equalsOrBothEmpty(host, knownHost) || (allowSubdomains && host.endsWith("." + knownHost))) {
         return true;
@@ -7008,7 +7008,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     if (uri == null) {
       return false;
     }
-    host = uri.getHost().toLowerCase();
+    host = uri.getHost().toLowerCase(Locale.ROOT);
     if (!StringUtils.isEmpty(options.tMeUrl)) {
       String tMeHost = StringUtils.urlWithoutProtocol(options.tMeUrl);
       if (StringUtils.equalsOrBothEmpty(host, tMeHost) || host.endsWith("." + tMeHost)) {
@@ -9170,13 +9170,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         if (str.length() > 0) str += " ";
         str += e.getMessage();
       }
-      return str.toUpperCase().replaceAll(" ", "_");
+      return str.toUpperCase(Locale.ROOT).replaceAll(" ", "_");
     }
 
     public static String formatReCaptchaMessage (Exception e) {
       if (e == null) return "NULL";
       if (e.getMessage() == null) return "MSG_NULL";
-      return e.getMessage().replaceAll(" ", "_").toUpperCase();
+      return e.getMessage().replaceAll(" ", "_").toUpperCase(Locale.ROOT);
     }
   }
 

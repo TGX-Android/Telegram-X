@@ -586,9 +586,9 @@ public class SearchManager {
             if (selfChatId != 0 && !StringUtils.isEmpty(query) && state[1] == 0) {
               state[1] = 1;
               if (foundChatIds.indexOf(selfChatId) == -1) {
-                String savedMessagesStr = Lang.getString(R.string.SavedMessages).toLowerCase();
-                String savedMessagesStr2 = Lang.getBuiltinString(R.string.SavedMessages).toLowerCase();
-                String check = query.trim().toLowerCase();
+                String savedMessagesStr = Lang.lowercase(Lang.getString(R.string.SavedMessages));
+                String savedMessagesStr2 = Lang.lowercase(Lang.getBuiltinString(R.string.SavedMessages));
+                String check = query.trim();
                 if (!StringUtils.isEmpty(check) && ((!StringUtils.isEmpty(savedMessagesStr) && Strings.anyWordStartsWith(savedMessagesStr, check, null)) || (!StringUtils.isEmpty(savedMessagesStr2) && Strings.anyWordStartsWith(savedMessagesStr2, check, null)))) {
                   TdApi.Chat chat = tdlib.chat(selfChatId);
                   if (chat != null) {

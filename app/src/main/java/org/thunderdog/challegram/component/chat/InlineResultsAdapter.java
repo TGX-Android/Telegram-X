@@ -16,7 +16,6 @@ package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -27,12 +26,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.emoji.GifView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultGif;
@@ -199,7 +198,7 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
       }
       case ViewHolder.TYPE_BUTTON: {
         InlineResultButton button = (InlineResultButton) items.get(position - 1);
-        ((TextView) holder.itemView).setText(button.getText().toUpperCase());
+        ((TextView) holder.itemView).setText(Lang.uppercase(button.getText()));
         holder.itemView.setTag(button);
         break;
       }

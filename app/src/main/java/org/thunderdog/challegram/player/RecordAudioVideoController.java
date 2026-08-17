@@ -301,7 +301,7 @@ public class RecordAudioVideoController implements
         }
       };
       this.cancelView.setGravity(Gravity.CENTER);
-      this.cancelView.setText(Lang.getString(R.string.Cancel).toUpperCase());
+      this.cancelView.setText(Lang.uppercase(Lang.getString(R.string.Cancel)));
       this.cancelView.setPadding(Screen.dp(12f), 0, Screen.dp(12f), 0);
       this.cancelView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
       this.cancelView.setTypeface(Fonts.getRobotoMedium());

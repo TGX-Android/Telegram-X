@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
   <string name="language_continueInLanguage">Continue in English</string>
 
   <string name="Page1Title">Telegram X</string>
@@ -3094,7 +3094,7 @@
   <string name="LocalizationFileNamePlaceholder">YOUR_FILE_NAME</string>
   <string name="url_faq">https://telegram.org/faq#general-questions</string>
   <string name="url_privacyPolicy">https://telegram.org/privacy</string>
-  <string name="url_contactsPrivacy">https://telegram.org/privacy#3-4-phone-number-and-contacts</string>
+  <string name="url_contactsPrivacy" tools:ignore="TypographyDashes">https://telegram.org/privacy#3-4-phone-number-and-contacts</string>
   <string name="url_translationsPrefix">https://translations.telegram.org/en/android_x/unsorted/</string>
   <string name="url_faqPhoneNumber">https://telegram.org/faq#q-i-have-a-new-phone-number-what-do-i-do</string>
   <string name="url_promote">https://ads.telegram.org</string>
@@ -5753,7 +5753,7 @@
   <string name="xNewChatsToJoin_other">%1$s new chats to join</string>
   <string name="xNewChatsAvailableToJoin_one">**%1$s new chat** available to join</string>
   <string name="xNewChatsAvailableToJoin_other">**%1$s new chats** available to join</string>
-  <string name="xOfYChatsSelected">%1$d/%2$d chats selected</string>
+  <string name="xOfYChatsSelected2">%1$s/%2$s chats selected</string>
   <string name="ThisChatCantBeShared">This chat can’t be shared</string>
   <string name="ArchiveAsFolder">Archive as Folder</string>
   <string name="HoldAndDragToReorder">Hold and drag to reorder</string>

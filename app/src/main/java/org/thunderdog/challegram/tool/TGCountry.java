@@ -294,6 +294,7 @@ public class TGCountry {
 
   private TGCountry () { }
 
+  @SuppressWarnings("HardwareIds")
   public String[] getNumber (Tdlib tdlib) {
     try {
       if (tdlib.hasAuthPhoneNumber()) {
@@ -352,7 +353,7 @@ public class TGCountry {
     if (StringUtils.isEmpty(code))
       return getLocaleCode();
 
-    return code.toUpperCase();
+    return code.toUpperCase(Locale.ROOT);
   }
 
   public String getLocaleCode () {
@@ -364,7 +365,7 @@ public class TGCountry {
       if (locale.length() > 2) {
         locale = locale.substring(0, 2);
       }
-      return locale.toUpperCase();
+      return locale.toUpperCase(Locale.ROOT);
     }
     return null;
   }

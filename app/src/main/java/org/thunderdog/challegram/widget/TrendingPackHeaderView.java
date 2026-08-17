@@ -61,7 +61,7 @@ public class TrendingPackHeaderView extends RelativeLayout {
     newView.setTextColor(Theme.getColor(ColorId.promoContent));
     newView.setTypeface(Fonts.getRobotoBold());
     newView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10f);
-    newView.setText(Lang.getString(R.string.New).toUpperCase());
+    newView.setText(Lang.uppercase(Lang.getString(R.string.New)));
     newView.setLayoutParams(params);
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(28f));
