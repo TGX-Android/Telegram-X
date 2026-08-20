@@ -135,6 +135,7 @@ open class ModulePlugin : Plugin<Project> {
                   extraFolders.forEach { folderName ->
                     kotlin.directories += "src/$folderName/kotlin"
                     java.directories += "src/$folderName/java"
+                    res.directories += "src/$folderName/res"
                   }
                 }
               }

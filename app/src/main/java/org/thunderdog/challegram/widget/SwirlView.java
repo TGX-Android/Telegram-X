@@ -21,11 +21,11 @@ import android.widget.ImageView;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.RequiresApi;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.core.lambda.CancellableRunnable;
+import tgx.flavor.Flavor;
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 public final class SwirlView extends ImageView {
@@ -100,7 +100,7 @@ public final class SwirlView extends ImageView {
       removeCallbacks(disabler);
     }
 
-    @DrawableRes int resId = getDrawable(this.state, state, animate);
+    @DrawableRes int resId = Flavor.getSwirlDrawable(this.state, state, animate);
     if (resId == 0) {
       setImageDrawable(null);
     } else {
@@ -112,42 +112,5 @@ public final class SwirlView extends ImageView {
     }
 
     this.state = state;
-  }
-
-  @DrawableRes private static int getDrawable(State currentState, State newState, boolean animate) {
-    switch (newState) {
-      case OFF:
-        if (animate) {
-          if (currentState == State.ON) {
-            return R.drawable.swirl_draw_off_animation;
-          } else if (currentState == State.ERROR) {
-            return R.drawable.swirl_error_off_animation;
-          }
-        }
-
-        return 0;
-      case ON:
-        if (animate) {
-          if (currentState == State.OFF) {
-            return R.drawable.swirl_draw_on_animation;
-          } else if (currentState == State.ERROR) {
-            return R.drawable.swirl_error_state_to_fp_animation;
-          }
-        }
-
-        return R.drawable.swirl_fingerprint;
-      case ERROR:
-        if (animate) {
-          if (currentState == State.ON) {
-            return R.drawable.swirl_fp_to_error_state_animation;
-          } else if (currentState == State.OFF) {
-            return R.drawable.swirl_error_on_animation;
-          }
-        }
-
-        return R.drawable.swirl_error;
-      default:
-        throw new IllegalArgumentException("Unknown state: " + newState);
-    }
   }
 }

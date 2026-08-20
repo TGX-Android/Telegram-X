@@ -9,10 +9,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import androidx.annotation.DrawableRes
 import androidx.multidex.MultiDexApplication
 import com.google.android.gms.tasks.Task
 import com.google.android.recaptcha.Recaptcha
 import com.google.android.recaptcha.RecaptchaTasksClient
+import org.thunderdog.challegram.widget.SwirlView
 
 typealias Barcode = com.google.mlkit.vision.barcode.Barcode
 
@@ -39,3 +41,12 @@ fun registerReceiver(
     context.registerReceiver(receiver, intentFilter)
   }
 }
+
+@Suppress("unused")
+@DrawableRes
+fun getSwirlDrawable(
+  currentState: SwirlView.State,
+  newState: SwirlView.State,
+  animate: Boolean
+): Int =
+  0

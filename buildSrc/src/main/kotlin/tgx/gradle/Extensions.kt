@@ -25,6 +25,7 @@ import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.DependencyHandlerScope
+import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.task.wrapInDoubleQuotes
 
 fun BaseFlavor.buildConfigInt (name: String, value: Int) =
@@ -86,10 +87,13 @@ fun findExtraFolders(variant: SdkVariant): Set<String> =
     if (variant.minSdk < 23) {
       this += "preMarshmallow"
     }
-    if (variant.minSdk >= 23) {
+    if (variant.minSdk >= 23 || variant.isLatest) {
       this += "sinceMarshmallow"
     }
-    this += "only${variant.flavor.replaceFirstChar { it.uppercase() }}"
+    if (variant.minSdk >= 26 || variant.isLatest) {
+      this += "sinceOreo"
+    }
+    this += "only${variant.flavor.uppercaseFirstChar()}"
   }.toSet()
 
 fun <T> selectApiFlavor(

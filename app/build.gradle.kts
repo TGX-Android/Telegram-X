@@ -311,6 +311,7 @@ android {
           extraFolders.forEach { folderName ->
             kotlin.directories += "src/$folderName/kotlin"
             java.directories += "src/$folderName/java"
+            res.directories += "src/$folderName/res"
 
             // TODO: Exclude in FOSS variant
             kotlin.directories += "src/google/$folderName/kotlin"
