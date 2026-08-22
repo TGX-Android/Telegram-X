@@ -11116,6 +11116,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
+  public void clearCallsHistory (boolean revoke, @Nullable Runnable after) {
+    send(new TdApi.DeleteAllCallMessages(revoke), okHandler(after));
+  }
+
   public boolean isBroadcastGroup (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isBroadcastGroup;
