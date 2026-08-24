@@ -323,6 +323,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
   protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
     Views.setPaddingBottom(buttonWrap, extraBottomInset);
+    Views.setLayoutHeight(buttonWrap, Screen.dp(76f) + extraBottomInset);
     Views.setPaddingBottom(callControlsLayout, extraBottomInset);
   }
 
@@ -622,7 +623,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     speakerButtonView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(72f), Screen.dp(72f), Gravity.RIGHT | Gravity.BOTTOM));
 
     buttonWrap = new FrameLayoutFix(context);
-    buttonWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(76f), Gravity.BOTTOM));
+    buttonWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(76f) + extraBottomInset, Gravity.BOTTOM));
     buttonWrap.addView(muteButtonView);
     buttonWrap.addView(messageButtonView);
     buttonWrap.addView(speakerButtonView);
