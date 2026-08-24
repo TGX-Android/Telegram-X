@@ -80,6 +80,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
       case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
       case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
+      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
       case TdApi.ChatEventPollStopped.CONSTRUCTOR:
         return ActionMessageMode.SERVICE_AND_FULL;
@@ -89,7 +90,6 @@ public class ChatEventUtil {
       case TdApi.ChatEventProfileAccentColorChanged.CONSTRUCTOR:
       case TdApi.ChatEventEmojiStatusChanged.CONSTRUCTOR:
       case TdApi.ChatEventBackgroundChanged.CONSTRUCTOR:
-      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
       case TdApi.ChatEventShowMessageSenderToggled.CONSTRUCTOR:
@@ -154,6 +154,8 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventMessageEdited) action);
       case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventMessagePinned) action);
+      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMessageUnpinned) action);
       case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventUsernameChanged) action);
       case TdApi.ChatEventPollStopped.CONSTRUCTOR:
@@ -169,8 +171,6 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventEmojiStatusChanged) action);
       case TdApi.ChatEventBackgroundChanged.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventBackgroundChanged) action);
-      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
-        return new TGMessageService(context, msg, (TdApi.ChatEventMessageUnpinned) action);
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventInvitesToggled) action);
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
@@ -272,6 +272,10 @@ public class ChatEventUtil {
       }
       case TdApi.ChatEventMessagePinned.CONSTRUCTOR: {
         TdApi.ChatEventMessagePinned e = (TdApi.ChatEventMessagePinned) action;
+        return TGMessage.valueOf(context, e.message);
+      }
+      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR: {
+        TdApi.ChatEventMessageUnpinned e = (TdApi.ChatEventMessageUnpinned) action;
         return TGMessage.valueOf(context, e.message);
       }
       case TdApi.ChatEventPollStopped.CONSTRUCTOR: {
@@ -666,7 +670,6 @@ public class ChatEventUtil {
       case TdApi.ChatEventAccentColorChanged.CONSTRUCTOR:
       case TdApi.ChatEventProfileAccentColorChanged.CONSTRUCTOR:
       case TdApi.ChatEventEmojiStatusChanged.CONSTRUCTOR:
-      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
       case TdApi.ChatEventShowMessageSenderToggled.CONSTRUCTOR:
