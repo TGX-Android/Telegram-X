@@ -1157,25 +1157,46 @@
   <string name="ChatThemeDisabled_outgoing">You disabled the chat theme</string>
 
   <string name="YouGiftedPremium_one">You gifted %1$s month of Telegram Premium for %2$s</string>
-  <string name="YouGiftedPremium_other">You gifted %1$s months Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremium_other">You gifted %1$s months of Telegram Premium for %2$s</string>
 
   <string name="YouGiftedPremiumTo_one">You gifted %3$s %1$s month of Telegram Premium for %2$s</string>
-  <string name="YouGiftedPremiumTo_other">You gifted %3$s %1$s months Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremiumTo_other">You gifted %3$s %1$s months of Telegram Premium for %2$s</string>
 
   <string name="GiftedPremium_one">%2$s gifted you %1$s month of Telegram Premium for %3$s</string>
-  <string name="GiftedPremium_other">%2$s gifted you %1$s months Telegram Premium for %3$s</string>
+  <string name="GiftedPremium_other">%2$s gifted you %1$s months of Telegram Premium for %3$s</string>
 
   <string name="AnonymousGiftedPremium_one">Someone gifted you %1$s month of Telegram Premium for %2$s</string>
-  <string name="AnonymousGiftedPremium_other">Someone gifted you %1$s months Telegram Premium for %2$s</string>
+  <string name="AnonymousGiftedPremium_other">Someone gifted you %1$s months of Telegram Premium for %2$s</string>
+
+  <string name="YouGiftedPremiumDays_one">You gifted %1$s day of Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremiumDays_other">You gifted %1$s days of Telegram Premium for %2$s</string>
+
+  <string name="YouGiftedPremiumDaysTo_one">You gifted %3$s %1$s day of Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremiumDaysTo_other">You gifted %3$s %1$s days of Telegram Premium for %2$s</string>
+
+  <string name="GiftedPremiumDays_one">%2$s gifted you %1$s day of Telegram Premium for %3$s</string>
+  <string name="GiftedPremiumDays_other">%2$s gifted you %1$s days of Telegram Premium for %3$s</string>
+
+  <string name="AnonymousGiftedPremiumDays_one">Someone gifted you %1$s day of Telegram Premium for %2$s</string>
+  <string name="AnonymousGiftedPremiumDays_other">Someone gifted you %1$s days of Telegram Premium for %2$s</string>
 
   <string name="YouGiftedPremiumCode_one">You sent Gift Code for %1$s month of Telegram Premium</string>
   <string name="YouGiftedPremiumCode_other">You sent Gift Code for %1$s months of Telegram Premium</string>
 
   <string name="GiftedPremiumCode_one">%2$s sent you a Gift Code for %1$s month of Telegram Premium</string>
-  <string name="GiftedPremiumCode_other">%2$s sent you a Gift Code for %1$s months Telegram Premium</string>
+  <string name="GiftedPremiumCode_other">%2$s sent you a Gift Code for %1$s months of Telegram Premium</string>
 
   <string name="AnonymousGiftedPremiumCode_one">Someone sent you a Gift Code for %1$s month of Telegram Premium</string>
-  <string name="AnonymousGiftedPremiumCode_other">Someone sent you a Gift Code for %1$s months Telegram Premium</string>
+  <string name="AnonymousGiftedPremiumCode_other">Someone sent you a Gift Code for %1$s months of Telegram Premium</string>
+
+  <string name="YouGiftedPremiumCodeDays_one">You sent Gift Code for %1$s day of Telegram Premium</string>
+  <string name="YouGiftedPremiumCodeDays_other">You sent Gift Code for %1$s days of Telegram Premium</string>
+
+  <string name="GiftedPremiumCodeDays_one">%2$s sent you a Gift Code for %1$s day of Telegram Premium</string>
+  <string name="GiftedPremiumCodeDays_other">%2$s sent you a Gift Code for %1$s days of Telegram Premium</string>
+
+  <string name="AnonymousGiftedPremiumCodeDays_one">Someone sent you a Gift Code for %1$s day of Telegram Premium</string>
+  <string name="AnonymousGiftedPremiumCodeDays_other">Someone sent you a Gift Code for %1$s days of Telegram Premium</string>
 
   <string name="BotDataSent">Data from the \"%1$s\" button was transferred to the bot</string>
 

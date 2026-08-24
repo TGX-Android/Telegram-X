@@ -74,32 +74,34 @@ public final class TGMessageService extends TGMessageServiceImpl {
     super(context, msg);
     String amount = CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount);
     setTextCreator(() -> {
+      boolean months = giftedPremium.monthCount != 0;
+      int monthsOrDays = months ? giftedPremium.monthCount : giftedPremium.dayCount;
       if (giftedPremium.receiverUserId != 0) {
         if (msg.chatId == ChatId.fromUserId(giftedPremium.receiverUserId)) {
           return getPlural(
-            R.string.YouGiftedPremium,
-            giftedPremium.monthCount,
+            months ? R.string.YouGiftedPremium : R.string.YouGiftedPremiumDays,
+            monthsOrDays,
             new BoldArgument(amount)
           );
         } else {
           return getPlural(
-            R.string.YouGiftedPremiumTo,
-            giftedPremium.monthCount,
+            months ? R.string.YouGiftedPremiumTo : R.string.YouGiftedPremiumDaysTo,
+            monthsOrDays,
             new BoldArgument(amount),
             new SenderArgument(new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(giftedPremium.receiverUserId)))
           );
         }
       } else if (giftedPremium.gifterUserId != 0) {
         return getPlural(
-          R.string.GiftedPremium,
-          giftedPremium.monthCount,
+          months ? R.string.GiftedPremium : R.string.GiftedPremiumDays,
+          monthsOrDays,
           new SenderArgument(new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(giftedPremium.gifterUserId)), isUserChat()),
           new BoldArgument(amount)
         );
       } else {
         return getPlural(
-          R.string.AnonymousGiftedPremium,
-          giftedPremium.monthCount,
+          months ? R.string.AnonymousGiftedPremium : R.string.AnonymousGiftedPremiumDays,
+          monthsOrDays,
           new BoldArgument(amount)
         );
       }
@@ -109,21 +111,23 @@ public final class TGMessageService extends TGMessageServiceImpl {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiftCode premiumGiftCode) {
     super(context, msg);
     setTextCreator(() -> {
+      boolean months = premiumGiftCode.monthCount != 0;
+      int monthsOrDays = months ? premiumGiftCode.monthCount : premiumGiftCode.dayCount;
       if (msg.isOutgoing) {
         return getPlural(
-          R.string.YouGiftedPremiumCode,
-          premiumGiftCode.monthCount
+          months ? R.string.YouGiftedPremiumCode : R.string.YouGiftedPremiumCodeDays,
+          monthsOrDays
         );
       } else if (premiumGiftCode.creatorId != null) {
         return getPlural(
-          R.string.GiftedPremiumCode,
-          premiumGiftCode.monthCount,
+          months ? R.string.GiftedPremiumCode : R.string.GiftedPremiumCodeDays,
+          monthsOrDays,
           new SenderArgument(new TdlibSender(tdlib, msg.chatId, premiumGiftCode.creatorId), isUserChat())
         );
       } else {
         return getPlural(
-          R.string.AnonymousGiftedPremiumCode,
-          premiumGiftCode.monthCount
+          months ? R.string.AnonymousGiftedPremiumCode : R.string.AnonymousGiftedPremiumCodeDays,
+          monthsOrDays
         );
       }
     });
