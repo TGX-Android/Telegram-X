@@ -1,5 +1,5 @@
 [versions]
-android-gradle-plugin = "9.3.1"
+android-gradle-plugin = "9.3.2"
 
 ksp = "2.3.4"
 desugaring = "2.1.5"
@@ -45,7 +45,7 @@ androidx-uiautomator = "2.4.0"
 
 # latest
 
-okhttp-latest = "5.4.0"
+okhttp-latest = "5.5.0"
 
 androidx-core-latest = "1.19.0"
 androidx-activity-latest = "1.13.0"
@@ -61,12 +61,13 @@ androidx-camera-latest = "1.6.1"
 androidx-media-latest = "1.11.0"
 androidx-tracing-latest = "2.0.0"
 
-firebase-messaging-latest = "25.1.1"
+firebase-messaging-latest = "25.1.2"
 
 google-recaptcha-latest = "18.9.2"
 
 google-play-integrity-latest = "1.6.0"
-google-play-services-base-latest = "18.10.0"
+google-play-services-base-latest = "18.10.1"
+google-play-services-basement-latest = "18.11.0"
 google-play-services-maps-latest = "20.0.0"
 google-play-services-location-latest = "21.4.0"
 google-play-services-safetynet-latest = "18.1.0"
@@ -229,7 +230,7 @@ google-play-services-base-lollipop = { module = "com.google.android.gms:play-ser
 google-play-services-base-latest = { module = "com.google.android.gms:play-services-base", version.ref = "google-play-services-base-latest" }
 google-play-services-basement-legacy = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-base-legacy" }
 google-play-services-basement-lollipop = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-basement-lollipop" }
-google-play-services-basement-latest = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-base-latest" }
+google-play-services-basement-latest = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-basement-latest" }
 
 google-play-services-maps-legacy = { module = "com.google.android.gms:play-services-maps", version.ref = "google-play-services-maps-legacy" }
 google-play-services-maps-lollipop = { module = "com.google.android.gms:play-services-maps", version.ref = "google-play-services-maps-lollipop" }
