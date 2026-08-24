@@ -56,7 +56,14 @@ public class TGMessageGift extends TGMessageGiveawayBase {
     }
 
     content.padding(Screen.dp(BLOCK_MARGIN));
-    content.add(Strings.buildMarkdown(this, Lang.plural(isUnclaimed ? R.string.xGiveawayUnclaimedPrizeReceivedInfo : R.string.xGiveawayPrizeReceivedInfo, premiumGiftCode.monthCount)), getTextColorSet(), currentViews);
+    boolean months = premiumGiftCode.monthCount != 0;
+    int monthsOrDays = months ? premiumGiftCode.monthCount : premiumGiftCode.dayCount;
+    content.add(Strings.buildMarkdown(this, Lang.plural(
+      months ?
+        (isUnclaimed ? R.string.xGiveawayUnclaimedPrizeReceivedInfo : R.string.xGiveawayPrizeReceivedInfo) :
+        (isUnclaimed ? R.string.xGiveawayUnclaimedPrizeReceivedInfoDays : R.string.xGiveawayPrizeReceivedInfoDays),
+      monthsOrDays
+    )), getTextColorSet(), currentViews);
 
     invalidateGiveawayReceiver();
     return content.getHeight();

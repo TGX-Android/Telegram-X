@@ -5654,6 +5654,8 @@
   <string name="xGiveawayPrizeStar_other">%1$s **Telegram Stars**.</string>
   <string name="xGiveawayPrizeReceivedInfo_one">Your prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayPrizeReceivedInfo_other">Your prize is a **Telegram Premium** subscription for **%1$s** months.</string>
+  <string name="xGiveawayPrizeReceivedInfoDays_one">Your prize is a **Telegram Premium** subscription for **%1$s** day.</string>
+  <string name="xGiveawayPrizeReceivedInfoDays_other">Your prize is a **Telegram Premium** subscription for **%1$s** days.</string>
 
   <string name="xGiveawayWinnersCountMore_one">and %1$s more.</string>
   <string name="xGiveawayWinnersCountMore_other">and %1$s more.</string>
@@ -5661,8 +5663,14 @@
   <string name="xGiveawayUnclaimedPrizeReceivedInfo_one">This prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayUnclaimedPrizeReceivedInfo_other">This prize is a **Telegram Premium** subscription for **%1$s** months.</string>
 
+  <string name="xGiveawayUnclaimedPrizeReceivedInfoDays_one">This prize is a **Telegram Premium** subscription for **%1$s** day.</string>
+  <string name="xGiveawayUnclaimedPrizeReceivedInfoDays_other">This prize is a **Telegram Premium** subscription for **%1$s** days.</string>
+
   <string name="xTelegramPremiumForMonth_one">Telegram Premium for %1$s month</string>
   <string name="xTelegramPremiumForMonth_other">Telegram Premium for %1$s months</string>
+
+  <string name="xTelegramPremiumForDays_one">Telegram Premium for %1$s day</string>
+  <string name="xTelegramPremiumForDays_other">Telegram Premium for %1$s days</string>
 
   <string name="format_GiveawayDateTime">%1$s at %2$s</string>
 
