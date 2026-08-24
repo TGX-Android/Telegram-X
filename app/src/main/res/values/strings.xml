@@ -3603,6 +3603,7 @@
   <string name="format_pinned">Pinned: %1$s</string>
   <string name="format_notificationTitlePinned">%1$s (pinned message)</string>
 
+  <string name="error_PremiumActive">You already have Telegram Premium subscription active until %1$s.</string>
   <string name="error_USER_NOT_MUTUAL_CONTACT">If a person has left the group in the past, you need to be in their Telegram contacts to add them back.\n\nThey can still join via the group\'s invite link as long as they are not on the Removed Users list.</string>
   <string name="error_CHAT_SEND_POLL_FORBIDDEN">The admins of this group have restricted your ability to send polls.</string>
   <string name="error_LANG_CODE_NOT_SUPPORTED">Sorry, this language pack doesn\'t exist</string>

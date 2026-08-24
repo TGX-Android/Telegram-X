@@ -2561,12 +2561,23 @@ public class TD {
     if (floodSeconds > 0) {
       return Lang.getString(R.string.format_TooManyRequests, Lang.getTryAgainIn(floodSeconds));
     }
+    int premiumActiveUntil = getPremiumActiveUntil(code, message, -1);
+    if (premiumActiveUntil > 0) {
+      return Lang.getString(R.string.error_PremiumActive, Lang.getDate(premiumActiveUntil, TimeUnit.SECONDS));
+    }
     return "#" + code + ": " + message;
   }
 
   public static int getFloodErrorSeconds (int code, String message, int defaultValue) {
     if (code == 429 && message.startsWith("Too Many Requests: retry after ")) {
       return StringUtils.parseInt(message.substring("Too Many Requests: retry after ".length()));
+    }
+    return defaultValue;
+  }
+
+  public static int getPremiumActiveUntil (int code, String message, int defaultValue) {
+    if (code == 420 && message.startsWith("PREMIUM_SUB_ACTIVE_UNTIL_")) {
+      return StringUtils.parseInt(message.substring("PREMIUM_SUB_ACTIVE_UNTIL_".length()));
     }
     return defaultValue;
   }
