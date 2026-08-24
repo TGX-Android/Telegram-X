@@ -1,125 +1,48 @@
-/*
- * This file is a part of Telegram X
- * Copyright © 2014 (tgx-android@pm.me)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
 package tgx.gradle.task
 
 import groovy.util.Node
 import groovy.util.NodeList
 import groovy.xml.XmlParser
-import org.gradle.api.tasks.TaskAction
-import tgx.gradle.config.tdlibArrayEqualTypes
-import tgx.gradle.config.tdlibEqualTypes
-import tgx.gradle.data.TdlibType
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.FileSystemOperations
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.*
 import tgx.gradle.data.Theme
-import java.io.File
-import java.util.*
-import java.util.zip.CRC32
-import kotlin.contracts.ExperimentalContracts
+import tgx.gradle.fatal
+import tgx.gradle.validateDir
+import java.io.Writer
+import javax.inject.Inject
 
-open class GenerateResourcesAndThemesTask : BaseTask() {
-  @ExperimentalContracts
+@CacheableTask
+abstract class GenerateThemesTask : DefaultTask() {
+  @get:InputFile
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val colorsAndProperties: RegularFileProperty
+
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val themeFiles: ConfigurableFileCollection
+
+  @get:OutputDirectory
+  abstract val resOutputDir: DirectoryProperty
+
+  @get:OutputDirectory
+  abstract val javaOutputDir: DirectoryProperty
+
+  @get:OutputDirectory
+  abstract val kotlinOutputDir: DirectoryProperty
+
   @TaskAction
-  fun generateResourcesAndThemes () {
-    val strings = XmlParser().parse("app/src/main/res/values/strings.xml")
-    val themes = XmlParser().parse("app/src/main/other/themes/colors-and-properties.xml")
+  fun generateThemes () {
+    val java = validateDir(javaOutputDir.get().asFile)
+    val kotlin = validateDir(kotlinOutputDir.get().asFile)
+    val res = validateDir(resOutputDir.get().asFile)
+
+    val themes = XmlParser().parse(colorsAndProperties.get().asFile)
 
     val generatedIds = ArrayList<String>()
-    val generatedStrings = ArrayList<String>()
-
-    val relativeDateForms = sortedSetOf(
-      "now",
-      "seconds", "minutes", "hours",
-      "today", "tomorrow", "yesterday", "weekday", "date",
-      "days", "weeks", "months", "years"
-    )
-    val relativeDateWhiteList = sortedSetOf(
-      "format_tomorrow"
-    )
-    val pluralForms = sortedSetOf(
-      "zero", "one", "two", "few", "many", "other"
-    )
-
-    // Strings
-
-    val blacklistedKeys = arrayOf(
-      "ExplicitDice",
-      "PsaInfo"
-    )
-    val ordinaryKeys = HashSet<String>()
-    val pluralKeys = HashSet<String>()
-    val foundPlurals = HashMap<String,MutableSet<String>>()
-    val foundRelativeDates = HashMap<String,MutableSet<String>>()
-    val foundColorDescriptions = HashMap<String,String>()
-    val foundPropertyDescriptions = HashMap<String,String>()
-
-    val invalidArgsRegex = Regex("(?<!%)%(?:[^0-9%]|\$)")
-
-    for (string in strings["string"] as NodeList) {
-      val name = (string as Node)["@name"].toString()
-      val value = string.text()
-
-      invalidArgsRegex.find(value)?.let { matchResult ->
-        matchResult.groups.forEach {
-          val arg = it?.value
-          if (arg != "%") {
-            error("Invalid string argument in \"$name\" ($arg):\n$value")
-          } else {
-            logger.lifecycle("\"$name\" contains '%' without argument")
-          }
-        }
-      }
-
-      if (name.startsWith("c_")) {
-        foundColorDescriptions[name.substring("c_".length)] = name
-        ordinaryKeys.add(name)
-      } else if (name.startsWith("p_")) {
-        foundPropertyDescriptions[name.substring("p_".length)] = name
-        ordinaryKeys.add(name)
-      } else {
-        var index = name.lastIndexOf('_')
-        if (index == -1) {
-          ordinaryKeys.add(name)
-          continue
-        }
-        var suffix = name.substring(index + 1)
-        var key = name.substring(0, index)
-        if (pluralForms.contains(suffix)) {
-          val list = foundPlurals[key]
-          if (list != null) {
-            list.add(suffix)
-          } else {
-            foundPlurals[key] = sortedSetOf(suffix)
-            pluralKeys.add(key)
-          }
-          index = key.lastIndexOf('_')
-          if (index != -1) {
-            suffix = key.substring(index + 1)
-            key = key.substring(0, index)
-          }
-        } else {
-          ordinaryKeys.add(name)
-        }
-        if (relativeDateForms.contains(suffix) && !relativeDateWhiteList.contains(name)) {
-          val list = foundRelativeDates[key]
-          if (list != null) {
-            list.add(suffix)
-          } else {
-            foundRelativeDates[key] = sortedSetOf(suffix)
-          }
-        }
-      }
-    }
-    ordinaryKeys.removeAll(blacklistedKeys)
-    pluralKeys.removeAll(blacklistedKeys)
 
     // Themes
 
@@ -169,142 +92,25 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
     val defaultLightTheme = ((defaultThemeNode["light"] as NodeList)[0] as Node).toInteger()
     val defaultDarkTheme = ((defaultThemeNode["dark"] as NodeList)[0] as Node).toInteger()
 
-    // Check: Relative dates
-
-    val requiredRelativeDateForms = listOf(
-      sortedSetOf(
-        "now", "seconds", "minutes", "hours", "today", "yesterday", "weekday", "date"
-      ), sortedSetOf(
-        "now", "seconds", "minutes", "hours", "today", "tomorrow", "weekday", "date"
-      ), sortedSetOf(
-        "now", "seconds", "minutes", "hours", "today", "yesterday", "days", "weeks", "months", "years"
-      ), sortedSetOf(
-        "now", "seconds", "minutes", "hours", "today", "tomorrow", "days", "weeks", "months", "years"
-      )
-    )
-    for (entry in foundRelativeDates) {
-      var found = entry.value == relativeDateForms
-      if (!found) {
-        for (requiredRelativeDateForm in requiredRelativeDateForms) {
-          if (entry.value == requiredRelativeDateForm) {
-            found = true
-            break
-          }
-        }
-      }
-      if (!found) {
-        error("Invalid relative date: ${entry.key}. Defined: ${entry.value}, expected: $requiredRelativeDateForms")
-      }
-      generatedStrings.add(entry.key)
-    }
-
-    // Check: Plurals
-
-    val requiredPluralForms = sortedSetOf("one", "other")
-    for (entry in foundPlurals) {
-      if (entry.value != requiredPluralForms) {
-        error("Invalid plural: ${entry.key}. Defined: ${entry.value}, expected: $requiredPluralForms")
-      }
-      generatedStrings.add(entry.key)
-      for (form in pluralForms) {
-        if (!entry.value.contains(form)) {
-          generatedStrings.add("${entry.key}_${form}")
-        }
-      }
-    }
-
-    // TODO: Use proper output folder for generated code and resources?
-
     // generated.xml
 
-    writeToFile("app/src/main/res/values/generated.xml") { xml ->
+    writeToFile(
+      res.resolve("values/generated.xml")
+    ) { xml ->
       xml.append("""
         <?xml version="1.0" encoding="utf-8"?>
         <!-- AUTOGENERATED, DO NOT MODIFY -->
         <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-          <string name="AppName">${applicationName()}</string>
-          ${generatedStrings.joinToString("\n          ") { "<string name=\"$it\" />" }}
-          ${generatedIds.joinToString("\n          ") { "<item type=\"id\" name=\"$it\" />" }}
+        
+      """.trimIndent())
+      generatedIds.forEach { id ->
+        xml.append(
+          "  <item type=\"id\" name=\"$id\" />\n"
+        )
+      }
+      xml.append("""
         </resources>
       """.trimIndent())
-    }
-
-    // LangUtils.kt
-
-    writeToFile("app/src/main/java/org/thunderdog/challegram/core/LangUtils.kt") { kt ->
-      kt.append("@file:JvmName(\"LangUtils\")\n\n")
-        .append("package org.thunderdog.challegram.core\n\n")
-        .append("import androidx.annotation.StringRes\n")
-        .append("import me.vkryl.annotation.Autogenerated\n")
-        .append("import org.thunderdog.challegram.theme.ColorId\n")
-        .append("import org.thunderdog.challegram.theme.PropertyId\n")
-
-      kt.append("import org.thunderdog.challegram.R\n\n")
-
-      kt.append("""
-        @Autogenerated fun getAllKeys (): Array<Array<String>> = arrayOf(
-          arrayOf(
-            ${ordinaryKeys.toSortedSet().joinToString(",\n            ") { "\"$it\"" }}
-          ),
-          arrayOf(
-            ${pluralKeys.toSortedSet().joinToString(",\n            ") { "\"$it\"" }}
-          )
-        )
-        
-        @Autogenerated fun getBlacklistedKeys (): Array<String> = arrayOf(
-          ${blacklistedKeys.toSortedSet().joinToString(",\n          ") { "\"$it\"" }}
-        )
-        
-        
-      """.trimIndent())
-
-      kt.append("@Autogenerated @StringRes fun getRelativeDateForm (@StringRes res: Int, @Lang.RelativeDateForm form: Int): Int = when (res) {\n")
-      for (entry in foundRelativeDates) {
-        kt.append("  R.string.").append(entry.key).append(" -> when (form) {\n")
-        entry.value.forEach { form ->
-          kt.append("    Lang.RelativeDateForm.").append(form.uppercase(Locale.US))
-                .append(" -> ")
-                .append("R.string.").append(entry.key).append("_").append(form)
-                .append("\n")
-        }
-        kt.append("    else -> throw IllegalArgumentException(form.toString())\n")
-          .append("  }\n")
-      }
-      kt.append("  else -> throw IllegalArgumentException(Lang.getResourceEntryName(res))\n")
-        .append("}\n\n")
-
-
-      kt.append("@Autogenerated @StringRes fun getColorIdDescription (@ColorId colorId: Int): Int = when (colorId) {\n")
-      foundColorDescriptions.keys.forEach { key ->
-        kt.append("  ColorId.")
-        kt.append(key).append(" -> R.string.c_").append(key).append("\n")
-      }
-      kt.append("  else -> 0\n")
-         .append("}\n\n")
-
-      kt.append("@Autogenerated @StringRes fun getPropertyIdDescription (@PropertyId propertyId: Int): Int = when (propertyId) {\n")
-      foundPropertyDescriptions.keys.forEach { key ->
-        kt.append("  PropertyId.${key.camelCaseToUpperCase()}")
-          .append(" -> R.string.p_").append(key)
-          .append("\n")
-      }
-      kt.append("  else -> 0\n")
-        .append("}\n\n")
-
-      kt.append("@Autogenerated @StringRes fun getPluralForm (@StringRes res: Int, @Lang.PluralForm form: Int): Int = when (res) {\n")
-      for (entry in foundPlurals) {
-        kt.append("  R.string.").append(entry.key)
-              .append(" -> when (form) {\n")
-        pluralForms.forEach { form ->
-          kt.append("    Lang.PluralForm.").append(form.uppercase(Locale.US))
-                .append(" -> ")
-                .append("R.string.").append(entry.key).append("_").append(form).append("\n")
-        }
-        kt.append("    else -> throw IllegalArgumentException(form.toString())\n")
-        kt.append("  }\n")
-      }
-      kt.append("  else -> throw IllegalArgumentException(Lang.getResourceEntryName(res))\n")
-        .append("}\n")
     }
 
     // Themes
@@ -312,9 +118,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
     val themesList = mutableListOf<Theme>()
     val themesMap = mutableMapOf<Int, Theme>()
     val missingMap = mutableMapOf<Int, Set<String>>()
-    File("app/src/main/other/themes").listFiles {
-      s -> s.name.endsWith(".tgx-theme")
-    }?.forEach { themeFile ->
+    themeFiles.forEach { themeFile ->
       val theme = Theme(themeFile)
 
       val missingKeys = if (theme.isTinted) tintedColors.toMutableList() else ArrayList(themeColors)
@@ -361,7 +165,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
 
     // ThemeId.java
 
-    writeToFile("app/src/main/java/org/thunderdog/challegram/theme/ThemeId.java") { java ->
+    writeToFile(
+      java.resolve("org/thunderdog/challegram/theme/ThemeId.java")
+    ) { java ->
       java.append("""
         /*
          * This file is a part of Telegram X
@@ -410,7 +216,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
 
     // PropertyId.java
 
-    writeToFile("app/src/main/java/org/thunderdog/challegram/theme/PropertyId.java") { java ->
+    writeToFile(
+      java.resolve("org/thunderdog/challegram/theme/PropertyId.java")
+    ) { java ->
       java.append("""
         /*
          * This file is a part of Telegram X
@@ -459,7 +267,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
 
     // ColorId.java
 
-    writeToFile("app/src/main/java/org/thunderdog/challegram/theme/ColorId.java") { java ->
+    writeToFile(
+      java.resolve("org/thunderdog/challegram/theme/ColorId.java")
+    ) { java ->
       java.append("""
         /*
          * This file is a part of Telegram X
@@ -508,7 +318,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
 
     // ColorIdTinted.java
 
-    writeToFile("app/src/main/java/org/thunderdog/challegram/theme/ColorIdTinted.java") { java ->
+    writeToFile(
+      java.resolve("org/thunderdog/challegram/theme/ColorIdTinted.java")
+    ) { java ->
       java.append("""
         /*
          * This file is a part of Telegram X
@@ -548,7 +360,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
         public @interface ColorIdTinted { }
       """.trimIndent())
     }
-    writeToFile("app/src/main/java/org/thunderdog/challegram/theme/PorterDuffColorId.java") { java ->
+    writeToFile(
+      java.resolve("org/thunderdog/challegram/theme/PorterDuffColorId.java")
+    ) { java ->
       java.append("""
         /*
          * This file is a part of Telegram X
@@ -586,7 +400,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
         public @interface PorterDuffColorId { }
       """.trimIndent())
     }
-    writeToFile("app/src/main/java/org/thunderdog/challegram/theme/FallbackColorId.kt") { kt ->
+    writeToFile(
+      kotlin.resolve("org/thunderdog/challegram/theme/FallbackColorId.kt")
+    ) { kt ->
       kt.append("""
         @file:JvmName("FallbackColorId")
         
@@ -599,7 +415,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
         """}
       """.trimIndent())
     }
-    writeToFile("app/src/main/java/org/thunderdog/challegram/tool/PorterDuffPaint.kt") { kt ->
+    writeToFile(
+      kotlin.resolve("org/thunderdog/challegram/tool/PorterDuffPaint.kt")
+    ) { kt ->
       kt.append("""
         @file:JvmName("PorterDuffPaint")
 
@@ -641,7 +459,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
 
     // ThemeProperties.kt
 
-    writeToFile("app/src/main/java/org/thunderdog/challegram/theme/ThemeProperties.kt") { kt ->
+    writeToFile(
+      kotlin.resolve("org/thunderdog/challegram/theme/ThemeProperties.kt")
+    ) { kt ->
       kt.append("""
         @file:JvmName("ThemeProperties")
         
@@ -689,7 +509,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
 
     // ThemeColors.kt
 
-    writeToFile("app/src/main/java/org/thunderdog/challegram/theme/ThemeColors.kt") { kt ->
+    writeToFile(
+      kotlin.resolve("org/thunderdog/challegram/theme/ThemeColors.kt")
+    ) { kt ->
       kt.append("""
         @file:JvmName("ThemeColors")
         
@@ -746,35 +568,28 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       """.trimIndent())
     }
 
-    // XML Resources
-
-    writeToFile("app/src/main/res/xml/authenticator.xml") { xml ->
-      xml.append("""
-        <?xml version="1.0" encoding="utf-8"?>
-        <account-authenticator xmlns:android="http://schemas.android.com/apk/res/android"
-          android:accountType="${applicationId()}.sync.account"
-          android:icon="@mipmap/app_launcher_round"
-          android:smallIcon="@mipmap/app_launcher_round"
-          android:label="@string/AppName" />
-      """.trimIndent())
-    }
-
-    writeToFile("app/src/main/res/xml/syncadapter.xml") { xml ->
-      xml.append("""
-        <?xml version="1.0" encoding="utf-8"?>
-        <sync-adapter xmlns:android="http://schemas.android.com/apk/res/android"
-          android:contentAuthority="${applicationId()}.sync.provider"
-          android:accountType="${applicationId()}.sync.account"
-          android:userVisible="true"
-          android:supportsUploading="true"
-          android:allowParallelSyncs="false"
-          android:isAlwaysSyncable="true" />
-      """.trimIndent())
-    }
-
     // Themes
 
-    writeToFile("app/src/main/java/org/thunderdog/challegram/theme/builtin/ThemeBubbleOverride.kt") { kt ->
+    val rudimentaryFileNames = kotlin.resolve(
+      "org/thunderdog/challegram/theme/builtin"
+    ).takeIf {
+      it.exists()
+    }?.listFiles()?.map {
+      it.name
+    }?.toMutableSet() ?: mutableSetOf()
+
+    val writeToThemeFile: (String, block: (Writer) -> Unit) -> Unit = { fileName, block ->
+      writeToFile(
+        kotlin.resolve("org/thunderdog/challegram/theme/builtin/${fileName}")
+      ) {
+        block(it)
+      }
+      rudimentaryFileNames -= fileName
+    }
+
+    writeToThemeFile(
+      "ThemeBubbleOverride.kt"
+    ) { kt ->
       kt.append("""
         @file:JvmName("ThemeBubbleOverride")
         
@@ -806,7 +621,9 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       val className = if (isSource) "Default" else theme.className
       val parentTheme = if (theme.parentTheme != 0) themesMap[theme.parentTheme] else if (!isSource) themesMap[sourceTheme] else null
 
-      writeToFile("app/src/main/java/org/thunderdog/challegram/theme/builtin/Theme${className}.kt") { writer ->
+      writeToThemeFile(
+        "Theme${className}.kt"
+      ) { writer ->
         writer.append("""
           @file:JvmName("Theme${className}")
           
@@ -936,294 +753,13 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       }
     }
 
-    // TdCompileAssert.kt & TdUnsupported.kt
-    // TODO: move file generation to vkryl/td
-
-    val tdApi = File("tdlib/src/main/java/org/drinkless/tdlib/TdApi.java").readText()
-
-    val tdTypesMap = mutableMapOf<String, Set<String>>()
-    val tdTypeHashCode = mutableMapOf<String, String>()
-
-    val typesRegex = Regex("public abstract static class ([a-zA-Z]+) extends Object \\{[^@]+[^\\n]+\\s+@IntDef\\(\\{([^}]+)")
-    var matchResult: MatchResult?
-    matchResult = typesRegex.find(tdApi)
-    val tdTypes = mutableListOf<Pair<String, Pair<Set<String>, String>>>()
-    val hashCodes = mutableSetOf<String>()
-    while (matchResult != null) {
-      val (typeName, constructorsRaw) = matchResult.destructured
-      val constructorsOriginal = constructorsRaw.split(",").map {
-        it.trim().replace(".CONSTRUCTOR", "")
-      }.toSortedSet()
-      val constructors = constructorsOriginal.map {
-        it.replace(Regex("^${typeName}"), "")
-      }.toSortedSet()
-      val hashSrc = "${typeName}_${constructors.joinToString("_")}"
-      val crc32 = CRC32()
-      crc32.update(hashSrc.toByteArray())
-
-      val hashCode = crc32.value.toHexString().replace(Regex("^0+"), "")
-      if (!hashCodes.add(hashCode))
-        error("hashCode collision for ${typeName}")
-      val stubMethodName = "assert${typeName}_${hashCode}";
-      if (stubMethodName.length > 65535) {
-        error("Too long (${stubMethodName.length}) method name for type: ${typeName}")
+    if (rudimentaryFileNames.isNotEmpty()) {
+      rudimentaryFileNames.forEach { fileName ->
+        val rudimentaryFile = kotlin.resolve("org/thunderdog/challegram/theme/builtin/${fileName}")
+        if (!rudimentaryFile.delete()) {
+          fatal("Unable to delete rudimentary theme file: ${rudimentaryFile.absolutePath}")
+        }
       }
-      tdTypes.add(Pair(typeName, Pair(constructors, stubMethodName)))
-      tdTypesMap[typeName] = constructorsOriginal
-      tdTypeHashCode[typeName] = hashCode
-
-      matchResult = matchResult.next()
-    }
-    tdTypes.sortBy { it.first }
-
-    writeToFile("vkryl/td/src/main/kotlin/tgx/td/TdCompileAssert.kt") { kt ->
-      kt.append("""
-        /*
-         * This file is a part of tdlib-utils
-         * Copyright © 2014 (tgx-android@pm.me)
-         *
-         * Licensed under the Apache License, Version 2.0 (the "License");
-         * you may not use this file except in compliance with the License.
-         * You may obtain a copy of the License at
-         *
-         *      http://www.apache.org/licenses/LICENSE-2.0
-         *
-         * Unless required by applicable law or agreed to in writing, software
-         * distributed under the License is distributed on an "AS IS" BASIS,
-         * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-         * See the License for the specific language governing permissions and
-         * limitations under the License.
-         */
-
-        @file:JvmName("Td")
-        @file:JvmMultifileClass
-
-        package tgx.td
-
-        import me.vkryl.annotation.Autogenerated
-        import org.drinkless.tdlib.TdApi.*
-        
-        // Cause compilation error whenever new constructor is added to the TDLib type
-        // by calling one of the corresponding stub methods below in places, where you expect to support all of them.
-        
-        ${tdTypes.joinToString("\n\n        ") {
-          "${it.second.first.joinToString("\n        ") { const -> "// $const" } }\n        @Autogenerated fun ${it.second.second} (): ${it.first}? = null"
-        }}
-      """.trimIndent())
-    }
-
-    writeToFile("vkryl/td/src/main/kotlin/tgx/td/TdUnsupported.kt") { kt ->
-      kt.append("""
-        /*
-         * This file is a part of tdlib-utils
-         * Copyright © 2014 (tgx-android@pm.me)
-         *
-         * Licensed under the Apache License, Version 2.0 (the "License");
-         * you may not use this file except in compliance with the License.
-         * You may obtain a copy of the License at
-         *
-         *      http://www.apache.org/licenses/LICENSE-2.0
-         *
-         * Unless required by applicable law or agreed to in writing, software
-         * distributed under the License is distributed on an "AS IS" BASIS,
-         * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-         * See the License for the specific language governing permissions and
-         * limitations under the License.
-         */
-
-        @file:JvmName("Td")
-        @file:JvmMultifileClass
-
-        package tgx.td
-
-        import me.vkryl.annotation.Autogenerated
-        import org.drinkless.tdlib.TdApi.*
-        
-        // Use throw unsupported(object) to group multiple crashes of the same kind into one report,
-        // and access critical places via Find Usages for the methods below when any new constructors are added
-
-        ${tdTypes.joinToString("\n        ") {
-          "@Autogenerated fun unsupported (data: ${it.first}): NotImplementedError = NotImplementedError(data.toString())"
-        }}
-      """.trimIndent())
-    }
-
-    val equalTypes = tdlibEqualTypes()
-      .sortedWith(compareBy<TdlibType> {
-        tdTypesMap.containsKey(it.name)
-      }.thenBy {
-        it.name
-      })
-
-    val arrayEqualTypes = tdlibArrayEqualTypes()
-      .sortedBy {
-        it.name
-      }
-
-    val fetchFieldsTypes = mutableListOf<String>()
-    equalTypes.forEach { type ->
-      val allConstructors = tdTypesMap[type.name]
-      if (allConstructors != null) {
-        fetchFieldsTypes.addAll(allConstructors)
-      } else {
-        fetchFieldsTypes.add(type.name)
-      }
-    }
-    val tdTypeFields = mutableMapOf<String, List<Pair<String, String>>>()
-    val fieldsRegex = Regex("public (${fetchFieldsTypes.joinToString("|")})\\(([^)]+)\\)")
-    matchResult = fieldsRegex.find(tdApi)
-    while (matchResult != null) {
-      val (typeName, fieldsListRaw) = matchResult.destructured
-      val fieldsList = fieldsListRaw.split(", ").map {
-        val data = it.split(" ")
-        Pair(data[0], data[1])
-      }
-      tdTypeFields[typeName] = fieldsList
-      matchResult = matchResult.next()
-    }
-
-    fun tdCompare (type: String, a: String, b: String): String = when (type) {
-      "int",
-      "long",
-      "float",
-      "double",
-      "byte",
-      "boolean" -> "$a == $b"
-      "int[]",
-      "long[]",
-      "double[]",
-      "float[]",
-      "byte[]",
-      "boolean[]" -> "$a.contentEqualsOrEmpty($b)"
-      "String" -> "$a.equalsOrEmpty($b)"
-      "String[]" -> "$a.contentEqualsOrEmpty($b)"
-      else -> "$a.equalsTo($b)"
-    }
-
-    fun typeEfficiencyOrder (type: String) = when (type) {
-      "int",
-      "long",
-      "float",
-      "double",
-      "byte",
-      "boolean" -> 1
-      "String" -> 2
-      "int[]",
-      "long[]",
-      "double[]",
-      "float[]",
-      "byte[]",
-      "boolean[]" -> 3
-      "String[]" -> 4
-      else -> 2
-    }
-
-    fun fieldId (constructor: String, field: String) = "$constructor.$field"
-
-    fun genConstructorCompare (type: TdlibType, constructor: String, indent: String): String {
-      return (tdTypeFields[constructor].let { fields ->
-        (if (!fields.isNullOrEmpty()) {
-          "if (COMPILE_CHECK) {" +
-            "\n${indent}  $constructor(" +
-            "\n${indent}    ${tdTypeFields[constructor]!!.joinToString(",\n${indent}    ") {
-              "this.${it.second}"
-            } }" +
-            "\n${indent}  )" +
-            "\n${indent}}"
-        } else "") +
-          (fields?.filter {
-            field -> !type.ignoredFields.contains(fieldId(constructor, field.second))
-          }?.takeIf { it.isNotEmpty() }?.sortedWith(compareBy {
-            typeEfficiencyOrder(it.first)
-          })?.joinToString(separator = " &&\n${indent}", prefix = "\n${indent}") {
-            tdCompare(it.first, "this.${it.second}", "b.${it.second}")
-          } ?: "") +
-          (fields?.filter {
-            field -> type.ignoredFields.contains(fieldId(constructor, field.second))
-          }?.takeIf { it.isNotEmpty() }?.joinToString(separator = "\n${indent}", prefix = "\n${indent}") {
-            "// ignored: " + tdCompare(it.first, "this.${it.second}", "b.${it.second}")
-          } ?: "") +
-          ("\n${indent}true // nothing to compare".takeIf {
-            fields == null || fields.count { field -> !type.ignoredFields.contains(fieldId(constructor, field.second)) } == 0
-          } ?: "")
-      })
-    }
-
-    writeToFile("vkryl/td/src/main/kotlin/tgx/td/TdEqualsTo.kt") { kt ->
-      kt.append("""
-        /*
-         * This file is a part of tdlib-utils
-         * Copyright © 2014 (tgx-android@pm.me)
-         *
-         * Licensed under the Apache License, Version 2.0 (the "License");
-         * you may not use this file except in compliance with the License.
-         * You may obtain a copy of the License at
-         *
-         *      http://www.apache.org/licenses/LICENSE-2.0
-         *
-         * Unless required by applicable law or agreed to in writing, software
-         * distributed under the License is distributed on an "AS IS" BASIS,
-         * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-         * See the License for the specific language governing permissions and
-         * limitations under the License.
-         */
-
-        @file:JvmName("Td")
-        @file:JvmMultifileClass
-
-        package tgx.td
-
-        import me.vkryl.annotation.Autogenerated
-        import org.drinkless.tdlib.TdApi.*
-        import kotlin.contracts.ExperimentalContracts
-        
-        // Arrays
-        
-        ${arrayEqualTypes.joinToString("\n\n        ") { type ->
-          "@Autogenerated\n        " + 
-          "fun Array<${type.name}>?.equalsTo(other: Array<${type.name}>?): Boolean = \n        " +
-          "  this.contentEqualsOrEmpty(other, ${type.name}::equalsTo)"
-        }}
-        
-        // Contents
-        
-        ${equalTypes.joinToString("\n        ") { type ->
-          (if (type.isExperimental) "@OptIn(ExperimentalContracts::class)\n        " else "") +
-          "@Autogenerated\n        fun ${type.name}?.equalsTo(other: ${type.name}?): Boolean = this.safeEqualsTo(other) { ${
-            type.name.let {
-              val maxFieldsCount = (tdTypesMap[type.name]?.map { constructor ->
-                tdTypeFields[constructor]?.size ?: 0
-              })?.max() ?: tdTypeFields[type.name]?.size ?: 0
-              if (maxFieldsCount > 0) {
-                "b"
-              } else {
-                "_" // unused variable
-              }
-            }
-          } ->\n          " +
-            (if (tdTypesMap.containsKey(type.name)) {
-              "when (this.constructor) {\n          " +
-                (tdTypesMap[type.name]!!.filter { constructor ->
-                  tdTypeFields[constructor].isNullOrEmpty()
-                }.takeIf { it.isNotEmpty() }?.joinToString(separator = ",\n          ", postfix = " ->\n              true // nothing to compare\n          ") { constructor ->
-                  "  $constructor.CONSTRUCTOR"
-                } ?: "") +
-                (tdTypesMap[type.name]!!.filter { constructor ->
-                  !tdTypeFields[constructor].isNullOrEmpty()
-                }.takeIf { it.isNotEmpty() }?.joinToString(separator = "\n          ", postfix = "\n          ") { constructor ->
-                  "  $constructor.CONSTRUCTOR -> {\n            " +
-                    "  require(this is $constructor && b is $constructor)\n              " +
-                    genConstructorCompare(type, constructor, indent = "              ") + "\n            " +
-                  "}"
-                } ?: "") + 
-                "  else -> {\n            " +
-                "  assert${type.name}_${tdTypeHashCode[type.name]}()\n            " +
-                "  throw unsupported(this)" +
-                "\n            }\n          }"
-            } else genConstructorCompare(type, type.name, indent = "          ")) + "\n        " +
-          "}\n      "
-        }}
-      """.trimIndent())
     }
   }
 }

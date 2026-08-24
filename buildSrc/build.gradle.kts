@@ -26,7 +26,7 @@ gradlePlugin {
   plugins {
     register("tgx-config") {
       id = "tgx-config"
-      implementationClass = "tgx.gradle.plugin.ConfigurationPlugin"
+      implementationClass = "tgx.gradle.plugin.AppConfigurationPlugin"
     }
     register("tgx-module") {
       id = "tgx-module"

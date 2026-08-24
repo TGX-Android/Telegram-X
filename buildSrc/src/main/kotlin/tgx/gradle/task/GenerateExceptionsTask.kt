@@ -12,19 +12,32 @@
  */
 package tgx.gradle.task
 
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import tgx.gradle.getOrThrow
-import tgx.gradle.loadProperties
+import tgx.gradle.validateDir
 import kotlin.contracts.ExperimentalContracts
 
-open class UpdateExceptionsTask : BaseTask() {
+@CacheableTask
+abstract class GenerateExceptionsTask : DefaultTask() {
+  @get:Input
+  abstract val applicationVersion: Property<Int>
+
+  @get:OutputDirectory
+  abstract val javaOutputDir: DirectoryProperty
+
   @ExperimentalContracts
   @TaskAction
   fun updateExceptions () {
-    val appVersion = loadProperties("version.properties").getOrThrow("version.app").toInt()
-    if (appVersion == 0)
-      error("appVersion == 0")
-    writeToFile("app/src/main/java/org/drinkmore/ClientException.java") { java ->
+    val appVersion = applicationVersion.get()
+    val java = validateDir(javaOutputDir.get().asFile)
+    writeToFile(
+      java.resolve("org/drinkmore/ClientException.java")
+    ) { java ->
       java.append("""
         package org.drinkmore;
         

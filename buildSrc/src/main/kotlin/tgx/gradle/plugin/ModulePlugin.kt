@@ -1,7 +1,6 @@
 package tgx.gradle.plugin
 
 import Abi
-import ApplicationConfig
 import Config
 import Sdk
 import com.android.build.api.dsl.ApplicationExtension
@@ -12,47 +11,27 @@ import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.kotlin.dsl.dependencies
-import org.gradle.kotlin.dsl.extra
-import org.gradle.kotlin.dsl.get
-import org.gradle.kotlin.dsl.the
+import org.gradle.kotlin.dsl.*
 import tgx.gradle.findExtraFolders
-import tgx.gradle.getIntOrThrow
-import tgx.gradle.getOrThrow
-import tgx.gradle.loadProperties
+import tgx.gradle.source.AppBuildVersionSource
+import tgx.gradle.source.KeystoreSource
 import java.io.File
 
-private data class Versions(
-  val compileSdk: Int,
-  val buildTools: String,
-  val legacyNdk: String,
-  val targetSdk: Int,
-) {
-  constructor(config: ApplicationConfig) : this(
-    compileSdk = config.compileSdkVersion,
-    buildTools = config.buildToolsVersion,
-    legacyNdk = config.legacyNdkVersion,
-    targetSdk = config.targetSdkVersion
-  )
-}
-
+@Suppress("UnstableApiUsage")
 open class ModulePlugin : Plugin<Project> {
   override fun apply(project: Project) {
     val config = try {
-      project.extra["config"] as ApplicationConfig
+      project.extensions.getByType<AppConfigurationExtension>().config.get()
     } catch (_: Exception) {
       null
     }
-    val versions = if (config != null) {
-      Versions(config)
-    } else {
-      val versions = loadProperties("version.properties")
-      Versions(
-        compileSdk = versions.getIntOrThrow("version.sdk_compile"),
-        buildTools = versions.getOrThrow("version.build_tools"),
-        targetSdk = versions.getIntOrThrow("version.sdk_target"),
-        legacyNdk = versions.getOrThrow("version.ndk_legacy")
-      )
+    val build by lazy {
+      config?.build ?:
+      project.providers.of(AppBuildVersionSource::class) {
+        parameters.version.set(
+          project.isolated.rootProject.projectDirectory.file("version.properties")
+        )
+      }.get()
     }
 
     val libs = project.the<LibrariesForLibs>()
@@ -83,14 +62,21 @@ open class ModulePlugin : Plugin<Project> {
     }
 
     val androidExt = project.extensions.getByName("android")
+    val keystore = config?.keystorePropertiesPath?.let { keystorePropertiesPath ->
+      project.providers.of(KeystoreSource::class) {
+        parameters.properties.set(
+          project.rootProject.projectDir.resolve(keystorePropertiesPath)
+        )
+      }
+    }
 
     androidExt.apply {
       when (this) {
         is LibraryExtension -> {
-          buildToolsVersion = versions.buildTools
-          ndkVersion = versions.legacyNdk
+          buildToolsVersion = build.buildToolsVersion
+          ndkVersion = build.legacyNdkVersion
           compileSdk {
-            version = release(versions.compileSdk)
+            version = release(build.compileSdkVersion)
           }
           lint {
             checkReleaseBuilds = false
@@ -144,10 +130,10 @@ open class ModulePlugin : Plugin<Project> {
         }
 
         is ApplicationExtension -> {
-          buildToolsVersion = versions.buildTools
-          ndkVersion = versions.legacyNdk
+          buildToolsVersion = build.buildToolsVersion
+          ndkVersion = build.legacyNdkVersion
           compileSdk {
-            version = release(versions.compileSdk)
+            version = release(build.compileSdkVersion)
           }
           lint {
             checkReleaseBuilds = false
@@ -168,10 +154,10 @@ open class ModulePlugin : Plugin<Project> {
 
           defaultConfig {
             minSdk = Config.MIN_SDK_VERSION
-            targetSdk = versions.targetSdk
+            targetSdk = build.targetSdkVersion
             multiDexEnabled = true
           }
-          config?.keystore?.let { keystore ->
+          keystore?.orNull?.let { keystore ->
             signingConfigs {
               arrayOf(
                 getByName("debug"),
@@ -232,10 +218,10 @@ open class ModulePlugin : Plugin<Project> {
         }
 
         is TestExtension -> {
-          buildToolsVersion = versions.buildTools
-          ndkVersion = versions.legacyNdk
+          buildToolsVersion = build.buildToolsVersion
+          ndkVersion = build.legacyNdkVersion
           compileSdk {
-            version = release(versions.compileSdk)
+            version = release(build.compileSdkVersion)
           }
           compileOptions {
             isCoreLibraryDesugaringEnabled = true
@@ -250,7 +236,7 @@ open class ModulePlugin : Plugin<Project> {
             jniLibs.directories += "jniLibs"
           }
 
-          config?.keystore?.let { keystore ->
+          keystore?.orNull?.let { keystore ->
             signingConfigs {
               arrayOf(
                 getByName("debug"),
@@ -261,6 +247,10 @@ open class ModulePlugin : Plugin<Project> {
                 config.keyAlias = keystore.keyAlias
                 config.keyPassword = keystore.keyPassword
                 config.enableV2Signing = true
+                config.enableV3Signing = true
+                if (config.name == "debug") {
+                  config.enableV4Signing = true
+                }
               }
             }
 

@@ -22,8 +22,12 @@ dependencyResolutionManagement {
   }
 }
 
+val generateBaselineProfile = providers.gradleProperty("generateBaselineProfile").map {
+  it.toBoolean()
+}.orElse(false)
+
 rootProject.name = "tgx"
-if (providers.gradleProperty("generateBaselineProfile").isPresent) {
+if (generateBaselineProfile.get()) {
   include(":baseline-profile")
 }
 include(

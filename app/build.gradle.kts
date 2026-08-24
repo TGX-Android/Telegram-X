@@ -6,6 +6,7 @@ import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.impl.VariantOutputImpl
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
+import tgx.gradle.source.*
 import tgx.gradle.task.*
 import java.util.*
 
@@ -16,32 +17,100 @@ plugins {
   id("tgx-module")
 }
 
-val generateResourcesAndThemes = tasks.register<GenerateResourcesAndThemesTask>("generateResourcesAndThemes") {
+val config = tgxConfig.config.get()
+val generateBaselineProfile = tgxConfig.generateBaselineProfile.get()
+
+val generateThemes = tasks.register<GenerateThemesTask>("generateThemes") {
   group = "Setup"
-  description = "Generates fresh strings, ids, theme resources and utility methods based on current static files"
+  description = "Generates fresh ids, theme resources and utility methods based on current theme files"
+  // Input
+  colorsAndProperties.set(layout.projectDirectory.file(
+    "src/main/other/themes/colors-and-properties.xml"
+  ))
+  themeFiles.from(layout.projectDirectory.dir(
+    "src/main/other/themes"
+  ).asFileTree.matching {
+    include("*.tgx-theme")
+  })
+  // Output
+  resOutputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/themes/res"
+  ))
+  javaOutputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/themes/java"
+  ))
+  kotlinOutputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/themes/kotlin"
+  ))
 }
-val updateLanguages = tasks.register<FetchLanguagesTask>("updateLanguages") {
+val generateLangFunctions = tasks.register<GenerateLangFunctions>("generateLangFunctions") {
   group = "Setup"
-  description = "Generates and updates all strings.xml resources based on translations.telegram.org"
+  description = "Generates extra string resources and utility methods based on strings.xml"
+  // Input
+  stringsXml.set(layout.projectDirectory.file(
+    "src/main/res/values/strings.xml"
+  ))
+  colorIdJava.set(generateThemes.flatMap {
+    it.javaOutputDir.file(
+      "org/thunderdog/challegram/theme/ColorId.java"
+    )
+  })
+  propertyIdJava.set(generateThemes.flatMap {
+    it.javaOutputDir.file(
+      "org/thunderdog/challegram/theme/PropertyId.java"
+    )
+  })
+  // Output
+  resOutputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/strings/res"
+  ))
+  kotlinOutputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/strings/kotlin"
+  ))
+}
+val generateEmojiSetsTask = tasks.register<GenerateEmojiSetsTask>("checkEmojiKeyboard") {
+  group = "Setup"
+  description = "Checks that all supported emoji can be entered from the keyboard"
+  // Input
+  emojiCode.set(layout.projectDirectory.file(
+    "src/main/java/org/thunderdog/challegram/tool/EmojiCode.java"
+  ))
+  emojiCodeColored.set(layout.projectDirectory.file(
+    "src/main/java/org/thunderdog/challegram/tool/EmojiCodeColored.java"
+  ))
+  // Output
+  kotlinOutputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/emojis/kotlin"
+  ))
+}
+val generateExceptions = tasks.register<GenerateExceptionsTask>("updateExceptions") {
+  group = "Setup"
+  description = "Updates exception class names with the app or TDLib version number in order to have separate group on Google Play Developer Console"
+  applicationVersion.set(
+    config.applicationVersion
+  )
+  javaOutputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/exceptions/java"
+  ))
 }
 val validateApiTokens = tasks.register<ValidateApiTokensTask>("validateApiTokens") {
   group = "Setup"
   description = "Validates some API tokens to make sure they work properly and won't cause problems"
+  applicationId.set(
+    config.applicationId
+  )
+  googleServicesJson.set(layout.projectDirectory.file(
+    "google-services.json"
+  ))
 }
-val updateExceptions = tasks.register<UpdateExceptionsTask>("updateExceptions") {
+val fetchLocalizedStrings = tasks.register<FetchLocalizedStringsTask>("fetchLocalizedStrings") {
   group = "Setup"
-  description = "Updates exception class names with the app or TDLib version number in order to have separate group on Google Play Developer Console"
-}
-val generatePhoneFormat = tasks.register<GeneratePhoneFormatTask>("generatePhoneFormat") {
-  group = "Setup"
-  description = "Generates utility methods for phone formatting, e.g. +12345678901 -> +1 (234) 567 89-01"
-}
-val checkEmojiKeyboard = tasks.register<CheckEmojiKeyboardTask>("checkEmojiKeyboard") {
-  group = "Setup"
-  description = "Checks that all supported emoji can be entered from the keyboard"
-}
+  description = "Generates and updates all strings.xml resources based on translations.telegram.org"
 
-val config = extra["config"] as ApplicationConfig
+  resOutputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/locales/res"
+  ))
+}
 
 //noinspection WrongGradleMethod
 android {
@@ -83,8 +152,12 @@ android {
 
   defaultConfig {
     applicationId = config.applicationId
-    targetSdk = config.targetSdkVersion
+    targetSdk = config.build.targetSdkVersion
     multiDexEnabled = true
+
+    resValue("string", "AppName", config.applicationName)
+    resValue("string", "account_type", "${config.applicationId}.sync.account")
+    resValue("string", "content_authority", "${config.applicationId}.sync.provider")
 
     buildConfigString("PROJECT_NAME", config.applicationName)
     buildConfigBool("SHARED_STL", Config.SHARED_STL)
@@ -105,7 +178,7 @@ android {
 
     buildConfigField("boolean", "EXPERIMENTAL", config.isExperimentalBuild.toString())
 
-    buildConfigInt("TARGET_SDK_INT", config.targetSdkVersion)
+    buildConfigInt("TARGET_SDK_INT", config.build.targetSdkVersion)
 
     buildConfigInt("TELEGRAM_API_ID", config.telegramApiId)
     buildConfigString("TELEGRAM_API_HASH", config.telegramApiHash)
@@ -142,7 +215,7 @@ android {
 
     buildConfigString("TDLIB_VERSION", tdlibVersion)
 
-    val tgxGitVersionProvider = providers.of(GitVersionValueSource::class) {
+    val tgxGitVersionProvider = providers.of(GitVersionSource::class) {
       parameters.module = layout.projectDirectory
     }
     val tgxGit = tgxGitVersionProvider.get()
@@ -178,7 +251,7 @@ android {
 
     // OpenSSL version
 
-    val openSslGit = providers.of(GitVersionValueSource::class) {
+    val openSslGit = providers.of(GitVersionSource::class) {
       parameters.module = layout.projectDirectory.dir("../tdlib/source/openssl")
     }.get()
     buildConfigString("OPENSSL_COMMIT", openSslGit.commitHashShort)
@@ -186,7 +259,7 @@ android {
 
     // WebRTC version
 
-    val webrtcGit = providers.of(GitVersionValueSource::class) {
+    val webrtcGit = providers.of(GitVersionSource::class) {
       parameters.module = layout.projectDirectory.dir("jni/third_party/webrtc")
     }.get()
     buildConfigString("WEBRTC_COMMIT", webrtcGit.commitHashShort)
@@ -194,7 +267,7 @@ android {
 
     // tgcalls version
 
-    val tgcallsGit = providers.of(GitVersionValueSource::class) {
+    val tgcallsGit = providers.of(GitVersionSource::class) {
       parameters.module = layout.projectDirectory.dir("jni/third_party/tgcalls")
     }.get()
     buildConfigString("TGCALLS_COMMIT", tgcallsGit.commitHashShort)
@@ -202,7 +275,7 @@ android {
 
     // FFmpeg version
 
-    val ffmpegGit = providers.of(GitVersionValueSource::class) {
+    val ffmpegGit = providers.of(GitVersionSource::class) {
       parameters.module = layout.projectDirectory.dir("jni/third_party/ffmpeg")
     }.get()
     buildConfigString("FFMPEG_COMMIT", ffmpegGit.commitHashShort)
@@ -210,7 +283,7 @@ android {
 
     // WebP version
 
-    val webpGit = providers.of(GitVersionValueSource::class) {
+    val webpGit = providers.of(GitVersionSource::class) {
       parameters.module = layout.projectDirectory.dir("jni/third_party/webp")
     }.get()
     buildConfigString("WEBP_COMMIT", webpGit.commitHashShort)
@@ -244,6 +317,7 @@ android {
 
   buildFeatures {
     buildConfig = true
+    resValues = true
   }
 
   flavorDimensions += arrayOf("SDK", "ABI")
@@ -254,7 +328,7 @@ android {
         dimension = "SDK"
         isDefault = sdkIndex == Sdk.LATEST
 
-        if (config.generateBaselineProfile && variant.flavor != "latest") {
+        if (generateBaselineProfile && variant.flavor != "latest") {
           matchingFallbacks += "latest"
         }
         Sdk.VARIANTS.forEach { (subSdkIndex, subVariant) ->
@@ -353,7 +427,7 @@ android {
         dimension = "ABI"
         isDefault = abiIndex == 0
 
-        if (config.generateBaselineProfile && !variant.isTestingLab) {
+        if (generateBaselineProfile && !variant.isTestingLab) {
           matchingFallbacks += Abi.VARIANTS[Abi.LAB]!!.flavor
         }
         Abi.VARIANTS.forEach { (subAbiIndex, subVariant) ->
@@ -361,9 +435,9 @@ android {
         }
 
         ndkVersion = if (variant.is64Bit) {
-          config.primaryNdkVersion
+          config.build.primaryNdkVersion
         } else {
-          config.legacyNdkVersion
+          config.build.legacyNdkVersion
         }
         // ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
         buildConfigString("NDK_VERSION", ndkVersion)
@@ -379,10 +453,41 @@ android {
 
   androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
-      if (config.isExperimentalBuild) {
-        variant.lifecycleTasks.registerPreBuild(updateLanguages)
-      } else {
-        variant.lifecycleTasks.registerPreBuild(updateLanguages, validateApiTokens)
+      if (!config.isExperimentalBuild) {
+        variant.lifecycleTasks.registerPreBuild(validateApiTokens)
+      }
+      variant.sources.res?.addGeneratedSourceDirectory(
+        fetchLocalizedStrings, FetchLocalizedStringsTask::resOutputDir
+      )
+    }
+
+    onVariants { variant ->
+      variant.sources.res?.apply {
+        addGeneratedSourceDirectory(
+          generateThemes, GenerateThemesTask::resOutputDir
+        )
+        addGeneratedSourceDirectory(
+          generateLangFunctions, GenerateLangFunctions::resOutputDir
+        )
+      }
+      variant.sources.java?.apply {
+        addGeneratedSourceDirectory(
+          generateThemes, GenerateThemesTask::javaOutputDir
+        )
+        addGeneratedSourceDirectory(
+          generateExceptions, GenerateExceptionsTask::javaOutputDir
+        )
+      }
+      variant.sources.kotlin?.apply {
+        addGeneratedSourceDirectory(
+          generateThemes, GenerateThemesTask::kotlinOutputDir
+        )
+        addGeneratedSourceDirectory(
+          generateLangFunctions, GenerateLangFunctions::kotlinOutputDir
+        )
+        addGeneratedSourceDirectory(
+          generateEmojiSetsTask, GenerateEmojiSetsTask::kotlinOutputDir
+        )
       }
     }
 
@@ -397,9 +502,6 @@ android {
         sdk * 100 + abi
       }
       val flavorVersionNameSuffix = StringBuilder().apply {
-        if (extra.has("app_version_suffix")) {
-          append(extra["app_version_suffix"])
-        }
         if (config.extension != "none") {
           append("-${config.extension}")
         }
@@ -408,9 +510,6 @@ android {
         }
         if (abiVariant.displayName != "universal" || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
           append("-${abiVariant.displayName}")
-        }
-        if (extra.has("app_name_suffix")) {
-          append("-${extra["app_name_suffix"]}")
         }
         if (variant.debuggable) {
           append("-debug")
@@ -539,16 +638,7 @@ android {
   }
 }
 
-tasks.preBuild.configure {
-  dependsOn(
-    generateResourcesAndThemes,
-    checkEmojiKeyboard,
-    generatePhoneFormat,
-    updateExceptions
-  )
-}
-
-if (config.generateBaselineProfile) {
+if (generateBaselineProfile) {
   apply(plugin = libs.plugins.androidx.baselineprofile.get().pluginId)
 
   extensions.configure<BaselineProfileConsumerExtension> {

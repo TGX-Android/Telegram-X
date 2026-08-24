@@ -1,16 +1,4 @@
-/*
- * This file is a part of Telegram X
- * Copyright © 2014 (tgx-android@pm.me)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-package tgx.gradle.task
+package tgx.gradle.source
 
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ValueSource
@@ -19,10 +7,10 @@ import org.gradle.process.ExecOperations
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.nio.charset.Charset
-import java.util.*
+import java.util.Locale
 import javax.inject.Inject
 
-abstract class GitVersionValueSource : ValueSource<GitVersionValueSource.Details, GitVersionValueSource.Params> {
+abstract class GitVersionSource : ValueSource<GitVersionSource.Details, GitVersionSource.Params> {
   interface Params : ValueSourceParameters {
     val module: DirectoryProperty
   }
