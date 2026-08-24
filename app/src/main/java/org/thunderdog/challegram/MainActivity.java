@@ -638,7 +638,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     if (IntroController.isIntroAttemptedButFailed()) {
       navigation.initController(new PhoneController(this, account.tdlib()));
     } else {
-      navigation.initController(new IntroController(this));
+      navigation.initController(new IntroController(this, account.tdlib()));
     }
   }
 
