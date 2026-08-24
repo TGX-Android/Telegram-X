@@ -299,7 +299,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       return;
     }
     if (this.data != null && data != null && this.data.equalsTo(data.message, data.quote, data.options, data.linkPreview, data.forcedLocalPickedFile)) {
-      if (data.setForcedTitle(data.forcedTitle)) {
+      if (this.data.setForcedTitle(data.forcedTitle)) {
         updateTitleText();
       }
       return;
