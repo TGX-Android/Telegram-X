@@ -893,11 +893,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageManagedBotCreated botCreated) {
     super(context, msg);
     setTextCreator(() -> {
-      TdlibSender targetSender = new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(botCreated.botUserId));
+      TdlibSender createdId = new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(botCreated.botUserId));
+      TdlibSender ownerId = new TdlibSender(tdlib, msg.chatId, getChatSenderId());
       return getText(
         R.string.ActionCreatedManagedBot,
-        new SenderArgument(targetSender),
-        new SenderArgument(sender)
+        new SenderArgument(createdId),
+        new SenderArgument(ownerId)
       );
     });
   }

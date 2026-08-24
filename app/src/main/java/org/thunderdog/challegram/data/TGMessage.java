@@ -4905,6 +4905,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return msg.chatId;
   }
 
+  public final TdApi.MessageSender getChatSenderId () {
+    if (ChatId.isUserChat(msg.chatId)) {
+      return new TdApi.MessageSenderUser(tdlib.chatUserId(msg.chatId));
+    } else {
+      return new TdApi.MessageSenderChat(msg.chatId);
+    }
+  }
+
   private TdApi.ChatAdministrator administrator;
 
   private String getAdministratorSign () {
