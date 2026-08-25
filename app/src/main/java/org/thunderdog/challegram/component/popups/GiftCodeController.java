@@ -105,7 +105,11 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
 
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_SETTING,0, R.drawable.baseline_gift_outline_24, R.string.Gift)
-      .setStringValue(Lang.plural(R.string.xTelegramPremiumForMonth, giftCodeInfo.monthCount)));
+      .setStringValue(
+        giftCodeInfo.monthCount != 0 ?
+          Lang.plural(R.string.xTelegramPremiumForMonth, giftCodeInfo.monthCount) :
+          Lang.plural(R.string.xTelegramPremiumForDays, giftCodeInfo.dayCount)
+      ));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showGiveawayMessage, R.drawable.baseline_info_24, R.string.GiftReason)
       .setStringValue(Lang.getString(giftCodeInfo.isFromGiveaway ? R.string.GiftReasonGiveaway : R.string.GiftReasonGift)));

@@ -69,7 +69,7 @@ data class TdlibOptions(
 
   @JvmField var usdToThousandStarRate: Long = 0,
   @JvmField var thousandStarToUsdRate: Long = 0,
-  @JvmField var millionToncoinToUsdRate: Long = 0,
+  @JvmField var millionGramToUsdRate: Long = 0,
 
   @JvmField var giftTextLengthMax: Int = 128,
   @JvmField var pinnedGiftCountMax: Int = 6,
@@ -78,10 +78,10 @@ data class TdlibOptions(
   @JvmField var giftResaleStarCountMin: Long = 125L,
   @JvmField var giftResaleStarCountMax: Long = 100000L,
   @JvmField var giftResaleEarningsPerMille: Long = 800L,
-  @JvmField var giftResaleToncoinCentCountMax: Long = 10000000L,
-  @JvmField var giftResaleToncoinCentCountMin: Long = 700L,
+  @JvmField var giftResaleGramCentCountMax: Long = 10000000L,
+  @JvmField var giftResaleGramCentCountMin: Long = 700L,
   @JvmField var giftResaleStarEarningsPerMille: Int = 800,
-  @JvmField var giftResaleToncoinEarningsPerMille: Int = 900,
+  @JvmField var giftResaleGramEarningsPerMille: Int = 900,
 
   @JvmField var starWithdrawalCountMin: Long = 1000L,
   @JvmField var starWithdrawalCountMax: Long = 25000000L,
@@ -104,15 +104,15 @@ data class TdlibOptions(
   @JvmField var suggestedPostStarCountMin: Long = 5L,
   @JvmField var suggestedPostStarCountMax: Long = 100000L,
   @JvmField var suggestedPostStarEarningsPerMille: Long = 850L,
-  @JvmField var suggestedPostToncoinCentCountMin: Long = 1L,
-  @JvmField var suggestedPostToncoinCentCountMax: Long = 1000000L,
-  @JvmField var suggestedPostToncoinEarningsPerMille: Long = 850L,
+  @JvmField var suggestedPostGramCentCountMin: Long = 1L,
+  @JvmField var suggestedPostGramCentCountMax: Long = 1000000L,
+  @JvmField var suggestedPostGramEarningsPerMille: Long = 850L,
   @JvmField var suggestedPostSendDelayMin: Int = 300,
   @JvmField var suggestedPostSendDelayMax: Int = 2678400,
 
   @JvmField var tMeUrl: String = "",
   @JvmField var tonBlockchainExplorerUrl: String = "",
-  @JvmField var toncoinTopUpUrl: String = "",
+  @JvmField var gramTopUpUrl: String = "",
 
   @JvmField var languagePackId: String = "",
   @JvmField var suggestedLanguagePackId: String = "",
@@ -342,8 +342,8 @@ data class TdlibOptions(
         usdToThousandStarRate = value.longValue()
       "thousand_star_to_usd_rate" ->
         thousandStarToUsdRate = value.longValue()
-      "million_toncoin_to_usd_rate" ->
-        millionToncoinToUsdRate = value.longValue()
+      "million_gram_to_usd_rate" ->
+        millionGramToUsdRate = value.longValue()
 
       "gift_text_length_max" ->
         giftTextLengthMax = value.intValue()
@@ -365,12 +365,12 @@ data class TdlibOptions(
         giftResaleEarningsPerMille = value.longValue()
       "gift_resale_star_earnings_per_mille" ->
         giftResaleStarEarningsPerMille = value.intValue()
-      "gift_resale_toncoin_cent_count_max" ->
-        giftResaleToncoinCentCountMax = value.longValue()
-      "gift_resale_toncoin_cent_count_min" ->
-        giftResaleToncoinCentCountMin = value.longValue()
-      "gift_resale_toncoin_earnings_per_mille" ->
-        giftResaleToncoinEarningsPerMille = value.intValue()
+      "gift_resale_gram_cent_count_max" ->
+        giftResaleGramCentCountMax = value.longValue()
+      "gift_resale_gram_cent_count_min" ->
+        giftResaleGramCentCountMin = value.longValue()
+      "gift_resale_gram_earnings_per_mille" ->
+        giftResaleGramEarningsPerMille = value.intValue()
 
       "star_withdrawal_count_min" ->
         starWithdrawalCountMin = value.longValue()
@@ -411,12 +411,12 @@ data class TdlibOptions(
         suggestedPostStarCountMax = value.longValue()
       "suggested_post_star_earnings_per_mille" ->
         suggestedPostStarEarningsPerMille = value.longValue()
-      "suggested_post_toncoin_cent_count_min" ->
-        suggestedPostToncoinCentCountMin = value.longValue()
-      "suggested_post_toncoin_cent_count_max" ->
-        suggestedPostToncoinCentCountMax = value.longValue()
-      "suggested_post_toncoin_earnings_per_mille" ->
-        suggestedPostToncoinEarningsPerMille = value.longValue()
+      "suggested_post_gram_cent_count_min" ->
+        suggestedPostGramCentCountMin = value.longValue()
+      "suggested_post_gram_cent_count_max" ->
+        suggestedPostGramCentCountMax = value.longValue()
+      "suggested_post_gram_earnings_per_mille" ->
+        suggestedPostGramEarningsPerMille = value.longValue()
       "suggested_post_send_delay_min" ->
         suggestedPostSendDelayMin = value.intValue()
       "suggested_post_send_delay_max" ->
@@ -426,8 +426,8 @@ data class TdlibOptions(
         tMeUrl = value.stringValue()
       "ton_blockchain_explorer_url" ->
         tonBlockchainExplorerUrl = value.stringValue()
-      "toncoin_top_up_url" ->
-        toncoinTopUpUrl = value.stringValue()
+      "gram_top_up_url" ->
+        gramTopUpUrl = value.stringValue()
 
       "language_pack_id" ->
         languagePackId = value.stringValue()
@@ -764,6 +764,8 @@ data class TdlibOptions(
         }
       }
 
+      "community_peers_limit",
+      "community_bot_peers_limit", // will be handled by TDLib
       "ios_disable_parallel_channel_reset",
       "small_queue_max_active_operations_count",
       "large_queue_max_active_operations_count",

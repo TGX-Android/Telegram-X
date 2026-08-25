@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.emoji;
 
-import android.annotation.TargetApi;
 import android.os.Build;
 import android.text.Editable;
 import android.text.Selection;
@@ -22,10 +21,11 @@ import android.view.inputmethod.InputConnection;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import me.vkryl.core.lambda.Destroyable;
 
-@TargetApi(Build.VERSION_CODES.KITKAT)
+@RequiresApi(Build.VERSION_CODES.KITKAT)
 public class EmojiUtils {
   static boolean handleDeleteSurroundingText(@NonNull final InputConnection inputConnection,
                                              @NonNull final Editable editable, @IntRange(from = 0) final int beforeLength,

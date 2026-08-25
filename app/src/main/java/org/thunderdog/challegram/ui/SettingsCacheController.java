@@ -36,6 +36,7 @@ import org.thunderdog.challegram.mediaview.paint.PaintState;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
+import org.thunderdog.challegram.telegram.SessionSnapshot;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -155,6 +156,9 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
         } else if (itemId == R.id.btn_junk) {
           view.setEnabledAnimated(fastStats != null, isUpdate);
           view.setData(fastStats != null ? Strings.buildSize(fastStats.getJunkSize()) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_snapshot) {
+          view.setEnabledAnimated(fastStats != null, isUpdate);
+          view.setData(fastStats != null ? Strings.buildSize(fastStats.getSnapshotsSize()) : Lang.getString(R.string.Calculating));
         } else if (itemId == R.id.btn_paint) {
           view.setEnabledAnimated(fastStats != null, isUpdate);
           view.setData(fastStats != null ? Strings.buildSize(fastStats.getPaintsSize()) : Lang.getString(R.string.Calculating));
@@ -253,6 +257,10 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
       items.add(new ListItem(VIEW_TYPE, R.id.btn_paint, 0, R.string.Paints));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
+    if (needSnapshotsEntry()) {
+      items.add(new ListItem(VIEW_TYPE, R.id.btn_snapshot, 0, R.string.SessionSnapshots));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    }
     if (needJunkEntry()) {
       items.add(new ListItem(VIEW_TYPE, R.id.btn_junk, 0, R.string.JunkFiles));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -306,6 +314,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
     checkLottieEntry();
     checkLogEntry();
     checkPaintEntry();
+    checkSnapshotsEntry();
     checkJunkEntry();
   }
 
@@ -411,6 +420,18 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
       openFeatureUnavailable(R.string.LocalDatabaseExcuse);
     } else if (viewId == R.id.btn_showOtherChats) {
       showAllChats();
+    } else if (viewId == R.id.btn_snapshot) {
+      if (fastStats != null) {
+        showOptions(Lang.getString(R.string.SessionSnapshotInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getSnapshotsSize())), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_deleteFile) {
+            Background.instance().post(() -> {
+              FileUtils.delete(SessionSnapshot.getSnapshotsDir(), true);
+              reloadFastStats();
+            });
+          }
+          return true;
+        });
+      }
     } else if (viewId == R.id.btn_paint) {
       if (fastStats != null) {
         showOptions(Lang.getString(R.string.PaintsInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPaintsSize())), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
@@ -648,7 +669,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
 
     showSettings(new SettingsWrapBuilder(id).addHeaderItem(headerItem).setRawItems(array).setIntDelegate((id1, result) -> optimizeStorage(result, entry)).setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
       String size = Strings.buildSize(measureTotal(settingsAdapter.getCheckIntResults(), entry), false);
-      doneButton.setText(Lang.getString(R.string.ClearX, size).toUpperCase());
+      doneButton.setText(Lang.uppercase(Lang.getString(R.string.ClearX, size)));
     }).setSaveStr(Lang.getString(R.string.ClearX, Strings.buildSize(selectedSize, false)))
       .setSaveColorId(ColorId.textNegative).setAllowResize(count >= 5));
   }
@@ -763,6 +784,14 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
 
   private void checkPaintEntry () {
     checkEntry(R.id.btn_paint, R.string.Paints, needPaintsEntry());
+  }
+
+  private boolean needSnapshotsEntry () {
+    return fastStats != null && fastStats.getSnapshotsSize() > 0;
+  }
+
+  private void checkSnapshotsEntry () {
+    checkEntry(R.id.btn_snapshot, R.string.SessionSnapshots, needSnapshotsEntry());
   }
 
   private boolean needLottieEntry () {

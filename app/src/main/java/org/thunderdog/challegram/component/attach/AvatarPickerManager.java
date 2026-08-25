@@ -190,7 +190,7 @@ public class AvatarPickerManager extends MediaLayoutManager {
         TextView button = Views.newTextView(context.context(), 16, Theme.getColor(customButtonColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
         context.addThemeTextColorListener(button, customButtonColorId);
 
-        button.setText(customButtonText.toUpperCase());
+        button.setText(Lang.uppercase(customButtonText));
         button.setOnClickListener(v -> customButtonCallback.run());
 
         RippleSupport.setSimpleWhiteBackground(button, context);

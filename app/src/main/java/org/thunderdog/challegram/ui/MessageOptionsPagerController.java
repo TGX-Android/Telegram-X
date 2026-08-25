@@ -562,6 +562,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   @Override
   public boolean performOnBackPressed (boolean fromTop, boolean commit) {
+    if (super.performOnBackPressed(fromTop, commit)) {
+      return true;
+    }
     if (reactionsPickerVisibility != null && reactionsPickerVisibility.getValue()) {
       if (!reactionsPickerController.performOnBackPressed(fromTop, commit)) {
         if (commit) {

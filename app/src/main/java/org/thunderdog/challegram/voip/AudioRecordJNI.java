@@ -232,8 +232,10 @@ public class AudioRecordJNI {
 		}
 		if(effect instanceof NoiseSuppressor){
 			Pattern impl=makeNonEmptyRegex("ans_good_impls"), name=makeNonEmptyRegex("ans_good_names");
-			if(impl!=null && impl.matcher(desc.implementor).find())
-				return true;
+			if (impl!=null && impl.matcher(desc.implementor).find()) {
+        return true;
+      }
+
       return name != null && name.matcher(desc.name).find();
 		}
 		return false;

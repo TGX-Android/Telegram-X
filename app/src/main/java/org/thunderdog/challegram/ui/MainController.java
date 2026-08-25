@@ -66,6 +66,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
@@ -764,12 +765,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   public void onActivityResume () {
     super.onActivityResume();
     UI.startNotificationService();
-    checkSyncAlert();
+    showAnnoyingAlertsForCompliance(true);
   }
 
   private void makeStartupChecks () {
     tdlib.context().checkDeviceToken();
-    tdlib.contacts().startSyncIfNeeded(context(), false, null);
   }
 
   @Override
@@ -1293,6 +1293,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
   }
 
+  private boolean oneShot;
+
   @Override
   public void onFocus () {
     super.onFocus();
@@ -1301,14 +1303,62 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (UI.TEST_MODE == UI.TEST_MODE_USER) {
       UI.TEST_MODE = UI.TEST_MODE_NONE;
     }
-    checkSyncAlert();
-    tdlib.checkDeadlocks(() -> runOnUiThreadOptional(() ->
-      context().permissions().requestPostNotifications(granted -> {
-        if (granted) {
-          tdlib.notifications().onNotificationPermissionGranted();
+    if (!oneShot) {
+      oneShot = true;
+      ((MainActivity) context()).getMessagesController(tdlib, true);
+    }
+    showAnnoyingAlertsForCompliance(false);
+  }
+
+  private boolean syncContactsInitiated;
+
+  private void syncContacts (Runnable after) {
+    if (!syncContactsInitiated) {
+      tdlib.contacts().startSyncIfNeeded(context(), false, () -> {
+        syncContactsInitiated = true;
+        U.run(after);
+      });
+    } else {
+      U.run(after);
+    }
+  }
+
+  private void addStartupMarker () {
+    if (Config.ENABLE_BASELINE_PROFILE_HOOKS) {
+      tdlib.awaitConnection(() -> runOnUiThreadOptional(() -> {
+        ViewGroup group = (ViewGroup) getWrapUnchecked();
+        if (group.findViewById(R.id.startup_marker) == null) {
+          group.addView(newStartupMarker());
         }
-      })
-    ));
+      }));
+    }
+  }
+
+  private boolean notificationsRequested;
+
+  private void showAnnoyingAlertsForCompliance (boolean fromAppResume) {
+    if (Config.ENABLE_BASELINE_PROFILE_HOOKS) {
+      addStartupMarker();
+    }
+    if (checkSyncAlert()) {
+      return;
+    }
+    tdlib.checkDeadlocks(() -> runOnUiThreadOptional(() -> {
+      if (isFocused() && context.getActivityState() == UI.State.RESUMED) {
+        boolean needNotifications = fromAppResume || !notificationsRequested;
+        if (needNotifications && !notificationsRequested) {
+          notificationsRequested = true;
+        }
+        if (needNotifications && !context().permissions().requestPostNotifications(granted -> {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && granted) {
+            tdlib.notifications().onNotificationPermissionGranted();
+          }
+          syncContacts(null);
+        })) {
+          syncContacts(null);
+        }
+      }
+    }, null, 1000L));
   }
 
   @Override
@@ -1545,7 +1595,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         source = Lang.getString(getMainSectionNameRes(FILTER_NONE, /* hasFolders */ true));
       }
       if (upperCase) {
-        source = source.toUpperCase();
+        source = Lang.uppercase(source);
       }
       if (useGlobalFilter() && selectedFilter == globalFilter || selectedFilter == FILTER_NONE) {
         return source;
@@ -1558,7 +1608,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     } else {
       sectionName = Lang.getString(getMainSectionNameRes(selectedFilter, hasFolders));
     }
-    return upperCase ? sectionName.toUpperCase() : sectionName;
+    return upperCase ? Lang.uppercase(sectionName) : sectionName;
   }
 
   @StringRes
@@ -1754,7 +1804,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     return new CharSequence[] {
       getMenuSectionName(MAIN_PAGER_ITEM_ID, /* pagerItemPosition */ 0, /* hasFolders */ false, ChatFolderStyle.LABEL_ONLY, /* upperCase */ true),
-      Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/
+      Lang.uppercase(Lang.getString(R.string.Calls))/*, UI.getString(R.string.Contacts).toUpperCase()*/
     };
   }
 
@@ -1810,7 +1860,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private List<ViewPagerTopView.Item> getDefaultSectionItems () {
     if (defaultSectionItems == null) {
-      String callsItem = Lang.getString(R.string.Calls).toUpperCase();
+      String callsItem = Lang.uppercase(Lang.getString(R.string.Calls));
       defaultSectionItems = Arrays.asList(
         getDefaultMainItem(),
         new ViewPagerTopView.Item(callsItem)
@@ -2183,7 +2233,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (!StringUtils.isEmpty(mimeType)) {
       if (mimeType.equals("image/webp")) {
         BitmapFactory.Options options = ImageReader.getImageWebpSize(filePath);
-        out.add(new TdApi.InputMessageSticker(TD.createInputFile(filePath), null, options.outWidth, options.outHeight, null));
+        out.add(new TdApi.InputMessageSticker(new TdApi.InputSticker(TD.createInputFile(filePath), null, options.outWidth, options.outHeight), null));
         return false;
       }
 
@@ -2308,13 +2358,16 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private SettingsWrap syncAlertWrap;
   private boolean syncShown;
 
-  private void showSyncAlert () {
-    if (syncShown || (syncAlertWrap != null && syncAlertWrap.window != null && !syncAlertWrap.window.isWindowHidden()) || !Settings.instance().needTutorial(Settings.TUTORIAL_SYNC_SETTINGS))
-      return;
+  private boolean showSyncAlert () {
+    if (syncShown || (syncAlertWrap != null && syncAlertWrap.window != null && !syncAlertWrap.window.isWindowHidden()))
+      return true;
+    if (!Settings.instance().needTutorial(Settings.TUTORIAL_SYNC_SETTINGS))
+      return false;
     syncAlertWrap = showSettings(new SettingsWrapBuilder(R.id.btn_notificationSettings).setIntDelegate((id, result) -> {
       SyncAdapter.turnOnSync(context, tdlib, true);
     }).setDismissListener(popup -> {
       syncAlertWrap = null;
+      showAnnoyingAlertsForCompliance(false);
     }).setOnActionButtonClick((wrap, view, isCancel) -> {
       if (isCancel) {
         int i = wrap.adapter.indexOfViewById(R.id.btn_neverAllow);
@@ -2326,8 +2379,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }).setCancelStr(R.string.NotificationSyncDecline).setSaveStr(R.string.NotificationSyncAccept).setAllowResize(false).setRawItems(new ListItem[] {
       new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_neverAllow, 0, R.string.NeverShowAgain, false)
     }).addHeaderItem(Lang.getMarkdownString(this, R.string.NotificationSyncOffWarn)));
-    if (syncAlertWrap != null)
+    if (syncAlertWrap != null) {
       syncShown = true;
+      return true;
+    }
+    return false;
   }
 
   private void hideSyncAlert () {
@@ -2339,11 +2395,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
   }
 
-  private void checkSyncAlert () {
+  private boolean checkSyncAlert () {
     if (tdlib.notifications().needSyncAlert()) {
-      showSyncAlert();
+      return showSyncAlert();
     } else {
       hideSyncAlert();
+      return false;
     }
   }
 

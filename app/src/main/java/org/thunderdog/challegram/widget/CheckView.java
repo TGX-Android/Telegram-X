@@ -17,7 +17,6 @@ package org.thunderdog.challegram.widget;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -25,6 +24,8 @@ import android.graphics.Paint;
 import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
+
+import androidx.annotation.RequiresApi;
 
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -84,7 +85,7 @@ public class CheckView extends View {
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       setOutlineProvider(new android.view.ViewOutlineProvider() {
-        @TargetApi (Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
         public void getOutline (View view, android.graphics.Outline outline) {
           outline.setOval(padding + getPaddingLeft(), padding + getPaddingTop(), mediaRadius * 2, mediaRadius * 2);

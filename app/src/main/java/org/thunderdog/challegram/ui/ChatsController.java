@@ -490,6 +490,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
     chatsViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceChatList(), this);
     chatsView = (ChatsRecyclerView) Views.inflate(context(), R.layout.recycler_chats, contentView);
+    chatsView.setId(R.id.chats_list);
     chatsView.setMeasureListener((v, oldWidth, oldHeight, newWidth, newHeight) -> {
       if (newHeight != oldHeight && adapter.hasArchive() && hideArchive && adapter.getItemCount() > 0) {
         adapter.notifyLastItemChanged();

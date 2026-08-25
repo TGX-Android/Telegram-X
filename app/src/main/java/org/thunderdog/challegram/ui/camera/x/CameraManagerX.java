@@ -12,7 +12,6 @@
  */
 package org.thunderdog.challegram.ui.camera.x;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Build;
@@ -22,6 +21,7 @@ import android.view.TextureView;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.camera.camera2.Camera2Config;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
@@ -64,7 +64,7 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 public class CameraManagerX extends CameraManager<PreviewView> {
   public CameraManagerX (Context context, CameraDelegate delegate) {
     super(context, delegate);

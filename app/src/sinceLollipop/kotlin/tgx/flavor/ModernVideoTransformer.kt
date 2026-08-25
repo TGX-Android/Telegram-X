@@ -2,10 +2,10 @@
 
 package tgx.flavor
 
-import android.annotation.TargetApi
 import android.content.Context
 import android.media.MediaFormat
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
 import kotlinx.coroutines.Runnable
 import me.vkryl.core.lambda.RunnableData
@@ -56,7 +56,7 @@ fun getVideoFrameRate(context: Context, sourcePath: String): Int {
   return -1
 }
 
-@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+@RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 fun legacyConvertVideoComplex(
   videoGen: VideoGen,
   context: Context,

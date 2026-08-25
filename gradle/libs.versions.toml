@@ -1,5 +1,5 @@
 [versions]
-android-gradle-plugin = "9.2.1"
+android-gradle-plugin = "9.3.2"
 
 ksp = "2.3.4"
 desugaring = "2.1.5"
@@ -19,8 +19,8 @@ google-play-app-update = "2.1.0"
 
 google-services-plugin = "4.5.0"
 
-huawei-agcp = "1.9.3.302"
-huawei-hms = "6.13.0.300"
+huawei-agcp = "1.9.6.300"
+huawei-hms = "6.13.0.301"
 
 shortcutbadger = "1.1.22"
 relinker = "1.4.5"
@@ -30,11 +30,73 @@ sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
 
-annotations-checkerframework = "4.2.0"
+annotations-checkerframework = "4.2.2"
 annotations-errorprone = "2.50.0"
 annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
 annotations-kotlin = "2.1.20"
+
+androidx-baselineprofile = "1.5.0-rc01"
+androidx-profileinstaller = "1.4.1"
+androidx-benchmark = "1.5.0-rc01"
+androidx-junit = "1.3.0"
+androidx-espresso-core = "3.7.0"
+androidx-uiautomator = "2.4.0"
+
+# latest
+
+okhttp-latest = "5.5.0"
+
+androidx-core-latest = "1.19.0"
+androidx-activity-latest = "1.13.0"
+androidx-work-latest = "2.11.2"
+androidx-room-latest = "2.8.4"
+androidx-gridlayout-latest = "1.1.0"
+androidx-recyclerview-latest = "1.4.0"
+androidx-constraintlayout-latest = "2.2.2"
+androidx-viewpager-latest = "1.1.0"
+androidx-browser-latest = "1.10.0"
+androidx-exifinterface-latest = "1.4.2"
+androidx-camera-latest = "1.6.1"
+androidx-media-latest = "1.11.0"
+androidx-tracing-latest = "2.0.0"
+
+firebase-messaging-latest = "25.1.2"
+
+google-recaptcha-latest = "18.9.2"
+
+google-play-integrity-latest = "1.6.0"
+google-play-services-base-latest = "18.10.1"
+google-play-services-basement-latest = "18.11.0"
+google-play-services-maps-latest = "20.0.0"
+google-play-services-location-latest = "21.4.0"
+google-play-services-safetynet-latest = "18.1.0"
+google-play-services-mlkit-barcode-scanning-latest = "18.3.1"
+
+google-mlkit-language-id-latest = "17.0.6"
+
+# marshmallow
+
+google-recaptcha-marshmallow = "18.8.0"
+
+# lollipop
+
+androidx-core-lollipop = "1.17.0"
+androidx-activity-lollipop = "1.11.0" # 1.12.2+ requires minSdk 23
+androidx-work-lollipop = "2.10.5" # 2.11.0+ requires minSdk 23
+androidx-browser-lollipop = "1.9.0"
+androidx-media-lollipop = "1.8.0" # 1.9.0+ requires minSdk 23
+androidx-tracing-lollipop = "1.3.0" # 2.0.0+ requires minSdk 24
+
+firebase-messaging-lollipop = "24.1.2" # 25.0.0+ requires minSdk 23
+
+google-recaptcha-lollipop = "18.7.1" # 18.8.0+ requires minSdk 23
+
+google-play-integrity-lollipop = "1.4.0" # 1.5.0+ requires minSdk 23
+google-play-services-base-lollipop = "18.7.2" # 18.8.0+ requires minSdk 23
+google-play-services-basement-lollipop = "18.7.1" # 18.7.2 was not released
+google-play-services-maps-lollipop = "19.2.0"
+google-play-services-location-lollipop = "21.3.0"
 
 # legacy
 
@@ -51,6 +113,7 @@ androidx-browser-legacy = "1.5.0" # 1.7.0+ requires minSdk 19
 androidx-exifinterface-legacy = "1.3.7" # 1.4.0+ requires minSdk 21
 androidx-camera-legacy = "1.4.2" # 1.6.0+ requires minSdk 23
 androidx-media-legacy = "1.2.1" # 1.3.0+ requires minSdk 19, 1.5.0+ requires minSdk 21
+androidx-tracing-legacy = "1.2.0" # 2.0.0+ requires minSdk 24
 
 firebase-messaging-legacy = "22.0.0" # 23.0.0+ requires minSdk 19
 
@@ -64,58 +127,6 @@ google-play-services-safetynet-legacy = "18.0.1" # 18.1.0+ requires minSdk 21
 google-play-services-mlkit-barcode-scanning-legacy = "16.2.1" # 18.3.0+ requires minSdk 21, 18.3.1+ requires minSdk 26
 
 google-mlkit-language-id-legacy = "16.1.1"
-
-# lollipop
-
-androidx-core-lollipop = "1.17.0"
-androidx-activity-lollipop = "1.11.0" # 1.12.2+ requires minSdk 23
-androidx-work-lollipop = "2.10.5" # 2.11.0+ requires minSdk 23
-androidx-browser-lollipop = "1.9.0"
-androidx-media-lollipop = "1.8.0" # 1.9.0+ requires minSdk 23
-
-firebase-messaging-lollipop = "24.1.2" # 25.0.0+ requires minSdk 23
-
-google-recaptcha-lollipop = "18.7.1" # 18.8.0+ requires minSdk 23
-
-google-play-integrity-lollipop = "1.4.0" # 1.5.0+ requires minSdk 23
-google-play-services-base-lollipop = "18.7.2" # 18.8.0+ requires minSdk 23
-google-play-services-basement-lollipop = "18.7.1" # 18.7.2 was not released
-google-play-services-maps-lollipop = "19.2.0"
-google-play-services-location-lollipop = "21.3.0"
-
-# marshmallow
-
-google-recaptcha-marshmallow = "18.8.0"
-
-# latest
-
-okhttp-latest = "5.4.0"
-
-androidx-core-latest = "1.19.0"
-androidx-activity-latest = "1.13.0"
-androidx-work-latest = "2.11.2"
-androidx-room-latest = "2.8.4"
-androidx-gridlayout-latest = "1.1.0"
-androidx-recyclerview-latest = "1.4.0"
-androidx-constraintlayout-latest = "2.2.1"
-androidx-viewpager-latest = "1.1.0"
-androidx-browser-latest = "1.10.0"
-androidx-exifinterface-latest = "1.4.2"
-androidx-camera-latest = "1.6.1"
-androidx-media-latest = "1.10.1"
-
-firebase-messaging-latest = "25.1.1"
-
-google-recaptcha-latest = "18.9.1"
-
-google-play-integrity-latest = "1.6.0"
-google-play-services-base-latest = "18.10.0"
-google-play-services-maps-latest = "20.0.0"
-google-play-services-location-latest = "21.4.0"
-google-play-services-safetynet-latest = "18.1.0"
-google-play-services-mlkit-barcode-scanning-latest = "18.3.1"
-
-google-mlkit-language-id-latest = "17.0.6"
 
 [libraries]
 desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugaring" }
@@ -219,7 +230,7 @@ google-play-services-base-lollipop = { module = "com.google.android.gms:play-ser
 google-play-services-base-latest = { module = "com.google.android.gms:play-services-base", version.ref = "google-play-services-base-latest" }
 google-play-services-basement-legacy = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-base-legacy" }
 google-play-services-basement-lollipop = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-basement-lollipop" }
-google-play-services-basement-latest = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-base-latest" }
+google-play-services-basement-latest = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-basement-latest" }
 
 google-play-services-maps-legacy = { module = "com.google.android.gms:play-services-maps", version.ref = "google-play-services-maps-legacy" }
 google-play-services-maps-lollipop = { module = "com.google.android.gms:play-services-maps", version.ref = "google-play-services-maps-lollipop" }
@@ -258,10 +269,23 @@ annotations-j2objc = { module = "com.google.j2objc:j2objc-annotations", version.
 annotations-jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "annotations-jsr305" }
 annotations-kotlin = { module = "org.jetbrains.kotlin:kotlin-annotations-jvm", version.ref = "annotations-kotlin" }
 
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "androidx-profileinstaller" }
+androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-junit" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso-core" }
+androidx-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidx-uiautomator" }
+androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "androidx-benchmark" }
+
+androidx-tracing-legacy = { module = "androidx.tracing:tracing-ktx", version.ref = "androidx-tracing-legacy" }
+androidx-tracing-lollipop = { module = "androidx.tracing:tracing-ktx", version.ref = "androidx-tracing-lollipop" }
+androidx-tracing-latest = { module = "androidx.tracing:tracing-ktx", version.ref = "androidx-tracing-latest" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }
 android-library = { id = "com.android.library", version.ref = "android-gradle-plugin" }
+android-test = { id = "com.android.test", version.ref = "android-gradle-plugin" }
 
 google-services = { id = "com.google.gms.google-services", version.ref = "google-services-plugin" }
 
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+
+androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidx-baselineprofile" }

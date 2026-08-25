@@ -69,6 +69,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -891,7 +892,7 @@ public final class TdlibFileGenerationManager {
             "import androidx.annotation.ColorInt;\n\n");
           b.append("public final class Theme").append(info.name).append(" extends ThemeBase {\n");
           b.append("  public Theme").append(info.name).append(" () {\n");
-          b.append("    super(ThemeId.").append(info.name.toUpperCase()).append(");\n");
+          b.append("    super(ThemeId.").append(info.name.toUpperCase(Locale.ROOT)).append(");\n");
           b.append("  }\n");
           ThemeDelegate base = ThemeSet.getBuiltinTheme(ThemeId.BLUE);
           if (!info.properties.isEmpty()) {
@@ -1699,7 +1700,8 @@ public final class TdlibFileGenerationManager {
         break;
       }
       case TdApi.InputMessageVideoNote.CONSTRUCTOR: {
-        TdApi.InputMessageVideoNote videoNote = (TdApi.InputMessageVideoNote) content;
+        TdApi.InputMessageVideoNote messageVideoNote = (TdApi.InputMessageVideoNote) content;
+        TdApi.InputVideoNote videoNote = messageVideoNote.videoNote;
         if (videoNote.thumbnail == null) {
           TdApi.InputFile thumbnail = newThumbnailFile(videoNote.videoNote, file, (originalPath, originalConversion) -> ThumbGenerationInfo.makeConversion(ThumbGenerationInfo.TYPE_VIDEO, originalConversion, resolution));
           if (thumbnail != null) {
@@ -1709,7 +1711,8 @@ public final class TdlibFileGenerationManager {
         break;
       }
       case TdApi.InputMessageSticker.CONSTRUCTOR: {
-        TdApi.InputMessageSticker sticker = (TdApi.InputMessageSticker) content;
+        TdApi.InputMessageSticker messageSticker = (TdApi.InputMessageSticker) content;
+        TdApi.InputSticker sticker = messageSticker.sticker;
         if (sticker.thumbnail == null) {
           TdApi.InputFile thumbnail = newThumbnailFile(sticker.sticker, file, (originalPath, originalConversion) -> originalConversion != null ? PhotoGenerationInfo.editResolutionLimit(originalConversion, resolution) : PhotoGenerationInfo.makeConversion(0, 0, true, resolution));
           if (thumbnail != null) {

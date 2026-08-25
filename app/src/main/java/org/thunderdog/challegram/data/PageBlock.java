@@ -368,7 +368,10 @@ public abstract class PageBlock {
       return openQuotes.size();
     }
 
-    private void processCaption (ViewController<?> parent, @NonNull TdApi.PageBlock mediaBlock, TdApi.PageBlockCaption caption, @Nullable TdlibUi.UrlOpenParameters openParameters, List<PageBlock> out) {
+    private void processCaption (ViewController<?> parent, @NonNull TdApi.PageBlock mediaBlock, @Nullable TdApi.PageBlockCaption caption, @Nullable TdlibUi.UrlOpenParameters openParameters, List<PageBlock> out) {
+      if (caption == null) {
+        return;
+      }
       final int quoteLevel = quoteLevel();
       PageBlockRichText captionBlock = null;
       boolean needMerge = (lastBlock != null && lastBlock.block == mediaBlock) || mediaBlock.getConstructor() == TdApi.PageBlockEmbeddedPost.CONSTRUCTOR;

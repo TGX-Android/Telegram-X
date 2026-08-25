@@ -367,4 +367,10 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
       }
     }
   }
+
+  protected final void addStartupMarker () {
+    if (contentView.findViewById(R.id.startup_marker) == null) {
+      contentView.addView(newStartupMarker());
+    }
+  }
 }

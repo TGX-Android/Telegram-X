@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.service;
 
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -36,6 +35,7 @@ import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.media3.common.C;
 import androidx.media3.extractor.metadata.id3.ApicFrame;
 
@@ -120,7 +120,7 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
   public void onDestroy () {
     super.onDestroy();
     Log.i(Log.TAG_PLAYER, "[service] onDestroy");
-    U.stopForeground(this, true, TdlibNotificationManager.ID_MUSIC);
+    U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_MUSIC);
     TdlibManager.instance().player().removeTrackListChangeListener(this);
   }
 
@@ -391,7 +391,7 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
     this.playDuration = this.playPosition = -1;
 
     if (!hasTrack) {
-      U.stopForeground(this, true, TdlibNotificationManager.ID_MUSIC);
+      U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_MUSIC);
       destroyResources();
       stopSelf();
       return;
@@ -417,7 +417,7 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
     TdlibManager.instance().player().addTrackListener(tdlib, track, this);
 
     if (!hadTrack) {
-      U.startForeground(this, TdlibNotificationManager.ID_MUSIC, buildNotification());
+      U.startForeground(this, TdlibNotificationManager.ID_FOREGROUND_MUSIC, buildNotification());
     } else {
       updateNotification();
     }
@@ -548,7 +548,7 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
     emptyCover = tryCreatePlaceholder();
   }
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void setSessionMetadata () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
       TdApi.Audio audio = ((TdApi.MessageAudio) currentTrack.content).audio;
@@ -568,7 +568,7 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void setSessionPlayState () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
       android.media.session.MediaSession session = (android.media.session.MediaSession) mediaSession;
@@ -614,7 +614,10 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
     NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     if (manager != null) {
       try {
-        manager.notify(TdlibNotificationManager.ID_MUSIC, buildNotification());
+        manager.notify(
+          TdlibNotificationManager.ID_FOREGROUND_MUSIC,
+          buildNotification()
+        );
       } catch (Throwable t) {
         Log.e("Unable to update music notification", t);
         Tracer.onOtherError(t);

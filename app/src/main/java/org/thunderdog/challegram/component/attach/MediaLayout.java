@@ -17,7 +17,6 @@ package org.thunderdog.challegram.component.attach;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.annotation.TargetApi;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Build;
@@ -33,6 +32,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.collection.LongSparseArray;
 
 import com.google.android.gms.maps.MapsInitializer;
@@ -306,7 +306,7 @@ public class MediaLayout extends FrameLayoutFix implements
       setElevation(Screen.dp(10f));
       setTranslationZ(Screen.dp(1f));
       setOutlineProvider(new android.view.ViewOutlineProvider() {
-        @TargetApi(value = 21)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
         public void getOutline (View view, android.graphics.Outline outline) {
           int top = currentController.getCurrentHeight() + (int) currentController.getValue().getTranslationY();

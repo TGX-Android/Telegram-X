@@ -28,6 +28,7 @@ import org.thunderdog.challegram.theme.Theme;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Locale;
 
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
@@ -407,10 +408,10 @@ public final class TdlibAccentColor {
   }
 
   @ColorId
-  public static int getFileColorId (String fileName, @Nullable  String mimeType, boolean isOutBubble) {
-    String mime = mimeType != null ? mimeType.toLowerCase() : null;
+  public static int getFileColorId (String fileName, @Nullable String mimeType, boolean isOutBubble) {
+    String mime = mimeType != null ? mimeType.toLowerCase(Locale.ROOT) : null;
     int i = fileName.lastIndexOf('.');
-    String ext = i != -1 ? fileName.substring(i + 1).toLowerCase() : "";
+    String ext = i != -1 ? fileName.substring(i + 1).toLowerCase(Locale.ROOT) : "";
 
     // Android APKs
     if ("application/vnd.android.package-archive".equals(mime) || "apk".equals(ext)) {

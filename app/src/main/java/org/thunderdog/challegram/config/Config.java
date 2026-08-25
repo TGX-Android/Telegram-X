@@ -26,6 +26,8 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.theme.ColorId;
 
+import java.util.Locale;
+
 public class Config {
   public static final boolean SUPPORT_SYSTEM_UNDERLINE_SPAN = true;
   public static final boolean FOREGROUND_SYNC_ALWAYS_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -61,6 +63,8 @@ public class Config {
   // This affects all rotated videos (which even Telegram for iOS produces too).
   // The only way around for the sender is to transcode video fully even when there's no need at all.
   public static final boolean TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT = true;
+
+  public static final boolean ENABLE_BASELINE_PROFILE_HOOKS = BuildConfig.LAB_FLAVOR;
 
   private static Boolean hasWebpSupport;
   public static boolean useBundledWebp () {
@@ -203,6 +207,10 @@ public class Config {
   public static final boolean CUTOUT_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.O;
   public static final boolean EXPLICIT_DICE_AVAILABLE = false;
 
+  public static final boolean FOREGROUND_SERVICE_DEMO = false;
+  public static final boolean FOREGROUND_CONTACTS_SYNC_DEMO = false;
+  public static final boolean TEST_SYNC_CONTACTS_PROMPT = false;
+
   public static boolean useCloudPlayback (TdApi.Message playPauseFile) {
     if (USE_CLOUD_PLAYER && playPauseFile != null) {
       //noinspection SwitchIntDef
@@ -284,7 +292,7 @@ public class Config {
   public static final boolean TEST_CHAT_COUNTERS = false;
 
   public static boolean isThemeDoc (TdApi.Document doc) {
-    return doc != null && doc.fileName != null && doc.fileName.toLowerCase().endsWith("." + BuildConfig.THEME_FILE_EXTENSION);
+    return doc != null && doc.fileName != null && doc.fileName.toLowerCase(Locale.ROOT).endsWith("." + BuildConfig.THEME_FILE_EXTENSION);
   }
 
   public static final boolean DISABLE_PASSWORD_INVISIBILITY = true;

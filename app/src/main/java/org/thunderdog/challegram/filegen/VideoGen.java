@@ -17,13 +17,13 @@ package org.thunderdog.challegram.filegen;
 import static tgx.flavor.VideoTransformer.getVideoFrameRate;
 import static tgx.flavor.VideoTransformer.legacyConvertVideoComplex;
 
-import android.annotation.TargetApi;
 import android.media.MediaMetadataRetriever;
 import android.os.Build;
 import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.WorkerThread;
 import androidx.media3.common.C;
 import androidx.media3.common.Effect;
@@ -372,7 +372,7 @@ public class VideoGen {
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void convertVideoComplexV2 (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure, Runnable after) throws FileNotFoundException {
     MediaMetadataRetriever retriever = U.openRetriever(sourcePath);
     if (retriever == null)

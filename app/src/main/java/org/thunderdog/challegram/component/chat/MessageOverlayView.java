@@ -14,11 +14,12 @@
  */
 package org.thunderdog.challegram.component.chat;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
 import android.view.View;
+
+import androidx.annotation.RequiresApi;
 
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageVideo;
@@ -31,7 +32,7 @@ public class MessageOverlayView extends View {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       setOutlineProvider(new android.view.ViewOutlineProvider() {
         @Override
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
           outline.setEmpty();
         }

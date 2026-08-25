@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.component.base;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -30,6 +29,7 @@ import android.view.View;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -71,7 +71,7 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       setOutlineProvider(new android.view.ViewOutlineProvider() {
         @Override
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
           outline.setRoundRect((int) (origX - origRadius), (int) (origY - origRadius), (int) (origX + origRadius), (int) (origY + origRadius), origRadius);
         }

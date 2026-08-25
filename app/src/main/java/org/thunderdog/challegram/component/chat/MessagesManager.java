@@ -1634,7 +1634,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
             case TdApi.SettingsSectionSearch.CONSTRUCTOR:
             case TdApi.SettingsSectionMyStars.CONSTRUCTOR:
-            case TdApi.SettingsSectionMyToncoins.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
             case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
             case TdApi.SettingsSectionPremium.CONSTRUCTOR:
             case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
@@ -1642,6 +1642,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             case TdApi.SettingsSectionInAppBrowser.CONSTRUCTOR:
             case TdApi.SettingsSectionFeatures.CONSTRUCTOR: {
               return false;
+            }
+            default: {
+              Td.assertSettingsSection_c6f544dd();
+              break;
             }
           }
         }

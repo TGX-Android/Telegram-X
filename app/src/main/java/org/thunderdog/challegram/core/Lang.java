@@ -122,7 +122,9 @@ public class Lang {
     Object onCreateSpan (CharSequence target, int argStart, int argEnd, int argIndex, boolean needFakeBold);
   }
 
-  public static @StringRes int getStringResourceIdentifier (String key) {
+  @SuppressWarnings("DiscouragedApi")
+  @StringRes
+  public static int getStringResourceIdentifier (String key) {
     try {
       Context context = UI.getAppContext();
       return context.getResources().getIdentifier(key, "string", context.getPackageName());
@@ -141,7 +143,7 @@ public class Lang {
     int resId = getStringResourceIdentifier(key);
     if (resId == 0 || ArrayUtils.indexOf(LangUtils.getBlacklistedKeys(), key) >= 0)
       return null;
-    return Lang.getString(resId);
+    return getString(resId);
   }
 
   public static String[] getKeys (@StringRes int[] stringResources) {
@@ -208,27 +210,27 @@ public class Lang {
 
   public static CharSequence getMarkdownPlural (TdlibDelegate context, @StringRes int resId, long num, Object... formatArgs) {
     sanitizeMarkdownFormatArgs(formatArgs);
-    return Strings.buildMarkdown(context, Lang.plural(resId, num, formatArgs), null);
+    return Strings.buildMarkdown(context, plural(resId, num, formatArgs), null);
   }
 
   public static CharSequence getMarkdownPlural (TdlibDelegate context, @StringRes int resId, long num, SpanCreator spanCreator, Object... formatArgs) {
     sanitizeMarkdownFormatArgs(formatArgs);
-    return Strings.buildMarkdown(context, Lang.plural(resId, num, spanCreator, formatArgs), null);
+    return Strings.buildMarkdown(context, plural(resId, num, spanCreator, formatArgs), null);
   }
 
   public static CharSequence getMarkdownString (TdlibDelegate context, @StringRes int resId, SpanCreator spanCreator, Object... formatArgs) {
     sanitizeMarkdownFormatArgs(formatArgs);
-    return Strings.buildMarkdown(context, Lang.getString(resId, spanCreator, formatArgs), null);
+    return Strings.buildMarkdown(context, getString(resId, spanCreator, formatArgs), null);
   }
 
   public static CharSequence getMarkdownString (TdlibDelegate context, @StringRes int resId, Object... formatArgs) {
     sanitizeMarkdownFormatArgs(formatArgs);
-    return Strings.buildMarkdown(context, Lang.getString(resId, formatArgs), null);
+    return Strings.buildMarkdown(context, getString(resId, formatArgs), null);
   }
 
   public static CharSequence getMarkdownStringSecure (TdlibDelegate context, @StringRes int resId, Object... formatArgs) {
     sanitizeMarkdownFormatArgs(formatArgs);
-    return Strings.buildMarkdown(context, Lang.getStringSecure(resId, formatArgs), null);
+    return Strings.buildMarkdown(context, getStringSecure(resId, formatArgs), null);
   }
 
   public static String getString (@StringRes int resId) {
@@ -288,7 +290,7 @@ public class Lang {
 
   private static CharSequence getSuffixString (int mainRes, String suffix, Object... formatArgs) {
     if (!StringUtils.isEmpty(suffix) && suffix.matches("^[A-Za-z0-9_]+$")) {
-      String key = getResourceEntryName(mainRes) + StringUtils.ucfirst(suffix.toLowerCase(), dateFormatLocale());
+      String key = getResourceEntryName(mainRes) + StringUtils.ucfirst(suffix.toLowerCase(Locale.ROOT), dateFormatLocale());
       int resId = getStringResourceIdentifier(key);
       if (resId != 0)
         return getStringBold(resId, formatArgs);
@@ -351,7 +353,7 @@ public class Lang {
   }
 
   private static boolean isTrustedLangauge () {
-    return !Lang.packId().startsWith("X");
+    return !packId().startsWith("X");
   }
 
   public static String getStringSecure (@StringRes int resource, Object... formatArgs) {
@@ -525,13 +527,13 @@ public class Lang {
   private static Locale decimalFormatLocale;
 
   public static String formatDecimal (double n) {
-    Locale locale = Settings.instance().forceArabicNumbers() ? Locale.US : Lang.dateFormatLocale();
+    Locale locale = Settings.instance().forceArabicNumbers() ? Locale.US : dateFormatLocale();
     synchronized (Lang.class) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
         android.icu.text.DecimalFormat format = (android.icu.text.DecimalFormat) decimalFormat;
         if (format == null || decimalFormatLocale != locale) {
           android.icu.text.DecimalFormatSymbols symbols = new android.icu.text.DecimalFormatSymbols(decimalFormatLocale = locale);
-          if (Lang.isSpanish()) {
+          if (isSpanish()) {
             symbols.setDecimalSeparator(',');
             symbols.setGroupingSeparator(' ');
           }
@@ -546,7 +548,7 @@ public class Lang {
         java.text.DecimalFormat format = (java.text.DecimalFormat) decimalFormat;
         if (format == null || decimalFormatLocale != locale) {
           java.text.DecimalFormatSymbols symbols = new java.text.DecimalFormatSymbols(decimalFormatLocale = locale);
-          if (Lang.isSpanish()) {
+          if (isSpanish()) {
             symbols.setDecimalSeparator(',');
             symbols.setGroupingSeparator(' ');
           }
@@ -562,7 +564,7 @@ public class Lang {
   }
 
   private static String fixNumber (String str) {
-    if (Lang.isSpanish()) {
+    if (isSpanish()) {
       str = str.replace('.', ' ');
       int beforeNum = 0;
       int separatorCount = 0;
@@ -595,10 +597,10 @@ public class Lang {
   public static String formatNumber (long n) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        return fixNumber(android.icu.text.NumberFormat.getInstance(Lang.dateFormatLocale()).format(n));
+        return fixNumber(android.icu.text.NumberFormat.getInstance(dateFormatLocale()).format(n));
       } catch (Throwable ignored) { }
     }
-    return fixNumber(java.text.NumberFormat.getInstance(Lang.dateFormatLocale()).format(n));
+    return fixNumber(java.text.NumberFormat.getInstance(dateFormatLocale()).format(n));
   }
 
   public static String compactNumber (long n) {
@@ -1005,37 +1007,40 @@ public class Lang {
   public static CharSequence getNotificationTitle (long chatId, String chatTitle, int notificationCount, boolean isSelfChat, boolean isMultiChat, boolean isChannel, boolean areMentions, boolean onlyPinned, boolean areOnlyScheduled, boolean areOnlySilent) {
     CharSequence result;
     if (areMentions && onlyPinned) {
-      result = Lang.getCharSequence(R.string.format_notificationTitlePinned, chatTitle);
+      result = getCharSequence(R.string.format_notificationTitlePinned, chatTitle);
     } else if (notificationCount > 1 || areMentions) {
-      result = Lang.getCharSequence(R.string.format_notificationTitleShort, chatTitle, Lang.plural(areMentions ? R.string.mentionCount : R.string.messagesCount, notificationCount));
+      result = getCharSequence(R.string.format_notificationTitleShort, chatTitle, plural(areMentions ? R.string.mentionCount : R.string.messagesCount, notificationCount));
     } else if (StringUtils.isEmpty(chatTitle)) {
       result = ChatId.toString(chatId);
     } else {
       result = chatTitle;
+    }
+    if (ChatId.isSecret(chatId)) {
+      result = getCharSequence(R.string.format_notificationTitleSecret, result);
     }
     return getSilentNotificationTitle(result, true, isSelfChat, isMultiChat, isChannel, areOnlyScheduled, areOnlySilent);
   }
 
   public static CharSequence getSilentNotificationTitle (CharSequence title, boolean isTitle, boolean isSelfChat, boolean isMultiChat, boolean isChannel, boolean isScheduled, boolean isSilent) {
     if (isSelfChat && isTitle)
-      title = Lang.getString(R.string.Reminder);
+      title = getString(R.string.Reminder);
     if (isScheduled && !isSelfChat)
-      title = Lang.getCharSequence(isTitle ? (isChannel ? R.string.format_notificationScheduledChannel : isMultiChat ? R.string.format_notificationScheduledGroup : R.string.format_notificationScheduledPrivate) : R.string.format_notificationScheduledText, title);
+      title = getCharSequence(isTitle ? (isChannel ? R.string.format_notificationScheduledChannel : isMultiChat ? R.string.format_notificationScheduledGroup : R.string.format_notificationScheduledPrivate) : R.string.format_notificationScheduledText, title);
     if (isSilent)
-      title = Lang.getCharSequence(isTitle ? R.string.format_notificationSilentTitle : R.string.format_notificationSilentText, title);
+      title = getCharSequence(isTitle ? R.string.format_notificationSilentTitle : R.string.format_notificationSilentText, title);
     return title;
   }
 
   public static String getNotificationCategory (int category) {
     switch (category) {
       case TdlibNotificationGroup.CATEGORY_PRIVATE:
-        return Lang.getString(R.string.CategoryPrivate);
+        return getString(R.string.CategoryPrivate);
       case TdlibNotificationGroup.CATEGORY_SECRET:
-        return Lang.getString(R.string.CategorySecret);
+        return getString(R.string.CategorySecret);
       case TdlibNotificationGroup.CATEGORY_GROUPS:
-        return Lang.getString(R.string.CategoryGroup);
+        return getString(R.string.CategoryGroup);
       case TdlibNotificationGroup.CATEGORY_CHANNELS:
-        return Lang.getString(R.string.CategoryChannels);
+        return getString(R.string.CategoryChannels);
     }
     throw new IllegalArgumentException("category == " + category);
   }
@@ -1043,7 +1048,7 @@ public class Lang {
   // Build no
 
   public static String getAppBuildAndVersion (@Nullable Tdlib tdlib) {
-    String msg = Lang.getString(R.string.AppNameAndVersion, BuildConfig.VERSION_NAME);
+    String msg = getString(R.string.AppNameAndVersion, BuildConfig.VERSION_NAME);
     if (tdlib != null && tdlib.isEmulator()) {
       msg += " (emulator)";
     }
@@ -1056,28 +1061,28 @@ public class Lang {
     String userName = sender != null ? tdlib.senderName(sender) : null;
     if (message == null) {
       if (userName != null) {
-        return Lang.getString(R.string.NotificationActionPinnedNoTextChannel, userName);
+        return getString(R.string.NotificationActionPinnedNoTextChannel, userName);
       } else {
-        return Lang.getString(R.string.PinnedMessageChanged);
+        return getString(R.string.PinnedMessageChanged);
       }
     }
     String text = TD.getTextFromMessageSpoilerless(message);
     if (!needPerson) {
       if (StringUtils.isEmpty(text)) {
         ContentPreview preview = ContentPreview.getNotificationPreview(tdlib, message.chatId, message, true);
-        text = Lang.lowercase(preview.buildText(false));
+        text = lowercase(preview.buildText(false));
       }
-      return Lang.getString(R.string.format_pinned, text);
+      return getString(R.string.format_pinned, text);
     }
     if (userName == null) {
       if (StringUtils.isEmpty(text)) {
         ContentPreview preview = ContentPreview.getNotificationPreview(tdlib, message.chatId, message, true);
-        text = Lang.lowercase(preview.buildText(false));
+        text = lowercase(preview.buildText(false));
       }
-      return Lang.getString(R.string.NewPinnedMessage, text);
+      return getString(R.string.NewPinnedMessage, text);
     }
     if (!StringUtils.isEmpty(text)) {
-      return Lang.getString(R.string.ActionPinnedText, userName, text);
+      return getString(R.string.ActionPinnedText, userName, text);
     }
     String format = null;
     int res = R.string.ActionPinnedNoText;
@@ -1117,7 +1122,7 @@ public class Lang {
             case MIXED: pluralRes = R.string.ActionPinnedXPaidMedia; break;
             default: throw new UnsupportedOperationException();
           }
-          format = Lang.plural(pluralRes, paidMedia.media.length);
+          format = plural(pluralRes, paidMedia.media.length);
         }
         break;
       }
@@ -1156,7 +1161,7 @@ public class Lang {
       case TdApi.MessageGame.CONSTRUCTOR: {
         String gameName = TD.getGameName(((TdApi.MessageGame) message.content).game, true);
         if (!StringUtils.isEmpty(gameName))
-          return Lang.getString(R.string.ActionPinnedGame, userName, gameName);
+          return getString(R.string.ActionPinnedGame, userName, gameName);
         res = R.string.ActionPinnedGameNoName;
         break;
       }
@@ -1241,13 +1246,15 @@ public class Lang {
       case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
       case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
       case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
+      case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
+      case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_bb294b24();
+        Td.assertMessageContent_a80283cf();
         throw Td.unsupported(message.content);
     }
     if (format == null) {
-      format = Lang.getString(res);
+      format = getString(res);
     }
     int startIndex = format.indexOf("**");
     int endIndex = startIndex != -1 ? format.indexOf("**", startIndex + 2) : -1;
@@ -1297,9 +1304,14 @@ public class Lang {
     return plural(res, num, null, args).toString();
   }
 
+  public static String uppercase (String string) {
+    // TODO allowUppercase()
+    return string.toUpperCase(locale());
+  }
+
   public static String lowercase (String string) {
-    if (Lang.allowLowercase()) {
-      return string.toLowerCase();
+    if (allowLowercase()) {
+      return string.toLowerCase(locale());
     } else {
       return string;
     }
@@ -1340,17 +1352,17 @@ public class Lang {
       switch (string.value.getConstructor()) {
         case TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR: {
           TdApi.LanguagePackStringValueOrdinary value = (TdApi.LanguagePackStringValueOrdinary) string.value;
-          TdApi.LanguagePackStringValueOrdinary updated = Lang.queryTdlibStringValue(string.key, langPack.languageInfo.id);
+          TdApi.LanguagePackStringValueOrdinary updated = queryTdlibStringValue(string.key, langPack.languageInfo.id);
           translated = updated != null;
           value.value = translated ? updated.value : getBuiltinValue().value;
           break;
         }
         case TdApi.LanguagePackStringValuePluralized.CONSTRUCTOR: {
           TdApi.LanguagePackStringValuePluralized pluralized = (TdApi.LanguagePackStringValuePluralized) string.value;
-          TdApi.LanguagePackStringValuePluralized updated = Lang.queryTdlibStringPluralized(string.key, langPack.languageInfo.id);
+          TdApi.LanguagePackStringValuePluralized updated = queryTdlibStringPluralized(string.key, langPack.languageInfo.id);
           translated = updated != null;
           if (updated == null)
-            updated = Lang.getBuiltinStringPluralized(string.key, langPack.untranslatedRules.forms);
+            updated = getBuiltinStringPluralized(string.key, langPack.untranslatedRules.forms);
           pluralized.zeroValue = updated.zeroValue;
           pluralized.oneValue = updated.oneValue;
           pluralized.twoValue = updated.twoValue;
@@ -1526,7 +1538,7 @@ public class Lang {
 
     // String
 
-    public void makeString (Lang.PackString string, SpannableStringBuilder out, boolean useNewLines) {
+    public void makeString (PackString string, SpannableStringBuilder out, boolean useNewLines) {
       switch (string.string.value.getConstructor()) {
         case TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR: {
           TdApi.LanguagePackStringValueOrdinary value = (TdApi.LanguagePackStringValueOrdinary) string.string.value;
@@ -1535,26 +1547,26 @@ public class Lang {
         }
         case TdApi.LanguagePackStringValuePluralized.CONSTRUCTOR: {
           TdApi.LanguagePackStringValuePluralized plural = (TdApi.LanguagePackStringValuePluralized) string.string.value;
-          Lang.PluralizationRules rules = string.translated ? this.rules : this.untranslatedRules;
-          for (Lang.PluralizationForm form : rules.forms) {
+          PluralizationRules rules = string.translated ? this.rules : this.untranslatedRules;
+          for (PluralizationForm form : rules.forms) {
             String str;
             switch (form.form) {
-              case Lang.PluralForm.FEW:
+              case PluralForm.FEW:
                 str = plural.fewValue;
                 break;
-              case Lang.PluralForm.MANY:
+              case PluralForm.MANY:
                 str = plural.manyValue;
                 break;
-              case Lang.PluralForm.ONE:
+              case PluralForm.ONE:
                 str = plural.oneValue;
                 break;
-              case Lang.PluralForm.OTHER:
+              case PluralForm.OTHER:
                 str = plural.otherValue;
                 break;
-              case Lang.PluralForm.TWO:
+              case PluralForm.TWO:
                 str = plural.twoValue;
                 break;
-              case Lang.PluralForm.ZERO:
+              case PluralForm.ZERO:
                 str = plural.zeroValue;
                 break;
               default:
@@ -1612,7 +1624,7 @@ public class Lang {
           CustomTypefaceSpan[] found = out.getSpans(index, endIndex, CustomTypefaceSpan.class);
           if (found != null && found.length == 1) {
             out.removeSpan(found[0]);
-            String replacement = Lang.formatNumber(num);
+            String replacement = formatNumber(num);
             found[0].setFakeBold(Text.needFakeBold(replacement));
             out.replace(index, endIndex, replacement);
             out.setSpan(found[0], index, index + replacement.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -1656,7 +1668,7 @@ public class Lang {
     String[][] keys = LangUtils.getAllKeys();
     List<PackString> strings = new ArrayList<>();
     PluralizationRules untranslatedRules = getPluralizationRules(makeLanguageCode(getStringImpl(null, R.string.language_code, false)));
-    TdApi.LanguagePackStringValueOrdinary languageCodeCloud = queryTdlibStringValue(Lang.INTERNAL_ID_KEY, languageInfo.id);
+    TdApi.LanguagePackStringValueOrdinary languageCodeCloud = queryTdlibStringValue(INTERNAL_ID_KEY, languageInfo.id);
     PluralizationRules pluralizationRules = languageCodeCloud != null ? getPluralizationRules(makeLanguageCode(languageCodeCloud.value)) : untranslatedRules;
     for (String valueKey : keys[0]) {
       TdApi.LanguagePackStringValue value = queryTdlibStringValue(valueKey, languageInfo.id);
@@ -1792,14 +1804,14 @@ public class Lang {
 
   public static String getCallDuration (int seconds) {
     if (seconds < 60)
-      return Lang.plural(R.string.xSec, seconds);
+      return plural(R.string.xSec, seconds);
     int minutes = seconds / 60;
     if (minutes < 60) {
       int remain = seconds % 60;
       if (remain == 0) {
-        return Lang.plural(R.string.xMin, minutes);
+        return plural(R.string.xMin, minutes);
       } else {
-        return Lang.getString(R.string.format_minutesAndSeconds, Lang.plural(R.string.xMin, minutes), Lang.plural(R.string.xSec, remain));
+        return getString(R.string.format_minutesAndSeconds, plural(R.string.xMin, minutes), plural(R.string.xSec, remain));
       }
     }
     return Strings.buildDuration(seconds);
@@ -1935,14 +1947,14 @@ public class Lang {
   }
 
   public static String pluralPeopleNames (List<String> names, int others) {
-    String concat = TextUtils.join(Lang.getConcatSeparator(), names);
+    String concat = TextUtils.join(getConcatSeparator(), names);
     if (others == 0)
       return concat;
     return getString(R.string.format_peopleNamesAndOthers, concat, plural(R.string.xOtherPeopleNames, others));
   }
 
   public static String pluralChatTitles (List<String> names, int others) {
-    String concat = TextUtils.join(Lang.getConcatSeparator(), names);
+    String concat = TextUtils.join(getConcatSeparator(), names);
     if (others == 0)
       return concat;
     return getString(R.string.format_chatTitlesAndOthers, concat, plural(R.string.xOtherChatTitles, others));
@@ -2093,22 +2105,22 @@ public class Lang {
     final long minutes = unit.toMinutes(duration);
     final long seconds = unit.toSeconds(duration);
     if (monthsRes != 0 && months > 0) {
-      return Lang.pluralBold(monthsRes, months, args);
+      return pluralBold(monthsRes, months, args);
     }
     if (weeksRes != 0 && weeks > 0) {
-      return Lang.pluralBold(weeksRes, weeks, args);
+      return pluralBold(weeksRes, weeks, args);
     }
     if (daysRes != 0 && days > 0) {
-      return Lang.pluralBold(daysRes, days, args);
+      return pluralBold(daysRes, days, args);
     }
     if (hoursRes != 0 && hours > 0) {
-      return Lang.pluralBold(hoursRes, hours, args);
+      return pluralBold(hoursRes, hours, args);
     }
     if (minutesRes != 0 && minutes > 0) {
-      return Lang.pluralBold(minutesRes, minutes, args);
+      return pluralBold(minutesRes, minutes, args);
     }
     if (secondsRes != 0) {
-      return Lang.pluralBold(secondsRes, seconds, args);
+      return pluralBold(secondsRes, seconds, args);
     }
     throw new IllegalArgumentException();
   }
@@ -2399,7 +2411,7 @@ public class Lang {
       int meters = (int) (distanceInMeters - km * 1000f) / 100;
       StringBuilder kmStr = new StringBuilder(Strings.buildCounter(km));
       if (meters != 0 && km < 1000) {
-        kmStr.append(Lang.getDecimalSeparator());
+        kmStr.append(getDecimalSeparator());
         kmStr.append(meters);
       }
       return getString(kmRes, kmStr.toString());
@@ -2417,11 +2429,11 @@ public class Lang {
 
   public static String getDownloadStatus (TdApi.File file, int downloadedRes, boolean forceDownload) {
     if (file == null || (!forceDownload && TD.isFileLoaded(file))) {
-      return Lang.getString(downloadedRes);
+      return getString(downloadedRes);
     } else if (file.local.isDownloadingActive) {
       return getDownloadProgress(file.local.downloadedSize, file.size, true);
     } else {
-      return Lang.getString(R.string.CloudDownload, Strings.buildSize(file.size));
+      return getString(R.string.CloudDownload, Strings.buildSize(file.size));
     }
   }
 
@@ -2460,15 +2472,15 @@ public class Lang {
       CharSequence age;
       @StringRes int formatRes = R.string.format_birthdateAndAge;
       if (daysTillBirthday == 1 && !isSelf) {
-        age = Lang.pluralBold(R.string.turnsTomorrow, ageYears + 1);
+        age = pluralBold(R.string.turnsTomorrow, ageYears + 1);
         formatRes = R.string.format_birthdateAndTurns;
       } else if (daysTillBirthday == 0) {
-        age = Lang.pluralBold(isSelf ? R.string.turnSelfToday : R.string.turnsToday, ageYears);
+        age = pluralBold(isSelf ? R.string.turnSelfToday : R.string.turnsToday, ageYears);
         formatRes = R.string.format_birthdateAndTurns;
       } else {
-        age = Lang.pluralBold(R.string.age, ageYears);
+        age = pluralBold(R.string.age, ageYears);
       }
-      return Lang.getCharSequence(formatRes, date, age);
+      return getCharSequence(formatRes, date, age);
     } else {
       return date;
     }
@@ -2495,11 +2507,11 @@ public class Lang {
     if (DateUtils.isToday(unixTime, unit)) {
       return time(unixTime, unit);
     } else if (DateUtils.isTomorrow(unixTime, unit)) {
-      return Lang.getString(R.string.format_tomorrow, time(unixTime, unit));
+      return getString(R.string.format_tomorrow, time(unixTime, unit));
     } else if (DateUtils.isThisYear(unixTime, unit)) {
-      return Lang.getString(R.string.format_dateTime, dateFull(unixTime, unit), time(unixTime, unit));
+      return getString(R.string.format_dateTime, dateFull(unixTime, unit), time(unixTime, unit));
     } else {
-      return Lang.getString(R.string.format_dateTime, dateYearFull(unixTime, unit), time(unixTime, unit));
+      return getString(R.string.format_dateTime, dateYearFull(unixTime, unit), time(unixTime, unit));
     }
   }
 
@@ -2583,10 +2595,10 @@ public class Lang {
       switch (languageCode.charAt(i)) {
         case '_':
         case '-':
-          return languageCode.substring(0, i).toLowerCase();
+          return languageCode.substring(0, i).toLowerCase(Locale.ROOT);
       }
     }
-    return languageCode.toLowerCase();
+    return languageCode.toLowerCase(Locale.ROOT);
   }
 
   public static int makeLanguageCode (String languageCode) {
@@ -2669,17 +2681,17 @@ public class Lang {
 
     public static String get (TdApi.LanguagePackStringValuePluralized plural, @PluralForm int form) {
       switch (form) {
-        case Lang.PluralForm.FEW:
+        case PluralForm.FEW:
           return plural.fewValue;
-        case Lang.PluralForm.MANY:
+        case PluralForm.MANY:
           return plural.manyValue;
-        case Lang.PluralForm.ONE:
+        case PluralForm.ONE:
           return plural.oneValue;
-        case Lang.PluralForm.OTHER:
+        case PluralForm.OTHER:
           return plural.otherValue;
-        case Lang.PluralForm.TWO:
+        case PluralForm.TWO:
           return plural.twoValue;
-        case Lang.PluralForm.ZERO:
+        case PluralForm.ZERO:
           return plural.zeroValue;
       }
       throw new IllegalArgumentException("form == " + form);
@@ -2687,22 +2699,22 @@ public class Lang {
 
     public static void set (TdApi.LanguagePackStringValuePluralized plural, @PluralForm int form, String value) {
       switch (form) {
-        case Lang.PluralForm.FEW:
+        case PluralForm.FEW:
           plural.fewValue = value;
           break;
-        case Lang.PluralForm.MANY:
+        case PluralForm.MANY:
           plural.manyValue = value;
           break;
-        case Lang.PluralForm.ONE:
+        case PluralForm.ONE:
           plural.oneValue = value;
           break;
-        case Lang.PluralForm.OTHER:
+        case PluralForm.OTHER:
           plural.otherValue = value;
           break;
-        case Lang.PluralForm.TWO:
+        case PluralForm.TWO:
           plural.twoValue = value;
           break;
-        case Lang.PluralForm.ZERO:
+        case PluralForm.ZERO:
           plural.zeroValue = value;
           break;
         default:
@@ -3421,15 +3433,15 @@ public class Lang {
   }
 
   private static void setLanguageAllowLowercase (boolean allowLowercase, boolean sendEvents) {
-    if (Lang.languageAllowLowercase != allowLowercase) {
-      Lang.languageAllowLowercase = allowLowercase;
+    if (languageAllowLowercase != allowLowercase) {
+      languageAllowLowercase = allowLowercase;
       // TODO update affected strings?
     }
   }
 
   private static void setLanguageRtl (boolean isRtl, boolean sendEvents) {
-    if (Lang.languageRtl != isRtl) {
-      Lang.languageRtl = isRtl;
+    if (languageRtl != isRtl) {
+      languageRtl = isRtl;
       if (sendEvents) {
         sendLanguageEvent(EVENT_DIRECTION_CHANGED, isRtl ? 1 : 0);
       }
@@ -3437,8 +3449,8 @@ public class Lang {
   }
 
   private static void setDateLocale (Locale locale, boolean sendEvents) {
-    if ((Lang.dateLocale == null && locale != null) || (Lang.dateLocale != null && locale == null) || (locale != null && !locale.equals(Lang.dateLocale))) {
-      Lang.dateLocale = locale;
+    if ((dateLocale == null && locale != null) || (dateLocale != null && locale == null) || (locale != null && !locale.equals(dateLocale))) {
+      dateLocale = locale;
       if (sendEvents) {
         sendLanguageEvent(EVENT_DATE_FORMAT_CHANGED, 0);
       }
@@ -3470,16 +3482,16 @@ public class Lang {
   }
 
   public static Locale obtainLocale (String languageTag) {
-    String language = Lang.cleanLanguageCode(languageTag);
+    String language = cleanLanguageCode(languageTag);
     String country;
     if (languageTag.length() > language.length()) {
-      country = Lang.cleanLanguageCode(languageTag.substring(language.length() + 1));
+      country = cleanLanguageCode(languageTag.substring(language.length() + 1));
     } else {
       country = null;
     }
     String variant;
     if (!StringUtils.isEmpty(country) && languageTag.length() > country.length() + language.length() + 2) {
-      variant = Lang.cleanLanguageCode(languageTag.substring(language.length() + country.length() + 2));
+      variant = cleanLanguageCode(languageTag.substring(language.length() + country.length() + 2));
     } else {
       variant = null;
     }
@@ -3522,10 +3534,10 @@ public class Lang {
   }
 
   private static void checkLanguageSettings (boolean sendEvents) {
-    setLanguageAllowLowercase(!"1".equals(Lang.getString(R.string.language_disable_lowercase)), sendEvents);
+    setLanguageAllowLowercase(!"1".equals(getString(R.string.language_disable_lowercase)), sendEvents);
     setLanguageRtl(Settings.instance().needRtl(packId(), getLanguageDirection() == LANGUAGE_DIRECTION_RTL), sendEvents);
     Locale dateLocale = null;
-    String dateFormatLocale = Lang.getString(R.string.language_dateFormatLocale);
+    String dateFormatLocale = getString(R.string.language_dateFormatLocale);
     if (!StringUtils.isEmpty(dateFormatLocale) && !"0".equals(dateFormatLocale)) {
       try {
         dateLocale = obtainLocale(dateFormatLocale);
@@ -3546,7 +3558,7 @@ public class Lang {
       return LANGUAGE_DIRECTION_LTR;
     if (Settings.instance().getLanguagePackInfo().isRtl)
       return LANGUAGE_DIRECTION_RTL;
-    return getLanguageDirection(Lang.getString(R.string.language_rtl));
+    return getLanguageDirection(getString(R.string.language_rtl));
   }
 
   public static int getLanguageDirection (String directionValue) {
@@ -3570,7 +3582,7 @@ public class Lang {
   }
 
   private static boolean isSpanish () {
-    return Lang.pluralCode() == 0x6573;
+    return pluralCode() == 0x6573;
   }
 
   public static String packId () {
@@ -3615,7 +3627,7 @@ public class Lang {
   }
 
   private static boolean getBuiltinLanguagePackRtl () {
-    return getLanguageDirection(Lang.getBuiltinString(R.string.language_rtl)) == Lang.LANGUAGE_DIRECTION_RTL;
+    return getLanguageDirection(getBuiltinString(R.string.language_rtl)) == LANGUAGE_DIRECTION_RTL;
   }
 
   public static TdApi.LanguagePackInfo getBuiltinSuggestedLanguage () {
@@ -3640,7 +3652,7 @@ public class Lang {
 
   public static boolean getBuiltinSuggestedLanguagePackRtl () {
     String languageDirection = getBuiltinString(R.string.suggested_language_rtl);
-    return StringUtils.isEmpty(languageDirection) ? getBuiltinLanguagePackRtl() : getLanguageDirection(languageDirection) == Lang.LANGUAGE_DIRECTION_RTL;
+    return StringUtils.isEmpty(languageDirection) ? getBuiltinLanguagePackRtl() : getLanguageDirection(languageDirection) == LANGUAGE_DIRECTION_RTL;
   }
 
   public static Locale locale () {
@@ -3683,12 +3695,12 @@ public class Lang {
 
   public static String normalizeLanguageCode (String languagePackId) {
     if (languagePackId.startsWith("X")) {
-      TdApi.LanguagePackStringValue value = TdlibManager.getString(TdlibManager.getLanguageDatabasePath(), Lang.INTERNAL_ID_KEY, languagePackId);
+      TdApi.LanguagePackStringValue value = TdlibManager.getString(TdlibManager.getLanguageDatabasePath(), INTERNAL_ID_KEY, languagePackId);
       if (value instanceof TdApi.LanguagePackStringValueOrdinary) {
         languagePackId = ((TdApi.LanguagePackStringValueOrdinary) value).value;
       }
     }
-    return Lang.cleanLanguageCode(languagePackId);
+    return cleanLanguageCode(languagePackId);
   }
 
   public static @Nullable TdApi.LanguagePackStringValuePluralized getStringPluralized (String key, @NonNull TdApi.LanguagePackInfo language) {
@@ -3767,14 +3779,14 @@ public class Lang {
   @UiThread
   private static void dispatchLanguagePackChanged () {
     boolean wasRtl = languageRtl;
-    Lang.clearCachedStrings();
+    clearCachedStrings();
     checkLanguageSettings(false);
     sendLanguageEvent(EVENT_PACK_CHANGED, languageRtl != wasRtl ? 1 : 0);
   }
 
   @UiThread
   private static void dispatchLanguagePackStringChanged (String languageCode, TdApi.LanguagePackString[] strings, String actualLanguagePackId) {
-    Lang.putCachedStrings(actualLanguagePackId != null ? actualLanguagePackId : languageCode, strings);
+    putCachedStrings(actualLanguagePackId != null ? actualLanguagePackId : languageCode, strings);
     checkLanguageSettings(true);
     if (hasLanguageListeners()) {
       for (TdApi.LanguagePackString string : strings) {
@@ -3870,7 +3882,7 @@ public class Lang {
   }
 
   public static boolean hasDirectionChanged (@EventType int event, int arg1) {
-    return (event == Lang.EVENT_PACK_CHANGED && arg1 == 1) || event == Lang.EVENT_DIRECTION_CHANGED;
+    return (event == EVENT_PACK_CHANGED && arg1 == 1) || event == EVENT_DIRECTION_CHANGED;
   }
 
   public static boolean fixLanguageCode (String languageCode, TdApi.LanguagePackInfo languageInfo) {
@@ -4083,7 +4095,7 @@ public class Lang {
 
       StringList list = new StringList(supportedLanguagesForTranslate.length);
       for (String lang : supportedLanguagesForTranslate) {
-        if (Lang.getLanguageName(lang, null) != null) {
+        if (getLanguageName(lang, null) != null) {
           list.append(lang);
         }
       }

@@ -770,7 +770,7 @@ public class MediaBottomLocationController extends MediaBottomBaseController<Voi
 
   @Override
   protected void onSearchInputChanged (String query) {
-    searchPlaces(query.trim().toLowerCase());
+    searchPlaces(query.trim());
   }
 
   @Override

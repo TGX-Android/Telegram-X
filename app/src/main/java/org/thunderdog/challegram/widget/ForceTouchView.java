@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.widget;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -40,6 +39,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.UiThread;
 
 import org.drinkless.tdlib.TdApi;
@@ -204,7 +204,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       contentWrap.setOutlineProvider(new android.view.ViewOutlineProvider() {
         @Override
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
           outline.setRoundRect(Math.round(drawingRect.left), Math.round(drawingRect.top), Math.round(drawingRect.right), Math.round(drawingRect.bottom), Screen.dp(RADIUS));
         }

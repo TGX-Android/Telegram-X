@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
@@ -38,6 +37,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -88,6 +88,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -464,7 +465,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           Set<String> messages = problems.allMessages();
           if (messages.size() == 1) {
             String message = messages.iterator().next();
-            if (message.toLowerCase().contains("Limit exceed; cannot create more channels".toLowerCase())) {
+            if (message.toLowerCase(Locale.ROOT).contains("Limit exceed; cannot create more channels".toLowerCase(Locale.ROOT))) {
               specificChatRes = R.string.NotificationsGuideCategoryLimitErrorChat;
               commonRes = R.string.NotificationsGuideCategoryLimit;
             } else {
@@ -2117,7 +2118,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   private void makeChannelChecks () {
     adapter.updateAllValuedSettings(); // TODO optimize
     onNotificationSettingsChanged();
@@ -2255,7 +2256,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             invalidateNotificationSettings(customChatId, channelChanged);
           } else {
             checkSnoozeStyle();
-            if (channelChanged) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channelChanged) {
               makeChannelChecks();
             } else {
               adapter.updateValuedSettingById(R.id.btn_notifications_preview);
@@ -2271,7 +2272,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     tdlib.ui().post(() -> {
       if (!isDestroyed()) {
         if (chatId != 0 && customChatId == chatId) {
-          if (channelChanged) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channelChanged) {
             makeChannelChecks();
           } else {
             adapter.updateValuedSettingById(R.id.btn_customChat_preview);
@@ -2282,6 +2283,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   @Override
+  @RequiresApi(Build.VERSION_CODES.O)
   public void onNotificationChannelChanged (TdApi.NotificationSettingsScope scope) {
     invalidateNotificationSettings(scope, true);
   }

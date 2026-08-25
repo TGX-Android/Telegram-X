@@ -80,6 +80,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
       case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
       case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
+      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
       case TdApi.ChatEventPollStopped.CONSTRUCTOR:
         return ActionMessageMode.SERVICE_AND_FULL;
@@ -89,7 +90,6 @@ public class ChatEventUtil {
       case TdApi.ChatEventProfileAccentColorChanged.CONSTRUCTOR:
       case TdApi.ChatEventEmojiStatusChanged.CONSTRUCTOR:
       case TdApi.ChatEventBackgroundChanged.CONSTRUCTOR:
-      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
       case TdApi.ChatEventShowMessageSenderToggled.CONSTRUCTOR:
@@ -154,6 +154,8 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventMessageEdited) action);
       case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventMessagePinned) action);
+      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMessageUnpinned) action);
       case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventUsernameChanged) action);
       case TdApi.ChatEventPollStopped.CONSTRUCTOR:
@@ -169,8 +171,6 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventEmojiStatusChanged) action);
       case TdApi.ChatEventBackgroundChanged.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventBackgroundChanged) action);
-      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
-        return new TGMessageService(context, msg, (TdApi.ChatEventMessageUnpinned) action);
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventInvitesToggled) action);
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
@@ -272,6 +272,10 @@ public class ChatEventUtil {
       }
       case TdApi.ChatEventMessagePinned.CONSTRUCTOR: {
         TdApi.ChatEventMessagePinned e = (TdApi.ChatEventMessagePinned) action;
+        return TGMessage.valueOf(context, e.message);
+      }
+      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR: {
+        TdApi.ChatEventMessageUnpinned e = (TdApi.ChatEventMessageUnpinned) action;
         return TGMessage.valueOf(context, e.message);
       }
       case TdApi.ChatEventPollStopped.CONSTRUCTOR: {
@@ -590,6 +594,7 @@ public class ChatEventUtil {
           appendRight(b, R.string.EventLogPromotedAddUsers, oldAdmin.rights.canInviteUsers, newAdmin.rights.canInviteUsers, false);
           if (!msg.isChannelPost) {
             appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.rights.canPinMessages, newAdmin.rights.canPinMessages, false);
+            appendRight(b, R.string.EventLogPromotedManageTags, oldAdmin.rights.canManageTags, newAdmin.rights.canManageTags, false);
           }
           appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.rights.canManageVideoChats, newAdmin.rights.canManageVideoChats, false);
           if (msg.isChannelPost) {
@@ -647,6 +652,7 @@ public class ChatEventUtil {
             appendRight(b, R.string.EventLogRestrictedReactToMessages, oldBan != null ? oldBan.permissions.canReactToMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canReactToMessages : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
+            appendRight(b, R.string.EventLogRestrictedEditTag, oldBan != null ? oldBan.permissions.canEditTag : oldCanReadMessages, newBan != null ? newBan.permissions.canEditTag : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
             appendRight(b, R.string.EventLogRestrictedTopics, oldBan != null ? oldBan.permissions.canCreateTopics : oldCanReadMessages, newBan != null ? newBan.permissions.canCreateTopics : newCanReadMessages, false);
           }
@@ -664,7 +670,6 @@ public class ChatEventUtil {
       case TdApi.ChatEventAccentColorChanged.CONSTRUCTOR:
       case TdApi.ChatEventProfileAccentColorChanged.CONSTRUCTOR:
       case TdApi.ChatEventEmojiStatusChanged.CONSTRUCTOR:
-      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
       case TdApi.ChatEventShowMessageSenderToggled.CONSTRUCTOR:
@@ -804,6 +809,7 @@ public class ChatEventUtil {
         appendRight(b, R.string.EventLogPermissionSendPolls, permissions.oldPermissions.canSendPolls, permissions.newPermissions.canSendPolls, true);
         appendRight(b, R.string.EventLogPermissionSendEmbed, permissions.oldPermissions.canAddLinkPreviews, permissions.newPermissions.canAddLinkPreviews, true);
         appendRight(b, R.string.EventLogPermissionReactToMessages, permissions.oldPermissions.canReactToMessages, permissions.newPermissions.canReactToMessages, true);
+        appendRight(b, R.string.EventLogPermissionEditTag, permissions.oldPermissions.canEditTag, permissions.newPermissions.canEditTag, true);
         appendRight(b, R.string.EventLogPermissionAddUsers, permissions.oldPermissions.canInviteUsers, permissions.newPermissions.canInviteUsers, true);
         appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
         appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);

@@ -142,8 +142,14 @@ public final class N {
   public static native String[] getTgCallsVersions ();
   public static native String toHexString (byte[] array);
 
+  private static boolean loaded;
+
   public static boolean init () {
-    return NLoader.loadLibraries();
+    if (!loaded) {
+      NLoader.loadLibraries();
+      loaded = true;
+    }
+    return true;
   }
 
   public static void setupLibraries () {

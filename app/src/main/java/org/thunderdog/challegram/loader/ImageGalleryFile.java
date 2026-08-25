@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
 import tgx.td.Td;
 
 public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalleryFile> {
@@ -368,8 +369,12 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
   }
 
   public boolean isScreenshot () {
-    String check = getFile().local.path.toLowerCase();
-    return /*check.contains("screenshot") || */check.contains("screen");
+    String path = getFile().local.path;
+    if (!StringUtils.isEmpty(path)) {
+      String name = U.getFileName(path);
+      return U.isScreenshotFolder(name);
+    }
+    return false;
   }
 
   @Override

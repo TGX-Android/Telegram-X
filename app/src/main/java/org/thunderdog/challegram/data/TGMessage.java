@@ -86,6 +86,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
+import org.thunderdog.challegram.telegram.TdlibForumTopicManager;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -168,7 +169,7 @@ import tgx.td.Td;
 import tgx.td.TdExt;
 import tgx.td.data.MessageWithProperties;
 
-public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TGAvatars.Callback, TranslationsManager.Translatable {
+public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TGAvatars.Callback, TranslationsManager.Translatable, TdlibForumTopicManager.Observer {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
   private static final int MAXIMUM_COMMON_MERGE_TIME_DIFF = 900;
 
@@ -221,6 +222,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected String time;
 
   protected @NonNull final TdlibSender sender;
+
+  private final TdlibForumTopicManager.Key forumTopicKey;
+  private TdApi.ForumTopicInfo topicInfo;
+  private boolean topicObserverRegistered;
 
   protected @Nullable final String viaBotUsername;
   protected TGSource forwardInfo;
@@ -337,6 +342,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     this.manager = manager;
     this.tdlib = manager.controller().tdlib();
+
+    TdApi.MessageTopic topicId = msg.topicId;
+    if (topicId != null && topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+      this.forumTopicKey = new TdlibForumTopicManager.Key(msg.chatId, ((TdApi.MessageTopicForum) topicId).forumTopicId);
+    } else {
+      this.forumTopicKey = null;
+    }
 
     this.mTranslationsManager = new TranslationsManager(tdlib, this, this::setTranslatedStatus, this::setTranslationResult, this::showTranslateErrorMessageBubbleMode);
 
@@ -4422,6 +4434,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return msg;
   }
 
+  public int forumTopicId () {
+    return forumTopicKey != null ? forumTopicKey.forumTopicId : 0;
+  }
+
   public void getMessageWithProperties (RunnableData<MessageWithProperties> act) {
     getMessageWithProperties(getMessage(), act);
   }
@@ -4887,6 +4903,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final long getChatId () {
     return msg.chatId;
+  }
+
+  public final TdApi.MessageSender getChatSenderId () {
+    if (ChatId.isUserChat(msg.chatId)) {
+      return new TdApi.MessageSenderUser(tdlib.chatUserId(msg.chatId));
+    } else {
+      return new TdApi.MessageSenderChat(msg.chatId);
+    }
   }
 
   private TdApi.ChatAdministrator administrator;
@@ -6244,6 +6268,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void onDestroy () {
     isDestroyed = true;
+    if (topicObserverRegistered) {
+      tdlib.topics().stopObserving(forumTopicKey, this);
+      topicObserverRegistered = false;
+    }
     stopHotTimer();
     if (forwardInfo != null)
       forwardInfo.destroy();
@@ -7257,7 +7285,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private boolean needHideEventDate () {
     //noinspection WrongConstant
-    return (event != null & event.hideDate) || (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR && ((TdApiExt.MessageChatEvent) msg.content).hideDate);
+    return (event != null && event.hideDate) || (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR && ((TdApiExt.MessageChatEvent) msg.content).hideDate);
   }
 
   public final boolean isEventLog () {
@@ -8371,6 +8399,46 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageChatBoost.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatBoost) content);
         }
+        case TdApi.MessagePollOptionAdded.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePollOptionAdded) content);
+        }
+        case TdApi.MessagePollOptionDeleted.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePollOptionDeleted) content);
+        }
+        case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePaidMessagesRefunded) content);
+        }
+        case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePaidMessagePriceChanged) content);
+        }
+        case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChecklistTasksAdded) content);
+        }
+        case TdApi.MessageChecklistTasksDone.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChecklistTasksDone) content);
+        }
+        case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatHasProtectedContentDisableRequested) content);
+        }
+        case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatHasProtectedContentToggled) content);
+        }
+        case TdApi.MessageChatOwnerChanged.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatOwnerChanged) content);
+        }
+        case TdApi.MessageChatOwnerLeft.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatOwnerLeft) content);
+        }
+        case TdApi.MessageManagedBotCreated.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageManagedBotCreated) content);
+        }
+        case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatAddedToCommunity) content);
+        }
+        case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatRemovedFromCommunity) content);
+        }
+
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
           return new TGMessageGift(context, msg, (TdApi.MessagePremiumGiftCode) content);
         }
@@ -8400,11 +8468,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageStakeDice.CONSTRUCTOR:
 
         case TdApi.MessageGroupCall.CONSTRUCTOR: // TODO TGMessageCall
-        case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR: // TODO TGMessageService
         case TdApi.MessageChecklist.CONSTRUCTOR: // TODO TGMessagePoll
-        case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChecklistTasksDone.CONSTRUCTOR: // TODO TGMessageService
         case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
         case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
         case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
@@ -8412,13 +8476,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
         case TdApi.MessageGiftedTon.CONSTRUCTOR:
         case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
-        case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChatOwnerChanged.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageChatOwnerLeft.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessageManagedBotCreated.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessagePollOptionAdded.CONSTRUCTOR: // TODO TGMessageService
-        case TdApi.MessagePollOptionDeleted.CONSTRUCTOR: // TODO TGMessageService
           break;
 
         case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -8431,7 +8488,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         default: {
-          Td.assertMessageContent_bb294b24();
+          Td.assertMessageContent_a80283cf();
           throw Td.unsupported(msg.content);
         }
       }
@@ -9833,5 +9890,100 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
     }
     return EmojiMessageContentType.NOT_EMOJI;
+  }
+
+  // Topics
+
+  private List<RunnableBool> postponedTopicInfoCallbacks;
+
+  protected final void withTopicInfo (RunnableBool after) {
+    if (forumTopicKey == null) {
+      return;
+    }
+    boolean needRegister;
+    boolean hasTopicInfo;
+    synchronized (forumTopicKey) {
+      needRegister = !topicObserverRegistered;
+      if (needRegister) {
+        topicObserverRegistered = true;
+      }
+      hasTopicInfo = topicInfo != null;
+    }
+    if (hasTopicInfo) {
+      after.runWithBool(true);
+    }
+    if (needRegister) {
+      TdlibForumTopicManager.Entry entry =
+        tdlib.topics().findAndObserve(forumTopicKey, this);
+
+      if (entry != null) {
+        after.runWithBool(true);
+      } else {
+        synchronized (forumTopicKey) {
+          if (topicInfo != null) {
+            hasTopicInfo = true;
+          } else {
+            if (postponedTopicInfoCallbacks == null) {
+              postponedTopicInfoCallbacks = new ArrayList<>();
+            }
+            postponedTopicInfoCallbacks.add(after);
+          }
+        }
+        if (hasTopicInfo) {
+          after.runWithBool(true);
+        }
+      }
+    }
+  }
+
+  @NonNull
+  protected final TdApi.ForumTopicInfo topicInfo () {
+    if (forumTopicKey == null)
+      throw new IllegalStateException();
+    synchronized (forumTopicKey) {
+      if (topicInfo == null) {
+        throw new NullPointerException();
+      }
+      return topicInfo;
+    }
+  }
+
+  private void setTopicInfo (TdApi.ForumTopicInfo topicInfo) {
+    List<RunnableBool> postponedCallbacks;
+    synchronized (forumTopicKey) {
+      if (this.topicInfo == null) {
+        postponedCallbacks = this.postponedTopicInfoCallbacks;
+        this.postponedTopicInfoCallbacks = null;
+      } else {
+        postponedCallbacks = null;
+      }
+      this.topicInfo = topicInfo;
+    }
+    if (postponedCallbacks != null) {
+      for (RunnableBool postponedCallback : postponedCallbacks) {
+        postponedCallback.runWithBool(false);
+      }
+    }
+    onTopicInfoUpdated();
+  }
+
+  @AnyThread
+  protected void onTopicInfoUpdated () {
+    // override
+  }
+
+  @Override
+  public final void onTopicFound (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.ForumTopic topic, boolean inPlace) {
+    setTopicInfo(topic.info);
+  }
+
+  @Override
+  public final void onTopicInfoUpdated (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.ForumTopicInfo topicInfo) {
+    setTopicInfo(topicInfo);
+  }
+
+  @Override
+  public final void onTopicUpdated (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.UpdateForumTopic update) {
+    // TODO?
   }
 }

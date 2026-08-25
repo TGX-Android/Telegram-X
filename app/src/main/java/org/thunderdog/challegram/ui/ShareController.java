@@ -795,7 +795,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
               textRes = R.string.ShareTextPlain;
               break;
             default:
-              Td.assertMessageContent_bb294b24();
+              Td.assertMessageContent_a80283cf();
               title1Res = R.string.ShareTitleMedia;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextMedia;
@@ -2619,13 +2619,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
     private float copyWidth;
 
     public void setShareText (@NonNull String text) {
-      this.copyText = text.toUpperCase();
+      this.copyText = Lang.uppercase(text);
       this.copyTextFake = Text.needFakeBold(copyText);
       this.copyWidth = U.measureText(copyText, Paints.getTitleBigPaint(copyTextFake));
     }
 
     public void setSendText (@NonNull String text) {
-      sendText = text.toUpperCase();
+      sendText = Lang.uppercase(text);
       sendTextFake = Text.needFakeBold(sendText);
       sendWidth = U.measureText(sendText, Paints.getTitleBigPaint(sendTextFake));
     }
@@ -3473,7 +3473,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           break;
         }
         case MODE_STICKER: {
-          functions.add(new TdApi.SendMessage(chatId, null, null, sendOptions, null, new TdApi.InputMessageSticker(new TdApi.InputFileId(args.sticker.sticker.id), null, 0, 0, null)));
+          functions.add(new TdApi.SendMessage(chatId, null, null, sendOptions, null, new TdApi.InputMessageSticker(new TdApi.InputSticker(new TdApi.InputFileId(args.sticker.sticker.id), null, 0, 0), null)));
           break;
         }
         case MODE_CUSTOM: {

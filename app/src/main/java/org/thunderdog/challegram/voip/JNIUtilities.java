@@ -1,6 +1,5 @@
 package org.thunderdog.challegram.voip;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.LinkAddress;
@@ -13,6 +12,8 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
+import androidx.annotation.RequiresApi;
+
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.tool.UI;
 
@@ -21,6 +22,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
+import java.util.Locale;
 
 /**
  * Created by grishka on 16.01.2018.
@@ -28,7 +30,7 @@ import java.util.Enumeration;
 
 @SuppressWarnings("unused")
 public class JNIUtilities{
-	@TargetApi(23)
+	@RequiresApi(Build.VERSION_CODES.M)
 	public static String getCurrentNetworkInterfaceName(){
 		ConnectivityManager cm=(ConnectivityManager) UI.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 		Network net=cm.getActiveNetwork();
@@ -109,7 +111,7 @@ public class JNIUtilities{
 				mcc=carrierID.substring(0, 3);
 				mnc=carrierID.substring(3);
 			}
-			return new String[]{tm.getNetworkOperatorName(), tm.getNetworkCountryIso().toUpperCase(), mcc, mnc};
+			return new String[]{tm.getNetworkOperatorName(), tm.getNetworkCountryIso().toUpperCase(Locale.ROOT), mcc, mnc};
 		}
 		return null;
 	}

@@ -3753,7 +3753,7 @@ public class TdlibUi extends Handler {
             case TdApi.SettingsSectionDevices.CONSTRUCTOR: {
               SettingsSessionsController sessions = new SettingsSessionsController(context.context(), context.tdlib());
               SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
-              result = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController<?>[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
+              result = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController<?>[] {sessions, websites}, new String[] {Lang.uppercase(Lang.getString(R.string.Devices)), Lang.getString(R.string.Websites)}, false);
               break;
             }
             case TdApi.SettingsSectionLanguage.CONSTRUCTOR: {
@@ -4034,7 +4034,7 @@ public class TdlibUi extends Handler {
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
             case TdApi.SettingsSectionSearch.CONSTRUCTOR:
             case TdApi.SettingsSectionMyStars.CONSTRUCTOR:
-            case TdApi.SettingsSectionMyToncoins.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
             case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
             case TdApi.SettingsSectionPremium.CONSTRUCTOR:
             case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
@@ -4045,7 +4045,7 @@ public class TdlibUi extends Handler {
               break;
             }
             default: {
-              Td.assertSettingsSection_94405f42();
+              Td.assertSettingsSection_c6f544dd();
               throw Td.unsupported(section);
             }
           }

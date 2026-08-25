@@ -30,12 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceMap;
 
-abstract class TdlibDataManager<Key, Value extends TdApi.Object, Result extends TdlibDataManager.AbstractEntry<Key, Value>> implements CleanupStartupDelegate {
-  protected static abstract class AbstractEntry<K, V extends TdApi.Object> {
+public abstract class TdlibDataManager<Key, Value extends TdApi.Object, Result extends TdlibDataManager.AbstractEntry<Key, Value>> implements CleanupStartupDelegate {
+  public static abstract class AbstractEntry<K, V extends TdApi.Object> {
     public final K key;
     public final @Nullable V value;
     public final @Nullable TdApi.Error error;
@@ -53,7 +52,7 @@ abstract class TdlibDataManager<Key, Value extends TdApi.Object, Result extends 
     }
   }
 
-  protected interface Watcher<Key, Value extends TdApi.Object, Result extends TdlibDataManager.AbstractEntry<Key, Value>> {
+  public interface Watcher<Key, Value extends TdApi.Object, Result extends TdlibDataManager.AbstractEntry<Key, Value>> {
     void onEntryLoaded (TdlibDataManager<Key, Value, Result> context, Result entry);
   }
 
@@ -95,19 +94,45 @@ abstract class TdlibDataManager<Key, Value extends TdApi.Object, Result extends 
     }
   }
 
+  public interface Replacer<Value extends TdApi.Object> {
+    @Nullable
+    Value replace (@Nullable Value oldValue, @Nullable TdApi.Error oldError);
+  }
+
   @UiThread
-  public final Result findOrRequest (Key key, @Nullable RunnableData<Result> callback) {
+  public final boolean replaceExisting (Key key, Replacer<Value> replacer) {
+    synchronized (dataLock) {
+      Result entry = entries.get(key);
+      if (entry != null) {
+        Value newValue = replacer.replace(entry.value, entry.error);
+        if (newValue != null) {
+          Result newEntry = newEntry(key, newValue, null);
+          entries.put(key, newEntry);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  public interface Callback<T> {
+    void onEntryFound (T entry, boolean inPlace);
+  }
+
+  @UiThread
+  @Nullable
+  public final Result findOrRequest (Key key, @Nullable Callback<Result> callback) {
     Watcher<Key, Value, Result> watcher;
     if (callback != null) {
       watcher = (context, entry) ->
-        callback.runWithData(entry);
+        callback.onEntryFound(entry, false);
     } else {
       watcher = null;
     }
     Result entry = findOrPostponeRequest(key, watcher, true);
     if (entry != null) {
       if (callback != null) {
-        callback.runWithData(entry);
+        callback.onEntryFound(entry, true);
       }
     } else {
       performPostponedRequest(key);

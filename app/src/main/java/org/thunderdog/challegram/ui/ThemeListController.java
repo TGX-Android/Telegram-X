@@ -95,6 +95,7 @@ import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.util.LineDrawModifier;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.v.HeaderEditText;
@@ -110,6 +111,7 @@ import org.thunderdog.challegram.widget.SimplestCheckBox;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -245,7 +247,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     CharSequence text = item.getText();
     if (text == null || text.length() > 256)
       throw new IllegalArgumentException();
-    String input = text.toString().trim().toLowerCase();
+    String input = text.toString().trim().toLowerCase(Locale.ROOT);
     int equal = input.indexOf(':');
     if (equal != -1)
       input = input.substring(equal + 1).trim();
@@ -320,7 +322,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     int groupCount = matcher.groupCount();
     if (groupCount < 5)
       throw new IllegalArgumentException();
-    String type = matcher.group(1).toLowerCase();
+    String type = matcher.group(1).toLowerCase(Locale.ROOT);
     String arg1 = matcher.group(2);
     String arg2 = matcher.group(3);
     String arg3 = matcher.group(4);
@@ -408,7 +410,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
 
         @Override
         public void onTextChanged (CharSequence s, int start, int before, int count) {
-          searchColors(s.toString().trim().toLowerCase(), null);
+          searchColors(s.toString().trim(), null);
           if (headerView != null) {
             headerView.updateMenuClear(R.id.menu_clear, R.id.menu_btn_clear, s.length() > 0, true);
           }
@@ -733,7 +735,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             addThemeInvalidateListener(newView);
             newView.setTypeface(Fonts.getRobotoBold());
             newView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10f);
-            newView.setText(Lang.getString(R.string.New).toUpperCase());
+            newView.setText(Lang.uppercase(Lang.getString(R.string.New)));
             newView.setLayoutParams(lp);
 
             ll.addView(newView);
@@ -1553,7 +1555,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         });
         break;
       case ColorId.online:
-        modifier.setCircle(ColorId.avatarSavedMessages, StringUtils.random(name, 2).toUpperCase());
+        modifier.setCircle(ColorId.avatarSavedMessages, StringUtils.random(name, 2).toUpperCase(Locale.ROOT));
         modifier.needOnline = true;
         modifier.noColorPreview = true;
         break;
@@ -1808,7 +1810,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
               break;
             }
             default: {
-              modifier.setCircle(id, StringUtils.random(name, 2).toUpperCase());
+              modifier.setCircle(id, StringUtils.random(name, 2).toUpperCase(Locale.ROOT));
               String colorName = name.substring("avatar".length());
               if (colorName.endsWith("_big")) {
                 colorName = colorName.substring(0, colorName.length() - "_big".length());
@@ -1863,20 +1865,15 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     if (StringUtils.isEmpty(query))
       return true;
     String name = isProperty ? Theme.getPropertyName(id) : Theme.getColorName(id);
-    String nameLower = name.toLowerCase();
-    if (nameLower.startsWith(query))
+    if (StringUtils.startsWithIgnoreCase(name, query))
       return true;
     for (int i = 0; i < name.length(); ) {
       int codePoint = name.codePointAt(i);
-      if (Character.isUpperCase(codePoint) && nameLower.startsWith(query, i))
+      if (Character.isUpperCase(codePoint) && StringUtils.startsWithIgnoreCase(name, query, i))
         return true;
       i += Character.charCount(codePoint);
     }
     return Strings.findWord(name, query);
-    /*if (Strings.findWord(name, query))
-      return true;
-    int stringRes = LangUtils.getThemeDescription(id);
-    return stringRes != 0 && Strings.findWord(Lang.getString(stringRes), query);*/
   }
 
   private CharSequence makeDescription (@StringRes int resId) {
@@ -1978,7 +1975,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       List<ListItem> items = new ArrayList<>();
       int resultCount = buildCells(items, getTheme().getId(), query);
       tdlib.ui().post(() -> {
-        if (!isDestroyed() && StringUtils.equalsOrBothEmpty(currentQuery, query)) {
+        if (!isDestroyed() && StringUtils.equalsOrEmptyIgnoreCase(currentQuery, query)) {
           if (editPosition != -1) {
             forceClosePicker();
           }

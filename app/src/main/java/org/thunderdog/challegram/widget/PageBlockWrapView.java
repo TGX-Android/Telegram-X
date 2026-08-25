@@ -112,6 +112,7 @@ public class PageBlockWrapView extends FrameLayoutFix implements ViewPager.OnPag
 
   private boolean wasUserInteraction;
 
+  @SuppressWarnings("SetJavaScriptEnabled")
   private void initWebView () {
     if (webView == null) {
       // FIXME android.webkit.WebViewFactory$MissingWebViewPackageException

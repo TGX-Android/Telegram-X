@@ -16,6 +16,8 @@ package org.thunderdog.challegram.config;
 
 import android.os.Build;
 
+import java.util.Locale;
+
 import me.vkryl.core.StringUtils;
 
 @SuppressWarnings("SpellCheckingInspection")
@@ -57,8 +59,8 @@ public class Device {
     if (StringUtils.isEmpty(manufacturer)) {
       return UNKNOWN;
     }
-    manufacturer = manufacturer.toLowerCase();
-    brand = StringUtils.isEmpty(brand) ? null : brand.toLowerCase();
+    manufacturer = manufacturer.toLowerCase(Locale.ROOT);
+    brand = StringUtils.isEmpty(brand) ? null : brand.toLowerCase(Locale.ROOT);
 
     switch (manufacturer) {
       case "google":
@@ -101,7 +103,7 @@ public class Device {
     if (manufacturer == UNKNOWN || StringUtils.isEmpty(product)) {
       return UNKNOWN;
     }
-    product = product.toLowerCase();
+    product = product.toLowerCase(Locale.ROOT);
 
     switch (manufacturer) {
       case SAMSUNG:
@@ -188,7 +190,7 @@ public class Device {
 
   public static final boolean ROUND_NOTIFICAITON_IMAGE = true; //MANUFACTURER != XIAOMI;
 
-  public static final boolean FLYME = !StringUtils.isEmpty(Build.DISPLAY) && Build.DISPLAY.toLowerCase().contains("flyme");
+  public static final boolean FLYME = !StringUtils.isEmpty(Build.DISPLAY) && Build.DISPLAY.toLowerCase(Locale.ROOT).contains("flyme");
 
   // Android >= 13 has builtin clipboard toasts, but MIUI/HyperOs ships without them
   public static final boolean HAS_BUILTIN_CLIPBOARD_TOASTS = !IS_XIAOMI && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;

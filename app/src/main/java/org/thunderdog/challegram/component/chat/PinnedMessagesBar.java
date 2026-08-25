@@ -769,6 +769,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       }
     }
     clearMessageList();
+    staticList = entries;
     collapse(false);
     canExpand.setValue(false, false);
     countAnimator.forceFactor(0);

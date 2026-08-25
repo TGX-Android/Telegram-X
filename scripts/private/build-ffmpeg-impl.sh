@@ -10,14 +10,14 @@ if [ -z "$ANDROID_SDK_ROOT" ]; then
   echo -e "${STYLE_ERROR}Failed! SDK is empty. Run 'export ANDROID_SDK_ROOT=[PATH_TO_SDK]'${STYLE_END}"
   exit
 fi
-validate_dir "$ANDROID_SDK_ROOT"
+validate_dir "$ANDROID_SDK_ROOT" || (echo "SDK not found!" && exit 1)
 
 function build_one {
   if [ -z "$ANDROID_NDK_ROOT" ]; then
     echo -e "${STYLE_ERROR}Failed! NDK is empty. Run 'export ANDROID_NDK_ROOT=[PATH_TO_NDK]'${STYLE_END}"
     exit
   fi
-  validate_dir "$ANDROID_NDK_ROOT"
+  validate_dir "$ANDROID_NDK_ROOT" || (echo "NDK not found!" && exit 1)
 
   LIBVPX_INCLUDE_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/$PLATFORM/include"
   LIBVPX_LIB_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/$PLATFORM/lib"
@@ -40,13 +40,12 @@ function build_one {
   validate_file "$STRIP"
   validate_file "$YASM"
   validate_file "$RANLIB"
-  validate_dir "$LINK"
 
   echo "Cleaning..."
   rm -f config.h
   make clean || true
 
-  echo "Configuring ffmpeg: ${PLATFORM} ${FLAVOR} (${ANDROID_API}), NDK: ${ANDROID_NDK_ROOT}"
+  echo "Configuring ffmpeg: ${PLATFORM} ${FLAVOR} (${ANDROID_API}), NDK: ${ANDROID_NDK_ROOT}, extras: ${OPTIMIZE_CFLAGS}, vpx: ${LIBVPX_LIB_DIR}"
 
   ./configure \
   --nm="${NM}" \
@@ -60,18 +59,15 @@ function build_one {
   --arch="$ARCH" \
   --target-os=linux \
   --enable-cross-compile \
-  --x86asmexe="$YASM" \
   --prefix="$PREFIX" \
   --enable-pic \
   --disable-shared \
   --enable-static \
-  --enable-asm \
-  --enable-inline-asm \
-  --enable-x86asm \
+  --enable-small \
   --cross-prefix="$CROSS_PREFIX"- \
   --sysroot="$SYSROOT" \
-  --extra-cflags="-fvisibility=hidden -ffunction-sections -fdata-sections -g -fno-omit-frame-pointer -w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS -I$LIBVPX_INCLUDE_DIR --static -fPIC" \
-  --extra-ldflags="-L$LIBVPX_LIB_DIR $EXTRA_LDFLAGS -L -lvpx -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
+  --extra-cflags="-ffunction-sections -fdata-sections -fvisibility=hidden -fvisibility-inlines-hidden -flto=full -fno-strict-aliasing -fno-fast-math -ftree-vectorize -funroll-loops -w -O2 -DCONFIG_LINUX_PERF=0 $OPTIMIZE_CFLAGS -I$LIBVPX_INCLUDE_DIR -fPIC" \
+  --extra-ldflags="-L$LIBVPX_LIB_DIR $EXTRA_LDFLAGS -lvpx -fPIC -flto=full" \
   --extra-libs="$EXTRA_LIBS" \
   \
   --enable-version3 \
@@ -81,7 +77,6 @@ function build_one {
   \
   --disable-doc \
   --disable-htmlpages \
-  --disable-avx \
   \
   --disable-everything \
   --disable-network \
@@ -89,10 +84,6 @@ function build_one {
   --disable-avdevice \
   --disable-debug \
   --disable-programs \
-  --disable-network \
-  --disable-ffplay \
-  --disable-ffprobe \
-  --disable-avdevice \
   \
   --enable-runtime-cpudetect \
   --enable-pthreads \
@@ -187,14 +178,12 @@ configure_and_build() {
       ARCH=aarch64
       CPU=armv8-a
       PLATFORM=arm64-v8a
-      ADDITIONAL_CONFIGURE_FLAGS=(--enable-optimizations --disable-x86asm)
-      OPTIMIZE_CFLAGS=""
-      EXTRA_LIBS="-lunwind"
+      ADDITIONAL_CONFIGURE_FLAGS=(--disable-x86asm --enable-neon)
+      OPTIMIZE_CFLAGS="-march=${CPU}"
+      EXTRA_LIBS=""
       EXTRA_LDFLAGS=""
-      # FIXME ADDITIONAL_CONFIGURE_FLAGS="--enable-neon --enable-optimizations"
 
       PREFIX=./build/$FLAVOR/$PLATFORM
-      LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
       CC=${CROSS_PREFIX}${ANDROID_API}-clang
       CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
       LD=$CC
@@ -203,27 +192,29 @@ configure_and_build() {
     x86_64)
       CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android
       ARCH=x86_64
-      CPU=x86_64
+      CPU=x86-64
       PLATFORM=x86_64
-      ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --disable-x86asm)
-      OPTIMIZE_CFLAGS=""
+      ADDITIONAL_CONFIGURE_FLAGS=(--enable-x86asm --x86asmexe="$YASM")
+      OPTIMIZE_CFLAGS="-march=${CPU}"
       EXTRA_LIBS="-lunwind"
       EXTRA_LDFLAGS=""
 
       PREFIX=./build/$FLAVOR/$PLATFORM
-      LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
       CC=${CROSS_PREFIX}${ANDROID_API}-clang
       CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
       LD=$CC
       AS=$CC
     ;;
 	  armeabi-v7a)
-      CROSS_PREFIX=$PREBUILT/bin/arm-linux-androideabi
+      CROSS_PREFIX=$PREBUILT/bin/armv7a-linux-androideabi
       ARCH=arm
       CPU=armv7-a
       PLATFORM=armv7-a
       ADDITIONAL_CONFIGURE_FLAGS=(--enable-neon --disable-x86asm)
-      OPTIMIZE_CFLAGS="-marm -march=$CPU -mfloat-abi=softfp"
+      OPTIMIZE_CFLAGS="-marm -march=${CPU} -mtune=cortex-a8 -mfloat-abi=softfp"
+      CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
+      CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
+      AS=$CC
       if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
         LD=$CC
         LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
@@ -235,20 +226,18 @@ configure_and_build() {
         EXTRA_LDFLAGS=""
         EXTRA_LIBS="-lgcc"
       fi
-
       PREFIX=./build/$FLAVOR/$PLATFORM
-      LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
-      CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
-      CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
-      AS=$CC
     ;;
     x86)
       CROSS_PREFIX=$PREBUILT/bin/i686-linux-android
+      CC=${CROSS_PREFIX}${ANDROID_API}-clang
+      CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+      AS=$CC
       ARCH=x86
       CPU=i686
       PLATFORM=i686
       ADDITIONAL_CONFIGURE_FLAGS=(--disable-asm --disable-x86asm)
-      OPTIMIZE_CFLAGS="-march=$CPU"
+      OPTIMIZE_CFLAGS=""
       if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
         LD=$CC
         LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
@@ -261,10 +250,6 @@ configure_and_build() {
         EXTRA_LIBS="-lgcc"
       fi
       PREFIX=./build/$FLAVOR/$PLATFORM
-      LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
-      CC=${CROSS_PREFIX}${ANDROID_API}-clang
-      CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-      AS=$CC
     ;;
     *)
       echo "Unknown abi: ${ABI}" >&2
@@ -284,5 +269,9 @@ for ABI in arm64-v8a x86_64 armeabi-v7a x86 ; do
     fi
   done
 done
+
+echo "Final cleaning..."
+rm -f config.h
+make clean || true
 
 popd

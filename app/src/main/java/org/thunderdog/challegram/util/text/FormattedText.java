@@ -278,6 +278,10 @@ public class FormattedText {
     return new FormattedText(this.text, newEntities.toArray(new TextEntity[0]));
   }
 
+  public static FormattedText valueOfEmpty () {
+    return new FormattedText("");
+  }
+
   public static FormattedText valueOf (TdlibDelegate context, @Nullable TdApi.FormattedText formattedText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (formattedText == null)
       return null;
@@ -436,6 +440,12 @@ public class FormattedText {
         entities.add(custom);
         break;
       }
+      case TdApi.RichTextDiff.CONSTRUCTOR: {
+        TdApi.RichTextDiff textDiff = (TdApi.RichTextDiff) in;
+        // TODO textDiff.oldText
+        parseRichText(context, textDiff.text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters);
+        break;
+      }
       case TdApi.RichTextIcon.CONSTRUCTOR: {
         TdApi.RichTextIcon icon = (TdApi.RichTextIcon) in;
         TextEntityCustom custom = new TextEntityCustom(context, context.tdlib(), "", offset[0], offset[0], flags, linkCached ? new TdlibUi.UrlOpenParameters(openParameters).forceInstantView() : openParameters)
@@ -563,7 +573,7 @@ public class FormattedText {
         break;
       }
       default: {
-        Td.assertRichText_1c4c4279();
+        Td.assertRichText_d57ed958();
         throw Td.unsupported(in);
       }
     }

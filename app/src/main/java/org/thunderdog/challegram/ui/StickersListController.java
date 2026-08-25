@@ -857,11 +857,11 @@ public class StickersListController extends ViewController<StickersListControlle
     final @StringRes int sendText = isEmoji ? (canWriteMessages ? R.string.PasteCustomEmoji : R.string.ShareCustomEmoji) : R.string.SendSticker;
 
     menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
-      Lang.getString(sendText).toUpperCase(), R.id.btn_send, ColorId.textNeutral));
+      Lang.uppercase(Lang.getString(sendText)), R.id.btn_send, ColorId.textNeutral));
 
     if (needViewPackButton) {
       menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
-        Lang.getString(R.string.ViewPackPreview).toUpperCase(), R.id.btn_view, ColorId.textNeutral));
+        Lang.uppercase(Lang.getString(R.string.ViewPackPreview)), R.id.btn_view, ColorId.textNeutral));
     }
   }
 

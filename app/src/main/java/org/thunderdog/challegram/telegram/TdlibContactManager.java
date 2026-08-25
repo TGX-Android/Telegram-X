@@ -40,6 +40,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.service.SyncContactsService;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
@@ -58,6 +59,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 
@@ -144,6 +146,9 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   private int getStatus () {
     if (_status == null) {
       _status = Settings.instance().getInt(key(_STATUS_KEY), STATUS_INACTIVE);
+      if (Config.TEST_SYNC_CONTACTS_PROMPT) {
+        _status = STATUS_INACTIVE;
+      }
     }
     return _status;
   }
@@ -525,11 +530,11 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   }
 
   public void enableSync (BaseActivity context) {
+    if (getStatus() != STATUS_INACTIVE || state != STATE_NOT_STARTED) {
+      return;
+    }
     if (getHideOption() == HIDE_OPTION_NEVER) {
       setHideOption(HIDE_OPTION_DEFAULT);
-    }
-    if (getStatus() == STATUS_INACTIVE) {
-      setStatus(STATUS_IN_FIRST_PROGRESS);
     }
     startSyncIfNeeded(context, true, null);
   }
@@ -552,7 +557,9 @@ public class TdlibContactManager implements CleanupStartupDelegate {
         public void act () {
 
         }
-      }, contactsArray);
+      }, contactsArray, success -> UI.execute(() -> {
+        setState(success ? STATE_FINISHED : STATE_NOT_STARTED);
+      }));
       if (callback != null) {
         callback.run();
       }
@@ -613,6 +620,51 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       pendingImportTask.cancel();
       pendingImportTask = null;
     }
+    stopForeground();
+  }
+
+  public void startForeground (RunnableBool after) {
+    String text;
+    if (tdlib.accountId() != TdlibAccount.NO_ID && tdlib.context().isMultiUser()) {
+      text = Lang.getString(R.string.RetrievingText, tdlib.account().getLongName());
+    } else {
+      text = null;
+    }
+    SyncContactsService.startForegroundTask(
+      UI.getAppContext(),
+      Lang.getString(R.string.SyncContactsProgress),
+      text,
+      U.getOtherNotificationChannel(), 0,
+      0,
+      tdlib.accountId(),
+      after
+    );
+  }
+
+  private boolean foregroundShowing;
+
+  public void stopForeground () {
+    if (foregroundShowing) {
+      if (Config.FOREGROUND_CONTACTS_SYNC_DEMO) {
+        UI.post(() -> {
+          SyncContactsService.stopForegroundTask(
+            UI.getAppContext(),
+            0,
+            tdlib.accountId()
+          );
+          foregroundShowing = false;
+        }, 3000L);
+      } else {
+        boolean result = SyncContactsService.stopForegroundTask(
+          UI.getAppContext(),
+          0,
+          tdlib.accountId()
+        );
+        if (result) {
+          foregroundShowing = false;
+        }
+      }
+    }
   }
 
   private void startContactsSync () {
@@ -621,12 +673,49 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       Log.i(Log.TAG_CONTACT, "Starting contacts synchronization, ignoreIfNoChanges:%b, status:%d", ignoreIfNoChanges, getStatus());
       state = STATE_IN_PROGRESS;
       cancelPendingImportTask();
-      Background.instance().post(pendingImportTask = new CancellableRunnable() {
+
+      CancellableRunnable task = new CancellableRunnable() {
         @Override
         public void act () {
-          importContactsImpl(this, ignoreIfNoChanges);
+          importContactsImpl(this, success -> UI.execute(() -> {
+            if (isPending()) {
+              setState(success ? STATE_FINISHED : STATE_NOT_STARTED);
+              stopForeground();
+            }
+          }));
+        }
+      };
+
+      this.pendingImportTask = task;
+
+      Runnable act = () -> UI.execute(() -> {
+        if (task.isPending()) {
+          startForeground(success -> {
+            if (task.isPending()) {
+              if (success) {
+                foregroundShowing = true;
+                Background.instance().post(task);
+              } else {
+                Log.w(Log.TAG_CONTACT, "Unable to start dataSync service to import contacts");
+                setState(STATE_NOT_STARTED);
+              }
+            }
+          });
         }
       });
+
+      if (!Config.FOREGROUND_CONTACTS_SYNC_DEMO && ignoreIfNoChanges) {
+        Background.instance().post(() -> {
+          if (!hasChanges()) {
+            Log.i(Log.TAG_CONTACT, "No contact changes has been found, aborting.");
+            setState(STATE_FINISHED);
+            return;
+          }
+          act.run();
+        });
+      } else {
+        act.run();
+      }
     }
   }
 
@@ -661,6 +750,8 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     }
   }
 
+  private DialogInterface showingAlert;
+
   private void showAlert (final BaseActivity context, final int flags, final @Nullable Runnable callback) {
     if (state != STATE_NOT_STARTED || getHideOption() == HIDE_OPTION_NEVER) {
       if (callback != null) {
@@ -668,27 +759,45 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       }
       return;
     }
+
+    if (showingAlert != null && showingAlert instanceof AlertDialog && ((AlertDialog) showingAlert).isShowing()) {
+      return;
+    }
+
     final boolean isFirstTime = (flags & FLAG_NOT_FIRST_TIME) == 0;
     final boolean isRetry = (flags & FLAG_PERMISSION_DISABLED) != 0;
     final boolean allowNever = (flags & FLAG_NEED_NEVER) != 0;
     final boolean needNever = true; // allowNever; //  && hideOption == HIDE_OPTION_LATER && !isFirstTime;
 
-    int title = R.string.SyncHintTitle;
-    String message;
+    int title = R.string.SyncHintTitle2;
+    CharSequence message;
+    TdlibDelegate delegate = context.navigation().getCurrentStackItem();
+    String appName = Lang.getString(R.string.AppName);
     if (isRetry) {
       if (isFirstTime) {
-        message = Lang.getString(R.string.SyncHintRetry);
+        message = Lang.getMarkdownString(delegate, R.string.SyncHintRetry2, appName);
       } else {
-        message = Lang.getString(R.string.SyncHintUnavailable);
+        message = Lang.getMarkdownString(delegate, R.string.SyncHintUnavailable2, appName);
       }
     } else {
-      message = Lang.getString(R.string.SyncHint, Lang.getString(R.string.AppName));
+      message = Lang.getMarkdownString(delegate, R.string.SyncHint3, appName);
     }
 
     AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
     b.setTitle(Lang.getString(title));
     b.setMessage(message);
-    b.setPositiveButton(Lang.getString(!context.permissions().canReadContacts() ? (isRetry ? R.string.Settings : R.string.Continue) : R.string.Allow), (dialog, which) -> {
+    b.setCancelable(false);
+    /*b.setNeutralButton(Lang.getString(R.string.SyncLearnMore), (dialog, which) -> {
+      tdlib.ui().openUrl(delegate, Lang.getStringSecure(R.string.url_contactsPrivacy), null);
+    });*/
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      b.setOnDismissListener(dialog -> {
+        if (showingAlert == dialog) {
+          showingAlert = null;
+        }
+      });
+    }
+    b.setPositiveButton(Lang.getString(!context.permissions().canReadContacts() ? (isRetry ? R.string.Settings : R.string.SyncBtn) : R.string.SyncBtn), (dialog, which) -> {
       if (isRetry) {
         Intents.openPermissionSettings();
         return;
@@ -732,6 +841,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     }
     if (!context.isFinishing()) {
       AlertDialog dialog = context.showAlert(b);
+      showingAlert = dialog;
       if (isRetry) {
         pendingRetryDialog = dialog;
         pendingRetryCallback = callback;
@@ -820,7 +930,62 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     return b.toString();
   }
 
-  private void importContactsImpl (CancellableRunnable cancellationSignal, boolean ignoreIfNoChanges) {
+  private boolean hasChanges () {
+    Cursor c = null;
+    Context context = UI.getAppContext();
+    ContentResolver resolver = context.getContentResolver();
+    boolean ok = false;
+    try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+        if (this.maxModificationDate == 0) {
+          ok = true;
+        } else {
+          c = resolver.query(ContactsContract.Contacts.CONTENT_URI,
+            new String[]{
+              ContactsContract.Contacts._ID
+            },
+            ContactsContract.Contacts.HAS_PHONE_NUMBER + "<>0 AND " + ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP + " > " + this.maxModificationDate,
+            null,
+            ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP + " DESC LIMIT 1"
+          );
+          if (c != null) {
+            ok = c.getCount() > 0;
+            U.closeCursor(c); c = null;
+            if (ok) {
+              Log.i(Log.TAG_CONTACT, "Found newer contact modifications, starting sync process");
+            }
+          }
+        }
+      }
+      if (!ok) {
+        c = resolver.query(
+          ContactsContract.Contacts.CONTENT_URI,
+          new String[] {
+            ContactsContract.Contacts._ID
+          },
+          ContactsContract.Contacts.HAS_PHONE_NUMBER + "<>0",
+          null,
+          null
+        );
+        if (c != null) {
+          long totalContactCount = c.getCount();
+          ok = totalContactCount != lastRetrievedContactCount;
+          if (ok) {
+            Log.i(Log.TAG_CONTACT, "Contact list size changed, starting sync process: prev_size:%d, new_size: %d", lastRetrievedContactCount, totalContactCount);
+          }
+        }
+        U.closeCursor(c); c = null;
+      }
+    } catch (Throwable t) {
+      Log.critical(Log.TAG_CONTACT, "Contact changes check failed", t);
+    }
+    if (c != null) {
+      U.closeCursor(c);
+    }
+    return ok;
+  }
+
+  private void importContactsImpl (CancellableRunnable cancellationSignal, RunnableBool after) {
     Cursor c = null;
     int count;
     Context context = UI.getAppContext();
@@ -828,62 +993,6 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     long maxModificationDate = 0;
     try {
       ContentResolver resolver = context.getContentResolver();
-
-      if (ignoreIfNoChanges) {
-        boolean ok = false;
-        try {
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            if (this.maxModificationDate == 0) {
-              ok = true;
-            } else {
-              c = resolver.query(ContactsContract.Contacts.CONTENT_URI,
-                new String[]{
-                  ContactsContract.Contacts._ID
-                },
-                ContactsContract.Contacts.HAS_PHONE_NUMBER + "<>0 AND " + ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP + " > " + this.maxModificationDate,
-                null,
-                ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP + " DESC LIMIT 1"
-              );
-              if (c != null) {
-                ok = c.getCount() > 0;
-                U.closeCursor(c); c = null;
-                if (ok) {
-                  Log.i(Log.TAG_CONTACT, "Found newer contact modifications, starting sync process");
-                }
-              }
-            }
-          }
-          if (!ok) {
-            c = resolver.query(
-                ContactsContract.Contacts.CONTENT_URI,
-                new String[] {
-                  ContactsContract.Contacts._ID
-                },
-              ContactsContract.Contacts.HAS_PHONE_NUMBER + "<>0",
-              null,
-              null
-              );
-            if (c != null) {
-              long totalContactCount = c.getCount();
-              ok = totalContactCount != lastRetrievedContactCount;
-              if (ok) {
-                Log.i(Log.TAG_CONTACT, "Contact list size changed, starting sync process: prev_size:%d, new_size: %d", lastRetrievedContactCount, totalContactCount);
-              }
-            }
-            U.closeCursor(c); c = null;
-          }
-        } catch (Throwable t) {
-          Log.critical(Log.TAG_CONTACT, "Contact changes check failed", t);
-        }
-        if (!ok) {
-          Log.i(Log.TAG_CONTACT, "No contact changes has been found, aborting.");
-          setState(STATE_FINISHED);
-
-          U.closeCursor(c); c = null;
-
-          return;
-        }
-      }
 
       String[] projection;
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
@@ -1042,14 +1151,14 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     if (cancellationSignal.isPending()) {
       if (result != null) {
         this.maxModificationDate = maxModificationDate;
-        importContacts(cancellationSignal, result);
+        importContacts(cancellationSignal, result, after);
       } else {
-        setState(STATE_NOT_STARTED);
+        after.runWithBool(false);
       }
     }
   }
 
-  private void importContacts (final CancellableRunnable cancellationSingal, final TdApi.ImportedContact[] contacts) {
+  private void importContacts (final CancellableRunnable cancellationSingal, final TdApi.ImportedContact[] contacts, RunnableBool after) {
     if (Log.isEnabled(Log.TAG_CONTACT)) {
       if (Log.checkLogLevel(Log.LEVEL_VERBOSE)) {
         Log.v(Log.TAG_CONTACT, "Importing %d contacts...\n%s", contacts.length, TextUtils.join("\n", contacts));
@@ -1057,54 +1166,48 @@ public class TdlibContactManager implements CleanupStartupDelegate {
         Log.i(Log.TAG_CONTACT, "Found %d contacts, importing...", contacts.length);
       }
     }
-    tdlib.client().send(new TdApi.ChangeImportedContacts(contacts), object -> {
-      switch (object.getConstructor()) {
-        case TdApi.ImportedContacts.CONSTRUCTOR: {
-          TdApi.ImportedContacts imported = (TdApi.ImportedContacts) object;
-          ArrayList<UnregisteredContact> unregisteredContacts = null;
-          int i = 0;
-          for (long userId : imported.userIds) {
-            if (userId == 0) {
-              TdApi.ImportedContact contact = contacts[i];
-              int importerCount = imported.importerCount[i];
-              if (unregisteredContacts == null) {
-                unregisteredContacts = new ArrayList<>();
+    tdlib.send(new TdApi.ChangeImportedContacts(contacts), (imported, error) -> {
+      if (imported != null) {
+        ArrayList<UnregisteredContact> unregisteredContacts = null;
+        int i = 0;
+        for (long userId : imported.userIds) {
+          if (userId == 0) {
+            TdApi.ImportedContact contact = contacts[i];
+            int importerCount = imported.importerCount[i];
+            if (unregisteredContacts == null) {
+              unregisteredContacts = new ArrayList<>();
+            }
+            unregisteredContacts.add(new UnregisteredContact(contact, formatPhoneNumber(contact.phoneNumber), importerCount));
+          }
+          i++;
+        }
+        if (cancellationSingal.isPending()) {
+          if (unregisteredContacts != null) {
+            unregisteredContacts.trimToSize();
+            Collections.sort(unregisteredContacts, (o1, o2) -> {
+              int c;
+              c = Integer.compare(o2.importerCount, o1.importerCount);
+              if (c != 0) {
+                return c;
               }
-              unregisteredContacts.add(new UnregisteredContact(contact, formatPhoneNumber(contact.phoneNumber), importerCount));
-            }
-            i++;
+              String n1 = TD.getUserName(o1.contact.firstName, o1.contact.lastName);
+              String n2 = TD.getUserName(o2.contact.firstName, o2.contact.lastName);
+              c = n1.compareTo(n2);
+              if (c != 0) {
+                return Integer.compare(c, 0);
+              }
+              return Integer.compare(o1.contact.phoneNumber.compareTo(o2.contact.phoneNumber), 0);
+            });
+            setUnregisteredContacts(unregisteredContacts);
+          } else {
+            setUnregisteredContacts(null);
           }
-          if (cancellationSingal.isPending()) {
-            if (unregisteredContacts != null) {
-              unregisteredContacts.trimToSize();
-              Collections.sort(unregisteredContacts, (o1, o2) -> {
-                int c;
-                c = Integer.compare(o2.importerCount, o1.importerCount);
-                if (c != 0) {
-                  return c;
-                }
-                String n1 = TD.getUserName(o1.contact.firstName, o1.contact.lastName).toLowerCase();
-                String n2 = TD.getUserName(o2.contact.firstName, o2.contact.lastName).toLowerCase();
-                c = n1.compareTo(n2);
-                if (c != 0) {
-                  return c;
-                }
-                return o1.contact.phoneNumber.compareTo(o2.contact.phoneNumber);
-              });
-              setUnregisteredContacts(unregisteredContacts);
-            } else {
-              setUnregisteredContacts(null);
-            }
-            checkRegisteredCount();
-          }
-          break;
+          checkRegisteredCount();
         }
-        case TdApi.Error.CONSTRUCTOR: {
-          Log.e(Log.TAG_CONTACT, "changeImportedContacts: %s", TD.toErrorString(object));
-          break;
-        }
+      } else {
+        Log.e(Log.TAG_CONTACT, "changeImportedContacts: %s", TD.toErrorString(error));
       }
-      setState(STATE_FINISHED);
+      after.runWithBool(error == null);
     });
   }
 
@@ -1266,11 +1369,14 @@ public class TdlibContactManager implements CleanupStartupDelegate {
         if (displayName == null) {
           ok = true;
         } else if (StringUtils.isEmpty(firstNameAttempt)) {
-          ok = StringUtils.equalsOrEmptyIgnoreCase(lastNameAttempt, displayName, Lang.locale());
+          ok = StringUtils.equalsOrEmptyIgnoreCase(lastNameAttempt, displayName);
         } else if (StringUtils.isEmpty(lastNameAttempt)) {
-          ok = StringUtils.equalsOrEmptyIgnoreCase(firstNameAttempt, displayName, Lang.locale());
+          ok = StringUtils.equalsOrEmptyIgnoreCase(firstNameAttempt, displayName);
         } else {
-          ok = displayName.toLowerCase().contains(firstNameAttempt.toLowerCase()) && displayName.contains(lastNameAttempt.toLowerCase()) && displayName.length() == firstNameAttempt.length() + lastNameAttempt.length() + 1;
+          ok =
+            Strings.anyWordStartsWith(displayName, firstNameAttempt) &&
+            Strings.anyWordStartsWith(displayName, lastNameAttempt) &&
+            displayName.length() == firstNameAttempt.length() + lastNameAttempt.length() + 1;
         }
         if (ok) {
           firstName = firstNameAttempt;

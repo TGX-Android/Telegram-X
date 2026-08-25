@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.ui.camera.legacy;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -25,6 +24,7 @@ import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Build;
 
+import androidx.annotation.RequiresApi;
 import androidx.exifinterface.media.ExifInterface;
 
 import org.thunderdog.challegram.Log;
@@ -52,7 +52,7 @@ import okio.BufferedSink;
 import okio.Okio;
 
 @SuppressWarnings("deprecation")
-@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+@RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
 public class CameraApiLegacy extends CameraApi implements Camera.PreviewCallback, Camera.AutoFocusMoveCallback, Camera.AutoFocusCallback, Camera.ShutterCallback, Camera.PictureCallback, MediaRecorder.OnInfoListener {
   // === UI ===
 

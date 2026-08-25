@@ -54,7 +54,7 @@ public class BlurButtonsWrap extends FrameLayoutFix implements View.OnClickListe
     for (int i = 0; i < 3; i++) {
       LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
       BlurButton button = new BlurButton(context);
-      button.setText(Lang.getString(i == 0 ? R.string.Off : i == 1 ? R.string.BlurRadial : R.string.BlurLinear).toUpperCase());
+      button.setText(Lang.uppercase(Lang.getString(i == 0 ? R.string.Off : i == 1 ? R.string.BlurRadial : R.string.BlurLinear)));
       button.setOnClickListener(this);
       if (i == 0) {
         button.setPadding(Screen.dp(20f), 0, 0, 0);
