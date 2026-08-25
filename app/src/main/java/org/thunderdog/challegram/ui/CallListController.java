@@ -102,13 +102,13 @@ public class CallListController extends RecyclerViewController<Void> implements
   @Override
   public void onMenuItemPressed (int id, View view) {
     if (id == R.id.menu_btn_more) {
-      showMore(new int[] {R.id.btn_clear_recent_calls}, new String[] {Lang.getString(R.string.ClearRecentCalls)});
+      showMore(new int[] {R.id.more_btn_delete}, new String[] {Lang.getString(R.string.DeleteCallHistory)});
     }
   }
 
   @Override
   public void onMoreItemPressed (int id) {
-    if (id == R.id.btn_clear_recent_calls) {
+    if (id == R.id.more_btn_delete) {
       tdlib.ui().showClearCallHistoryOptions(this);
     }
   }

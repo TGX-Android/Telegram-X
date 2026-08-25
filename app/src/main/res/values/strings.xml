@@ -5893,9 +5893,9 @@
   <string name="xBotUsers_one">%1$s monthly user</string>
   <string name="xBotUsers_other">%1$s monthly users</string>
 
-  <string name="AreYouSureClearCalls">Do you want to delete all recent calls?</string>
-  <string name="ClearRecentCalls">Clear recent calls</string>
-  <string name="DeleteCallsForEveryone">Delete for everyone</string>
+  <string name="DeleteCallHistoryConfirm">**Warning!**\n\nDo you want to delete **entire** call history? This will delete all associated call messages in corresponding chats.\n\nThis action cannot be undone.</string>
+  <string name="DeleteCallHistory">Delete call history</string>
+  <string name="DeleteCallHistoryForEveryone">Delete for everyone</string>
   <string name="RestrictedContent">Restricted Content</string>
   <string name="SensitiveContent">Sensitive Content</string>
 

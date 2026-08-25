@@ -596,15 +596,15 @@ public class TdlibUi extends Handler {
   }
 
   public void showClearCallHistoryOptions (ViewController<?> context) {
-    tdlib.send(new TdApi.SearchCallMessages("", 1, false), (result, error) -> {
+    tdlib.send(new TdApi.SearchCallMessages(null, 1, false), (result, error) -> {
       if (error != null || result.messages.length == 0) {
         return;
       }
       context.runOnUiThreadOptional(() ->
         context.showSettings(new SettingsWrapBuilder(R.id.btn_delete)
-          .addHeaderItem(Lang.getString(R.string.AreYouSureClearCalls))
+          .addHeaderItem(Lang.getMarkdownString(context, R.string.DeleteCallHistoryConfirm))
           .setRawItems(new ListItem[] {
-            new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteCallsForEveryone, false)
+            new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteCallHistoryForEveryone, false)
           })
           .setIntDelegate((id, result2) -> {
             if (id == R.id.btn_delete) {

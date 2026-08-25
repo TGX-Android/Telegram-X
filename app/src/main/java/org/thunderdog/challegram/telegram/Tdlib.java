@@ -11117,7 +11117,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void clearCallsHistory (boolean revoke, @Nullable Runnable after) {
-    send(new TdApi.DeleteAllCallMessages(revoke), okHandler(after));
+    send(new TdApi.DeleteAllCallMessages(revoke), typedOkHandler(after));
   }
 
   public boolean isBroadcastGroup (long chatId) {
