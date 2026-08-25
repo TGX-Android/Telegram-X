@@ -6,7 +6,7 @@ import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.impl.VariantOutputImpl
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
-import tgx.gradle.source.*
+import tgx.gradle.source.GitVersionSource
 import tgx.gradle.task.*
 import java.util.*
 
@@ -106,10 +106,34 @@ val validateApiTokens = tasks.register<ValidateApiTokensTask>("validateApiTokens
 val fetchLocalizedStrings = tasks.register<FetchLocalizedStringsTask>("fetchLocalizedStrings") {
   group = "Setup"
   description = "Generates and updates all strings.xml resources based on translations.telegram.org"
-
   resOutputDir.set(layout.buildDirectory.dir(
     "generated/tgx/locales/res"
   ))
+}
+
+val patchJetpackMediaTasks = Sdk.VARIANTS.values.filter {
+  it.minSdk >= 21
+}.associateBy({ it.flavor }) { variant ->
+  tasks.register<PatchJetpackMediaTask>(
+    "patchJetpackMedia${variant.flavor.uppercaseFirstChar()}"
+  ) {
+    group = "Setup"
+    description = "Copies patched androidx-media extensions for ${variant.flavor} flavor"
+    inputDirs.from(Config.ANDROIDX_MEDIA_EXTENSIONS.map { extension ->
+      layout.projectDirectory.dir(
+        "thirdparty/androidx-media/${variant.flavor}/libraries/$extension/src/main/jni"
+      )
+    })
+    outputDir.set(layout.projectDirectory.dir(
+      "jni/third_party/androidx-media/${variant.flavor}"
+    ))
+  }
+}
+
+val patchJetpackMedia = tasks.register("patchJetpackMedia") {
+  group = "Setup"
+  description = "Copies patched androidx-media extensions for all flavors"
+  dependsOn(patchJetpackMediaTasks.values)
 }
 
 //noinspection WrongGradleMethod
@@ -379,7 +403,7 @@ android {
 
         sourceSets.getByName(variant.flavor) {
           Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
-            java.directories += "../thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/src/main/java"
+            java.directories += "thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/src/main/java"
           }
           val extraFolders = findExtraFolders(variant)
           extraFolders.forEach { folderName ->
@@ -407,9 +431,9 @@ android {
           "database",
           "effect"
         ).plus(Config.ANDROIDX_MEDIA_EXTENSIONS).forEach { extension ->
-          val proguardFile = file(
-            "../thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/proguard-rules.txt"
-          )
+          val proguardFile = project.layout.projectDirectory.file(
+            "thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/proguard-rules.txt"
+          ).asFile
           if (proguardFile.exists()) {
             extraProguardFileCount++
             proguardFile(proguardFile)
@@ -462,6 +486,16 @@ android {
     }
 
     onVariants { variant ->
+      val abiFlavor = variant.productFlavors.first { it.first == "ABI" }.second
+      val sdkFlavor = variant.productFlavors.first { it.first == "SDK" }.second
+
+      val (abi, abiVariant) = Abi.VARIANTS.entries.first { it.value.flavor == abiFlavor }
+      val (sdk, sdkVariant) = Sdk.VARIANTS.entries.first { it.value.flavor == sdkFlavor }
+
+      if (sdkVariant.minSdk >= 21) {
+        variant.lifecycleTasks.registerPreBuild(patchJetpackMediaTasks[sdkFlavor]!!)
+      }
+
       variant.sources.res?.apply {
         addGeneratedSourceDirectory(
           generateThemes, GenerateThemesTask::resOutputDir
