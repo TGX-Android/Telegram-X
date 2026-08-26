@@ -183,17 +183,17 @@ add_library(${NATIVE_LIB} SHARED
   gif.cpp
   views.c
 
-  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/opus_jni.cc"
-  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/flac_jni.cc"
-  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/flac_parser.cc"
-  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/ffmpeg_jni.cc"
-  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}/vpx_jni.cc"
+  "${ANDROIDX_MEDIA_DIR}/opus_jni.cc"
+  "${ANDROIDX_MEDIA_DIR}/flac_jni.cc"
+  "${ANDROIDX_MEDIA_DIR}/flac_parser.cc"
+  "${ANDROIDX_MEDIA_DIR}/ffmpeg_jni.cc"
+  "${ANDROIDX_MEDIA_DIR}/vpx_jni.cc"
 
   bridge.cpp
 )
 target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
-  "${THIRDPARTY_DIR}/androidx-media/${TGX_FLAVOR}"
+  "${ANDROIDX_MEDIA_DIR}"
 
   "${THIRDPARTY_DIR}"
   .

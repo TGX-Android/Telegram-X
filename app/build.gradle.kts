@@ -124,8 +124,8 @@ val patchJetpackMediaTasks = Sdk.VARIANTS.values.filter {
         "thirdparty/androidx-media/${variant.flavor}/libraries/$extension/src/main/jni"
       )
     })
-    outputDir.set(layout.projectDirectory.dir(
-      "jni/third_party/androidx-media/${variant.flavor}"
+    outputDir.set(layout.buildDirectory.dir(
+      "generated/tgx/androidx-media/${variant.flavor}"
     ))
   }
 }
@@ -134,6 +134,19 @@ val patchJetpackMedia = tasks.register("patchJetpackMedia") {
   group = "Setup"
   description = "Copies patched androidx-media extensions for all flavors"
   dependsOn(patchJetpackMediaTasks.values)
+}
+
+val patchOpusTask = tasks.register<PatchOpusTask>(
+  "patchOpus"
+) {
+  group = "Setup"
+  description = "Creates a patched copy of opus"
+  inputDir.set(layout.projectDirectory.dir(
+    "jni/third_party/opus"
+  ))
+  outputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/opus"
+  ))
 }
 
 //noinspection WrongGradleMethod
@@ -389,7 +402,6 @@ android {
           targets += arrayOf("tgxjni", "tgcallsjni")
           arguments(
             "-DANDROID_PLATFORM=android-${selectedMinSdk}",
-            "-DTGX_FLAVOR=${variant.flavor}",
             "-DANDROID_STL=${if (Config.SHARED_STL) "c++_shared" else "c++_static"}",
             "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
             "-DCMAKE_SKIP_RPATH=ON",
@@ -397,8 +409,17 @@ android {
             "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
             "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
             "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
-            "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}"
+            "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}",
+            "-DTGX_FLAVOR=${variant.flavor}"
           )
+
+          val dirs = mapOf(
+            "ANDROIDX_MEDIA_DIR" to layout.buildDirectory.dir("generated/tgx/androidx-media/${variant.flavor}"),
+            "OPUS_DIR" to layout.buildDirectory.dir("generated/tgx/opus")
+          ).map {
+            "-D${it.key}=${it.value.get().asFile.absolutePath}"
+          }.toTypedArray()
+          arguments(*dirs)
         }
 
         sourceSets.getByName(variant.flavor) {
@@ -495,6 +516,7 @@ android {
       if (sdkVariant.minSdk >= 21) {
         variant.lifecycleTasks.registerPreBuild(patchJetpackMediaTasks[sdkFlavor]!!)
       }
+      variant.lifecycleTasks.registerPreBuild(patchOpusTask)
 
       variant.sources.res?.apply {
         addGeneratedSourceDirectory(

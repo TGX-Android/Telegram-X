@@ -1,6 +1,7 @@
 # opus
 
-set(OPUS_DIR "${THIRDPARTY_DIR}/opus")
-add_subdirectory("${OPUS_DIR}"
+add_subdirectory(
+  "${OPUS_DIR}"
+  "${CMAKE_BINARY_DIR}/third_party/opus"
   EXCLUDE_FROM_ALL
 )
