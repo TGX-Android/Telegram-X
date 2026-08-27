@@ -17,7 +17,6 @@
 #include <sys/types.h>
 #include <inttypes.h>
 #include <time.h>
-#include <androidx-media/jni.h>
 
 #include "utils.h"
 
@@ -26,6 +25,10 @@
 #endif
 
 int jni_init(JavaVM *vm, JNIEnv *env);
+
+jint ffmpeg_jni_OnLoad(JavaVM* vm, void* reserved);
+jint opus_jni_OnLoad(JavaVM* vm, void* reserved);
+jint vpx_jni_OnLoad(JavaVM* vm, void* reserved);
 
 jint JNI_OnLoad (JavaVM *vm, void *reserved) {
   JNIEnv *env = 0;
