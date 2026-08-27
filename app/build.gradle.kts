@@ -111,9 +111,7 @@ val fetchLocalizedStrings = tasks.register<FetchLocalizedStringsTask>("fetchLoca
   ))
 }
 
-val patchJetpackMediaTasks = Sdk.VARIANTS.values.filter {
-  it.minSdk >= 21
-}.associateBy({ it.flavor }) { variant ->
+val patchJetpackMediaTasks = Sdk.VARIANTS.values.filter { it.flavor != "marshmallow" }.associateBy({ it.flavor }) { variant ->
   tasks.register<PatchJetpackMediaTask>(
     "patchJetpackMedia${variant.flavor.uppercaseFirstChar()}"
   ) {
@@ -513,10 +511,14 @@ android {
       val (abi, abiVariant) = Abi.VARIANTS.entries.first { it.value.flavor == abiFlavor }
       val (sdk, sdkVariant) = Sdk.VARIANTS.entries.first { it.value.flavor == sdkFlavor }
 
-      if (sdkVariant.minSdk >= 21) {
-        variant.lifecycleTasks.registerPreBuild(patchJetpackMediaTasks[sdkFlavor]!!)
+      val patchJetpackMediaTask = if (sdkVariant.flavor == "marshmallow") {
+        Sdk.VARIANTS[Sdk.LATEST]!!
+      } else {
+        sdkVariant
+      }.let {
+        patchJetpackMediaTasks[it.flavor]!!
       }
-      variant.lifecycleTasks.registerPreBuild(patchOpusTask)
+      variant.lifecycleTasks.registerPreBuild(patchJetpackMediaTask, patchOpusTask)
 
       variant.sources.res?.apply {
         addGeneratedSourceDirectory(

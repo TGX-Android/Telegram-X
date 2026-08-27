@@ -135,6 +135,3 @@
 [submodule "thirdparty/androidx-media/lollipop"]
 	path = app/thirdparty/androidx-media/lollipop
 	url = https://github.com/androidx/media
-[submodule "thirdparty/androidx-media/marshmallow"]
-	path = app/thirdparty/androidx-media/marshmallow
-	url = https://github.com/androidx/media
