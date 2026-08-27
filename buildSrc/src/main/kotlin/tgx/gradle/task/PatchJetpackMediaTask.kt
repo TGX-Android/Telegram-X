@@ -52,23 +52,23 @@ abstract class PatchJetpackMediaTask : DefaultTask() {
         }
         copiedFiles += file.name
       }
+    }
 
-      var deletedFiles = false
-      output.walkTopDown().filter {
-        it.isFile
-      }.forEach { file ->
-        val relative = file.relativeTo(output)
-        if (!copiedFiles.contains(relative.path)) {
-          logger.lifecycle("Deleting rudimentary file: ${file.absolutePath} (${relative.path})")
-          if (!file.delete()) {
-            error("Rudimentary file could not be deleted: ${file.absolutePath}")
-          }
-          deletedFiles = true
+    var deletedFiles = false
+    output.walkTopDown().filter {
+      it.isFile
+    }.forEach { file ->
+      val relative = file.relativeTo(output)
+      if (!copiedFiles.contains(relative.path)) {
+        logger.lifecycle("Deleting rudimentary file: ${relative.path} / ${file.absolutePath}")
+        if (!file.delete()) {
+          error("Rudimentary file could not be deleted: ${file.absolutePath}")
         }
+        deletedFiles = true
       }
-      if (deletedFiles) {
-        logger.lifecycle("Copied files include:\n${copiedFiles.joinToString("\n")}")
-      }
+    }
+    if (deletedFiles) {
+      logger.lifecycle("Copied files include:\n${copiedFiles.joinToString("\n")}")
     }
   }
 
