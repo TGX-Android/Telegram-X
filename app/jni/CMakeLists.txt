@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 project(tgx VERSION 1.0.0 LANGUAGES C CXX)
 message(STATUS "Building ${PROJECT_NAME} platform: ${ANDROID_PLATFORM} abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
 
-if (NOT ${TGX_FLAVOR} MATCHES "legacy|lollipop|marshmallow|latest")
+if (NOT TGX_FLAVOR MATCHES "^(legacy|lollipop|marshmallow|latest)$")
   message(FATAL_ERROR "Unknown flavor: ${TGX_FLAVOR}")
 endif()
 
@@ -31,7 +31,7 @@ set(USE_WEBP yes)
 
 if (${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
   set(FFMPEG_ABI ${ANDROID_ABI})
-  if (${TGX_FLAVOR} MATCHES "legacy")
+  if (TGX_FLAVOR STREQUAL "legacy")
     message(FATAL_ERROR "Invalid combination: ${TGX_FLAVOR} ${ANDROID_ABI}")
   endif()
 elseif(${ANDROID_ABI} STREQUAL "x86")
