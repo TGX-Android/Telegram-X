@@ -14,7 +14,6 @@ import javax.inject.Inject
 @CacheableTask
 abstract class PatchOpusTask : DefaultTask() {
   @get:Internal
-  @get:PathSensitive(PathSensitivity.RELATIVE)
   abstract val inputDir: DirectoryProperty
 
   @get:InputFiles

@@ -20,7 +20,6 @@ abstract class BuildNativeLibraryTask : DefaultTask() {
   abstract val hostTag: Property<String>
 
   @get:Internal
-  @get:PathSensitive(PathSensitivity.RELATIVE)
   abstract val inputDir: DirectoryProperty
 
   @get:InputFiles
