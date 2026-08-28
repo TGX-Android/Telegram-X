@@ -22,7 +22,7 @@ This is the complete source code and the build instructions for the official alt
 
 * At least **5,34GB** of free disk space: **487,10MB** for source codes and around **4,85GB** for files generated after building all variants
 * **4GB** of RAM
-* **macOS** or **Linux**-based operating system. **Windows** platform is supported by using [MSYS](https://www.msys2.org/) (e.g., [Git Bash](https://gitforwindows.org/)).
+* **macOS** or **Linux**-based operating system.
 
 #### macOS
 
@@ -47,14 +47,6 @@ This is the complete source code and the build instructions for the official alt
 5. Run `$ scripts/./setup.sh` and follow up the instructions
 6. If you specified package name that's different from the one Telegram X uses, [setup Firebase](https://firebase.google.com/docs/android/setup) and replace `google-services.json` with the one that's suitable for the `app.id` you need
 7. Now you can open the project using **[Android Studio](https://developer.android.com/studio/)** or build manually from the command line: `./gradlew assembleUniversalRelease`.
-
-#### Available flavors
-
-* `arm64`: **arm64-v8a** build with `minSdkVersion` set to `21` (**Lollipop**)
-* `arm32`: **armeabi-v7a** build
-* `x64`: **x86_64** build with `minSdkVersion` set to `21` (**Lollipop**)
-* `x86`: **x86** build
-* `universal`: universal build that includes native bundles for all platforms.
 
 ### Quick setup for development
 
