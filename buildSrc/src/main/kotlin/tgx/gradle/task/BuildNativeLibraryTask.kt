@@ -1,6 +1,7 @@
 package tgx.gradle.task
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.Property
@@ -18,9 +19,13 @@ abstract class BuildNativeLibraryTask : DefaultTask() {
   @get:Input
   abstract val hostTag: Property<String>
 
-  @get:InputDirectory
+  @get:Internal
   @get:PathSensitive(PathSensitivity.RELATIVE)
   abstract val inputDir: DirectoryProperty
+
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val inputSources: ConfigurableFileCollection
 
   @get:Input
   abstract val sdkFlavor: Property<String>

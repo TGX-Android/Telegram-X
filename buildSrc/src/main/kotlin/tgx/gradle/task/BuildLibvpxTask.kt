@@ -201,7 +201,8 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
         "--disable-examples",
         "--disable-tools",
         "--disable-debug",
-        "--disable-unit-tests"
+        "--disable-unit-tests",
+        "--disable-libyuv"
       ),
       "make" to arrayOf(
         "make",

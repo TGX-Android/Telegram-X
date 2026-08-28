@@ -142,6 +142,15 @@ val patchOpusTask = tasks.register<PatchOpusTask>(
   inputDir.set(layout.projectDirectory.dir(
     "jni/third_party/opus"
   ))
+  inputSources.from(inputDir.asFileTree.matching {
+    exclude(
+      ".git",
+      ".github",
+      "doc",
+      "tests",
+      "**/*.md"
+    )
+  })
   outputDir.set(layout.buildDirectory.dir(
     "generated/tgx/opus"
   ))
@@ -168,6 +177,16 @@ val buildLibvpxTasks = Sdk.VARIANTS.values.flatMap { sdkVariant ->
       inputDir.set(layout.projectDirectory.dir(
         "jni/third_party/libvpx"
       ))
+      inputSources.from(inputDir.asFileTree.matching {
+        exclude(
+          ".git",
+          "test",
+          "third_party",
+          "tools",
+          "examples",
+          "*.md"
+        )
+      })
       sdkFlavor.set(sdkVariant.flavor)
       abi.set(abiVariant.toAbiFilter())
       // Output
@@ -207,6 +226,14 @@ val buildFfmpegTasks = Sdk.VARIANTS.values.flatMap { sdkVariant ->
       inputDir.set(layout.projectDirectory.dir(
         "jni/third_party/ffmpeg"
       ))
+      inputSources.from(inputDir.asFileTree.matching {
+        exclude(
+          ".git",
+          "doc",
+          "tests",
+          "*.md"
+        )
+      })
       sdkFlavor.set(sdkVariant.flavor)
       abi.set(abiVariant.toAbiFilter())
       libvpxDir.set(layout.buildDirectory.dir(

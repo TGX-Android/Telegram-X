@@ -1,6 +1,7 @@
 package tgx.gradle.task
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.tasks.*
@@ -12,9 +13,13 @@ import javax.inject.Inject
 
 @CacheableTask
 abstract class PatchOpusTask : DefaultTask() {
-  @get:InputDirectory
+  @get:Internal
   @get:PathSensitive(PathSensitivity.RELATIVE)
   abstract val inputDir: DirectoryProperty
+
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val inputSources: ConfigurableFileCollection
 
   @get:OutputDirectory
   abstract val outputDir: DirectoryProperty
