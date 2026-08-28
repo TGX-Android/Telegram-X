@@ -75,6 +75,8 @@ data class BuildVersions(
 }
 
 data class ApplicationConfig(
+  val sdkDir: String,
+
   val applicationName: String,
   val applicationId: String,
   val extension: String,

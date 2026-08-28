@@ -147,6 +147,89 @@ val patchOpusTask = tasks.register<PatchOpusTask>(
   ))
 }
 
+val buildLibvpxTasks = Sdk.VARIANTS.values.flatMap { sdkVariant ->
+  val abiVariants = if (sdkVariant.minSdk >= 21) {
+    arrayOf("arm64", "arm32", "x86", "x64")
+  } else {
+    arrayOf("arm32", "x86")
+  }
+  abiVariants.map { abiVariant ->
+    Pair(Pair(sdkVariant.flavor, abiVariant), tasks.register<BuildLibvpxTask>(
+      "buildLibvpx${sdkVariant.flavor.uppercaseFirstChar()}${abiVariant.uppercaseFirstChar()}"
+    ) {
+      group = "Setup"
+      description = "Builds libvpx for ${sdkVariant.flavor}, $abiVariant flavor"
+      // System
+      sdkDir.set(File(config.sdkDir))
+      // sdkDir.fileValue(File(config.sdkDir))
+      ndkVersion.set(android.ndkVersion)
+      hostTag.set(findHostTag())
+      // Input
+      inputDir.set(layout.projectDirectory.dir(
+        "jni/third_party/libvpx"
+      ))
+      sdkFlavor.set(sdkVariant.flavor)
+      abi.set(abiVariant.toAbiFilter())
+      // Output
+      buildDir.set(layout.buildDirectory.dir(
+        "generated/tgx/libvpx-build/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+      ))
+      outputDir.set(layout.buildDirectory.dir(
+        "generated/tgx/libvpx/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+      ))
+    })
+  }
+}.toMap()
+val buildLibvpxTask = tasks.register("buildLibvpx") {
+  group = "Setup"
+  description = "Builds libvpx for all flavors"
+  dependsOn(buildLibvpxTasks.values)
+}
+
+val buildFfmpegTasks = Sdk.VARIANTS.values.flatMap { sdkVariant ->
+  val abiVariants = if (sdkVariant.minSdk >= 21) {
+    arrayOf("arm64", "arm32", "x86", "x64")
+  } else {
+    arrayOf("arm32", "x86")
+  }
+  abiVariants.map { abiVariant ->
+    val key = Pair(sdkVariant.flavor, abiVariant)
+    val task = tasks.register<BuildFfmpegTask>(
+      "buildFfmpeg${sdkVariant.flavor.uppercaseFirstChar()}${abiVariant.uppercaseFirstChar()}"
+    ) {
+      group = "Setup"
+      description = "Builds FFmpeg for ${sdkVariant.flavor}, $abiVariant flavor"
+      // System
+      sdkDir.fileValue(File(config.sdkDir))
+      ndkVersion.set(android.ndkVersion)
+      hostTag.set(findHostTag())
+      // Input
+      inputDir.set(layout.projectDirectory.dir(
+        "jni/third_party/ffmpeg"
+      ))
+      sdkFlavor.set(sdkVariant.flavor)
+      abi.set(abiVariant.toAbiFilter())
+      libvpxDir.set(layout.buildDirectory.dir(
+        "generated/tgx/libvpx/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+      ))
+      // Output
+      buildDir.set(layout.buildDirectory.dir(
+        "generated/tgx/ffmpeg-build/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+      ))
+      outputDir.set(layout.buildDirectory.dir(
+        "generated/tgx/ffmpeg/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+      ))
+      dependsOn(buildLibvpxTasks[key] ?: error("libvpx task not found for $key"))
+    }
+    Pair(key, task)
+  }
+}.toMap()
+val buildFfmpegTask = tasks.register("buildFfmpeg") {
+  group = "Setup"
+  description = "Builds FFmpeg for all flavors"
+  dependsOn(buildFfmpegTasks.values)
+}
+
 //noinspection WrongGradleMethod
 android {
   namespace = "org.thunderdog.challegram"
@@ -413,7 +496,9 @@ android {
 
           val dirs = mapOf(
             "ANDROIDX_MEDIA_DIR" to layout.buildDirectory.dir("generated/tgx/androidx-media/${variant.flavor}"),
-            "OPUS_DIR" to layout.buildDirectory.dir("generated/tgx/opus")
+            "OPUS_DIR" to layout.buildDirectory.dir("generated/tgx/opus"),
+            "LIBVPX_DIR" to layout.buildDirectory.dir("generated/tgx/libvpx/${variant.flavor}"),
+            "FFMPEG_DIR" to layout.buildDirectory.dir("generated/tgx/ffmpeg/${variant.flavor}")
           ).map {
             "-D${it.key}=${it.value.get().asFile.absolutePath}"
           }.toTypedArray()
@@ -519,6 +604,16 @@ android {
         patchJetpackMediaTasks[it.flavor]!!
       }
       variant.lifecycleTasks.registerPreBuild(patchJetpackMediaTask, patchOpusTask)
+
+      abiVariant.filters.filter {
+        sdkVariant.minSdk >= 21 || it == "armeabi-v7a" || it == "x86"
+      }.map {
+        Pair(sdkVariant.flavor, it.toAbiVariant())
+      }.forEach { key ->
+        val buildLibvpxTask = buildLibvpxTasks[key] ?: error("libvpx task not found for $key")
+        val buildFfmpegTask = buildFfmpegTasks[key] ?: error("ffmpeg task not found for $key")
+        variant.lifecycleTasks.registerPreBuild(buildLibvpxTask, buildFfmpegTask)
+      }
 
       variant.sources.res?.apply {
         addGeneratedSourceDirectory(

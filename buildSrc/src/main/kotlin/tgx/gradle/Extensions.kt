@@ -230,3 +230,33 @@ fun findHostAbi(): String =
   } else {
     "x64"
   }
+
+fun findHostTag(): String {
+  val os = System.getProperty("os.name")
+  return when {
+    os.startsWith("mac", ignoreCase = true) ->
+      "darwin-x86_64"
+    os.startsWith("Linux", ignoreCase = true) ->
+      "linux-x86_64"
+    os.startsWith("Windows", ignoreCase = true) ->
+      "windows-x86_64"
+    else ->
+      error("Unknown system: $os")
+  }
+}
+
+fun String.toAbiFilter(): String = when (this) {
+  "arm64" -> "arm64-v8a"
+  "arm32" -> "armeabi-v7a"
+  "x86" -> "x86"
+  "x64" -> "x86_64"
+  else -> error("Unknown abi variant: $this")
+}
+
+fun String.toAbiVariant(): String = when (this) {
+  "arm64-v8a" -> "arm64"
+  "armeabi-v7a" -> "arm32"
+  "x86" -> "x86"
+  "x86_64" -> "x64"
+  else -> error("Unknown abi filter: $this")
+}

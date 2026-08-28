@@ -59,6 +59,8 @@ abstract class AppConfigurationSource : ValueSource<ApplicationConfig, AppConfig
 
     return ApplicationConfig(
       // local.properties & local.properties.sample
+      sdkDir =
+        properties.getOrThrow("sdk.dir"),
       applicationName =
         applicationName,
       applicationId =

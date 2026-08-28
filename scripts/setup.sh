@@ -11,24 +11,8 @@ else
 fi
 
 if [[ -f local.properties ]]; then
-  echo -e "${STYLE_INFO}local.properties already exists. Cleaning...${STYLE_END}"
-  reset.sh
+  echo -e "${STYLE_INFO}local.properties already exists.${STYLE_END}"
 fi
-
-# == Setup thirdparty libraries ==
-
-if [ "$WIN_PATCH_REQUIRED" = true ]; then
-  patch-windows-impl.sh
-fi
-
-# Patch opus
-patch-opus-impl.sh
-
-# Build and configure libvpx
-build-vpx-impl.sh
-
-# Build and configure ffmpeg
-build-ffmpeg-impl.sh
 
 # == Copy local.properties ===
 

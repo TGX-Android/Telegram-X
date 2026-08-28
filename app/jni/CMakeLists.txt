@@ -29,20 +29,7 @@ set(ENABLE_TGVOIP yes)
 #endif()
 set(USE_WEBP yes)
 
-if (${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
-  set(FFMPEG_ABI ${ANDROID_ABI})
-  if (TGX_FLAVOR STREQUAL "legacy")
-    message(FATAL_ERROR "Invalid combination: ${TGX_FLAVOR} ${ANDROID_ABI}")
-  endif()
-elseif(${ANDROID_ABI} STREQUAL "x86")
-  set(FFMPEG_ABI "i686")
-elseif(${ANDROID_ABI} STREQUAL "armeabi-v7a")
-  set(FFMPEG_ABI "armv7-a")
-else()
-  message(FATAL_ERROR "Unknown abi: ${ANDROID_ABI}")
-endif()
 set(FFMPEG_SRC_DIR "${THIRDPARTY_DIR}/ffmpeg")
-set(FFMPEG_DIR "${FFMPEG_SRC_DIR}/build/${TGX_FLAVOR}/${FFMPEG_ABI}")
 set(FFMPEG_LIBS
   swresample
   avformat
@@ -52,7 +39,7 @@ set(FFMPEG_LIBS
   avutil
 )
 
-set(VPX_DIR "${THIRDPARTY_DIR}/libvpx/build/${TGX_FLAVOR}/${FFMPEG_ABI}")
+set(VPX_DIR "${LIBVPX_DIR}/${ANDROID_ABI}")
 set(VPX_LIB_PATH "${VPX_DIR}/lib/libvpx.a")
 
 # == Constants ==
@@ -129,9 +116,13 @@ add_subdirectory(
 include("${PROJECT_SOURCE_DIR}/BuildYuv.cmake")
 
 # vpx
-add_library(vpx STATIC IMPORTED)
-set_target_properties(vpx PROPERTIES IMPORTED_LOCATION "${VPX_LIB_PATH}")
-target_include_directories(vpx INTERFACE "${VPX_DIR}/include")
+if(EXISTS "${VPX_DIR}")
+  add_library(vpx STATIC IMPORTED)
+  set_target_properties(vpx PROPERTIES IMPORTED_LOCATION "${VPX_LIB_PATH}")
+  target_include_directories(vpx INTERFACE "${VPX_DIR}/include")
+else()
+  message(WARNING "./gradlew buildLibvpx was not run yet")
+endif()
 
 # opusfile
 include("${PROJECT_SOURCE_DIR}/BuildOpusfile.cmake")
@@ -148,14 +139,18 @@ if (${USE_WEBP})
 endif()
 
 # ffmpeg
-foreach(FFMPEG_LIB IN LISTS FFMPEG_LIBS)
-  add_library(${FFMPEG_LIB} STATIC IMPORTED)
-  set_target_properties(${FFMPEG_LIB} PROPERTIES IMPORTED_LOCATION "${FFMPEG_DIR}/lib/lib${FFMPEG_LIB}.a")
-  target_include_directories(${FFMPEG_LIB} INTERFACE
-    "${FFMPEG_DIR}/include"
-    "${FFMPEG_SRC_DIR}"
-  )
-endforeach()
+if(EXISTS "${FFMPEG_DIR}")
+  foreach(FFMPEG_LIB IN LISTS FFMPEG_LIBS)
+    add_library(${FFMPEG_LIB} STATIC IMPORTED)
+    set_target_properties(${FFMPEG_LIB} PROPERTIES IMPORTED_LOCATION "${FFMPEG_DIR}/${ANDROID_ABI}/lib/lib${FFMPEG_LIB}.a")
+    target_include_directories(${FFMPEG_LIB} INTERFACE
+      "${FFMPEG_DIR}/${ANDROID_ABI}/include"
+      "${FFMPEG_SRC_DIR}"
+    )
+  endforeach()
+else()
+  message(WARNING "./gradlew buildFFmpeg was not run yet")
+endif()
 
 # tgcalls
 if (${ENABLE_TGVOIP})

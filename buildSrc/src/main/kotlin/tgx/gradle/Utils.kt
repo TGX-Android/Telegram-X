@@ -13,6 +13,7 @@
 package tgx.gradle
 
 import org.gradle.api.GradleException
+import org.gradle.api.file.FileSystemOperations
 import java.io.File
 import java.util.*
 
@@ -28,6 +29,32 @@ fun validateDir (dir: File, mustExist: Boolean = false): File {
     fatal("Directory does not exist: ${dir.absolutePath}")
   }
   return dir
+}
+
+fun createEmptyDir (fs: FileSystemOperations, dir: File): File {
+  validateDir(dir)
+  if (dir.exists()) {
+    fs.delete {
+      delete(dir)
+    }
+  }
+  if (!dir.mkdirs()) {
+    fatal("Unable to create directory: ${dir.absolutePath}")
+  }
+  return dir
+}
+
+fun requireDir (dir: File): File =
+  validateDir(dir, mustExist = true)
+
+fun requireFile (file: File): File {
+  if (!file.exists()) {
+    fatal("File does not exist: ${file.absolutePath}")
+  }
+  if (!file.isFile) {
+    fatal("Exists but not a file: ${file.absolutePath}")
+  }
+  return file
 }
 
 fun loadProperties (file: File): Properties {
