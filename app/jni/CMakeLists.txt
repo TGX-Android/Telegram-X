@@ -162,7 +162,7 @@ endif()
 # == Target ==
 
 set(NATIVE_LIB "tgxjni")
-add_library(${NATIVE_LIB} SHARED
+set(NATIVE_SOURCES
   log.cpp
 
   "${THIRDPARTY_DIR}/telegram_intro/IntroRenderer.c"
@@ -177,15 +177,21 @@ add_library(${NATIVE_LIB} SHARED
   image.c
   gif.cpp
   views.c
-
-  "${ANDROIDX_MEDIA_DIR}/opus_jni.cc"
-  "${ANDROIDX_MEDIA_DIR}/flac_jni.cc"
-  "${ANDROIDX_MEDIA_DIR}/flac_parser.cc"
-  "${ANDROIDX_MEDIA_DIR}/ffmpeg_jni.cc"
-  "${ANDROIDX_MEDIA_DIR}/vpx_jni.cc"
-
   bridge.cpp
 )
+if(EXISTS "${ANDROIDX_MEDIA_DIR}")
+  list(APPEND NATIVE_SOURCES
+    "${ANDROIDX_MEDIA_DIR}/opus_jni.cc"
+    "${ANDROIDX_MEDIA_DIR}/flac_jni.cc"
+    "${ANDROIDX_MEDIA_DIR}/flac_parser.cc"
+    "${ANDROIDX_MEDIA_DIR}/ffmpeg_jni.cc"
+    "${ANDROIDX_MEDIA_DIR}/vpx_jni.cc"
+  )
+else()
+  message(WARNING "./gradlew patchJetpackMedia was not run yet")
+endif()
+
+add_library(${NATIVE_LIB} SHARED ${NATIVE_SOURCES})
 target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
   "${ANDROIDX_MEDIA_DIR}"
