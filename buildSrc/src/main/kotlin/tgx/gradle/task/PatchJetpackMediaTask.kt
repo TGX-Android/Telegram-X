@@ -77,7 +77,7 @@ abstract class PatchJetpackMediaTask : DefaultTask() {
     return file.readText()
       .replace(Regex("^#define LOG_TAG \"[^\"]+\"\n", RegexOption.MULTILINE), "")
       .replace(Regex("(?<=^#include <)android/(?=log.h)", RegexOption.MULTILINE), "")
-      .replace(Regex("^jint JNI_(?=OnLoad\\s*\\(JavaVM\\*)", RegexOption.MULTILINE), "extern \"C\" jint ${fileName}_")
+      .replace(Regex("^jint JNI_(?=OnLoad\\s*\\(JavaVM\\s*\\*)", RegexOption.MULTILINE), "extern \"C\" jint ${fileName}_")
       .replace(
         "__android_log_assert(NULL, LOG_TAG, ##",
         "loga(TAG_NDK, "
