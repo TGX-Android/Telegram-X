@@ -8,6 +8,8 @@ import tgx.gradle.fatal
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
 
+private const val TAG = "libvpx"
+
 @CacheableTask
 abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
   @TaskAction
@@ -131,6 +133,7 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
       "CXX" to "${cxx.absolutePath}",
       "CPP" to "${cxx.absolutePath}",
 
+      "ASFLAGS" to "-D__ANDROID__",
       "YASM" to "${requireFile(
         prebuilt.resolve("bin/yasm")
       ).absolutePath}",
@@ -179,54 +182,66 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
         "--disable-runtime-cpu-detect"
       }
 
-    val commands = linkedMapOf(
-      "configure" to arrayOf(
-        configure.absolutePath,
-        "--libc=${sysroot.absolutePath}",
-        "--prefix=${output.absolutePath}",
-        "--target=${libvpxTarget}",
-        *extraParams.toTypedArray(),
-        "--as=auto",
-        "--disable-docs",
-        "--enable-pic",
-        "--enable-libyuv",
-        "--enable-static",
-        "--enable-small",
-        "--enable-optimizations",
-        "--enable-better-hw-compatibility",
-        "--enable-realtime-only",
-        "--enable-vp8",
-        "--enable-vp9",
-        "--disable-webm-io",
-        "--disable-examples",
-        "--disable-tools",
-        "--disable-debug",
-        "--disable-unit-tests",
-        "--disable-libyuv"
-      ),
-      "make" to arrayOf(
-        "make",
-        "-j${Runtime.getRuntime().availableProcessors()}",
-        "install"
+    val logFile = build.resolve("build.log")
+
+    runCommands(
+      TAG,
+      env,
+      build,
+      logFile,
+      mapOf(
+        "configure" to arrayOf(
+          configure.absolutePath,
+          "--libc=${sysroot.absolutePath}",
+          "--prefix=${output.absolutePath}",
+          "--target=${libvpxTarget}",
+          *extraParams.toTypedArray(),
+          "--as=auto",
+          "--disable-docs",
+          "--enable-pic",
+          "--enable-static",
+          "--enable-small",
+          "--enable-optimizations",
+          "--enable-better-hw-compatibility",
+          "--enable-realtime-only",
+          "--enable-vp8",
+          "--enable-vp9",
+          "--disable-webm-io",
+          "--disable-examples",
+          "--disable-tools",
+          "--disable-debug",
+          "--disable-unit-tests",
+          "--disable-libyuv"
+        )
       )
     )
 
-    val logFile = build.resolve("build.log")
-    for (command in commands) {
-      logFile.outputStream().use { log ->
-        exec.exec {
-          standardOutput = log
-          errorOutput = log
-          isIgnoreExitValue = true
-          workingDir = build
-          environment(env)
-          commandLine(*command.value)
-        }.let { result ->
-          if (result.exitValue != 0) {
-            fatal("libvpx ${command.key} failed [$flavor, $abi], see: ${logFile.absolutePath}")
-          }
-        }
-      }
+    // set CONFIG_LIBYUV to 1
+    val configHeader = requireFile(
+      build.resolve("vpx_config.h")
+    )
+    val contents = configHeader.readText().replace(
+      Regex("(?<=^#define CONFIG_LIBYUV )(\\d+)", RegexOption.MULTILINE)
+    ) {
+      require(it.groupValues[1] == "0")
+      "1"
     }
+    writeToFile(configHeader) { h ->
+      h.append(contents)
+    }
+
+    runCommands(
+      TAG,
+      env,
+      build,
+      logFile,
+      mapOf(
+        "make" to arrayOf(
+          "make",
+          "-j${Runtime.getRuntime().availableProcessors()}",
+          "install"
+        )
+      )
+    )
   }
 }

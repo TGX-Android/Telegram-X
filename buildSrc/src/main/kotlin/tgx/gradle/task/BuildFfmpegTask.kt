@@ -8,6 +8,8 @@ import tgx.gradle.fatal
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
 
+private const val TAG = "FFmpeg"
+
 @CacheableTask
 abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
   @get:InputDirectory
@@ -179,6 +181,7 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
       "CXX" to "${cxx.absolutePath}",
       "CPP" to "${cxx.absolutePath}",
 
+      "ASFLAGS" to "-D__ANDROID__",
       "YASM" to "${requireFile(
         prebuilt.resolve("bin/yasm")
       ).absolutePath}",
@@ -302,21 +305,13 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
     )
 
     val logFile = build.resolve("build.log")
-    for (command in commands) {
-      logFile.outputStream().use { log ->
-        exec.exec {
-          standardOutput = log
-          errorOutput = log
-          isIgnoreExitValue = true
-          workingDir = build
-          environment(env)
-          commandLine(*command.value)
-        }.let { result ->
-          if (result.exitValue != 0) {
-            fatal("FFmpeg ${command.key} failed [$flavor, $abi], see: ${logFile.absolutePath}")
-          }
-        }
-      }
-    }
+
+    runCommands(
+      TAG,
+      env,
+      build,
+      logFile,
+      commands
+    )
   }
 }
