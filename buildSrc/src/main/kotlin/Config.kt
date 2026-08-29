@@ -188,6 +188,12 @@ data class SdkVariant(
 ) {
   val isLatest: Boolean =
     flavor == "latest"
+  val isMarshmallow: Boolean =
+    flavor == "marshmallow"
+  val isLollipop: Boolean =
+    flavor == "lollipop"
+  val isLegacy: Boolean =
+    flavor == "legacy"
 }
 
 object Sdk {

@@ -111,7 +111,7 @@ val fetchLocalizedStrings = tasks.register<FetchLocalizedStringsTask>("fetchLoca
   ))
 }
 
-val patchJetpackMediaTasks = Sdk.VARIANTS.values.filter { it.flavor != "marshmallow" }.associateBy({ it.flavor }) { variant ->
+val patchJetpackMediaTasks = Sdk.VARIANTS.values.filter { !it.isMarshmallow }.associateBy({ it.flavor }) { variant ->
   tasks.register<PatchJetpackMediaTask>(
     "patchJetpackMedia${variant.flavor.uppercaseFirstChar()}"
   ) {
@@ -473,7 +473,7 @@ android {
         dimension = "SDK"
         isDefault = sdkIndex == Sdk.LATEST
 
-        if (generateBaselineProfile && variant.flavor != "latest") {
+        if (generateBaselineProfile && !variant.isLatest) {
           matchingFallbacks += "latest"
         }
         Sdk.VARIANTS.forEach { (subSdkIndex, subVariant) ->
@@ -522,7 +522,9 @@ android {
           )
 
           val dirs = mapOf(
-            "ANDROIDX_MEDIA_DIR" to layout.buildDirectory.dir("generated/tgx/androidx-media/${variant.flavor}"),
+            "ANDROIDX_MEDIA_DIR" to layout.buildDirectory.dir("generated/tgx/androidx-media/${
+              (variant.takeIf { !it.isMarshmallow } ?: Sdk.VARIANTS[Sdk.LATEST]!!).flavor
+            }"),
             "OPUS_DIR" to layout.buildDirectory.dir("generated/tgx/opus"),
             "LIBVPX_DIR" to layout.buildDirectory.dir("generated/tgx/libvpx/${variant.flavor}"),
             "FFMPEG_DIR" to layout.buildDirectory.dir("generated/tgx/ffmpeg/${variant.flavor}")
@@ -534,7 +536,9 @@ android {
 
         sourceSets.getByName(variant.flavor) {
           Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
-            java.directories += "thirdparty/androidx-media/${variant.flavor}/libraries/${extension}/src/main/java"
+            java.directories += "thirdparty/androidx-media/${
+              (variant.takeIf { !it.isMarshmallow } ?: Sdk.VARIANTS[Sdk.LATEST]!!).flavor
+            }/libraries/${extension}/src/main/java"
           }
           val extraFolders = findExtraFolders(variant)
           extraFolders.forEach { folderName ->
@@ -623,11 +627,11 @@ android {
       val (abi, abiVariant) = Abi.VARIANTS.entries.first { it.value.flavor == abiFlavor }
       val (sdk, sdkVariant) = Sdk.VARIANTS.entries.first { it.value.flavor == sdkFlavor }
 
-      val patchJetpackMediaTask = if (sdkVariant.flavor == "marshmallow") {
-        Sdk.VARIANTS[Sdk.LATEST]!!
-      } else {
-        sdkVariant
-      }.let {
+      val patchJetpackMediaTask = (
+        sdkVariant.takeIf {
+          !it.isMarshmallow
+        } ?: Sdk.VARIANTS[Sdk.LATEST]!!
+      ).let {
         patchJetpackMediaTasks[it.flavor]!!
       }
       variant.lifecycleTasks.registerPreBuild(patchJetpackMediaTask, patchOpusTask)
