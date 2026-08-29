@@ -581,7 +581,9 @@ android {
       }
     }
 
-    Abi.VARIANTS.forEach { (abiIndex, variant) ->
+    Abi.VARIANTS.filter { (abiIndex, variant) ->
+      generateBaselineProfile || !variant.isTestingLab
+    }.forEach { (abiIndex, variant) ->
       create(variant.flavor) {
         dimension = "ABI"
         isDefault = abiIndex == 0
