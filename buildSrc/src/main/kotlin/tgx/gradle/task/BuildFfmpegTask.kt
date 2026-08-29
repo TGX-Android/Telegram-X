@@ -287,7 +287,8 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
           "gif"
         ).map {
           "--enable-demuxer=$it"
-        }.toTypedArray()
+        }.toTypedArray(),
+        *extraParams.toTypedArray()
       ),
       "make" to arrayOf(
         "make",
