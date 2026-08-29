@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
@@ -89,7 +90,11 @@ public class CallListController extends RecyclerViewController<Void> implements
 
   @Override
   protected int getMenuId () {
-    return messages != null && !messages.isEmpty() ? R.id.menu_btn_more : 0;
+    if (Config.ENABLE_DELETE_CALL_HISTORY) {
+      return messages != null && !messages.isEmpty() ? R.id.menu_btn_more : 0;
+    } else {
+      return 0;
+    }
   }
 
   @Override

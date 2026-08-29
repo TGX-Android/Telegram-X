@@ -66,6 +66,8 @@ public class Config {
 
   public static final boolean ENABLE_BASELINE_PROFILE_HOOKS = BuildConfig.LAB_FLAVOR;
 
+  public static final boolean ENABLE_DELETE_CALL_HISTORY = BuildConfig.DEBUG;
+
   private static Boolean hasWebpSupport;
   public static boolean useBundledWebp () {
     if (BuildConfig.WEBP_ENABLED) {
