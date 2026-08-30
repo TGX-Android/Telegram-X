@@ -116,12 +116,13 @@ add_subdirectory(
 include("${PROJECT_SOURCE_DIR}/BuildYuv.cmake")
 
 # vpx
-if(EXISTS "${VPX_DIR}")
+if(EXISTS "${VPX_LIB_PATH}" AND EXISTS "${VPX_DIR}/include")
   add_library(vpx STATIC IMPORTED)
   set_target_properties(vpx PROPERTIES IMPORTED_LOCATION "${VPX_LIB_PATH}")
   target_include_directories(vpx INTERFACE "${VPX_DIR}/include")
 else()
   message(WARNING "./gradlew buildLibvpx was not run yet")
+  add_library(vpx INTERFACE)
 endif()
 
 # opusfile
