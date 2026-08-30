@@ -140,18 +140,21 @@ if (${USE_WEBP})
 endif()
 
 # ffmpeg
-if(EXISTS "${FFMPEG_DIR}")
-  foreach(FFMPEG_LIB IN LISTS FFMPEG_LIBS)
+foreach(FFMPEG_LIB IN LISTS FFMPEG_LIBS)
+  set(FFMPEG_LIB_PATH "${FFMPEG_DIR}/${ANDROID_ABI}/lib/lib${FFMPEG_LIB}.a")
+  set(FFMPEG_INCLUDE_DIR "${FFMPEG_DIR}/${ANDROID_ABI}/include")
+  if(EXISTS "${FFMPEG_LIB_PATH}" AND EXISTS "${FFMPEG_INCLUDE_DIR}")
     add_library(${FFMPEG_LIB} STATIC IMPORTED)
-    set_target_properties(${FFMPEG_LIB} PROPERTIES IMPORTED_LOCATION "${FFMPEG_DIR}/${ANDROID_ABI}/lib/lib${FFMPEG_LIB}.a")
+    set_target_properties(${FFMPEG_LIB} PROPERTIES IMPORTED_LOCATION "${FFMPEG_LIB_PATH}")
     target_include_directories(${FFMPEG_LIB} INTERFACE
-      "${FFMPEG_DIR}/${ANDROID_ABI}/include"
+      "${FFMPEG_INCLUDE_DIR}"
       "${FFMPEG_SRC_DIR}"
     )
-  endforeach()
-else()
-  message(WARNING "./gradlew buildFFmpeg was not run yet")
-endif()
+  else()
+    message(WARNING "./gradlew buildFFmpeg was not run yet, missing ${FFMPEG_LIB}")
+    add_library(${FFMPEG_LIB} INTERFACE)
+  endif()
+endforeach()
 
 # tgcalls
 if (${ENABLE_TGVOIP})
