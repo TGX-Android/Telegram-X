@@ -26,6 +26,7 @@ import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.DependencyHandlerScope
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
+import org.gradle.util.internal.VersionNumber
 import tgx.gradle.task.wrapInDoubleQuotes
 
 fun BaseFlavor.buildConfigInt (name: String, value: Int) =
@@ -285,3 +286,13 @@ fun String.toAbiVariant(): String = when (this) {
   "x86_64" -> "x64"
   else -> error("Unknown abi filter: $this")
 }
+
+fun String.ndkVersionMajor(): Int =
+  VersionNumber.parse(this).major
+
+fun String.ndkVersionToMinSdk(): Int =
+  when (this.ndkVersionMajor()) {
+    23 -> 16
+    27 -> 21
+    else -> error("Unsupported NDK version: $this")
+  }

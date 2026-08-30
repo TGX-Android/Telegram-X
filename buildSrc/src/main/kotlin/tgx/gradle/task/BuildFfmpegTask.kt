@@ -4,6 +4,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.tasks.*
 import org.jetbrains.kotlin.konan.file.File
 import tgx.gradle.createEmptyDir
+import tgx.gradle.ndkVersionMajor
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
 
@@ -24,6 +25,7 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
     val abi = this.abi.get()
     val hostTag = this.hostTag.get()
     val ndkVersion = this.ndkVersion.get()
+    val ndkVersionMajor = ndkVersion.ndkVersionMajor()
 
     val ndk = requireDir(
       sdkDir.get().asFile.resolve("ndk/$ndkVersion")
@@ -63,6 +65,12 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
         libvpx.resolve("include")
       ).absolutePath}"
     )
+    if (ndkVersionMajor >= 27) {
+      cFlags.addAll(arrayOf(
+        "-Wno-int-conversion",
+        "-Wno-incompatible-function-pointer-types"
+      ))
+    }
     val ldFlags = mutableListOf(
       "-L${requireDir(
         libvpx.resolve("lib")
@@ -72,7 +80,16 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
       "-flto=full"
     )
     val clangLibs = requireDir(
-      prebuilt.resolve("lib64/clang/12.0.9/lib/linux")
+      when (ndkVersionMajor) {
+        23 ->
+          prebuilt.resolve("lib64/clang/12.0.9/lib/linux")
+        27 ->
+          prebuilt.resolve("lib/clang/18/lib/linux")
+        29 ->
+          prebuilt.resolve("lib/clang/21/lib/linux")
+        else ->
+          error("Unsupported NDK version: $ndkVersion")
+      }
     )
     val extraLibs = mutableListOf<String>()
     val ndkAbi: String
@@ -265,6 +282,7 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
         "--enable-pthreads",
 
         "--enable-hwaccels",
+        "--disable-vulkan",
         "--enable-protocol=file",
         *arrayOf(
           "scale",

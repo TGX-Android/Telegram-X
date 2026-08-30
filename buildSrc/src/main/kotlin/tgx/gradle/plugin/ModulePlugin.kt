@@ -13,6 +13,7 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.*
 import tgx.gradle.findExtraFolders
+import tgx.gradle.ndkVersionToMinSdk
 import tgx.gradle.source.AppBuildVersionSource
 import tgx.gradle.source.KeystoreSource
 import java.io.File
@@ -24,6 +25,13 @@ open class ModulePlugin : Plugin<Project> {
       project.extensions.getByType<AppConfigurationExtension>().config.get()
     } catch (_: Exception) {
       null
+    }
+    val useLegacyNdk = try {
+      project.extensions.getByType<AppConfigurationExtension>().useLegacyNdk.get()
+    } catch (_: Exception) {
+      project.providers.gradleProperty("useLegacyNdk").map {
+        it.toBoolean()
+      }.getOrElse(false)
     }
     val build by lazy {
       config?.build ?:
@@ -74,7 +82,11 @@ open class ModulePlugin : Plugin<Project> {
       when (this) {
         is LibraryExtension -> {
           buildToolsVersion = build.buildToolsVersion
-          ndkVersion = build.legacyNdkVersion
+          ndkVersion = if (useLegacyNdk) {
+            build.legacyNdkVersion
+          } else {
+            build.primaryNdkVersion
+          }
           compileSdk {
             version = release(build.compileSdkVersion)
           }
@@ -96,7 +108,10 @@ open class ModulePlugin : Plugin<Project> {
           }
 
           defaultConfig {
-            minSdk = Config.MIN_SDK_VERSION
+            minSdk = maxOf(
+              Config.MIN_SDK_VERSION,
+              ndkVersion.ndkVersionToMinSdk()
+            )
             multiDexEnabled = true
           }
           flavorDimensions += arrayOf("SDK", "ABI")
@@ -131,7 +146,11 @@ open class ModulePlugin : Plugin<Project> {
 
         is ApplicationExtension -> {
           buildToolsVersion = build.buildToolsVersion
-          ndkVersion = build.legacyNdkVersion
+          ndkVersion = if (useLegacyNdk) {
+            build.primaryNdkVersion
+          } else {
+            build.legacyNdkVersion
+          }
           compileSdk {
             version = release(build.compileSdkVersion)
           }
@@ -153,7 +172,10 @@ open class ModulePlugin : Plugin<Project> {
           }
 
           defaultConfig {
-            minSdk = Config.MIN_SDK_VERSION
+            minSdk = maxOf(
+              Config.MIN_SDK_VERSION,
+              ndkVersion.ndkVersionToMinSdk()
+            )
             targetSdk = build.targetSdkVersion
             multiDexEnabled = true
           }
@@ -219,7 +241,11 @@ open class ModulePlugin : Plugin<Project> {
 
         is TestExtension -> {
           buildToolsVersion = build.buildToolsVersion
-          ndkVersion = build.legacyNdkVersion
+          ndkVersion = if (useLegacyNdk) {
+            build.legacyNdkVersion
+          } else {
+            build.primaryNdkVersion
+          }
           compileSdk {
             version = release(build.compileSdkVersion)
           }
@@ -229,7 +255,10 @@ open class ModulePlugin : Plugin<Project> {
             targetCompatibility = Config.JAVA_VERSION
           }
           defaultConfig {
-            minSdk = Config.MIN_SDK_VERSION
+            minSdk = maxOf(
+              Config.MIN_SDK_VERSION,
+              ndkVersion.ndkVersionToMinSdk()
+            )
             multiDexEnabled = true
           }
           sourceSets.configureEach {

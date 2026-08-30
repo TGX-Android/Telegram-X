@@ -135,3 +135,6 @@
 [submodule "thirdparty/androidx-media/lollipop"]
 	path = app/thirdparty/androidx-media/lollipop
 	url = https://github.com/androidx/media
+[submodule "app/jni/third_party/pixman"]
+	path = app/jni/third_party/pixman
+	url = https://gitlab.freedesktop.org/pixman/pixman.git
