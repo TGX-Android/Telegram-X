@@ -50,10 +50,16 @@ fun DependencyHandlerScope.legacyImplementation(
   this.flavorImplementation("legacy", dependency, dependencyConfiguration)
 
 fun DependencyHandlerScope.sinceLollipopImplementation(
-  dependency: Provider<MinimalExternalModuleDependency>,
+  sinceLollipop: Provider<MinimalExternalModuleDependency>,
+  sinceMarshmallow: Provider<MinimalExternalModuleDependency>? = null,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
-  this.flavorImplementation(null, dependency, dependency, dependency, dependencyConfiguration)
+  this.flavorImplementation(null,
+    sinceLollipop,
+    sinceMarshmallow ?: sinceLollipop,
+    sinceMarshmallow ?: sinceLollipop,
+    dependencyConfiguration
+  )
 
 fun DependencyHandlerScope.lollipopImplementation(
   dependency: Provider<MinimalExternalModuleDependency>,
@@ -62,22 +68,41 @@ fun DependencyHandlerScope.lollipopImplementation(
   this.flavorImplementation("lollipop", dependency, dependencyConfiguration)
 
 fun DependencyHandlerScope.sinceMarshmallowImplementation(
-  dependency: Provider<MinimalExternalModuleDependency>,
+  sinceMarshmallow: Provider<MinimalExternalModuleDependency>,
+  sinceNougat: Provider<MinimalExternalModuleDependency>? = null,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
-  this.flavorImplementation(null, null, dependency, dependency, dependencyConfiguration)
+  this.flavorImplementation(
+    null,
+    null,
+    sinceMarshmallow,
+    sinceNougat ?: sinceMarshmallow,
+    dependencyConfiguration
+  )
 
 fun DependencyHandlerScope.preMarshmallowImplementation(
-  dependency: Provider<MinimalExternalModuleDependency>,
+  legacyAndLollipop: Provider<MinimalExternalModuleDependency>,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
-  this.flavorImplementation(dependency, dependency, null, null, dependencyConfiguration)
+  this.flavorImplementation(
+    legacyAndLollipop,
+    legacyAndLollipop,
+    null,
+    null,
+    dependencyConfiguration
+  )
 
 fun DependencyHandlerScope.sinceNougatImplementation(
-  dependency: Provider<MinimalExternalModuleDependency>,
+  sinceNougat: Provider<MinimalExternalModuleDependency>,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
-  this.flavorImplementation(null, null, null, dependency, dependencyConfiguration)
+  this.flavorImplementation(
+    null,
+    null,
+    null,
+    sinceNougat,
+    dependencyConfiguration
+  )
 
 fun findExtraFolders(variant: SdkVariant): Set<String> =
   mutableSetOf<String>().apply {
@@ -148,28 +173,28 @@ private fun DependencyHandlerScope.flavorImplementation(
 
 fun DependencyHandlerScope.flavorImplementation(
   legacy: Provider<MinimalExternalModuleDependency>?,
-  postLegacy: Provider<MinimalExternalModuleDependency>?,
+  sinceLollipop: Provider<MinimalExternalModuleDependency>?,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation(
     legacy,
-    postLegacy,
-    postLegacy,
-    postLegacy,
+    sinceLollipop,
+    sinceLollipop,
+    sinceLollipop,
     dependencyConfiguration
   )
 
 fun DependencyHandlerScope.flavorImplementation(
   legacy: Provider<MinimalExternalModuleDependency>?,
   lollipop: Provider<MinimalExternalModuleDependency>?,
-  postLollipop: Provider<MinimalExternalModuleDependency>?,
+  sinceMarshmallow: Provider<MinimalExternalModuleDependency>?,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation(
     legacy,
     lollipop,
-    postLollipop,
-    postLollipop,
+    sinceMarshmallow,
+    sinceMarshmallow,
     dependencyConfiguration
   )
 
