@@ -4,7 +4,6 @@ import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.TaskAction
 import org.jetbrains.kotlin.konan.file.File
 import tgx.gradle.createEmptyDir
-import tgx.gradle.fatal
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
 

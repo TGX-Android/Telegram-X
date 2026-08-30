@@ -13,11 +13,7 @@
 
 // File with static configuration, that is meant to be adjusted only once
 
-import tgx.gradle.fatal
-import tgx.gradle.getIntOrThrow
-import tgx.gradle.getLongOrThrow
-import tgx.gradle.getOrThrow
-import tgx.gradle.loadProperties
+import tgx.gradle.*
 import java.io.File
 import java.util.*
 

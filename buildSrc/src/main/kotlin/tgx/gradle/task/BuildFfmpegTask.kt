@@ -4,7 +4,6 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.tasks.*
 import org.jetbrains.kotlin.konan.file.File
 import tgx.gradle.createEmptyDir
-import tgx.gradle.fatal
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
 

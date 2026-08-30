@@ -30,7 +30,6 @@ import android.os.Build;
 import android.os.PowerManager;
 
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
 import androidx.media3.exoplayer.ExoPlayer;

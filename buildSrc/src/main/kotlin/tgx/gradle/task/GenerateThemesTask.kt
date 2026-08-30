@@ -6,14 +6,12 @@ import groovy.xml.XmlParser
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.*
 import tgx.gradle.data.Theme
 import tgx.gradle.fatal
 import tgx.gradle.validateDir
 import java.io.Writer
-import javax.inject.Inject
 
 @CacheableTask
 abstract class GenerateThemesTask : DefaultTask() {

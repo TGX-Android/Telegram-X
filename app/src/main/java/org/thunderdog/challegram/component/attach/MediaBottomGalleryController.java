@@ -69,7 +69,6 @@ import org.thunderdog.challegram.v.RtlGridLayoutManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;

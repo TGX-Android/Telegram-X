@@ -7,7 +7,7 @@ import org.gradle.process.ExecOperations
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.nio.charset.Charset
-import java.util.Locale
+import java.util.*
 import javax.inject.Inject
 
 abstract class GitVersionSource : ValueSource<GitVersionSource.Details, GitVersionSource.Params> {

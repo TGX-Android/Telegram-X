@@ -95,7 +95,6 @@ import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.util.LineDrawModifier;
 import org.thunderdog.challegram.util.text.Counter;
-import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.v.HeaderEditText;
