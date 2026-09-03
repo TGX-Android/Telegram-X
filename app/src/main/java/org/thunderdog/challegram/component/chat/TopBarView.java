@@ -35,6 +35,8 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.FormattedText;
+import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.CustomTextView;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -73,6 +75,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     final int id;
     final int stringRes;
     final CharSequence noticeRes;
+    final @Nullable TextEntity[] noticeEntities;
     final int iconResId;
     final View.OnClickListener onClickListener;
     final boolean showDismissRight;
@@ -80,14 +83,18 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     boolean isNegative;
     boolean noDismiss;
 
-    public Item (int id, int stringRes, CharSequence noticeRes, int iconResId,
-                 boolean showDismissRight, View.OnClickListener onClickListener) {
+    private Item (int id, int stringRes, CharSequence noticeRes, @Nullable TextEntity[] noticeEntities, int iconResId, boolean showDismissRight, View.OnClickListener onClickListener) {
       this.id = id;
       this.stringRes = stringRes;
       this.noticeRes = noticeRes;
+      this.noticeEntities = noticeEntities;
       this.iconResId = iconResId;
       this.showDismissRight = showDismissRight;
       this.onClickListener = onClickListener;
+    }
+
+    public Item (int id, int stringRes, CharSequence noticeRes, int iconResId, boolean showDismissRight, View.OnClickListener onClickListener) {
+      this(id, stringRes, noticeRes, null, iconResId, showDismissRight, onClickListener);
     }
 
     public Item (int id, int stringRes, boolean showDismissRight, int iconResId,
@@ -106,6 +113,10 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
 
     public Item (CharSequence noticeRes, boolean showDismissRight) {
       this(0, 0, noticeRes, 0, showDismissRight, null);
+    }
+
+    public Item (FormattedText notice, boolean showDismissRight) {
+      this(0, 0, notice.text, notice.entities, 0, showDismissRight, null);
     }
 
     public Item (CharSequence noticeRes) {
@@ -346,7 +357,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
           CustomTextView noticeText = new CustomTextView(getContext(), tdlib);
           noticeText.setTextColorId(ColorId.textLight);
           noticeText.setTextSize(NOTICE_TEXT_SIZE_SP);
-          noticeText.setText(item.noticeRes, null, false);
+          noticeText.setText(item.noticeRes, item.noticeEntities, false);
           noticeText.setContentDescription(item.noticeRes);
           noticeText.setPadding(
             Screen.dp(dismissInNotice && Lang.rtl() ?

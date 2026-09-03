@@ -221,12 +221,14 @@ import org.thunderdog.challegram.ui.camera.CameraAccessImageView;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
+import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.v.HeaderEditText;
@@ -8224,6 +8226,35 @@ public class MessagesController extends ViewController<MessagesController.Argume
     );
   }
 
+  private void addEmojiStatusNotice (List<TopBarView.Item> items) {
+    if (!Config.ENABLE_NEW_CHAT_ACTION_BAR) {
+      return;
+    }
+    TdApi.User user = tdlib.cache().user(tdlib.chatUserId(getChatId()));
+    long customEmojiId = user != null ? Td.customEmojiId(user.emojiStatus) : 0;
+    if (customEmojiId == 0) {
+      return;
+    }
+    String name = tdlib.cache().userFirstName(user.id);
+    String learnMoreText = Lang.getString(R.string.ChatActionBarEmojiStatusLearnMore);
+    CharSequence text = Lang.getString(
+      R.string.format_chatActionBarEmojiStatusNotice,
+      (target, start, end, index, needFakeBold) -> index == 1 ?
+        TD.toDisplaySpan(new TdApi.TextEntityTypeCustomEmoji(customEmojiId)) :
+        index == 2 ? TD.toDisplaySpan(new TdApi.TextEntityTypeTextUrl(
+          "https://telegram.org/blog/infinite-reactions-statuses#emoji-statuses"
+        )) : null,
+      Lang.escapeMarkdown(name), EmojiStatusHelper.EMOJI,
+      Lang.escapeMarkdown(learnMoreText)
+    );
+    TdApi.FormattedText formattedText = TD.toFormattedText(text, false);
+    TD.parseMarkdownWithEntities(formattedText);
+    FormattedText notice = FormattedText.valueOf(
+      this, formattedText, new TdlibUi.UrlOpenParameters().controller(this)
+    );
+    items.add(new TopBarView.Item(notice, true));
+  }
+
   private TopBarView.Item newUnarchiveItem (long chatId) {
     return new TopBarView.Item(
       R.id.btn_unarchiveChat, R.string.UnarchiveUnmute, true,
@@ -8349,6 +8380,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         case TdApi.ChatActionBarReportSpam.CONSTRUCTOR: {
           TdApi.ChatActionBarReportSpam reportSpam = (TdApi.ChatActionBarReportSpam) actionBar;
+          addEmojiStatusNotice(items);
           items.add(newReportItem(chatId, false));
           if (reportSpam.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
@@ -8359,6 +8391,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         case TdApi.ChatActionBarReportAddBlock.CONSTRUCTOR: {
           TdApi.ChatActionBarReportAddBlock reportAddBlock =
             (TdApi.ChatActionBarReportAddBlock) actionBar;
+          addEmojiStatusNotice(items);
           items.add(newAddContactItem(chatId));
           items.add(newReportItem(chatId, true));
           if (reportAddBlock.canUnarchive) {
@@ -11090,6 +11123,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       runOnUiThreadOptional(() -> {
         headerCell.setEmojiStatus(user);
         checkCanSendMessagesToUser(false);
+        if (Config.ENABLE_NEW_CHAT_ACTION_BAR) {
+          checkActionBar();
+        }
       });
     }
   }
