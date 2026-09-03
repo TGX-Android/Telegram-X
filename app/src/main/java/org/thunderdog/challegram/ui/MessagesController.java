@@ -849,13 +849,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
     liveLocationView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, liveLocationHeight));
     addThemeInvalidateListener(liveLocationView);
 
-    int actionBarHeight = Screen.dp(46f);
-    actionView = new TopBarView(context);
+    actionView = new TopBarView(context, tdlib);
     actionView.setDismissListener(barView ->
       dismissActionBar()
     );
-    actionView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, actionBarHeight));
     actionView.addThemeListeners(this);
+    actionItem = new CollapseListView.Item() {
+      @Override
+      public int getVisualHeight () {
+        return actionView.getVisualHeight();
+      }
+
+      @Override
+      public View getValue () {
+        return actionView;
+      }
+    };
+    actionView.addOnLayoutChangeListener((view, left, top, right, bottom,
+                                          oldLeft, oldTop, oldRight, oldBottom) -> {
+      if (bottom - top != oldBottom - oldTop) {
+        topBar.notifyItemHeightChanged(actionItem);
+      }
+    });
 
     int requestsViewHeight = Screen.dp(48f);
     requestsView = new JoinRequestsView(context, tdlib);
@@ -939,7 +954,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       pinnedMessagesItem,
       requestsItem = new CollapseListView.ViewItem(requestsView, requestsViewHeight),
       liveLocationItem = new CollapseListView.ViewItem(liveLocationView, liveLocationHeight),
-      actionItem = new CollapseListView.ViewItem(actionView, ViewGroup.LayoutParams.WRAP_CONTENT),
+      actionItem,
       toastAlertItem
     }, this);
 
@@ -8201,70 +8216,103 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private TopBarView.Item newAddContactItem (long chatId) {
-    return new TopBarView.Item(R.id.btn_addContact, R.string.AddContact, true, R.drawable.baseline_person_add_24, v -> {
-      tdlib.ui().addContact(this, tdlib.chatUser(chatId));
-    });
+    return new TopBarView.Item(
+      R.id.btn_addContact, R.string.AddContact, true,
+      R.drawable.baseline_person_add_24, v -> {
+        tdlib.ui().addContact(this, tdlib.chatUser(chatId));
+      }
+    );
   }
 
   private TopBarView.Item newUnarchiveItem (long chatId) {
-    return new TopBarView.Item(R.id.btn_unarchiveChat, R.string.UnarchiveUnmute, true, R.drawable.baseline_unarchive_24, v -> {
-      tdlib.send(new TdApi.AddChatToList(chatId, new TdApi.ChatListMain()), tdlib.typedOkHandler());
-      TdApi.ChatNotificationSettings settings = tdlib.chatSettings(chatId);
-      if (settings != null) {
-        TdApi.ChatNotificationSettings newSettings = new TdApi.ChatNotificationSettings(
-          true, 0,
-          settings.useDefaultSound, settings.soundId,
-          settings.useDefaultShowPreview, settings.showPreview,
-          settings.useDefaultMuteStories, settings.muteStories,
-          settings.useDefaultStorySound, settings.storySoundId,
-          settings.useDefaultShowStoryPoster, settings.showStoryPoster,
-          settings.useDefaultDisablePinnedMessageNotifications, settings.disablePinnedMessageNotifications,
-          settings.useDefaultDisableMentionNotifications, settings.disableMentionNotifications
+    return new TopBarView.Item(
+      R.id.btn_unarchiveChat, R.string.UnarchiveUnmute, true,
+      R.drawable.baseline_unarchive_24, v -> {
+        tdlib.send(
+          new TdApi.AddChatToList(chatId, new TdApi.ChatListMain()),
+          tdlib.typedOkHandler()
         );
-        tdlib.send(new TdApi.SetChatNotificationSettings(chatId, newSettings), tdlib.typedOkHandler());
+        TdApi.ChatNotificationSettings settings = tdlib.chatSettings(chatId);
+        if (settings != null) {
+          TdApi.ChatNotificationSettings newSettings = new TdApi.ChatNotificationSettings(
+            true, 0,
+            settings.useDefaultSound, settings.soundId,
+            settings.useDefaultShowPreview, settings.showPreview,
+            settings.useDefaultMuteStories, settings.muteStories,
+            settings.useDefaultStorySound, settings.storySoundId,
+            settings.useDefaultShowStoryPoster, settings.showStoryPoster,
+            settings.useDefaultDisablePinnedMessageNotifications,
+            settings.disablePinnedMessageNotifications,
+            settings.useDefaultDisableMentionNotifications,
+            settings.disableMentionNotifications
+          );
+          tdlib.send(
+            new TdApi.SetChatNotificationSettings(chatId, newSettings),
+            tdlib.typedOkHandler()
+          );
+        }
       }
-    });
+    );
   }
 
   private TopBarView.Item newReportItem (long chatId, boolean isBlock) {
-    return new TopBarView.Item(R.id.btn_reportChat, isBlock ? R.string.BlockContact : R.string.ReportSpam, true, isBlock ? R.drawable.baseline_block_24 : R.drawable.baseline_report_24, v -> {
-      showSettings(new SettingsWrapBuilder(R.id.btn_reportSpam)
-        .addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.ReportChatSpam, chat.title), false))
-        .setRawItems(getChatUserId() != 0 ? new ListItem[] {
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_blockSender, 0, R.string.BlockUser, true),
-        } : new ListItem[] {
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true)
-        })
-        .setIntDelegate((id, result) -> {
-          if (id != R.id.btn_reportSpam || chatId != getChatId() || !isFocused()) {
-            return;
-          }
+    return new TopBarView.Item(
+      R.id.btn_reportChat, isBlock ? R.string.BlockContact : R.string.ReportSpam,
+      true, isBlock ? R.drawable.baseline_block_24 : R.drawable.baseline_report_24, v -> {
+        showSettings(new SettingsWrapBuilder(R.id.btn_reportSpam)
+          .addHeaderItem(new ListItem(
+            ListItem.TYPE_INFO, 0, 0,
+            Lang.getStringBold(R.string.ReportChatSpam, chat != null ? chat.title : ""),
+            false
+          ))
+          .setRawItems(getChatUserId() != 0 ? new ListItem[] {
+            new ListItem(
+              ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true
+            ),
+            new ListItem(
+              ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat,
+              true
+            ),
+            new ListItem(
+              ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_blockSender, 0, R.string.BlockUser, true
+            ),
+          } : new ListItem[] {
+            new ListItem(
+              ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true
+            ),
+            new ListItem(
+              ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat,
+              true
+            )
+          })
+          .setIntDelegate((id, result) -> {
+            if (id != R.id.btn_reportSpam || chatId != getChatId() || !isFocused()) {
+              return;
+            }
 
-          boolean reportSpam = result.get(R.id.btn_reportSpam) != 0;
-          boolean deleteChat = result.get(R.id.btn_removeChatFromList) != 0;
-          boolean blockSender = result.get(R.id.btn_blockSender) != 0;
+            boolean reportSpam = result.get(R.id.btn_reportSpam) != 0;
+            boolean deleteChat = result.get(R.id.btn_removeChatFromList) != 0;
+            boolean blockSender = result.get(R.id.btn_blockSender) != 0;
 
-          if (!reportSpam && !deleteChat && !blockSender) {
-            return;
-          }
+            if (!reportSpam && !deleteChat && !blockSender) {
+              return;
+            }
 
-          if (blockSender) {
-            tdlib.blockSender(tdlib.sender(chat.id), new TdApi.BlockListMain(), tdlib.okHandler());
-          }
+            if (blockSender) {
+              tdlib.blockSender(tdlib.sender(chatId), new TdApi.BlockListMain(), tdlib.okHandler());
+            }
 
-          if (reportSpam) {
-            tdlib.send(new TdApi.ReportChat(getChatId(), null, null, null), tdlib.errorHandler());
-          }
-          if (deleteChat) {
-            deleteAndLeave();
-          }
-        })
-        .setSaveStr(R.string.Done)
-        .setSaveColorId(ColorId.textNegative));
-    }).setIsNegative();
+            if (reportSpam) {
+              tdlib.send(new TdApi.ReportChat(getChatId(), null, null, null), tdlib.errorHandler());
+            }
+            if (deleteChat) {
+              deleteAndLeave();
+            }
+          })
+          .setSaveStr(R.string.Done)
+          .setSaveColorId(ColorId.textNegative));
+      }
+    ).setIsNegative();
   }
 
   private void checkJoinRequests (TdApi.ChatJoinRequestsInfo info) {
@@ -8301,14 +8349,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         case TdApi.ChatActionBarReportSpam.CONSTRUCTOR: {
           TdApi.ChatActionBarReportSpam reportSpam = (TdApi.ChatActionBarReportSpam) actionBar;
-          /*
-           TODO: Add anti-scam notice for custom emojis
-           var customEmoji = tdlib().cache().user(tdlib.chatUserId(getChatId()));
-           android.util.Log.e("customEmoji", String.format("customEmoji: %s", customEmoji));
-           if (customEmoji != null && customEmoji.emojiStatus != null) {
-             items.add(new TopBarView.Item("Have a custom emoji", true));
-           }
-          */
           items.add(newReportItem(chatId, false));
           if (reportSpam.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
@@ -8317,17 +8357,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         case TdApi.ChatActionBarReportAddBlock.CONSTRUCTOR: {
-          TdApi.ChatActionBarReportAddBlock reportAddBlock = (TdApi.ChatActionBarReportAddBlock) actionBar;
-          /*
-           TODO: Add anti-scam notice for custom emojis
-           var customEmoji = tdlib().cache().user(tdlib.chatUserId(getChatId()));
-           android.util.Log.e("customEmoji", String.format("customEmoji: %s", customEmoji));
-           if (customEmoji != null && customEmoji.emojiStatus != null) {
-             items.add(new TopBarView.Item("Have a custom emoji", true));
-           }
-          */
-          items.add(newReportItem(chatId, true));
+          TdApi.ChatActionBarReportAddBlock reportAddBlock =
+            (TdApi.ChatActionBarReportAddBlock) actionBar;
           items.add(newAddContactItem(chatId));
+          items.add(newReportItem(chatId, true));
           if (reportAddBlock.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
           }
@@ -8335,57 +8368,86 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         case TdApi.ChatActionBarInviteMembers.CONSTRUCTOR: {
-          items.add(new TopBarView.Item(R.id.btn_invite, R.string.AddMember, v -> {
-            ContactsController c = new ContactsController(context, tdlib);
-            c.initWithMode(ContactsController.MODE_ADD_MEMBER);
-            c.setAllowBots(true);
-            c.setArguments(new ContactsController.Args(new SenderPickerDelegate() {
-              @Override
-              public boolean onSenderPick (ContactsController context, View view, TdApi.MessageSender senderId) {
-                if (tdlib.isSelfSender(senderId)) {
-                  return false;
+          items.add(new TopBarView.Item(
+            R.id.btn_invite, R.string.AddMember, false,
+            R.drawable.baseline_group_add_24, v -> {
+              ContactsController c = new ContactsController(context, tdlib);
+              c.initWithMode(ContactsController.MODE_ADD_MEMBER);
+              c.setAllowBots(true);
+              c.setArguments(new ContactsController.Args(new SenderPickerDelegate() {
+                @Override
+                public boolean onSenderPick (ContactsController context, View view,
+                                             TdApi.MessageSender senderId) {
+                  if (tdlib.isSelfSender(senderId)) {
+                    return false;
+                  }
+
+                  tdlib.setChatMemberStatus(
+                    chat.id, senderId, new TdApi.ChatMemberStatusMember(), null,
+                    (ok, error, failedToAddMember) -> runOnUiThreadOptional(() -> {
+                      if (!ok && error != null) {
+                        context.context()
+                          .tooltipManager()
+                          .builder(view)
+                          .show(context, tdlib, R.drawable.baseline_error_24,
+                            TD.toErrorString(error));
+                      } else {
+                        context.navigateBack();
+                      }
+                    })
+                  );
+
+                  return true;
                 }
-
-                tdlib.setChatMemberStatus(chat.id, senderId, new TdApi.ChatMemberStatusMember(), null, (ok, error, failedToAddMember) -> {
-                  runOnUiThreadOptional(() -> {
-                    if (!ok && error != null) {
-                      context.context()
-                        .tooltipManager()
-                        .builder(view)
-                        .show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(error));
-                    } else {
-                      context.navigateBack();
-                    }
-                  });
-                });
-
-                return true;
-              }
+              }));
+              c.setChatTitle(R.string.AddMember, chat.title);
+              navigateTo(c);
             }));
-            c.setChatTitle(R.string.AddMember, chat.title);
-            navigateTo(c);
-          }));
           break;
         }
 
         case TdApi.ChatActionBarSharePhoneNumber.CONSTRUCTOR: {
-          items.add(new TopBarView.Item(R.id.btn_shareMyContact, R.string.SharePhoneNumber, v -> {
-            TdApi.User user = tdlib.myUser();
-            if (user != null) {
-              showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[] {R.id.btn_shareMyContact, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SharePhoneNumberAction), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.BLUE, OptionColor.NORMAL}, new int[] {R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
-                if (id1 == R.id.btn_shareMyContact) {
-                  tdlib.send(new TdApi.SharePhoneNumber(tdlib.chatUserId(chatId)), tdlib.typedOkHandler());
-                }
-                return true;
-              });
-            }
-          }));
+          items.add(new TopBarView.Item(
+            R.id.btn_shareMyContact, R.string.SharePhoneNumber, false,
+            R.drawable.baseline_contact_phone_24, v -> {
+              TdApi.User user = tdlib.myUser();
+              if (user != null) {
+                showOptions(
+                  TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber),
+                  new int[] {R.id.btn_shareMyContact, R.id.btn_cancel},
+                  new String[] {
+                    Lang.getString(R.string.SharePhoneNumberAction),
+                    Lang.getString(R.string.Cancel)
+                  },
+                  new int[] {OptionColor.BLUE, OptionColor.NORMAL},
+                  new int[] {
+                    R.drawable.baseline_contact_phone_24,
+                    R.drawable.baseline_cancel_24
+                  },
+                  (itemView, id1) -> {
+                    if (id1 == R.id.btn_shareMyContact) {
+                      tdlib.send(
+                        new TdApi.SharePhoneNumber(tdlib.chatUserId(chatId)),
+                        tdlib.typedOkHandler()
+                      );
+                    }
+                    return true;
+                  }
+                );
+              }
+            }));
           break;
         }
         case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
-          TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
-          int noticeResId = joinRequest.isChannel ? R.string.JoinRequestChannelAdminNotice : R.string.JoinRequestGroupAdminNotice;
-          items.add(new TopBarView.Item(Strings.replaceBoldTokens(Lang.getString(noticeResId, tdlib.cache().userFirstName(tdlib.chatUserId(getChatId())), joinRequest.title)), true));
+          TdApi.ChatActionBarJoinRequest joinRequest =
+            (TdApi.ChatActionBarJoinRequest) actionBar;
+          int noticeResId = joinRequest.isChannel ?
+            R.string.JoinRequestChannelAdminNotice : R.string.JoinRequestGroupAdminNotice;
+          items.add(new TopBarView.Item(Strings.replaceBoldTokens(Lang.getString(
+            noticeResId,
+            tdlib.cache().userFirstName(tdlib.chatUserId(getChatId())),
+            joinRequest.title
+          )), true));
           break;
         }
         default: {
@@ -8396,14 +8458,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (ChatId.isSecret(chatId)) {
       TdApi.SecretChat secretChat = tdlib.chatToSecretChat(chatId);
-      if (secretChat != null && secretChat.state.getConstructor() == TdApi.SecretChatStateClosed.CONSTRUCTOR) {
-        items.add(new TopBarView.Item(R.id.btn_delete, R.string.DeleteAndLeave, v -> {
-          if (manager.isTotallyEmpty()) {
-            deleteAndLeave();
-          } else {
-            tdlib.ui().showDeleteChatConfirm(this, getChatId());
-          }
-        }).setNoDismiss().setIsNegative());
+      if (secretChat != null &&
+          secretChat.state.getConstructor() == TdApi.SecretChatStateClosed.CONSTRUCTOR) {
+        items.add(new TopBarView.Item(
+          R.id.btn_delete, R.string.DeleteAndLeave, false,
+          R.drawable.baseline_delete_24, v -> {
+            if (manager.isTotallyEmpty()) {
+              deleteAndLeave();
+            } else {
+              tdlib.ui().showDeleteChatConfirm(this, getChatId());
+            }
+          }).setNoDismiss().setIsNegative());
       }
     }
     if (!items.isEmpty()) {
