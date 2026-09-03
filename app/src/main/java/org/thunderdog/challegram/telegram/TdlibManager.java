@@ -766,7 +766,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  int getActiveAccountsNum () {
+  public int getActiveAccountsNum () {
     return activeAccounts.size();
   }
 
