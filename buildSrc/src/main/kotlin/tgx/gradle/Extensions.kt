@@ -230,10 +230,11 @@ fun ApplicationAndroidComponentsExtension.disableRudimentaryVariants(
     val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
     val abiFlavor = variantBuilder.productFlavors.first { it.first == "ABI" }.second
     val abiVariant = Abi.VARIANTS.values.first { it.flavor == abiFlavor }
-    if (sdkVariant.maxSdk != null) {
+    val isDebug = variantBuilder.buildType == "debug"
+    if (sdkVariant.maxSdk != null && !isDebug) {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
-    variantBuilder.enable = isVariantEnabled(sdkVariant, abiVariant, variantBuilder.buildType == "debug") && filter(sdkVariant, abiVariant)
+    variantBuilder.enable = isVariantEnabled(sdkVariant, abiVariant, isDebug) && filter(sdkVariant, abiVariant)
   }
 
 fun TestAndroidComponentsExtension.disableRudimentaryVariants(
@@ -244,10 +245,11 @@ fun TestAndroidComponentsExtension.disableRudimentaryVariants(
     val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
     val abiFlavor = variantBuilder.productFlavors.first { it.first == "ABI" }.second
     val abiVariant = Abi.VARIANTS.values.first { it.flavor == abiFlavor }
-    if (sdkVariant.maxSdk != null) {
+    val isDebug = variantBuilder.buildType == "debug"
+    if (sdkVariant.maxSdk != null && !isDebug) {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
-    variantBuilder.enable = isVariantEnabled(sdkVariant, abiVariant, variantBuilder.buildType == "debug") && filter(sdkVariant, abiVariant)
+    variantBuilder.enable = isVariantEnabled(sdkVariant, abiVariant, isDebug) && filter(sdkVariant, abiVariant)
   }
 
 fun findHostAbi(): String =
