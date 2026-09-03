@@ -1173,7 +1173,7 @@ public class Lang {
       case TdApi.MessageInvoice.CONSTRUCTOR:
       case TdApi.MessageGiftedPremium.CONSTRUCTOR:
       case TdApi.MessageGiftedStars.CONSTRUCTOR:
-      case TdApi.MessageGiftedTon.CONSTRUCTOR:
+      case TdApi.MessageGiftedGrams.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
@@ -1196,6 +1196,8 @@ public class Lang {
       case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
       case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
       case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
+      case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
+      case TdApi.MessageChatJoinFromCommunity.CONSTRUCTOR:
       case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
@@ -1214,7 +1216,6 @@ public class Lang {
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
       case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
-      case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
       case TdApi.MessageChatSetTheme.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
@@ -1250,7 +1251,7 @@ public class Lang {
       case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_a80283cf();
+        Td.assertMessageContent_af730a78();
         throw Td.unsupported(message.content);
     }
     if (format == null) {

@@ -28,9 +28,6 @@ object Config {
     "decoder_vp9"
   )
   val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
-
-  // FIXME(ndK): As of 16.08.2025, NDK team didn't release an update for r23's c++_shared.so with 16 KB ELF alignment
-  const val SHARED_STL = false
 }
 
 data class PullRequest (

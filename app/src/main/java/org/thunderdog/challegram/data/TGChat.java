@@ -1221,7 +1221,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       boolean needSuffix = true;
       if (showDraft()) {
         TdApi.DraftMessage draftMessage = chat.draftMessage;
-        Td.assertDraftMessageContent_b637f166();
+        Td.assertDraftMessageContent_f690069b();
         needSuffix = draftMessage != null && draftMessage.content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR && !Td.isEmpty(((TdApi.DraftMessageContentText) draftMessage.content).text);
         prefix = Lang.getString(R.string.Draft);
         flags |= FLAG_CONTENT_STRING;
@@ -1338,7 +1338,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     if (chat.draftMessage != null && showDraft()) {
       flags |= FLAG_TEXT_DRAFT | FLAG_HAS_PREFIX;
       // TODO rich message
-      Td.assertDraftMessageContent_b637f166();
+      Td.assertDraftMessageContent_f690069b();
       TdApi.FormattedText text = ((TdApi.DraftMessageContentText) chat.draftMessage.content).text;
       setTextValue(text.text, text.entities, false);
       setPrefix();

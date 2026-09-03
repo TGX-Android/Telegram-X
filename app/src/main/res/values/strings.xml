@@ -378,6 +378,8 @@
   <string name="ChatContentGroupLeft_outgoing">Left the group</string>
   <string name="ChatContentGroupJoin">Joined the group via invite link</string>
   <string name="ChatContentGroupJoin_outgoing">Joined the group via invite link</string>
+  <string name="ChatContentGroupJoinCommunity">Joined the group from the community</string>
+  <string name="ChatContentGroupJoinCommunity_outgoing">Joined the group from the community</string>
   <string name="ChatContentGroupAccept">Was accepted to the group</string>
   <string name="ChatContentGroupAccept_outgoing">Were accepted to the group</string>
   <string name="ChatContentGroupJoinPublic">Joined the group</string>
@@ -704,6 +706,10 @@
   <string name="group_user_remove_self">You left the group</string>
   <string name="group_user_join_by_link">%1$s joined the group via invite link</string>
   <string name="group_user_join_by_link_self">You joined the group via invite link</string>
+  <string name="group_user_join_from_community">%1$s joined the group from the community</string>
+  <string name="group_user_join_from_community_self">You joined the group from the community</string>
+  <string name="group_user_join_from_community_name">%1$s joined the group from the community \"%2$s\"</string>
+  <string name="group_user_join_from_community_name_self">You joined the group from the community \"%2$s\"</string>
   <string name="group_user_join_by_link_with_approval">%1$s joined the group via invite link, approved by %2$s</string>
   <string name="group_user_join_by_link_self_with_approval">You joined the group via invite link, approved by %1$s</string>
   <string name="group_created">%1$s created the group "%2$s"</string>
@@ -2139,6 +2145,7 @@
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
   <string name="RightDirectMessages">Manage direct messages</string>
+  <string name="RightWelcomeMessages">Manage direct messages</string>
   <string name="RightTags">Edit Member Tags</string>
   <string name="RightTagsOwn">Edit Own Tags</string>
   <string name="RightTopics">Manage topics</string>
@@ -2349,6 +2356,7 @@
   <string name="EventLogPromotedRemainAnonymous">Remain anonymous</string>
   <string name="EventLogPromotedManageVoiceChats">Manage video chats</string>
   <string name="EventLogPromotedManageLiveStreams">Manage live streams</string>
+  <string name="EventLogPromotedManageWelcomeMessages">Manage welcome messages</string>
   <string name="EventLogPromotedManageDirectMessages">Manage direct messages</string>
   <string name="EventLogPromotedTitle">Title: %1$s</string>
   <string name="EventLogPromotedTitleChange">Title: %1$s → %2$s</string>

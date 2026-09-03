@@ -578,6 +578,7 @@ public class ChatEventUtil {
               true,
               true,
               true,
+              true,
               true
             );
           }
@@ -597,6 +598,7 @@ public class ChatEventUtil {
             appendRight(b, R.string.EventLogPromotedManageTags, oldAdmin.rights.canManageTags, newAdmin.rights.canManageTags, false);
           }
           appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.rights.canManageVideoChats, newAdmin.rights.canManageVideoChats, false);
+          appendRight(b, R.string.EventLogPromotedManageWelcomeMessages, oldAdmin.rights.canSendWelcomeMessages, newAdmin.rights.canSendWelcomeMessages, false);
           if (msg.isChannelPost) {
             appendRight(b, R.string.EventLogPromotedPostStories, oldAdmin.rights.canPostStories, newAdmin.rights.canPostStories, false);
             appendRight(b, R.string.EventLogPromotedEditStories, oldAdmin.rights.canEditStories, newAdmin.rights.canEditStories, false);

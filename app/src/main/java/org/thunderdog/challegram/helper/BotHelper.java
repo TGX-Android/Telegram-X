@@ -29,6 +29,7 @@ import java.util.ArrayList;
 
 import me.vkryl.core.StringUtils;
 import tgx.td.ChatId;
+import tgx.td.Td;
 import tgx.td.data.MessageWithProperties;
 
 public class BotHelper implements Runnable, InlineSearchContext.CommandListProvider, TdlibCache.UserDataChangeListener, TdlibCache.BasicGroupDataChangeListener, TdlibCache.SupergroupDataChangeListener {
@@ -366,7 +367,15 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
         break;
       }
       case TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR: {
+        TdApi.ReplyMarkupInlineKeyboard inlineKeyboard = (TdApi.ReplyMarkupInlineKeyboard) markup;
+        if (inlineKeyboard.forceReply) {
+          // TODO
+        }
         break;
+      }
+      default: {
+        Td.assertReplyMarkup_d6ebcdbe();
+        throw Td.unsupported(markup);
       }
     }
   }

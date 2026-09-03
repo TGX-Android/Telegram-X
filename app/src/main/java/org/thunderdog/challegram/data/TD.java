@@ -213,6 +213,7 @@ public class TD {
         false,
         false,
         false,
+        false,
         false
       );
     }
@@ -237,6 +238,8 @@ public class TD {
         rights.canManageTags;
       case RightId.MANAGE_OR_CREATE_TOPICS ->
         rights.canManageTopics;
+      case RightId.SEND_WELCOME_MESSAGES ->
+        rights.canSendWelcomeMessages;
       case RightId.MANAGE_DIRECT_MESSAGES ->
         rights.canManageDirectMessages;
       case RightId.POST_STORIES ->
@@ -304,6 +307,7 @@ public class TD {
         false,
         false,
         false,
+        false,
         false
       );
     }
@@ -354,6 +358,7 @@ public class TD {
       case RightId.DELETE_STORIES:
       case RightId.MANAGE_DIRECT_MESSAGES:
       case RightId.REMAIN_ANONYMOUS:
+      case RightId.SEND_WELCOME_MESSAGES:
         break;
     }
     throw new IllegalArgumentException(Lang.getResourceEntryName(rightId));
@@ -3750,7 +3755,7 @@ public class TD {
         // TODO rich message
         break;
       default:
-        Td.assertMessageContent_a80283cf();
+        Td.assertMessageContent_af730a78();
         break;
     }
     return false;
@@ -5555,7 +5560,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_a80283cf();
+        Td.assertMessageContent_af730a78();
         break;
     }
     return false;

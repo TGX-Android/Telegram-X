@@ -13,6 +13,7 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.*
 import tgx.gradle.findExtraFolders
+import tgx.gradle.ndkVersionMajor
 import tgx.gradle.ndkVersionToMinSdk
 import tgx.gradle.source.AppBuildVersionSource
 import tgx.gradle.source.KeystoreSource
@@ -128,7 +129,8 @@ open class ModulePlugin : Plugin<Project> {
               register(variant.flavor) {
                 dimension = "SDK"
                 externalNativeBuild.cmake.arguments(
-                  "-DANDROID_PLATFORM=android-${variant.minSdk}",
+                  "-DANDROID_PLATFORM=android-${maxOf(variant.minSdk, ndkVersion.ndkVersionToMinSdk())}",
+                  "-DANDROID_STL=${if (ndkVersion.ndkVersionMajor() == 27) "c++_shared" else "c++_static"}",
                   "-DTGX_FLAVOR=${variant.flavor}"
                 )
                 sourceSets.getByName(variant.flavor) {

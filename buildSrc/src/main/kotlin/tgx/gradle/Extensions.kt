@@ -291,8 +291,11 @@ fun String.ndkVersionMajor(): Int =
   VersionNumber.parse(this).major
 
 fun String.ndkVersionToMinSdk(): Int =
-  when (this.ndkVersionMajor()) {
-    23 -> 16
-    27 -> 21
-    else -> error("Unsupported NDK version: $this")
+  this.ndkVersionMajor().let { major ->
+    when {
+      major >= 27 -> 21
+      major >= 24 -> 19
+      major >= 23 -> 16
+      else -> error("Unsupported NDK version: $this")
+    }
   }

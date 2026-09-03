@@ -8095,7 +8095,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       new TdApi.InlineKeyboardButton[] {
         new TdApi.InlineKeyboardButton(sponsoredMessage.buttonText, 0, new TdApi.ButtonStyleDefault(), type)
       }
-    });
+    }, false);
     return fakeMessage;
   }
 
@@ -8345,6 +8345,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageChatJoinByLink.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatJoinByLink) content);
         }
+        case TdApi.MessageChatJoinFromCommunity.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatJoinFromCommunity) content);
+        }
         case TdApi.MessageChatJoinByRequest.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatJoinByRequest) content);
         }
@@ -8474,7 +8477,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
         case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
         case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
-        case TdApi.MessageGiftedTon.CONSTRUCTOR:
+        case TdApi.MessageGiftedGrams.CONSTRUCTOR:
         case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
           break;
 
@@ -8488,7 +8491,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         default: {
-          Td.assertMessageContent_a80283cf();
+          Td.assertMessageContent_af730a78();
           throw Td.unsupported(msg.content);
         }
       }

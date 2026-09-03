@@ -24,6 +24,7 @@ public interface MessageListener {
   default void onMessageSendSucceeded (TdApi.Message message, long oldMessageId) { }
   default void onMessageSendFailed (TdApi.Message message, long oldMessageId, TdApi.Error error) { }
   default void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) { }
+  default void onMessageEphemeralContentChanged (long chatId, long messageId, @Nullable TdApi.EphemeralMessageContent newEphemeralContent) { }
   default void onMessageEdited (long chatId, long messageId, int editDate, @Nullable TdApi.ReplyMarkup replyMarkup) { }
   default void onMessagePinned (long chatId, long messageId, boolean isPinned) { }
   default void onMessageOpened (long chatId, long messageId) { }

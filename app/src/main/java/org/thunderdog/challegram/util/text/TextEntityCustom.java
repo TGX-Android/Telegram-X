@@ -37,6 +37,7 @@ import org.thunderdog.challegram.util.StringList;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import tgx.td.Td;
 
 // TODO merge with TextEntityMessage into one type
 public class TextEntityCustom extends TextEntity {
@@ -67,6 +68,7 @@ public class TextEntityCustom extends TextEntity {
 
   public static final int LINK_TYPE_ANCHOR = 100;
   public static final int LINK_TYPE_REFERENCE = 101;
+  public static final int LINK_TYPE_BUTTON = 102;
 
   private final ViewController<?> context; // TODO move to TextEntity
 
@@ -77,6 +79,7 @@ public class TextEntityCustom extends TextEntity {
   private int linkType;
   private String link;
   private boolean linkCached;
+  private TdApi.InlineButton button;
 
   private ClickableSpan onClickListener;
   private String anchorOrReferenceName;
@@ -190,6 +193,24 @@ public class TextEntityCustom extends TextEntity {
       colorSet = customColorSet;
     } else if (linkType == LINK_TYPE_REFERENCE) {
       colorSet = TextColorSets.InstantView.REFERENCE;
+    } else if (linkType == LINK_TYPE_BUTTON) {
+      // TODO: similar to TextColorSets.InstantView.REFERENCE
+      colorSet = switch (button.style.getConstructor()) {
+        case TdApi.ButtonStyleLink.CONSTRUCTOR ->
+          null;
+        case TdApi.ButtonStyleDanger.CONSTRUCTOR ->
+          TextColorSets.InstantView.REFERENCE; // TODO: red
+        case TdApi.ButtonStyleDefault.CONSTRUCTOR ->
+          TextColorSets.InstantView.REFERENCE; // TODO: default style
+        case TdApi.ButtonStylePrimary.CONSTRUCTOR ->
+          TextColorSets.InstantView.REFERENCE; // TODO: dark blue
+        case TdApi.ButtonStyleSuccess.CONSTRUCTOR ->
+          TextColorSets.InstantView.REFERENCE; // TODO: green
+        default -> {
+          Td.assertButtonStyle_4f30e8d0();
+          throw Td.unsupported(button.type);
+        }
+      };
     } else if (BitwiseUtils.hasFlag(flags, FLAG_MARKED)) {
       colorSet = TextColorSets.InstantView.Marked.NORMAL;
     } else if (BitwiseUtils.hasFlag(flags, FLAG_MONOSPACE)) {
@@ -279,6 +300,10 @@ public class TextEntityCustom extends TextEntity {
     this.linkType = type;
     this.link = link;
     this.linkCached = linkCached;
+  }
+
+  public void setButton (TdApi.InlineButton button) {
+    this.button = button;
   }
 
   // Impl
@@ -392,6 +417,12 @@ public class TextEntityCustom extends TextEntity {
       case LINK_TYPE_REFERENCE: {
         if (callback == null || !(callback.onReferenceClick(view, link, referenceAnchorName, this.openParameters(view, text, part, isFromLongPressMenu))) || callback.onAnchorClick(view, link)) {
           // TODO open pop-up with ${referenceText}?
+        }
+        break;
+      }
+      case LINK_TYPE_BUTTON: {
+        if (callback == null || !(callback.onButtonClick(view, button, this.openParameters(view, text, part, isFromLongPressMenu)))) {
+          // TODO
         }
         break;
       }

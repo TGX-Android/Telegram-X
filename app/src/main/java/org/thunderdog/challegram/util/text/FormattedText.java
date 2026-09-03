@@ -401,7 +401,12 @@ public class FormattedText {
 
     return new FormattedText(out.toString(), parsed);
   }
+
   private static void parseRichText (ViewController<?> context, TdApi.RichText in, StringBuilder out, ArrayList<TextEntityCustom> entities, int[] offset, int flags, int linkOffset, int[] linkLength, int linkType, String link, boolean linkCached, @Nullable String referenceAnchorName, String copyLink, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    parseRichText(context, in, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters, null);
+  }
+
+  private static void parseRichText (ViewController<?> context, TdApi.RichText in, StringBuilder out, ArrayList<TextEntityCustom> entities, int[] offset, int flags, int linkOffset, int[] linkLength, int linkType, String link, boolean linkCached, @Nullable String referenceAnchorName, String copyLink, @Nullable TdlibUi.UrlOpenParameters openParameters, TdApi.InlineButton inlineButton) {
     switch (in.getConstructor()) {
       case TdApi.RichTextPlain.CONSTRUCTOR: {
         final String text = ((TdApi.RichTextPlain) in).text;
@@ -411,6 +416,7 @@ public class FormattedText {
             .setReferenceAnchorName(referenceAnchorName).setCopyLink(copyLink);
           if (linkType != TextEntityCustom.LINK_TYPE_NONE) {
             custom.setLink(linkOffset, linkLength, linkType, link, linkCached);
+            custom.setButton(inlineButton);
             linkLength[0] += text.length();
           }
           entities.add(custom);
@@ -438,6 +444,11 @@ public class FormattedText {
           custom.setLink(linkOffset, linkLength, linkType, link, linkCached);
         }
         entities.add(custom);
+        break;
+      }
+      case TdApi.RichTextButton.CONSTRUCTOR: {
+        TdApi.InlineButton button = ((TdApi.RichTextButton) in).button;
+        parseRichText(context, button.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_BUTTON, null, true, referenceAnchorName, null, new TdlibUi.UrlOpenParameters(openParameters), button);
         break;
       }
       case TdApi.RichTextDiff.CONSTRUCTOR: {
@@ -573,7 +584,7 @@ public class FormattedText {
         break;
       }
       default: {
-        Td.assertRichText_d57ed958();
+        Td.assertRichText_caec3729();
         throw Td.unsupported(in);
       }
     }

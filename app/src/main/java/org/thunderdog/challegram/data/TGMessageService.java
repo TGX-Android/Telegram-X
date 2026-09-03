@@ -445,6 +445,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
             case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
             case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
+            case TdApi.MessageChatJoinFromCommunity.CONSTRUCTOR:
             case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
             case TdApi.MessageChatSetTheme.CONSTRUCTOR:
             case TdApi.MessageChatSetBackground.CONSTRUCTOR:
@@ -455,7 +456,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageGameScore.CONSTRUCTOR:
             case TdApi.MessageGiftedPremium.CONSTRUCTOR:
             case TdApi.MessageGiftedStars.CONSTRUCTOR:
-            case TdApi.MessageGiftedTon.CONSTRUCTOR:
+            case TdApi.MessageGiftedGrams.CONSTRUCTOR:
             case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
             case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
             case TdApi.MessageGiveawayCompleted.CONSTRUCTOR:
@@ -516,7 +517,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_a80283cf();
+              Td.assertMessageContent_af730a78();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
@@ -730,6 +731,39 @@ public final class TGMessageService extends TGMessageServiceImpl {
         );
       }
     });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatJoinFromCommunity joinFromCommunity) {
+    super(context, msg);
+    TdApi.Community community = tdlib.cache().community(joinFromCommunity.communityId);
+    if (community != null) {
+      setTextCreator(() -> {
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.group_user_join_from_community_name_self
+          );
+        } else {
+          return getText(
+            R.string.group_user_join_from_community_name,
+            new SenderArgument(sender),
+            new BoldArgument(community.name)
+          );
+        }
+      });
+    } else {
+      setTextCreator(() -> {
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.group_user_join_from_community_self
+          );
+        } else {
+          return getText(
+            R.string.group_user_join_from_community,
+            new SenderArgument(sender)
+          );
+        }
+      });
+    }
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatJoinByRequest joinByRequest) {
