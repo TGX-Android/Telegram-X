@@ -187,6 +187,9 @@ data class SdkVariant(
     flavor == "lollipop"
   val isLegacy: Boolean =
     flavor == "legacy"
+
+  val jetpackMediaFlavor: String =
+    flavor.takeIf { !isMarshmallow } ?: "latest"
 }
 
 object Sdk {
