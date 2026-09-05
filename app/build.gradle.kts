@@ -668,19 +668,22 @@ android {
       val buildNativeTask = tasks.register<ValidateNativeBuildTask>("buildNativeDependencies${variant.name.uppercaseFirstChar()}") {
         group = "Setup"
         description = "Builds native dependencies for ${sdkVariant.flavor}, $abiVariant flavor and validates output"
-        abiFilters.set(abiVariant.filters.toSet())
         jetpackMediaDir.set(layout.buildDirectory.dir(
           "generated/tgx/androidx-media/${sdkVariant.jetpackMediaFlavor}"
         ))
         opusDir.set(layout.buildDirectory.dir(
           "generated/tgx/opus"
         ))
-        libvpxDir.set(layout.buildDirectory.dir(
-          "generated/tgx/libvpx/${sdkVariant.flavor}"
-        ))
-        ffmpegDir.set(layout.buildDirectory.dir(
-          "generated/tgx/ffmpeg/${sdkVariant.flavor}"
-        ))
+        libvpxDirs.from(abiVariant.filters.map { abiFilter ->
+          layout.buildDirectory.dir(
+            "generated/tgx/libvpx/${sdkVariant.flavor}/$abiFilter"
+          )
+        })
+        ffmpegDirs.from(abiVariant.filters.map { abiFilter ->
+          layout.buildDirectory.dir(
+            "generated/tgx/ffmpeg/${sdkVariant.flavor}/$abiFilter"
+          )
+        })
         dependsOn(*nativeBuildTasks.toTypedArray())
       }
       variant.lifecycleTasks.registerPreBuild(buildNativeTask)
