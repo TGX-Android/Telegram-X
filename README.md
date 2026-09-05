@@ -28,6 +28,8 @@ This is the complete source code and the build instructions for the official alt
 
 * [Homebrew](https://brew.sh)
 * git with LFS, wget and sed: `$ brew install git git-lfs wget gsed && git lfs install`
+* Java runtime: `brew install java`
+    * Run `java --help` to verify your system can find Java.  If not, run `sudo ln -sfn /opt/homebrew/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk`
 
 #### Ubuntu
 
