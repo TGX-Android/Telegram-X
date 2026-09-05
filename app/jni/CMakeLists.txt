@@ -19,7 +19,6 @@ include("${CMAKE_HOME_DIRECTORY}/cmake/Join.cmake")
 # == Dirs ==
 
 set(THIRDPARTY_DIR "${PROJECT_SOURCE_DIR}/third_party")
-set(TGX_ROOT_DIR "${PROJECT_SOURCE_DIR}/../..")
 set(TDLIB_DIR "${TGX_ROOT_DIR}/tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
@@ -32,16 +31,6 @@ set(ENABLE_TGVOIP yes)
 #  set(USE_WEBP no)
 #endif()
 set(USE_WEBP yes)
-
-set(FFMPEG_SRC_DIR "${THIRDPARTY_DIR}/ffmpeg")
-set(FFMPEG_LIBS
-  swresample
-  avformat
-  swscale
-  avcodec
-  avfilter
-  avutil
-)
 
 set(VPX_DIR "${LIBVPX_DIR}/${ANDROID_ABI}")
 set(VPX_LIB_PATH "${VPX_DIR}/lib/libvpx.a")
@@ -152,7 +141,6 @@ foreach(FFMPEG_LIB IN LISTS FFMPEG_LIBS)
     set_target_properties(${FFMPEG_LIB} PROPERTIES IMPORTED_LOCATION "${FFMPEG_LIB_PATH}")
     target_include_directories(${FFMPEG_LIB} INTERFACE
       "${FFMPEG_INCLUDE_DIR}"
-      "${FFMPEG_SRC_DIR}"
     )
   else()
     message(WARNING "./gradlew buildFFmpeg was not run yet, missing ${FFMPEG_LIB}")

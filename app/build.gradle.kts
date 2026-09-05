@@ -476,7 +476,8 @@ android {
 
   flavorDimensions += arrayOf("SDK", "ABI")
   androidComponents.disableRudimentaryVariants { sdkVariant, abiVariant ->
-    maxOf(sdkVariant.minSdk, abiVariant.minSdk) >= ndkMinSdkVersion
+    maxOf(sdkVariant.minSdk, abiVariant.minSdk) >= ndkMinSdkVersion &&
+    (sdkVariant.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
   }
   productFlavors {
     Sdk.VARIANTS.forEach { (sdkIndex, variant) ->
@@ -528,7 +529,9 @@ android {
             "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
             "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
             "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}",
-            "-DTGX_FLAVOR=${variant.flavor}"
+            "-DTGX_FLAVOR=${variant.flavor}",
+            "-DTGX_ROOT_DIR=${project.isolated.rootProject.projectDirectory.asFile.absolutePath}",
+            "-DFFMPEG_LIBS=${Config.FFMPEG_LIBS.joinToString(";")}"
           )
 
           val dirs = mapOf(
@@ -602,7 +605,7 @@ android {
     }
 
     Abi.VARIANTS.filter { (abiIndex, variant) ->
-      generateBaselineProfile || !variant.isTestingLab
+      (generateBaselineProfile || !variant.isTestingLab)
     }.forEach { (abiIndex, variant) ->
       create(variant.flavor) {
         dimension = "ABI"
@@ -615,12 +618,7 @@ android {
           buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", abiIndex == subAbiIndex)
         }
 
-        ndkVersion = if (variant.is64Bit) {
-          config.build.primaryNdkVersion
-        } else {
-          config.build.legacyNdkVersion
-        }
-        // ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
+        ndkVersion = appliedNdkVersion
         buildConfigString("NDK_VERSION", ndkVersion)
         buildConfigBool("WEBP_ENABLED", true) // variant.minSdk < 19
         if (ndk.abiFilters.isNotEmpty())
@@ -649,10 +647,12 @@ android {
       val (abi, abiVariant) = Abi.VARIANTS.entries.first { it.value.flavor == abiFlavor }
       val (sdk, sdkVariant) = Sdk.VARIANTS.entries.first { it.value.flavor == sdkFlavor }
 
-      variant.lifecycleTasks.registerPreBuild(
+      val nativeBuildTasks = mutableListOf<TaskProvider<out Task>>()
+
+      nativeBuildTasks.addAll(arrayOf(
         patchJetpackMediaTasks[sdkVariant.jetpackMediaFlavor]!!,
         patchOpusTask
-      )
+      ))
 
       abiVariant.filters.filter {
         sdkVariant.minSdk >= 21 || it == "armeabi-v7a" || it == "x86"
@@ -661,8 +661,29 @@ android {
       }.forEach { key ->
         val buildLibvpxTask = buildLibvpxTasks[key] ?: error("libvpx task not found for $key")
         val buildFfmpegTask = buildFfmpegTasks[key] ?: error("ffmpeg task not found for $key")
-        variant.lifecycleTasks.registerPreBuild(buildLibvpxTask, buildFfmpegTask)
+        nativeBuildTasks += buildLibvpxTask
+        nativeBuildTasks += buildFfmpegTask
       }
+
+      val buildNativeTask = tasks.register<ValidateNativeBuildTask>("buildNativeDependencies${variant.name.uppercaseFirstChar()}") {
+        group = "Setup"
+        description = "Builds native dependencies for ${sdkVariant.flavor}, $abiVariant flavor and validates output"
+        abiFilters.set(abiVariant.filters.toSet())
+        jetpackMediaDir.set(layout.buildDirectory.dir(
+          "generated/tgx/androidx-media/${sdkVariant.jetpackMediaFlavor}"
+        ))
+        opusDir.set(layout.buildDirectory.dir(
+          "generated/tgx/opus"
+        ))
+        libvpxDir.set(layout.buildDirectory.dir(
+          "generated/tgx/libvpx/${sdkVariant.flavor}"
+        ))
+        ffmpegDir.set(layout.buildDirectory.dir(
+          "generated/tgx/ffmpeg/${sdkVariant.flavor}"
+        ))
+        dependsOn(*nativeBuildTasks.toTypedArray())
+      }
+      variant.lifecycleTasks.registerPreBuild(buildNativeTask)
 
       variant.sources.res?.apply {
         addGeneratedSourceDirectory(
@@ -744,7 +765,7 @@ android {
         libs.google.recaptcha.lollipop,
         libs.google.recaptcha.marshmallow,
         libs.google.recaptcha.latest
-      )!!.get().version!!
+      ).get().version!!
       require(recaptchaVersion.isNotEmpty() && recaptchaVersion.matches(Regex("^[0-9.]+$"))) {
         "Invalid ReCaptcha version: $recaptchaVersion"
       }

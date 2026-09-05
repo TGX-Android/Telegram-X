@@ -27,6 +27,15 @@ object Config {
     "decoder_opus",
     "decoder_vp9"
   )
+
+  val FFMPEG_LIBS = arrayOf(
+    "swresample",
+    "avformat",
+    "swscale",
+    "avcodec",
+    "avfilter",
+    "avutil"
+  )
   val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
 }
 
@@ -190,6 +199,9 @@ data class SdkVariant(
 
   val jetpackMediaFlavor: String =
     flavor.takeIf { !isMarshmallow } ?: "latest"
+
+  val usesLegacyNdk: Boolean =
+    isLegacy
 }
 
 object Sdk {
