@@ -802,11 +802,12 @@ public class U {
           long streamId = HlsVideo.extractStreamId(uri);
           TdApi.AlternativeVideo alternativeVideo = hlsVideo.findVideoByStreamId(streamId);
           format = format.buildUpon()
-            .setCodecs(alternativeVideo.codec)
+            .setCodecs(HlsVideo.toRfc6381CodecString(alternativeVideo.codec))
             .setWidth(alternativeVideo.width)
             .setHeight(alternativeVideo.height)
             .setContainerMimeType(MimeTypes.VIDEO_MP4)
             .setCryptoType(C.CRYPTO_TYPE_UNSUPPORTED)
+            .setSampleMimeType(HlsVideo.toSampleMimeType(alternativeVideo.codec))
             .build();
           if (!timestampAdjuster.isInitialized()) {
             try {
