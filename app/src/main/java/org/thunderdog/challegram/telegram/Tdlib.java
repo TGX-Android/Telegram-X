@@ -1821,7 +1821,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public void runOnTdlibThread (@NonNull Runnable runnable, double timeoutSeconds, boolean acquireReference) {
     if (acquireReference) {
-      incrementJobReferenceCount(JOB_ID_RUNNABLE + "_" + Log.toString(Log.generateException(1)));
+      String id;
+      if (Config.DEBUG_TDLIB_REFERENCES) {
+        id = JOB_ID_RUNNABLE + "_" + Log.toString(Log.generateException(2));
+      } else {
+        id = JOB_ID_RUNNABLE;
+      }
+      incrementJobReferenceCount(id);
     }
     clientHolder().runOnTdlibThread(() -> {
       runnable.run();

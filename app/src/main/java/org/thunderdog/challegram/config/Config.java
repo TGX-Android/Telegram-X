@@ -68,6 +68,8 @@ public class Config {
 
   public static final boolean ENABLE_DELETE_CALL_HISTORY = BuildConfig.DEBUG;
 
+  public static final boolean DEBUG_TDLIB_REFERENCES = false;
+
   private static Boolean hasWebpSupport;
   public static boolean useBundledWebp () {
     if (BuildConfig.WEBP_ENABLED) {
