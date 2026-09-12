@@ -166,7 +166,9 @@ val patchOpusTask = tasks.register<PatchOpusTask>(
   ))
 }
 
-val buildLibvpxTasks = Sdk.VARIANTS.values.flatMap { sdkVariant ->
+val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
+  (it.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
+}.flatMap { sdkVariant ->
   val abiVariants = if (sdkVariant.minSdk >= 21) {
     arrayOf("arm64", "arm32", "x86", "x64")
   } else {
@@ -215,7 +217,9 @@ val buildLibvpxTask = tasks.register("buildLibvpx") {
   dependsOn(buildLibvpxTasks.values)
 }
 
-val buildFfmpegTasks = Sdk.VARIANTS.values.flatMap { sdkVariant ->
+val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
+  (it.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
+}.flatMap { sdkVariant ->
   val abiVariants = if (sdkVariant.minSdk >= 21) {
     arrayOf("arm64", "arm32", "x86", "x64")
   } else {
@@ -871,8 +875,11 @@ if (generateBaselineProfile) {
 
 afterEvaluate {
   tasks.withType<ExternalNativeBuildTask>().configureEach {
-    val variantName = variantName.replace(Regex("(Release|Debug)$", RegexOption.IGNORE_CASE), "")
-    val buildNativeTask = buildNativeTasks[variantName]!!
+    val variantName = variantName.replace(Regex("(Benchmark)?(NonMinified)?(Release|Debug)$", RegexOption.IGNORE_CASE), "")
+    val buildNativeTask = buildNativeTasks[variantName]
+    require(buildNativeTask != null) {
+      "Could not find buildNativeTask for $variantName (${this.variantName})"
+    }
     dependsOn(buildNativeTask)
   }
 }
