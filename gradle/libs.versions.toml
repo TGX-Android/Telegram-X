@@ -58,7 +58,7 @@ androidx-viewpager-latest = "1.1.0"
 androidx-browser-latest = "1.10.0"
 androidx-exifinterface-latest = "1.4.2"
 androidx-camera-latest = "1.6.2"
-androidx-media-latest = "1.11.0"
+androidx-media-latest = "1.11.1"
 androidx-tracing-latest = "2.0.1"
 
 firebase-messaging-latest = "25.1.2"
