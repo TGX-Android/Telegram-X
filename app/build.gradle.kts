@@ -4,7 +4,6 @@ import androidx.baselineprofile.gradle.consumer.BaselineProfileConsumerExtension
 import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.impl.VariantOutputImpl
-import com.android.build.gradle.tasks.ExternalNativeBuildJsonTask
 import com.android.build.gradle.tasks.ExternalNativeBuildTask
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
