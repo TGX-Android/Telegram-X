@@ -93,6 +93,7 @@ data class TdlibOptions(
   @JvmField var subscriptionStarCountMin: Long = 10000L,
   @JvmField var subscriptionStarCountMax: Long = 10000L,
   @JvmField var directChannelMessageStarCountDefault: Long = 10L,
+  @JvmField var welcomeMessageCountMax: Int = 3,
 
   @JvmField var affiliateProgramCommissionPerMilleMin: Long = 1L,
   @JvmField var affiliateProgramCommissionPerMilleMax: Long = 800L,
@@ -140,6 +141,8 @@ data class TdlibOptions(
   @JvmField var canAcceptCalls: Boolean = false,
   @JvmField var callsEnabled: Boolean = true,
 
+  @JvmField var showMessageEditDateByDefault: Boolean = true,
+
   @JvmField var pendingTextMessagePeriod: Int = 30,
 
   @JvmField var groupCallParticipantCountMax: Int = 200,
@@ -182,7 +185,7 @@ data class TdlibOptions(
   @JvmField var textCompositionStyleExampleCount: Int = 3,
   @JvmField var textCompositionStylePromptLengthMax: Int = 1024,
   @JvmField var textCompositionStyleTitleLengthMax: Int = 12,
-  @JvmField var addedTextCompositionStyleMax: Int = 5,
+  @JvmField var addedTextCompositionStyleCountMax: Int = 5,
 
   @JvmField var pollAnswerCountMax: Int = 12,
   @JvmField var pollOpenPeriodMax: Int = 2628000,
@@ -196,6 +199,9 @@ data class TdlibOptions(
 
   @JvmField var basicGroupSizeMax: Int = 200,
   @JvmField var supergroupSizeMax: Int = 200000,
+
+  @JvmField var communityChatCountMax: Int = 100,
+  @JvmField var communityBotCountMax: Int = 100,
 
   @JvmField var pinnedChatCountMax: Int = 5,
   @JvmField var pinnedArchivedChatCountMax: Int = 100,
@@ -285,6 +291,9 @@ data class TdlibOptions(
 
       "expect_blocking" ->
         expectBlocking = value.boolValue()
+
+      "show_message_edit_date_by_default" ->
+        showMessageEditDateByDefault = value.boolValue()
 
       "can_ignore_sensitive_content_restrictions" ->
         canIgnoreSensitiveContentRestrictions = value.boolValue()
@@ -391,7 +400,9 @@ data class TdlibOptions(
       "subscription_star_count_max" ->
         subscriptionStarCountMax = value.longValue()
       "direct_channel_message_star_count_default" ->
-        directChannelMessageStarCountDefault = value.longValue() /*10*/
+        directChannelMessageStarCountDefault = value.longValue()
+      "welcome_message_count_max" ->
+        welcomeMessageCountMax = value.intValue()
 
       "affiliate_program_commission_per_mille_min" ->
         affiliateProgramCommissionPerMilleMin = value.longValue()
@@ -546,8 +557,8 @@ data class TdlibOptions(
         textCompositionStylePromptLengthMax = value.intValue()
       "text_composition_style_title_length_max" ->
         textCompositionStyleTitleLengthMax = value.intValue()
-      "added_text_composition_style_max" ->
-        addedTextCompositionStyleMax = value.intValue()
+      "added_text_composition_style_count_max" ->
+        addedTextCompositionStyleCountMax = value.intValue()
 
       "poll_answer_count_max" ->
         pollAnswerCountMax = value.intValue()
@@ -570,6 +581,11 @@ data class TdlibOptions(
         basicGroupSizeMax = value.intValue()
       "supergroup_size_max" ->
         supergroupSizeMax = value.intValue()
+
+      "community_chat_count_max" ->
+        communityChatCountMax = value.intValue()
+      "community_bot_count_max" ->
+        communityBotCountMax = value.intValue()
 
       "pinned_chat_count_max" ->
         pinnedChatCountMax = value.intValue()
@@ -765,7 +781,6 @@ data class TdlibOptions(
       }
 
       "community_peers_limit",
-      "community_bot_peers_limit", // will be handled by TDLib
       "ios_disable_parallel_channel_reset",
       "small_queue_max_active_operations_count",
       "large_queue_max_active_operations_count",
