@@ -705,9 +705,19 @@ public class U {
     final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
     final MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
     final AnalyticsCollector analyticsCollector;
-    if (BuildConfig.DEBUG) {
+    if (Log.getLogLevel() > Log.LEVEL_ASSERT) {
       analyticsCollector = new DefaultAnalyticsCollector(Clock.DEFAULT);
-      analyticsCollector.addListener(new EventLogger("ExoPlayerImpl"));
+      analyticsCollector.addListener(new EventLogger("Client") {
+        @Override
+        protected void logd (@NonNull String msg) {
+          Log.d("[media3:Client]: %s", msg);
+        }
+
+        @Override
+        protected void loge (@NonNull String msg) {
+          Log.e("[media3:Client]: %s", msg);
+        }
+      });
     } else {
       analyticsCollector = null;
     }

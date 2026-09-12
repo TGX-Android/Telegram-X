@@ -454,6 +454,28 @@ public class Log {
       setLogTagsImpl(tags);
       setThirdPartyLogLevels(level);
 
+      androidx.media3.common.util.Log.setLogger(new androidx.media3.common.util.Log.Logger() {
+        @Override
+        public void i (@NonNull String tag, @NonNull String message, @Nullable Throwable throwable) {
+          Log.i("[media3:%s]: %s", throwable, tag, message);
+        }
+
+        @Override
+        public void d (@NonNull String tag, @NonNull String message, @Nullable Throwable throwable) {
+          Log.d("[media3:%s]: %s", throwable, tag, message);
+        }
+
+        @Override
+        public void w (@NonNull String tag, @NonNull String message, @Nullable Throwable throwable) {
+          Log.w("[media3:%s]: %s", throwable, tag, message);
+        }
+
+        @Override
+        public void e (@NonNull String tag, @NonNull String message, @Nullable Throwable throwable) {
+          Log.e("[media3:%s]: %s", throwable, tag, message);
+        }
+      });
+
       loaded = true;
     }
   }
