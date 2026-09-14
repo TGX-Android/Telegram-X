@@ -833,9 +833,9 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   }
 
   private boolean hasValidNumber () {
-    CharSequence code = codeView.getText();
-    CharSequence number = numberView.getText();
-    return code.length() > 0 && number.length() > 0;
+    CharSequence code = codeView != null ? codeView.getText() : "";
+    CharSequence number = numberView != null ? numberView.getText() : "";
+    return !StringUtils.isEmpty(code) && !StringUtils.isEmpty(number);
   }
 
   private boolean hasValidFirstName () {
@@ -1295,7 +1295,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   private boolean oneShot;
 
   public void onAuthorizationReady () {
-    if (UI.inTestMode() && recyclerView != null) {
+    if (UI.inTestMode() && recyclerView != null && isFocused()) {
       makeRequest();
     }
   }
