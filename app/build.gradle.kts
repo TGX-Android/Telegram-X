@@ -322,7 +322,6 @@ android {
     resValue("string", "content_authority", "${config.applicationId}.sync.provider")
 
     buildConfigString("PROJECT_NAME", config.applicationName)
-    buildConfigBool("SHARED_STL", ndkVersion.ndkVersionMajor() >= 27)
     buildConfigString("SAFETYNET_API_KEY", config.safetyNetToken)
 
     buildConfigString("DOWNLOAD_URL", config.appDownloadUrl)
@@ -628,7 +627,8 @@ android {
 
         ndkVersion = appliedNdkVersion
         buildConfigString("NDK_VERSION", ndkVersion)
-        buildConfigBool("WEBP_ENABLED", true) // variant.minSdk < 19
+        buildConfigBool("SHARED_STL", ndkVersion.ndkVersionMajor() >= 27)
+        buildConfigBool("WEBP_ENABLED", true)
         if (ndk.abiFilters.isNotEmpty())
           error(ndk.abiFilters.joinToString())
         ndk.abiFilters.addAll(variant.filters)
