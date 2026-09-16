@@ -26,7 +26,6 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.webrtc.ContextUtils;
@@ -99,8 +98,6 @@ public class VoIP {
   public static boolean isForceDisabled (String version) {
     if (forceDisabledVersions != null) {
       return forceDisabledVersions.contains(version);
-    } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-      return !version.equals(VoIPController.getVersion());
     } else {
       return false;
     }
@@ -308,13 +305,9 @@ public class VoIP {
   }
 
   public static String[] getAvailableVersions (boolean allowFilter) {
-    String tgVoipVersion = VoIPController.getVersion();
     String[] tgCallsVersions = N.getTgCallsVersions();
 
     Set<String> versions = new LinkedHashSet<>();
-    if (!allowFilter || !isForceDisabled(tgVoipVersion)) {
-      versions.add(tgVoipVersion);
-    }
     Set<String> restrictedTgCallsVersions = new LinkedHashSet<>() {{
       add("11.0.0");
     }};
@@ -325,18 +318,18 @@ public class VoIP {
         versions.add(tgCallsVersion);
       }
     }
-    if (versions.isEmpty()) {
-      versions.add(tgVoipVersion);
-    }
     return versions.toArray(new String[0]);
   }
+
+  public static final int CONNECTION_MIN_LAYER = 65;
+  public static final int CONNECTION_MAX_LAYER = 92;
 
   public static TdApi.CallProtocol getProtocol () {
     return new TdApi.CallProtocol(
       true,
       true,
-      Config.VOIP_CONNECTION_MIN_LAYER,
-      VoIPController.getConnectionMaxLayer(),
+      CONNECTION_MIN_LAYER,
+      CONNECTION_MAX_LAYER,
       getAvailableVersions(true)
    );
   }
@@ -355,7 +348,6 @@ public class VoIP {
   public static void initialize (Context context) {
     ContextUtils.initialize(context);
     int bufferSize = getNativeBufferSize(context);
-    VoIPController.setNativeBufferSize(bufferSize);
   }
 
   public static VoIPInstance instantiateAndConnect (
@@ -370,7 +362,6 @@ public class VoIP {
     int echoCancellationStrength,
     boolean isMicDisabled
   ) throws IllegalArgumentException {
-    final String libtgvoipVersion = VoIPController.getVersion();
     final String[] tgCallsVersions = N.getTgCallsVersions();
 
     final VoIPLogs.Pair logFiles = VoIPLogs.getNewFile(true);
@@ -419,15 +410,7 @@ public class VoIP {
       if (StringUtils.isEmpty(version)) {
         continue;
       }
-      if (version.equals(libtgvoipVersion) && (Config.FORCE_DIRECT_TGVOIP || !ArrayUtils.contains(tgCallsVersions, version) || isForceDisabled(version))) {
-        tgcalls = new VoIPController(
-          tdlib,
-          call,
-          configuration,
-          options,
-          connectionStateListener
-        );
-      } else if (ArrayUtils.contains(tgCallsVersions, version)) {
+      if (ArrayUtils.contains(tgCallsVersions, version)) {
         try {
           tgcalls = new TgCallsController(
             tdlib,

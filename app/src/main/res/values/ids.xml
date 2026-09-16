@@ -1023,7 +1023,6 @@
   <item type="id" name="btn_test_crashDirect" />
   <item type="id" name="btn_test_crash3" />
   <item type="id" name="btn_test_crash4" />
-  <item type="id" name="btn_test_crashDirectNative" />
 
   <item type="id" name="btn_launchApp" />
   <item type="id" name="btn_update" />
