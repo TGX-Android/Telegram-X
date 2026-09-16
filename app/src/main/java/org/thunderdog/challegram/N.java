@@ -27,8 +27,6 @@ import androidx.media3.decoder.opus.OpusLibrary;
 import androidx.media3.decoder.vp9.VpxLibrary;
 
 import org.thunderdog.challegram.config.Config;
-import org.webrtc.SoftwareVideoEncoderFactory;
-import org.webrtc.VideoCodecInfo;
 
 import java.nio.ByteBuffer;
 import java.util.Locale;
@@ -136,6 +134,8 @@ public final class N {
   }
 
   public native static void onFatalError (String msg, int cause);
+
+  // Unavailable in legacy flavor
   public static native String[] getTgCallsVersions ();
   public static native String toHexString (byte[] array);
 
@@ -163,9 +163,10 @@ public final class N {
           OpusLibrary.getVersion(),
           VpxLibrary.getVersion(),
           FfmpegLibrary.getVersion(),
-          TextUtils.join("+", N.getTgCallsVersions())
+          BuildConfig.CALLS_AVAILABLE ?
+            TextUtils.join("+", N.getTgCallsVersions()) :
+            "disabled"
         ));
-        VideoCodecInfo[] softwareVideoCodecs = new SoftwareVideoEncoderFactory().getSupportedCodecs();
       }
     }
   }

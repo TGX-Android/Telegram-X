@@ -22,7 +22,11 @@ set(THIRDPARTY_DIR "${PROJECT_SOURCE_DIR}/third_party")
 set(TDLIB_DIR "${TGX_ROOT_DIR}/tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
-set(ENABLE_TGVOIP yes)
+if(${TGX_FLAVOR} STREQUAL "legacy")
+  set(ENABLE_TGVOIP no)
+else()
+  set(ENABLE_TGVOIP yes)
+endif()
 
 # Using webp only if building for 32-bit platform
 #if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "x86")

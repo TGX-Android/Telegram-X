@@ -22,8 +22,8 @@ import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.TestAndroidComponentsExtension
 import org.gradle.api.Action
 import org.gradle.api.artifacts.ExternalModuleDependency
-import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderConvertible
 import org.gradle.kotlin.dsl.DependencyHandlerScope
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import org.gradle.util.internal.VersionNumber
@@ -45,14 +45,14 @@ fun VariantDimension.buildConfigString (name: String, value: String?) =
   this.buildConfigField("String", name, value?.wrapInDoubleQuotes() ?: "null")
 
 fun DependencyHandlerScope.legacyImplementation(
-  dependency: Provider<MinimalExternalModuleDependency>,
+  dependency: Any,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation("legacy", dependency, dependencyConfiguration)
 
 fun DependencyHandlerScope.sinceLollipopImplementation(
-  sinceLollipop: Provider<MinimalExternalModuleDependency>,
-  sinceMarshmallow: Provider<MinimalExternalModuleDependency>? = null,
+  sinceLollipop: Any,
+  sinceMarshmallow: Any? = null,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation(null,
@@ -63,14 +63,14 @@ fun DependencyHandlerScope.sinceLollipopImplementation(
   )
 
 fun DependencyHandlerScope.lollipopImplementation(
-  dependency: Provider<MinimalExternalModuleDependency>,
+  dependency: Any,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation("lollipop", dependency, dependencyConfiguration)
 
 fun DependencyHandlerScope.sinceMarshmallowImplementation(
-  sinceMarshmallow: Provider<MinimalExternalModuleDependency>,
-  sinceNougat: Provider<MinimalExternalModuleDependency>? = null,
+  sinceMarshmallow: Any,
+  sinceNougat: Any? = null,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation(
@@ -82,7 +82,7 @@ fun DependencyHandlerScope.sinceMarshmallowImplementation(
   )
 
 fun DependencyHandlerScope.preMarshmallowImplementation(
-  legacyAndLollipop: Provider<MinimalExternalModuleDependency>,
+  legacyAndLollipop: Any,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation(
@@ -94,7 +94,7 @@ fun DependencyHandlerScope.preMarshmallowImplementation(
   )
 
 fun DependencyHandlerScope.sinceNougatImplementation(
-  sinceNougat: Provider<MinimalExternalModuleDependency>,
+  sinceNougat: Any,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation(
@@ -158,13 +158,27 @@ fun <T> selectAbiFlavor(
 
 private fun DependencyHandlerScope.flavorImplementation(
   flavor: String,
-  dependency: Provider<MinimalExternalModuleDependency>?,
+  dependency: Any?,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) {
   if (dependency != null) {
     if (dependencyConfiguration != null) {
-      "${flavor}Implementation"(dependency) {
-        dependencyConfiguration.execute(this)
+      when (dependency) {
+        is String ->
+          "${flavor}Implementation"(dependency) {
+            dependencyConfiguration.execute(this)
+          }
+        is Provider<*> ->
+          "${flavor}Implementation"(dependency) {
+            dependencyConfiguration.execute(this)
+          }
+        is ProviderConvertible<*> ->
+          "${flavor}Implementation"(dependency) {
+            dependencyConfiguration.execute(this)
+          }
+        else -> {
+          error("Unknown type: $dependency of ${dependency.javaClass}")
+        }
       }
     } else {
       "${flavor}Implementation"(dependency)
@@ -173,8 +187,8 @@ private fun DependencyHandlerScope.flavorImplementation(
 }
 
 fun DependencyHandlerScope.flavorImplementation(
-  legacy: Provider<MinimalExternalModuleDependency>?,
-  sinceLollipop: Provider<MinimalExternalModuleDependency>?,
+  legacy: Any?,
+  sinceLollipop: Any?,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation(
@@ -186,9 +200,9 @@ fun DependencyHandlerScope.flavorImplementation(
   )
 
 fun DependencyHandlerScope.flavorImplementation(
-  legacy: Provider<MinimalExternalModuleDependency>?,
-  lollipop: Provider<MinimalExternalModuleDependency>?,
-  sinceMarshmallow: Provider<MinimalExternalModuleDependency>?,
+  legacy: Any?,
+  lollipop: Any?,
+  sinceMarshmallow: Any?,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) =
   this.flavorImplementation(
@@ -200,10 +214,10 @@ fun DependencyHandlerScope.flavorImplementation(
   )
 
 fun DependencyHandlerScope.flavorImplementation(
-  legacy: Provider<MinimalExternalModuleDependency>?,
-  lollipop: Provider<MinimalExternalModuleDependency>?,
-  marshmallow: Provider<MinimalExternalModuleDependency>?,
-  latest: Provider<MinimalExternalModuleDependency>?,
+  legacy: Any?,
+  lollipop: Any?,
+  marshmallow: Any?,
+  latest: Any?,
   dependencyConfiguration: Action<ExternalModuleDependency>? = null
 ) {
   Sdk.VARIANTS.values.forEach { sdkVariant ->

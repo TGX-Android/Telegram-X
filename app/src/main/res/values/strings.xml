@@ -1694,7 +1694,8 @@
   <string name="CropSquare">Square</string>
   <string name="Wallpaper">Wallpaper</string>
   <string name="ChatPreview">Chat preview</string>
-  <string name="AndroidVersionWarning">Sorry, this feature is available yet only on Android %1$s (%2$s) or higher</string>
+  <string name="AndroidVersionWarning">Sorry, this feature is available only on Android %1$s (%2$s) or higher</string>
+  <string name="AndroidVersionWarningTitle">Unsupported Android version</string>
   <string name="RemoveStickerSet">Remove sticker set %1$s?</string>
   <string name="RemoveEmojiSet">Remove emoji pack %1$s?</string>
   <string name="RemoveStickerSetAction">Remove</string>

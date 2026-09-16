@@ -15,6 +15,7 @@ import com.google.android.recaptcha.Recaptcha
 import com.google.android.recaptcha.RecaptchaTasksClient
 import org.thunderdog.challegram.R
 import org.thunderdog.challegram.widget.SwirlView
+import org.webrtc.ContextUtils;
 
 typealias Barcode = com.google.mlkit.vision.barcode.common.Barcode
 
@@ -85,4 +86,8 @@ fun getSwirlDrawable(
         R.drawable.swirl_error
     }
   }
+}
+
+fun initializeWebRTC(context: Context) {
+  ContextUtils.initialize(context);
 }

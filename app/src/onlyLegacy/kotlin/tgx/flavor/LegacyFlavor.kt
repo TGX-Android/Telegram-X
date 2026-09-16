@@ -50,3 +50,5 @@ fun getSwirlDrawable(
   animate: Boolean
 ): Int =
   0
+
+fun initializeWebRTC(context: Context) { }

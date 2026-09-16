@@ -56,7 +56,9 @@ fun loadLibraries() {
     loadLibrary(reLinker, "sslx", BuildConfig.OPENSSL_VERSION_FULL)
     loadLibrary(reLinker, "tdjni", BuildConfig.TDLIB_VERSION)
     loadLibrary(reLinker, "leveldbjni", BuildConfig.LEVELDB_VERSION)
-    loadLibrary(reLinker, "tgcallsjni", BuildConfig.JNI_VERSION)
+    if (BuildConfig.CALLS_AVAILABLE) {
+      loadLibrary(reLinker, "tgcallsjni", BuildConfig.JNI_VERSION)
+    }
     loadLibrary(reLinker, "tgxjni", BuildConfig.JNI_VERSION)
     N.setupLibraries()
   } catch (t: Throwable) {

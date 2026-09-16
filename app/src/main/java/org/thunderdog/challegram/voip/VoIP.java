@@ -24,11 +24,11 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
-import org.webrtc.ContextUtils;
 
 import java.io.File;
 import java.lang.annotation.Retention;
@@ -43,6 +43,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Filter;
+import tgx.flavor.Flavor;
 import tgx.td.Td;
 
 public class VoIP {
@@ -197,7 +198,7 @@ public class VoIP {
   }
 
   private static void validateModifiedCallServer (TdApi.CallServer server) {
-    if (server.type.getConstructor() == TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR) {
+    if (BuildConfig.CALLS_AVAILABLE && server.type.getConstructor() == TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR) {
       TdApi.CallServerTypeTelegramReflector telegramReflector = (TdApi.CallServerTypeTelegramReflector) server.type;
       String myHex = N.toHexString(telegramReflector.peerTag);
       String validHex = toHexString(telegramReflector.peerTag);
@@ -305,7 +306,12 @@ public class VoIP {
   }
 
   public static String[] getAvailableVersions (boolean allowFilter) {
-    String[] tgCallsVersions = N.getTgCallsVersions();
+    String[] tgCallsVersions;
+    if (BuildConfig.CALLS_AVAILABLE) {
+      tgCallsVersions = N.getTgCallsVersions();
+    } else {
+      tgCallsVersions = new String[0];
+    }
 
     Set<String> versions = new LinkedHashSet<>();
     Set<String> restrictedTgCallsVersions = new LinkedHashSet<>() {{
@@ -346,7 +352,7 @@ public class VoIP {
   }
 
   public static void initialize (Context context) {
-    ContextUtils.initialize(context);
+    Flavor.initializeWebRTC(context);
     int bufferSize = getNativeBufferSize(context);
   }
 
@@ -362,7 +368,12 @@ public class VoIP {
     int echoCancellationStrength,
     boolean isMicDisabled
   ) throws IllegalArgumentException {
-    final String[] tgCallsVersions = N.getTgCallsVersions();
+    final String[] tgCallsVersions;
+    if (BuildConfig.CALLS_AVAILABLE) {
+      tgCallsVersions = N.getTgCallsVersions();
+    } else {
+      tgCallsVersions = new String[0];
+    }
 
     final VoIPLogs.Pair logFiles = VoIPLogs.getNewFile(true);
     tdlib.storeCallLogInformation(call, logFiles);

@@ -22,7 +22,9 @@ fun loadLibraries() {
   loadLibrary("sslx")
   loadLibrary("tdjni")
   loadLibrary("leveldbjni")
-  loadLibrary("tgcallsjni")
+  if (BuildConfig.CALLS_AVAILABLE) {
+    loadLibrary("tgcallsjni")
+  }
   loadLibrary("tgxjni")
   trace("setup") {
     N.setupLibraries()

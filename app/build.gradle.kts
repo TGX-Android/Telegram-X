@@ -499,6 +499,8 @@ android {
           buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", sdkIndex == subSdkIndex)
         }
 
+        buildConfigBool("CALLS_AVAILABLE", !variant.isLegacy)
+
         val selectedMinSdk = maxOf(
           variant.minSdk,
           Config.MIN_SDK_VERSION_HUAWEI.takeIf { config.isHuaweiBuild } ?: 0,
@@ -525,7 +527,10 @@ android {
           "-finline-functions"
         )
         externalNativeBuild.cmake {
-          targets += arrayOf("tgxjni", "tgcallsjni")
+          targets += "tgxjni"
+          if (!variant.isLegacy) {
+            targets += "tgcallsjni"
+          }
           arguments(
             "-DANDROID_PLATFORM=android-${selectedMinSdk}",
             "-DANDROID_STL=${if (appliedNdkVersion.ndkVersionMajor() >= 27) "c++_shared" else "c++_static"}",
@@ -895,7 +900,7 @@ dependencies {
   implementation(project(":extension:${config.extension}"))
   // TDLib: https://github.com/tdlib/td/blob/master/CHANGELOG.md
   implementation(project(":tdlib"))
-  implementation(project(":tgcalls"))
+  sinceLollipopImplementation(project(":tgcalls"))
   implementation(project(":vkryl:core"))
   implementation(project(":vkryl:leveldb"))
   implementation(project(":vkryl:android"))
