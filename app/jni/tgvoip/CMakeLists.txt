@@ -20,8 +20,6 @@ include("${PROJECT_SOURCE_DIR}/BuildJson11.cmake")
 include("${PROJECT_SOURCE_DIR}/BuildRNNoise.cmake")
 # webrtc
 include("${PROJECT_SOURCE_DIR}/BuildWebRTC.cmake")
-# libtgvoip
-include("${PROJECT_SOURCE_DIR}/BuildTelegramVoIP.cmake")
 # tgcalls
 include("${PROJECT_SOURCE_DIR}/BuildTgCalls.cmake")
 

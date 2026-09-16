@@ -7,11 +7,6 @@
 	path = app/jni/third_party/libyuv
 	url = https://chromium.googlesource.com/libyuv/libyuv
 	shallow = true
-[submodule "libtgvoip"]
-	path = app/jni/tgvoip/third_party/libtgvoip
-	url = https://github.com/TGX-Android/libtgvoip
-	shallow = true
-	branch = tgx
 [submodule "ffmpeg"]
 	path = app/jni/third_party/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg

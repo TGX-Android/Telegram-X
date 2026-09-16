@@ -11,8 +11,6 @@ set(TGCALLS_DIR "${TGCALLS_DEPS_DIR}/tgcalls")
 add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/utils/gzip.cpp"
 
-  "${TGCALLS_DIR}/tgcalls/legacy/InstanceImplLegacy.cpp"
-
   "${TGCALLS_DIR}/tgcalls/desktop_capturer/DesktopCaptureSourceManager.cpp"
   "${TGCALLS_DIR}/tgcalls/desktop_capturer/DesktopCaptureSourceHelper.cpp"
   "${TGCALLS_DIR}/tgcalls/desktop_capturer/DesktopCaptureSource.cpp"
@@ -93,8 +91,6 @@ target_link_libraries(tgcalls PRIVATE
   rnnoise
   json11
   z
-)
-
-target_link_libraries(tgcalls PUBLIC
-  tgvoip
+  absl
+  webrtc
 )

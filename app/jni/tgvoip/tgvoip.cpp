@@ -16,9 +16,6 @@
 #include <jni_utils.h>
 #include "bridge.h"
 
-#include <VoIPController.h>
-#include <client/android/tg_voip_jni.h>
-
 #ifndef DISABLE_TGCALLS
 #include <modules/utility/include/jvm_android.h>
 #include <sdk/android/native_api/video/wrapper.h>
@@ -26,9 +23,6 @@
 #include <rtc_base/ssl_adapter.h>
 #include <webrtc/media/base/media_constants.h>
 
-#include <os/android/JNIUtilities.h>
-
-#include <tgcalls/legacy/InstanceImplLegacy.h>
 #include <tgcalls/InstanceImpl.h>
 #include <tgcalls/v2/InstanceV2Impl.h>
 #include <tgcalls/v2/InstanceV2ReferenceImpl.h>
@@ -38,6 +32,7 @@
 #include <platform/android/AndroidContext.h>
 
 #include <utility>
+#include <jni.h>
 
 #else
 
@@ -134,8 +129,6 @@ namespace tgcalls {
 #define REGISTER(impl) if (!Register<impl>()) { \
       jni::throw_new(env, #impl" could not be registered", jni_class::IllegalStateException(env)); \
     }
-    // "2.4.4"
-    REGISTER(InstanceImplLegacy)
     // "2.7.7", "5.0.0"
     REGISTER(InstanceImpl)
     // "7.0.0", "8.0.0", "9.0.0"
@@ -169,6 +162,24 @@ namespace tgcalls {
 
     isInitialized = true;
     return true;
+  }
+}
+
+JavaVM* sharedJVM = nullptr;
+
+void DoWithJNI(std::function<void(JNIEnv*)> f){
+  JNIEnv *env=NULL;
+  bool didAttach=false;
+  sharedJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+  if(!env){
+    sharedJVM->AttachCurrentThread(&env, NULL);
+    didAttach=true;
+  }
+
+  f(env);
+
+  if(didAttach){
+    sharedJVM->DetachCurrentThread();
   }
 }
 
@@ -348,7 +359,7 @@ public:
     // there won't be need in mutex here.
     pthread_mutex_lock(&mutex);
     if (thiz != nullptr) {
-      tgvoip::jni::DoWithJNI(std::move(act));
+      DoWithJNI(std::move(act));
     }
     pthread_mutex_unlock(&mutex);
   }
@@ -771,7 +782,7 @@ JNI_OBJECT_FUNC(void, voip_TgCallsController, destroyInstance, jlong ptr) {
     return;
   }
   context->tgcalls->stop([context](const tgcalls::FinalState& finalState) {
-    tgvoip::jni::DoWithJNI([context, finalState](JNIEnv *env) {
+    DoWithJNI([context, finalState](JNIEnv *env) {
 
       jobject jConfiguration = context->javaController->getObject(env, "configuration", "Lorg/thunderdog/challegram/voip/CallConfiguration;");
       jni::Object configuration (env, jConfiguration, tgcalls::javaCallConfiguration);
@@ -852,11 +863,11 @@ int voipOnJNILoad(JavaVM *vm, JNIEnv *env) {
   tgvoip::VoIPController::crypto.aes_cbc_encrypt = &telegram_aes_cbc_encrypt;
 #endif
 #endif
-  tgvoipRegisterNatives(env);
   return 0;
 }
 
 jint JNI_OnLoad (JavaVM *vm, void *reserved) {
+  sharedJVM = vm;
   JNIEnv *env = 0;
   srand(time(NULL));
 
