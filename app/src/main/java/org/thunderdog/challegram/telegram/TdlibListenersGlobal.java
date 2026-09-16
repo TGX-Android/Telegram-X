@@ -89,6 +89,12 @@ public class TdlibListenersGlobal {
     }
   }
 
+  void notifyUpdateEphemeralMessageContent (Tdlib tdlib, TdApi.UpdateMessageEphemeralContent update) {
+    for (GlobalMessageListener listener : messageListeners) {
+      listener.onEphemeralMessageContentChanged(tdlib, update.chatId, update.messageId, update.ephemeralContent);
+    }
+  }
+
   void notifyUpdateNewMessages (Tdlib tdlib, TdApi.Message[] messages) {
     for (GlobalMessageListener listener : messageListeners) {
       listener.onNewMessages(tdlib, messages);

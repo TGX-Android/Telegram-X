@@ -7581,6 +7581,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   private void updateMessageEphemeralContent (TdApi.UpdateMessageEphemeralContent update) {
     listeners.updateMessageEphemeralContent(update);
+    context.global().notifyUpdateEphemeralMessageContent(this, update);
   }
 
   @TdlibThread
