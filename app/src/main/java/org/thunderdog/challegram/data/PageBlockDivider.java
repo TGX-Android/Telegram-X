@@ -31,8 +31,8 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
 
 public class PageBlockDivider extends PageBlock {
-  public PageBlockDivider (ViewController<?> context, @NonNull TdApi.PageBlock block) {
-    super(context, block);
+  public PageBlockDivider (ViewController<?> context, @NonNull TdApi.PageBlock block, int quoteLevel) {
+    super(context, block, quoteLevel);
   }
 
   @Override

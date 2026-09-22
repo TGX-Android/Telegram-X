@@ -112,7 +112,7 @@ final class MapGoogleController extends MapController<MapView, MapGoogleControll
         bitmap = newBitmap(this, accentColor, letters, avatar);
       } else if (point.isLiveLocation && point.message != null) {
         opts.zIndex(1f);
-        this.isActive = ((TdApi.MessageLocation) point.message.content).expiresIn > 0;
+        this.isActive = ((TdApi.MessageLiveLocation) point.message.content).expiresIn > 0;
         opts.alpha(isActive ? 1f : FINISHED_BROADCAST_ALPHA);
         bitmap = newBitmap(this, point.message);
       }
@@ -225,7 +225,7 @@ final class MapGoogleController extends MapController<MapView, MapGoogleControll
 
     public void setPosition (LocationPoint<MarkerData> point) {
       marker.setPosition(new LatLng(point.latitude, point.longitude));
-      setActive(point.message == null || ((TdApi.MessageLocation) point.message.content).expiresIn > 0);
+      setActive(point.message == null || ((TdApi.MessageLiveLocation) point.message.content).expiresIn > 0);
     }
 
     private boolean isActive = true;

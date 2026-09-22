@@ -25,10 +25,12 @@ import android.os.CancellationSignal;
 import android.os.Looper;
 import android.widget.Toast;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -46,9 +48,12 @@ import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPServerConfig;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
+import me.vkryl.android.SdkVersion;
 import me.vkryl.core.reference.ReferenceList;
 
 public class CallManager implements GlobalCallListener {
@@ -256,15 +261,36 @@ debugCall id:long debug:string = Ok;
 
   private static final boolean CHECK_CONNECTION = true;
 
-  private void showNeedMicAlert (boolean missingHardware) {
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    AlertType.MICROPHONE_HARDWARE_MISSING,
+    AlertType.MICROPHONE_PERMISSION_MISSING
+  })
+  private @interface AlertType {
+    int MICROPHONE_HARDWARE_MISSING = 1,
+        MICROPHONE_PERMISSION_MISSING = 2,
+        ANDROID_VERSION_UNSUPPORTED = 3;
+  }
+
+  private void showAlert (@AlertType int alertType) {
     final Context context = UI.getContext();
     AlertDialog.Builder b;
     b = new AlertDialog.Builder(context, Theme.dialogTheme());
-    b.setTitle(Lang.getString(R.string.MicrophonePermission));
-    if (missingHardware) {
-      b.setMessage(Lang.getString(R.string.MicrophoneMissing));
-    } else {
-      b.setMessage(Lang.getString(R.string.MicrophonePermissionDesc));
+    switch (alertType) {
+      case AlertType.ANDROID_VERSION_UNSUPPORTED -> {
+        b.setTitle(Lang.getString(R.string.AndroidVersionWarningTitle));
+        b.setMessage(Lang.getString(R.string.AndroidVersionWarning, SdkVersion.getPrettyName(Build.VERSION_CODES.LOLLIPOP), SdkVersion.getPrettyVersionCode(Build.VERSION_CODES.LOLLIPOP)));
+      }
+      case AlertType.MICROPHONE_HARDWARE_MISSING -> {
+        b.setTitle(Lang.getString(R.string.MicrophonePermission));
+        b.setMessage(Lang.getString(R.string.MicrophoneMissing));
+      }
+      case AlertType.MICROPHONE_PERMISSION_MISSING -> {
+        b.setTitle(Lang.getString(R.string.MicrophonePermission));
+        b.setMessage(Lang.getString(R.string.MicrophonePermissionDesc));
+      }
+      default ->
+        throw new UnsupportedOperationException(Integer.toString(alertType));
     }
     b.setPositiveButton(Lang.getOK(), (dialog, which) -> dialog.dismiss());
     b.setNeutralButton(Lang.getString(R.string.Settings), (dialog, which) -> {
@@ -303,7 +329,7 @@ debugCall id:long debug:string = Ok;
                 }
               }
             } else {
-              showNeedMicAlert(false);
+              showAlert(AlertType.MICROPHONE_PERMISSION_MISSING);
             }
           });
         } else {
@@ -354,8 +380,12 @@ debugCall id:long debug:string = Ok;
     if (userFull == null) {
       userFull = context.tdlib().cache().userFull(userId);
     }
+    if (!BuildConfig.CALLS_AVAILABLE) {
+      showAlert(AlertType.ANDROID_VERSION_UNSUPPORTED);
+      return;
+    }
     if (!U.deviceHasMicrophone(UI.getAppContext())) {
-      showNeedMicAlert(true);
+      showAlert(AlertType.MICROPHONE_HARDWARE_MISSING);
       return;
     }
     /*final TdApi.Call pendingCall = context.tdlib().cache().getPendingCall();

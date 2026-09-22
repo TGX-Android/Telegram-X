@@ -114,7 +114,7 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
   private String currentQuery;
   private void searchColors (String query) {
     if (!StringUtils.isEmpty(query)) {
-      query = query.trim().toLowerCase();
+      query = query.trim();
     }
     if (StringUtils.isEmpty(query)) {
       query = null;
@@ -466,7 +466,7 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
     String[] names = new String[themeSections.length];
     int i = 0;
     for (int sectionId : themeSections) {
-      names[i] = Lang.getString(getSectionName(sectionId)).toUpperCase();
+      names[i] = Lang.uppercase(Lang.getString(getSectionName(sectionId)));
       i++;
     }
     return names;

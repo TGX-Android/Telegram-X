@@ -312,6 +312,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         }
         break;
       }
+      case TdApi.MessageRichMessage.CONSTRUCTOR: {
+        // TODO extract first big photo
+        return null;
+      }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) message.content;
         return valueOf(tdlib, messagePhoto.photo, size, cornerRadius, messagePhoto.isSecret || messagePhoto.hasSpoiler);
@@ -350,6 +354,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageLocation.CONSTRUCTOR: {
         // map preview
         return valueOf(tdlib, ((TdApi.MessageLocation) message.content).location, null, size, cornerRadius);
+      }
+      case TdApi.MessageLiveLocation.CONSTRUCTOR: {
+        // map preview
+        return valueOf(tdlib, ((TdApi.MessageLiveLocation) message.content).location.location, null, size, cornerRadius);
       }
       case TdApi.MessageVenue.CONSTRUCTOR: {
         // map preview
@@ -415,10 +423,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
           return new MediaPreviewSimple(tdlib, size, cornerRadius, giftedStars.sticker);
         break;
       }
-      case TdApi.MessageGiftedTon.CONSTRUCTOR: {
-        TdApi.MessageGiftedTon giftedTon = (TdApi.MessageGiftedTon) message.content;
-        if (giftedTon.sticker != null)
-          return new MediaPreviewSimple(tdlib, size, cornerRadius, giftedTon.sticker);
+      case TdApi.MessageGiftedGrams.CONSTRUCTOR: {
+        TdApi.MessageGiftedGrams giftedGram = (TdApi.MessageGiftedGrams) message.content;
+        if (giftedGram.sticker != null)
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, giftedGram.sticker);
         break;
       }
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
@@ -456,6 +464,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
       case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
       case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
+      case TdApi.MessageChatJoinFromCommunity.CONSTRUCTOR:
       case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
@@ -513,12 +522,14 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
       case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
       case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
+      case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
+      case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR: {
         // No media preview.
         break;
       }
       default: {
-        Td.assertMessageContent_baa076bf();
+        Td.assertMessageContent_af730a78();
         throw Td.unsupported(message.content);
       }
     }

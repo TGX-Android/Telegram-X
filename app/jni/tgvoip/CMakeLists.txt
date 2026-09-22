@@ -20,8 +20,6 @@ include("${PROJECT_SOURCE_DIR}/BuildJson11.cmake")
 include("${PROJECT_SOURCE_DIR}/BuildRNNoise.cmake")
 # webrtc
 include("${PROJECT_SOURCE_DIR}/BuildWebRTC.cmake")
-# libtgvoip
-include("${PROJECT_SOURCE_DIR}/BuildTelegramVoIP.cmake")
 # tgcalls
 include("${PROJECT_SOURCE_DIR}/BuildTgCalls.cmake")
 
@@ -193,26 +191,10 @@ target_link_libraries(${TGCALLS_LIB}
   cpufeatures
 )
 
-set(TGCALLS_EXCLUDE_LIBS
-  tgvoip/libtgvoip.a
-  tgvoip/libusrsctp.a
-  tgvoip/libsrtp.a
-  tgvoip/libopenh264.a
-  tgvoip/libabsl.a
-  tgvoip/libjson11.a
-  tgvoip/librnnoise.a
-  tgvoip/libwebrtc.a
-  tgvoip/libtgcalls.a
-)
-list(APPEND TGCALLS_EXCLUDE_LIBS
-  libyuv.a
-  libopus.a
-  "${VPX_LIB_PATH}"
-  "${FFMPEG_DIR}/lib/libavcodec.a"
-)
-Join(TGCALLS_EXCLUDE_LIBS "${TGCALLS_EXCLUDE_LIBS}" ",")
-target_link_options(${TGCALLS_LIB} PUBLIC
-  -Wl,--exclude-libs,${TGCALLS_EXCLUDE_LIBS}
+target_link_options(${TGCALLS_LIB} PRIVATE
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-Wl,--gc-sections,--icf=safe>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-Wl,--exclude-libs,ALL>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
 )
 
 if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "x86_64")

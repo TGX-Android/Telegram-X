@@ -40,6 +40,7 @@ public class PieLegendView extends LegendSignatureView {
     }
 
 
+    @SuppressWarnings("SetTextI18n")
     public void setData(String name, int value, int color) {
         signature.setText(name);
         this.value.setText(Integer.toString(value));

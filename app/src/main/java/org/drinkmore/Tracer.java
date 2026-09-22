@@ -201,9 +201,4 @@ public class Tracer {
     // Direct throw from NDK
     N.onFatalError(message, Cause.TEST_DIRECT);
   }
-
-  public static void test5 (String message) {
-    // Just throws AssertionError from NDK
-    N.throwDirect(message);
-  }
 }

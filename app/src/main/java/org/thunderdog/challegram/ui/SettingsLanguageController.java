@@ -664,7 +664,7 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
                 String channelUrl = "https://t.me/tgx_android";
 
                 TdApi.FormattedText caption = TD.newText(Lang.getString(R.string.ToolsExportText, (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 2 ? TD.newSpan(new TdApi.TextEntityTypeTextUrl(channelUrl)) : null, languageInfo.nativeName, languageInfo.name, appName));
-                TdApi.InputMessageContent content = new TdApi.InputMessageDocument(new TdApi.InputFileGenerated(fileName, conversion, 0), null, false, caption);
+                TdApi.InputMessageContent content = new TdApi.InputMessageDocument(new TdApi.InputDocument(new TdApi.InputFileGenerated(fileName, conversion, 0), null, false), caption);
                 ShareController c = new ShareController(context, tdlib);
                 c.setArguments(new ShareController.Args(content));
                 Keyboard.hide(inputView.getEditText());

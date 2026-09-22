@@ -18,7 +18,6 @@ import android.content.Context;
 import android.os.Build;
 import android.telephony.TelephonyManager;
 
-import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -294,6 +293,7 @@ public class TGCountry {
 
   private TGCountry () { }
 
+  @SuppressWarnings("HardwareIds")
   public String[] getNumber (Tdlib tdlib) {
     try {
       if (tdlib.hasAuthPhoneNumber()) {
@@ -352,7 +352,7 @@ public class TGCountry {
     if (StringUtils.isEmpty(code))
       return getLocaleCode();
 
-    return code.toUpperCase();
+    return code.toUpperCase(Locale.ROOT);
   }
 
   public String getLocaleCode () {
@@ -364,7 +364,7 @@ public class TGCountry {
       if (locale.length() > 2) {
         locale = locale.substring(0, 2);
       }
-      return locale.toUpperCase();
+      return locale.toUpperCase(Locale.ROOT);
     }
     return null;
   }

@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.component.attach;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.os.Build;
@@ -23,6 +22,7 @@ import android.view.TextureView;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.R;
@@ -61,7 +61,7 @@ public class MediaGalleryCameraView extends FrameLayoutFix implements Destroyabl
 
   // Texture stuff
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void openCamera () {
 
   }

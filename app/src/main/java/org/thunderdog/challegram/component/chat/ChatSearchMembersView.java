@@ -133,11 +133,11 @@ public class ChatSearchMembersView extends FrameLayout implements TdlibCache.Bas
       CharSequence text;
       if (i == 0) {
         button.setId(R.id.btn_cancel);
-        button.setText(text = Lang.getString(R.string.Cancel).toUpperCase());
+        button.setText(text = Lang.uppercase(Lang.getString(R.string.Cancel)));
         button.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(55f), (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM));
       } else {
         button.setId(R.id.btn_clear);
-        button.setText(text = Lang.getString(R.string.Clear).toUpperCase());
+        button.setText(text = Lang.uppercase(Lang.getString(R.string.Clear)));
         button.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(55f), (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM));
       }
       Views.updateMediumTypeface(button, text);

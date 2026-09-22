@@ -154,7 +154,7 @@ public class TopBarView extends FrameLayoutFix {
       button.setSingleLine(true);
       button.setBackgroundResource(R.drawable.bg_btn_header);
       button.setOnClickListener(item.onClickListener);
-      Views.setMediumText(button, Lang.getString(item.stringRes).toUpperCase());
+      Views.setMediumText(button, Lang.uppercase(Lang.getString(item.stringRes)));
       Views.setClickable(button);
       button.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
       actionsList.addView(button);

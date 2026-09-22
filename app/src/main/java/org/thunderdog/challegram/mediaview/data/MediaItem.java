@@ -63,6 +63,7 @@ import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.InvalidateContentProvider;
@@ -216,7 +217,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       }
       String extension = U.getExtension(document.fileName);
       if (!StringUtils.isEmpty(extension)) {
-        extension = extension.toLowerCase();
+        extension = extension.toLowerCase(Locale.ROOT);
       }
       String alternateMimeType = TGMimeType.mimeTypeForExtension(extension);
       if (!StringUtils.isEmpty(alternateMimeType) && !alternateMimeType.equals(document.mimeType)) {
@@ -991,7 +992,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       case TdApi.MessageAnimation.CONSTRUCTOR ->
         new MediaItem(context, tdlib, chatId, sponsoredMessage.messageId, null, 0, (TdApi.MessageAnimation) sponsoredMessage.content);
       default -> {
-        Td.assertMessageContent_baa076bf();
+        Td.assertMessageContent_af730a78();
         throw Td.unsupported(sponsoredMessage.content);
       }
     };
@@ -1814,17 +1815,17 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         if (isAnimatedAvatar()) {
           TdApi.AnimatedChatPhoto targetFile = chatPhoto.animation != null ? chatPhoto.animation : chatPhoto.smallAnimation;
           if (targetFile != null) {
-            return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, caption, showCaptionAboveMedia, false);
+            return new TdApi.InputMessageAnimation(new TdApi.InputAnimation(file, null, null, 3, targetFile.length, targetFile.length), caption, showCaptionAboveMedia, false);
           }
         }
-        return new TdApi.InputMessagePhoto(file, null, null, null, 640, 640, caption, showCaptionAboveMedia, null, false);
+        return new TdApi.InputMessagePhoto(new TdApi.InputPhoto(file, null, null, null, 640, 640), caption, showCaptionAboveMedia, null, false);
       case TYPE_PHOTO:
       case TYPE_GALLERY_PHOTO:
-        return new TdApi.InputMessagePhoto(file, null, null, null, width, height, caption, showCaptionAboveMedia, null, type == TYPE_GALLERY_PHOTO && hasSpoiler);
+        return new TdApi.InputMessagePhoto(new TdApi.InputPhoto(file, null, null, null, width, height), caption, showCaptionAboveMedia, null, type == TYPE_GALLERY_PHOTO && hasSpoiler);
       case TYPE_VIDEO:
-        return new TdApi.InputMessageVideo(file, null, null, 0, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, showCaptionAboveMedia, null, false);
+        return new TdApi.InputMessageVideo(new TdApi.InputVideo(file, null, null, 0, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming), caption, showCaptionAboveMedia, null, false);
       case TYPE_GIF:
-        return new TdApi.InputMessageAnimation(file, null, null, sourceAnimation.duration, sourceAnimation.width, sourceAnimation.height, caption, showCaptionAboveMedia, false);
+        return new TdApi.InputMessageAnimation(new TdApi.InputAnimation(file, null, null, sourceAnimation.duration, sourceAnimation.width, sourceAnimation.height), caption, showCaptionAboveMedia, false);
     }
     return null;
   }

@@ -257,6 +257,8 @@
 
   <item type="id" name="separator" />
 
+  <item type="id" name="chats_list" />
+
   <item type="id" name="msg_input" />
   <item type="id" name="msg_tooltip" />
   <item type="id" name="msg_emoji" />
@@ -510,6 +512,7 @@
   <item type="id" name="btn_crop" />
   <item type="id" name="btn_crop_reset" />
   <item type="id" name="btn_paint" />
+  <item type="id" name="btn_snapshot" />
   <item type="id" name="btn_adjust" />
   <item type="id" name="btn_rotate" />
   <item type="id" name="btn_flipHorizontally" />
@@ -659,6 +662,9 @@
   <item type="id" name="btn_openGiftSender" />
   <item type="id" name="btn_openGiftReceiver" />
   <item type="id" name="btn_showGiveawayMessage" />
+  <item type="id" name="btn_startMessaging" />
+
+  <item type="id" name="startup_marker" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />
@@ -1019,7 +1025,6 @@
   <item type="id" name="btn_test_crashDirect" />
   <item type="id" name="btn_test_crash3" />
   <item type="id" name="btn_test_crash4" />
-  <item type="id" name="btn_test_crashDirectNative" />
 
   <item type="id" name="btn_launchApp" />
   <item type="id" name="btn_update" />
@@ -1036,6 +1041,7 @@
   <item type="id" name="btn_ffmpeg" />
   <item type="id" name="btn_webp" />
   <item type="id" name="btn_tgcalls" />
+  <item type="id" name="btn_openssl" />
   <item type="id" name="btn_pushService" />
   <item type="id" name="btn_tdlib_verbosity" />
   <item type="id" name="btn_tdlib_resetLogSettings" />

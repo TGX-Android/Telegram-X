@@ -14,11 +14,14 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import androidx.annotation.Nullable;
+
 import org.drinkless.tdlib.TdApi;
 
 public interface GlobalMessageListener {
   default void onNewMessage (Tdlib tdlib, TdApi.Message message) { }
   default void onMessageContentChanged (Tdlib tdlib, long chatId, long messageId, TdApi.MessageContent content) { }
+  default void onEphemeralMessageContentChanged (Tdlib tdlib, long chatId, long messageId, @Nullable TdApi.EphemeralMessageContent content) { }
 
   default void onNewMessages (Tdlib tdlib, TdApi.Message[] messages) { }
 

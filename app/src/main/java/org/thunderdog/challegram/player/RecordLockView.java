@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.player;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -25,6 +24,8 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.annotation.RequiresApi;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.ColorId;
@@ -55,7 +56,7 @@ public class RecordLockView extends View {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       setOutlineProvider(new android.view.ViewOutlineProvider() {
         @Override
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
           outline.setRoundRect(0, 0, view.getMeasuredWidth(), (int) (view.getMeasuredHeight() - Screen.dp(BUTTON_EXPANDED) * collapseFactor), Screen.dp(BUTTON_SIZE / 2f));
         }

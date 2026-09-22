@@ -159,7 +159,6 @@ import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.lang.ref.SoftReference;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -169,8 +168,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -295,8 +292,30 @@ public class U {
     if (StringUtils.isEmpty(str)) {
       return false;
     }
-    str = str.toLowerCase();
-    return str.contains("screencapture") || str.contains("screenshot") || str.contains("экран");
+    return
+      StringUtils.containsIgnoreCase(str, "screencapture") ||
+      StringUtils.containsIgnoreCase(str, "screenshot") ||
+      StringUtils.containsIgnoreCase(str, "экран");
+  }
+
+  public static boolean isDownloadsFolder (String str) {
+    if (StringUtils.isEmpty(str)) {
+      return false;
+    }
+    return
+      StringUtils.containsIgnoreCase(str, "download") ||
+      StringUtils.containsIgnoreCase(str, "загрузки");
+  }
+
+  @SuppressWarnings("SpellCheckingInspection")
+  public static boolean isCameraFolder (String str) {
+    if (StringUtils.isEmpty(str)) {
+      return false;
+    }
+    return
+      StringUtils.containsIgnoreCase(str, "camera") ||
+      StringUtils.containsIgnoreCase(str, "DCIM") ||
+      StringUtils.containsIgnoreCase(str, "камера");
   }
 
   public static float maxWidth (Layout layout) {
@@ -310,6 +329,7 @@ public class U {
   }
 
   public static boolean isLocalhost (String server) {
+    server = server.toLowerCase(Locale.ROOT);
     return switch (server) {
       case "127.0.0.1",
            "::1",
@@ -395,14 +415,16 @@ public class U {
       //Below few lines is to remove paths which may not be external memory card, like OTG (feel free to comment them out)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         for (int i = 0; i < results.size(); i++) {
-          if (!results.get(i).toLowerCase().matches(".*[0-9a-f]{4}[-][0-9a-f]{4}")) {
+          String lowercase = results.get(i).toLowerCase(Locale.ROOT);
+          if (!lowercase.matches(".*[0-9a-f]{4}[-][0-9a-f]{4}")) {
             // Log.d(LOG_TAG, results.get(i) + " might not be extSDcard");
             results.remove(i--);
           }
         }
       } else {
         for (int i = 0; i < results.size(); i++) {
-          if (!results.get(i).toLowerCase().contains("ext") && !results.get(i).toLowerCase().contains("sdcard")) {
+          String lowercase = results.get(i).toLowerCase(Locale.ROOT);
+          if (!lowercase.contains("ext") && !lowercase.contains("sdcard")) {
             // Log.d(LOG_TAG, results.get(i)+" might not be extSDcard");
             results.remove(i--);
           }
@@ -451,7 +473,7 @@ public class U {
     int len = str.length();
     for (int i = 0; i < len; i++) {
       char c = str.charAt(i);
-      b.append("\\u").append(Integer.toString(c, 16).toUpperCase());
+      b.append("\\u").append(Integer.toString(c, 16).toUpperCase(Locale.ROOT));
     }
     return b.toString();
   }
@@ -469,8 +491,8 @@ public class U {
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       switch (notificationId) {
-        case TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION:
-        case TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION: {
+        case TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION:
+        case TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION: {
           int knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (UI.getAppContext().checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -487,9 +509,9 @@ public class U {
           service.startForeground(notificationId, notification, knownType);
           return;
         }
-        case TdlibNotificationManager.ID_MUSIC:
-        case TdlibNotificationManager.ID_LOCATION:
-        case TdlibNotificationManager.ID_PENDING_TASK:
+        case TdlibNotificationManager.ID_FOREGROUND_MUSIC:
+        case TdlibNotificationManager.ID_FOREGROUND_LOCATION:
+        case TdlibNotificationManager.ID_FOREGROUND_PENDING_TASK:
           // android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST;
           break;
         default:
@@ -695,9 +717,19 @@ public class U {
     final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
     final MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
     final AnalyticsCollector analyticsCollector;
-    if (BuildConfig.DEBUG) {
+    if (Log.getLogLevel() > Log.LEVEL_ASSERT) {
       analyticsCollector = new DefaultAnalyticsCollector(Clock.DEFAULT);
-      analyticsCollector.addListener(new EventLogger("ExoPlayerImpl"));
+      analyticsCollector.addListener(new EventLogger("Client") {
+        @Override
+        protected void logd (@NonNull String msg) {
+          Log.d("[media3:Client]: %s", msg);
+        }
+
+        @Override
+        protected void loge (@NonNull String msg) {
+          Log.e("[media3:Client]: %s", msg);
+        }
+      });
     } else {
       analyticsCollector = null;
     }
@@ -792,11 +824,12 @@ public class U {
           long streamId = HlsVideo.extractStreamId(uri);
           TdApi.AlternativeVideo alternativeVideo = hlsVideo.findVideoByStreamId(streamId);
           format = format.buildUpon()
-            .setCodecs(alternativeVideo.codec)
+            .setCodecs(HlsVideo.toRfc6381CodecString(alternativeVideo.codec))
             .setWidth(alternativeVideo.width)
             .setHeight(alternativeVideo.height)
             .setContainerMimeType(MimeTypes.VIDEO_MP4)
             .setCryptoType(C.CRYPTO_TYPE_UNSUPPORTED)
+            .setSampleMimeType(HlsVideo.toSampleMimeType(alternativeVideo.codec))
             .build();
           if (!timestampAdjuster.isInitialized()) {
             try {
@@ -2082,7 +2115,7 @@ public class U {
   }
 
   public static String hexWithZero (int color) {
-    String part = Integer.toHexString(color).toUpperCase();
+    String part = Integer.toHexString(color).toUpperCase(Locale.ROOT);
     if (part.length() == 1)
       return "0" + part;
     return part;

@@ -225,8 +225,9 @@ public class ThreadInfo {
           break;
         }
         case TdApi.InputMessageReplyToStory.CONSTRUCTOR: // Unreachable
+        case TdApi.InputMessageReplyToEphemeralMessage.CONSTRUCTOR: // Unreachable
         default:
-          Td.assertInputMessageReplyTo_acef6f3a();
+          Td.assertInputMessageReplyTo_a271ad89();
           throw Td.unsupported(replyTo);
       }
       if (Td.isEmpty(replyToQuote)) {
@@ -241,8 +242,8 @@ public class ThreadInfo {
     threadInfo.draftMessage = draftMessage;
   }
 
-  public @Nullable TdApi.InputMessageContent getDraftContent () {
-    return threadInfo.draftMessage != null ? threadInfo.draftMessage.inputMessageText : null;
+  public @Nullable TdApi.DraftMessageContent getDraftContent () {
+    return threadInfo.draftMessage != null ? threadInfo.draftMessage.content : null;
   }
 
   public String chatHeaderTitle () {

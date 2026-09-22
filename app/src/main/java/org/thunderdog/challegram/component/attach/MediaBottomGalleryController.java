@@ -872,7 +872,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   protected void onSearchInputChanged (String query) {
-    searchImages(query.trim().toLowerCase());
+    searchImages(query.trim());
   }
 
   private String lastQuery = "";

@@ -61,6 +61,7 @@ import org.thunderdog.challegram.widget.ProgressComponent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.android.AnimatorUtils;
@@ -127,7 +128,7 @@ public class TGInlineKeyboard {
     this.isCustom = true;
     this.disableCustomPadding = disableCustomPadding;
 
-    Button button = new Button(this, parent, text.toUpperCase(), iconRes, maxWidth - getButtonPadding() * 2);
+    Button button = new Button(this, parent, text.toUpperCase(Locale.ROOT), iconRes, maxWidth - getButtonPadding() * 2);
     button.setClickListener(listener);
     button.setViewProvider(viewProvider);
 
@@ -471,7 +472,7 @@ public class TGInlineKeyboard {
     }
 
     private String uppercase (String text) {
-      return useWhiteMode() ? text : text.toUpperCase();
+      return useWhiteMode() ? text : text.toUpperCase(Locale.ROOT);
     }
 
     public void set (TdApi.InlineKeyboardButton button, int maxWidth) {
@@ -672,9 +673,10 @@ public class TGInlineKeyboard {
           }
           case TdApi.InlineKeyboardButtonTypeCopyText.CONSTRUCTOR:
           case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR:
+          case TdApi.InlineKeyboardButtonTypeDisabled.CONSTRUCTOR:
             break;
           default: {
-            Td.assertInlineKeyboardButtonType_4c981aa8();
+            Td.assertInlineKeyboardButtonType_3a46e70a();
             throw Td.unsupported(type);
           }
         }
@@ -849,12 +851,13 @@ public class TGInlineKeyboard {
               case TdApi.InlineKeyboardButtonTypeCallbackGame.CONSTRUCTOR:
               case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
               case TdApi.InlineKeyboardButtonTypeCopyText.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeDisabled.CONSTRUCTOR:
               case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
               case TdApi.InlineKeyboardButtonTypeUser.CONSTRUCTOR:
               case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR:
                 break;
               default: {
-                Td.assertInlineKeyboardButtonType_4c981aa8();
+                Td.assertInlineKeyboardButtonType_3a46e70a();
                 throw Td.unsupported(type);
               }
             }
@@ -1241,8 +1244,12 @@ public class TGInlineKeyboard {
           context.context.tdlib().send(new TdApi.GetLoginUrlInfo(context.context.getChatId(), context.messageId, button.id), getLoginCallback(currentContextId, view, button, needVerify));
           break;
         }
+        case TdApi.InlineKeyboardButtonTypeDisabled.CONSTRUCTOR: {
+          // Do nothing, button is disabled
+          break;
+        }
         default: {
-          Td.assertInlineKeyboardButtonType_4c981aa8();
+          Td.assertInlineKeyboardButtonType_3a46e70a();
           throw Td.unsupported(type);
         }
       }

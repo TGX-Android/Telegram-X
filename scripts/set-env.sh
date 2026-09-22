@@ -15,21 +15,18 @@ case "${PLATFORM}" in
     BUILD_PLATFORM=darwin-x86_64
     CPU_COUNT=$(sysctl -n hw.logicalcpu_max)
     DEFAULT_ANDROID_SDK_ROOT=~/Library/Android/sdk
-    SED="gsed"
     ;;
   Linux*)
     PLATFORM=linux
     BUILD_PLATFORM=linux-x86_64
     CPU_COUNT=$(lscpu -p | grep -Evc '^#')
     DEFAULT_ANDROID_SDK_ROOT=~/Android/Sdk
-    SED="sed"
     ;;
   MINGW*|MSYS*)
     PLATFORM=windows
     BUILD_PLATFORM=windows-x86_64
     CPU_COUNT=$(nproc --all)
     DEFAULT_ANDROID_SDK_ROOT=~/AppData/Local/Android/Sdk
-    SED="sed"
     WIN_PATCH_REQUIRED=true
     ;;
   *)
@@ -90,8 +87,6 @@ export STYLE_END
 export STYLE_ERROR
 export STYLE_WARN
 export STYLE_INFO
-
-export SED
 
 THIRDPARTY_LIBRARIES="$(pwd)/app/jni/third_party"
 export THIRDPARTY_LIBRARIES

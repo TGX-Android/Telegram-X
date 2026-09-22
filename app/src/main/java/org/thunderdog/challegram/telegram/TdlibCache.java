@@ -83,6 +83,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     default void onMyUserBioUpdated (@Nullable TdApi.FormattedText newBio) { }
   }
 
+  public interface CommunityDataChangeListener {
+    default void onCommunityUpdated (TdApi.Community community) { }
+    default void onCommunityFullUpdated (long id, TdApi.CommunityFullInfo community) { }
+  }
+
   public interface BasicGroupDataChangeListener {
     default void onBasicGroupUpdated (TdApi.BasicGroup basicGroup, boolean migratedToSupergroup) { }
     default void onBasicGroupFullUpdated (long basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) { }
@@ -119,6 +124,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   private final ReferenceLongMap<UserStatusChangeListener> statusListeners = new ReferenceLongMap<>(true, statusFullnessListener);
   private final ReferenceLongMap<UserStatusChangeListener> simpleStatusListeners = new ReferenceLongMap<>(true, null);
   private final ReferenceList<MyUserDataChangeListener> myUserListeners = new ReferenceList<>(true);
+
+  private final HashMap<Long, TdApi.Community> communities = new HashMap<>();
+  private final HashMap<Long, TdApi.CommunityFullInfo> communitiesFull = new HashMap<>();
+  private final ReferenceList<CommunityDataChangeListener> communityGlobalListeners = new ReferenceList<>(true);
+  private final ReferenceLongMap<CommunityDataChangeListener> communityListeners = new ReferenceLongMap<>(true);
 
   private final HashMap<Long, TdApi.BasicGroup> basicGroup = new HashMap<>();
   private final HashMap<Long, TdApi.BasicGroupFullInfo> basicGroupFull = new HashMap<>();
@@ -554,6 +564,38 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     notifyUserStatusChanged(update.userId, user.status, uiOnly);
     synchronized (onlineMutex) {
       checkUserStatus(user, user.status, false);
+    }
+  }
+
+  // Community
+
+  @TdlibThread
+  void onUpdateCommunity (TdApi.UpdateCommunity update) {
+    boolean updated;
+    synchronized (dataLock) {
+      TdApi.Community community = update.community;
+      TdApi.Community oldCommunity = communities.get(update.community.id);
+      communities.put(community.id, community);
+      updated = oldCommunity != null;
+    }
+    if (updated) {
+      notifyListeners(communityGlobalListeners.iterator(), update.community);
+      notifyListeners(communityListeners.iterator(update.community.id), update.community);
+    }
+  }
+
+  @TdlibThread
+  void onUpdateCommunityFull (TdApi.UpdateCommunityFullInfo update) {
+    boolean updated;
+    synchronized (dataLock) {
+      TdApi.CommunityFullInfo community = update.communityFullInfo;
+      TdApi.CommunityFullInfo oldCommunity = communitiesFull.get(update.communityId);
+      communitiesFull.put(update.communityId, community);
+      updated = oldCommunity != null;
+    }
+    if (updated) {
+      notifyListeners(communityGlobalListeners.iterator(), update.communityId, update.communityFullInfo);
+      notifyListeners(communityListeners.iterator(update.communityId), update.communityId, update.communityFullInfo);
     }
   }
 
@@ -1148,6 +1190,20 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @Nullable
+  public TdApi.Community community (long communityId) {
+    synchronized (dataLock) {
+      return communities.get(communityId);
+    }
+  }
+
+  @Nullable
+  public TdApi.CommunityFullInfo communityFull (long communityId) {
+    synchronized (dataLock) {
+      return communitiesFull.get(communityId);
+    }
+  }
+
+  @Nullable
   public TdApi.BasicGroup basicGroup (long basicGroupId) {
     synchronized (dataLock) {
       return basicGroup.get(basicGroupId);
@@ -1414,8 +1470,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return -1;
   }
 
-  void updateLiveLocation (long chatId, long messageId, TdApi.MessageLocation location) {
-    if (location.livePeriod == 0) {
+  void updateLiveLocation (long chatId, long messageId, TdApi.MessageLiveLocation liveLocation) {
+    if (liveLocation.location.livePeriod == 0) {
       return;
     }
     synchronized (outputLocations) {
@@ -1427,8 +1483,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         return;
       }
       TdApi.Message message = outputLocations.get(foundIndex);
-      message.content = location;
-      boolean removed = location.expiresIn == 0;
+      message.content = liveLocation;
+      boolean removed = liveLocation.expiresIn == 0;
       if (removed) {
         outputLocations.remove(foundIndex);
         notifyOutputLocationsChanged(-1);
@@ -1468,7 +1524,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       for (int i = size - 1; i >= 0; i--) {
         TdApi.Message msg = outputLocations.get(i);
         if (chatId == 0 || msg.chatId == chatId) {
-          tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null, 0, 0, 0), tdlib.silentHandler());
+          tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null), tdlib.silentHandler());
         }
       }
     }
@@ -1505,17 +1561,17 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     synchronized (outputLocations) {
       Log.v("Updating %d live location messages", outputLocations.size());
       for (final TdApi.Message message : outputLocations) {
-        tdlib.send(new TdApi.EditMessageLiveLocation(message.chatId, message.id, message.replyMarkup, location, 0, heading, 0), (resultMessage, error) -> {
+        tdlib.send(new TdApi.EditMessageLiveLocation(message.chatId, message.id, message.replyMarkup, new TdApi.LiveLocation(location, 0, heading, 0)), (resultMessage, error) -> {
           if (error != null) {
             Log.e("Error broadcasting location: %s", TD.toErrorString(error));
           } else {
             message.editDate = resultMessage.editDate;
-            if (Td.isLocation(resultMessage.content)) {
-              TdApi.MessageLocation in = (TdApi.MessageLocation) resultMessage.content;
-              TdApi.MessageLocation out = (TdApi.MessageLocation) message.content;
-              out.expiresIn = in.livePeriod;
-              out.location.latitude = in.location.latitude;
-              out.location.longitude = in.location.longitude;
+            if (Td.isLiveLocation(resultMessage.content)) {
+              TdApi.MessageLiveLocation in = (TdApi.MessageLiveLocation) resultMessage.content;
+              TdApi.MessageLiveLocation out = (TdApi.MessageLiveLocation) message.content;
+              out.expiresIn = in.location.livePeriod;
+              out.location.location.latitude = in.location.location.latitude;
+              out.location.location.longitude = in.location.location.longitude;
               onLiveLocationChanged(message);
             }
           }
@@ -1564,6 +1620,22 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     if (list != null) {
       while (list.hasNext()) {
         list.next().onUserStatusChanged(userId, status, uiOnly);
+      }
+    }
+  }
+
+  private static void notifyListeners (@Nullable Iterator<CommunityDataChangeListener> list, TdApi.Community community) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onCommunityUpdated(community);
+      }
+    }
+  }
+
+  private static void notifyListeners (@Nullable Iterator<CommunityDataChangeListener> list, long id, TdApi.CommunityFullInfo community) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onCommunityFullUpdated(id, community);
       }
     }
   }

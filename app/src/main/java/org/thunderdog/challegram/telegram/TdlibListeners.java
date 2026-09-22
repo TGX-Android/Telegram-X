@@ -682,6 +682,20 @@ public class TdlibListeners {
     );
   }
 
+  // updateMessageEphemeralContent
+
+  void updateMessageEphemeralContent (TdApi.UpdateMessageEphemeralContent update) {
+    List<TdApi.Message> messages = pendingMessages.get(update.chatId + "_" + update.messageId);
+    if (messages != null) {
+      for (TdApi.Message message : messages) {
+        message.ephemeralContent = update.ephemeralContent;
+      }
+    }
+    runMessageUpdate(update.chatId, listener ->
+      listener.onMessageEphemeralContentChanged(update.chatId, update.messageId, update.ephemeralContent)
+    );
+  }
+
   // updatePoll (fake via updateMessageContent)
 
   public void addPollListener (long id, PollListener listener) {
@@ -1038,6 +1052,14 @@ public class TdlibListeners {
   void updateChatHasScheduledMessages (TdApi.UpdateChatHasScheduledMessages update) {
     runChatUpdate(update.chatId, listener ->
       listener.onChatHasScheduledMessagesChanged(update.chatId, update.hasScheduledMessages)
+    );
+  }
+
+  // updateChatHasWelcomeMessages
+
+  void updateChatHasWelcomeMessages (TdApi.UpdateChatHasWelcomeMessages update) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatHasWelcomeMessagesChanged(update.chatId, update.hasWelcomeMessages)
     );
   }
 
@@ -1711,15 +1733,21 @@ public class TdlibListeners {
     );
   }
 
-  void updateTonRevenueStatus (TdApi.UpdateTonRevenueStatus update) {
+  void updateGramRevenueStatus (TdApi.UpdateGramRevenueStatus update) {
     runUpdate(optionListeners, listener ->
-      listener.onTonRevenueStatusUpdated(update.status)
+      listener.onGramRevenueStatusUpdated(update.status)
     );
   }
 
   void updateSpeedLimitNotification (TdApi.UpdateSpeedLimitNotification update) {
     runUpdate(optionListeners, listener ->
       listener.onSpeedLimitNotification(update.isUpload)
+    );
+  }
+
+  void updateWebBrowserSettings (TdApi.UpdateWebBrowserSettings update) {
+    runUpdate(optionListeners, listener ->
+      listener.onWebBrowserSettingsChanged(update.settings)
     );
   }
 

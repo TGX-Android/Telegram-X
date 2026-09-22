@@ -18,14 +18,24 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.gradle.api.tasks.TaskAction
-import java.io.File
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.*
 
-open class ValidateApiTokensTask : BaseTask() {
+@CacheableTask
+abstract class ValidateApiTokensTask : DefaultTask() {
+  @get:Input
+  abstract val applicationId: Property<String>
+
+  @get:InputFile
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val googleServicesJson: RegularFileProperty
+
   @TaskAction
   fun validateGoogleServicesJsonFile () {
-    val appId = applicationId()
-    val json = File("app/google-services.json").readText()
+    val appId = applicationId.get()
+    val json = googleServicesJson.get().asFile.readText()
     val googleServices = Json.parseToJsonElement(json)
     var foundPackageName: String? = null
     googleServices.jsonObject["client"]!!.jsonArray.filter {

@@ -660,7 +660,7 @@ public class TGCallService extends Service implements
       if (lastScreenSharing != settings.isScreenSharing()) {
         lastScreenSharing = settings.isScreenSharing();
         cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
-        U.stopForeground(this, true, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION);
+        U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION);
         ongoingCallNotification = null;
         showNotification();
         tgcalls.setScreenShareEnabled(lastScreenSharing);
@@ -707,7 +707,7 @@ public class TGCallService extends Service implements
       } else if (newState == UI.State.RESUMED) {
         needShowIncomingNotification = true;
         cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
-        U.stopForeground(this, true, TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION);
+        U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION);
         incomingNotification = null;
       }
     }
@@ -821,7 +821,7 @@ public class TGCallService extends Service implements
 
     if (!needNotification) {
       cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
-      U.stopForeground(this, true, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION, TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION);
+      U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION, TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION);
       incomingNotification = ongoingCallNotification = null;
       return;
     }
@@ -881,7 +881,7 @@ public class TGCallService extends Service implements
     } else {
       ongoingCallNotification = builder.getNotification();
     }
-    U.startForeground(this, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION, ongoingCallNotification, lastScreenSharing);
+    U.startForeground(this, TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION, ongoingCallNotification, lastScreenSharing);
   }
 
   // Sound
@@ -1001,7 +1001,7 @@ public class TGCallService extends Service implements
     } else {
       incomingNotification = builder.getNotification();
     }
-    U.startForeground(this, TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION, incomingNotification);
+    U.startForeground(this, TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION, incomingNotification);
     return true;
   }
 
@@ -1078,7 +1078,7 @@ public class TGCallService extends Service implements
 
   private void stopRinging () {
     cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
-    U.stopForeground(this, true, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION, TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION);
+    U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION, TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION);
     incomingNotification = ongoingCallNotification = null;
     if (ringtonePlayer != null) {
       ringtonePlayer.stop();
@@ -1374,7 +1374,7 @@ public class TGCallService extends Service implements
       if (TD.isFinished(call)) {
         releaseTgCalls(tdlib, call);
         cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
-        U.stopForeground(this, true, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION, TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION);
+        U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION, TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION);
         incomingNotification = ongoingCallNotification = null;
         stopSelf();
       }

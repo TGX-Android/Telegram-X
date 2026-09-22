@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import me.vkryl.core.StringUtils;
@@ -507,7 +508,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   private CancellableResultHandler inlineBotHandler;
 
   private void processInlineQueryOrOther (final String username, final String inlineQuery, final int cursorPosition) {
-    if (lastInlineUsername == null || !lastInlineUsername.toLowerCase().equals(username.toLowerCase())) {
+    if (lastInlineUsername == null || !lastInlineUsername.toLowerCase(Locale.ROOT).equals(username.toLowerCase(Locale.ROOT))) {
       lastInlineUsername = username;
 
       if (inlineBotHandler != null) {
@@ -515,7 +516,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         inlineBotHandler = null;
       }
 
-      TdApi.User user = tdlib.cache().searchUser(username.toLowerCase());
+      TdApi.User user = tdlib.cache().searchUser(username);
 
       if (user != null) {
         if (user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR && ((TdApi.UserTypeBot) user.type).isInline) {
@@ -1247,7 +1248,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     Background.instance().post(new CancellableRunnable() {
       @Override
       public void act () {
-        String query = suggestionQuery.toLowerCase();
+        String query = suggestionQuery.toLowerCase(Locale.ROOT);
         if (suggestionQuery.length() == 1 && Character.isUpperCase(suggestionQuery.charAt(0))) {
           char c = suggestionQuery.charAt(0);
           switch (c) {

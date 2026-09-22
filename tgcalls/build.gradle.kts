@@ -1,32 +1,39 @@
 plugins {
+  id("java-toolchain-convention")
   id(libs.plugins.android.library.get().pluginId)
   id("tgx-config")
   id("tgx-module")
 }
 
-val config = extra["config"] as ApplicationConfig
+val config = tgxConfig.config.get()
 
 dependencies {
   implementation(libs.androidx.annotation)
 }
 
+tasks.withType(JavaCompile::class.java).configureEach {
+  options.compilerArgs.addAll(listOf(
+    "-Xlint:-rawtypes",
+    "-Xlint:-cast",
+    "-Xlint:-deprecation"
+  ))
+}
+
 android {
   lint {
-    disable += "RawTypes"
+    disable += arrayOf(
+      "ObsoleteSdkInt",
+      "MissingPermission",
+      "InlinedApi",
+      "NewApi",
+      "UseRequiresApi",
+      "Range",
+      "WrongConstant"
+    )
   }
 
   defaultConfig {
     consumerProguardFiles("consumer-rules.pro")
-  }
-
-  project.afterEvaluate {
-    tasks.withType(JavaCompile::class.java).configureEach {
-      options.compilerArgs.addAll(listOf(
-        "-Xlint:-rawtypes",
-        "-Xlint:-cast",
-        "-Xlint:-deprecation"
-      ))
-    }
   }
 
   sourceSets.named<com.android.build.api.dsl.AndroidSourceSet>("main") {

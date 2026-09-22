@@ -26,6 +26,8 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.theme.ColorId;
 
+import java.util.Locale;
+
 public class Config {
   public static final boolean SUPPORT_SYSTEM_UNDERLINE_SPAN = true;
   public static final boolean FOREGROUND_SYNC_ALWAYS_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -56,6 +58,17 @@ public class Config {
 
   // Allow stretch bounce in places where the glow looks ugly
   public static final boolean HAS_NICE_OVER_SCROLL_EFFECT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
+
+  // Telegram for iOS has a long-established bug and doesn't play rotated videos properly
+  // This affects all rotated videos (which even Telegram for iOS produces too).
+  // The only way around for the sender is to transcode video fully even when there's no need at all.
+  public static final boolean TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT = true;
+
+  public static final boolean ENABLE_BASELINE_PROFILE_HOOKS = BuildConfig.LAB_FLAVOR;
+
+  public static final boolean ENABLE_DELETE_CALL_HISTORY = BuildConfig.DEBUG;
+
+  public static final boolean DEBUG_TDLIB_REFERENCES = false;
 
   private static Boolean hasWebpSupport;
   public static boolean useBundledWebp () {
@@ -198,6 +211,10 @@ public class Config {
   public static final boolean CUTOUT_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.O;
   public static final boolean EXPLICIT_DICE_AVAILABLE = false;
 
+  public static final boolean FOREGROUND_SERVICE_DEMO = false;
+  public static final boolean FOREGROUND_CONTACTS_SYNC_DEMO = false;
+  public static final boolean TEST_SYNC_CONTACTS_PROMPT = false;
+
   public static boolean useCloudPlayback (TdApi.Message playPauseFile) {
     if (USE_CLOUD_PLAYER && playPauseFile != null) {
       //noinspection SwitchIntDef
@@ -279,7 +296,7 @@ public class Config {
   public static final boolean TEST_CHAT_COUNTERS = false;
 
   public static boolean isThemeDoc (TdApi.Document doc) {
-    return doc != null && doc.fileName != null && doc.fileName.toLowerCase().endsWith("." + BuildConfig.THEME_FILE_EXTENSION);
+    return doc != null && doc.fileName != null && doc.fileName.toLowerCase(Locale.ROOT).endsWith("." + BuildConfig.THEME_FILE_EXTENSION);
   }
 
   public static final boolean DISABLE_PASSWORD_INVISIBILITY = true;
@@ -315,9 +332,6 @@ public class Config {
   public static final boolean REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET = false;
 
   public static final boolean USE_INPUT_VIEW_CLIPPING_FIX = false;
-
-  public static final int VOIP_CONNECTION_MIN_LAYER = 65;
-  public static final boolean FORCE_DIRECT_TGVOIP = false;
 
   public static final boolean ALLOW_SPONSORED_MESSAGE_LINK_COPY = true;
   public static final boolean PROTECT_ANONYMOUS_VOTING = false;

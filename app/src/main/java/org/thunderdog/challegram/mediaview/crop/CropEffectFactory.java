@@ -14,15 +14,15 @@
  */
 package org.thunderdog.challegram.mediaview.crop;
 
-import android.annotation.TargetApi;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.media3.effect.Crop;
 import androidx.media3.effect.ScaleAndRotateTransformation;
 
-@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 public final class CropEffectFactory {
   private CropEffectFactory () { }
 

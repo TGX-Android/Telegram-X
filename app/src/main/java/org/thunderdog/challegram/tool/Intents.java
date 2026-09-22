@@ -14,10 +14,10 @@
  */
 package org.thunderdog.challegram.tool;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -32,6 +32,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
 import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.browser.customtabs.CustomTabsService;
@@ -115,7 +116,7 @@ public class Intents {
   public static final String ACTION_PLAYBACK_PAUSE = PACKAGE_NAME + ".ACTION_PLAY_PAUSE";
   public static final String CHANNEL_ID_PLAYBACK = "playback";
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public static String newSimpleChannel (String channelId, @StringRes int channelName) {
     NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
@@ -719,6 +720,14 @@ public class Intents {
     return intent;
   }
 
+  public static String getIntentClassName (Intent intent) {
+    ComponentName componentName = intent.getComponent();
+    if (componentName != null) {
+      return componentName.getClassName();
+    }
+    return "";
+  }
+
   public static Intent valueOfMain (int accountId) {
     Intent intent = new Intent(UI.getContext(), MainActivity.class);
     secureIntent(intent, true);
@@ -733,7 +742,7 @@ public class Intents {
       return false;
     }
     try {
-      String scheme = uri.getScheme() != null ? uri.getScheme().toLowerCase() : "";
+      String scheme = uri.getScheme() != null ? uri.getScheme().toLowerCase(Locale.ROOT) : "";
       if (Config.IN_APP_BROWSER_AVAILABLE && (ignoreSetting || org.thunderdog.challegram.unsorted.Settings.instance().useInAppBrowser()) && !scheme.equals("tel")) {
         Intent share = new Intent(UI.getContext(), TGShareBroadcastReceiver.class);
         share.setAction(Intent.ACTION_SEND);

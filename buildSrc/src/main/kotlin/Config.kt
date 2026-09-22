@@ -13,10 +13,8 @@
 
 // File with static configuration, that is meant to be adjusted only once
 
-import tgx.gradle.fatal
-import tgx.gradle.getLongOrThrow
-import tgx.gradle.getOrThrow
-import tgx.gradle.plugin.Keystore
+import tgx.gradle.*
+import java.io.File
 import java.util.*
 
 object Config {
@@ -29,10 +27,16 @@ object Config {
     "decoder_opus",
     "decoder_vp9"
   )
-  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
 
-  // FIXME(ndK): As of 16.08.2025, NDK team didn't release an update for r23's c++_shared.so with 16 KB ELF alignment
-  const val SHARED_STL = false
+  val FFMPEG_LIBS = arrayOf(
+    "swresample",
+    "avformat",
+    "swscale",
+    "avcodec",
+    "avfilter",
+    "avutil"
+  )
+  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
 }
 
 data class PullRequest (
@@ -51,7 +55,30 @@ data class PullRequest (
   )
 }
 
+data class BuildVersions(
+  val compileSdkVersion: Int,
+  val targetSdkVersion: Int,
+  val buildToolsVersion: String,
+  val legacyNdkVersion: String,
+  val primaryNdkVersion: String
+) {
+  constructor(version: Properties) : this(
+    compileSdkVersion =
+      version.getIntOrThrow("version.sdk_compile"),
+    targetSdkVersion =
+      version.getIntOrThrow("version.sdk_target"),
+    buildToolsVersion =
+      version.getOrThrow("version.build_tools"),
+    legacyNdkVersion =
+      version.getOrThrow("version.ndk_legacy"),
+    primaryNdkVersion =
+      version.getOrThrow("version.ndk_primary")
+  )
+}
+
 data class ApplicationConfig(
+  val sdkDir: String,
+
   val applicationName: String,
   val applicationId: String,
   val extension: String,
@@ -66,12 +93,7 @@ data class ApplicationConfig(
   val doNotObfuscate: Boolean,
   val useNTgCalls: Boolean,
 
-  val compileSdkVersion: Int,
-  val targetSdkVersion: Int,
-  val buildToolsVersion: String,
-
-  val legacyNdkVersion: String,
-  val primaryNdkVersion: String,
+  val build: BuildVersions,
 
   val nativeLibraryVersion: String,
   val leveldbVersion: String,
@@ -91,8 +113,24 @@ data class ApplicationConfig(
   val outputFileNamePrefix: String,
   val creationDateMillis: Long,
 
-  val keystore: Keystore?
+  val keystorePropertiesPath: String?
 )
+
+data class Keystore(
+  val file: File,
+  val password: String,
+  val keyAlias: String,
+  val keyPassword: String
+) {
+  constructor(configPath: String) : this(loadProperties(configPath))
+  constructor(file: File) : this(loadProperties(file))
+  constructor(config: org.jetbrains.kotlin.konan.properties.Properties) : this(
+    file = File(config.getOrThrow("keystore.file")),
+    password = config.getOrThrow("keystore.password"),
+    keyAlias = config.getOrThrow("key.alias"),
+    keyPassword = config.getOrThrow("key.password")
+  )
+}
 
 class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
   init {
@@ -114,6 +152,11 @@ class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), va
       return true
     }
 
+  val isTestingLab: Boolean
+    get() {
+      return flavor == Abi.VARIANTS[Abi.LAB]!!.flavor
+    }
+
   val minSdk: Int
     get() = if (is64Bit) {
       21
@@ -129,13 +172,15 @@ object Abi {
   const val ARM64_V8A = 2
   const val X86 = 3
   const val X64 = 4
+  const val LAB = 5
 
   val VARIANTS = mapOf(
     Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "armeabi-v7a"))),
     Pair(ARMEABI_V7A, AbiVariant("arm32", "armeabi-v7a")),
     Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
     Pair(X86, AbiVariant("x86", "x86")),
-    Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64"))
+    Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64")),
+    Pair(LAB, AbiVariant("lab", displayName = "testing", filters = arrayOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86"))),
   )
 }
 
@@ -144,7 +189,22 @@ data class SdkVariant(
   val maxSdk: Int? = null,
   val flavor: String,
   val displayName: String? = flavor
-)
+) {
+  val isLatest: Boolean =
+    flavor == "latest"
+  val isMarshmallow: Boolean =
+    flavor == "marshmallow"
+  val isLollipop: Boolean =
+    flavor == "lollipop"
+  val isLegacy: Boolean =
+    flavor == "legacy"
+
+  val jetpackMediaFlavor: String =
+    flavor.takeIf { !isMarshmallow } ?: "latest"
+
+  val usesLegacyNdk: Boolean =
+    isLegacy
+}
 
 object Sdk {
   const val LEGACY = 0

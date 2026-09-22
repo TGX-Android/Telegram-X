@@ -32,6 +32,10 @@ public class TdlibResourceManager {
   private final String channelUsername;
   private long chatId;
 
+  private static final String JOB_ID_RESOURCE = "resource";
+  private static final String JOB_ID_CHAT = "resource_chat";
+  private static final String JOB_ID_MESSAGES = "resource_messages";
+
   public TdlibResourceManager (Tdlib tdlib, String channelUsername) {
     this.tdlib = tdlib;
     this.channelUsername = channelUsername;
@@ -39,24 +43,19 @@ public class TdlibResourceManager {
 
   private void withChat (RunnableLong callback)  {
     tdlib.awaitInitialization(() -> {
-      tdlib.incrementJobReferenceCount();
+      tdlib.incrementJobReferenceCount(JOB_ID_CHAT);
       if (chatId != 0) {
         callback.runWithLong(chatId);
-        tdlib.decrementJobReferenceCount();
+        tdlib.decrementJobReferenceCount(JOB_ID_CHAT);
       } else {
-        tdlib.client().send(new TdApi.SearchPublicChat(channelUsername), chatResult -> {
-          switch (chatResult.getConstructor()) {
-            case TdApi.Chat.CONSTRUCTOR: {
-              chatId = ((TdApi.Chat) chatResult).id;
-              break;
-            }
-            case TdApi.Error.CONSTRUCTOR: {
-              Log.e("Unable to get resources channel @%s: %s", channelUsername, TD.toErrorString(chatResult));
-              break;
-            }
+        tdlib.send(new TdApi.SearchPublicChat(channelUsername), (chat, error) -> {
+          if (chat != null) {
+            chatId = chat.id;
+          } else {
+            Log.e("Unable to get resources channel @%s: %s", channelUsername, TD.toErrorString(error));
           }
           callback.runWithLong(chatId);
-          tdlib.decrementJobReferenceCount();
+          tdlib.decrementJobReferenceCount(JOB_ID_CHAT);
         });
       }
     });
@@ -68,12 +67,12 @@ public class TdlibResourceManager {
         onDone.runWithData(null);
         return;
       }
-      tdlib.incrementJobReferenceCount();
+      tdlib.incrementJobReferenceCount(JOB_ID_MESSAGES);
       tdlib.openChat(chatId, null);
       tdlib.fetchAllMessages(chatId, null, new TdApi.SearchMessagesFilterDocument(), messages -> {
         tdlib.closeChat(chatId, null, false);
         onDone.runWithData(messages);
-        tdlib.decrementJobReferenceCount();
+        tdlib.decrementJobReferenceCount(JOB_ID_MESSAGES);
       });
     });
   }
@@ -84,7 +83,7 @@ public class TdlibResourceManager {
         onDone.runWithData(null);
         return;
       }
-      tdlib.incrementJobReferenceCount();
+      tdlib.incrementJobReferenceCount(JOB_ID_RESOURCE);
       tdlib.openChat(chatId, null, () -> {
         tdlib.send(new TdApi.SearchChatMessages(chatId, null, query, null, 0, 0, 1, new TdApi.SearchMessagesFilterDocument()), (messages, error) -> {
           if (messages != null) {
@@ -98,7 +97,7 @@ public class TdlibResourceManager {
             onDone.runWithData(null);
           }
           tdlib.closeChat(chatId, null, false);
-          tdlib.decrementJobReferenceCount();
+          tdlib.decrementJobReferenceCount(JOB_ID_RESOURCE);
         });
       });
     });

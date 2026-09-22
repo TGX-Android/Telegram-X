@@ -773,7 +773,7 @@ public class Media {
     }
 
     public boolean isCameraBucket () {
-      return (name != null && (name.toLowerCase().contains("camera") || name.toLowerCase().contains("dcim")));
+      return U.isCameraFolder(name);
     }
 
     public boolean isAllPhotosBucket () {
@@ -781,11 +781,11 @@ public class Media {
     }
 
     public boolean isDownloadsBucket () {
-      return name != null && (name.toLowerCase().contains("download"));
+      return U.isDownloadsFolder(name);
     }
 
     public boolean isScreenshotBucket () {
-      return name != null && (name.toLowerCase().contains("screenshot"));
+      return U.isScreenshotFolder(name);
     }
 
     public ImageFile getPreviewImage () {

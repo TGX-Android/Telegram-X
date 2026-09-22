@@ -30,8 +30,8 @@ public class PageBlockFile extends PageBlock {
   private final InlineResultCommon result;
   private final TGPlayerController.PlayListBuilder playListBuilder;
 
-  public PageBlockFile (ViewController<?> context, TdApi.PageBlock pageBlock, String url, TGPlayerController.PlayListBuilder builder) {
-    super(context, pageBlock);
+  public PageBlockFile (ViewController<?> context, TdApi.PageBlock pageBlock, int quoteLevel, String url, TGPlayerController.PlayListBuilder builder) {
+    super(context, pageBlock, quoteLevel);
     this.result = (InlineResultCommon) InlineResult.valueOf(context.context(), context.tdlib(), pageBlock, builder);
     this.playListBuilder = builder;
     if (result == null)

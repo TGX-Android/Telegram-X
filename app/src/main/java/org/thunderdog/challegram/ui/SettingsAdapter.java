@@ -361,7 +361,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   protected void setButtonText (ListItem item, ScalableTextView view, boolean isUpdate) {
-    CharSequence text = item.getString() != null ? item.getString().toString().toUpperCase() : null;
+    CharSequence text = item.getString() != null ? Lang.uppercase(item.getString().toString()) : null;
     if (isUpdate) {
       view.replaceText(text);
     } else {
@@ -1830,7 +1830,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         CustomTextView nameView = (CustomTextView) group.getChildAt(0);
         TextView numberView = (TextView) group.getChildAt(1);
         nameView.setText(item.getString(), null, item.getHighlight(), false);
-        numberView.setText("+" + item.getStringValue());
+        String countryCode = "+" + item.getStringValue();
+        numberView.setText(countryCode);
         break;
       }
       case ListItem.TYPE_DESCRIPTION:

@@ -45,6 +45,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.widget.CheckBoxView;
@@ -496,7 +497,7 @@ public class EditChatFolderInviteLinkController extends EditBaseController<EditC
     protected void setHeaderText (ListItem item, TextView view, boolean isUpdate) {
       if (item.getId() == headerId) {
         if (chatIds != null && chatIds.length > 0) {
-          Views.setMediumText(view, Lang.getString(R.string.xOfYChatsSelected, selectedChatIds.size(), chatIds.length));
+          Views.setMediumText(view, Lang.plural(R.string.xOfYChatsSelected2, selectedChatIds.size(), Strings.buildCounter(chatIds.length)));
         } else {
           view.setText(null);
         }

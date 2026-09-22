@@ -468,7 +468,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     giveawayInfoLoaded = false;
   }
 
-  protected void showGiveawayInfoPopup (int winnerCount, TdApi.GiveawayPrize prize, long boostedChatId, int additionalChatsCount, long[] additionalChatIds, int winnersSelectionDate, String prizeDescription) {
+  protected void showGiveawayInfoPopup (int winnerCount, TdApi.GiveawayPrize prize, long boostedChatId, int additionalChatsCount, long[] additionalChatIds, int winnersSelectionDate, CharSequence prizeDescription) {
     if (giveawayInfo == null) {
       return;
     }

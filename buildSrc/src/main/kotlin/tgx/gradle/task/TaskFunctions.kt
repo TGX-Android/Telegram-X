@@ -10,6 +10,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+@file:Suppress("Unused", "NewApi")
+
 package tgx.gradle.task
 
 import tgx.gradle.fatal
@@ -24,21 +26,30 @@ fun isWindowsHost(): Boolean {
   return System.getProperty("os.name").startsWith("Windows")
 }
 
-fun writeToFile(path: String, block: (Writer) -> Unit) {
-  val isWindows = isWindowsHost()
-  // TODO proper detection, but it isn't needed for now,
-  // because all paths passed to this method are relative.
-  val isRelativePath = !path.startsWith("/")
-  val isRootFolder = !path.contains("/")
-  val file = if (isRelativePath && isWindows) {
-    File("${System.getProperty("user.dir")}${File.separator}$path")
-  } else {
-    File(path)
+fun writeTextToFile(file: File, mkdirs: Boolean = true, block: () -> String) {
+  writeToFileImpl(file, mkdirs) { outFile ->
+    val text = block()
+    outFile.writeText(text)
   }
-  writeToFile(file, mkdirs = !isRootFolder, block)
 }
 
 fun writeToFile(file: File, mkdirs: Boolean = true, block: (Writer) -> Unit) {
+  writeToFileImpl(file, mkdirs) { outFile ->
+    FileOutputStream(outFile).use { stream ->
+      stream.bufferedWriter().use {
+        try {
+          block(it)
+        } catch (t: Throwable) {
+          outFile.delete()
+          throw t
+        }
+      }
+      stream.flush()
+    }
+  }
+}
+
+private fun writeToFileImpl(file: File, mkdirs: Boolean = true, block: (File) -> Unit) {
   if (file.parentFile == null) {
     if (mkdirs) {
       fatal("Invalid file path: ${file.absolutePath}")
@@ -56,17 +67,10 @@ fun writeToFile(file: File, mkdirs: Boolean = true, block: (Writer) -> Unit) {
     fatal("Not a file: ${file.absolutePath}")
   }
   val outFile = File(file.parentFile, "${file.name}.temp")
-  FileOutputStream(outFile).use { stream ->
-    stream.bufferedWriter().use {
-      try {
-        block(it)
-      } catch (t: Throwable) {
-        outFile.delete()
-        throw t
-      }
-    }
-    stream.flush()
+  if (outFile.exists()) {
+    fatal("Temp file exists: ${outFile.absolutePath}")
   }
+  block(outFile)
 
   if (file.exists()) {
     if (!areFileContentsIdentical(file, outFile)) {
@@ -100,42 +104,6 @@ fun copyOrReplace(fromFile: File, toFile: File) {
       inChannel.transferTo(0, inChannel.size(), outChannel)
     }
   }
-}
-
-fun editFile(path: String, block: (String) -> String) {
-  val file = File(path)
-  if (!file.exists()) {
-    error("File does not exist: ${file.absolutePath}")
-  }
-  if (!file.isFile) {
-    error("Not a file: ${file.absolutePath}")
-  }
-
-  val tempFile = File(file.parentFile, "${file.name}.temp")
-  var hasChanges = false
-  tempFile.bufferedWriter().use { writer ->
-    file.bufferedReader().use { reader ->
-      var first = true
-      while (true) {
-        val line = reader.readLine() ?: break
-        if (first) {
-          first = false
-        } else {
-          writer.append("\n")
-        }
-        val changedLine = block(line)
-        if (!hasChanges && line != changedLine) {
-          hasChanges = true
-        }
-        writer.append(changedLine)
-      }
-    }
-  }
-
-  if (hasChanges) {
-    copyOrReplace(tempFile, file)
-  }
-  tempFile.delete()
 }
 
 fun areFileContentsIdentical(a: File, b: File): Boolean {

@@ -28,7 +28,7 @@ public class DrawerContentView extends FrameLayoutFix {
     /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       setFitsSystemWindows(true);
       setOnApplyWindowInsetsListener(new OnApplyWindowInsetsListener() {
-        @TargetApi(Build.VERSION_CODES.KITKAT_WATCH)
+        @RequiresApi(Build.VERSION_CODES.KITKAT_WATCH)
         @Override
         public WindowInsets onApplyWindowInsets (View v, WindowInsets insets) {
           lastInsets = insets;

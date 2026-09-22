@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -34,6 +33,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
@@ -49,6 +49,8 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.service.FetchNotificationService;
+import org.thunderdog.challegram.service.PushProcessor;
 import org.thunderdog.challegram.sync.SyncAdapter;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
@@ -64,6 +66,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
@@ -72,14 +75,29 @@ import me.vkryl.leveldb.LevelDB;
 import tgx.td.ChatId;
 
 public class TdlibNotificationManager implements UI.StateListener, Passcode.LockListener, CleanupStartupDelegate {
-  public static final int ID_MUSIC = Integer.MAX_VALUE;
-  public static final int ID_LOCATION = Integer.MAX_VALUE - 1;
-  public static final int ID_ONGOING_CALL_NOTIFICATION = Integer.MAX_VALUE - 2;
-  public static final int ID_INCOMING_CALL_NOTIFICATION = Integer.MAX_VALUE - 3;
-  public static final int ID_PENDING_TASK = Integer.MAX_VALUE - 4;
-  public static final int ID_TEMPORARY_NOTIFICATION = Integer.MAX_VALUE - 5;
-  public static final int IDS_COUNT = 6;
-  public static final int IDS_PER_ACCOUNT = (int) ((long) (Integer.MAX_VALUE - IDS_COUNT) / (long) TdlibAccount.ID_MAX) - 1;
+  public static final int ID_TEMPORARY_NOTIFICATION = Integer.MAX_VALUE;
+  public static final int ID_FOREGROUND_MUSIC = Integer.MAX_VALUE - 1;
+  public static final int ID_FOREGROUND_LOCATION = Integer.MAX_VALUE - 2;
+  public static final int ID_FOREGROUND_ONGOING_CALL_NOTIFICATION = Integer.MAX_VALUE - 3;
+  public static final int ID_FOREGROUND_INCOMING_CALL_NOTIFICATION = Integer.MAX_VALUE - 4;
+  public static final int ID_FOREGROUND_PENDING_TASK = Integer.MAX_VALUE - 5;
+
+  public static final int IDS_PER_ACCOUNT = (int) ((long) (Integer.MAX_VALUE - 6) / (long) TdlibAccount.ID_MAX) - 1;
+
+  public static String getMessageNotificationTag (int accountId, int category) {
+    String prefix = switch (category) {
+      case TdlibNotificationGroup.CATEGORY_PRIVATE -> "pm";
+      case TdlibNotificationGroup.CATEGORY_GROUPS -> "groups";
+      case TdlibNotificationGroup.CATEGORY_CHANNELS -> "channels";
+      case TdlibNotificationGroup.CATEGORY_SECRET -> "sc";
+      default -> "chats";
+    };
+    if (accountId != TdlibAccount.NO_ID) {
+      return prefix + "_" + accountId;
+    } else {
+      return prefix;
+    }
+  }
 
   public static int calculateBaseNotificationId (Tdlib tdlib) {
     return 1 + IDS_PER_ACCOUNT * tdlib.id();
@@ -318,7 +336,9 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     protected void process (Message msg) {
       switch (msg.what) {
         case CLEANUP_CHANNELS: {
-          TdlibNotificationChannelGroup.cleanupChannelGroups(context);
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            TdlibNotificationChannelGroup.cleanupChannelGroups(context);
+          }
           break;
         }
         case PLAY_SOUND: {
@@ -1177,7 +1197,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return _channelGlobalVersion;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public long getChannelVersion (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (customChatId != 0) {
       return Settings.instance().getLong(key(_CHANNEL_VERSION_CUSTOM_KEY + customChatId), 0);
@@ -1186,7 +1206,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   private void incrementChannelVersion (@Nullable TdApi.NotificationSettingsScope scope, long chatId, LevelDB editor) {
     long selfUserId = tdlib.myUserId();
     LocalScopeNotificationSettings settings = chatId != 0 ? null : getLocalNotificationSettings(scope);
@@ -1212,7 +1232,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public String getSystemChannelId (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long accountId = tdlib.myUserId();
@@ -1224,7 +1244,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return null;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   @Nullable
   public Object getSystemChannelGroup () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -1247,7 +1267,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return null;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public Object getSystemChannel (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -2032,7 +2052,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   @AnyThread
-  @TargetApi(Build.VERSION_CODES.TIRAMISU)
+  @RequiresApi(Build.VERSION_CODES.TIRAMISU)
   public void onNotificationPermissionGranted () {
     rebuildNotification();
   }
@@ -2181,6 +2201,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   @TdlibThread
   void onUpdateNotificationGroup (TdApi.UpdateNotificationGroup update) {
+    if (Config.FOREGROUND_SERVICE_DEMO) {
+      Context context = UI.getContext();
+      PushProcessor.showForegroundNotification(context, tdlib.context(), false, -1, tdlib.accountId(), true, new CountDownLatch(0));
+      queue.post(() -> {
+        FetchNotificationService.stopForegroundTask(context, -1, tdlib.accountId());
+        sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
+      }, 1500L);
+      return;
+    }
     sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
   }
 

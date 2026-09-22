@@ -2718,6 +2718,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     default boolean onUrlClick (View view, String link, boolean promptUser, @NonNull TdlibUi.UrlOpenParameters openParameters) { return false; }
     default boolean onAnchorClick (View view, String anchor) { return false; }
     default boolean onReferenceClick (View view, String name, String referenceAnchorName, @NonNull TdlibUi.UrlOpenParameters openParameters) { return false; }
+    default boolean onButtonClick (View view, TdApi.InlineButton button, @NonNull TdlibUi.UrlOpenParameters openParameters) { return false; }
   }
 
   public boolean highlightPart (int index, boolean onlyClickable) {

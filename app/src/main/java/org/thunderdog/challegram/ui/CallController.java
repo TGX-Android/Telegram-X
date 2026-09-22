@@ -355,6 +355,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
   protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
     Views.setPaddingBottom(buttonWrap, extraBottomInset);
+    Views.setLayoutHeight(buttonWrap, Screen.dp(76f) + extraBottomInset);
     Views.setPaddingBottom(callControlsLayout, extraBottomInset);
   }
 
@@ -587,7 +588,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     Views.setSimpleShadow(brandView);
     brandView.setEllipsize(TextUtils.TruncateAt.END);
     brandView.setLayoutParams(lp);
-    brandView.setText(Lang.getString(R.string.VoipBranding).toUpperCase());
+    brandView.setText(Lang.uppercase(Lang.getString(R.string.VoipBranding)));
     if (Log.checkLogLevel(Log.LEVEL_INFO) || BuildConfig.EXPERIMENTAL) {
       brandView.setOnClickListener(new View.OnClickListener() {
         @Override
@@ -772,7 +773,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     buttonWrap.setLayoutTransition(layoutTransition);
 
     buttonWrap.setGravity(Gravity.CENTER);
-    buttonWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(76f), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+    buttonWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(76f) + extraBottomInset, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
     buttonWrap.addView(otherOptionsContainer);
     buttonWrap.addView(videoButtonContainer);
     buttonWrap.addView(flipCameraButtonContainer);
@@ -1468,7 +1469,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
         }
       }
     }
-    stateView.setText(str.toUpperCase());
+    stateView.setText(Lang.uppercase(str));
     setButtonsVisible(!TD.isFinished(call) && !(call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR && !call.isOutgoing), isFocused());
     updateEmoji();
     updateFlashing();

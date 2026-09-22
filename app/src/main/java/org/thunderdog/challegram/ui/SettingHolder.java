@@ -104,7 +104,6 @@ import org.thunderdog.challegram.widget.ScoutFrameLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.SettingStupidView;
 import org.thunderdog.challegram.widget.ShadowView;
-import org.thunderdog.challegram.widget.SimplestCheckBox;
 import org.thunderdog.challegram.widget.SliderWrapView;
 import org.thunderdog.challegram.widget.SmallChatView;
 import org.thunderdog.challegram.widget.TimerView;

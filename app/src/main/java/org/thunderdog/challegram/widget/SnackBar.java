@@ -24,6 +24,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
@@ -108,7 +109,7 @@ public class SnackBar extends RelativeLayout {
   }
 
   public SnackBar setAction (String action, Runnable callback, boolean dismissAutomatically) {
-    Views.setMediumText(actionView, action.toUpperCase());
+    Views.setMediumText(actionView, Lang.uppercase(action));
     actionView.setOnClickListener(v -> {
       callback.run();
       if (dismissAutomatically) {

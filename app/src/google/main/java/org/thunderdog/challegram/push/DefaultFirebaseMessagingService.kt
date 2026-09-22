@@ -8,6 +8,7 @@ import org.thunderdog.challegram.telegram.TdlibManager
 import org.thunderdog.challegram.tool.UI
 import tgx.bridge.PushManagerBridge
 
+@Suppress("MissingFirebaseInstanceTokenRefresh")
 abstract class DefaultFirebaseMessagingService : FirebaseMessagingService() {
 
   override fun onMessageReceived(remoteMessage: RemoteMessage) {
@@ -24,6 +25,10 @@ abstract class DefaultFirebaseMessagingService : FirebaseMessagingService() {
   }
 
   companion object {
+    @Suppress(names = [
+      "UNNECESSARY_SAFE_CALL",
+      "SENSELESS_COMPARISON"
+    ])
     private fun makePayload(remoteMessage: RemoteMessage): Map<String, Any> {
       val payload = mutableMapOf<String, Any>()
       payload["google.sent_time"] = remoteMessage.getSentTime()
@@ -45,9 +50,8 @@ abstract class DefaultFirebaseMessagingService : FirebaseMessagingService() {
           }
         }
       }
-      val data = remoteMessage.getData()
-      if (data != null) {
-        payload.putAll(data)
+      remoteMessage.data?.let {
+        payload.putAll(it)
       }
       return payload
     }

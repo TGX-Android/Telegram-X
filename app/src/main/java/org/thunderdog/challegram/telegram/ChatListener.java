@@ -40,6 +40,7 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatPhotoChanged (long chatId, @Nullable TdApi.ChatPhotoInfo photo) { }
   default void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) { }
   default void onChatHasScheduledMessagesChanged (long chatId, boolean hasScheduledMessages) { }
+  default void onChatHasWelcomeMessagesChanged (long chatId, boolean hasWelcomeMessages) { }
   default void onChatHasProtectedContentChanged (long chatId, boolean hasProtectedContent) { }
   default void onChatReadOutbox (long chatId, long lastReadOutboxMessageId) { }
   default void onChatMarkedAsUnread (long chatId, boolean isMarkedAsUnread) { }

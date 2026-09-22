@@ -595,6 +595,31 @@ public class TdlibUi extends Handler {
     showDeleteOptions(context, new MessageWithProperties[] {message}, null);
   }
 
+  public void showClearCallHistoryOptions (ViewController<?> context) {
+    tdlib.send(new TdApi.SearchCallMessages(null, 1, false), (result, error) -> {
+      if (error != null || result.messages.length == 0) {
+        return;
+      }
+      context.runOnUiThreadOptional(() ->
+        context.showSettings(new SettingsWrapBuilder(R.id.btn_delete)
+          .addHeaderItem(Lang.getMarkdownString(context, R.string.DeleteCallHistoryConfirm))
+          .setRawItems(new ListItem[] {
+            new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteCallHistoryForEveryone, false)
+          })
+          .setIntDelegate((id, result2) -> {
+            if (id == R.id.btn_delete) {
+              boolean revoke = result2.get(R.id.btn_deleteAll) != 0;
+              tdlib.clearCallsHistory(revoke, () ->
+                UI.showToast(R.string.Done, Toast.LENGTH_SHORT)
+              );
+            }
+          })
+          .setSaveStr(R.string.Delete)
+          .setSaveColorId(ColorId.textNegative))
+      );
+    });
+  }
+
   public void showDeleteOptions (final ViewController<?> context, final MessageWithProperties[] messages, final @Nullable Runnable after) {
     if (context != null && messages != null && messages.length > 0) {
       if (deleteSuperGroupMessages(context, messages, after)) {
@@ -3728,7 +3753,7 @@ public class TdlibUi extends Handler {
             case TdApi.SettingsSectionDevices.CONSTRUCTOR: {
               SettingsSessionsController sessions = new SettingsSessionsController(context.context(), context.tdlib());
               SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
-              result = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController<?>[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
+              result = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController<?>[] {sessions, websites}, new String[] {Lang.uppercase(Lang.getString(R.string.Devices)), Lang.getString(R.string.Websites)}, false);
               break;
             }
             case TdApi.SettingsSectionLanguage.CONSTRUCTOR: {
@@ -4009,7 +4034,7 @@ public class TdlibUi extends Handler {
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
             case TdApi.SettingsSectionSearch.CONSTRUCTOR:
             case TdApi.SettingsSectionMyStars.CONSTRUCTOR:
-            case TdApi.SettingsSectionMyToncoins.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
             case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
             case TdApi.SettingsSectionPremium.CONSTRUCTOR:
             case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
@@ -4020,7 +4045,7 @@ public class TdlibUi extends Handler {
               break;
             }
             default: {
-              Td.assertSettingsSection_94405f42();
+              Td.assertSettingsSection_c6f544dd();
               throw Td.unsupported(section);
             }
           }
@@ -6449,7 +6474,7 @@ public class TdlibUi extends Handler {
     if (!StringUtils.isEmpty(author)) {
       conversion += "," + author;
     }
-    TdApi.InputMessageContent content = new TdApi.InputMessageDocument(new TdApi.InputFileGenerated(fileName, conversion, 0), null, false, null);
+    TdApi.InputMessageContent content = new TdApi.InputMessageDocument(new TdApi.InputDocument(new TdApi.InputFileGenerated(fileName, conversion, 0), null, false), null);
     ShareController c = new ShareController(context.context(), context.tdlib());
     c.setArguments(new ShareController.Args(content));
     c.show();
@@ -7492,8 +7517,11 @@ public class TdlibUi extends Handler {
       case TdApi.PremiumLimitTypeShareableChatFolderCount.CONSTRUCTOR:
         effectiveLimit = tdlib.addedShareableChatFolderCountMax();
         break;
+      case TdApi.PremiumLimitTypeMessageTextLength.CONSTRUCTOR:
+        effectiveLimit = tdlib.maxMessageTextLength();
+        break;
       default:
-        Td.assertPremiumLimitType_8710e45f();
+        Td.assertPremiumLimitType_f8cc4a60();
         throw Td.unsupported(premiumLimitType);
     }
 

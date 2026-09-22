@@ -14,13 +14,13 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationManagerCompat;
 
 import org.drinkless.tdlib.TdApi;
@@ -46,8 +46,8 @@ import tgx.td.ChatId;
 public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup> {
   private final TdlibNotificationManager context;
   private final Tdlib tdlib;
-
   private final int baseNotificationId;
+
   private final TdlibNotificationStyleDelegate style;
 
   TdlibNotificationHelper (TdlibNotificationManager context, Tdlib tdlib) {
@@ -103,21 +103,11 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     // groups.clear();
   }
 
-  private void hideUnknownNotification (NotificationManagerCompat manager, int notificationId, boolean isSummary, TdlibNotificationExtras extras) {
-    /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-      try {
-        String channelId;
-        if (isSummary) {
-          channelId = findCommonChannelId(extras.category);
-        } else {
-          TdlibNotificationGroup group = new TdlibNotificationGroup(tdlib, new TdApi.NotificationGroup(extras.notificationGroupId, extras.areMentions ? new TdApi.NotificationGroupTypeMentions() : new TdApi.NotificationGroupTypeMessages(), extras.chatId, 0, new TdApi.Notification[0]));
-          channelId = ((android.app.NotificationChannel) getChannelGroup().getChannel(group, true)).getId();
-        }
-
-        manager.notify(baseNotificationId, new Notification.Builder(UI.getAppContext(), channelId).setGroupSummary(isSummary).setGroupSummary(isSummary).setGroup(TdlibNotificationStyle.makeGroupKey(tdlib, extras.category)).setOnlyAlertOnce(true).build());
-      } catch (Throwable ignored) { }
-    }*/
-    manager.cancel(notificationId);
+  private void hideUnknownNotification (NotificationManagerCompat manager, String tag, int notificationId, boolean isSummary, TdlibNotificationExtras extras) {
+    manager.cancel(
+      tag,
+      notificationId
+    );
   }
 
   @AnyThread
@@ -133,12 +123,13 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     if (group != null && !group.isEmpty()) {
       tdlib.client().send(new TdApi.RemoveNotificationGroup(extras.notificationGroupId, extras.maxNotificationId), tdlib.silentHandler());
     } else {
+      String notificationTag = TdlibNotificationManager.getMessageNotificationTag(extras.accountId, extras.category);
       int notificationId = getNotificationIdForGroup(extras.notificationGroupId);
       NotificationManagerCompat manager = manager();
-      hideUnknownNotification(manager, notificationId, false, extras);
+      hideUnknownNotification(manager, notificationTag, notificationId, false, extras);
       if (!hasVisibleNotifications(extras.category)) {
         int baseNotificationId = getBaseNotificationId(extras.category);
-        hideUnknownNotification(manager, baseNotificationId, true, extras);
+        hideUnknownNotification(manager, notificationTag, baseNotificationId, true, extras);
       }
     }
   }
@@ -320,12 +311,22 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     return tdlib;
   }
 
+  public String tag (int category) {
+    return TdlibNotificationManager.getMessageNotificationTag(tdlib.accountId(), category);
+  }
+
   public int getBaseNotificationId (int category) {
     return baseNotificationId + category;
   }
 
   public int getNotificationIdForGroup (int groupId) {
-    return baseNotificationId + (/*category_count*/ TdlibNotificationGroup.MAX_CATEGORY + 1) + groupId;
+    int offset = TdlibNotificationGroup.MAX_CATEGORY + 1 + groupId;
+    int available = Integer.MAX_VALUE - baseNotificationId;
+    if (offset >= available) {
+      return 1 + offset;
+    } else {
+      return baseNotificationId + offset;
+    }
   }
 
   public boolean isEmpty () {
@@ -359,7 +360,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     return group != null && !group.isEmpty() && !group.isHidden() ? group : null;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public String findCommonChannelId (int category) throws TdlibNotificationChannelGroup.ChannelCreationFailureException {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       TdlibNotificationChannelGroup channelGroup = tdlib.notifications().getChannelCache();

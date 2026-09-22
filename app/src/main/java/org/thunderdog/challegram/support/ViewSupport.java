@@ -45,8 +45,6 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
-import java.lang.reflect.Field;
-
 import me.vkryl.android.ViewUtils;
 import me.vkryl.core.ColorUtils;
 
@@ -92,16 +90,12 @@ public class ViewSupport {
     }
   }
 
+  @SuppressWarnings("DiscouragedApi")
   public static void showDatePicker (final DatePickerDialog dialog) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       dialog.setOnShowListener(ignored -> {
-        final DatePicker datePicker = dialog.getDatePicker();
+        final DatePicker mDatePicker = dialog.getDatePicker();
         try {
-          Field mDatePickerField;
-          mDatePickerField = DatePickerDialog.class.getDeclaredField("mDatePicker");
-          mDatePickerField.setAccessible(true);
-          final DatePicker mDatePicker = (DatePicker) mDatePickerField.get(dialog);
-
           int viewId = Resources.getSystem().getIdentifier("day_picker_selector_layout", "id", "android");
           if (viewId == 0) {
             viewId = Resources.getSystem().getIdentifier("date_picker_header", "id", "android");

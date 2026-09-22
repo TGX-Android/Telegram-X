@@ -16,6 +16,7 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("SimpleDateFormat")
 public class ChartData {
 
     public long[] x;
@@ -77,7 +78,7 @@ public class ChartData {
                 if (matcher.matches()) {
                     String key = matcher.group(1);
                     if (key != null) {
-                        line.colorKey = "statisticChartLine_" + matcher.group(1).toLowerCase();
+                        line.colorKey = "statisticChartLine_" + matcher.group(1).toLowerCase(Locale.ROOT);
                     }
 
                     line.color = Color.parseColor(matcher.group(2));

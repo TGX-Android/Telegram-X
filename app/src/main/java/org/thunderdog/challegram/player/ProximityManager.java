@@ -41,6 +41,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
+import tgx.flavor.Flavor;
 import tgx.td.Td;
 
 @SuppressWarnings("deprecation")
@@ -158,7 +159,7 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
   private PowerManager.WakeLock proximityWakeLock;
 
   private boolean isWiredHeadsetOn;
-  private BroadcastReceiver receiver = new BroadcastReceiver() {
+  private final BroadcastReceiver receiver = new BroadcastReceiver() {
     @Override
     public void onReceive (Context context, Intent intent) {
       checkWiredHeadset();
@@ -196,7 +197,7 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
       BluetoothAdapter btAdapter = am.isBluetoothScoAvailableOffCall() ? BluetoothAdapter.getDefaultAdapter() : null;
       IntentFilter intentFilter = newIntentFilter(btAdapter);
       try {
-        UI.getAppContext().registerReceiver(receiver, intentFilter);
+        Flavor.registerReceiver(UI.getAppContext(), receiver, intentFilter, false);
       } catch (Throwable t) {
         Log.e("Unable to register headset broadcast receiver", t);
       }

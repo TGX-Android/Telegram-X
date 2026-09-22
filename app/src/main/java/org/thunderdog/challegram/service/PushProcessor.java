@@ -182,7 +182,7 @@ public class PushProcessor {
       synchronized (foregroundLock) {
         if (state.compareAndSet(State.VISIBLE, State.FINISHED)) {
           TDLib.Tag.notifications(pushId, accountId, "Stopping a foreground task");
-          ForegroundService.stopForegroundTask(context, pushId, accountId);
+          FetchNotificationService.stopForegroundTask(context, pushId, accountId);
           SyncTask.cancel(accountId);
         } else {
           int currentState = state.get();
@@ -278,6 +278,10 @@ public class PushProcessor {
       TDLib.Tag.notifications(pushId, accountId, "Can't show foreground notification, because user didn't provide explicit permission. inRecovery: %b", inRecovery);
       return false;
     }
+    return showForegroundNotification(context, manager, inRecovery, pushId, accountId, critical, foregroundServiceLatch);
+  }
+
+  public static boolean showForegroundNotification (Context context, TdlibManager manager, boolean inRecovery, long pushId, int accountId, boolean critical, CountDownLatch foregroundServiceLatch) {
     String text;
     if (accountId != TdlibAccount.NO_ID && manager.isMultiUser()) {
       text = Lang.getString(R.string.RetrievingText, manager.account(accountId).getLongName());
@@ -285,7 +289,7 @@ public class PushProcessor {
       text = null;
     }
     final AtomicBoolean success = new AtomicBoolean(false);
-    if (ForegroundService.startForegroundTask(context,
+    if (FetchNotificationService.startForegroundTask(context,
       Lang.getString(inRecovery ? R.string.RetrieveMessagesError : R.string.RetrievingMessages), text,
       U.getOtherNotificationChannel(),
       0,

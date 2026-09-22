@@ -103,8 +103,8 @@ import me.vkryl.core.lambda.RunnableBool;
 
 @SuppressWarnings("JniMissingFunction")
 public class IntroController extends ViewController<Void> implements GLSurfaceView.EGLConfigChooser, GLSurfaceView.Renderer, ViewPager.OnPageChangeListener, Runnable, View.OnClickListener, View.OnLongClickListener, TdlibOptionListener, ConnectionListener, GlobalAccountListener {
-  public IntroController (Context context) {
-    super(context, null);
+  public IntroController (Context context, Tdlib tdlib) {
+    super(context, tdlib);
   }
 
   @Override
@@ -237,7 +237,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
 
     CharSequence info = Strings.buildMarkdown(new TdlibContext(context, getTdlib()), Lang.getString(languagePackInfo, R.string.LoginErrorLongConnecting), null);
     PopupLayout popupLayout = showOptions(info, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
-      if (id == R.id.btn_done) {
+      if (id == R.id.btn_startMessaging) {
         // nothing to do?
       } else if (id == R.id.btn_help) {
         TdApi.NetworkType networkType = getTdlib().networkType();
@@ -1002,7 +1002,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     progressComponent = new ProgressComponent(UI.getContext(context), Screen.dp(3.5f));
     progressComponent.setAlpha(0f);
     progressComponent.setViewProvider(new SingleViewProvider(button));
-    button.setId(R.id.btn_done);
+    button.setId(R.id.btn_startMessaging);
     button.setPadding(0, 0, 0, Screen.dp(1f));
     button.setTypeface(Fonts.getRobotoMedium());
     button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17f);
@@ -1082,7 +1082,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
   @Override
   public void onClick (View v) {
     final int viewId = v.getId();
-    if (viewId == R.id.btn_done) {
+    if (viewId == R.id.btn_startMessaging) {
       requestLogin(false);
     } else if (viewId == R.id.btn_cancel) {
       requestLogin(true);

@@ -63,7 +63,6 @@ import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.voip.VoIP;
-import org.thunderdog.challegram.voip.VoIPController;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
@@ -929,8 +928,6 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_crash4, 0, "Crash app (method 4, native direct)", false));
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_crashDirect, 0, "Crash app (default)", false));
-          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_crashDirectNative, 0, "Crash app (native)", false));
         }
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         break;
@@ -1215,7 +1212,6 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         for (String version : versions) {
           items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, version, !VoIP.isForceDisabled(version)).setStringValue(version));
         }
-        builder.addHeaderItem("Disabling all tgcalls versions enables libtgvoip " + VoIPController.getVersion() + " without tgcalls wrapper.");
       } else {
         int index = 0;
         int[] options = VoIP.getAllDebugOptions();
@@ -1313,8 +1309,6 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       Tracer.test3("[SUCCESS] INDIRECT NATIVE " + MathUtils.random(0, 10000));
     } else if (viewId == R.id.btn_test_crash4) {
       Tracer.test4("[SUCCESS] DIRECT NATIVE " + -MathUtils.random(0, 10000));
-    } else if (viewId == R.id.btn_test_crashDirectNative) {
-      Tracer.test5("[SUCCESS] DIRECT THROW " + -MathUtils.random(0, 10000));
     } else if (viewId == R.id.btn_test_crashDirect) {
       throw new RuntimeException("This is a default test");
     } else if (viewId == R.id.btn_secret_dropHidden) {

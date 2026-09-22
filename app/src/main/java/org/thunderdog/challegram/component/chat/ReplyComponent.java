@@ -548,6 +548,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private @Nullable TdApi.Function<?> retryFunction;
   private boolean ignoreFailures;
   private @Nullable TdApi.TextQuote quote;
+  private String pollOptionId;
   private Drawable cornerDrawable;
 
   public void load () {
@@ -569,6 +570,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         if (replyToMessage.origin != null) {
           handleOrigin(replyToMessage.origin);
         }
+        this.pollOptionId = replyToMessage.pollOptionId;
         if (!Td.isEmpty(replyToMessage.quote) || replyToMessage.content != null) {
           this.quote = replyToMessage.quote;
           TdApi.Message fakeMessage = TD.newFakeMessage(replyToMessage.chatId, sender, replyToMessage.content == null ? new TdApi.MessageText(replyToMessage.quote.text, null, null) : replyToMessage.content);
@@ -1015,6 +1017,18 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     ContentPreview contentPreview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, true);
     if (!Td.isEmpty(quote)) {
       contentPreview = new ContentPreview(contentPreview, quote.text);
+    } else if (!StringUtils.isEmpty(pollOptionId) && msg.content.getConstructor() == TdApi.MessagePoll.CONSTRUCTOR) {
+      TdApi.MessagePoll poll = (TdApi.MessagePoll) msg.content;
+      TdApi.PollOption option = null;
+      for (TdApi.PollOption pollOption : poll.poll.options) {
+        if (pollOption.id.equals(pollOptionId)) {
+          option = pollOption;
+          break;
+        }
+      }
+      if (option != null) {
+        contentPreview = new ContentPreview(ContentPreview.EMOJI_POLL_OPTION, 0, option.text);
+      }
     }
     if (msg.forwardInfo != null /*&& (parent != null && parent.getMessage().forwardInfo != null)*/) {
       handleOrigin(msg.forwardInfo.origin);

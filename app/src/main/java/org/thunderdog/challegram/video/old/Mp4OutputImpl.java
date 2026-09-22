@@ -14,10 +14,11 @@
  */
 package org.thunderdog.challegram.video.old;
 
-import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.os.Build;
+
+import androidx.annotation.RequiresApi;
 
 import com.coremedia.iso.BoxParser;
 import com.coremedia.iso.IsoFile;
@@ -59,7 +60,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+@RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
 public class Mp4OutputImpl extends Mp4Output {
 
   private InterleaveChunkMdat mdat = null;

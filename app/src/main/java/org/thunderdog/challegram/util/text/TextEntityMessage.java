@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.util.text;
 
-import android.net.Uri;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ClickableSpan;

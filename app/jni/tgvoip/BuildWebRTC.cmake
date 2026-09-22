@@ -2771,6 +2771,7 @@ target_link_libraries(webrtc PUBLIC
   yuv
   opus
   vpx
+  OpenSLES
 )
 
 target_include_directories(webrtc PRIVATE

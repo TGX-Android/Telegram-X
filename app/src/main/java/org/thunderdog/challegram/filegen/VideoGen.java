@@ -17,13 +17,13 @@ package org.thunderdog.challegram.filegen;
 import static tgx.flavor.VideoTransformer.getVideoFrameRate;
 import static tgx.flavor.VideoTransformer.legacyConvertVideoComplex;
 
-import android.annotation.TargetApi;
 import android.media.MediaMetadataRetriever;
 import android.os.Build;
 import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.WorkerThread;
 import androidx.media3.common.C;
 import androidx.media3.common.Effect;
@@ -116,6 +116,8 @@ public class VideoGen {
     private double transcodeProgress;
     private long readyBytes;
     private long reportedBytesCount, reportedExpectedBytesCount;
+
+    private int inputVideoRotation;
 
     private final VideoGen context;
     private final long generationId;
@@ -220,7 +222,7 @@ public class VideoGen {
     final String sourcePath = info.getOriginalPath();
     final String destinationPath = info.getDestinationPath();
 
-    boolean sendOriginalInCaseFileSizeGrows = !Config.MODERN_VIDEO_TRANSCODING_ENABLED && info.canTakeSimplePath();
+    boolean sendOriginalInCaseFileSizeGrows = !Config.MODERN_VIDEO_TRANSCODING_ENABLED && info.canTakeSimplePath() && (entry.inputVideoRotation == 0 || !Config.TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT);
 
     long sourceSize = getBytesCount(sourcePath, true);
     ProgressCallback onProgress = new ProgressCallback() {
@@ -370,7 +372,7 @@ public class VideoGen {
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void convertVideoComplexV2 (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure, Runnable after) throws FileNotFoundException {
     MediaMetadataRetriever retriever = U.openRetriever(sourcePath);
     if (retriever == null)
@@ -384,6 +386,7 @@ public class VideoGen {
     } else {
       inputVideoRotation = 0;
     }
+    entry.inputVideoRotation = inputVideoRotation;
     long inputVideoBitrate = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
     U.closeRetriever(retriever);
 
@@ -446,6 +449,11 @@ public class VideoGen {
       editedMediaItemBuilder.setEffects(new Effects(
         Collections.emptyList(),
         videoEffects
+      ));
+    } else if (Config.TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT && inputVideoRotation != 0) {
+      editedMediaItemBuilder.setEffects(new Effects(
+        Collections.emptyList(),
+        Collections.emptyList()
       ));
     }
 

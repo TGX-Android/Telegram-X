@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.component.chat;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -28,6 +27,7 @@ import android.view.ViewGroup;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.data.TD;
@@ -43,7 +43,7 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
-@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+@RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
 public class MessageViewGroup extends ViewGroup implements Destroyable, AttachDelegate, MessagesManager.MessageProvider {
   private static class MessageBackground extends Drawable {
     private final MessageView context;

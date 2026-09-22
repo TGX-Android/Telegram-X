@@ -89,27 +89,31 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
   private boolean needFakeTitle;
   private String trimmedSubtitle;
 
-  public TGMessageLocation (MessagesManager context, TdApi.Message msg, TdApi.Location point, int livePeriod, int expiresInSeconds) {
+  public TGMessageLocation (MessagesManager context, TdApi.Message msg, TdApi.MessageLocation location) {
     super(context, msg);
-    this.point = point;
+    this.point = location.location;
     this.venue = null;
-    if (livePeriod != 0) {
-      switch (msg.senderId.getConstructor()) {
-        case TdApi.MessageSenderUser.CONSTRUCTOR: {
-          long userId = ((TdApi.MessageSenderUser) msg.senderId).userId;
-          updatePreviewUser(userId, tdlib.cache().user(userId));
-          break;
-        }
-        case TdApi.MessageSenderChat.CONSTRUCTOR: {
-          long chatId = ((TdApi.MessageSenderChat) msg.senderId).chatId;
-          updatePreviewChat(chatId, tdlib.chat(chatId));
-          break;
-        }
-        default:
-          throw new AssertionError(msg.senderId.toString());
+  }
+
+  public TGMessageLocation (MessagesManager context, TdApi.Message msg, TdApi.MessageLiveLocation liveLocation) {
+    super(context, msg);
+    this.point = liveLocation.location.location;
+    this.venue = null;
+    switch (msg.senderId.getConstructor()) {
+      case TdApi.MessageSenderUser.CONSTRUCTOR: {
+        long userId = ((TdApi.MessageSenderUser) msg.senderId).userId;
+        updatePreviewUser(userId, tdlib.cache().user(userId));
+        break;
       }
-      setLivePeriod(livePeriod, expiresInSeconds, true);
+      case TdApi.MessageSenderChat.CONSTRUCTOR: {
+        long chatId = ((TdApi.MessageSenderChat) msg.senderId).chatId;
+        updatePreviewChat(chatId, tdlib.chat(chatId));
+        break;
+      }
+      default:
+        throw new AssertionError(msg.senderId.toString());
     }
+    setLivePeriod(liveLocation.location.livePeriod, liveLocation.expiresIn, true);
   }
 
   private void setLivePeriod (int livePeriod, int expiresInSeconds, boolean isInitial) {
@@ -124,8 +128,8 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
       updateTimer();
     }
     if (!isInitial) {
-      if (Td.isLocation(msg.content)) {
-        ((TdApi.MessageLocation) msg.content).expiresIn = expiresInSeconds;
+      if (Td.isLiveLocation(msg.content)) {
+        ((TdApi.MessageLiveLocation) msg.content).expiresIn = expiresInSeconds;
       }
       checkAlive(true);
     }
@@ -404,17 +408,26 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
     int newLivePeriod;
     int newExpiresIn;
     switch (newContent.getConstructor()) {
-      case TdApi.MessageVenue.CONSTRUCTOR:
+      case TdApi.MessageVenue.CONSTRUCTOR: {
         location = ((TdApi.MessageVenue) newContent).venue.location;
         newLivePeriod = livePeriod;
         newExpiresIn = initialExpiresIn;
         break;
-      case TdApi.MessageLocation.CONSTRUCTOR:
+      }
+      case TdApi.MessageLocation.CONSTRUCTOR: {
         TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) newContent;
         location = messageLocation.location;
-        newLivePeriod = messageLocation.livePeriod;
+        newLivePeriod = 0;
+        newExpiresIn = 0;
+        break;
+      }
+      case TdApi.MessageLiveLocation.CONSTRUCTOR: {
+        TdApi.MessageLiveLocation messageLocation = (TdApi.MessageLiveLocation) newContent;
+        location = messageLocation.location.location;
+        newLivePeriod = messageLocation.location.livePeriod;
         newExpiresIn = messageLocation.expiresIn;
         break;
+      }
       default:
         return false;
     }
@@ -444,7 +457,9 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
 
   public void stopLiveLocation () {
     if (canStopAlive()) {
-      tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, msg.replyMarkup, null, 0, 0, 0), tdlib.silentHandler());
+      tdlib.client().send(new TdApi.EditMessageLiveLocation(
+        msg.chatId, msg.id, msg.replyMarkup, null
+      ), tdlib.silentHandler());
     }
   }
 
