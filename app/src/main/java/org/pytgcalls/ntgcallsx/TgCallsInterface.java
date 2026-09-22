@@ -3,7 +3,7 @@ package org.pytgcalls.ntgcallsx;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import io.github.pytgcalls.FrameCallback;
+import io.github.pytgcalls.FramesCallback;
 import io.github.pytgcalls.RemoteSourceChangeCallback;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.voip.ConnectionStateListener;
@@ -39,7 +39,7 @@ public class TgCallsInterface implements CallInterface{
   }
 
   @Override
-  public void setFrameCallback (FrameCallback callback) {
+  public void setFrameCallback (FramesCallback callback) {
 
   }
 

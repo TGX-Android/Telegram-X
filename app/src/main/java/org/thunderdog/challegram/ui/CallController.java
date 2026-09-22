@@ -1295,13 +1295,19 @@ public class CallController extends ViewController<CallController.Arguments> imp
       var isVideo = streamDevice == StreamDevice.CAMERA || streamDevice == StreamDevice.SCREEN;
       if (isVideo) {
         var rawFrame = frameList.get(0);
-        int ySize = rawFrame.frameData.width * rawFrame.frameData.height;
+        int ySize = rawFrame.frame_data.width * rawFrame.frame_data.height;
         int uvSize = ySize / 4;
-        var i420Buffer = JavaI420Buffer.allocate(rawFrame.frameData.width, rawFrame.frameData.height);
+        var i420Buffer = JavaI420Buffer.allocate(rawFrame.frame_data.width, rawFrame.frame_data.height);
         i420Buffer.getDataY().put(rawFrame.data, 0, ySize).flip();
         i420Buffer.getDataU().put(rawFrame.data, ySize, uvSize).flip();
         i420Buffer.getDataV().put(rawFrame.data, ySize + uvSize, uvSize).flip();
-        VideoFrame frame = new VideoFrame(i420Buffer, rawFrame.frameData.rotation, System.nanoTime());
+        int rotation = 0;
+        switch (rawFrame.frame_data.rotation) {
+          case VIDEO_ROTATION_90 -> rotation = 90;
+          case VIDEO_ROTATION_180 -> rotation = 180;
+          case VIDEO_ROTATION_270 -> rotation = 270;
+        }
+        VideoFrame frame = new VideoFrame(i420Buffer, rotation, System.nanoTime());
 
         switch (streamMode) {
           case CAPTURE:

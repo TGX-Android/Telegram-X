@@ -9,8 +9,9 @@ import android.view.WindowManager;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import org.drinkless.tdlib.TdApi;
-import io.github.pytgcalls.NetworkInfo;
-import io.github.pytgcalls.FrameCallback;
+import io.github.pytgcalls.ConnectionInfo;
+import io.github.pytgcalls.ConnectionState;
+import io.github.pytgcalls.FramesCallback;
 import io.github.pytgcalls.NTgCalls;
 import io.github.pytgcalls.RemoteSourceChangeCallback;
 import io.github.pytgcalls.exceptions.ConnectionException;
@@ -50,22 +51,22 @@ public class NTgCallsInterface implements CallInterface {
     this.tdlib = tdlib;
     this.call = call;
     ntgcalls = new NTgCalls();
-    ntgcalls.setSignalingDataCallback((callId, data) -> listener.onSignallingDataEmitted(data));
-    ntgcalls.setConnectionChangeCallback((chatId, callNetworkState) -> {
-      if (callNetworkState.state == NetworkInfo.State.CONNECTED) {
+    ntgcalls.onSignalingData((callId, data) -> listener.onSignallingDataEmitted(data));
+    ntgcalls.onConnectionChange((chatId, callNetworkState) -> {
+      if (callNetworkState.state == ConnectionState.CONNECTED) {
         listener.onConnectionStateChanged(null, CallState.ESTABLISHED);
-      } else if (callNetworkState.state != NetworkInfo.State.CONNECTING) {
+      } else if (callNetworkState.state != ConnectionState.CONNECTING) {
         listener.onConnectionStateChanged(null, CallState.FAILED);
       }
     });
     micDescription = new AudioDescription(
       MediaSource.DEVICE,
-      NTgCalls.getMediaDevices().microphone.get(0).metadata,
-      true,
       48000,
-      2
+      2,
+      NTgCalls.getMediaDevices().microphone.get(0).metadata,
+      true
     );
-    ntgcalls.createP2PCall(CALL_ID);
+    ntgcalls.createP2pCall(CALL_ID);
     if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
       throw new SecurityException("No microphone permission");
     }
@@ -88,19 +89,19 @@ public class NTgCallsInterface implements CallInterface {
       new MediaDescription(
         new AudioDescription(
           MediaSource.DEVICE,
-          NTgCalls.getMediaDevices().speaker.get(0).metadata,
-          true,
           48000,
-          2
+          2,
+          NTgCalls.getMediaDevices().speaker.get(0).metadata,
+          true
         ),
         null,
         new VideoDescription(
           MediaSource.EXTERNAL,
+          AUTO_DETECT,
+          AUTO_DETECT,
+          30,
           "",
-          true,
-          AUTO_DETECT,
-          AUTO_DETECT,
-          30
+          true
         ),
         null
       )
@@ -137,7 +138,7 @@ public class NTgCallsInterface implements CallInterface {
           );
         }
       }).collect(Collectors.toList());
-    ntgcalls.connectP2P(CALL_ID, rtcServers, List.of(state.protocol.libraryVersions), state.allowP2p);
+    ntgcalls.connectP2p(CALL_ID, rtcServers, List.of(state.protocol.libraryVersions), state.allowP2p, null);
   }
 
   @Override
@@ -146,13 +147,13 @@ public class NTgCallsInterface implements CallInterface {
   }
 
   @Override
-  public void setFrameCallback (FrameCallback callback) {
-    ntgcalls.setFrameCallback(callback);
+  public void setFrameCallback (FramesCallback callback) {
+    ntgcalls.onFrames(callback);
   }
 
   @Override
   public void setRemoteSourceChangeCallback (RemoteSourceChangeCallback callback) {
-    ntgcalls.setRemoteSourceChangeCallback(callback);
+    ntgcalls.onRemoteSourceChange(callback);
   }
 
   @Override
@@ -215,11 +216,11 @@ public class NTgCallsInterface implements CallInterface {
             null,
             new VideoDescription(
               MediaSource.DEVICE,
-              cameraId,
-              true,
               CAPTURE_WIDTH,
               CAPTURE_HEIGHT,
-              30
+              30,
+              cameraId,
+              true
             ),
             null
           )
@@ -236,7 +237,7 @@ public class NTgCallsInterface implements CallInterface {
           )
         );
       }
-    } catch (FileNotFoundException | ConnectionNotFoundException e) {
+    } catch (ConnectionNotFoundException e) {
       Log.e(Log.TAG_VOIP, "Error setting camera", e);
     }
   }
@@ -261,11 +262,11 @@ public class NTgCallsInterface implements CallInterface {
             null,
             new VideoDescription(
               MediaSource.DESKTOP,
-              NTgCalls.getMediaDevices().screen.get(0).metadata,
-              true,
               size.x,
               size.y,
-              30
+              30,
+              NTgCalls.getMediaDevices().screen.get(0).metadata,
+              true
             )
           )
         );
@@ -281,7 +282,7 @@ public class NTgCallsInterface implements CallInterface {
           )
         );
       }
-    } catch (FileNotFoundException | ConnectionNotFoundException e) {
+    } catch (ConnectionNotFoundException e) {
       Log.e(Log.TAG_VOIP, "Error setting screen share", e);
     }
   }

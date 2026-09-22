@@ -144,7 +144,7 @@ public final class N {
 
   public static String[] getTgCallsLibVersions () {
     if (BuildConfig.USE_NTGCALLS) {
-      return NTgCalls.getProtocol().libraryVersions.toArray(new String[0]);
+      return NTgCalls.getProtocol().library_versions.toArray(new String[0]);
     } else {
       return getTgCallsVersions();
     }

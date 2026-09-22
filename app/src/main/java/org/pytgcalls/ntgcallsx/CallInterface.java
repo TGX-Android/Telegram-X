@@ -1,7 +1,7 @@
 package org.pytgcalls.ntgcallsx;
 
 import org.drinkless.tdlib.TdApi;
-import io.github.pytgcalls.FrameCallback;
+import io.github.pytgcalls.FramesCallback;
 import io.github.pytgcalls.RemoteSourceChangeCallback;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.voip.NetworkStats;
@@ -10,7 +10,7 @@ import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 public interface CallInterface {
   boolean isVideoSupported();
 
-  void setFrameCallback(FrameCallback callback);
+  void setFrameCallback(FramesCallback callback);
 
   void setRemoteSourceChangeCallback(RemoteSourceChangeCallback callback);
 

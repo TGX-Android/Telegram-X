@@ -336,11 +336,11 @@ public class VoIP {
   public static TdApi.CallProtocol getProtocol () {
     var protocol = NTgCalls.getProtocol();
     return new TdApi.CallProtocol(
-      protocol.udpP2P,
-      protocol.udpReflector,
-      protocol.minLayer,
-      protocol.maxLayer,
-      protocol.libraryVersions.toArray(new String[0])
+      protocol.udp_p2p,
+      protocol.udp_reflector,
+      protocol.min_layer,
+      protocol.max_layer,
+      protocol.library_versions.toArray(new String[0])
     );
   }
 
