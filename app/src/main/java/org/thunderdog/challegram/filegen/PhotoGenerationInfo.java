@@ -181,6 +181,7 @@ public class PhotoGenerationInfo extends GenerationInfo {
       Rect regionRect = null;
       if (Config.CROP_USE_REGION_READER && opts.inSampleSize > 1 && cropState.getDegreesAroundCenter() == 0) { // TODO BitmapRegionDecoder support for getDegreesAroundCenter() != 0
         BitmapRegionDecoder decoder = null;
+        Throwable regionError = null;
         try {
           regionRect = new Rect();
 
@@ -203,12 +204,16 @@ public class PhotoGenerationInfo extends GenerationInfo {
             Log.i("BitmapRegionDecoder.newInstance returned null");
           }
         } catch (Throwable t) {
+          regionError = t;
           Log.i("BitmapRegionDecoder failed", t);
         }
         if (decoder != null) {
           try {
             decoder.recycle();
           } catch (Throwable ignored) { }
+        }
+        if (regionError != null) {
+          rethrowIfHdOutOfMemory(regionError);
         }
       }
       regionDecoderState = bitmapRegion != null ? REGION_OK : REGION_ERROR;
@@ -223,12 +228,19 @@ public class PhotoGenerationInfo extends GenerationInfo {
         try {
           result = BitmapFactory.decodeStream(newIs, null, opts);
         } catch (Throwable t) {
+          rethrowIfHdOutOfMemory(t);
           Log.w("Cannot read bitmap", t);
         }
         return result;
       }
     } else {
       return BitmapFactory.decodeStream(is, null, opts);
+    }
+  }
+
+  private void rethrowIfHdOutOfMemory (Throwable t) {
+    if (t instanceof OutOfMemoryError && resolutionLimit > SIZE_LIMIT) {
+      throw (OutOfMemoryError) t;
     }
   }
 
