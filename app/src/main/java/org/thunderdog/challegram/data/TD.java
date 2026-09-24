@@ -51,6 +51,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 import androidx.annotation.StringRes;
+import androidx.annotation.WorkerThread;
 import androidx.collection.LongSparseArray;
 
 import org.drinkless.tdlib.Client;
@@ -81,6 +82,8 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibEntitySpan;
+import org.thunderdog.challegram.telegram.TdlibException;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
@@ -3884,6 +3887,28 @@ public class TD {
       return file;
     }
 
+    private @Nullable TdApi.File fullSizeFile;
+
+    public DownloadedFile setFullSizeFile (@Nullable TdApi.File fullSizeFile) {
+      this.fullSizeFile = fullSizeFile != null && fullSizeFile.id != file.id ? fullSizeFile : null;
+      return this;
+    }
+
+    @WorkerThread
+    public String getFullSizePath () {
+      if (fullSizeFile != null && !TD.isFileLoaded(fullSizeFile) && fullSizeFile.local.canBeDownloaded) {
+        try {
+          TdApi.File result = tdlib.clientExecuteT(new TdApi.DownloadFile(fullSizeFile.id, TdlibFilesManager.PRIORITY_USER_REQUEST_DOWNLOAD, 0, 0, true), TimeUnit.MINUTES.toMillis(1), false);
+          if (result != null) {
+            Td.copyTo(result, fullSizeFile);
+          }
+        } catch (TdlibException e) {
+          Log.e("Cannot download full size file %d", e, fullSizeFile.id);
+        }
+      }
+      return fullSizeFile != null && TD.isFileLoaded(fullSizeFile) ? fullSizeFile.local.path : getPath();
+    }
+
     public static DownloadedFile valueOfPhoto (Tdlib tdlib, TdApi.File file, boolean isWebp) {
       return new DownloadedFile(tdlib, file, isWebp ? "image/webp" : "image/jpg", new TdApi.FileTypePhoto());
     }
@@ -4240,7 +4265,7 @@ public class TD {
             break;
           }
           case TdApi.FileTypePhoto.CONSTRUCTOR: {
-            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_PHOTO, null);
+            ok = U.copyToGalleryImpl(file.getFullSizePath(), savedType = U.TYPE_PHOTO, null);
             break;
           }
           default: {
@@ -4431,9 +4456,11 @@ public class TD {
   public static @Nullable DownloadedFile getDownloadedFile (Tdlib tdlib, TdApi.Message msg) {
     switch (msg.content.getConstructor()) {
       case TdApi.MessagePhoto.CONSTRUCTOR: {
-        TdApi.PhotoSize size = MediaWrapper.buildTargetFile(((TdApi.MessagePhoto) msg.content).photo);
+        TdApi.Photo photo = ((TdApi.MessagePhoto) msg.content).photo;
+        TdApi.PhotoSize size = MediaWrapper.buildTargetFile(photo);
         if (size != null && TD.isFileLoaded(size.photo)) {
-          return DownloadedFile.valueOfPhoto(tdlib, size.photo, false);
+          TdApi.PhotoSize biggestSize = Td.findBiggest(photo);
+          return DownloadedFile.valueOfPhoto(tdlib, size.photo, false).setFullSizeFile(biggestSize != null ? biggestSize.photo : null);
         }
         return null;
       }

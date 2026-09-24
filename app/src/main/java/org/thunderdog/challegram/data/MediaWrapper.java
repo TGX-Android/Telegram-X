@@ -962,6 +962,9 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
   public boolean setImageScaling (int size) {
     size = Math.min(MAX_BITMAP_SIZE, size);
+    if (size == 0 && photo != null && Math.max(contentWidth, contentHeight) > MAX_BITMAP_SIZE) {
+      size = MAX_BITMAP_SIZE;
+    }
     if (targetImageFile != null && targetImageFile.getSize() != size) {
       targetImageFile.setSize(size);
       return showImage();
