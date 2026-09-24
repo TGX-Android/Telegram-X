@@ -33,6 +33,7 @@ import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.crop.CropStateParser;
 import org.thunderdog.challegram.mediaview.data.FiltersState;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.InputStream;
 
@@ -373,6 +374,10 @@ public class PhotoGenerationInfo extends GenerationInfo {
     }
 
     return Bitmap.createBitmap(source, bitmapLeft, bitmapTop, bitmapRight - bitmapLeft, bitmapBottom - bitmapTop, matrix, false);
+  }
+
+  public static int preferredResolutionLimit () {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Settings.instance().getNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS) ? SIZE_LIMIT_HD : 0;
   }
 
   public static TdApi.InputFileGenerated newFile (String path, int rotation) {

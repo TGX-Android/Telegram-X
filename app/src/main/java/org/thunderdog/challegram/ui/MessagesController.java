@@ -10341,7 +10341,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       Media.instance().post(() -> {
         BitmapFactory.Options opts = ImageReader.getImageSize(path);
         int orientation = U.getExifOrientation(path);
-        int inSampleSize = ImageReader.calculateInSampleSize(opts, 1280, 1280);
+        int resolutionLimit = PhotoGenerationInfo.preferredResolutionLimit();
+        int sizeLimit = resolutionLimit != 0 ? resolutionLimit : PhotoGenerationInfo.SIZE_LIMIT;
+        int inSampleSize = ImageReader.calculateInSampleSize(opts, sizeLimit, sizeLimit);
         int sampledWidth = opts.outWidth / inSampleSize;
         int sampledHeight = opts.outHeight / inSampleSize;
         int width, height;
@@ -10352,7 +10354,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           width = sampledWidth;
           height = sampledHeight;
         }
-        TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(path, U.getRotationForExifOrientation(orientation));
+        TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(path, U.getRotationForExifOrientation(orientation), PhotoGenerationInfo.lastModified(path), false, resolutionLimit);
         TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(new TdApi.InputPhoto(inputFile, null, null, null, width, height), null, false, selfDestructType, false), isSecret);
         tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, photo);
       });
