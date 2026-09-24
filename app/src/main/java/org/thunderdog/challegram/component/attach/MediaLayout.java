@@ -1577,10 +1577,8 @@ public class MediaLayout extends FrameLayoutFix implements
       hdMediaView.setOnClickListener(this);
       hdMediaView.setId(R.id.btn_hd);
       hdMediaView.setScaleType(ImageView.ScaleType.CENTER);
-      hdMediaView.setImageResource(needHd ? R.drawable.baseline_hd_24 : R.drawable.baseline_sd_24);
       hdMediaView.setAlpha(allowHd ? 1f : 0f);
-      hdMediaView.setColorFilter(Theme.getColor(needHd ? ColorId.iconActive : ColorId.icon));
-      themeListeners.addThemeFilterListener(hdMediaView, needHd ? ColorId.iconActive : ColorId.icon);
+      updateHdMediaView();
       hdMediaView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
       bottomBar.addView(hdMediaView);
 
@@ -1685,12 +1683,17 @@ public class MediaLayout extends FrameLayoutFix implements
       this.needHd = needHd;
       Settings.instance().setNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS, needHd);
       if (hdMediaView != null) {
-        hdMediaView.setImageResource(needHd ? R.drawable.baseline_hd_24 : R.drawable.baseline_sd_24);
-        hdMediaView.setColorFilter(Theme.getColor(needHd ? ColorId.iconActive : ColorId.icon));
         themeListeners.removeThemeListenerByTarget(hdMediaView);
-        themeListeners.addThemeFilterListener(hdMediaView, needHd ? ColorId.iconActive : ColorId.icon);
+        updateHdMediaView();
       }
     }
+  }
+
+  private void updateHdMediaView () {
+    int colorId = needHd ? ColorId.iconActive : ColorId.icon;
+    hdMediaView.setImageResource(needHd ? R.drawable.baseline_hd_24 : R.drawable.baseline_sd_24);
+    hdMediaView.setColorFilter(Theme.getColor(colorId));
+    themeListeners.addThemeFilterListener(hdMediaView, colorId);
   }
 
   private void updateMediaOptionMargins () {
