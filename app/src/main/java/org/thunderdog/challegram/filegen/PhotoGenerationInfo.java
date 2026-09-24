@@ -41,6 +41,7 @@ import me.vkryl.core.StringUtils;
 
 public class PhotoGenerationInfo extends GenerationInfo {
   public static final int SIZE_LIMIT = 1280;
+  public static final int SIZE_LIMIT_HD = 2560;
 
   private int rotation; // 0, 90, 180 or 270
   private boolean isFiltered;
@@ -185,7 +186,7 @@ public class PhotoGenerationInfo extends GenerationInfo {
           regionRect.bottom = (int) Math.floor(bottom * (double) originalHeight);
 
           BitmapFactory.Options regionOptions = new BitmapFactory.Options();
-          regionOptions.inSampleSize = ImageReader.calculateInSampleSize(regionRect.width(), regionRect.height(), PhotoGenerationInfo.SIZE_LIMIT, PhotoGenerationInfo.SIZE_LIMIT);
+          regionOptions.inSampleSize = ImageReader.calculateInSampleSize(regionRect.width(), regionRect.height(), Math.max(resolutionLimit, SIZE_LIMIT), Math.max(resolutionLimit, SIZE_LIMIT));
 
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             decoder = BitmapRegionDecoder.newInstance(is);
@@ -393,8 +394,12 @@ public class PhotoGenerationInfo extends GenerationInfo {
   }
 
   public static TdApi.InputFileGenerated newFile (ImageGalleryFile file) {
+    return newFile(file, SIZE_LIMIT);
+  }
+
+  public static TdApi.InputFileGenerated newFile (ImageGalleryFile file, int sizeLimit) {
     String path = file.getTargetPath();
-    return new TdApi.InputFileGenerated(path, makeConversion(file, lastModified(path)), 0);
+    return new TdApi.InputFileGenerated(path, makeConversion(file, lastModified(path), sizeLimit), 0);
   }
 
   private static String makeConversion (int rotation, long lastModifiedTime, String parameters) {
@@ -431,7 +436,7 @@ public class PhotoGenerationInfo extends GenerationInfo {
     return b.toString();
   }
 
-  private static String makeConversion (ImageGalleryFile file, long lastModifiedTime) {
+  private static String makeConversion (ImageGalleryFile file, long lastModifiedTime, int sizeLimit) {
     StringBuilder b = new StringBuilder(TYPE_PHOTO);
     b.append(file.getRotation());
 
@@ -451,6 +456,10 @@ public class PhotoGenerationInfo extends GenerationInfo {
     if (paintState != null && !paintState.isEmpty()) {
       b.append(",p:");
       b.append(paintState.saveAndSerializeToString());
+    }
+
+    if (sizeLimit != SIZE_LIMIT) {
+      b.append(",l:").append(sizeLimit);
     }
 
     if (BuildConfig.DEBUG) {

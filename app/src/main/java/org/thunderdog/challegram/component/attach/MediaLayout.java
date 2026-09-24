@@ -294,6 +294,7 @@ public class MediaLayout extends FrameLayoutFix implements
     View controllerView = currentController.getValue();
     if (currentController != null) {
       setAllowSpoiler(currentController.allowSpoiler());
+      setAllowHd(target != null && currentController instanceof MediaBottomGalleryController);
     }
 
     addView(controllerView);
@@ -1333,7 +1334,8 @@ public class MediaLayout extends FrameLayoutFix implements
         Settings.instance().setNeedGroupMedia(needGroupMedia);
         boolean showCaptionAboveMedia = false;
         boolean hasSpoiler = allowSpoiler && needSpoiler;
-        target.sendPhotosAndVideosCompressed(result, needGroupMedia, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
+        boolean isHd = allowHd && needHd;
+        target.sendPhotosAndVideosCompressed(result, needGroupMedia, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler, isHd);
       }
     }
 
@@ -1405,6 +1407,10 @@ public class MediaLayout extends FrameLayoutFix implements
           }
         }
       }
+    } else if (viewId == R.id.btn_hd) {
+      if (allowHd) {
+        setNeedHd(!needHd);
+      }
     } else if (viewId == R.id.btn_mosaic) {
       setNeedGroupMedia(!needGroupMedia, true);
     } else if (viewId == R.id.btn_close) {
@@ -1426,10 +1432,10 @@ public class MediaLayout extends FrameLayoutFix implements
   private HapticMenuHelper sendMenu;
   private BackHeaderButton closeButton;
   private TextView counterHintView;
-  private ImageView groupMediaView, hotMediaView;
+  private ImageView groupMediaView, hotMediaView, hdMediaView;
 
   private float groupMediaFactor;
-  private boolean needGroupMedia, needSpoiler;
+  private boolean needGroupMedia, needSpoiler, needHd;
   private FactorAnimator groupMediaAnimator;
   private static final int ANIMATOR_GROUP_MEDIA = 1;
 
@@ -1561,8 +1567,24 @@ public class MediaLayout extends FrameLayoutFix implements
       hotMediaView.setLayoutParams(params);
       bottomBar.addView(hotMediaView);
 
+      needHd = Settings.instance().getNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS);
+      hdMediaView = new ImageView(getContext()) {
+        @Override
+        public boolean onTouchEvent (MotionEvent e) {
+          return isEnabled() && Views.isValid(this) && super.onTouchEvent(e);
+        }
+      };
+      hdMediaView.setOnClickListener(this);
+      hdMediaView.setId(R.id.btn_hd);
+      hdMediaView.setScaleType(ImageView.ScaleType.CENTER);
+      hdMediaView.setImageResource(needHd ? R.drawable.baseline_hd_24 : R.drawable.baseline_sd_24);
+      hdMediaView.setAlpha(allowHd ? 1f : 0f);
+      hdMediaView.setColorFilter(Theme.getColor(needHd ? ColorId.iconActive : ColorId.icon));
+      themeListeners.addThemeFilterListener(hdMediaView, needHd ? ColorId.iconActive : ColorId.icon);
+      hdMediaView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
+      bottomBar.addView(hdMediaView);
+
       params = FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT);
-      params.rightMargin = allowSpoiler ? Screen.dp(55f) + Screen.dp(48f) : Screen.dp(55f);
       groupMediaView = new ImageView(getContext()) {
         @Override
         public boolean onTouchEvent (MotionEvent e) {
@@ -1578,6 +1600,7 @@ public class MediaLayout extends FrameLayoutFix implements
       themeListeners.addThemeFilterListener(groupMediaView, colorId);
       groupMediaView.setLayoutParams(params);
       bottomBar.addView(groupMediaView);
+      updateMediaOptionMargins();
 
       closeButton = new BackHeaderButton(getContext()) {
         @Override
@@ -1600,13 +1623,16 @@ public class MediaLayout extends FrameLayoutFix implements
       counterHintView.setAlpha(0f);
       groupMediaView.setAlpha(0f);
       hotMediaView.setAlpha(0f);
+      hdMediaView.setAlpha(0f);
 
       setCounterEnabled(false);
     }
     // No need to reset, right?
     // setNeedSpoiler(false);
     setAllowSpoiler(getCurrentController().allowSpoiler());
+    setAllowHd(target != null && getCurrentController() instanceof MediaBottomGalleryController);
     hotMediaView.setAlpha(counterFactor * (allowSpoiler ? 1f : 0f));
+    hdMediaView.setAlpha(counterFactor * (allowHd ? 1f : 0f));
     if (counterView != null) {
       counterView.setTranslationY(0f);
       checkSuffix(false);
@@ -1633,10 +1659,39 @@ public class MediaLayout extends FrameLayoutFix implements
       if (hotMediaView != null) {
         hotMediaView.setAlpha(allowSpoiler ? counterFactor : 0f);
       }
-      if (groupMediaView != null) {
-        Views.setRightMargin(groupMediaView, allowSpoiler ? Screen.dp(55f) + Screen.dp(48f) : Screen.dp(55f));
+      updateMediaOptionMargins();
+    }
+  }
+
+  private boolean allowHd;
+
+  private void setAllowHd (boolean allowHd) {
+    if (this.allowHd != allowHd) {
+      this.allowHd = allowHd;
+      if (hdMediaView != null) {
+        hdMediaView.setAlpha(allowHd ? counterFactor : 0f);
+      }
+      updateMediaOptionMargins();
+    }
+  }
+
+  private void setNeedHd (boolean needHd) {
+    if (this.needHd != needHd) {
+      this.needHd = needHd;
+      Settings.instance().setNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS, needHd);
+      if (hdMediaView != null) {
+        hdMediaView.setImageResource(needHd ? R.drawable.baseline_hd_24 : R.drawable.baseline_sd_24);
+        hdMediaView.setColorFilter(Theme.getColor(needHd ? ColorId.iconActive : ColorId.icon));
+        themeListeners.removeThemeListenerByTarget(hdMediaView);
+        themeListeners.addThemeFilterListener(hdMediaView, needHd ? ColorId.iconActive : ColorId.icon);
       }
     }
+  }
+
+  private void updateMediaOptionMargins () {
+    int rightMargin = Screen.dp(55f) + (allowSpoiler ? Screen.dp(48f) : 0);
+    Views.setRightMargin(hdMediaView, rightMargin);
+    Views.setRightMargin(groupMediaView, rightMargin + (allowHd ? Screen.dp(48f) : 0));
   }
 
   public void setNeedSpoiler (boolean needSpoiler) {
@@ -1710,6 +1765,7 @@ public class MediaLayout extends FrameLayoutFix implements
     if (counterView != null && counterView.isEnabled() != enabled) {
       counterView.setEnabled(enabled);
       groupMediaView.setEnabled(enabled);
+      hdMediaView.setEnabled(enabled);
       sendButton.setEnabled(enabled);
       closeButton.setEnabled(enabled);
     }
@@ -1769,6 +1825,7 @@ public class MediaLayout extends FrameLayoutFix implements
         translateFactor = 0f;
       }
       hotMediaView.setAlpha(counterFactor * (allowSpoiler ? 1f : 0f));
+      hdMediaView.setAlpha(counterFactor * (allowHd ? 1f : 0f));
       float alpha = counterFactor * translateFactor;
       groupMediaView.setAlpha(alpha);
       counterHintView.setAlpha(alpha);
@@ -1797,6 +1854,7 @@ public class MediaLayout extends FrameLayoutFix implements
     if (this.counterFactor != factor) {
       this.counterFactor = factor;
       hotMediaView.setAlpha(factor * (allowSpoiler ? 1f : 0f));
+      hdMediaView.setAlpha(factor * (allowHd ? 1f : 0f));
       setAddExtraSpacing(factor == 1f);
     }
   }

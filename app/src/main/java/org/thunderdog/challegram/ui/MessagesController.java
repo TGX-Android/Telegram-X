@@ -10360,6 +10360,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions modifiedSendOptions, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
+    return sendPhotosAndVideosCompressed(files, needGroupMedia, modifiedSendOptions, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler, false);
+  }
+
+  public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions modifiedSendOptions, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler, boolean isHd) {
     if (files == null || files.length == 0) {
       return false;
     }
@@ -10425,8 +10429,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(new TdApi.InputVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo)), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
           }
         } else {
+          final int sizeLimit = isHd ? PhotoGenerationInfo.SIZE_LIMIT_HD : PhotoGenerationInfo.SIZE_LIMIT;
           int[] size = new int[2];
-          file.getOutputSize(size);
+          file.getOutputSize(size, sizeLimit);
 
           final int width = size[0];
           final int height = size[1];
@@ -10435,7 +10440,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (asFiles && PhotoGenerationInfo.isEmpty(file)) {
             inputFile = TD.createInputFile(file.getFilePath());
           } else {
-            inputFile = PhotoGenerationInfo.newFile(file);
+            inputFile = PhotoGenerationInfo.newFile(file, sizeLimit);
           }
 
           TdApi.FormattedText caption = file.getCaption(true, !disableMarkdown);
