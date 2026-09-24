@@ -96,6 +96,10 @@ public class PhotoGenerationInfo extends GenerationInfo {
     return resolutionLimit;
   }
 
+  public void setResolutionLimit (int resolutionLimit) {
+    this.resolutionLimit = resolutionLimit;
+  }
+
   public boolean getAllowTransparency () {
     return allowTransparency;
   }
