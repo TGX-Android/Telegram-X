@@ -249,6 +249,11 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
+  public boolean allowHd () {
+    return !showingFoundImages;
+  }
+
+  @Override
   public boolean allowShowCaptionAboveMedia () {
     return !ChatId.isSecret(getOutputChatId());
   }
@@ -846,8 +851,8 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   private void showCurrentBucketImages () {
     if (showingFoundImages) {
-      mediaLayout.clearCounter();
       showingFoundImages = false;
+      mediaLayout.clearCounter();
     }
     if (currentBucket != null) {
       // recyclerView.setItemAnimator(null);

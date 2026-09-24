@@ -295,7 +295,7 @@ public class MediaLayout extends FrameLayoutFix implements
     View controllerView = currentController.getValue();
     if (currentController != null) {
       setAllowSpoiler(currentController.allowSpoiler());
-      setAllowHd(target != null && currentController instanceof MediaBottomGalleryController);
+      updateAllowHd();
     }
 
     addView(controllerView);
@@ -1630,7 +1630,7 @@ public class MediaLayout extends FrameLayoutFix implements
     // No need to reset, right?
     // setNeedSpoiler(false);
     setAllowSpoiler(getCurrentController().allowSpoiler());
-    setAllowHd(target != null && getCurrentController() instanceof MediaBottomGalleryController);
+    updateAllowHd();
     hotMediaView.setAlpha(counterFactor * (allowSpoiler ? 1f : 0f));
     hdMediaView.setAlpha(counterFactor * (allowHd ? 1f : 0f));
     if (counterView != null) {
@@ -1663,7 +1663,12 @@ public class MediaLayout extends FrameLayoutFix implements
     }
   }
 
-  private boolean allowHd;
+  private boolean allowHd, selectionHasPhotos = true;
+
+  private void updateAllowHd () {
+    MediaBottomBaseController<?> c = getCurrentController();
+    setAllowHd(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && target != null && c != null && c.allowHd() && selectionHasPhotos);
+  }
 
   private void setAllowHd (boolean allowHd) {
     if (this.allowHd != allowHd) {
@@ -1746,6 +1751,10 @@ public class MediaLayout extends FrameLayoutFix implements
               break;
             }
           }
+        }
+        if (selectionHasPhotos != (photosCount > 0 || otherCount > 0)) {
+          selectionHasPhotos = !selectionHasPhotos;
+          updateAllowHd();
         }
         if (otherCount > 0 || (photosCount > 0 && videosCount > 0)) {
           int count = (otherCount + photosCount + videosCount);
@@ -1905,6 +1914,10 @@ public class MediaLayout extends FrameLayoutFix implements
       return;
     }
 
+    if (count == 0 && !selectionHasPhotos) {
+      selectionHasPhotos = true;
+      updateAllowHd();
+    }
     boolean init = counterFactor == 0f && count == 1;
     if (init) {
       prepareCounter();
@@ -1927,6 +1940,8 @@ public class MediaLayout extends FrameLayoutFix implements
   public void clearCounter () {
     animateCounterFactor(0f);
     getCurrentController().onCancelMultiSelection();
+    selectionHasPhotos = true;
+    updateAllowHd();
   }
 
   // HeaderView
