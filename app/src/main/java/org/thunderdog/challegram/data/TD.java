@@ -82,7 +82,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibEntitySpan;
-import org.thunderdog.challegram.telegram.TdlibException;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -116,6 +115,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.html.HtmlEncoder;
@@ -3896,17 +3896,10 @@ public class TD {
 
     @WorkerThread
     public String getFullSizePath () {
-      if (fullSizeFile != null && !TD.isFileLoaded(fullSizeFile) && fullSizeFile.local.canBeDownloaded) {
-        try {
-          TdApi.File result = tdlib.clientExecuteT(new TdApi.DownloadFile(fullSizeFile.id, TdlibFilesManager.PRIORITY_USER_REQUEST_DOWNLOAD, 0, 0, true), TimeUnit.MINUTES.toMillis(1), false);
-          if (result != null) {
-            Td.copyTo(result, fullSizeFile);
-          }
-        } catch (TdlibException e) {
-          Log.e("Cannot download full size file %d", e, fullSizeFile.id);
-        }
+      if (fullSizeFile != null && TD.isFileLoadedAndExists(fullSizeFile)) {
+        return fullSizeFile.local.path;
       }
-      return fullSizeFile != null && TD.isFileLoaded(fullSizeFile) ? fullSizeFile.local.path : getPath();
+      return getPath();
     }
 
     public static DownloadedFile valueOfPhoto (Tdlib tdlib, TdApi.File file, boolean isWebp) {
@@ -4248,6 +4241,51 @@ public class TD {
     })) {
       return;
     }
+    for (DownloadedFile file : files) {
+      if (file.fullSizeFile != null) {
+        new Thread(() -> {
+          downloadFullSizeFiles(files);
+          saveFilesImpl(context, files);
+        }, "SaveFullSizeFiles").start();
+        return;
+      }
+    }
+    saveFilesImpl(context, files);
+  }
+
+  @WorkerThread
+  private static void downloadFullSizeFiles (List<DownloadedFile> files) {
+    List<DownloadedFile> pending = new ArrayList<>();
+    for (DownloadedFile file : files) {
+      TdApi.File fullSizeFile = file.fullSizeFile;
+      if (fullSizeFile != null && fullSizeFile.local.canBeDownloaded && !TD.isFileLoadedAndExists(fullSizeFile)) {
+        pending.add(file);
+      }
+    }
+    if (pending.isEmpty()) {
+      return;
+    }
+    CountDownLatch latch = new CountDownLatch(pending.size());
+    for (DownloadedFile file : pending) {
+      TdApi.File fullSizeFile = file.fullSizeFile;
+      file.tdlib.client().send(new TdApi.DownloadFile(fullSizeFile.id, TdlibFilesManager.PRIORITY_USER_REQUEST_DOWNLOAD, 0, 0, true), result -> {
+        if (result.getConstructor() == TdApi.File.CONSTRUCTOR) {
+          Td.copyTo((TdApi.File) result, fullSizeFile);
+        }
+        latch.countDown();
+      });
+    }
+    try {
+      latch.await(1, TimeUnit.MINUTES);
+    } catch (InterruptedException ignored) { }
+    for (DownloadedFile file : pending) {
+      if (!TD.isFileLoaded(file.fullSizeFile)) {
+        file.tdlib.send(new TdApi.CancelDownloadFile(file.fullSizeFile.id, false), file.tdlib.typedOkHandler());
+      }
+    }
+  }
+
+  private static void saveFilesImpl (BaseActivity context, List<DownloadedFile> files) {
     Background.instance().post(() -> {
       int savedCount = 0;
       int allSavedType = -1;
