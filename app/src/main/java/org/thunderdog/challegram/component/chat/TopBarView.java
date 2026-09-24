@@ -22,6 +22,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -43,6 +44,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
 public class TopBarView extends FrameLayoutFix implements Destroyable {
+  private static final float LEGACY_HEIGHT_DP = 36f;
   private static final float ACTIONS_HEIGHT_DP = 46f;
   private static final float DISMISS_SIZE_DP = 40f;
   private static final float CONTENT_HORIZONTAL_PADDING_DP = 16f;
@@ -54,8 +56,6 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
   private static final float NOTICE_DISMISS_PADDING_DP = 48f;
   private static final float NOTICE_TOP_PADDING_DP = 10f;
   private static final float NOTICE_BOTTOM_PADDING_DP = 8f;
-  private static final float LEGACY_NOTICE_END_PADDING_DP = 26f;
-  private static final float LEGACY_NOTICE_VERTICAL_PADDING_DP = 8f;
   private static final float ACTION_TEXT_SIZE_SP = 15f;
   private static final float NOTICE_TEXT_SIZE_SP = 14f;
 
@@ -74,53 +74,37 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
   public static class Item {
     final int id;
     final int stringRes;
-    final CharSequence noticeRes;
+    final @Nullable CharSequence notice;
     final @Nullable TextEntity[] noticeEntities;
-    final int iconResId;
     final View.OnClickListener onClickListener;
-    final boolean showDismissRight;
 
     boolean isNegative;
     boolean noDismiss;
+    int iconRes;
+    boolean showDismissRight;
 
-    private Item (int id, int stringRes, CharSequence noticeRes, @Nullable TextEntity[] noticeEntities, int iconResId, boolean showDismissRight, View.OnClickListener onClickListener) {
+    public Item (int id, int stringRes, View.OnClickListener onClickListener) {
       this.id = id;
       this.stringRes = stringRes;
-      this.noticeRes = noticeRes;
-      this.noticeEntities = noticeEntities;
-      this.iconResId = iconResId;
-      this.showDismissRight = showDismissRight;
+      this.notice = null;
+      this.noticeEntities = null;
       this.onClickListener = onClickListener;
     }
 
-    public Item (int id, int stringRes, CharSequence noticeRes, int iconResId, boolean showDismissRight, View.OnClickListener onClickListener) {
-      this(id, stringRes, noticeRes, null, iconResId, showDismissRight, onClickListener);
+    public Item (CharSequence notice) {
+      this(notice, null);
     }
 
-    public Item (int id, int stringRes, boolean showDismissRight, int iconResId,
-                 View.OnClickListener onClickListener) {
-      this(id, stringRes, null, iconResId, showDismissRight, onClickListener);
+    public Item (FormattedText notice) {
+      this(notice.text, notice.entities);
     }
 
-    public Item (int id, int stringRes, boolean showDismissRight,
-                 View.OnClickListener onClickListener) {
-      this(id, stringRes, null, 0, showDismissRight, onClickListener);
-    }
-
-    public Item (int id, int stringRes, View.OnClickListener onClickListener) {
-      this(id, stringRes, null, 0, false, onClickListener);
-    }
-
-    public Item (CharSequence noticeRes, boolean showDismissRight) {
-      this(0, 0, noticeRes, 0, showDismissRight, null);
-    }
-
-    public Item (FormattedText notice, boolean showDismissRight) {
-      this(0, 0, notice.text, notice.entities, 0, showDismissRight, null);
-    }
-
-    public Item (CharSequence noticeRes) {
-      this(0, 0, noticeRes, 0, false, null);
+    private Item (CharSequence notice, @Nullable TextEntity[] noticeEntities) {
+      this.id = 0;
+      this.stringRes = 0;
+      this.notice = notice;
+      this.noticeEntities = noticeEntities;
+      this.onClickListener = null;
     }
 
     public Item setIsNegative () {
@@ -130,6 +114,16 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
 
     public Item setNoDismiss () {
       this.noDismiss = true;
+      return this;
+    }
+
+    public Item setIcon (@DrawableRes int iconRes) {
+      this.iconRes = iconRes;
+      return this;
+    }
+
+    public Item setShowDismissRight () {
+      this.showDismissRight = true;
       return this;
     }
   }
@@ -147,7 +141,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
 
     setLayoutParams(FrameLayoutFix.newParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
-      useNewLayout ? ViewGroup.LayoutParams.WRAP_CONTENT : Screen.dp(36f)
+      useNewLayout ? ViewGroup.LayoutParams.WRAP_CONTENT : Screen.dp(LEGACY_HEIGHT_DP)
     ));
     ViewSupport.setThemedBackground(this, ColorId.filling, null);
 
@@ -211,6 +205,9 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
   }
 
   public int getVisualHeight () {
+    if (!useNewLayout) {
+      return Screen.dp(LEGACY_HEIGHT_DP);
+    }
     return Math.max(getMeasuredHeight(), Screen.dp(ACTIONS_HEIGHT_DP));
   }
 
@@ -227,14 +224,17 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
       }
       canDismiss |= !item.noDismiss;
       showDismissRight |= item.showDismissRight;
-      hasNotice |= item.noticeRes != null;
+      hasNotice |= item.notice != null;
     }
+    // Notices, icons and right-side dismiss are only supported by the new layout
+    showDismissRight &= useNewLayout;
+    hasNotice &= useNewLayout;
 
-    boolean dismissInNotice = useNewLayout && showDismissRight && actionCount == 0;
+    boolean dismissInNotice = showDismissRight && actionCount == 0;
     int actionsHeight = Screen.dp(ACTIONS_HEIGHT_DP);
     actionsList.getLayoutParams().height = useNewLayout ?
       actionsHeight : ViewGroup.LayoutParams.MATCH_PARENT;
-    int dismissSpace = useNewLayout && showDismissRight && actionCount > 0 ?
+    int dismissSpace = showDismissRight && actionCount > 0 ?
       Screen.dp(DISMISS_SIZE_DP) : 0;
     int startPadding = useNewLayout ? Screen.dp(CONTENT_HORIZONTAL_PADDING_DP) : 0;
     int endPadding = dismissSpace != 0 ? dismissSpace : startPadding;
@@ -249,10 +249,10 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
         (useNewLayout && actionCount > 0 ? Gravity.TOP : Gravity.CENTER_VERTICAL)
     ));
 
-    if (actionCount > 0 || (!useNewLayout && hasNotice)) {
+    if (actionCount > 0) {
       actionsContainer.addView(actionsList);
     }
-    if (useNewLayout && actionCount > 0 && hasNotice) {
+    if (actionCount > 0 && hasNotice) {
       View separator = new View(getContext());
       LinearLayout.LayoutParams separatorParams = new LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(SEPARATOR_HEIGHT_DP)
@@ -291,10 +291,11 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
         ));
         Views.setClickable(buttonLayout);
 
+        boolean hasIcon = useNewLayout && item.iconRes != 0;
         ImageView iconView = null;
-        if (item.iconResId != 0) {
+        if (hasIcon) {
           iconView = new ImageView(getContext());
-          iconView.setImageResource(item.iconResId);
+          iconView.setImageResource(item.iconRes);
           iconView.setColorFilter(Theme.getColor(textColorId));
           LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
             Screen.dp(ACTION_ICON_SIZE_DP), Screen.dp(ACTION_ICON_SIZE_DP)
@@ -316,7 +317,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
         if (showText) {
           buttonText = Views.newTextView(
             getContext(), ACTION_TEXT_SIZE_SP, Theme.getColor(textColorId),
-            useNewLayout && item.iconResId != 0 ?
+            hasIcon ?
               Lang.gravity() | Gravity.CENTER_VERTICAL : Gravity.CENTER,
             Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING
           );
@@ -352,50 +353,28 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
         actionsList.addView(buttonLayout);
       }
 
-      if (item.noticeRes != null) {
-        if (useNewLayout) {
-          CustomTextView noticeText = new CustomTextView(getContext(), tdlib);
-          noticeText.setTextColorId(ColorId.textLight);
-          noticeText.setTextSize(NOTICE_TEXT_SIZE_SP);
-          noticeText.setText(item.noticeRes, item.noticeEntities, false);
-          noticeText.setContentDescription(item.noticeRes);
-          noticeText.setPadding(
-            Screen.dp(dismissInNotice && Lang.rtl() ?
-              NOTICE_DISMISS_PADDING_DP : CONTENT_HORIZONTAL_PADDING_DP),
-            Screen.dp(NOTICE_TOP_PADDING_DP),
-            Screen.dp(dismissInNotice && !Lang.rtl() ?
-              NOTICE_DISMISS_PADDING_DP : CONTENT_HORIZONTAL_PADDING_DP),
-            Screen.dp(NOTICE_BOTTOM_PADDING_DP)
-          );
-          noticeText.setLayoutParams(new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-          ));
-          if (themeProvider != null) {
-            themeProvider.addThemeInvalidateListener(noticeText);
-          }
-          actionsContainer.addView(noticeText);
-        } else {
-          LinearLayout noticeItem = new LinearLayout(getContext());
-          noticeItem.setGravity(Gravity.CENTER);
-          noticeItem.setLayoutParams(new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 2f
-          ));
-
-          TextView noticeText = Views.newTextView(
-            getContext(), ACTION_TEXT_SIZE_SP, Theme.getColor(ColorId.textPlaceholder),
-            Lang.gravity(), Views.TEXT_FLAG_HORIZONTAL_PADDING
-          );
-          noticeText.setText(item.noticeRes);
-          noticeText.setPadding(Screen.dp(CONTENT_HORIZONTAL_PADDING_DP),
-            Screen.dp(LEGACY_NOTICE_VERTICAL_PADDING_DP),
-            Screen.dp(LEGACY_NOTICE_END_PADDING_DP),
-            Screen.dp(LEGACY_NOTICE_VERTICAL_PADDING_DP));
-          noticeText.setSingleLine(false);
-          noticeItem.addView(noticeText);
-          actionsList.addView(noticeItem);
+      if (hasNotice && item.notice != null) {
+        CustomTextView noticeText = new CustomTextView(getContext(), tdlib);
+        noticeText.setTextColorId(ColorId.textLight);
+        noticeText.setTextSize(NOTICE_TEXT_SIZE_SP);
+        noticeText.setText(item.notice, item.noticeEntities, false);
+        noticeText.setContentDescription(item.notice);
+        noticeText.setPadding(
+          Screen.dp(dismissInNotice && Lang.rtl() ?
+            NOTICE_DISMISS_PADDING_DP : CONTENT_HORIZONTAL_PADDING_DP),
+          Screen.dp(NOTICE_TOP_PADDING_DP),
+          Screen.dp(dismissInNotice && !Lang.rtl() ?
+            NOTICE_DISMISS_PADDING_DP : CONTENT_HORIZONTAL_PADDING_DP),
+          Screen.dp(NOTICE_BOTTOM_PADDING_DP)
+        );
+        noticeText.setLayoutParams(new LinearLayout.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(noticeText);
         }
+        actionsContainer.addView(noticeText);
       }
-
     }
 
     if (!useNewLayout && items.length > 1) {
