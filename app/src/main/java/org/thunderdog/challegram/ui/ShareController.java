@@ -162,6 +162,16 @@ public class ShareController extends TelegramViewController<ShareController.Args
   public interface ShareProviderDelegate {
     void generateFunctionsForChat (long chatId, TdApi.Chat chat, TdApi.MessageSendOptions sendOptions, ArrayList<TdApi.Function<?>> functions);
     CharSequence generateErrorMessageForChat (long chatId);
+
+    default boolean allowSendHd () {
+      return false;
+    }
+
+    default boolean isSendHdEnabled () {
+      return false;
+    }
+
+    default void onSendHdStateChanged (boolean sendHd) { }
   }
 
   public static class FileInfo {
@@ -1198,6 +1208,20 @@ public class ShareController extends TelegramViewController<ShareController.Args
         if (items == null)
           items = new ArrayList<>();
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_settings, Lang.getString(R.string.MoreForwardOptions), R.drawable.baseline_more_horiz_24).bindTutorialFlag(Settings.TUTORIAL_FORWARD_COPY));
+      }
+      ShareProviderDelegate customDelegate = getArgumentsStrict().customDelegate;
+      if (customDelegate != null && customDelegate.allowSendHd()) {
+        if (items == null)
+          items = new ArrayList<>();
+        items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_hd, Lang.getString(R.string.SendHd), R.drawable.baseline_hd_24)
+          .setIsCheckbox(true, customDelegate.isSendHdEnabled())
+          .setOnClickListener((itemView, parentView, item) -> {
+            if (itemView.getId() == R.id.btn_hd) {
+              customDelegate.onSendHdStateChanged(item.isCheckboxSelected);
+              return true;
+            }
+            return false;
+          }));
       }
       return items;
     }, (view, parentView, item) -> {
