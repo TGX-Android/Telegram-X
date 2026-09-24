@@ -215,6 +215,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public void init (int mode, MessagesController target) {
     this.mode = mode;
     this.target = target;
+    this.needHd = Settings.instance().getNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS);
     this.rtl = Lang.rtl();
     this.needVote = false;
     final MediaBottomBar.BarItem[] items;
@@ -1567,7 +1568,6 @@ public class MediaLayout extends FrameLayoutFix implements
       hotMediaView.setLayoutParams(params);
       bottomBar.addView(hotMediaView);
 
-      needHd = Settings.instance().getNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS);
       hdMediaView = new ImageView(getContext()) {
         @Override
         public boolean onTouchEvent (MotionEvent e) {
