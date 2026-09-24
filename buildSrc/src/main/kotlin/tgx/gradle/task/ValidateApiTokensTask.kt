@@ -14,22 +14,35 @@
  */
 package tgx.gradle.task
 
-import com.beust.klaxon.JsonObject
-import com.beust.klaxon.Parser
-import org.gradle.api.tasks.TaskAction
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.*
 
-open class ValidateApiTokensTask : BaseTask() {
+@CacheableTask
+abstract class ValidateApiTokensTask : DefaultTask() {
+  @get:Input
+  abstract val applicationId: Property<String>
+
+  @get:InputFile
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val googleServicesJson: RegularFileProperty
+
   @TaskAction
   fun validateGoogleServicesJsonFile () {
-    val parser: Parser = Parser.default()
-    val googleServices = parser.parse("app/google-services.json") as JsonObject
+    val appId = applicationId.get()
+    val json = googleServicesJson.get().asFile.readText()
+    val googleServices = Json.parseToJsonElement(json)
     var foundPackageName: String? = null
-    val appId = applicationId()
-    googleServices.array<JsonObject>("client")!!.filter {
+    googleServices.jsonObject["client"]!!.jsonArray.filter {
       // client_info.android_client_info.package_name
-      val clientInfo = it.obj("client_info")!!
-      val googleAppId = clientInfo.string("mobilesdk_app_id")!!
-      val clientInfoPackage = clientInfo.obj("android_client_info")?.string("package_name")
+      val clientInfo = it.jsonObject["client_info"]!!.jsonObject
+      val googleAppId = clientInfo["mobilesdk_app_id"]!!.jsonPrimitive.content
+      val clientInfoPackage = clientInfo["android_client_info"]!!.jsonObject["package_name"]!!.jsonPrimitive.content
       foundPackageName = clientInfoPackage
       clientInfoPackage == appId && (googleAppId != "1:1037154859800:android:683d617a5fe76437" || clientInfoPackage == "org.thunderdog.challegram")
     }.ifEmpty {

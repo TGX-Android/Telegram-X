@@ -8,8 +8,6 @@ import org.drinkless.tdlib.TdApi;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.Collection;
 
 import me.vkryl.core.BitwiseUtils;

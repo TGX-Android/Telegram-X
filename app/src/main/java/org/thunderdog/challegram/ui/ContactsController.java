@@ -77,6 +77,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
@@ -360,7 +361,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
 
   @Override
   public void onTextChanged (CharSequence s, int start, int before, int count) {
-    searchUser(s.toString());
+    searchForItems(s.toString());
   }
 
   @Override
@@ -811,7 +812,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
   private String lastQuery;
 
   @Override
-  public void searchUser (String q) {
+  public void searchForItems (String q) {
     if (lastQuery == null) {
       lastQuery = "";
     }
@@ -838,9 +839,9 @@ public class ContactsController extends TelegramViewController<ContactsControlle
         forceSearchChats(q);
       }
     } else if (users != null && users.length > 0) {
-      q = Strings.clean(q.trim().toLowerCase());
+      q = Strings.clean(q.trim());
       if (!q.equals(lastQuery)) {
-        searchInternal(q, q.length() > lastQuery.length() && lastQuery.length() > 0 && q.startsWith(lastQuery));
+        searchInternal(q, q.length() > lastQuery.length() && lastQuery.length() > 0 && q.regionMatches(true, 0, lastQuery, 0, lastQuery.length()));
         lastQuery = q;
       }
     }
@@ -893,13 +894,11 @@ public class ContactsController extends TelegramViewController<ContactsControlle
           Log.critical("ContactsController::sortUsers: TGUser is null");
           continue;
         }
-        String firstName = Strings.clean(user.getFirstName().trim()).toLowerCase();
-        String lastName = Strings.clean(user.getLastName().trim()).toLowerCase();
         TdApi.Usernames usernames = user.getUsernames();
-        String check = (firstName + " " + lastName).trim();
+        String check = TD.getUserName(user.getFirstName(), user.getLastName());
 
         if (q != null) {
-          if (!firstName.startsWith(q) && !lastName.startsWith(q) && !check.startsWith(q) && !Td.findUsernameByPrefix(usernames, q)) {
+          if (!Strings.anyWordStartsWith(check, q) && !Td.findUsernameByPrefix(usernames, q)) {
             continue;
           }
         }
@@ -913,7 +912,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
           if ((charCount == 1 && Character.isDigit(codePoint)) || charCount > check.length()) {
             c = "#";
           } else {
-            c = check.substring(0, charCount).toUpperCase();
+            c = check.substring(0, charCount).toUpperCase(Locale.ROOT);
           }
         }
 
@@ -1202,6 +1201,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     }
 
     @Override
+    @NonNull
     public String getSectionName (int section) {
       return sUsers == null ? letters[section] : sLetters[section];
     }
@@ -1228,7 +1228,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     }
 
     @Override
-    public void updateView (SectionedRecyclerView.SectionViewHolder holder, int position) {
+    public void updateView (SectionedRecyclerView.SectionViewHolder holder, int position, boolean isUpdate) {
       TGUser user = sUsers == null ? users[position] : sUsers[position];
       ((UserView) holder.itemView).setUser(user);
       ((UserView) holder.itemView).setChecked(controller.canSelectContacts() && controller.isSelected(user), false);

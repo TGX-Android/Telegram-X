@@ -32,6 +32,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
@@ -246,7 +247,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
       return;
     }
     copyLine = line;
-    showOptions(trimmed, new int[] {R.id.btn_copyLine}, new String[] {Lang.getString(R.string.CopyLine) + " " + (index + 1)}, null, new int[] {R.drawable.baseline_content_copy_24});
+    showOptions(trimmed, new int[] {R.id.btn_copyLine}, new String[] {Lang.getString(R.string.CopyLine) + " " + (index + 1)}, null, new int[] {R.drawable.baseline_content_copy_24}, Config.MAX_COPY_TEXT_LINE_COUNT, null, null);
   }
 
   private void copyText () {
@@ -615,6 +616,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
     }
 
     @Override
+    @NonNull
     public String getSectionName (int section) {
       return lines.get(section).getIdStr();
     }
@@ -660,7 +662,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
     }
 
     @Override
-    public void updateView (SectionedRecyclerView.SectionViewHolder holder, int position) {
+    public void updateView (SectionedRecyclerView.SectionViewHolder holder, int position, boolean isUpdate) {
       ((LineView) holder.itemView).setCell(lines.get(position));
     }
   }

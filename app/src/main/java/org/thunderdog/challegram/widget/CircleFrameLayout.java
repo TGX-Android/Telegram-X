@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.widget;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -25,6 +24,7 @@ import android.os.Build;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import org.thunderdog.challegram.config.Config;
 
@@ -45,7 +45,7 @@ public class CircleFrameLayout extends FrameLayoutFix {
       path = null;
       setOutlineProvider(new android.view.ViewOutlineProvider() {
         @Override
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
           final int viewWidth = view.getMeasuredWidth();
           outline.setRoundRect(0, 0, viewWidth, view.getMeasuredHeight(), viewWidth / 2);

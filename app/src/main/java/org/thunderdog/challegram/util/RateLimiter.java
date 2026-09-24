@@ -37,8 +37,9 @@ public final class RateLimiter implements Runnable {
     });
   }
 
-  public void setDelayFirstExecution (boolean delayFirstExecution) {
+  public RateLimiter setDelayFirstExecution (boolean delayFirstExecution) {
     this.delayFirstExecution = delayFirstExecution;
+    return this;
   }
 
   public void cancelIfScheduled () {

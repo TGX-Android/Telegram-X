@@ -33,7 +33,7 @@ public class Socks5Proxy {
     this.password = password;
   }
 
-  public Socks5Proxy (TdApi.InternalLinkTypeProxy proxy) {
+  public Socks5Proxy (TdApi.Proxy proxy) {
     if (proxy.type.getConstructor() != TdApi.ProxyTypeSocks5.CONSTRUCTOR)
       throw new IllegalArgumentException(proxy.type.toString());
     TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.type;

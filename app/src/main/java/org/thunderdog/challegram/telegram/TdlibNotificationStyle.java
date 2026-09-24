@@ -242,26 +242,28 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   @SuppressWarnings("deprecation")
   protected final int displayChildNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @NonNull TdlibNotificationGroup group, TdlibNotificationSettings settings, int notificationId, boolean isSummary, boolean isRebuild) {
+    final int category = group.getCategory();
+
     if (!allowPreview || group.isEmpty()) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(category), notificationId);
       return DISPLAY_STATE_HIDDEN;
     }
 
     int visualSize = group.visualSize();
     if (visualSize == 0) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(category), notificationId);
       return DISPLAY_STATE_HIDDEN;
     }
 
     if (!tdlib.account().allowNotifications()) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(category), notificationId);
       return DISPLAY_STATE_POSTPONED;
     }
 
     final long chatId = group.getChatId();
     final TdApi.Chat chat = tdlib.chatSync(chatId, CHAT_MAX_DELAY);
     if (chat == null) {
-      Log.e(Log.TAG_FCM, "Doing nothing with the notification for chat %d, because it is no longer accessible");
+      TDLib.Tag.notifications( "Doing nothing with the notification for chat %d, because it is no longer accessible");
       // manager.cancel(notificationId);
       return DISPLAY_STATE_FAIL;
     }
@@ -273,8 +275,6 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         return DISPLAY_STATE_FAIL;
       }
     }*/
-
-    final int category = group.getCategory();
 
     String channelId;
     String rShortcutId = null;
@@ -310,7 +310,18 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final boolean onlyScheduled = group.isOnlyScheduled();
     final boolean onlySilent = group.isOnlyInitiallySilent();
     final boolean isChannel = tdlib.isChannelChat(chat);
-    final CharSequence visualChatTitle = Lang.getNotificationTitle(chat.id, chatTitle, group.getTotalCount(), tdlib.isSelfChat(group.getChatId()), tdlib.isMultiChat(chat), isChannel, group.isMention(), onlyPinned, onlyScheduled, onlySilent);
+    final CharSequence visualChatTitle = Lang.getNotificationTitle(
+      chat.id,
+      chatTitle,
+      group.getTotalCount(),
+      tdlib.isSelfChat(group.getChatId()),
+      tdlib.isMultiChat(chat),
+      isChannel,
+      group.isMention(),
+      onlyPinned,
+      onlyScheduled,
+      onlySilent
+    );
 
     // Content preview download
     List<TdApi.File> cloudReferences = null;
@@ -597,7 +608,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
           behavior = needNotification ? NotificationCompat.GROUP_ALERT_CHILDREN : NotificationCompat.GROUP_ALERT_SUMMARY;
         }
         builder.setGroupAlertBehavior(behavior);
-        Log.i(Log.TAG_FCM, "displaying notification with behavior:%d", behavior);
+        TDLib.Tag.notifications("displaying notification with behavior:%d", behavior);
       }
     } else {
       builder = new NotificationCompat.Builder(UI.getAppContext());
@@ -709,7 +720,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       try {
         if (Config.TEST_NOTIFICATION_PROBLEM_RESOLUTION)
           throw new RuntimeException();
-        manager.notify(notificationId, notification);
+        manager.notify(helper.tag(category), notificationId, notification);
         state = DISPLAY_STATE_OK;
       } catch (Throwable t) {
         Log.e("Cannot display notification", t);
@@ -771,19 +782,19 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   protected final void hideExtraSummaryNotifications (NotificationManagerCompat manager, @NonNull TdlibNotificationHelper helper, SparseIntArray displayedCategories) {
     for (int category = TdlibNotificationGroup.CATEGORY_DEFAULT; category <= TdlibNotificationGroup.MAX_CATEGORY; category++) {
       if (displayedCategories.indexOfKey(category) < 0)
-        manager.cancel(helper.getBaseNotificationId(category));
+        manager.cancel(helper.tag(category), helper.getBaseNotificationId(category));
     }
   }
 
   protected final void displaySummaryNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, TdlibNotificationSettings settings, int category, boolean isRebuild) {
-    int notificationId = helper.getBaseNotificationId(category);
+    int summaryNotificationId = helper.getBaseNotificationId(category);
     if (helper.isEmpty() || !tdlib.account().allowNotifications()) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(category), summaryNotificationId);
       return;
     }
     List<TdlibNotification> notifications = helper.getVisibleNotifications(category);
     if (notifications.isEmpty()) {
-      manager.cancel(notificationId);
+      manager.cancel(helper.tag(category), summaryNotificationId);
       return;
     }
     if (USE_GROUPS && allowPreview) {
@@ -798,8 +809,8 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         }
       }
       if (singleGroup != null) {
-        // manager.cancel(helper.getNotificationIdForGroup(singleGroup.getId()));
-        if (displayChildNotification(manager, context, helper, badgeCount, allowPreview, singleGroup, settings, notificationId, true, isRebuild) != DISPLAY_STATE_FAIL) {
+        // manager.cancel(TdlibNotificationManager.TAG_MESSAGES, helper.getNotificationIdForGroup(singleGroup.getId()));
+        if (displayChildNotification(manager, context, helper, badgeCount, allowPreview, singleGroup, settings, summaryNotificationId, true, isRebuild) != DISPLAY_STATE_FAIL) {
           tdlib.settings().forgetNotificationProblems();
         }
         return;
@@ -820,7 +831,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       try {
         if (Config.TEST_NOTIFICATION_PROBLEM_RESOLUTION)
           throw new RuntimeException();
-        manager.notify(notificationId, notification);
+        manager.notify(helper.tag(category), summaryNotificationId, notification);
         tdlib.settings().forgetNotificationProblems();
       } catch (Throwable t) {
         Log.e("Unable to display common notification", t);
@@ -949,7 +960,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
               switch (result.getConstructor()) {
                 case TdApi.File.CONSTRUCTOR: {
                   TdApi.File uploadingFile = (TdApi.File) result;
-                  tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(uploadingFile.id), tdlib.okHandler());
+                  tdlib.send(new TdApi.CancelPreliminaryUploadFile(uploadingFile.id), tdlib.typedOkHandler());
                   tdlib.client().send(new TdApi.DownloadFile(uploadingFile.id, TdlibFilesManager.PRIORITY_NOTIFICATION_MEDIA, 0, 0, true), downloadedFile -> {
                     switch (downloadedFile.getConstructor()) {
                       case TdApi.File.CONSTRUCTOR: {
@@ -1034,7 +1045,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     long chatId = singleChatId != 0 ? singleChatId : lastNotification.group().getChatId();
     TdApi.Chat chat = tdlib.chatSync(chatId, CHAT_MAX_DELAY);
     if (chat == null) {
-      Log.e(Log.TAG_FCM, "Not displaying notification, because chat is inaccessible: %d", chatId);
+      TDLib.Tag.notifications("Not displaying notification, because chat is inaccessible: %d", chatId);
       return null;
     }
     int displayingChatsCount = singleChatId != 0 ? 1 : helper.calculateChatsCount(category);
@@ -1042,12 +1053,16 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     long timeMs = TimeUnit.SECONDS.toMillis(lastNotification.notification().date);
 
     String commonChannelId;
-    try {
-      commonChannelId = helper.findCommonChannelId(category);
-    } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
-      TDLib.Tag.notifications("Unable to create common notification channel:\n%s", Log.toString(e));
-      tdlib.settings().trackNotificationChannelProblem(e, 0);
-      return null;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      try {
+        commonChannelId = helper.findCommonChannelId(category);
+      } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+        TDLib.Tag.notifications("Unable to create common notification channel:\n%s", Log.toString(e));
+        tdlib.settings().trackNotificationChannelProblem(e, 0);
+        return null;
+      }
+    } else {
+      commonChannelId = null;
     }
     NotificationCompat.Builder b = new NotificationCompat.Builder(context, commonChannelId);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

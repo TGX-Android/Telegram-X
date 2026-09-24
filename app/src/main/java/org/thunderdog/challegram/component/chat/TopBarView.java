@@ -219,7 +219,7 @@ public class TopBarView extends FrameLayoutFix {
         buttonText.setEllipsize(TextUtils.TruncateAt.END);
         buttonText.setSingleLine(true);
         buttonText.setPadding(Screen.dp(8), 0, Screen.dp(8), 0);
-        buttonText.setText(Lang.getString(item.stringRes).toUpperCase());
+        buttonText.setText(Lang.uppercase(Lang.getString(item.stringRes)));
         buttonText.setOnClickListener(item.onClickListener);
         buttonLayout.addView(buttonText);
         actionsList.addView(buttonLayout);

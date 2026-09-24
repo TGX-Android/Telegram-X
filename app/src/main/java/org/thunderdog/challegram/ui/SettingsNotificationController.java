@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
@@ -38,6 +37,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -75,7 +75,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.RingtoneItem;
 import org.thunderdog.challegram.util.SimpleStringItem;
 import org.thunderdog.challegram.util.StringList;
-import org.thunderdog.challegram.util.TokenRetriever;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
@@ -89,6 +88,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -96,6 +96,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import tgx.bridge.DeviceTokenRetriever;
 import tgx.td.ChatId;
 import tgx.td.Td;
 
@@ -392,9 +393,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       case TdlibNotificationManager.Status.DISABLED_APP_SYNC:
       case TdlibNotificationManager.Status.DISABLED_SYNC:
         return R.drawable.baseline_sync_problem_24;
-      case TdlibNotificationManager.Status.FIREBASE_MISSING:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_MISSING:
         return R.drawable.baseline_system_update_24;
-      case TdlibNotificationManager.Status.FIREBASE_ERROR:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_ERROR:
         return R.drawable.baseline_bug_report_24;
       case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
       case TdlibNotificationManager.Status.MISSING_PERMISSION:
@@ -413,11 +414,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         return R.string.TurnSyncOnSystem;
       case TdlibNotificationManager.Status.DISABLED_APP_SYNC:
         return R.string.TurnSyncOnApp;
-      case TdlibNotificationManager.Status.FIREBASE_MISSING:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_MISSING:
         return R.string.InstallGooglePlayServices;
       case TdlibNotificationManager.Status.INTERNAL_ERROR:
         return R.string.ShareNotificationError;
-      case TdlibNotificationManager.Status.FIREBASE_ERROR:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_ERROR:
         return R.string.FirebaseErrorResolve;
       case TdlibNotificationManager.Status.MISSING_PERMISSION:
       case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
@@ -449,10 +450,10 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       case TdlibNotificationManager.Status.DISABLED_APP_SYNC:
         guideRes = R.string.NotificationsGuideSyncAppOff;
         break;
-      case TdlibNotificationManager.Status.FIREBASE_MISSING:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_MISSING:
         guideRes = R.string.NotificationsGuideFirebaseUnavailable;
         break;
-      case TdlibNotificationManager.Status.FIREBASE_ERROR:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_ERROR:
         return Lang.getMarkdownString(this, R.string.NotificationsGuideFirebaseError, Lang.boldCreator(), tdlib.context().getTokenError());
       case TdlibNotificationManager.Status.INTERNAL_ERROR: {
         @StringRes int
@@ -464,7 +465,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           Set<String> messages = problems.allMessages();
           if (messages.size() == 1) {
             String message = messages.iterator().next();
-            if (message.toLowerCase().contains("Limit exceed; cannot create more channels".toLowerCase())) {
+            if (message.toLowerCase(Locale.ROOT).contains("Limit exceed; cannot create more channels".toLowerCase(Locale.ROOT))) {
               specificChatRes = R.string.NotificationsGuideCategoryLimitErrorChat;
               commonRes = R.string.NotificationsGuideCategoryLimit;
             } else {
@@ -1400,8 +1401,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     Throwable fullError = tdlib.context().getTokenFullError();
     String error = tdlib.context().getTokenError();
     if (!StringUtils.isEmpty(error) || fullError != null) {
-      TokenRetriever retriever = TdlibNotificationUtils.getTokenRetriever();
-      String report = "#" + retriever.getName() + "_error";
+      DeviceTokenRetriever retriever = TdlibNotificationUtils.getDeviceTokenRetriever();
+      String report = "#" + retriever.name + "_error";
       if (!StringUtils.isEmpty(error)) {
         report += " " + error;
       }
@@ -1508,7 +1509,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           }
           break;
         }
-        case TdlibNotificationManager.Status.FIREBASE_ERROR: {
+        case TdlibNotificationManager.Status.PUSH_SERVICE_ERROR: {
           showOptions(new Options.Builder()
             .item(new OptionItem(R.id.btn_retry, Lang.getString(R.string.FirebaseErrorResolveTryAgain), OptionColor.BLUE, R.drawable.baseline_sync_problem_24))
             .item(new OptionItem(R.id.btn_share, Lang.getString(R.string.FirebaseErrorResolveShareError), OptionColor.NORMAL, R.drawable.baseline_forward_24))
@@ -1522,7 +1523,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           });
           break;
         }
-        case TdlibNotificationManager.Status.FIREBASE_MISSING: {
+        case TdlibNotificationManager.Status.PUSH_SERVICE_MISSING: {
           Intents.openLink("https://play.google.com/store/apps/details?id=com.google.android.gms");
           break;
         }
@@ -2027,7 +2028,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   private void resetNotificationSettings () {
     tdlib.notifications().resetNotificationSettings(false);
     tdlib.setDisableContactRegisteredNotifications(false);
-    tdlib.client().send(new TdApi.ResetAllNotificationSettings(), tdlib.okHandler());
+    tdlib.send(new TdApi.ResetAllNotificationSettings(), tdlib.typedOkHandler());
     int oldMode = getNotificationMode();
     boolean update = Settings.instance().resetNotificationFlags();
     if (update) {
@@ -2117,7 +2118,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   private void makeChannelChecks () {
     adapter.updateAllValuedSettings(); // TODO optimize
     onNotificationSettingsChanged();
@@ -2255,7 +2256,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             invalidateNotificationSettings(customChatId, channelChanged);
           } else {
             checkSnoozeStyle();
-            if (channelChanged) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channelChanged) {
               makeChannelChecks();
             } else {
               adapter.updateValuedSettingById(R.id.btn_notifications_preview);
@@ -2271,7 +2272,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     tdlib.ui().post(() -> {
       if (!isDestroyed()) {
         if (chatId != 0 && customChatId == chatId) {
-          if (channelChanged) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channelChanged) {
             makeChannelChecks();
           } else {
             adapter.updateValuedSettingById(R.id.btn_customChat_preview);
@@ -2282,6 +2283,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   @Override
+  @RequiresApi(Build.VERSION_CODES.O)
   public void onNotificationChannelChanged (TdApi.NotificationSettingsScope scope) {
     invalidateNotificationSettings(scope, true);
   }

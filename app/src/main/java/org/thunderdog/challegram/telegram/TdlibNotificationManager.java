@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -34,6 +33,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
@@ -49,6 +49,8 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.service.FetchNotificationService;
+import org.thunderdog.challegram.service.PushProcessor;
 import org.thunderdog.challegram.sync.SyncAdapter;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
@@ -64,6 +66,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
@@ -72,14 +75,29 @@ import me.vkryl.leveldb.LevelDB;
 import tgx.td.ChatId;
 
 public class TdlibNotificationManager implements UI.StateListener, Passcode.LockListener, CleanupStartupDelegate {
-  public static final int ID_MUSIC = Integer.MAX_VALUE;
-  public static final int ID_LOCATION = Integer.MAX_VALUE - 1;
-  public static final int ID_ONGOING_CALL_NOTIFICATION = Integer.MAX_VALUE - 2;
-  public static final int ID_INCOMING_CALL_NOTIFICATION = Integer.MAX_VALUE - 3;
-  public static final int ID_PENDING_TASK = Integer.MAX_VALUE - 4;
-  public static final int ID_TEMPORARY_NOTIFICATION = Integer.MAX_VALUE - 5;
-  public static final int IDS_COUNT = 6;
-  public static final int IDS_PER_ACCOUNT = (int) ((long) (Integer.MAX_VALUE - IDS_COUNT) / (long) TdlibAccount.ID_MAX) - 1;
+  public static final int ID_TEMPORARY_NOTIFICATION = Integer.MAX_VALUE;
+  public static final int ID_FOREGROUND_MUSIC = Integer.MAX_VALUE - 1;
+  public static final int ID_FOREGROUND_LOCATION = Integer.MAX_VALUE - 2;
+  public static final int ID_FOREGROUND_ONGOING_CALL_NOTIFICATION = Integer.MAX_VALUE - 3;
+  public static final int ID_FOREGROUND_INCOMING_CALL_NOTIFICATION = Integer.MAX_VALUE - 4;
+  public static final int ID_FOREGROUND_PENDING_TASK = Integer.MAX_VALUE - 5;
+
+  public static final int IDS_PER_ACCOUNT = (int) ((long) (Integer.MAX_VALUE - 6) / (long) TdlibAccount.ID_MAX) - 1;
+
+  public static String getMessageNotificationTag (int accountId, int category) {
+    String prefix = switch (category) {
+      case TdlibNotificationGroup.CATEGORY_PRIVATE -> "pm";
+      case TdlibNotificationGroup.CATEGORY_GROUPS -> "groups";
+      case TdlibNotificationGroup.CATEGORY_CHANNELS -> "channels";
+      case TdlibNotificationGroup.CATEGORY_SECRET -> "sc";
+      default -> "chats";
+    };
+    if (accountId != TdlibAccount.NO_ID) {
+      return prefix + "_" + accountId;
+    } else {
+      return prefix;
+    }
+  }
 
   public static int calculateBaseNotificationId (Tdlib tdlib) {
     return 1 + IDS_PER_ACCOUNT * tdlib.id();
@@ -318,7 +336,9 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     protected void process (Message msg) {
       switch (msg.what) {
         case CLEANUP_CHANNELS: {
-          TdlibNotificationChannelGroup.cleanupChannelGroups(context);
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            TdlibNotificationChannelGroup.cleanupChannelGroups(context);
+          }
           break;
         }
         case PLAY_SOUND: {
@@ -471,7 +491,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   /**
-   * Called from {@link org.thunderdog.challegram.service.FirebaseListenerService} when push processing takes too long.
+   * Called from {@link org.thunderdog.challegram.service.PushProcessor} when push processing takes too long.
    * */
   public void notifyPushProcessingTakesTooLong () {
     notification.abortCancelableOperations();
@@ -500,7 +520,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   public boolean hasLocalNotificationProblem () {
     return areNotificationsBlockedGlobally() || areNotificationsBlocked(scopePrivate()) ||
       areNotificationsBlocked(scopeGroup()) || areNotificationsBlocked(scopeChannel()) ||
-      !hasFirebase() ||
+      !hasRemotePushService() ||
       tdlib.notifications().getNotificationBlockStatus() == TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED;
   }
 
@@ -511,8 +531,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       case Status.BLOCKED_CATEGORY:
       case Status.DISABLED_APP_SYNC:
       case Status.DISABLED_SYNC:
-      case Status.FIREBASE_MISSING:
-      case Status.FIREBASE_ERROR:
+      case Status.PUSH_SERVICE_MISSING:
+      case Status.PUSH_SERVICE_ERROR:
 
       case Status.INTERNAL_ERROR:
         return true;
@@ -525,11 +545,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   public boolean needSyncAlert () {
-    return isSyncDisabledGlobally() && !hasFirebase();
+    return isSyncDisabledGlobally() && !hasRemotePushService();
   }
 
-  private boolean hasFirebase () {
-    return U.isGooglePlayServicesAvailable(UI.getAppContext());
+  private boolean hasRemotePushService () {
+    return TdlibNotificationUtils.getDeviceTokenRetriever().isAvailable(UI.getContext());
   }
 
   private boolean isSyncDisabledGlobally () {
@@ -547,10 +567,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     Status.BLOCKED_ALL,
     Status.DISABLED_SYNC,
     Status.DISABLED_APP_SYNC,
-    Status.FIREBASE_MISSING,
+    Status.PUSH_SERVICE_MISSING,
     Status.INTERNAL_ERROR,
     Status.ACCOUNT_NOT_SELECTED,
-    Status.FIREBASE_ERROR,
+    Status.PUSH_SERVICE_ERROR,
     Status.MISSING_PERMISSION
   })
   public @interface Status {
@@ -560,10 +580,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       BLOCKED_ALL = 2,
       DISABLED_SYNC = 3,
       DISABLED_APP_SYNC = 4,
-      FIREBASE_MISSING = 5,
+      PUSH_SERVICE_MISSING = 5,
       INTERNAL_ERROR = 6,
       ACCOUNT_NOT_SELECTED = 7,
-      FIREBASE_ERROR = 8,
+      PUSH_SERVICE_ERROR = 8,
       MISSING_PERMISSION = 9;
   }
 
@@ -586,21 +606,21 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     if (!NotificationManagerCompat.from(UI.getAppContext()).areNotificationsEnabled()) {
       return Status.BLOCKED_ALL;
     }
-    boolean hasFirebase = hasFirebase();
-    if (!hasFirebase) {
-      // Sync matters only when Firebase unavailable
+    boolean hasPushServices = hasRemotePushService();
+    if (!hasPushServices) {
+      // Sync matters only when push service (firebase, hms, ...) unavailable
       if (isSyncDisabledGlobally())
         return Status.DISABLED_SYNC;
       if (isSyncDisabledForApp())
         return Status.DISABLED_APP_SYNC;
-      return Status.FIREBASE_MISSING;
+      return Status.PUSH_SERVICE_MISSING;
     }
     if (tdlib.settings().hasNotificationProblems())
       return Status.INTERNAL_ERROR;
     if (!tdlib.account().forceEnableNotifications() && Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS))
       return Status.ACCOUNT_NOT_SELECTED;
     if (tdlib.context().getTokenState() == TdlibManager.TokenState.ERROR)
-      return Status.FIREBASE_ERROR;
+      return Status.PUSH_SERVICE_ERROR;
     return Status.NOT_BLOCKED;
   }
 
@@ -1177,7 +1197,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return _channelGlobalVersion;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public long getChannelVersion (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (customChatId != 0) {
       return Settings.instance().getLong(key(_CHANNEL_VERSION_CUSTOM_KEY + customChatId), 0);
@@ -1186,7 +1206,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   private void incrementChannelVersion (@Nullable TdApi.NotificationSettingsScope scope, long chatId, LevelDB editor) {
     long selfUserId = tdlib.myUserId();
     LocalScopeNotificationSettings settings = chatId != 0 ? null : getLocalNotificationSettings(scope);
@@ -1212,7 +1232,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public String getSystemChannelId (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long accountId = tdlib.myUserId();
@@ -1224,7 +1244,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return null;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   @Nullable
   public Object getSystemChannelGroup () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -1247,7 +1267,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return null;
   }
 
-  @TargetApi(Build.VERSION_CODES.O)
+  @RequiresApi(Build.VERSION_CODES.O)
   public Object getSystemChannel (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -1600,7 +1620,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         } else {
           settingsForPrivateChats = newDefaults();
         }
-        tdlib.client().send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopePrivateChats(), settingsForPrivateChats), tdlib.okHandler());
+        tdlib.send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopePrivateChats(), settingsForPrivateChats), tdlib.typedOkHandler());
       }
       if (needUpdateDefaults(settingsForGroupChats)) {
         if (settingsForGroupChats != null) {
@@ -1608,7 +1628,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         } else {
           settingsForGroupChats = newDefaults();
         }
-        tdlib.client().send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopeGroupChats(), settingsForGroupChats), tdlib.okHandler());
+        tdlib.send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopeGroupChats(), settingsForGroupChats), tdlib.typedOkHandler());
       }
       if (needUpdateDefaults(settingsForChannelChats)) {
         if (settingsForChannelChats != null) {
@@ -1616,7 +1636,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         } else {
           settingsForChannelChats = newDefaults();
         }
-        tdlib.client().send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopeChannelChats(), settingsForChannelChats), tdlib.okHandler());
+        tdlib.send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopeChannelChats(), settingsForChannelChats), tdlib.typedOkHandler());
       }
 
       updated = Settings.instance().setNeedSplitNotificationCategories(true);
@@ -2032,7 +2052,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   @AnyThread
-  @TargetApi(Build.VERSION_CODES.TIRAMISU)
+  @RequiresApi(Build.VERSION_CODES.TIRAMISU)
   public void onNotificationPermissionGranted () {
     rebuildNotification();
   }
@@ -2181,6 +2201,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   @TdlibThread
   void onUpdateNotificationGroup (TdApi.UpdateNotificationGroup update) {
+    if (Config.FOREGROUND_SERVICE_DEMO) {
+      Context context = UI.getContext();
+      PushProcessor.showForegroundNotification(context, tdlib.context(), false, -1, tdlib.accountId(), true, new CountDownLatch(0));
+      queue.post(() -> {
+        FetchNotificationService.stopForegroundTask(context, -1, tdlib.accountId());
+        sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
+      }, 1500L);
+      return;
+    }
     sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
   }
 

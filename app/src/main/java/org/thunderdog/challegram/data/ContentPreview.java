@@ -49,6 +49,7 @@ public class ContentPreview {
   public static final Emoji EMOJI_AUDIO = new Emoji("\uD83C\uDFB5", R.drawable.baseline_music_note_16);
   public static final Emoji EMOJI_CONTACT = new Emoji("\uD83D\uDC64", R.drawable.baseline_person_16);
   public static final Emoji EMOJI_POLL = new Emoji("\uD83D\uDCCA", R.drawable.baseline_poll_16);
+  public static final Emoji EMOJI_POLL_OPTION = new Emoji("\uD83D\uDCCA", R.drawable.baseline_ballot_16);
   public static final Emoji EMOJI_QUIZ = new Emoji("\u2753", R.drawable.baseline_help_16);
   public static final Emoji EMOJI_PAID_PHOTO = new Emoji("\u2B50", R.drawable.baseline_premium_star_16); // ⭐
   public static final Emoji EMOJI_PAID_VIDEO = new Emoji("\u2B50", R.drawable.baseline_premium_star_16);
@@ -279,6 +280,11 @@ public class ContentPreview {
         }
         break;
       }
+      case TdApi.MessageRichMessage.CONSTRUCTOR: {
+        TdApi.MessageRichMessage richMessage = (TdApi.MessageRichMessage) message.content;
+        // TODO rich message text representation
+        break;
+      }
       case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
         TdApi.MessageAnimatedEmoji animatedEmoji = (TdApi.MessageAnimatedEmoji) message.content;
         alternativeText = animatedEmoji.emoji;
@@ -322,11 +328,6 @@ public class ContentPreview {
             arg1 = ((TdApi.MessageCall) message.content).duration;
             break;
         }
-        break;
-      }
-      case TdApi.MessageLocation.CONSTRUCTOR: {
-        TdApi.MessageLocation location = ((TdApi.MessageLocation) message.content);
-        alternativeText = location.livePeriod == 0 || location.expiresIn == 0 ? null : "live";
         break;
       }
       case TdApi.MessageGame.CONSTRUCTOR:
@@ -536,16 +537,43 @@ public class ContentPreview {
         TdApi.MessageGiftedPremium giftedPremium = (TdApi.MessageGiftedPremium) message.content;
         CharSequence text;
         String amount = CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount);
+        boolean months = giftedPremium.monthCount != 0;
+        int monthsOrDays = months ? giftedPremium.monthCount : giftedPremium.dayCount;
         if (giftedPremium.receiverUserId != 0) {
           if (message.chatId == ChatId.fromUserId(giftedPremium.receiverUserId)) {
-            text = Lang.pluralBold(R.string.YouGiftedPremium, giftedPremium.monthCount, amount);
+            text = Lang.pluralBold(
+              months ?
+                R.string.YouGiftedPremium :
+                R.string.YouGiftedPremiumDays,
+              monthsOrDays,
+              amount
+            );
           } else {
-            text = Lang.pluralBold(R.string.YouGiftedPremiumTo, giftedPremium.monthCount, amount, tdlib.senderName(new TdApi.MessageSenderUser(giftedPremium.receiverUserId)));
+            text = Lang.pluralBold(
+              months ?
+                R.string.YouGiftedPremiumTo :
+                R.string.YouGiftedPremiumDaysTo,
+              monthsOrDays,
+              amount,
+              tdlib.senderName(new TdApi.MessageSenderUser(giftedPremium.receiverUserId))
+            );
           }
         } else if (giftedPremium.gifterUserId != 0) {
-          text = Lang.pluralBold(R.string.GiftedPremium, giftedPremium.monthCount, tdlib.senderName(new TdApi.MessageSenderUser(giftedPremium.gifterUserId), true), amount);
+          text = Lang.pluralBold(
+            months ?
+              R.string.GiftedPremium :
+              R.string.GiftedPremiumDays,
+            monthsOrDays,
+            tdlib.senderName(new TdApi.MessageSenderUser(giftedPremium.gifterUserId), true), amount
+          );
         } else {
-          text = Lang.pluralBold(R.string.AnonymousGiftedPremium, giftedPremium.monthCount, amount);
+          text = Lang.pluralBold(
+            months ?
+              R.string.AnonymousGiftedPremium :
+              R.string.AnonymousGiftedPremiumDays,
+            monthsOrDays,
+            amount
+          );
         }
         TdApi.FormattedText formatted = TD.toFormattedText(text, false);
         return new ContentPreview(EMOJI_GIFT, 0, formatted, true);
@@ -553,13 +581,15 @@ public class ContentPreview {
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
         // TODO: R.string.ChatContent*
         TdApi.MessagePremiumGiftCode giftedPremium = (TdApi.MessagePremiumGiftCode) message.content;
+        boolean months = giftedPremium.monthCount != 0;
+        int monthsOrDays = months ? giftedPremium.monthCount : giftedPremium.dayCount;
         CharSequence text;
         if (message.isOutgoing) {
-          text = Lang.pluralBold(R.string.YouGiftedPremiumCode, giftedPremium.monthCount);
+          text = Lang.pluralBold(months ? R.string.YouGiftedPremiumCode : R.string.YouGiftedPremiumCodeDays, monthsOrDays);
         } else if (giftedPremium.creatorId != null) {
-          text = Lang.pluralBold(R.string.GiftedPremiumCode, giftedPremium.monthCount, tdlib.senderName(giftedPremium.creatorId, true));
+          text = Lang.pluralBold(months ? R.string.GiftedPremiumCodeDays : R.string.GiftedPremiumCode, monthsOrDays, tdlib.senderName(giftedPremium.creatorId, true));
         } else {
-          text = Lang.pluralBold(R.string.AnonymousGiftedPremiumCode, giftedPremium.monthCount);
+          text = Lang.pluralBold(months ? R.string.AnonymousGiftedPremiumCodeDays : R.string.AnonymousGiftedPremiumCode, monthsOrDays);
         }
         TdApi.FormattedText formatted = TD.toFormattedText(text, false);
         return new ContentPreview(EMOJI_GIFT, 0, formatted, true);
@@ -694,6 +724,8 @@ public class ContentPreview {
       }
 
       // Handled by getSimpleContentPreview
+      case TdApi.MessageLocation.CONSTRUCTOR:
+      case TdApi.MessageLiveLocation.CONSTRUCTOR:
       case TdApi.MessageVenue.CONSTRUCTOR:
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
       case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
@@ -708,11 +740,15 @@ public class ContentPreview {
       case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
       case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
       case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
+      case TdApi.MessageChatJoinFromCommunity.CONSTRUCTOR:
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
       case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
       case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
       case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
@@ -723,6 +759,7 @@ public class ContentPreview {
       case TdApi.MessageUsersShared.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
       case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
       case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
@@ -737,15 +774,24 @@ public class ContentPreview {
       case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
-      case TdApi.MessageGiftedTon.CONSTRUCTOR:
+      case TdApi.MessageGiftedGrams.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
+      case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+      case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
+      case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
+      case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
+      case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_af730a78();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -985,7 +1031,7 @@ public class ContentPreview {
           if (((TdApi.PushMessageContentLocation) push.content).isPinned)
             return getNotificationPinned(R.string.ActionPinnedGeoLive, TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
           else
-            return getNotificationPreview(TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, "live");
+            return getNotificationPreview(TdApi.MessageLiveLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
         } else {
           if (((TdApi.PushMessageContentLocation) push.content).isPinned)
             return getNotificationPinned(R.string.ActionPinnedGeo, TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
@@ -1110,6 +1156,7 @@ public class ContentPreview {
 
       case TdApi.PushMessageContentChatJoinByLink.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageChatJoinByLink.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
+        // TODO(server/TDLib): PushMessageContentChatJoinFromCommunity
       case TdApi.PushMessageContentChatJoinByRequest.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageChatJoinByRequest.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
       case TdApi.PushMessageContentRecurringPayment.CONSTRUCTOR:
@@ -1127,6 +1174,8 @@ public class ContentPreview {
         return getNotificationPreview(TdApi.MessageChatSetBackground.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, ((TdApi.PushMessageContentChatSetBackground) push.content).isSame ? ARG_TRUE : ARG_NONE, 0);
       case TdApi.PushMessageContentSuggestProfilePhoto.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
+      case TdApi.PushMessageContentSuggestBirthdate.CONSTRUCTOR:
+        return getNotificationPreview(TdApi.MessageSuggestBirthdate.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
 
       case TdApi.PushMessageContentPremiumGiftCode.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessagePremiumGiftCode.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, ((TdApi.PushMessageContentPremiumGiftCode) push.content).monthCount, 0);
@@ -1199,13 +1248,14 @@ public class ContentPreview {
           return new ContentPreview(isChannel ? EMOJI_LIVE_STREAM : EMOJI_VIDEO_CHAT, isChannel ? R.string.ChatContentLiveStreamAddSomeone : R.string.ChatContentVideoChatAddSomeone);
         }
       }
+      case TdApi.PushMessageContentPollOptionAdded.CONSTRUCTOR:
       case TdApi.PushMessageContentChecklist.CONSTRUCTOR:
       case TdApi.PushMessageContentChecklistTasksAdded.CONSTRUCTOR:
       case TdApi.PushMessageContentChecklistTasksDone.CONSTRUCTOR: {
         return getNotificationPreview(TdApi.MessageUnsupported.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
       }
       default:
-        Td.assertPushMessageContent_55b7513d();
+        Td.assertPushMessageContent_fd03564b();
         throw Td.unsupported(push.content);
     }
   }
@@ -1258,7 +1308,9 @@ public class ContentPreview {
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GIF, R.string.ChatContentAnimation, formattedArgument, argumentTranslatable);
       case TdApi.MessageLocation.CONSTRUCTOR:
-        return new ContentPreview(EMOJI_LOCATION, "live".equals(Td.getText(formattedArgument)) ? R.string.AttachLiveLocation : R.string.Location);
+        return new ContentPreview(EMOJI_LOCATION, R.string.Location);
+      case TdApi.MessageLiveLocation.CONSTRUCTOR:
+        return new ContentPreview(EMOJI_LOCATION, R.string.AttachLiveLocation);
       case TdApi.MessageVenue.CONSTRUCTOR:
         return new ContentPreview(EMOJI_LOCATION, R.string.Location);
       case TdApi.MessageSticker.CONSTRUCTOR: {
@@ -1296,6 +1348,8 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_GROUP, isOutgoing ? R.string.ChatContentGroupCreate_outgoing : R.string.ChatContentGroupCreate);
       case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GROUP, isOutgoing ? R.string.ChatContentGroupJoin_outgoing : R.string.ChatContentGroupJoin);
+      case TdApi.MessageChatJoinFromCommunity.CONSTRUCTOR:
+        return new ContentPreview(EMOJI_GROUP, isOutgoing ? R.string.ChatContentGroupJoinCommunity_outgoing : R.string.ChatContentGroupJoinCommunity);
       case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GROUP, isOutgoing ? R.string.ChatContentGroupAccept_outgoing : R.string.ChatContentGroupAccept);
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
@@ -1542,6 +1596,7 @@ public class ContentPreview {
       case TdApi.MessageUsersShared.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
       case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
       case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
@@ -1552,6 +1607,10 @@ public class ContentPreview {
       case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageChecklist.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
@@ -1563,8 +1622,18 @@ public class ContentPreview {
       case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
-      case TdApi.MessageGiftedTon.CONSTRUCTOR:
+      case TdApi.MessageGiftedGrams.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
+      case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+      case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
+      case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
+      case TdApi.MessageRichMessage.CONSTRUCTOR:
+      case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
+      case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1575,7 +1644,7 @@ public class ContentPreview {
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_af730a78();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

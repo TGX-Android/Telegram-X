@@ -29,6 +29,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.FillingDrawable;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
@@ -37,6 +38,7 @@ import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.EmojiTextView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -132,7 +134,7 @@ public final class ColumnDataPicker implements Destroyable {
   public void showPopup (ViewController<?> c, CharSequence title, CharSequence commitButtonText, @Nullable ThemeDelegate forcedTheme, @Nullable CommitListener commitListener) {
     if (popupLayout != null)
       throw new IllegalStateException();
-    this.popupLayout = c.showPopup(title, true, (popupLayout, optionsWrap) -> {
+    this.popupLayout = c.showPopup(title, true, Text.LINE_COUNT_UNLIMITED, (popupLayout, optionsWrap) -> {
       int contentHeight = 0;
       final int pickerHeight = InfiniteRecyclerView.getItemHeight() * 5;
 
@@ -151,7 +153,7 @@ public final class ColumnDataPicker implements Destroyable {
       }
 
       EmojiTextView commitButton = newCommitButton(c, forcedTheme);
-      Views.setMediumText(commitButton, commitButtonText.toString().toUpperCase());
+      Views.setMediumText(commitButton, Lang.uppercase(commitButtonText.toString()));
 
       for (Column column : columns) {
         InfiniteRecyclerView<SimpleStringItem> picker = new InfiniteRecyclerView<SimpleStringItem>(c.context(), false);

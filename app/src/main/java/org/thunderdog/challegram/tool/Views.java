@@ -16,7 +16,6 @@ package org.thunderdog.challegram.tool;
 
 import android.animation.Animator;
 import android.animation.ValueAnimator;
-import android.annotation.TargetApi;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -44,6 +43,7 @@ import android.widget.TextView;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -588,13 +588,13 @@ public class Views {
     }
   }
 
+  @SuppressWarnings({"DiscouragedPrivateApi", "JavaReflectionMemberAccess"})
   public static void setCursorDrawable (android.widget.EditText editText, @DrawableRes int res) {
     if (editText != null) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         editText.setTextCursorDrawable(res);
       } else {
         try {
-          //noinspection JavaReflectionMemberAccess
           Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
           mCursorDrawableRes.setAccessible(true);
           mCursorDrawableRes.setInt(editText, res);
@@ -617,6 +617,7 @@ public class Views {
     return (e.getAction() != MotionEvent.ACTION_DOWN || (Views.isValid(view) && Views.isValid((View) view.getParent())));
   }
 
+  @SuppressWarnings("DiscouragedApi")
   public static View tryFindAndroidView (Context context, Dialog dialog, String name) {
     if (dialog == null)
       return null;
@@ -721,7 +722,7 @@ public class Views {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       setSimpleStateListAnimator(view);
       view.setOutlineProvider(new android.view.ViewOutlineProvider() {
-        @TargetApi (Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
         public void getOutline (View view, android.graphics.Outline outline) {
           int p = Screen.dp(padding);
@@ -736,7 +737,7 @@ public class Views {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       setSimpleStateListAnimator(view);
       view.setOutlineProvider(new android.view.ViewOutlineProvider() {
-        @TargetApi (Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi (Build.VERSION_CODES.LOLLIPOP)
         @Override
         public void getOutline (View view, android.graphics.Outline outline) {
           int p = Screen.dp(padding);
@@ -1112,5 +1113,27 @@ public class Views {
       return gravity < 0 ? Gravity.NO_GRAVITY : gravity;
     }
     return Gravity.NO_GRAVITY;
+  }
+
+  public static boolean isFocusedViewVisible (RecyclerView recyclerView, View view) {
+    View target = view;
+    while (target != null && target.getParent() != recyclerView) {
+      target = (View) target.getParent();
+    }
+    if (target == null) {
+      return false;
+    }
+    RecyclerView.ViewHolder holder = recyclerView.findContainingViewHolder(target);
+    if (holder == null) {
+      return false;
+    }
+    int position = holder.getBindingAdapterPosition();
+    if (position == RecyclerView.NO_POSITION) {
+      return false;
+    }
+    LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+    int first = manager.findFirstVisibleItemPosition();
+    int last = manager.findLastVisibleItemPosition();
+    return position >= first && position <= last;
   }
 }

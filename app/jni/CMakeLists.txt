@@ -1,5 +1,14 @@
-cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 project(tgx VERSION 1.0.0 LANGUAGES C CXX)
+message(STATUS "Building ${PROJECT_NAME} ndk: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION}) platform: ${ANDROID_PLATFORM} abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
+
+if(NOT ANDROID_NDK_MAJOR OR NOT ANDROID_NDK_REVISION)
+  message(FATAL_ERROR "Unknown NDK: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION})")
+endif()
+
+if (NOT TGX_FLAVOR MATCHES "^(legacy|lollipop|marshmallow|latest)$")
+  message(FATAL_ERROR "Unknown flavor: ${TGX_FLAVOR}")
+endif()
 
 # == Include ==
 
@@ -9,13 +18,15 @@ include("${CMAKE_HOME_DIRECTORY}/cmake/Join.cmake")
 
 # == Dirs ==
 
-set(THIRDPARTY_DIR "${CMAKE_HOME_DIRECTORY}/third_party")
-set(STUB_DIR "${CMAKE_HOME_DIRECTORY}/stub")
-set(TGX_ROOT_DIR "${CMAKE_HOME_DIRECTORY}/../..")
+set(THIRDPARTY_DIR "${PROJECT_SOURCE_DIR}/third_party")
 set(TDLIB_DIR "${TGX_ROOT_DIR}/tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
-set(ENABLE_TG_CALLS yes)
+if(${TGX_FLAVOR} STREQUAL "legacy")
+  set(ENABLE_TGVOIP no)
+else()
+  set(ENABLE_TGVOIP yes)
+endif()
 
 # Using webp only if building for 32-bit platform
 #if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "x86")
@@ -25,26 +36,7 @@ set(ENABLE_TG_CALLS yes)
 #endif()
 set(USE_WEBP yes)
 
-if (${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
-  set(FFMPEG_ABI ${ANDROID_ABI})
-elseif(${ANDROID_ABI} STREQUAL "x86")
-  set(FFMPEG_ABI "i686")
-elseif(${ANDROID_ABI} STREQUAL "armeabi-v7a")
-  set(FFMPEG_ABI "armv7-a")
-else()
-  message(FATAL_ERROR "Unknown abi: ${ANDROID_ABI}")
-endif()
-set(FFMPEG_DIR "${THIRDPARTY_DIR}/ffmpeg/build/${FFMPEG_ABI}")
-set(FFMPEG_LIBS
-  swresample
-  avformat
-  swscale
-  avcodec
-  avfilter
-  avutil
-)
-
-set(VPX_DIR "${THIRDPARTY_DIR}/libvpx/build/${FFMPEG_ABI}")
+set(VPX_DIR "${LIBVPX_DIR}/${ANDROID_ABI}")
 set(VPX_LIB_PATH "${VPX_DIR}/lib/libvpx.a")
 
 # == Constants ==
@@ -55,10 +47,6 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a"
 else()
   set(IS_ARM_FAMILY no)
 endif()
-
-message(STATUS "Building native library... \
-        CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} \
-        IS_ARM_FAMILY: ${IS_ARM_FAMILY}")
 
 # == CMake global settings ==
 
@@ -72,31 +60,13 @@ else()
 endif()
 set(ORIGINAL_CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
 
-set(EXCLUDE_LIBS
-  libjni-utils.a
-  libyuv.a
-  "${VPX_LIB_PATH}"
-  libopus.a
-  libopusfile.a
-  librlottie.a
-  liblz4.a
+add_compile_options(
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-ffunction-sections>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fdata-sections>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fvisibility=hidden>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fvisibility-inlines-hidden>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
 )
-if (${USE_WEBP})
-  list(APPEND EXCLUDE_LIBS
-    libwebpdecoder_static.a
-  )
-endif()
-foreach(ffmpeg_lib ${FFMPEG_LIBS})
-  list(APPEND EXCLUDE_LIBS
-    "${FFMPEG_DIR}/lib/lib${ffmpeg_lib}.a"
-  )
-endforeach()
-Join(EXCLUDE_LIBS "${EXCLUDE_LIBS}" ",")
-list(APPEND ADD_LINKER_FLAGS
-  -Wl,--exclude-libs,${EXCLUDE_LIBS}
-)
-Join(ADD_LINKER_FLAGS "${ADD_LINKER_FLAGS}" " ")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ADD_LINKER_FLAGS}")
 
 # == Libraries ==
 
@@ -104,35 +74,35 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ADD_LINKER_FLAGS}"
 
 add_library(crypto SHARED IMPORTED)
 set_target_properties(crypto PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/openssl/${ANDROID_ABI}/lib/libcryptox.so
+  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/lib/libcryptox.so
 )
 add_library(ssl SHARED IMPORTED)
 set_target_properties(ssl PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/openssl/${ANDROID_ABI}/lib/libsslx.so
+  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/lib/libsslx.so
 )
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
   target_include_directories(crypto INTERFACE
-    ${TDLIB_DIR}/openssl/${ANDROID_ABI}/include
+    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/include
   )
   target_include_directories(ssl INTERFACE
-    ${TDLIB_DIR}/openssl/${ANDROID_ABI}/include
+    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/include
   )
 endif()
 
 add_library(tdjni SHARED IMPORTED)
 set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so
+  ${TDLIB_DIR}/src/main/libs/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/libtdjni.so
 )
-target_link_libraries(tdjni INTERFACE ssl crypto)
+target_link_libraries(tdjni INTERFACE crypto ssl)
 
 # opus
-include("${CMAKE_HOME_DIRECTORY}/BuildOpus.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildOpus.cmake")
 
 # ogg
-include("${CMAKE_HOME_DIRECTORY}/BuildOgg.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildOgg.cmake")
 
 # flac
-include("${CMAKE_HOME_DIRECTORY}/BuildFlac.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildFlac.cmake")
 
 # jni-utils
 add_subdirectory(
@@ -140,59 +110,56 @@ add_subdirectory(
 )
 
 # yuv
-include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildYuv.cmake")
 
 # vpx
+set(VPX_INCLUDE_DIR "${VPX_DIR}/include")
 add_library(vpx STATIC IMPORTED)
 set_target_properties(vpx PROPERTIES IMPORTED_LOCATION "${VPX_LIB_PATH}")
-target_include_directories(vpx INTERFACE "${VPX_DIR}/include")
+target_include_directories(vpx INTERFACE "${VPX_INCLUDE_DIR}")
+file(MAKE_DIRECTORY "${VPX_INCLUDE_DIR}")
+if(NOT EXISTS "${VPX_LIB_PATH}" OR NOT EXISTS "${VPX_INCLUDE_DIR}")
+  message(WARNING "Missing dependency: vpx. Run :app:buildLibvpx or Refresh Linked C++ Projects")
+endif()
 
 # opusfile
-include("${CMAKE_HOME_DIRECTORY}/BuildOpusfile.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildOpusfile.cmake")
 
 # rlottie
-include("${CMAKE_HOME_DIRECTORY}/BuildRlottie.cmake")
+include("${PROJECT_SOURCE_DIR}/BuildRlottie.cmake")
 
 # lz4
-include("${CMAKE_HOME_DIRECTORY}/BuildLz4.cmake")
-
-if (${ENABLE_TG_CALLS})
-  # usrsctp
-  include("${CMAKE_HOME_DIRECTORY}/BuildUsrSCTP.cmake")
-  # srtp
-  include("${CMAKE_HOME_DIRECTORY}/BuildLibSRTP.cmake")
-  # openh264
-  include("${CMAKE_HOME_DIRECTORY}/BuildOpenH264.cmake")
-  # absl
-  include("${CMAKE_HOME_DIRECTORY}/BuildAbsl.cmake")
-  # json11
-  include("${CMAKE_HOME_DIRECTORY}/BuildJson11.cmake")
-  # rnnoise
-  include("${CMAKE_HOME_DIRECTORY}/BuildRNNoise.cmake")
-  # webrtc
-  include("${CMAKE_HOME_DIRECTORY}/BuildWebRTC.cmake")
-  # libtgvoip
-  include("${CMAKE_HOME_DIRECTORY}/BuildTelegramVoIP.cmake")
-  # tgcalls
-  include("${CMAKE_HOME_DIRECTORY}/BuildTgCalls.cmake")
-endif()
+include("${PROJECT_SOURCE_DIR}/BuildLz4.cmake")
 
 # webp
 if (${USE_WEBP})
-  include("${CMAKE_HOME_DIRECTORY}/BuildWebp.cmake")
+  include("${PROJECT_SOURCE_DIR}/BuildWebp.cmake")
 endif()
 
 # ffmpeg
 foreach(FFMPEG_LIB IN LISTS FFMPEG_LIBS)
+  set(FFMPEG_LIB_PATH "${FFMPEG_DIR}/${ANDROID_ABI}/lib/lib${FFMPEG_LIB}.a")
+  set(FFMPEG_INCLUDE_DIR "${FFMPEG_DIR}/${ANDROID_ABI}/include")
   add_library(${FFMPEG_LIB} STATIC IMPORTED)
-  set_target_properties(${FFMPEG_LIB} PROPERTIES IMPORTED_LOCATION "${FFMPEG_DIR}/lib/lib${FFMPEG_LIB}.a")
-  target_include_directories(${FFMPEG_LIB} INTERFACE "${FFMPEG_DIR}/include")
+  set_target_properties(${FFMPEG_LIB} PROPERTIES IMPORTED_LOCATION "${FFMPEG_LIB_PATH}")
+  target_include_directories(${FFMPEG_LIB} INTERFACE "${FFMPEG_INCLUDE_DIR}")
+  file(MAKE_DIRECTORY "${FFMPEG_INCLUDE_DIR}")
+  if(NOT EXISTS "${FFMPEG_LIB_PATH}" OR NOT EXISTS "${FFMPEG_INCLUDE_DIR}")
+    message(WARNING "Missing dependency: ${FFMPEG_LIB}. Run :app:buildFfmpeg or Refresh Linked C++ Projects.")
+  endif()
 endforeach()
+
+# tgcalls
+if (${ENABLE_TGVOIP})
+  add_subdirectory(
+    "${PROJECT_SOURCE_DIR}/tgvoip"
+  )
+endif()
 
 # == Target ==
 
 set(NATIVE_LIB "tgxjni")
-add_library(${NATIVE_LIB} SHARED
+set(NATIVE_SOURCES
   log.cpp
 
   "${THIRDPARTY_DIR}/telegram_intro/IntroRenderer.c"
@@ -207,18 +174,24 @@ add_library(${NATIVE_LIB} SHARED
   image.c
   gif.cpp
   views.c
-
-  "${THIRDPARTY_DIR}/androidx-media/opus_jni.cc"
-  "${THIRDPARTY_DIR}/androidx-media/flac_jni.cc"
-  "${THIRDPARTY_DIR}/androidx-media/flac_parser.cc"
-  "${THIRDPARTY_DIR}/androidx-media/ffmpeg_jni.cc"
-  "${THIRDPARTY_DIR}/androidx-media/vpx_jni.cc"
-
   bridge.cpp
 )
+if(EXISTS "${ANDROIDX_MEDIA_DIR}")
+  list(APPEND NATIVE_SOURCES
+    "${ANDROIDX_MEDIA_DIR}/opus_jni.cc"
+    "${ANDROIDX_MEDIA_DIR}/flac_jni.cc"
+    "${ANDROIDX_MEDIA_DIR}/flac_parser.cc"
+    "${ANDROIDX_MEDIA_DIR}/ffmpeg_jni.cc"
+    "${ANDROIDX_MEDIA_DIR}/vpx_jni.cc"
+  )
+else()
+  message(WARNING "./gradlew patchJetpackMedia was not run yet")
+endif()
+
+add_library(${NATIVE_LIB} SHARED ${NATIVE_SOURCES})
 target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
-  "${THIRDPARTY_DIR}/androidx-media"
+  "${ANDROIDX_MEDIA_DIR}"
 
   "${THIRDPARTY_DIR}"
   .
@@ -237,11 +210,10 @@ target_compile_definitions(${NATIVE_LIB} PUBLIC
 
   TDLIB_TDAPI_CLASS_PATH="org/drinkless/tdlib/TdApi"
 )
-target_compile_options(${NATIVE_LIB} PUBLIC
+target_compile_options(${NATIVE_LIB} PRIVATE
   -Wall -Werror -Wno-deprecated-declarations
   -Wno-macro-redefined -Wno-unused-variable
   -fno-math-errno -fno-strict-aliasing -funroll-loops
-  -ffast-math
   -fno-rtti
 )
 # TODO: remove -Wno-macro-redefined -Wno-unused-variable
@@ -279,6 +251,12 @@ target_link_libraries(${NATIVE_LIB}
   EGL
   android
   cpufeatures
+)
+
+target_link_options(${NATIVE_LIB} PRIVATE
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-Wl,--gc-sections,--icf=safe>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-Wl,--exclude-libs,ALL>"
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
 )
 
 if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "x86_64")

@@ -301,7 +301,7 @@ public class RecordAudioVideoController implements
         }
       };
       this.cancelView.setGravity(Gravity.CENTER);
-      this.cancelView.setText(Lang.getString(R.string.Cancel).toUpperCase());
+      this.cancelView.setText(Lang.uppercase(Lang.getString(R.string.Cancel)));
       this.cancelView.setPadding(Screen.dp(12f), 0, Screen.dp(12f), 0);
       this.cancelView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
       this.cancelView.setTypeface(Fonts.getRobotoMedium());
@@ -1045,7 +1045,7 @@ public class RecordAudioVideoController implements
   private boolean inRaiseMode;
 
   private long targetChatId;
-  private long targetMessageThreadId;
+  private @Nullable TdApi.MessageTopic targetMessageTopicId;
   private MessagesController targetController;
 
   public boolean startRecording (View view, boolean inRaiseMode) {
@@ -1070,7 +1070,7 @@ public class RecordAudioVideoController implements
     this.savedRoundDurationSeconds = 0;
     this.prevVideoPath = null;
     this.targetChatId = targetController.getChatId();
-    this.targetMessageThreadId = targetController.getMessageThreadId();
+    this.targetMessageTopicId = targetController.getMessageTopicId();
     if (needVideo && !tdlib.chatSupportsRoundVideos(targetChatId)) {
       TdApi.User user = tdlib.chatUser(targetChatId);
       String name = user != null ? user.firstName : tdlib.chatTitle(targetChatId);
@@ -1218,7 +1218,7 @@ public class RecordAudioVideoController implements
   }
 
   private boolean hasValidOutputTarget () {
-    return targetController != null && !targetController.isDestroyed() && targetController.compareChat(targetChatId, targetMessageThreadId) && targetChatId != 0 && tdlib != null;
+    return targetController != null && !targetController.isDestroyed() && targetController.compareChat(targetChatId, targetMessageTopicId) && targetChatId != 0 && tdlib != null;
   }
 
   private void checkActualRecording (int closeMode) {
@@ -1568,7 +1568,7 @@ public class RecordAudioVideoController implements
       final TGRecord record = new TGRecord(tdlib, generation, duration, waveform);
       if (awaitingVoiceResult()) {
         if (voiceCloseMode == CLOSE_MODE_SEND) {
-          sendAudioNote(new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform(), null, obtainSelfDestructType()), Td.newSendOptions());
+          sendAudioNote(new TdApi.InputMessageVoiceNote(new TdApi.InputVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform()), null, obtainSelfDestructType()), Td.newSendOptions());
         } else {
           audioPreviewView.processRecord(voiceRecord = record);
         }
@@ -1739,21 +1739,20 @@ public class RecordAudioVideoController implements
       targetController.pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         TdApi.InputMessageVideoNote newVideoNote = tdlib.filegen().createThumbnail(videoNote, isSecretChat, helperFile);
         long chatId = targetController.getChatId();
-        long messageThreadId = targetController.getMessageThreadId();
         MessagesController.ReplyInfo replyInfo = targetController.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
+        TdApi.MessageTopic topicId = targetController.getMessageTopicId(replyInfo);
         TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
           modifiedSendOptions,
-          targetController.getDirectMessagesChatTopicId(replyInfo),
           targetController.getInputSuggestedPostInfo(replyInfo),
           targetController.obtainSilentMode()
         );
-        if (newVideoNote.thumbnail == null && helperFile != null) {
+        if (newVideoNote.videoNote.thumbnail == null && helperFile != null) {
           tdlib.client().send(new TdApi.DownloadFile(helperFile.id, TdlibFilesManager.PRIORITY_FILE_GENERATION, 0, 0, true), result -> {
-            tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, result.getConstructor() == TdApi.File.CONSTRUCTOR ? tdlib.filegen().createThumbnail(videoNote, isSecretChat, (TdApi.File) result) : newVideoNote, null);
+            tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, result.getConstructor() == TdApi.File.CONSTRUCTOR ? tdlib.filegen().createThumbnail(videoNote, isSecretChat, (TdApi.File) result) : newVideoNote, null);
           });
         } else {
-          tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, newVideoNote, null);
+          tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, newVideoNote, null);
         }
       });
     }
@@ -1765,16 +1764,15 @@ public class RecordAudioVideoController implements
     if (hasValidOutputTarget()) {
       targetController.pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         long chatId = targetController.getChatId();
-        long messageThreadId = targetController.getMessageThreadId();
         MessagesController.ReplyInfo replyInfo = targetController.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
+        TdApi.MessageTopic topicId = targetController.getMessageTopicId(replyInfo);
         TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
           modifiedSendOptions,
-          targetController.getDirectMessagesChatTopicId(replyInfo),
           targetController.getInputSuggestedPostInfo(replyInfo),
           targetController.obtainSilentMode()
         );
-        tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, voiceNote, null);
+        tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, voiceNote, null);
       });
     }
 
@@ -1827,7 +1825,7 @@ public class RecordAudioVideoController implements
             finishFileGeneration(resultFileSize, null);
           } else {
             finishFileGeneration(resultFileSize, () ->
-              sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, obtainSelfDestructType()), Td.newSendOptions(), roundFile)
+              sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH), obtainSelfDestructType()), Td.newSendOptions(), roundFile)
             );
           }
         } else {
@@ -1955,7 +1953,7 @@ public class RecordAudioVideoController implements
 
     if (initialSendOptions != null) {
       if (videoPreviewView.hasTrim()) {
-        tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(roundFile.id), tdlib.okHandler());
+        tdlib.send(new TdApi.CancelPreliminaryUploadFile(roundFile.id), tdlib.typedOkHandler());
         double startTimeSeconds = videoPreviewView.getStartTime();
         double endTimeSeconds = videoPreviewView.getEndTime();
         String conversion = VideoGenerationInfo.makeConversion(roundFile.id, false, 0,
@@ -1964,9 +1962,9 @@ public class RecordAudioVideoController implements
           0
         );
         TdApi.InputFileGenerated trimmedFile = new TdApi.InputFileGenerated(roundFile.local.path, conversion, 0);
-        sendVideoNote(new TdApi.InputMessageVideoNote(trimmedFile, null, (int) Math.round(endTimeSeconds - startTimeSeconds), VIDEO_NOTE_LENGTH, obtainSelfDestructType()), initialSendOptions, null);
+        sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputVideoNote(trimmedFile, null, (int) Math.round(endTimeSeconds - startTimeSeconds), VIDEO_NOTE_LENGTH), obtainSelfDestructType()), initialSendOptions, null);
       } else {
-        sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, obtainSelfDestructType()), initialSendOptions, roundFile);
+        sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH), obtainSelfDestructType()), initialSendOptions, roundFile);
       }
     } else {
       tdlib.client().send(new TdApi.DeleteFile(roundFile.id), tdlib.silentHandler());
@@ -1997,10 +1995,10 @@ public class RecordAudioVideoController implements
       if (record.getWaveform() == null) {
         Background.instance().post(() -> {
           byte[] waveform = N.getWaveform(record.getPath());
-          sendAudioNote(new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), waveform, null, obtainSelfDestructType()), initialSendOptions);
+          sendAudioNote(new TdApi.InputMessageVoiceNote(new TdApi.InputVoiceNote(record.toInputFile(), record.getDuration(), waveform), null, obtainSelfDestructType()), initialSendOptions);
         });
       } else {
-        sendAudioNote(new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform(), null, obtainSelfDestructType()), initialSendOptions);
+        sendAudioNote(new TdApi.InputMessageVoiceNote(new TdApi.InputVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform()), null, obtainSelfDestructType()), initialSendOptions);
       }
       Recorder.instance().finish(false);
     } else {

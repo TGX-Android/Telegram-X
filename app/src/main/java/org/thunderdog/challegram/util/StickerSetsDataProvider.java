@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.util;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -46,7 +45,7 @@ public abstract class StickerSetsDataProvider implements TGStickerObj.DataProvid
     loadingStickerSets.put(stickerSetId, currentFlags | loadingFlags);
 
     if (needRequestData) {
-      tdlib.client().send(new TdApi.GetStickerSet(stickerSetId), singleStickerSetHandler());
+      tdlib.send(new TdApi.GetStickerSet(stickerSetId), singleStickerSetHandler());
     }
   }
 
@@ -54,22 +53,16 @@ public abstract class StickerSetsDataProvider implements TGStickerObj.DataProvid
     loadingStickerSets.clear();
   }
 
-  private Client.ResultHandler singleStickerSetHandler () {
-    return object -> {
-      switch (object.getConstructor()) {
-        case TdApi.StickerSet.CONSTRUCTOR: {
-          final TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
-          UI.post(() -> {
-            final int flags = loadingStickerSets.get(stickerSet.id);
-            loadingStickerSets.delete(stickerSet.id);
-            applyStickerSet(stickerSet, flags);
-          });
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
-          break;
-        }
+  private Tdlib.ResultHandler<TdApi.StickerSet> singleStickerSetHandler () {
+    return (stickerSet, error) -> {
+      if (stickerSet != null) {
+        UI.post(() -> {
+          final int flags = loadingStickerSets.get(stickerSet.id);
+          loadingStickerSets.delete(stickerSet.id);
+          applyStickerSet(stickerSet, flags);
+        });
+      } else {
+        UI.showError(error);
       }
     };
   }

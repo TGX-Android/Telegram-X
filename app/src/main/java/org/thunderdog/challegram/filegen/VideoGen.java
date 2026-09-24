@@ -14,15 +14,16 @@
  */
 package org.thunderdog.challegram.filegen;
 
-import android.annotation.TargetApi;
-import android.media.MediaFormat;
+import static tgx.flavor.VideoTransformer.getVideoFrameRate;
+import static tgx.flavor.VideoTransformer.legacyConvertVideoComplex;
+
 import android.media.MediaMetadataRetriever;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.WorkerThread;
 import androidx.media3.common.C;
 import androidx.media3.common.Effect;
@@ -47,18 +48,6 @@ import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
 import com.googlecode.mp4parser.authoring.container.mp4.MovieCreator;
 import com.googlecode.mp4parser.authoring.tracks.AppendTrack;
 import com.googlecode.mp4parser.authoring.tracks.CroppedTrack;
-import com.otaliastudios.transcoder.Transcoder;
-import com.otaliastudios.transcoder.TranscoderListener;
-import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.source.DataSource;
-import com.otaliastudios.transcoder.source.FilePathDataSource;
-import com.otaliastudios.transcoder.source.TrimDataSource;
-import com.otaliastudios.transcoder.source.UriDataSource;
-import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
-import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
-import com.otaliastudios.transcoder.strategy.PassThroughTrackStrategy;
-import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
-import com.otaliastudios.transcoder.strategy.TrackStrategy;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
@@ -128,10 +117,16 @@ public class VideoGen {
     private long readyBytes;
     private long reportedBytesCount, reportedExpectedBytesCount;
 
+    private int inputVideoRotation;
+
     private final VideoGen context;
     private final long generationId;
     private Future<Void> task;
     private Transformer transformer;
+
+    public void setTask (Future<Void> task) {
+      this.task = task;
+    }
 
     private Entry (VideoGen context, long generationId) {
       this.context = context;
@@ -210,7 +205,7 @@ public class VideoGen {
     return 0;
   }
 
-  private interface ProgressCallback {
+  public interface ProgressCallback {
     void onTranscodeProgress (double progress, long expectedSize);
     void onReadyToUpload (long bytesCount, long expectedSize);
   }
@@ -227,7 +222,7 @@ public class VideoGen {
     final String sourcePath = info.getOriginalPath();
     final String destinationPath = info.getDestinationPath();
 
-    boolean sendOriginalInCaseFileSizeGrows = !Config.MODERN_VIDEO_TRANSCODING_ENABLED && info.canTakeSimplePath();
+    boolean sendOriginalInCaseFileSizeGrows = !Config.MODERN_VIDEO_TRANSCODING_ENABLED && info.canTakeSimplePath() && (entry.inputVideoRotation == 0 || !Config.TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT);
 
     long sourceSize = getBytesCount(sourcePath, true);
     ProgressCallback onProgress = new ProgressCallback() {
@@ -366,8 +361,8 @@ public class VideoGen {
     try {
       if (Config.MODERN_VIDEO_TRANSCODING_ENABLED) {
         convertVideoComplexV2(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure, after);
-      } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-        convertVideoComplex(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure, after);
+      } else if (Config.LEGACY_VIDEO_TRANSCODING_ENABLED) {
+        legacyConvertVideoComplex(this, UI.getAppContext(), sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure, after);
       } else {
         onFailure.runWithData(new RuntimeException());
       }
@@ -377,7 +372,7 @@ public class VideoGen {
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void convertVideoComplexV2 (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure, Runnable after) throws FileNotFoundException {
     MediaMetadataRetriever retriever = U.openRetriever(sourcePath);
     if (retriever == null)
@@ -391,6 +386,7 @@ public class VideoGen {
     } else {
       inputVideoRotation = 0;
     }
+    entry.inputVideoRotation = inputVideoRotation;
     long inputVideoBitrate = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
     U.closeRetriever(retriever);
 
@@ -398,7 +394,7 @@ public class VideoGen {
     if (videoLimit == null)
       videoLimit = new Settings.VideoLimit();
 
-    int inputVideoFrameRate = getFrameRate(sourcePath);
+    int inputVideoFrameRate = getVideoFrameRate(UI.getAppContext(), sourcePath);
     int outputVideoFrameRate = videoLimit.getOutputFrameRate(inputVideoFrameRate);
 
     int outputVideoSquare;
@@ -415,7 +411,7 @@ public class VideoGen {
       outputVideoSquare = inputVideoWidth * inputVideoHeight;
     }
     long outputVideoBitrate = Math.min(
-      (videoLimit.bitrate != DefaultVideoStrategy.BITRATE_UNKNOWN ? videoLimit.bitrate :
+      (videoLimit.bitrate != Settings.VideoLimit.BITRATE_UNKNOWN ? videoLimit.bitrate :
       (int) Math.round(outputVideoSquare * outputVideoFrameRate * Settings.VideoLimit.BITRATE_SCALE)),
       inputVideoBitrate
     );
@@ -435,7 +431,9 @@ public class VideoGen {
       .setRemoveAudio(info.needMute());
 
     List<Effect> videoEffects = new ArrayList<>();
-    videoEffects.add(FrameDropEffect.createDefaultFrameDropEffect(outputVideoFrameRate));
+    if (outputVideoFrameRate != inputVideoFrameRate) {
+      videoEffects.add(FrameDropEffect.createDefaultFrameDropEffect(outputVideoFrameRate));
+    }
     if (outputHeightLimit > 0) {
       videoEffects.add(Presentation.createForHeight(outputHeightLimit));
     }
@@ -451,6 +449,11 @@ public class VideoGen {
       editedMediaItemBuilder.setEffects(new Effects(
         Collections.emptyList(),
         videoEffects
+      ));
+    } else if (Config.TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT && inputVideoRotation != 0) {
+      editedMediaItemBuilder.setEffects(new Effects(
+        Collections.emptyList(),
+        Collections.emptyList()
       ));
     }
 
@@ -521,132 +524,7 @@ public class VideoGen {
     progressRunner.run();
   }
 
-  private static DataSource toDataSource (String sourcePath) {
-    if (sourcePath.startsWith("content://")) {
-      return new UriDataSource(UI.getAppContext(), Uri.parse(sourcePath));
-    } else {
-      FilePathDataSource dataSource = new FilePathDataSource(sourcePath);
-      dataSource.initialize();
-      return dataSource;
-    }
-  }
-
-  private static int getFrameRate (String sourcePath) {
-    DataSource dataSource = toDataSource(sourcePath);
-    MediaFormat format = dataSource.getTrackFormat(TrackType.VIDEO);
-    return getFrameRate(format);
-  }
-
-  private static int getFrameRate (@Nullable MediaFormat format) {
-    if (format != null && format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
-      return format.getInteger(MediaFormat.KEY_FRAME_RATE);
-    }
-    return -1;
-  }
-
-  @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-  private void convertVideoComplex (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure, @Nullable Runnable after) {
-    if (info.hasCrop()) {
-      throw new IllegalArgumentException();
-    }
-
-    DataSource dataSource = toDataSource(sourcePath);
-
-    if (info.needTrim()) {
-      long trimEnd = info.getEndTimeUs() == -1 ? 0 : dataSource.getDurationUs() - info.getEndTimeUs();
-      dataSource = new TrimDataSource(dataSource, info.getStartTimeUs(), trimEnd < 1000 ? 0 : trimEnd);
-    }
-
-    TrackStrategy videoTrackStrategy;
-    if (info.disableTranscoding()) {
-      videoTrackStrategy = new PassThroughTrackStrategy();
-    } else {
-      Settings.VideoLimit videoLimit = info.getVideoLimit();
-      if (videoLimit == null)
-        videoLimit = new Settings.VideoLimit();
-      long outputBitrate = videoLimit.bitrate;
-      int outputFrameRate = videoLimit.getOutputFrameRate(-1);
-      int maxTextureSize = U.getMaxTextureSize();
-      if (maxTextureSize > 0 && videoLimit.size.majorSize > maxTextureSize) {
-        float scale = (float) maxTextureSize / (float) videoLimit.size.majorSize;
-        int majorSize = (int) ((float) videoLimit.size.majorSize * scale);
-        majorSize -= majorSize % 2;
-        int minorSize = (int) ((float) videoLimit.size.minorSize * scale);
-        minorSize -= majorSize % 2;
-        videoLimit = videoLimit.changeSize(new Settings.VideoSize(majorSize, minorSize));
-      }
-      if (outputBitrate == DefaultVideoStrategy.BITRATE_UNKNOWN) {
-        MediaFormat format = dataSource.getTrackFormat(TrackType.VIDEO);
-        if (format != null) {
-          Settings.VideoSize outputSize = videoLimit.getOutputSize(
-            format.getInteger(MediaFormat.KEY_WIDTH),
-            format.getInteger(MediaFormat.KEY_HEIGHT)
-          );
-          int inputFrameRate = getFrameRate(format);
-          outputFrameRate = videoLimit.getOutputFrameRate(inputFrameRate);
-          outputBitrate = videoLimit.getOutputBitrate(outputSize, outputFrameRate, videoLimit.bitrate);
-        }
-      }
-      videoTrackStrategy = DefaultVideoStrategy
-        .atMost(videoLimit.size.minorSize, videoLimit.size.majorSize)
-        .frameRate(outputFrameRate)
-        .bitRate(outputBitrate)
-        .build();
-    }
-
-    int rotation = info.getRotate();
-
-    File outFile = new File(destinationPath);
-
-    entry.task = Transcoder
-      .into(destinationPath)
-      .addDataSource(dataSource)
-      .setVideoTrackStrategy(videoTrackStrategy)
-      .setAudioTrackStrategy(
-        info.needMute() ? new RemoveTrackStrategy() :
-        info.disableTranscoding() || Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_AUDIO_COMPRESSION) ? new PassThroughTrackStrategy() :
-          new DefaultAudioStrategy.Builder()
-            .sampleRate(44100)
-            .bitRate(62000)
-            .channels(2)
-            .build()
-      )
-      .setVideoRotation(rotation)
-      .setListener(new TranscoderListener() {
-        @Override
-        public void onTranscodeProgress (double progress) {
-          onProgress.onTranscodeProgress(progress, outFile.exists() ? outFile.length() : 0);
-        }
-
-        @Override
-        public void onTranscodeCompleted (int successCode) {
-          switch (successCode) {
-            case Transcoder.SUCCESS_TRANSCODED:
-              onComplete.run();
-              break;
-            case Transcoder.SUCCESS_NOT_NEEDED:
-              sendOriginal(info, entry);
-              break;
-          }
-          U.run(after);
-        }
-
-        @Override
-        public void onTranscodeCanceled () {
-          onCancel.runWithData("Transcode canceled");
-          U.run(after);
-        }
-
-        @Override
-        public void onTranscodeFailed (@NonNull Throwable exception) {
-          onFailure.runWithData(exception);
-          U.run(after);
-        }
-      })
-      .transcode();
-  }
-
-  private void sendOriginal (VideoGenerationInfo info, Entry entry) {
+  public void sendOriginal (VideoGenerationInfo info, Entry entry) {
     final long generationId = info.getGenerationId();
     final String sourcePath = info.getOriginalPath();
     final String destinationPath = info.getDestinationPath();

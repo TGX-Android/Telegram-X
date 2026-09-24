@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.player;
 
-import android.annotation.TargetApi;
 import android.graphics.SurfaceTexture;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -33,6 +32,8 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
 import android.view.Surface;
+
+import androidx.annotation.RequiresApi;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -61,7 +62,7 @@ import javax.microedition.khronos.opengles.GL;
 
 import me.vkryl.core.BitwiseUtils;
 
-@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+@RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 public class RoundVideoRecorder {
   public interface Delegate {
     /**

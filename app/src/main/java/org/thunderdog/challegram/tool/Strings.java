@@ -46,6 +46,7 @@ import org.thunderdog.challegram.util.text.Text;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
@@ -221,7 +222,7 @@ public class Strings {
   }*/
 
   public interface Modifier<T> {
-    T modify (T item);
+    String modify (T item);
   }
 
   public static <T> String join (CharSequence delimiter, T[] tokens, Modifier<T> itemModifier) {
@@ -386,8 +387,8 @@ public class Strings {
       String scheme = uri.getScheme();
       if (StringUtils.isEmpty(scheme)) {
         return Uri.parse(defaultProtocol + "://" + url);
-      } else if (!scheme.toLowerCase().equals(scheme)) {
-        return uri.buildUpon().scheme(scheme.toLowerCase()).build();
+      } else if (!scheme.toLowerCase(Locale.ROOT).equals(scheme)) {
+        return uri.buildUpon().scheme(scheme.toLowerCase(Locale.ROOT)).build();
       } else {
         return uri;
       }
@@ -523,21 +524,19 @@ public class Strings {
     }
     Spannable b = null;
     final int end = text.length();
-    final String lowercaseText = text.toLowerCase();
-    final String lowercaseHighlight = highlight.toLowerCase();
     ArrayList<String> splitted = null;
 
     int j = Text.indexOfSplitter(highlight, startIndex, special);
     int highlightIndex = 0;
     while (j != -1 || (splitted != null && highlightIndex < highlight.length())) {
       if (j == -1) {
-        splitted.add(lowercaseHighlight.substring(highlightIndex));
+        splitted.add(highlight.substring(highlightIndex));
         break;
       }
       if (splitted == null) {
         splitted = new ArrayList<>();
       }
-      String token = lowercaseHighlight.substring(highlightIndex, j);
+      String token = highlight.substring(highlightIndex, j);
       if (!StringUtils.isEmpty(token)) {
         splitted.add(token);
       }
@@ -548,11 +547,11 @@ public class Strings {
       Collections.sort(splitted, (o1, o2) -> Integer.compare(o2.length(), o1.length()));
     }
     while (startIndex < end) {
-      boolean found = lowercaseText.startsWith(lowercaseHighlight, startIndex);
-      String foundToken = lowercaseHighlight;
+      boolean found = text.regionMatches(true, startIndex, highlight, 0, highlight.length());
+      String foundToken = highlight;
       if (!found && splitted != null) {
         for (String token : splitted) {
-          if (lowercaseText.startsWith(token, startIndex)) {
+          if (text.regionMatches(true, startIndex, token, 0, token.length())) {
             foundToken = token;
             found = true;
             break;
@@ -572,8 +571,11 @@ public class Strings {
   }
 
   private static final char[] WORDS_LOOKUP = { ' ', '\n' };
+  public static boolean anyWordStartsWith (String source, String prefix) {
+    return anyWordStartsWith(source, prefix, null);
+  }
   public static boolean anyWordStartsWith (String source, String prefix, @Nullable int[] level) {
-    if (source.startsWith(prefix)) {
+    if (source.regionMatches(true, 0, prefix, 0, prefix.length())) {
       if (level != null) {
         level[0] = 0;
       }
@@ -587,7 +589,7 @@ public class Strings {
     while ((i = indexOfAnyChar(source, startIndex, WORDS_LOOKUP)) != -1) {
       startIndex = i + 1;
       l++;
-      if (source.startsWith(prefix, startIndex)) {
+      if (source.regionMatches(true, startIndex, prefix, 0, prefix.length())) {
         if (level != null) {
           level[0] = l;
         }
@@ -599,13 +601,17 @@ public class Strings {
 
   public static int indexOfAnyChar (String lookup, int startIndex, char[] chars) {
     final int length = lookup.length();
-    for (int i = startIndex; i < length; i++) {
-      char c = lookup.charAt(i);
-      for (char check : chars) {
-        if (c == check) {
-          return i;
+    for (int i = startIndex; i < length; ) {
+      int c = lookup.codePointAt(i);
+      int charCount = Character.charCount(c);
+      if (charCount == 1) {
+        for (char check : chars) {
+          if (c == check) {
+            return i;
+          }
         }
       }
+      i += charCount;
     }
     return -1;
   }
@@ -948,6 +954,38 @@ public class Strings {
         return true;
     }
     return false;
+  }
+
+  public static String buildDurationFull (long duration, TimeUnit unit) {
+    StringBuilder builder = new StringBuilder(4);
+
+    String separator = " ";
+    long days = unit.toDays(duration);
+    if (days > 0) {
+      builder.append(Lang.plural(R.string.xDaysShort, days));
+      duration -= unit.convert(days, TimeUnit.DAYS);
+    }
+    long hours = unit.toHours(duration);
+    if (hours > 0) {
+      if (builder.length() > 0)
+        builder.append(separator);
+      builder.append(Lang.plural(R.string.xHoursShort, hours));
+      duration -= unit.convert(hours, TimeUnit.HOURS);
+    }
+    long minutes = unit.toMinutes(duration);
+    if (minutes > 0) {
+      if (builder.length() > 0)
+        builder.append(separator);
+      builder.append(Lang.plural(R.string.xMinutesShort, minutes));
+      duration -= unit.convert(minutes, TimeUnit.MINUTES);
+    }
+    long seconds = unit.toSeconds(duration);
+    if (builder.length() > 0)
+      builder.append(separator);
+    builder.append(Lang.plural(R.string.xSecondsShort, seconds));
+    duration -= unit.convert(seconds, TimeUnit.MINUTES);
+
+    return builder.toString();
   }
 
   public static String buildDuration (long durationSeconds) {

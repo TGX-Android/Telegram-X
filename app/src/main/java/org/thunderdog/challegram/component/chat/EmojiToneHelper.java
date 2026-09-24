@@ -396,7 +396,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
       themeProvider.addThemeTextColorListener(sendView, ColorId.textNeutral);
     }
     sendView.setTypeface(Fonts.getRobotoMedium());
-    Views.setMediumText(sendView, Lang.getString(R.string.ApplyToAll).toUpperCase());
+    Views.setMediumText(sendView, Lang.uppercase(Lang.getString(R.string.ApplyToAll)));
     sendView.setOnClickListener(v -> {
       if (emojiTonePicker != null && emojiTonePicker.getAnchorView() instanceof EmojiView && isVisible()) {
         applyButtonClicked = true;

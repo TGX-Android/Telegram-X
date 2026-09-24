@@ -24,7 +24,6 @@ import android.text.TextUtils;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -88,7 +87,13 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
   private final int addIndex;
   private final boolean enableCropping;
 
-  public VideoPlayerView (Context context, ViewGroup parentView, int addIndex, boolean enableCropping) {
+  public interface ErrorHandler {
+    void onError (@NonNull PlaybackException exception, @Nullable MediaItem item);
+  }
+
+  private final ErrorHandler errorHandler;
+
+  public VideoPlayerView (Context context, ViewGroup parentView, int addIndex, boolean enableCropping, ErrorHandler onError) {
     this.context = context;
     this.parentView = parentView;
     this.addIndex = addIndex;
@@ -97,6 +102,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       return false;
     });
     this.enableCropping = !APPLY_CROP_EFFECTS && enableCropping;
+    this.errorHandler = onError;
   }
 
   public void prepareTextureView () {
@@ -182,7 +188,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       case MediaItem.TYPE_GIF: {
         HlsVideo hlsVideo = mediaItem.getHslVideo();
         TdApi.File targetFile = mediaItem.getTargetFile();
-        if (hlsVideo == null || TD.isFileLoaded(targetFile) || targetFile.local.isDownloadingActive || !Config.HLS_VIDEO_ENABLED || Settings.instance().getNewSetting(Settings.SETTING_FLAG_FORCE_DISABLE_HLS_VIDEO)) {
+        if (hlsVideo == null || TD.isFileLoaded(targetFile) || targetFile.local.isDownloadingActive || !hlsVideo.hasSupportedCodecs() || Settings.instance().getNewSetting(Settings.SETTING_FLAG_FORCE_DISABLE_HLS_VIDEO)) {
           long durationMs = mediaItem.getVideoDuration(false, TimeUnit.MILLISECONDS);
           source = U.newMediaSource(mediaItem.tdlib().id(), targetFile, TdlibFilesManager.PRIORITY_STREAMING_VIDEO, TdlibDataSource.Flag.OPTIMIZE_CHUNKS, durationMs);
         } else {
@@ -478,8 +484,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       setPlaying(isPlaying);
     } else {
       Log.e(Log.TAG_VIDEO, "Unable to play video", error);
-      boolean isGif = currentItem != null && currentItem.isGifType();
-      UI.showToast(U.isUnsupportedFormat(error) ? (isGif ? R.string.GifPlaybackUnsupported : R.string.VideoPlaybackUnsupported) : (isGif ? R.string.GifPlaybackError : R.string.VideoPlaybackError), Toast.LENGTH_SHORT);
+      errorHandler.onError(error, currentItem);
       setVideo(null);
       if (callback != null) {
         callback.onPlayError();

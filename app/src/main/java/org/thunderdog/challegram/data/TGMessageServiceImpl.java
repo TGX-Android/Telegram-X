@@ -134,9 +134,8 @@ abstract class TGMessageServiceImpl extends TGMessage {
 
   public void setDisplayMessage (long chatId, long messageId, Filter<TdApi.Message> callback) {
     originalMessageCreator = textCreator;
-    tdlib.client().send(new TdApi.GetMessage(chatId, messageId), result -> {
-      if (result.getConstructor() == TdApi.Message.CONSTRUCTOR) {
-        TdApi.Message message = (TdApi.Message) result;
+    tdlib.send(new TdApi.GetMessage(chatId, messageId), (message, error) -> {
+      if (message != null) {
         runOnUiThreadOptional(() -> {
           if (callback.accept(message)) {
             this.previewMessage = message;
@@ -148,7 +147,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
     });
   }
 
-  private void updateServiceMessage () {
+  protected final void updateServiceMessage () {
     boolean hadTextMedia = hasTextMedia();
     rebuildAndUpdateContent();
     if (hadTextMedia || hasTextMedia()) {
@@ -226,7 +225,10 @@ abstract class TGMessageServiceImpl extends TGMessage {
   protected void buildContent (int maxWidth) {
     int availWidth = Math.max(0, this.width - Screen.dp(12f) * 2);
 
-    FormattedText formattedText = textCreator.createText();
+    FormattedText formattedText =
+      textCreator != null ?
+        textCreator.createText() :
+        FormattedText.valueOfEmpty();
     if (this.lastAvailWidth == availWidth && this.currentText != null && this.currentText.equals(formattedText)) {
       return;
     }
@@ -618,8 +620,16 @@ abstract class TGMessageServiceImpl extends TGMessage {
     }
   }
 
-  protected abstract class FormattedTextArgument implements FormattedArgument {
-    protected abstract TdApi.FormattedText getFormattedText ();
+  protected class FormattedTextArgument implements FormattedArgument {
+    private final TdApi.FormattedText formattedText;
+
+    public FormattedTextArgument (TdApi.FormattedText formattedText) {
+      this.formattedText = formattedText;
+    }
+
+    protected TdApi.FormattedText getFormattedText () {
+      return formattedText;
+    }
 
     @Override
     public final FormattedText buildArgument () {
@@ -632,7 +642,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
     private final String text;
     private final TdApi.TextEntityType entityType;
 
-    public TextEntityArgument (String text, TdApi.TextEntityType entityType) {
+    public TextEntityArgument (String text, @Nullable TdApi.TextEntityType entityType) {
       this.text = text;
       this.entityType = entityType;
     }
@@ -641,9 +651,11 @@ abstract class TGMessageServiceImpl extends TGMessage {
     public FormattedText buildArgument () {
       final TdApi.FormattedText formattedText;
       if (text.length() > 0) {
-        formattedText = new TdApi.FormattedText(text, new TdApi.TextEntity[] {
-          new TdApi.TextEntity(0, text.length(), entityType)
-        });
+        formattedText = new TdApi.FormattedText(text, entityType != null ?
+          new TdApi.TextEntity[] {
+            new TdApi.TextEntity(0, text.length(), entityType)
+          } :
+          new TdApi.TextEntity[0]);
       } else {
         formattedText = new TdApi.FormattedText("", new TdApi.TextEntity[0]);
       }
@@ -654,6 +666,12 @@ abstract class TGMessageServiceImpl extends TGMessage {
   protected final class BoldArgument extends TextEntityArgument {
     public BoldArgument (String text) {
       super(text, new TdApi.TextEntityTypeBold());
+    }
+  }
+
+  protected final class PlainArgument extends TextEntityArgument {
+    public PlainArgument (String text) {
+      super(text, null);
     }
   }
 

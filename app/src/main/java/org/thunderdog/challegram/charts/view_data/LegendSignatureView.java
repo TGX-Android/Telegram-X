@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
+@SuppressWarnings("SimpleDateFormat")
 public class LegendSignatureView extends FrameLayout {
 
     public boolean isTopHourChart;
@@ -208,13 +209,13 @@ public class LegendSignatureView extends FrameLayout {
         float num_ = v;
         int count = 0;
         if (v < 10_000) {
-            return String.format("%d", v);
+            return String.format(Locale.ROOT, "%d", v);
         }
         while (num_ >= 10_000 && count < ChartHorizontalLinesData.s.length - 1) {
             num_ /= 1000;
             count++;
         }
-        return String.format("%.2f", num_) + ChartHorizontalLinesData.s[count];
+        return String.format(Locale.ROOT, "%.2f", num_) + ChartHorizontalLinesData.s[count];
     }
 
 

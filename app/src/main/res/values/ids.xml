@@ -253,7 +253,11 @@
   <item type="id" name="controller_editChatFolders" />
   <item type="id" name="controller_selectChats" />
 
+  <item type="id" name="controller_country" />
+
   <item type="id" name="separator" />
+
+  <item type="id" name="chats_list" />
 
   <item type="id" name="msg_input" />
   <item type="id" name="msg_tooltip" />
@@ -463,6 +467,7 @@
   <item type="id" name="text_recoveryInactive" />
   <item type="id" name="text_title" />
   <item type="id" name="text_subtitle" />
+  <item type="id" name="text_explanation" />
   <item type="id" name="btn_sessionsEmpty_image" />
   <item type="id" name="btn_sessionsEmpty_title" />
   <item type="id" name="btn_currentSession" />
@@ -505,6 +510,7 @@
   <item type="id" name="btn_crop" />
   <item type="id" name="btn_crop_reset" />
   <item type="id" name="btn_paint" />
+  <item type="id" name="btn_snapshot" />
   <item type="id" name="btn_adjust" />
   <item type="id" name="btn_rotate" />
   <item type="id" name="btn_flipHorizontally" />
@@ -654,6 +660,9 @@
   <item type="id" name="btn_openGiftSender" />
   <item type="id" name="btn_openGiftReceiver" />
   <item type="id" name="btn_showGiveawayMessage" />
+  <item type="id" name="btn_startMessaging" />
+
+  <item type="id" name="startup_marker" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />
@@ -899,7 +908,9 @@
   <item type="id" name="btn_1month" />
   <item type="id" name="btn_3months" />
   <item type="id" name="btn_6month" />
-  <item type="id" name="btn_1year" />
+  <item type="id" name="btn_12months" />
+  <item type="id" name="btn_18months" />
+  <item type="id" name="btn_24months" />
   <item type="id" name="btn_setPassword" />
   <item type="id" name="btn_changePassword" />
   <item type="id" name="btn_disablePassword" />
@@ -1012,7 +1023,6 @@
   <item type="id" name="btn_test_crashDirect" />
   <item type="id" name="btn_test_crash3" />
   <item type="id" name="btn_test_crash4" />
-  <item type="id" name="btn_test_crashDirectNative" />
 
   <item type="id" name="btn_launchApp" />
   <item type="id" name="btn_update" />
@@ -1029,6 +1039,7 @@
   <item type="id" name="btn_ffmpeg" />
   <item type="id" name="btn_webp" />
   <item type="id" name="btn_tgcalls" />
+  <item type="id" name="btn_openssl" />
   <item type="id" name="btn_pushService" />
   <item type="id" name="btn_tdlib_verbosity" />
   <item type="id" name="btn_tdlib_resetLogSettings" />
@@ -1214,14 +1225,23 @@
 
   <item type="id" name="input" />
   <item type="id" name="title" />
+  <item type="id" name="name" />
+  <item type="id" name="code" />
   <item type="id" name="option" />
   <item type="id" name="optionAdd" />
   <item type="id" name="description" />
   <item type="id" name="state" />
 
-  <item type="id" name="btn_pollSetting_anonymous" />
-  <item type="id" name="btn_pollSetting_multi" />
+  <item type="id" name="btn_pollSetting_showVoters" />
+  <item type="id" name="btn_pollSetting_multiAnswers" />
+  <item type="id" name="btn_pollSetting_additions" />
+  <item type="id" name="btn_pollSetting_revoting" />
+  <item type="id" name="btn_pollSetting_shuffle" />
   <item type="id" name="btn_pollSetting_quiz" />
+  <item type="id" name="btn_pollSetting_duration" />
+  <item type="id" name="btn_pollSetting_members" />
+  <item type="id" name="btn_pollSetting_countries" />
+  <item type="id" name="btn_pollSetting_hideResults" />
 
   <item type="id" name="secret_icon" />
   <item type="id" name="secret_title" />

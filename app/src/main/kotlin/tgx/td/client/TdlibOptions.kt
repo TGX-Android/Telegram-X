@@ -54,7 +54,10 @@ data class TdlibOptions(
   @JvmField var isPremium: Boolean = false,
   @JvmField var isPremiumAvailable: Boolean = false,
 
-  @JvmField @GiftPremiumFrom var giftPremiumFrom: Int = 0,
+  @JvmField @field:GiftPremiumFrom var giftPremiumFrom: Int = 0,
+  @JvmField var giftCollectionCountMax: Int = 10,
+  @JvmField var giftCollectionSizeMax: Int = 500,
+
   @JvmField var premiumUploadSpeedup: Int = 10,
   @JvmField var premiumDownloadSpeedup: Int = 10,
   @JvmField var premiumGiftBoostCount: Int = 3,
@@ -66,7 +69,7 @@ data class TdlibOptions(
 
   @JvmField var usdToThousandStarRate: Long = 0,
   @JvmField var thousandStarToUsdRate: Long = 0,
-  @JvmField var millionToncoinToUsdRate: Long = 0,
+  @JvmField var millionGramToUsdRate: Long = 0,
 
   @JvmField var giftTextLengthMax: Int = 128,
   @JvmField var pinnedGiftCountMax: Int = 6,
@@ -75,16 +78,22 @@ data class TdlibOptions(
   @JvmField var giftResaleStarCountMin: Long = 125L,
   @JvmField var giftResaleStarCountMax: Long = 100000L,
   @JvmField var giftResaleEarningsPerMille: Long = 800L,
+  @JvmField var giftResaleGramCentCountMax: Long = 10000000L,
+  @JvmField var giftResaleGramCentCountMin: Long = 700L,
+  @JvmField var giftResaleStarEarningsPerMille: Int = 800,
+  @JvmField var giftResaleGramEarningsPerMille: Int = 900,
 
   @JvmField var starWithdrawalCountMin: Long = 1000L,
   @JvmField var starWithdrawalCountMax: Long = 25000000L,
   @JvmField var paidReactionStarCountMax: Long = 2500L,
   @JvmField var paidMessageEarningsPerMille: Long = 850L,
   @JvmField var paidMessageStarCountMax: Long = 10000L,
+  @JvmField var paidGroupCallMessageStarCountMax: Long = 35000L,
   @JvmField var paidMediaMessageStarCountMax: Long = 10000L,
   @JvmField var subscriptionStarCountMin: Long = 10000L,
   @JvmField var subscriptionStarCountMax: Long = 10000L,
   @JvmField var directChannelMessageStarCountDefault: Long = 10L,
+  @JvmField var welcomeMessageCountMax: Int = 3,
 
   @JvmField var affiliateProgramCommissionPerMilleMin: Long = 1L,
   @JvmField var affiliateProgramCommissionPerMilleMax: Long = 800L,
@@ -96,15 +105,15 @@ data class TdlibOptions(
   @JvmField var suggestedPostStarCountMin: Long = 5L,
   @JvmField var suggestedPostStarCountMax: Long = 100000L,
   @JvmField var suggestedPostStarEarningsPerMille: Long = 850L,
-  @JvmField var suggestedPostToncoinCentCountMin: Long = 1L,
-  @JvmField var suggestedPostToncoinCentCountMax: Long = 1000000L,
-  @JvmField var suggestedPostToncoinEarningsPerMille: Long = 850L,
+  @JvmField var suggestedPostGramCentCountMin: Long = 1L,
+  @JvmField var suggestedPostGramCentCountMax: Long = 1000000L,
+  @JvmField var suggestedPostGramEarningsPerMille: Long = 850L,
   @JvmField var suggestedPostSendDelayMin: Int = 300,
   @JvmField var suggestedPostSendDelayMax: Int = 2678400,
 
   @JvmField var tMeUrl: String = "",
   @JvmField var tonBlockchainExplorerUrl: String = "",
-  @JvmField var toncoinTopUpUrl: String = "",
+  @JvmField var gramTopUpUrl: String = "",
 
   @JvmField var languagePackId: String = "",
   @JvmField var suggestedLanguagePackId: String = "",
@@ -126,10 +135,18 @@ data class TdlibOptions(
   @JvmField var botMediaPreviewCountMax: Int = 12,
   @JvmField var botVerificationCustomDescriptionLengthMax: Int = 70,
 
+  @JvmField var canUseLoginPasskey: Boolean = false,
+  @JvmField var loginPasskeyCountMax: Int = 5,
+
   @JvmField var canAcceptCalls: Boolean = false,
   @JvmField var callsEnabled: Boolean = true,
 
+  @JvmField var showMessageEditDateByDefault: Boolean = true,
+
+  @JvmField var pendingTextMessagePeriod: Int = 30,
+
   @JvmField var groupCallParticipantCountMax: Int = 200,
+  @JvmField var groupCallMessageTextLengthMax: Int = 128,
 
   @JvmField var callConnectTimeoutMs: Long = 30000L,
   @JvmField var callPacketTimeoutMs: Long = 10000L,
@@ -152,12 +169,27 @@ data class TdlibOptions(
   @JvmField var addedShareableChatFolderCountMax: Int = 2,
 
   @JvmField var bioLengthMax: Int = 70,
+  @JvmField var userNoteTextLengthMax: Int = 128,
+  @JvmField var ownedBotCountMax: Int = 20,
 
   @JvmField var messageTextLengthMax: Int = 4000,
   @JvmField var messageCaptionLengthMax: Int = 1024,
   @JvmField var messageReplyQuoteLengthMax: Int = 1024,
 
+  @JvmField var richMessageTextLengthMax: Int = 32768,
+  @JvmField var richMessageBlockCountMax: Int = 500,
+  @JvmField var richMessageDepthMax: Int = 16,
+  @JvmField var richMessageMediaCountMax: Int = 50,
+  @JvmField var richMessageTableColumnCountMax: Int = 20,
+
+  @JvmField var textCompositionStyleExampleCount: Int = 3,
+  @JvmField var textCompositionStylePromptLengthMax: Int = 1024,
+  @JvmField var textCompositionStyleTitleLengthMax: Int = 12,
+  @JvmField var addedTextCompositionStyleCountMax: Int = 5,
+
   @JvmField var pollAnswerCountMax: Int = 12,
+  @JvmField var pollOpenPeriodMax: Int = 2628000,
+  @JvmField var pollCountryCountMax: Int = 12,
 
   @JvmField var checklistTaskCountMax: Int = 30,
   @JvmField var checklistTaskTextLengthMax: Int = 200,
@@ -167,6 +199,9 @@ data class TdlibOptions(
 
   @JvmField var basicGroupSizeMax: Int = 200,
   @JvmField var supergroupSizeMax: Int = 200000,
+
+  @JvmField var communityChatCountMax: Int = 100,
+  @JvmField var communityBotCountMax: Int = 100,
 
   @JvmField var pinnedChatCountMax: Int = 5,
   @JvmField var pinnedArchivedChatCountMax: Int = 100,
@@ -186,15 +221,21 @@ data class TdlibOptions(
   @JvmField var storyStealthModeFuturePeriod: Int = 1500,
   @JvmField var storyStealthModePastPeriod: Int = 300,
   @JvmField var storyLinkAreaCountMax: Int = 3,
+  @JvmField var storyAlbumCountMax: Int = 100,
+  @JvmField var storyAlbumSizeMax: Int = 1000,
 
   @JvmField var businessStartPageTitleLengthMax: Int = 32,
   @JvmField var businessStartPageMessageLengthMax: Int = 70,
   @JvmField var businessChatLinkCountMax: Int = 100,
 
+  @JvmField var stakeDiceStakeAmountMin: Long = 100000000L,
+  @JvmField var stakeDiceStakeAmountMax: Long = 50000000000L,
+
   // Server config
 
   @JvmField var forceInAppUpdate: Boolean = false,
   @JvmField var youtubePipDisabled: Boolean = false,
+  @JvmField var richMessagePostingDisabled: Boolean = false,
 
   @JvmField var qrLoginCamera: Boolean = true,
 
@@ -212,6 +253,7 @@ data class TdlibOptions(
 
   @JvmField var storyExpirePeriod: Long = 0,
   @JvmField var storyPostingEnabled: Boolean = true,
+  @JvmField var storyAllHidden: Boolean = false,
 
   @JvmField var translationsManualEnabled: Boolean = true,
   @JvmField var translationsAutoEnabled: Boolean = true,
@@ -249,6 +291,9 @@ data class TdlibOptions(
 
       "expect_blocking" ->
         expectBlocking = value.boolValue()
+
+      "show_message_edit_date_by_default" ->
+        showMessageEditDateByDefault = value.boolValue()
 
       "can_ignore_sensitive_content_restrictions" ->
         canIgnoreSensitiveContentRestrictions = value.boolValue()
@@ -306,13 +351,18 @@ data class TdlibOptions(
         usdToThousandStarRate = value.longValue()
       "thousand_star_to_usd_rate" ->
         thousandStarToUsdRate = value.longValue()
-      "million_toncoin_to_usd_rate" ->
-        millionToncoinToUsdRate = value.longValue()
+      "million_gram_to_usd_rate" ->
+        millionGramToUsdRate = value.longValue()
 
       "gift_text_length_max" ->
         giftTextLengthMax = value.intValue()
       "pinned_gift_count_max" ->
         pinnedGiftCountMax = value.intValue()
+
+      "gift_collection_count_max" ->
+        giftCollectionCountMax = value.intValue()
+      "gift_collection_size_max" ->
+        giftCollectionSizeMax = value.intValue()
 
       "gift_sell_period" ->
         giftSellPeriod = value.longValue()
@@ -322,6 +372,14 @@ data class TdlibOptions(
         giftResaleStarCountMax = value.longValue()
       "gift_resale_earnings_per_mille" ->
         giftResaleEarningsPerMille = value.longValue()
+      "gift_resale_star_earnings_per_mille" ->
+        giftResaleStarEarningsPerMille = value.intValue()
+      "gift_resale_gram_cent_count_max" ->
+        giftResaleGramCentCountMax = value.longValue()
+      "gift_resale_gram_cent_count_min" ->
+        giftResaleGramCentCountMin = value.longValue()
+      "gift_resale_gram_earnings_per_mille" ->
+        giftResaleGramEarningsPerMille = value.intValue()
 
       "star_withdrawal_count_min" ->
         starWithdrawalCountMin = value.longValue()
@@ -333,6 +391,8 @@ data class TdlibOptions(
         paidMessageEarningsPerMille = value.longValue()
       "paid_message_star_count_max" ->
         paidMessageStarCountMax = value.longValue()
+      "paid_group_call_message_star_count_max" ->
+        paidGroupCallMessageStarCountMax = value.longValue()
       "paid_media_message_star_count_max" ->
         paidMediaMessageStarCountMax = value.longValue()
       "subscription_star_count_min" ->
@@ -340,7 +400,9 @@ data class TdlibOptions(
       "subscription_star_count_max" ->
         subscriptionStarCountMax = value.longValue()
       "direct_channel_message_star_count_default" ->
-        directChannelMessageStarCountDefault = value.longValue() /*10*/
+        directChannelMessageStarCountDefault = value.longValue()
+      "welcome_message_count_max" ->
+        welcomeMessageCountMax = value.intValue()
 
       "affiliate_program_commission_per_mille_min" ->
         affiliateProgramCommissionPerMilleMin = value.longValue()
@@ -360,12 +422,12 @@ data class TdlibOptions(
         suggestedPostStarCountMax = value.longValue()
       "suggested_post_star_earnings_per_mille" ->
         suggestedPostStarEarningsPerMille = value.longValue()
-      "suggested_post_toncoin_cent_count_min" ->
-        suggestedPostToncoinCentCountMin = value.longValue()
-      "suggested_post_toncoin_cent_count_max" ->
-        suggestedPostToncoinCentCountMax = value.longValue()
-      "suggested_post_toncoin_earnings_per_mille" ->
-        suggestedPostToncoinEarningsPerMille = value.longValue()
+      "suggested_post_gram_cent_count_min" ->
+        suggestedPostGramCentCountMin = value.longValue()
+      "suggested_post_gram_cent_count_max" ->
+        suggestedPostGramCentCountMax = value.longValue()
+      "suggested_post_gram_earnings_per_mille" ->
+        suggestedPostGramEarningsPerMille = value.longValue()
       "suggested_post_send_delay_min" ->
         suggestedPostSendDelayMin = value.intValue()
       "suggested_post_send_delay_max" ->
@@ -375,8 +437,8 @@ data class TdlibOptions(
         tMeUrl = value.stringValue()
       "ton_blockchain_explorer_url" ->
         tonBlockchainExplorerUrl = value.stringValue()
-      "toncoin_top_up_url" ->
-        toncoinTopUpUrl = value.stringValue()
+      "gram_top_up_url" ->
+        gramTopUpUrl = value.stringValue()
 
       "language_pack_id" ->
         languagePackId = value.stringValue()
@@ -414,13 +476,22 @@ data class TdlibOptions(
       "bot_verification_custom_description_length_max" ->
         botVerificationCustomDescriptionLengthMax = value.intValue()
 
+      "can_use_login_passkey" ->
+        canUseLoginPasskey = value.boolValue()
+      "login_passkey_count_max" ->
+        loginPasskeyCountMax = value.intValue()
       "can_accept_calls" ->
         canAcceptCalls = value.boolValue()
       "calls_enabled" ->
         callsEnabled = value.boolValue()
 
+      "pending_text_message_period" ->
+        pendingTextMessagePeriod = value.intValue()
+
       "group_call_participant_count_max" ->
         groupCallParticipantCountMax = value.intValue()
+      "group_call_message_text_length_max" ->
+        groupCallMessageTextLengthMax = value.intValue()
 
       "call_connect_timeout_ms" ->
         callConnectTimeoutMs = value.longValue()
@@ -457,6 +528,10 @@ data class TdlibOptions(
 
       "bio_length_max" ->
         bioLengthMax = value.intValue()
+      "user_note_text_length_max" ->
+        userNoteTextLengthMax = value.intValue()
+      "owned_bot_count_max" ->
+        ownedBotCountMax = value.intValue()
 
       "message_text_length_max" ->
         messageTextLengthMax = value.intValue()
@@ -465,8 +540,32 @@ data class TdlibOptions(
       "message_reply_quote_length_max" ->
         messageReplyQuoteLengthMax = value.intValue()
 
+      "rich_message_text_length_max" ->
+        richMessageTextLengthMax = value.intValue()
+      "rich_message_block_count_max" ->
+        richMessageBlockCountMax = value.intValue()
+      "rich_message_depth_max" ->
+        richMessageDepthMax = value.intValue()
+      "rich_message_media_count_max" ->
+        richMessageMediaCountMax = value.intValue()
+      "rich_message_table_column_count_max" ->
+        richMessageTableColumnCountMax = value.intValue()
+
+      "text_composition_style_example_count" ->
+        textCompositionStyleExampleCount = value.intValue()
+      "text_composition_style_prompt_length_max" ->
+        textCompositionStylePromptLengthMax = value.intValue()
+      "text_composition_style_title_length_max" ->
+        textCompositionStyleTitleLengthMax = value.intValue()
+      "added_text_composition_style_count_max" ->
+        addedTextCompositionStyleCountMax = value.intValue()
+
       "poll_answer_count_max" ->
         pollAnswerCountMax = value.intValue()
+      "poll_open_period_max" ->
+        pollOpenPeriodMax = value.intValue()
+      "poll_country_count_max" ->
+        pollCountryCountMax = value.intValue()
 
       "checklist_task_count_max" ->
         checklistTaskCountMax = value.intValue()
@@ -482,6 +581,11 @@ data class TdlibOptions(
         basicGroupSizeMax = value.intValue()
       "supergroup_size_max" ->
         supergroupSizeMax = value.intValue()
+
+      "community_chat_count_max" ->
+        communityChatCountMax = value.intValue()
+      "community_bot_count_max" ->
+        communityBotCountMax = value.intValue()
 
       "pinned_chat_count_max" ->
         pinnedChatCountMax = value.intValue()
@@ -517,6 +621,10 @@ data class TdlibOptions(
         storyStealthModePastPeriod = value.intValue()
       "story_link_area_count_max" ->
         storyLinkAreaCountMax = value.intValue()
+      "story_album_count_max" ->
+        storyAlbumCountMax = value.intValue()
+      "story_album_size_max" ->
+        storyAlbumSizeMax = value.intValue()
 
       "business_start_page_title_length_max" ->
         businessStartPageTitleLengthMax = value.intValue()
@@ -524,6 +632,11 @@ data class TdlibOptions(
         businessStartPageMessageLengthMax = value.intValue()
       "business_chat_link_count_max" ->
         businessChatLinkCountMax = value.intValue()
+
+      "stake_dice_stake_amount_min" ->
+        stakeDiceStakeAmountMin = value.longValue()
+      "stake_dice_stake_amount_max" ->
+        stakeDiceStakeAmountMax = value.longValue()
 
       "test_mode",
 
@@ -574,6 +687,8 @@ data class TdlibOptions(
         forceInAppUpdate = value.boolValue()
       "youtube_pip" ->
         youtubePipDisabled = value.stringValue() == "disabled"
+      "rich_message_posting" ->
+        richMessagePostingDisabled = value.stringValue() == "disabled"
 
       "qr_login_camera" ->
         qrLoginCamera = value.boolValue()
@@ -612,6 +727,8 @@ data class TdlibOptions(
         storyExpirePeriod = value.longValue()
       "stories_posting" ->
         storyPostingEnabled = value.stringValue() == "enabled"
+      "stories_all_hidden" ->
+        storyAllHidden = value.boolValue()
 
       "translations_manual_enabled" ->
         translationsManualEnabled = value.stringValue() == "enabled"
@@ -663,6 +780,7 @@ data class TdlibOptions(
         }
       }
 
+      "community_peers_limit",
       "ios_disable_parallel_channel_reset",
       "small_queue_max_active_operations_count",
       "large_queue_max_active_operations_count",

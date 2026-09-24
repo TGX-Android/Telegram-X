@@ -38,6 +38,7 @@ import org.thunderdog.challegram.component.chat.ChatHeaderView;
 import org.thunderdog.challegram.component.sticker.StickerPreviewView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -45,7 +46,6 @@ import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
-import org.thunderdog.challegram.mediaview.data.MediaStack;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
@@ -1097,6 +1097,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     final ViewController.Options.Builder builder = new ViewController.Options.Builder();
 
     builder.info(Lang.boldify(title));
+    builder.maxLineCount(Config.MAX_COPY_TEXT_LINE_COUNT);
     builder.item(new ViewController.OptionItem(R.id.btn_copyText, Lang.getString(R.string.CopyDisplayName), ViewController.OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
 
     final String username = chatId != 0 ? tdlib.chatUsername(chatId) : null;
@@ -1204,11 +1205,6 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   }
 
   @Override
-  public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
-    return null;
-  }
-
-  @Override
   public void modifyMediaArguments (Object cause, MediaViewController.Args args) {
     args.delegate = new MediaViewDelegate() {
       @Override
@@ -1267,8 +1263,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
 
   private final TdlibStatusManager.Helper status;
 
-  public void attachChatStatus (long chatId, long messageThreadId) {
-    status.attachToChat(chatId, messageThreadId);
+  public void attachChatStatus (long chatId, @Nullable TdApi.MessageTopic messageTopic) {
+    status.attachToChat(chatId, messageTopic);
   }
 
   public void removeChatStatus () {
@@ -1363,7 +1359,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     }
 
     OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
-    optionsLayout.setInfo(null, null, false);
+    optionsLayout.setInfo(null, null, false, Text.LINE_COUNT_UNLIMITED);
 
     final long[] sets = new long[]{ sticker.setId };
 
@@ -1409,7 +1405,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker) {
     menuItems.add(new StickerPreviewView.MenuItem(
       StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
-      Lang.getString(R.string.ViewPackPreview).toUpperCase(),
+      Lang.uppercase(Lang.getString(R.string.ViewPackPreview)),
       R.id.btn_view,
       ColorId.textNeutral
     ));

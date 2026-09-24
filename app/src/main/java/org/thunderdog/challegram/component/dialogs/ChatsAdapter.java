@@ -34,6 +34,8 @@ import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.v.ChatsRecyclerView;
 import org.thunderdog.challegram.widget.SuggestedChatsView;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -133,22 +135,32 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     return new TGChat(context, context.tdlib().chatList(ChatPosition.CHAT_LIST_ARCHIVE), true);
   }
 
-  public static final int ARCHIVE_UPDATE_ALL = 0;
-  public static final int ARCHIVE_UPDATE_COUNTER = 1;
-  public static final int ARCHIVE_UPDATE_MESSAGE = 2;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    ArchiveUpdate.ALL,
+    ArchiveUpdate.COUNTER,
+    ArchiveUpdate.MESSAGE
+  })
+  public @interface ArchiveUpdate {
+    int
+      NONE = 0,
+      ALL = 1,
+      COUNTER = 1 << 1,
+      MESSAGE = 1 << 2;
+  }
 
   public int updateArchive (int reason) {
     if (this.hasArchive) {
       TGChat chat = getChatAt(ARCHIVE_INDEX);
       if (chat != null && chat.isArchive()) {
         switch (reason) {
-          case ARCHIVE_UPDATE_COUNTER:
+          case ArchiveUpdate.COUNTER:
             chat.onArchiveCounterChanged();
             break;
-          case ARCHIVE_UPDATE_MESSAGE:
+          case ArchiveUpdate.MESSAGE:
             chat.onArchiveMessageChanged();
             break;
-          case ARCHIVE_UPDATE_ALL:
+          case ArchiveUpdate.ALL:
           default:
             chat.onArchiveChanged();
             break;
@@ -578,7 +590,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     int fromIndex = getChatIndexByItemPosition(fromPosition);
     int toIndex = getChatIndexByItemPosition(toPosition);
     ArrayUtils.move(chatIds, fromIndex - promotedCount, toIndex - promotedCount);
-    context.tdlib().client().send(new TdApi.SetPinnedChats(context.chatList(), ArrayUtils.asArray(chatIds)), context.tdlib().okHandler());
+    context.tdlib().send(new TdApi.SetPinnedChats(context.chatList(), ArrayUtils.asArray(chatIds)), context.tdlib().typedOkHandler());
   }
 
   public void savePinnedChats () { }

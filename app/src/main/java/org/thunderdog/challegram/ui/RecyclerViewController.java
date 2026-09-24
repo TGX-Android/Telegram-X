@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
@@ -40,6 +41,7 @@ import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -116,10 +118,14 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
     }
   }
 
+  protected FrameLayout createFrameLayout (Context context) {
+    return new FrameLayoutFix(context);
+  }
+
   @SuppressLint("InflateParams")
   @Override
   protected View onCreateView (Context context) {
-    FrameLayoutFix wrap = new FrameLayoutFix(context);
+    FrameLayout wrap = createFrameLayout(context);
     if (needContentBackground()) {
       ViewSupport.setThemedBackground(wrap, getRecyclerBackground(), this);
     }
@@ -135,6 +141,20 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
         if (scrollState != newState) {
           prevScrollState = scrollState;
           scrollState = newState;
+        }
+      }
+    });
+    recyclerView.addOnChildAttachStateChangeListener(new RecyclerView.OnChildAttachStateChangeListener() {
+      @Override
+      public void onChildViewAttachedToWindow (@NonNull View view) { }
+
+      @Override
+      public void onChildViewDetachedFromWindow (@NonNull View view) {
+        if (context().isKeyboardVisible()) {
+          View focusView = view.findFocus();
+          if (focusView != null) {
+            Keyboard.hide(focusView);
+          }
         }
       }
     });

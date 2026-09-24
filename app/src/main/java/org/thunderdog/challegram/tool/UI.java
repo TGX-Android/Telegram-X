@@ -603,7 +603,9 @@ public class UI {
       }
     }
     int visibility = forceNewVisibility ? newVisibility : w.getDecorView().getSystemUiVisibility();
-    visibility = BitwiseUtils.setFlag(visibility, View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR, lightNavigationBar);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      visibility = BitwiseUtils.setFlag(visibility, View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR, lightNavigationBar);
+    }
     visibility = BitwiseUtils.setFlag(visibility, View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR, lightStatusBar);
     w.getDecorView().setSystemUiVisibility(visibility);
   }

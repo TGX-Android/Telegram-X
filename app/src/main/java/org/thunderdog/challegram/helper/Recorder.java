@@ -18,9 +18,11 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.AudioEffect;
 import android.media.audiofx.AutomaticGainControl;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.SystemClock;
+import android.text.TextUtils;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
@@ -30,13 +32,14 @@ import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.filegen.GenerationInfo;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.voip.AudioRecordJNI;
+import org.thunderdog.challegram.voip.VoIPServerConfig;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 import me.vkryl.core.lambda.CancellableRunnable;
 
@@ -463,6 +466,46 @@ public class Recorder implements Runnable {
     return lastAmplitude;
   }
 
+  private static Pattern makeNonEmptyRegex(String configKey){
+    String r= VoIPServerConfig.getString(configKey, "");
+    if(TextUtils.isEmpty(r))
+      return null;
+    try{
+      return Pattern.compile(r);
+    }catch(Exception x){
+      Log.e(x);
+      return null;
+    }
+  }
+
+  public static boolean isGoodAudioEffect(AudioEffect effect){
+    Pattern globalImpl=makeNonEmptyRegex("adsp_good_impls"), globalName=makeNonEmptyRegex("adsp_good_names");
+    AudioEffect.Descriptor desc=effect.getDescriptor();
+    Log.d(effect.getClass().getSimpleName()+": implementor="+desc.implementor+", name="+desc.name);
+    if(globalImpl!=null && globalImpl.matcher(desc.implementor).find()){
+      return true;
+    }
+    if(globalName!=null && globalName.matcher(desc.name).find()){
+      return true;
+    }
+    if(effect instanceof AcousticEchoCanceler){
+      Pattern impl=makeNonEmptyRegex("aaec_good_impls"), name=makeNonEmptyRegex("aaec_good_names");
+      if(impl!=null && impl.matcher(desc.implementor).find())
+        return true;
+      if(name!=null && name.matcher(desc.name).find())
+        return true;
+    }
+    if(effect instanceof NoiseSuppressor){
+      Pattern impl=makeNonEmptyRegex("ans_good_impls"), name=makeNonEmptyRegex("ans_good_names");
+      if (impl!=null && impl.matcher(desc.implementor).find()) {
+        return true;
+      }
+
+      return name != null && name.matcher(desc.name).find();
+    }
+    return false;
+  }
+
   private void tryInitEnhancers () {
     try {
       if (AutomaticGainControl.isAvailable()) {
@@ -480,7 +523,7 @@ public class Recorder implements Runnable {
       if (NoiseSuppressor.isAvailable()) {
         ns = NoiseSuppressor.create(recorder.getAudioSessionId());
         if (ns != null)
-          ns.setEnabled(AudioRecordJNI.isGoodAudioEffect(ns));
+          ns.setEnabled(isGoodAudioEffect(ns));
       } else {
         Log.w(Log.TAG_VOICE, "NoiseSuppressor is not available on this device");
       }
@@ -492,7 +535,7 @@ public class Recorder implements Runnable {
       if (AcousticEchoCanceler.isAvailable()) {
         aec = AcousticEchoCanceler.create(recorder.getAudioSessionId());
         if (aec != null)
-          aec.setEnabled(AudioRecordJNI.isGoodAudioEffect(aec));
+          aec.setEnabled(isGoodAudioEffect(aec));
       } else {
         Log.w(Log.TAG_VOICE, "AcousticEchoCanceler is not available on this device");
       }

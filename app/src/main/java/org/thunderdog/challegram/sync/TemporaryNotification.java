@@ -43,12 +43,17 @@ public class TemporaryNotification {
         b.setContentText(text);
       }
       Notification notification = b.build();
-      manager.notify(TdlibNotificationManager.ID_TEMPORARY_NOTIFICATION, notification);
+      manager.notify(
+        TdlibNotificationManager.ID_TEMPORARY_NOTIFICATION,
+        notification
+      );
     }
   }
 
   public static void hide (Context context) {
     NotificationManagerCompat manager = NotificationManagerCompat.from(context);
-    manager.cancel(TdlibNotificationManager.ID_TEMPORARY_NOTIFICATION);
+    manager.cancel(
+      TdlibNotificationManager.ID_TEMPORARY_NOTIFICATION
+    );
   }
 }

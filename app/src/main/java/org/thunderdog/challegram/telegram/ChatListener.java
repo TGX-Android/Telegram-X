@@ -40,6 +40,7 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatPhotoChanged (long chatId, @Nullable TdApi.ChatPhotoInfo photo) { }
   default void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) { }
   default void onChatHasScheduledMessagesChanged (long chatId, boolean hasScheduledMessages) { }
+  default void onChatHasWelcomeMessagesChanged (long chatId, boolean hasWelcomeMessages) { }
   default void onChatHasProtectedContentChanged (long chatId, boolean hasProtectedContent) { }
   default void onChatReadOutbox (long chatId, long lastReadOutboxMessageId) { }
   default void onChatMarkedAsUnread (long chatId, boolean isMarkedAsUnread) { }
@@ -51,9 +52,10 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatVideoChatChanged (long chatId, TdApi.VideoChat videoChat) { }
   default void onChatViewAsTopics (long chatId, boolean viewAsTopics) { }
   default void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) { }
-  default void onChatReplyMarkupChanged (long chatId, long replyMarkupMessageId) { }
+  default void onChatReplyMarkupChanged (long chatId, @Nullable TdApi.Message replyMarkupMessage) { }
   default void onChatDraftMessageChanged (long chatId, @Nullable TdApi.DraftMessage draftMessage) { }
-  default void onChatUnreadMentionCount(long chatId, int unreadMentionCount, boolean availabilityChanged) { }
+  default void onChatUnreadMentionCount (long chatId, int unreadMentionCount, boolean availabilityChanged) { }
+  default void onChatUnreadPollVoteCount (long chatId, int unreadMentionCount, boolean availabilityChanged) { }
   default void onChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged) { }
   default void onChatDefaultDisableNotifications (long chatId, boolean defaultDisableNotifications) { }
   default void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) { }

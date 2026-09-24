@@ -197,19 +197,23 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeRequestManagedBot.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
-      case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR: {
+      case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR: {
         // TODO support more types
         break;
       }
       default:
-        Td.assertLinkPreviewType_4868cb55();
+        Td.assertLinkPreviewType_883de866();
         throw Td.unsupported(linkPreview.type);
     }
     return false;
@@ -287,22 +291,30 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeGiftAuction.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeLiveStory.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeRequestManagedBot.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
-            case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR: {
+            case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeTextCompositionStyle.CONSTRUCTOR: {
               // TODO support more types
               break;
             }
             default:
-              Td.assertLinkPreviewType_4868cb55();
+              Td.assertLinkPreviewType_883de866();
               throw Td.unsupported(linkPreview.type);
           }
         }
         break;
+      }
+      case TdApi.MessageRichMessage.CONSTRUCTOR: {
+        // TODO extract first big photo
+        return null;
       }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) message.content;
@@ -342,6 +354,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageLocation.CONSTRUCTOR: {
         // map preview
         return valueOf(tdlib, ((TdApi.MessageLocation) message.content).location, null, size, cornerRadius);
+      }
+      case TdApi.MessageLiveLocation.CONSTRUCTOR: {
+        // map preview
+        return valueOf(tdlib, ((TdApi.MessageLiveLocation) message.content).location.location, null, size, cornerRadius);
       }
       case TdApi.MessageVenue.CONSTRUCTOR: {
         // map preview
@@ -407,10 +423,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
           return new MediaPreviewSimple(tdlib, size, cornerRadius, giftedStars.sticker);
         break;
       }
-      case TdApi.MessageGiftedTon.CONSTRUCTOR: {
-        TdApi.MessageGiftedTon giftedTon = (TdApi.MessageGiftedTon) message.content;
-        if (giftedTon.sticker != null)
-          return new MediaPreviewSimple(tdlib, size, cornerRadius, giftedTon.sticker);
+      case TdApi.MessageGiftedGrams.CONSTRUCTOR: {
+        TdApi.MessageGiftedGrams giftedGram = (TdApi.MessageGiftedGrams) message.content;
+        if (giftedGram.sticker != null)
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, giftedGram.sticker);
         break;
       }
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
@@ -448,6 +464,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
       case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
       case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
+      case TdApi.MessageChatJoinFromCommunity.CONSTRUCTOR:
       case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
@@ -462,6 +479,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
       case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR:
       case TdApi.MessageGameScore.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
@@ -476,6 +494,9 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageContactRegistered.CONSTRUCTOR:
       case TdApi.MessageUsersShared.CONSTRUCTOR:
@@ -494,12 +515,21 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentDisableRequested.CONSTRUCTOR:
+      case TdApi.MessageChatHasProtectedContentToggled.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
+      case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
+      case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+      case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
+      case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
+      case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
+      case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR: {
         // No media preview.
         break;
       }
       default: {
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_af730a78();
         throw Td.unsupported(message.content);
       }
     }

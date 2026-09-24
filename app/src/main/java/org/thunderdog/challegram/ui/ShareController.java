@@ -787,13 +787,15 @@ public class ShareController extends TelegramViewController<ShareController.Args
               title2Res = R.string.ShareTitleFileX;
               textRes = R.string.ShareTextFile;
               break;
+            case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
             case TdApi.MessageText.CONSTRUCTOR:
+            case TdApi.MessageRichMessage.CONSTRUCTOR:
               title1Res = R.string.ShareTitleText;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextPlain;
               break;
             default:
-              Td.assertMessageContent_7c00740();
+              Td.assertMessageContent_af730a78();
               title1Res = R.string.ShareTitleMedia;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextMedia;
@@ -1211,7 +1213,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       } else if (viewId == R.id.btn_sendOnceOnline) {
         performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()), false);
       } else if (viewId == R.id.btn_sendNoSound) {
-        performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, 0L, null, true), false);
+        performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, null, true), false);
       } else if (viewId == R.id.btn_sendAndOpen) {
         performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions), true);
       }
@@ -1463,16 +1465,17 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private void initializeChatList (TdApi.ChatList chatList) {
-    TdlibChatListSlice list = new TdlibChatListSlice(tdlib, chatList, this, true) {
+    TdlibChatListSlice list = tdlib.chatList(chatList).slice(this, true, new TdlibChatListSlice.Modifier() {
       @Override
-      protected boolean modifySlice (List<Entry> slice, int currentSize) {
+      public boolean modifySlice (TdlibChatListSlice chatListSlice, List<TdlibChatListSlice.Entry> slice, int currentSize) {
+        TdApi.ChatList chatList = chatListSlice.chatList();
         int index = 0;
-        for (Entry entry : slice) {
+        for (TdlibChatListSlice.Entry entry : slice) {
           if (tdlib.isSelfChat(entry.chat)) {
             if (currentSize > 0) {
               slice.remove(index);
               return true;
-            } else if (index == 0 || ChatPosition.isPinned(entry.chat, chatList())) {
+            } else if (index == 0 || ChatPosition.isPinned(entry.chat, chatList)) {
               return false;
             } else {
               slice.remove(index);
@@ -1483,19 +1486,21 @@ public class ShareController extends TelegramViewController<ShareController.Args
           }
           index++;
         }
-        if (currentSize == 0 && TD.isChatListMain(chatList())) {
+        if (currentSize == 0 && TD.isChatListMain(chatList)) {
           TdApi.Chat selfChat = tdlib.selfChat();
-          if (selfChat != null && !ChatPosition.isPinned(selfChat, chatList())) {
-            Entry entry = new Entry(selfChat, chatList(), ChatPosition.findPosition(selfChat, chatList()), true);
+          if (selfChat != null && !ChatPosition.isPinned(selfChat, chatList)) {
+            TdlibChatListSlice.Entry entry = new TdlibChatListSlice.Entry(selfChat, chatList, ChatPosition.findPosition(selfChat, chatList), true);
             entry.bringToTop();
             slice.add(0, entry);
             return true;
           }
-          bringToTop(tdlib.selfChatId(), () -> new TdApi.CreatePrivateChat(tdlib.myUserId(), false), null);
+          chatListSlice.bringToTop(tdlib.selfChatId(), () -> new TdApi.CreatePrivateChat(tdlib.myUserId(), false), null);
         }
         return false;
       }
-    };
+    });
+
+    /**/
     // FIXME replace Math.max with proper fix.
     int startLoadCount = Math.max(20, Screen.calculateLoadingItems(Screen.dp(95f), 1) * calculateSpanCount());
     list.initializeList(this, entries -> processChats(list.chatList(), entries), startLoadCount, this::executeScheduledAnimation);
@@ -1892,7 +1897,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           if (ChatId.isSecret(chatId)) {
             if (!properties.canBeCopiedToSecretChat)
               return Lang.getString(R.string.SecretChatForwardError);
-            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(0L, null, false, false, false, false, 0, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
+            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, null, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(null, false, false, false, false, 0, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
             TdApi.Object check = tdlib.clientExecute(function, 1000L);
             if (check instanceof TdApi.Error) {
               return TD.toErrorString(check);
@@ -2614,13 +2619,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
     private float copyWidth;
 
     public void setShareText (@NonNull String text) {
-      this.copyText = text.toUpperCase();
+      this.copyText = Lang.uppercase(text);
       this.copyTextFake = Text.needFakeBold(copyText);
       this.copyWidth = U.measureText(copyText, Paints.getTitleBigPaint(copyTextFake));
     }
 
     public void setSendText (@NonNull String text) {
-      sendText = text.toUpperCase();
+      sendText = Lang.uppercase(text);
       sendTextFake = Text.needFakeBold(sendText);
       sendWidth = U.measureText(sendText, Paints.getTitleBigPaint(sendTextFake));
     }
@@ -3380,7 +3385,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     final Args args = getArgumentsStrict();
 
-    TdApi.MessageSendOptions cloudSendOptions = Td.newSendOptions(finalSendOptions, 0L, null, forceSendWithoutSound);
+    TdApi.MessageSendOptions cloudSendOptions = Td.newSendOptions(finalSendOptions, null, forceSendWithoutSound);
     // FIXME: it seems separate sendOptions for secret chats no longer required or something is broken?
     TdApi.MessageSendOptions secretSendOptions = Td.newSendOptions(cloudSendOptions);
 
@@ -3429,46 +3434,46 @@ public class ShareController extends TelegramViewController<ShareController.Args
           }
 
           if (messageReplyIncluded) {
-            replyTo = new TdApi.InputMessageReplyToMessage(contentfulMediaMessageId != 0 ? contentfulMediaMessageId : args.messages[0].id, null, 0);
+            replyTo = new TdApi.InputMessageReplyToMessage(contentfulMediaMessageId != 0 ? contentfulMediaMessageId : args.messages[0].id, null, 0, "");
           }
         }
-        functions.addAll(TD.sendMessageText(chatId, 0, replyTo, sendOptions, new TdApi.InputMessageText(comment, null, false), tdlib.maxMessageTextLength()));
+        functions.addAll(TD.sendMessageText(chatId, null, replyTo, sendOptions, new TdApi.InputMessageText(comment, null, false), tdlib.maxMessageTextLength()));
       }
       switch (mode) {
         case MODE_TEXT: {
-          functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(args.text, null, false), tdlib.maxMessageTextLength()));
+          functions.addAll(TD.sendMessageText(chatId, null, null, sendOptions, new TdApi.InputMessageText(args.text, null, false), tdlib.maxMessageTextLength()));
           break;
         }
         case MODE_MESSAGES: {
-          if (!messageReplyIncluded && !TD.forwardMessages(chatId, 0, args.messages, needHideAuthor, needRemoveCaptions, sendOptions, functions))
+          if (!messageReplyIncluded && !TD.forwardMessages(chatId, null, args.messages, needHideAuthor, needRemoveCaptions, sendOptions, functions))
             return;
           break;
         }
         case MODE_GAME: {
-          functions.add(new TdApi.SendMessage(chatId, 0, null, sendOptions, null, new TdApi.InputMessageForwarded(args.botMessage.chatId, args.botMessage.id, args.withUserScore, false, 0, null)));
+          functions.add(new TdApi.SendMessage(chatId, null, null, sendOptions, null, new TdApi.InputMessageForwarded(args.botMessage.chatId, args.botMessage.id, args.withUserScore, false, 0, null)));
           break;
         }
         case MODE_FILES  : {
           List<TdApi.InputMessageContent> contents = new ArrayList<>(args.files.length);
           for (FileInfo fileInfo : args.files) {
-            TdApi.InputMessageDocument document = new TdApi.InputMessageDocument(TD.createInputFile(fileInfo.path), null, false, null);
+            TdApi.InputMessageDocument document = new TdApi.InputMessageDocument(new TdApi.InputDocument(TD.createInputFile(fileInfo.path), null, false), null);
             contents.add(document);
           }
           TdApi.Function<?> function;
           if (contents.size() == 1) {
-            function = new TdApi.SendMessage(chatId, 0, null, sendOptions, null, contents.get(0));
+            function = new TdApi.SendMessage(chatId, null, null, sendOptions, null, contents.get(0));
           } else {
-            function = new TdApi.SendMessageAlbum(chatId, 0, null, sendOptions, contents.toArray(new TdApi.InputMessageContent[0]));
+            function = new TdApi.SendMessageAlbum(chatId, null, null, sendOptions, contents.toArray(new TdApi.InputMessageContent[0]));
           }
           functions.add(function);
           break;
         }
         case MODE_CONTACT: {
-          functions.add(new TdApi.SendMessage(chatId, 0, null, sendOptions, null, new TdApi.InputMessageContact(new TdApi.Contact(args.contactUser.phoneNumber, args.contactUser.firstName, args.contactUser.lastName, null, args.botUserId))));
+          functions.add(new TdApi.SendMessage(chatId, null, null, sendOptions, null, new TdApi.InputMessageContact(new TdApi.Contact(args.contactUser.phoneNumber, args.contactUser.firstName, args.contactUser.lastName, null, args.botUserId))));
           break;
         }
         case MODE_STICKER: {
-          functions.add(new TdApi.SendMessage(chatId, 0, null, sendOptions, null, new TdApi.InputMessageSticker(new TdApi.InputFileId(args.sticker.sticker.id), null, 0, 0, null)));
+          functions.add(new TdApi.SendMessage(chatId, null, null, sendOptions, null, new TdApi.InputMessageSticker(new TdApi.InputSticker(new TdApi.InputFileId(args.sticker.sticker.id), null, 0, 0), null)));
           break;
         }
         case MODE_CUSTOM: {
@@ -3476,7 +3481,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           break;
         }
         case MODE_CUSTOM_CONTENT: {
-          functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, args.customContent, tdlib.maxMessageTextLength()));
+          functions.addAll(TD.sendMessageText(chatId, null, null, sendOptions, args.customContent, tdlib.maxMessageTextLength()));
           break;
         }
         case MODE_TELEGRAM_FILES: {
@@ -3484,14 +3489,14 @@ public class ShareController extends TelegramViewController<ShareController.Args
           TdApi.FormattedText messageCaption = formattedCaption != null && formattedCaption.text.codePointCount(0, formattedCaption.text.length()) <= tdlib.maxCaptionLength() ? formattedCaption : null;
           boolean showCaptionAboveMedia = false; // TODO?
           if (formattedCaption != null && messageCaption == null) {
-            functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(formattedCaption, null, false), tdlib.maxMessageTextLength()));
+            functions.addAll(TD.sendMessageText(chatId, null, null, sendOptions, new TdApi.InputMessageText(formattedCaption, null, false), tdlib.maxMessageTextLength()));
           }
           for (MediaItem item : args.telegramFiles) {
             boolean last = item == args.telegramFiles[args.telegramFiles.length - 1];
             TdApi.InputMessageContent content = item.createShareContent(last ? messageCaption : null, last && showCaptionAboveMedia);
             if (content == null)
               return;
-            functions.add(new TdApi.SendMessage(chatId, 0, null, sendOptions, null, content));
+            functions.add(new TdApi.SendMessage(chatId, null, null, sendOptions, null, content));
           }
           break;
         }
@@ -3516,7 +3521,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       UI.showToast(R.string.DoneSave, Toast.LENGTH_SHORT);
     } else if ((args.needOpenChat || forceGoToChat) && selectedChats.size() == 1) {
       ViewController<?> c = context().navigation().getCurrentStackItem();
-      if (!(c instanceof MessagesController && ((MessagesController) c).compareChat(selectedChats.valueAt(0).getAnyId(), 0))) {
+      if (!(c instanceof MessagesController && ((MessagesController) c).compareChat(selectedChats.valueAt(0).getAnyId(), (TdApi.MessageTopic) null))) {
         UI.post(() -> tdlib.ui().openChat(ShareController.this, selectedChats.valueAt(0).getAnyId(), null), 250);
       }
     } else {
@@ -3716,7 +3721,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   public void destroy () {
     super.destroy();
     for (TdlibChatListSlice list : listByChatList.values()) {
-      list.unsubscribeFromUpdates(this);
+      list.performDestroy();
     }
     Views.destroyRecyclerView(recyclerView);
     TGLegacyManager.instance().removeEmojiListener(adapter);

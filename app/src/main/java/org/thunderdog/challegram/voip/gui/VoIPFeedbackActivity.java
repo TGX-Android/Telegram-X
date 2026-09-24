@@ -93,7 +93,7 @@ public class VoIPFeedbackActivity extends Activity {
         int rating = bar.getRating();
         String comment = rating < 5 ? commentBox.getText().toString() : "";
         Log.i(Log.TAG_VOIP, "Submitting call feedback, call_id: %d, rating: %d, comment: %s", callId, rating, comment);
-        tdlib.send(new TdApi.SendCallRating(callId, rating, comment, null), tdlib.typedOkHandler());
+        tdlib.send(new TdApi.SendCallRating(new TdApi.InputCallDiscarded(callId), rating, comment, null), tdlib.typedOkHandler());
         finishDelayed();
       })
       .setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> {

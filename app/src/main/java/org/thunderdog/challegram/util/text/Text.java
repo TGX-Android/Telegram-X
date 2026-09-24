@@ -132,6 +132,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   public static final int ENTITY_FLAGS_ALL = ENTITY_FLAGS_ALL_NO_COMMANDS | ENTITY_FLAG_COMMAND;
   public static final int ENTITY_FLAGS_NONE = 0;
 
+  public static final int LINE_COUNT_UNLIMITED = -1;
+
   public interface LineWidthProvider {
     int provideLineWidth (int lineIndex, int y, int defaultMaxWidth, int lineHeight);
   }
@@ -612,12 +614,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR:
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         break;
       default:
-        Td.assertTextEntityType_56c1e709();
+        Td.assertTextEntityType_aefd8e69();
         throw Td.unsupported(entity.type);
     }
     return false;
@@ -2705,6 +2708,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     default boolean forceInstantView (String link) { return false; }
     default TdApi.LinkPreview findLinkPreview (String link) { return null; }
     default boolean onCommandClick (View view, Text text, TextPart part, String command, boolean isLongPress) { return false; }
+    default boolean onDateClick (View view, Text text, TextPart part, String date, TdApi.TextEntityTypeDateTime entity, boolean isLongPress) { return false; }
     default boolean onUsernameClick (String username) { return false; }
     default boolean onUserClick (long userId) { return false; }
     default boolean onEmailClick (String email) { return false; }
@@ -2714,6 +2718,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     default boolean onUrlClick (View view, String link, boolean promptUser, @NonNull TdlibUi.UrlOpenParameters openParameters) { return false; }
     default boolean onAnchorClick (View view, String anchor) { return false; }
     default boolean onReferenceClick (View view, String name, String referenceAnchorName, @NonNull TdlibUi.UrlOpenParameters openParameters) { return false; }
+    default boolean onButtonClick (View view, TdApi.InlineButton button, @NonNull TdlibUi.UrlOpenParameters openParameters) { return false; }
   }
 
   public boolean highlightPart (int index, boolean onlyClickable) {

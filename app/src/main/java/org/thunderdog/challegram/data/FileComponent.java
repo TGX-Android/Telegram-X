@@ -61,6 +61,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.io.File;
+import java.util.Locale;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -434,14 +435,14 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
           extension = TGMimeType.extensionForMimeType(doc.mimeType);
         }
         if (BuildConfig.THEME_FILE_EXTENSION.equalsIgnoreCase(extension)) {
-          if (init && !StringUtils.isEmpty(title) && title.toLowerCase().endsWith("." + BuildConfig.THEME_FILE_EXTENSION)) {
+          if (init && !StringUtils.isEmpty(title) && title.toLowerCase(Locale.ROOT).endsWith("." + BuildConfig.THEME_FILE_EXTENSION)) {
             title = title.substring(0, title.length() - 1 - BuildConfig.THEME_FILE_EXTENSION.length());
           }
           return Lang.getString(R.string.ThemeFile, Strings.buildSize(file.expectedSize));
         }
         if (!StringUtils.isEmpty(extension) && extension.length() <= 7) {
-          extension = extension.toUpperCase();
-          if (init && !StringUtils.isEmpty(title) && title.toUpperCase().endsWith("." + extension)) {
+          extension = extension.toUpperCase(Locale.ROOT);
+          if (init && !StringUtils.isEmpty(title) && title.toUpperCase(Locale.ROOT).endsWith("." + extension)) {
             title = title.substring(0, title.length() - 1 - extension.length());
           }
           return Lang.getString(R.string.format_fileSizeAndExtension, Strings.buildSize(file.expectedSize), extension);
@@ -894,7 +895,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   public static String getTitleFromMime (String mimeType) {
     String ext = TGMimeType.extensionForMimeType(mimeType);
     if (ext != null) {
-      return ext.toUpperCase() + " " + Lang.getString(R.string.File);
+      return ext.toUpperCase(Locale.ROOT) + " " + Lang.getString(R.string.File);
     }
     return mimeType;
   }

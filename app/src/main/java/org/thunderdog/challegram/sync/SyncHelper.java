@@ -16,17 +16,17 @@ package org.thunderdog.challegram.sync;
 
 import android.content.Context;
 
-import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.TDLib;
 
 public class SyncHelper {
   public static void register (Context context, int accountId) {
-    Log.v(Log.TAG_FCM, "SyncHelper.register, accountId:%d", accountId);
+    TDLib.Tag.notifications( "SyncHelper.register, accountId:%d", accountId);
     SyncAdapter.register(context);
     // SyncWorker.register(accountId);
   }
 
   public static void cancel (Context context, int accountId) {
-    Log.v(Log.TAG_FCM, "SyncHelper.cancel, accountId:%d", accountId);
+    TDLib.Tag.notifications( "SyncHelper.cancel, accountId:%d", accountId);
     // SyncAdapter.cancel(accountId);
     // SyncWorker.cancel(accountId);
   }

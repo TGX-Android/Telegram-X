@@ -63,7 +63,6 @@ import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.voip.VoIP;
-import org.thunderdog.challegram.voip.VoIPController;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
@@ -81,6 +80,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.unit.ByteUnit;
+import tgx.extension.TelegramXExtension;
 import tgx.td.ChatPosition;
 import tgx.td.Td;
 
@@ -498,7 +498,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         } else if (itemId == R.id.btn_switchRtl) {
           view.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
         } else if (itemId == R.id.btn_toggleNewSetting) {
-          handleSettingClick(view, adapter);
+          updateSettingView(view, item, isUpdate);
         } else if (itemId == R.id.btn_experiment) {
           view.getToggler().setRadioEnabled(Settings.instance().isExperimentEnabled(item.getLongValue()), isUpdate);
         } else if (itemId == R.id.btn_secret_pushToken) {
@@ -520,7 +520,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
               break;
           }
         } else if (itemId == R.id.btn_secret_pushConfig) {
-          String configuration = TdlibNotificationUtils.getTokenRetriever().getConfiguration();
+          String configuration = TdlibNotificationUtils.getDeviceTokenRetriever().getConfiguration();
           view.setData(!StringUtils.isEmpty(configuration) ? configuration : "Unavailable");
         } else if (itemId == R.id.btn_secret_appFingerprint) {
           view.setData(U.getApkFingerprint("SHA1"));
@@ -764,6 +764,15 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_NoEdgeToEdgeInfo));
         }
 
+        if (TelegramXExtension.INSTANCE.isNotEmpty()) {
+          if (!items.isEmpty()) {
+            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          }
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_ForceAltPushService).setLongValue(Settings.EXPERIMENT_FLAG_FORCE_ALTERNATIVE_PUSH_SERVICE));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_ForceAltPushServiceInfo));
+        }
+
         if (items.isEmpty()) {
           items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, R.string.ExperimentalSettingsUnavailable));
         }
@@ -919,8 +928,6 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_crash4, 0, "Crash app (method 4, native direct)", false));
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_crashDirect, 0, "Crash app (default)", false));
-          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_crashDirectNative, 0, "Crash app (native)", false));
         }
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         break;
@@ -1183,7 +1190,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         UI.copyText(toHumanRepresentation(tdlib.context().getToken()), R.string.CopiedText);
       }
     } else if (viewId == R.id.btn_secret_pushConfig) {
-      String configuration = TdlibNotificationUtils.getTokenRetriever().getConfiguration();
+      String configuration = TdlibNotificationUtils.getDeviceTokenRetriever().getConfiguration();
       if (!StringUtils.isEmpty(configuration)) {
         UI.copyText(configuration, R.string.CopiedText);
       }
@@ -1205,7 +1212,6 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         for (String version : versions) {
           items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, version, !VoIP.isForceDisabled(version)).setStringValue(version));
         }
-        builder.addHeaderItem("Disabling all tgcalls versions enables libtgvoip " + VoIPController.getVersion() + " without tgcalls wrapper.");
       } else {
         int index = 0;
         int[] options = VoIP.getAllDebugOptions();
@@ -1303,8 +1309,6 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       Tracer.test3("[SUCCESS] INDIRECT NATIVE " + MathUtils.random(0, 10000));
     } else if (viewId == R.id.btn_test_crash4) {
       Tracer.test4("[SUCCESS] DIRECT NATIVE " + -MathUtils.random(0, 10000));
-    } else if (viewId == R.id.btn_test_crashDirectNative) {
-      Tracer.test5("[SUCCESS] DIRECT THROW " + -MathUtils.random(0, 10000));
     } else if (viewId == R.id.btn_test_crashDirect) {
       throw new RuntimeException("This is a default test");
     } else if (viewId == R.id.btn_secret_dropHidden) {
@@ -1441,8 +1445,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     } else if (viewId == R.id.btn_secret_deleteProfilePhoto) {
       TdApi.User user = tdlib.myUser();
       if (user != null && user.profilePhoto != null) {
-        tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.small.id), tdlib.okHandler());
-        tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.big.id), tdlib.okHandler());
+        tdlib.send(new TdApi.DeleteFile(user.profilePhoto.small.id), tdlib.typedOkHandler());
+        tdlib.send(new TdApi.DeleteFile(user.profilePhoto.big.id), tdlib.typedOkHandler());
       }
     } else if (viewId == R.id.btn_secret_dropSavedScrollPositions) {
       Settings.instance().removeScrollPositions(tdlib.accountId(), null);

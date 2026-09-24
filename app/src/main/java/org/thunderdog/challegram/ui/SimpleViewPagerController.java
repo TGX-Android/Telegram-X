@@ -19,6 +19,7 @@ import android.content.Context;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
@@ -99,7 +100,7 @@ public class SimpleViewPagerController extends ViewPagerController<Object> {
       return sections;
     String[] result = new String[controllers.length];
     for (int i = 0; i < result.length; i++) {
-      result[i] = controllers[i].getName().toString().toUpperCase();
+      result[i] = Lang.uppercase(controllers[i].getName().toString());
     }
     return result;
   }

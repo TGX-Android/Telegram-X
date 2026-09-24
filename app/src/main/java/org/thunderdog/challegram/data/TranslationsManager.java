@@ -11,6 +11,7 @@ import java.util.HashMap;
 
 import me.vkryl.core.StringUtils;
 import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public final class TranslationsManager {
 
@@ -120,7 +121,7 @@ public final class TranslationsManager {
   }
 
   private void requestTranslationImpl (TdApi.FormattedText originalText, String toLanguage, Client.ResultHandler callback) {
-    tdlib.client().send(new TdApi.TranslateText(originalText, toLanguage), callback);
+    tdlib.client().send(new TdApi.TranslateText(originalText, toLanguage, TdConstants.TEXT_FORMAT_NEUTRAL), callback);
   }
 
 

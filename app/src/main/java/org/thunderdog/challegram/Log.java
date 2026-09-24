@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram;
 
+import static tgx.flavor.VideoTransformer.setLegacyTranscoderLogLevel;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -21,8 +23,6 @@ import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.otaliastudios.transcoder.internal.utils.Logger;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.config.Config;
@@ -419,22 +419,8 @@ public class Log {
   // == Settings ==
 
   private static void setThirdPartyLogLevels (int level) {
-    switch (level) {
-      case LEVEL_WARNING:
-        Logger.setLogLevel(Logger.LEVEL_WARNING);
-        break;
-      case LEVEL_INFO:
-      case LEVEL_DEBUG:
-        Logger.setLogLevel(Logger.LEVEL_INFO);
-        break;
-      case LEVEL_VERBOSE:
-        Logger.setLogLevel(Logger.LEVEL_VERBOSE);
-        break;
-      case LEVEL_ASSERT:
-      case LEVEL_ERROR:
-      default:
-        Logger.setLogLevel(Logger.LEVEL_ERROR);
-        break;
+    if (Config.LEGACY_VIDEO_TRANSCODING_ENABLED) {
+      setLegacyTranscoderLogLevel(level);
     }
   }
 
@@ -467,6 +453,28 @@ public class Log {
       setLogLevelImpl(level);
       setLogTagsImpl(tags);
       setThirdPartyLogLevels(level);
+
+      androidx.media3.common.util.Log.setLogger(new androidx.media3.common.util.Log.Logger() {
+        @Override
+        public void i (@NonNull String tag, @NonNull String message, @Nullable Throwable throwable) {
+          Log.i("[media3:%s]: %s", throwable, tag, message);
+        }
+
+        @Override
+        public void d (@NonNull String tag, @NonNull String message, @Nullable Throwable throwable) {
+          Log.d("[media3:%s]: %s", throwable, tag, message);
+        }
+
+        @Override
+        public void w (@NonNull String tag, @NonNull String message, @Nullable Throwable throwable) {
+          Log.w("[media3:%s]: %s", throwable, tag, message);
+        }
+
+        @Override
+        public void e (@NonNull String tag, @NonNull String message, @Nullable Throwable throwable) {
+          Log.e("[media3:%s]: %s", throwable, tag, message);
+        }
+      });
 
       loaded = true;
     }
@@ -754,7 +762,7 @@ public class Log {
           if (b.length() > 0) {
             b.append('\n');
           }
-          toStringBuilder(t, 10, b);
+          toStringBuilder(t, 10, true, b);
           fileMessage = b.toString();
         } else {
           fileMessage = sourceMessage;
@@ -998,24 +1006,48 @@ public class Log {
   }
 
   public static String toString (Throwable t) {
+    return toString(t, true);
+  }
+  public static String toString (Throwable t, boolean includePreview) {
     StringBuilder b = new StringBuilder();
-    toStringBuilder(t, 10, b);
+    toStringBuilder(t, 10, includePreview, b);
     return b.toString();
   }
 
-  public static String toString (Throwable t, int limitCauseNum) {
+  public static String toPreviewString (Throwable t) {
     StringBuilder b = new StringBuilder();
-    toStringBuilder(t, limitCauseNum, b);
+    messagesToStringBuilder(t, b);
     return b.toString();
   }
 
-  public static void toStringBuilder (Throwable t, int limitCauseNum, StringBuilder b) {
-    toStringBuilder(t, limitCauseNum, b, 0);
+  public static void toStringBuilder (Throwable t, int limitCauseNum, boolean includePreview, StringBuilder b) {
+    toStringBuilder(t, limitCauseNum, includePreview, b, 0);
   }
 
-  private static void toStringBuilder (Throwable t, int limitCauseNum, StringBuilder b, int causeNo) {
+  private static int messagesToStringBuilder (Throwable t, StringBuilder b) {
+    Throwable current = t;
+    int addedCount = 0;
+    do {
+      String message = current.getMessage();
+      if (!StringUtils.isEmpty(message)) {
+        if (addedCount > 0) {
+          b.append("\n");
+        }
+        b.append(message);
+        addedCount++;
+      }
+      current = current.getCause();
+    } while (current != null);
+    return addedCount;
+  }
+
+  private static void toStringBuilder (Throwable t, int limitCauseNum, boolean includePreview, StringBuilder b, int causeNo) {
     if (causeNo != 0) {
       b.append('\n');
+    } else if (includePreview) {
+      if (messagesToStringBuilder(t, b) > 0) {
+        b.append("\n\n");
+      }
     }
     b.append("=== ");
     if (causeNo != 0) {
@@ -1035,7 +1067,7 @@ public class Log {
     Throwable cause = t.getCause();
     if (cause != null && causeNo + 1 < limitCauseNum) {
       if (b.length() > 0) {
-        toStringBuilder(cause, limitCauseNum, b, causeNo + 1);
+        toStringBuilder(cause, limitCauseNum, includePreview, b, causeNo + 1);
       }
     }
   }

@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -127,14 +128,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
     Log.i("MainActivity.onCreate");
 
-    handler = new Handler();
+    handler = new Handler(Looper.getMainLooper());
 
     TdlibManager.instance().global().addAccountListener(this);
     TdlibManager.instance().global().addCountersListener(this);
     TdlibManager.instance().global().addResolvableProblemAvailabilityListener(this);
     reloadTdlib();
-
-    createMessagesController(tdlib).getValue();
 
     tempSavedInstanceState = savedInstanceState;
 
@@ -639,7 +638,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     if (IntroController.isIntroAttemptedButFailed()) {
       navigation.initController(new PhoneController(this, account.tdlib()));
     } else {
-      navigation.initController(new IntroController(this));
+      navigation.initController(new IntroController(this, account.tdlib()));
     }
   }
 
@@ -1066,11 +1065,11 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     }
 
     if (accounts.size() == 1) {
-      new LiveLocationHelper(this, accounts.get(0).tdlib(), 0, 0, null, null, false, null).init().openLiveLocationList(false).destroy();
+      new LiveLocationHelper(this, accounts.get(0).tdlib(), 0, null, null, false, null).init().openLiveLocationList(false).destroy();
       return;
     }
 
-    performAs(accounts, null, null, account -> account.tdlib().awaitInitialization(() -> handler.post(() -> new LiveLocationHelper(MainActivity.this, account.tdlib(), 0, 0, null, null, false, null).init().openLiveLocationList(true).destroy())));
+    performAs(accounts, null, null, account -> account.tdlib().awaitInitialization(() -> handler.post(() -> new LiveLocationHelper(MainActivity.this, account.tdlib(), 0, null, null, false, null).init().openLiveLocationList(true).destroy())));
   }
 
   private void resolveLiveLocationError (boolean force) {

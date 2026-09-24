@@ -25,6 +25,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.gif.LottieCache;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
+import org.thunderdog.challegram.telegram.SessionSnapshot;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -41,7 +42,7 @@ public class TGStorageStatsFast {
   private final long filesSize, databaseSize, languagePackDatabaseSize;
 
   // Application
-  private final long pmcSize, accountsConfigSize, voipConfigSize, paintsSize, privateCameraMediaSize;
+  private final long pmcSize, accountsConfigSize, voipConfigSize, paintsSize, privateCameraMediaSize, snapshotsSize;
   private final long debugJunkSize, testJunkSize, oldTdlibLogJunkSize;
   private final File[] internalJunk, externalJunk, privateCameraMedia;
   private final long emojiUnusedSize, emojiUsedSize;
@@ -72,6 +73,7 @@ public class TGStorageStatsFast {
     // Application
     this.pmcSize = prevStats != null ? prevStats.pmcSize : Settings.instance().pmc().length();
     this.paintsSize = FileUtils.getSize(PaintState.getPaintsDir());
+    this.snapshotsSize = FileUtils.getSize(SessionSnapshot.getSnapshotsDir());
     this.accountsConfigSize = TdlibManager.getAccountConfigFileSize();
     this.voipConfigSize = VoIPPersistentConfig.getVoipConfigFileSize();
 
@@ -194,6 +196,10 @@ public class TGStorageStatsFast {
     return paintsSize;
   }
 
+  public long getSnapshotsSize () {
+    return snapshotsSize;
+  }
+
   public long getEmojiSize () {
     return emojiUnusedSize + emojiUsedSize;
   }
@@ -220,7 +226,7 @@ public class TGStorageStatsFast {
 
   public long getTotalSize () {
     return /*TDLib*/ filesSize + databaseSize + languagePackDatabaseSize +
-           /*App*/ pmcSize + accountsConfigSize + voipConfigSize + paintsSize + emojiUsedSize + emojiUnusedSize + lottieSize +
+           /*App*/ pmcSize + accountsConfigSize + voipConfigSize + snapshotsSize + paintsSize + emojiUsedSize + emojiUnusedSize + lottieSize +
            /*Junk*/ debugJunkSize + testJunkSize + oldTdlibLogJunkSize;
   }
 

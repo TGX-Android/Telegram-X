@@ -529,8 +529,15 @@ public class Emoji {
     return null;
   }
 
+  public boolean hasEmoji (String str) {
+    return !StringUtils.isEmpty(extractSingleEmoji(str));
+  }
+
   @Nullable
   public static String extractSingleEmoji (String str) {
+    if (StringUtils.isEmpty(str)) {
+      return null;
+    }
     CharSequence emoji = Emoji.instance().replaceEmoji(str, 0, str.length(), newSingleLimiter());
     if (emoji instanceof Spanned) {
       Spanned spanned = (Spanned) emoji;
@@ -1120,9 +1127,14 @@ public class Emoji {
 
   public static String getEmojiFlagFromCountry (String countryCode) {
     try {
-      return Client.execute(new TdApi.GetCountryFlagEmoji(countryCode)).text;
-    } catch (Client.ExecutionException e) {
-      return null;
+      String emoji = Client.execute(new TdApi.GetCountryFlagEmoji(countryCode)).text;
+      if (!StringUtils.isEmpty(emoji)) {
+        return emoji;
+      }
+    } catch (Client.ExecutionException ignored) { }
+    if ("YL".equals(countryCode)) {
+      return "\uD83D\uDD2E";
     }
+    return null;
   }
 }

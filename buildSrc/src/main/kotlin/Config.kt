@@ -13,26 +13,121 @@
 
 // File with static configuration, that is meant to be adjusted only once
 
-import tgx.gradle.fatal
+import tgx.gradle.*
+import java.io.File
+import java.util.*
 
 object Config {
-  const val PRIMARY_SDK_VERSION = 21
   const val MIN_SDK_VERSION = 16
+  const val MIN_SDK_VERSION_HUAWEI = 17
   val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_21
-  val ANDROIDX_MEDIA_EXTENSIONS = arrayOf("decoder_ffmpeg", "decoder_flac", "decoder_opus", "decoder_vp9")
-  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
+  val ANDROIDX_MEDIA_EXTENSIONS = arrayOf(
+    "decoder_ffmpeg",
+    "decoder_flac",
+    "decoder_opus",
+    "decoder_vp9"
+  )
 
-  // FIXME(ndK): As of 16.08.2025, NDK team didn't release an update for r23's c++_shared.so with 16 KB ELF alignment
-  val SHARED_STL = false
+  val FFMPEG_LIBS = arrayOf(
+    "swresample",
+    "avformat",
+    "swscale",
+    "avcodec",
+    "avfilter",
+    "avutil"
+  )
+  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
 }
 
-object LibraryVersions {
-  const val MULTIDEX = "2.0.1"
-  const val DESUGAR = "2.1.5"
-  const val ANDROIDX_CORE = "1.12.0" // 1.13.0+ requires minSdk 19+
-  const val ANNOTATIONS = "1.9.1"
-  const val ANDROIDX_MEDIA = "1.8.0"
-  const val ANDROIDX_CAMERA = "1.4.2"
+data class PullRequest (
+  val id: Long,
+  val commitShort: String,
+  val commitLong: String,
+  val commitDate: Long,
+  val author: String
+) {
+  constructor(id: Long, properties: Properties) : this(
+    id,
+    properties.getOrThrow("pr.$id.commit_short"),
+    properties.getOrThrow("pr.$id.commit_long"),
+    properties.getLongOrThrow("pr.$id.date"),
+    properties.getOrThrow("pr.$id.author")
+  )
+}
+
+data class BuildVersions(
+  val compileSdkVersion: Int,
+  val targetSdkVersion: Int,
+  val buildToolsVersion: String,
+  val legacyNdkVersion: String,
+  val primaryNdkVersion: String
+) {
+  constructor(version: Properties) : this(
+    compileSdkVersion =
+      version.getIntOrThrow("version.sdk_compile"),
+    targetSdkVersion =
+      version.getIntOrThrow("version.sdk_target"),
+    buildToolsVersion =
+      version.getOrThrow("version.build_tools"),
+    legacyNdkVersion =
+      version.getOrThrow("version.ndk_legacy"),
+    primaryNdkVersion =
+      version.getOrThrow("version.ndk_primary")
+  )
+}
+
+data class ApplicationConfig(
+  val sdkDir: String,
+
+  val applicationName: String,
+  val applicationId: String,
+  val extension: String,
+  val sourceCodeUrl: String,
+
+  val applicationVersion: Int,
+  val majorVersion: Int,
+
+  val isExperimentalBuild: Boolean,
+  val isHuaweiBuild: Boolean,
+  val forceOptimize: Boolean,
+  val doNotObfuscate: Boolean,
+  val build: BuildVersions,
+
+  val nativeLibraryVersion: String,
+  val leveldbVersion: String,
+  val emojiVersion: Int,
+
+  val telegramApiId: Int,
+  val telegramApiHash: String,
+  val safetyNetToken: String?,
+  val appDownloadUrl: String?,
+  val googlePlayUrl: String?,
+  val galaxyStoreUrl: String?,
+  val huaweiAppGalleryUrl: String?,
+  val amazonAppStoreUrl: String?,
+
+  val pullRequests: List<PullRequest>,
+
+  val outputFileNamePrefix: String,
+  val creationDateMillis: Long,
+
+  val keystorePropertiesPath: String?
+)
+
+data class Keystore(
+  val file: File,
+  val password: String,
+  val keyAlias: String,
+  val keyPassword: String
+) {
+  constructor(configPath: String) : this(loadProperties(configPath))
+  constructor(file: File) : this(loadProperties(file))
+  constructor(config: org.jetbrains.kotlin.konan.properties.Properties) : this(
+    file = File(config.getOrThrow("keystore.file")),
+    password = config.getOrThrow("keystore.password"),
+    keyAlias = config.getOrThrow("key.alias"),
+    keyPassword = config.getOrThrow("key.password")
+  )
 }
 
 class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
@@ -55,11 +150,16 @@ class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), va
       return true
     }
 
-  val minSdkVersion: Int
+  val isTestingLab: Boolean
+    get() {
+      return flavor == Abi.VARIANTS[Abi.LAB]!!.flavor
+    }
+
+  val minSdk: Int
     get() = if (is64Bit) {
-      Config.PRIMARY_SDK_VERSION
+      21
     } else {
-      Config.MIN_SDK_VERSION
+      16
     }
 }
 
@@ -70,13 +170,67 @@ object Abi {
   const val ARM64_V8A = 2
   const val X86 = 3
   const val X64 = 4
+  const val LAB = 5
 
   val VARIANTS = mapOf(
     Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "armeabi-v7a"))),
     Pair(ARMEABI_V7A, AbiVariant("arm32", "armeabi-v7a")),
     Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
     Pair(X86, AbiVariant("x86", "x86")),
-    Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64"))
+    Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64")),
+    Pair(LAB, AbiVariant("lab", displayName = "testing", filters = arrayOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86"))),
+  )
+}
+
+data class SdkVariant(
+  val minSdk: Int = Config.MIN_SDK_VERSION,
+  val maxSdk: Int? = null,
+  val flavor: String,
+  val displayName: String? = flavor
+) {
+  val isLatest: Boolean =
+    flavor == "latest"
+  val isMarshmallow: Boolean =
+    flavor == "marshmallow"
+  val isLollipop: Boolean =
+    flavor == "lollipop"
+  val isLegacy: Boolean =
+    flavor == "legacy"
+
+  val jetpackMediaFlavor: String =
+    flavor.takeIf { !isMarshmallow } ?: "latest"
+
+  val usesLegacyNdk: Boolean =
+    isLegacy
+}
+
+object Sdk {
+  const val LEGACY = 0
+  const val LOLLIPOP = 1
+  const val MARSHMALLOW = 2
+  const val LATEST = 3
+
+  val VARIANTS = mapOf(
+    Pair(LEGACY, SdkVariant(
+      flavor = "legacy",
+      minSdk = 16,
+      maxSdk = 20
+    )),
+    Pair(LOLLIPOP, SdkVariant(
+      flavor = "lollipop",
+      minSdk = 21,
+      maxSdk = 22
+    )),
+    Pair(MARSHMALLOW, SdkVariant(
+      flavor = "marshmallow",
+      minSdk = 23,
+      maxSdk = 23
+    )),
+    Pair(LATEST, SdkVariant(
+      flavor = "latest",
+      minSdk = 24,
+      displayName = null
+    ))
   )
 }
 

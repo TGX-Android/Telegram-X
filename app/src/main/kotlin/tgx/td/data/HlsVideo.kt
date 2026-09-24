@@ -13,6 +13,9 @@
 package tgx.td.data
 
 import android.net.Uri
+import android.os.Build
+import androidx.media3.common.MimeTypes
+import androidx.media3.decoder.vp9.VpxLibrary
 import me.vkryl.core.parseLong
 import org.drinkless.tdlib.TdApi.AlternativeVideo
 import org.drinkless.tdlib.TdApi.Video
@@ -57,11 +60,15 @@ data class HlsVideo(
 ) {
   @JvmField val id: Int = video.video.id
 
-  fun findVideoByStreamId (streamId: Long): AlternativeVideo {
-    return this.alternativeVideos.firstOrNull { alternativeVideo ->
+  fun findVideoByStreamId (streamId: Long): AlternativeVideo =
+    this.alternativeVideos.firstOrNull { alternativeVideo ->
       alternativeVideo.id == streamId
     }!!
-  }
+
+  fun hasSupportedCodecs(): Boolean =
+    alternativeVideos.firstOrNull {
+      it.isSupported(false)
+    } != null
 
   fun findVideoFileIdByStreamId (streamId: Long): Int =
     findVideoByStreamId(streamId).video.id
@@ -72,6 +79,43 @@ data class HlsVideo(
 
     @JvmStatic fun extractStreamId(uri: Uri): Long =
       parseLong(uri.schemeSpecificPart)
+
+    @JvmStatic fun toRfc6381CodecString(codec: String?) = when (codec) {
+      "h264" -> "avc1"
+      "h265" -> "hvc1"
+      "av1" -> "av01"
+      "vp8" -> "vp08"
+      "vp9" -> "vp09"
+      else -> codec
+    }
+
+    @JvmStatic fun toSampleMimeType(codec: String?): String? =
+      MimeTypes.getMediaMimeType(toRfc6381CodecString(codec))
+
+    @JvmStatic fun isCodecSupported(
+      codec: String,
+      failOnUnknownCodec: Boolean
+    ) = when (codec.substringBefore(".")) {
+      // https://developer.android.com/media/platform/supported-formats
+      // AV1: Android 10
+      "av1", "av01" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+      // h.264: Main profile guaranteed since Android M (6.0), baseline since Android Honeycomb (3.0)
+      "h264", "avc1", "avc3" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB
+      // h.265: Android L (5.0)
+      "h265", "hevc", "hvc1", "hev1" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
+      // VP9: Android KitKat (4.4)
+      "vp9", "vp09" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT || VpxLibrary.isAvailable()
+      // VP8: Streamable only in Android 4.0 and above
+      "vp8", "vp08" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH
+      else -> if (failOnUnknownCodec) {
+        error("Unexpected codec: $codec")
+      } else {
+        true
+      }
+    }
+
+    fun AlternativeVideo.isSupported(failOnUnknownCodec: Boolean): Boolean =
+      isCodecSupported(codec, failOnUnknownCodec)
   }
 
   fun AlternativeVideo.appendTo(b: StringBuilder) {
@@ -80,16 +124,22 @@ data class HlsVideo(
     } else {
       1000000
     }
-    // TODO: ,CODECS="${codec}"
-    b.append("#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${width}x${height}\n")
+    b.append("#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${width}x${height},CODECS=\"${toRfc6381CodecString(codec)}\"\n")
     b.append("${HlsPath(this)}\n")
   }
 
-  fun multivariantPlaylistData (): String {
+  fun multivariantPlaylistData(failOnUnknownCodec: Boolean): String {
     val playlist = StringBuilder()
     playlist.append("#EXTM3U\n")
+    var videoCount = 0
     for (alternativeVideo in alternativeVideos) {
-      alternativeVideo.appendTo(playlist)
+      if (alternativeVideo.isSupported(failOnUnknownCodec)) {
+        alternativeVideo.appendTo(playlist)
+        videoCount++
+      }
+    }
+    if (videoCount == 0 && alternativeVideos.isNotEmpty()) {
+      error("None of codecs supported: ${alternativeVideos.joinToString { it.codec }}")
     }
     playlist.append("#EXT-X-ENDLIST\n")
     return playlist.toString()

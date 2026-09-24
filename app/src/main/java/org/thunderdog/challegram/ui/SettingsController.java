@@ -283,8 +283,8 @@ public class SettingsController extends ViewController<Void> implements
         return R.string.NotificationsErrorBlockedCategory;
       case TdlibNotificationManager.Status.DISABLED_SYNC:
       case TdlibNotificationManager.Status.DISABLED_APP_SYNC:
-      case TdlibNotificationManager.Status.FIREBASE_MISSING:
-      case TdlibNotificationManager.Status.FIREBASE_ERROR:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_MISSING:
+      case TdlibNotificationManager.Status.PUSH_SERVICE_ERROR:
         return R.string.NotificationsErrorBackground;
       case TdlibNotificationManager.Status.INTERNAL_ERROR: {
         this.problematicChatId = tdlib.settings().getLastNotificationProblematicChat();
@@ -548,8 +548,11 @@ public class SettingsController extends ViewController<Void> implements
             case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
               view.setText(obtainWrapper(Lang.getString(R.string.ReminderSetBirthdateText), action.getConstructor()));
               break;
+            case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR:
+              view.setText(obtainWrapper(Lang.getString(R.string.ReminderSetLoginEmailText), action.getConstructor()));
+              break;
             default:
-              Td.assertSuggestedAction_c92fb71c();
+              Td.assertSuggestedAction_a78df4c9();
               throw Td.unsupported(action);
           }
         } else if (itemId == R.id.btn_birthdate) {
@@ -868,8 +871,11 @@ public class SettingsController extends ViewController<Void> implements
       case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
         item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_cake_variant_24, R.string.ReminderSetBirthdate);
         break;
+      case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR:
+        item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_alternate_email_24, R.string.ReminderSetLoginEmail);
+        break;
       default:
-        Td.assertSuggestedAction_c92fb71c();
+        Td.assertSuggestedAction_a78df4c9();
         throw Td.unsupported(action);
     }
     item
@@ -1015,7 +1021,7 @@ public class SettingsController extends ViewController<Void> implements
   private boolean setUsername (@Nullable TdApi.User myUser) {
     TdApi.Usernames usernames = myUser != null ? myUser.usernames : null;
     if (myUser != null && usernames == null) {
-      usernames = new TdApi.Usernames(new String[0], new String[0], "");
+      usernames = new TdApi.Usernames(new String[0], new String[0], "", new String[0]);
     }
     if ((myUsernames == null && usernames != null) || (myUsernames != null && !Td.equalsTo(myUsernames, usernames))) {
       this.myUsernames = usernames;
@@ -1079,10 +1085,11 @@ public class SettingsController extends ViewController<Void> implements
     SourceCodeType.TGCALLS,
     SourceCodeType.WEBRTC,
     SourceCodeType.FFMPEG,
-    SourceCodeType.WEBP
+    SourceCodeType.WEBP,
+    SourceCodeType.OPENSSL
   })
   private @interface SourceCodeType {
-    int TELEGRAM_X = 0, TDLIB = 1, TGCALLS = 2, WEBRTC = 3, FFMPEG = 4, WEBP = 5;
+    int TELEGRAM_X = 0, TDLIB = 1, TGCALLS = 2, WEBRTC = 3, FFMPEG = 4, WEBP = 5, OPENSSL = 6;
   }
 
   private void viewSourceCode (@SourceCodeType int sourceCodeType) {
@@ -1109,6 +1116,9 @@ public class SettingsController extends ViewController<Void> implements
         break;
       case SourceCodeType.WEBP:
         url = BuildConfig.WEBP_COMMIT_URL;
+        break;
+      case SourceCodeType.OPENSSL:
+        url = BuildConfig.OPENSSL_COMMIT_URL;
         break;
       default:
         throw new IllegalArgumentException(Integer.toString(sourceCodeType));
@@ -1176,6 +1186,7 @@ public class SettingsController extends ViewController<Void> implements
         if (appBuildInfo.getTdlibCommitFull() != null) {
           b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), Td.tdlibCommitHash()), OptionColor.NORMAL, R.drawable.baseline_tdlib_24));
         }
+        b.item(new OptionItem(R.id.btn_openssl, Lang.getCharSequence(R.string.format_commit, "OpenSSL " + BuildConfig.OPENSSL_VERSION_FULL, BuildConfig.OPENSSL_COMMIT), OptionColor.NORMAL, R.drawable.baseline_lock_24));
         b.item(new OptionItem(R.id.btn_tgcalls, Lang.getCharSequence(R.string.format_commit, "tgcalls", BuildConfig.TGCALLS_COMMIT), OptionColor.NORMAL, R.drawable.baseline_phone_in_talk_24));
         b.item(new OptionItem(R.id.btn_webrtc, Lang.getCharSequence(R.string.format_commit, "WebRTC", BuildConfig.WEBRTC_COMMIT), OptionColor.NORMAL, R.drawable.baseline_webrtc_24));
         b.item(new OptionItem(R.id.btn_ffmpeg, Lang.getCharSequence(R.string.format_commit, "FFmpeg", BuildConfig.FFMPEG_COMMIT), OptionColor.NORMAL, R.drawable.baseline_ffmpeg_24));
@@ -1191,6 +1202,8 @@ public class SettingsController extends ViewController<Void> implements
             viewSourceCode(SourceCodeType.TELEGRAM_X);
           } else if (id == R.id.btn_tdlib) {
             viewSourceCode(SourceCodeType.TDLIB);
+          } else if (id == R.id.btn_openssl) {
+            viewSourceCode(SourceCodeType.OPENSSL);
           } else if (id == R.id.btn_webrtc) {
             viewSourceCode(SourceCodeType.WEBRTC);
           } else if (id == R.id.btn_ffmpeg) {
@@ -1227,9 +1240,9 @@ public class SettingsController extends ViewController<Void> implements
     } else if (viewId == R.id.btn_chatFolders) {
       navigateTo(new SettingsFoldersController(context, tdlib));
     } else if (viewId == R.id.btn_faq) {
-      tdlib.ui().openUrl(this, Lang.getString(R.string.url_faq), new TdlibUi.UrlOpenParameters().forceInstantView());
+      tdlib.ui().openFaq(this);
     } else if (viewId == R.id.btn_privacyPolicy) {
-      tdlib.ui().openUrl(this, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
+      tdlib.ui().openPrivacyPolicy(this);
     } else if (viewId == R.id.btn_suggestion) {
       ListItem listItem = (ListItem) v.getTag();
       showSuggestionPopup(v, (TdApi.SuggestedAction) listItem.getData());
@@ -1294,8 +1307,12 @@ public class SettingsController extends ViewController<Void> implements
         tdlib.ui().openBirthdateEditor(this, suggestionView, TdlibUi.BirthdateOpenOrigin.SUGGESTED_ACTION);
         return;
       }
+      case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR: {
+        tdlib.ui().editLoginEmail(this);
+        return;
+      }
       default: {
-        Td.assertSuggestedAction_c92fb71c();
+        Td.assertSuggestedAction_a78df4c9();
         throw Td.unsupported(suggestedAction);
       }
     }
@@ -1379,7 +1396,7 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private void dismissSuggestion (TdApi.SuggestedAction suggestedAction) {
-    tdlib.client().send(new TdApi.HideSuggestedAction(suggestedAction), tdlib.okHandler());
+    tdlib.send(new TdApi.HideSuggestedAction(suggestedAction), tdlib.typedOkHandler());
   }
 
   private void showBuildOptions (boolean allowDebug) {

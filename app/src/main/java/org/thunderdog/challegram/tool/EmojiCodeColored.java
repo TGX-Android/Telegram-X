@@ -513,7 +513,7 @@ public class EmojiCodeColored {
       "\uD83E\uDD39",
       "\uD83E\uDD39\u200D\u2642",
       "\u26F7",
-      "\uD83C\uDFC2",
+      "\uD83C\uDFC2"
     },
     EmojiCode.DATA[1],
     {
@@ -1689,7 +1689,7 @@ public class EmojiCodeColored {
       "\uD83C\uDDE9\uD83C\uDDEC",
       "\uD83C\uDDE8\uD83C\uDDF5",
       "\uD83C\uDDE7\uD83C\uDDFB",
-      "\uD83C\uDDE6\uD83C\uDDE8",
+      "\uD83C\uDDE6\uD83C\uDDE8"
     }
   };
 }

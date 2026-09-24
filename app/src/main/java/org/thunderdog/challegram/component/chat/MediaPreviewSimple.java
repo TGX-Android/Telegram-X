@@ -43,7 +43,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 
 import java.io.File;
-import java.math.BigDecimal;
 
 import me.vkryl.core.ColorUtils;
 import tgx.td.Td;

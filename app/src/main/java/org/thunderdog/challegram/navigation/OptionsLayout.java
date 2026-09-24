@@ -286,19 +286,20 @@ public class OptionsLayout extends LinearLayout implements Animated, RootFrameLa
     addView(text, 1);
   }
 
-  public void setInfo (ViewController<?> context, Tdlib tdlib, CharSequence info, boolean isTitle) {
+  public void setInfo (ViewController<?> context, Tdlib tdlib, CharSequence info, boolean isTitle, int maxLineCount) {
     if (!StringUtils.isEmpty(info)) {
       String str = info.toString();
       TextEntity[] parsed = TD.collectAllEntities(context, tdlib, info, false, null);
-      setInfo(str, parsed, isTitle);
+      setInfo(str, parsed, isTitle, maxLineCount);
     } else {
       textView.setVisibility(View.GONE);
     }
   }
 
-  public void setInfo (String text, TextEntity[] entities, boolean isTitle) {
+  public void setInfo (String text, TextEntity[] entities, boolean isTitle, int maxLineCount) {
     if (!StringUtils.isEmpty(text)) {
       textView.setVisibility(View.VISIBLE);
+      textView.setMaxLineCount(maxLineCount);
       if (isTitle) {
         textView.setBoldText(text, entities, false);
         textView.setTextSize(19f);

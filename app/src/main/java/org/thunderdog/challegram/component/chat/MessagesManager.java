@@ -185,13 +185,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (TD.isAdmin(member.status)) {
           if (existingIndex >= 0) {
             // Just update the title, if needed
-            if (!StringUtils.equalsOrBothEmpty(existingAdmin.customTitle, Td.getCustomTitle(member.status))) {
-              existingAdmin.customTitle = Td.getCustomTitle(member.status);
+            if (!StringUtils.equalsOrBothEmpty(existingAdmin.customTitle, member.tag)) {
+              existingAdmin.customTitle = member.tag;
               changed = true;
             }
           } else {
             // Add admin
-            chatAdmins.put(userId, new TdApi.ChatAdministrator(userId, Td.getCustomTitle(member.status), TD.isCreator(member.status)));
+            boolean canBeEdited = member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR && ((TdApi.ChatMemberStatusAdministrator) member.status).canBeEdited;
+            chatAdmins.put(userId, new TdApi.ChatAdministrator(userId, member.tag, TD.isCreator(member.status), canBeEdited));
             changed = true;
           }
         } else {
@@ -1350,7 +1351,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         topEndReached = true;
       } else if (!items.isEmpty()) {
         final int accountId = tdlib.id();
-        Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
+        Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageTopicId());
         if (messageId != null && messageId.topEndMessageId != 0) {
           TGMessage topMessage = items.get(items.size() - 1);
           topEndReached = topMessage.isDescendantOrSelf(messageId.topEndMessageId);
@@ -1565,10 +1566,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private static boolean isSupported (@NonNull TdApi.InternalLinkType internalLinkType) {
     // Matches TdlibUi.openInternalLinkType
     switch (internalLinkType.getConstructor()) {
-      case TdApi.InternalLinkTypeBotAddToChannel.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeLiveStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStoryAlbum.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
       case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
@@ -1576,24 +1576,87 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
 
-      case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
-      case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyToncoins.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR:
+
+      case TdApi.InternalLinkTypeCallsPage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeChatSelection.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMyProfilePage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewChannelChat.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewGroupChat.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewPrivateChat.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeOauth.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumGiftPurchase.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeRequestManagedBot.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeSavedMessages.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeSearch.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeTextCompositionStyle.CONSTRUCTOR:
         return false;
 
+      case TdApi.InternalLinkTypeSettings.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeSettings settings = (TdApi.InternalLinkTypeSettings) internalLinkType;
+        if (settings.section != null) {
+          switch (settings.section.getConstructor()) {
+            case TdApi.SettingsSectionAppearance.CONSTRUCTOR: {
+              TdApi.SettingsSectionAppearance appearance = (TdApi.SettingsSectionAppearance) settings.section;
+              switch (appearance.subsection) {
+                case "your-color/profile":
+                case "your-color/profile/add-icons":
+                case "your-color/profile/use-gift":
+                case "your-color/profile/reset":
+                case "your-color/name":
+                case "your-color/name/add-icons":
+                case "your-color/name/use-gift":
+                case "app-icon":
+                case "tap-for-next-media":
+                  return false;
+              }
+              break;
+            }
+            case TdApi.SettingsSectionPrivacyAndSecurity.CONSTRUCTOR: {
+              TdApi.SettingsSectionPrivacyAndSecurity privacyAndSecurity = (TdApi.SettingsSectionPrivacyAndSecurity) settings.section;
+              switch (privacyAndSecurity.subsection) {
+                case "calls/ios-integration":
+                  return false;
+              }
+              break;
+            }
+            case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
+            case TdApi.SettingsSectionSearch.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyStars.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
+            case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
+            case TdApi.SettingsSectionPremium.CONSTRUCTOR:
+            case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
+            case TdApi.SettingsSectionBusiness.CONSTRUCTOR:
+            case TdApi.SettingsSectionInAppBrowser.CONSTRUCTOR:
+            case TdApi.SettingsSectionFeatures.CONSTRUCTOR: {
+              return false;
+            }
+            default: {
+              Td.assertSettingsSection_c6f544dd();
+              break;
+            }
+          }
+        }
+        break;
+      }
+
       default:
-        Td.assertInternalLinkType_eaa9fead();
-        return true;
+        Td.assertInternalLinkType_44babac4();
+        break;
     }
+    return true;
   }
 
   private void filterSponsoredMessages (TdApi.SponsoredMessages sponsoredMessages, RunnableData<TdApi.SponsoredMessages> after) {
@@ -1836,8 +1899,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case MessagesLoader.SPECIAL_MODE_SEARCH:
         return;
     }
-    long messageThreadId = loader.getMessageThreadId();
-    if (messageThreadId != 0 && message.getMessageThreadId() != messageThreadId) {
+    TdApi.MessageTopic topicId = loader.getMessageTopicId();
+    if (!Td.matchesTopic(message.getMessageTopicId(), topicId)) {
       return;
     }
     ThreadInfo messageThread = loader.getMessageThread();
@@ -2313,7 +2376,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   // Collectors
 
-  public MediaStack collectMedias (final long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
+  public MediaStack collectMedias (final long fromMessageId, final boolean isSponsored, @Nullable TdApi.SearchMessagesFilter filter) {
     ArrayList<TGMessage> items = adapter.getItems();
     if (items == null) {
       return null;
@@ -2324,16 +2387,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     AtomicBoolean found = new AtomicBoolean();
     AtomicInteger addedAfter = new AtomicInteger();
 
+    RunnableData<MediaItem> addItem = item -> {
+      if (item != null) {
+        result.add(0, item);
+        if (found.get()) {
+          addedAfter.incrementAndGet();
+        }
+      }
+    };
     RunnableData<TdApi.Message> callback = message -> {
       if (Td.isSecret(message.content))
         return;
       boolean matchesFilter = filter == null || Td.matchesFilter(message, filter);
       MediaItem item = matchesFilter ? MediaItem.valueOf(controller.context(), tdlib, message) : null;
       if (item != null) {
-        result.add(0, item);
-        if (found.get()) {
-          addedAfter.incrementAndGet();
-        }
+        addItem.runWithData(item);
         if (message.id == fromMessageId) {
           found.set(true);
         }
@@ -2341,7 +2409,22 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     };
 
     for (TGMessage parsedMessage : items) {
-      parsedMessage.iterate(callback, true);
+      if (parsedMessage.isSponsoredMessage() != isSponsored) {
+        continue;
+      }
+      if (!isSponsored) {
+        parsedMessage.iterate(callback, true);
+        continue;
+      }
+      if (Td.matchesFilter(parsedMessage.getMessage(), filter)) {
+        MediaItem item = MediaItem.valueOf(controller.context(), tdlib, parsedMessage.getChatId(), parsedMessage.getSponsoredMessage());
+        if (item != null) {
+          addItem.runWithData(item);
+          if (parsedMessage.getId() == fromMessageId) {
+            found.set(true);
+          }
+        }
+      }
     }
 
     if (!found.get()) {
@@ -2559,7 +2642,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (scrollChatId != 0) {
       final int accountId = tdlib.id();
       final long chatId = loader.getChatId();
-      final long messageThreadId = loader.getMessageThreadId();
+      final TdApi.MessageTopic topicId = loader.getMessageTopicId();
       Settings.SavedMessageId savedMessageId = new Settings.SavedMessageId(
         new MessageId(scrollMessageChatId, scrollMessageId, scrollMessageOtherIds),
         scrollOffsetInPixels,
@@ -2567,7 +2650,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         readFully, topEndMessageId
       );
       Settings.instance().setScrollMessageId(accountId,
-        chatId, messageThreadId,
+        chatId, topicId,
         savedMessageId
       );
 
@@ -2981,7 +3064,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     if (highlightMode == HIGHLIGHT_MODE_POSITION_RESTORE) {
       final int accountId = tdlib.id();
-      Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
+      Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageTopicId());
       int offset = messageId != null ? messageId.offsetPixels - scrollMessage.getExtraPadding() : 0;
       this.returnToMessageIds = messageId != null ? messageId.returnToMessageIds : null;
       scrollToPositionWithOffset(index, offset, false);
@@ -3236,8 +3319,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return HIGHLIGHT_MODE_NONE;
     }
     boolean canGoUnread = canGoUnread(chat, threadInfo);
-    long messageThreadId = threadInfo != null ? threadInfo.getMessageThreadId() : 0;
-    Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, chat.id, messageThreadId);
+    Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, chat.id,
+      threadInfo != null ? threadInfo.getMessageTopicId() : null
+    );
     boolean preferUnreadFirst = messageId == null || messageId.readFully;
     if (preferUnreadFirst) {
       if (canGoUnread)
@@ -3260,7 +3344,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     switch (anchorMode) {
       case HIGHLIGHT_MODE_POSITION_RESTORE: {
         Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(
-          accountId, chat.id, threadInfo != null ? threadInfo.getMessageThreadId() : 0
+          accountId, chat.id, threadInfo != null ? threadInfo.getMessageTopicId() : null
         );
         return messageId != null && messageId.id.getMessageId() != 0 ? messageId.id : null;
       }
@@ -3537,8 +3621,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   @Override
-  public void onMessageThreadReadOutbox (long chatId, long messageThreadId, long lastReadOutboxMessageId) {
-    if (chatId == loader.getChatId() && messageThreadId == loader.getMessageThreadId()) {
+  public void onMessageThreadReadOutbox (long chatId, TdApi.MessageTopic topicId, long lastReadOutboxMessageId) {
+    if (chatId == loader.getChatId() && Td.equalsTo(topicId, loader.getMessageTopicId())) {
       TdApi.Chat chat = tdlib.chat(chatId);
       long lastGlobalReadOutboxMessageId = chat != null ? chat.lastReadOutboxMessageId : 0;
       if (lastReadOutboxMessageId > lastGlobalReadOutboxMessageId) {

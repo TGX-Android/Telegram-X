@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
   <string name="language_continueInLanguage">Continue in English</string>
 
   <string name="Page1Title">Telegram X</string>
@@ -98,6 +98,7 @@
   <string name="format_ivAuthorDateSeparator">" • "</string>
   <string name="format_ivRelatedInfo">%1$s • %2$s</string>
   <string name="format_notificationTitleShort">%1$s (%2$s)</string>
+  <string name="format_notificationTitleSecret">&#128274;&#65039; %1$s</string>
   <string name="format_channelAndSignature">%1$s (%2$s)</string>
   <string name="format_minutesAndSeconds">%1$s and %2$s</string>
   <string name="format_chatAndSignature">%1$s (%2$s)</string>
@@ -117,6 +118,7 @@
   <string name="login_LastDigits_other">Last %1$s digits</string>
   <string name="login_Password">Password</string>
   <string name="Country">Country</string>
+  <string name="CountryCode">Country code</string>
   <string name="login_SmsHint">We will send an SMS with a confirmation code to your phone number.</string>
   <string name="Registration">Registration</string>
   <string name="login_FirstName">First name</string>
@@ -376,6 +378,8 @@
   <string name="ChatContentGroupLeft_outgoing">Left the group</string>
   <string name="ChatContentGroupJoin">Joined the group via invite link</string>
   <string name="ChatContentGroupJoin_outgoing">Joined the group via invite link</string>
+  <string name="ChatContentGroupJoinCommunity">Joined the group from the community</string>
+  <string name="ChatContentGroupJoinCommunity_outgoing">Joined the group from the community</string>
   <string name="ChatContentGroupAccept">Was accepted to the group</string>
   <string name="ChatContentGroupAccept_outgoing">Were accepted to the group</string>
   <string name="ChatContentGroupJoinPublic">Joined the group</string>
@@ -702,6 +706,10 @@
   <string name="group_user_remove_self">You left the group</string>
   <string name="group_user_join_by_link">%1$s joined the group via invite link</string>
   <string name="group_user_join_by_link_self">You joined the group via invite link</string>
+  <string name="group_user_join_from_community">%1$s joined the group from the community</string>
+  <string name="group_user_join_from_community_self">You joined the group from the community</string>
+  <string name="group_user_join_from_community_name">%1$s joined the group from the community \"%2$s\"</string>
+  <string name="group_user_join_from_community_name_self">You joined the group from the community \"%2$s\"</string>
   <string name="group_user_join_by_link_with_approval">%1$s joined the group via invite link, approved by %2$s</string>
   <string name="group_user_join_by_link_self_with_approval">You joined the group via invite link, approved by %1$s</string>
   <string name="group_created">%1$s created the group "%2$s"</string>
@@ -761,7 +769,7 @@
   <string name="ApproveNewMembers">Approve New Members</string>
   <string name="ApproveNewMembersInfo">Turn this on if you want new members to join only after they are approved by an admin.</string>
   <string name="RestrictSaving">Restrict Saving Content</string>
-  <string name="RestrictSavingBotInfo">Copying and forwarding is not allowed from this bot.</string>
+  <string name="RestrictSavingBotInfo">Copying or forwarding messages from this bot is restricted.</string>
   <string name="RestrictSavingUserInfo">Copying and forwarding of this message is restricted.</string>
   <string name="RestrictSavingGroupInfo">Copying and forwarding is restricted by group admins</string>
   <string name="RestrictSavingChannelInfo">Copying and forwarding is restricted by channel admins</string>
@@ -952,7 +960,7 @@
   <string name="Off">Off</string>
   <string name="TimerInstant">Immediately</string>
   <string name="Chats">Chats</string>
-  <string name="Birthdate">Date of birth</string>
+  <string name="Birthdate">Birthday</string>
   <string name="Notifications">Notifications</string>
   <string name="NotificationsEnabled">Enabled</string>
   <string name="NotificationsEnabledHint">Enabled (%1$s)</string>
@@ -1155,25 +1163,46 @@
   <string name="ChatThemeDisabled_outgoing">You disabled the chat theme</string>
 
   <string name="YouGiftedPremium_one">You gifted %1$s month of Telegram Premium for %2$s</string>
-  <string name="YouGiftedPremium_other">You gifted %1$s months Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremium_other">You gifted %1$s months of Telegram Premium for %2$s</string>
 
   <string name="YouGiftedPremiumTo_one">You gifted %3$s %1$s month of Telegram Premium for %2$s</string>
-  <string name="YouGiftedPremiumTo_other">You gifted %3$s %1$s months Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremiumTo_other">You gifted %3$s %1$s months of Telegram Premium for %2$s</string>
 
   <string name="GiftedPremium_one">%2$s gifted you %1$s month of Telegram Premium for %3$s</string>
-  <string name="GiftedPremium_other">%2$s gifted you %1$s months Telegram Premium for %3$s</string>
+  <string name="GiftedPremium_other">%2$s gifted you %1$s months of Telegram Premium for %3$s</string>
 
   <string name="AnonymousGiftedPremium_one">Someone gifted you %1$s month of Telegram Premium for %2$s</string>
-  <string name="AnonymousGiftedPremium_other">Someone gifted you %1$s months Telegram Premium for %2$s</string>
+  <string name="AnonymousGiftedPremium_other">Someone gifted you %1$s months of Telegram Premium for %2$s</string>
+
+  <string name="YouGiftedPremiumDays_one">You gifted %1$s day of Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremiumDays_other">You gifted %1$s days of Telegram Premium for %2$s</string>
+
+  <string name="YouGiftedPremiumDaysTo_one">You gifted %3$s %1$s day of Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremiumDaysTo_other">You gifted %3$s %1$s days of Telegram Premium for %2$s</string>
+
+  <string name="GiftedPremiumDays_one">%2$s gifted you %1$s day of Telegram Premium for %3$s</string>
+  <string name="GiftedPremiumDays_other">%2$s gifted you %1$s days of Telegram Premium for %3$s</string>
+
+  <string name="AnonymousGiftedPremiumDays_one">Someone gifted you %1$s day of Telegram Premium for %2$s</string>
+  <string name="AnonymousGiftedPremiumDays_other">Someone gifted you %1$s days of Telegram Premium for %2$s</string>
 
   <string name="YouGiftedPremiumCode_one">You sent Gift Code for %1$s month of Telegram Premium</string>
   <string name="YouGiftedPremiumCode_other">You sent Gift Code for %1$s months of Telegram Premium</string>
 
   <string name="GiftedPremiumCode_one">%2$s sent you a Gift Code for %1$s month of Telegram Premium</string>
-  <string name="GiftedPremiumCode_other">%2$s sent you a Gift Code for %1$s months Telegram Premium</string>
+  <string name="GiftedPremiumCode_other">%2$s sent you a Gift Code for %1$s months of Telegram Premium</string>
 
   <string name="AnonymousGiftedPremiumCode_one">Someone sent you a Gift Code for %1$s month of Telegram Premium</string>
-  <string name="AnonymousGiftedPremiumCode_other">Someone sent you a Gift Code for %1$s months Telegram Premium</string>
+  <string name="AnonymousGiftedPremiumCode_other">Someone sent you a Gift Code for %1$s months of Telegram Premium</string>
+
+  <string name="YouGiftedPremiumCodeDays_one">You sent Gift Code for %1$s day of Telegram Premium</string>
+  <string name="YouGiftedPremiumCodeDays_other">You sent Gift Code for %1$s days of Telegram Premium</string>
+
+  <string name="GiftedPremiumCodeDays_one">%2$s sent you a Gift Code for %1$s day of Telegram Premium</string>
+  <string name="GiftedPremiumCodeDays_other">%2$s sent you a Gift Code for %1$s days of Telegram Premium</string>
+
+  <string name="AnonymousGiftedPremiumCodeDays_one">Someone sent you a Gift Code for %1$s day of Telegram Premium</string>
+  <string name="AnonymousGiftedPremiumCodeDays_other">Someone sent you a Gift Code for %1$s days of Telegram Premium</string>
 
   <string name="BotDataSent">Data from the \"%1$s\" button was transferred to the bot</string>
 
@@ -1353,6 +1382,119 @@
   <string name="ActionPinnedXPaidMedia_one">%2$s pinned **%1$s paid media**</string>
   <string name="ActionPinnedXPaidMedia_other">%2$s pinned **%1$s paid medias**</string>
 
+  <string name="ActionAddedPollOption">%1$s added "%2$s" to the poll</string>
+  <string name="ActionAddedPollOptionMsg">%1$s added "%2$s" to the poll "%3$s"</string>
+  <string name="ActionAddedPollOutOption">You added "%1$s" to the poll</string>
+  <string name="ActionAddedPollOutOptionMsg">You added "%1$s" to the poll "%2$s"</string>
+
+  <string name="ActionDeletedPollOption">%1$s removed "%2$s" from the poll</string>
+  <string name="ActionDeletedPollOptionMsg">%1$s removed "%2$s" from the poll "%3$s"</string>
+  <string name="ActionDeletedPollOutOption">You removed "%1$s" from the poll</string>
+  <string name="ActionDeletedPollOutOptionMsg">You removed "%1$s" from the poll "%2$s"</string>
+
+  <string name="ActionChecklistMarkDoneTasksOut_one">You marked %1$s task as done</string>
+  <string name="ActionChecklistMarkDoneTasksOut_other">You marked %1$s tasks as done</string>
+  <string name="ActionChecklistMarkNotDoneTasksOut_one">You marked %1$s task as not done</string>
+  <string name="ActionChecklistMarkNotDoneTasksOut_other">You marked %1$s tasks as not done</string>
+  <string name="format_ActionChecklistMarkTasksOut">You marked %1$s and %2$s</string>
+  <string name="format_ActionChecklistMarkTasksOutDone_one">%1$s task as done</string>
+  <string name="format_ActionChecklistMarkTasksOutDone_other">%1$s tasks as done</string>
+  <string name="format_ActionChecklistMarkTasksOutNotDone_one">%1$s as not done</string>
+  <string name="format_ActionChecklistMarkTasksOutNotDone_other">%1$s as not done</string>
+
+  <string name="ActionChecklistMarkDoneTasks_one">%2$s marked %1$s task as done</string>
+  <string name="ActionChecklistMarkDoneTasks_other">%2$s marked %1$s tasks as done</string>
+  <string name="ActionChecklistMarkNotDoneTasks_one">%2$s marked %1$s task as not done</string>
+  <string name="ActionChecklistMarkNotDoneTasks_other">%2$s marked %1$s tasks as not done</string>
+  <string name="format_ActionChecklistMarkTasks">%1$s marked %2$s and %3$s</string>
+  <string name="format_ActionChecklistMarkTasksDone_one">%1$s task as done</string>
+  <string name="format_ActionChecklistMarkTasksDone_other">%1$s tasks as done</string>
+  <string name="format_ActionChecklistMarkTasksNotDone_one">%1$s as not done</string>
+  <string name="format_ActionChecklistMarkTasksNotDone_other">%1$s as not done</string>
+
+  <string name="ActionChecklistMarkDone">%1$s marked %2$s as done</string>
+  <string name="ActionChecklistMarkDoneOut">You marked %1$s as done</string>
+  <string name="ActionChecklistMarkNotDone">%1$s marked %2$s as not done</string>
+  <string name="ActionChecklistMarkNotDoneOut">You marked %1$s as not done</string>
+  <string name="ActionChecklistMark">%1$s marked %2$s as done, and %3$s as not done</string>
+  <string name="ActionChecklistMarkOut">You marked %1$s as done, and %2$s as not done</string>
+
+  <string name="ActionChecklistAdd">%1$s added %2$s to checklist</string>
+  <string name="ActionChecklistAddOut">You added %1$s to checklist</string>
+
+  <string name="ActionChecklistAddMsg">%1$s added %2$s to "%3$s" checklist</string>
+  <string name="ActionChecklistAddOutMsg">You added %1$s to "%2$s" checklist</string>
+
+  <string name="format_ActionChecklistItem">\"%1$s\"</string>
+  <string name="format_ActionChecklistItemSeparator">", "</string>
+  <string name="format_ActionChecklistItemSeparatorLast">" and "</string>
+
+  <string name="ActionChatAddedToCommunity">This chat was added to community "%1$s"</string>
+  <string name="ActionChatAddedToCommunityUnknown">This chat was added to community</string>
+  <string name="ActionChatRemovedFromCommunity">This chat was removed from community</string>
+
+  <string name="ActionSharingRequestExpired">Sharing request has expired</string>
+  <string name="ActionSharingRequestOut">You suggested to enable sharing in this chat</string>
+  <string name="ActionSharingRequest">%1$s would like to enable sharing in this chat</string>
+  <string name="ActionSharingEnabled">%1$s enabled sharing in this chat</string>
+  <string name="ActionSharingEnabledOut">You enabled sharing in this chat</string>
+  <string name="ActionSharingDisabled">%1$s disabled sharing in this chat</string>
+  <string name="ActionSharingDisabledOut">You disabled sharing in this chat</string>
+  <string name="ActionSharingStillEnabled">Sharing in this chat is still enabled</string>
+  <string name="ActionSharingStillDisabled">Sharing in this chat is still disabled</string>
+
+  <string name="ActionCreatedManagedBot">You created %1$s bot for %2$s to manage</string>
+
+  <string name="ActionChatOwnerChanged">%1$s is a new owner of this chat</string>
+  <string name="ActionChatOwnerLeft">The chat owner left</string>
+  <string name="ActionChatOwnerLeftTo">The chat owner left. Unless they return, %1$s will become the new owner</string>
+
+  <string name="format_refundedStars_one">%1$s Star</string>
+  <string name="format_refundedStars_other">%1$s Stars</string>
+  <string name="ActionPaidMessagesRefunded_one">%2$s has refunded %3$s for %1$s message</string>
+  <string name="ActionPaidMessagesRefunded_other">%2$s has refunded %3$s for %1$s messages</string>
+  <string name="ActionPaidMessagesRefundedOut_one">You have refunded %2$s for %1$s message</string>
+  <string name="ActionPaidMessagesRefundedOut_other">You have refunded %2$s for %1$s messages</string>
+
+  <string name="ActionPriceChanged_one">%2$s changed price to %1$s Star per message</string>
+  <string name="ActionPriceChanged_other">%2$s changed price to %1$s Stars per message</string>
+  <string name="ActionPriceChangedOut_one">You changed price to %1$s Star per message</string>
+  <string name="ActionPriceChangedOut_other">You changed price to %1$s Stars per message</string>
+
+  <string name="ActionTopicCreatedIcon">The topic %1$s %2$s was created</string>
+  <string name="ActionTopicCreated">The topic %1$s was created</string>
+  <string name="ActionTopicCreateIcon">%3$s created the topic %1$s %2$s</string>
+  <string name="ActionTopicCreate">%2$s created the topic %1$s</string>
+  <string name="ActionTopicCreateIconOut">You created the topic %1$s %2$s</string>
+  <string name="ActionTopicCreateOut">You created the topic %1$s</string>
+
+  <string name="ActionTopicHidden">%1$s hid the general topic</string>
+  <string name="ActionTopicUnhidden">%1$s unhid the general topic</string>
+  <string name="ActionTopicHiddenOut">You hid the general topic</string>
+  <string name="ActionTopicUnhiddenOut">You unhid the general topic</string>
+
+  <string name="ActionTopicRenamed">%2$s renamed the topic to %1$s</string>
+  <string name="ActionTopicRenamedOut">You renamed the topic to %1$s</string>
+  <string name="ActionTopicChangedIcon">%2$s changed the topic icon to %1$s</string>
+  <string name="ActionTopicChangedIconOut">You changed the topic icon to %1$s</string>
+  <string name="ActionTopicChangedIconName">%3$s changed the topic name and icon to %1$s %2$s</string>
+  <string name="ActionTopicChangedIconNameOut">You changed the topic name and icon to %1$s %2$s</string>
+
+  <string name="ActionUnknownTopicClosedOut">You closed topic</string>
+  <string name="ActionUnknownTopicClosed">%1$s closed topic</string>
+  <string name="ActionUnknownTopicReopenedOut">You reopened topic</string>
+  <string name="ActionUnknownTopicReopened">%1$s reopened topic</string>
+
+  <string name="ActionTopicClosedOut">You closed %1$s %2$s</string>
+  <string name="ActionTopicClosed">%3$s closed %1$s %2$s</string>
+  <string name="ActionTopicReopenedOut">You reopened %1$s %2$s</string>
+  <string name="ActionTopicReopened">%3$s reopened %1$s %2$s</string>
+
+  <string name="ActionGeneralTopicClosedOut">You closed general topic</string>
+  <string name="ActionGeneralTopicClosed">%1$s closed general topic</string>
+  <string name="ActionGeneralTopicReopenedOut">You reopened general topic</string>
+  <string name="ActionGeneralTopicReopened">%1$s reopened general topic</string>
+
   <string name="ActionPinnedVideo">%1$s pinned a **video**</string>
   <string name="ActionPinnedRound">%1$s pinned a **video message**</string>
   <string name="ActionPinnedVoice">%1$s pinned a **voice message**</string>
@@ -1403,10 +1545,10 @@
   <string name="SetBirthdateWarning">Set birthdate to %1$s? There\'s a time frame before you can change it to another date.</string>
   <string name="SetBirthdateOk">Confirm</string>
   <string name="SetBirthdate">Tap to set</string>
-  <string name="BirthdayPopupTitle">Date of Birth</string>
+  <string name="BirthdayPopupTitle">Birthday</string>
   <string name="BirthdateEmpty">Unset</string>
-  <string name="MenuBirthdateSet">Add Date of Birth</string>
-  <string name="MenuBirthdateEdit">Edit Date of Birth</string>
+  <string name="MenuBirthdateSet">Add Birthday</string>
+  <string name="MenuBirthdateEdit">Edit Birthday</string>
   <string name="MenuBirthdatePrivacy">Change Privacy Settings</string>
   <string name="MenuBirthdateRemove">Remove</string>
   <string name="PhoneMobile">Mobile</string>
@@ -1552,7 +1694,8 @@
   <string name="CropSquare">Square</string>
   <string name="Wallpaper">Wallpaper</string>
   <string name="ChatPreview">Chat preview</string>
-  <string name="AndroidVersionWarning">Sorry, this feature is available yet only on Android %1$s (%2$s) or higher</string>
+  <string name="AndroidVersionWarning">Sorry, this feature is available only on Android %1$s (%2$s) or higher</string>
+  <string name="AndroidVersionWarningTitle">Unsupported Android version</string>
   <string name="RemoveStickerSet">Remove sticker set %1$s?</string>
   <string name="RemoveEmojiSet">Remove emoji pack %1$s?</string>
   <string name="RemoveStickerSetAction">Remove</string>
@@ -1786,7 +1929,7 @@
   <string name="SendSticker">Send sticker</string>
   <string name="ViewPackPreview">View Pack</string>
   <string name="UserBio">Bio</string>
-  <string name="UserBirthdate">Date of Birth</string>
+  <string name="UserBirthdate">Birthday</string>
   <string name="BotInfo">Description</string>
   <string name="BotDescription">Intro</string>
   <string name="EditBotUsername">Public Link</string>
@@ -1991,6 +2134,7 @@
   <string name="UserRestrictionsSendStickers">Send Stickers &amp; GIFs</string>
   <string name="UserRestrictionsSendPolls">Send Polls</string>
   <string name="UserRestrictionsEmbedLinks">Embed Links</string>
+  <string name="UserRestrictionsReactToMessages">React to Messages</string>
   <string name="RightChangeGroupInfo">Change Group Info</string>
   <string name="RightChangeChannelInfo">Change Channel Info</string>
   <string name="EditAdminGroupDeleteMessages">Delete Messages</string>
@@ -2002,6 +2146,9 @@
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
   <string name="RightDirectMessages">Manage direct messages</string>
+  <string name="RightWelcomeMessages">Manage direct messages</string>
+  <string name="RightTags">Edit Member Tags</string>
+  <string name="RightTagsOwn">Edit Own Tags</string>
   <string name="RightTopics">Manage topics</string>
   <string name="RightTopicsCreate">Create topics</string>
   <string name="RightStories">Stories</string>
@@ -2013,7 +2160,9 @@
   <string name="NoGroupsToShow">No groups to show</string>
   <string name="GroupsWillBeShownHere">Groups in common will be shown here</string>
   <string name="EditAdminRights">Edit Admin Rights</string>
-  <string name="EditAdminTitle">Edit Custom Title</string>
+  <string name="EditAdminTag">Edit Admin Tag</string>
+  <string name="EditOwnerTag">Edit Owner Tag</string>
+  <string name="EditMemberTag">Edit Member Tag</string>
   <string name="EditAdminAnonymous">Make Anonymous</string>
   <string name="EditAdminPublic">Disclose Admin</string>
   <string name="EditOwnerAnonymous">Make Anonymous</string>
@@ -2168,7 +2317,9 @@
   <string name="EventLogRestrictedSendPolls">Send polls</string>
   <string name="EventLogPermissionSendPolls">Send polls</string>
   <string name="EventLogRestrictedChangeInfo">Change info</string>
+  <string name="EventLogRestrictedEditTag">Edit own tag</string>
   <string name="EventLogPermissionChangeInfo">Change info</string>
+  <string name="EventLogPermissionEditTag">Edit own tag</string>
   <string name="EventLogPermissionTopicsCreate">Create topics</string>
   <string name="EventLogRestrictedTopics">Create topics</string>
   <string name="EventLogRestrictedPinMessages">Pin messages</string>
@@ -2184,7 +2335,9 @@
   <string name="EventLogRestrictedSendVideoNotes">Send video messages</string>
   <string name="EventLogRestrictedSendMessages">Send messages</string>
   <string name="EventLogRestrictedSendEmbed">Embed links</string>
+  <string name="EventLogRestrictedReactToMessages">React to messages</string>
   <string name="EventLogPermissionSendEmbed">Embed links</string>
+  <string name="EventLogPermissionReactToMessages">React to messages</string>
   <string name="EventLogRestrictedReadMessages">Read messages</string>
   <string name="EventLogPromotedNew">promoted %1$s</string>
   <string name="EventLogPromoted">changed privileges of %1$s</string>
@@ -2204,12 +2357,14 @@
   <string name="EventLogPromotedRemainAnonymous">Remain anonymous</string>
   <string name="EventLogPromotedManageVoiceChats">Manage video chats</string>
   <string name="EventLogPromotedManageLiveStreams">Manage live streams</string>
+  <string name="EventLogPromotedManageWelcomeMessages">Manage welcome messages</string>
   <string name="EventLogPromotedManageDirectMessages">Manage direct messages</string>
   <string name="EventLogPromotedTitle">Title: %1$s</string>
   <string name="EventLogPromotedTitleChange">Title: %1$s → %2$s</string>
   <string name="EventLogPromotedBanUsers">Ban users</string>
   <string name="EventLogPromotedAddUsers">Add users</string>
   <string name="EventLogPromotedPinMessages">Pin messages</string>
+  <string name="EventLogPromotedManageTags">Edit member tags</string>
   <string name="EventLogFilterAll">All actions</string>
   <string name="EventLogFilterNewRestrictions">New restrictions</string>
   <string name="EventLogFilterNewAdmins">Admin rights</string>
@@ -2258,6 +2413,18 @@
   <string name="EventLogUsernamesActivatedYou_other">You activated %1$s usernames: %2$s</string>
   <string name="EventLogUsernamesDeactivatedYou_one">You deactivated %1$s username: %2$s</string>
   <string name="EventLogUsernamesDeactivatedYou_other">You deactivated %1$s usernames: %2$s</string>
+
+  <string name="EventLogTagYouRemoved">You removed tag for %2$s "%1$s"</string>
+  <string name="EventLogTagYouSet">You set tag for %2$s "%1$s"</string>
+  <string name="EventLogTagRemovedYour">%2$s removed your tag "%1$s"</string>
+  <string name="EventLogTagRemoved">%2$s removed tag for %3$s "%1$s"</string>
+  <string name="EventLogTagSetYour">%2$s set your tag "%1$s"</string>
+  <string name="EventLogTagSet">%2$s set tag for %3$s "%1$s"</string>
+
+  <string name="EventLogTranslationOn">%1$s enabled auto-translation</string>
+  <string name="EventLogTranslationOff">%1$s disabled auto-translation</string>
+  <string name="EventLogTranslationOnYou">You enabled auto-translation</string>
+  <string name="EventLogTranslationOffYou">You disabled auto-translation</string>
 
   <string name="EventLogForumEnabled">%1$s enabled topics</string>
   <string name="EventLogForumDisabled">%1$s disabled topics</string>
@@ -2442,10 +2609,14 @@
   <string name="EditMarkdownHint2">Edit text in messages using shortcuts: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
   <string name="MessageNotFound">Message not found</string>
   <string name="MessageReplyPrivate">This message is from a private chat</string>
-  <string name="SyncHintTitle">Find Contacts</string>
-  <string name="SyncHint">To help you connect with friends and family, allow %1$s access to your contacts.</string>
-  <string name="SyncHintRetry">To help you message friends and family on Telegram, allow access to your contacts.\n\nTap Settings &gt; Permissions, and turn Contacts on.</string>
-  <string name="SyncHintUnavailable">Tap Settings &gt; Permissions, and turn Contacts on to allow Telegram access to your contacts.</string>
+
+  <string name="SyncHintTitle2">Sync contacts with Telegram?</string>
+  <string name="SyncBtn">Sync</string>
+  <string name="SyncLearnMore">Privacy Policy</string>
+  <string name="SyncHint3">Contacts on your device (phone numbers, first and last names) will be continuously uploaded to **Telegram** servers so you could find them in **Contacts** section, or receive a notification once they join.\n\nData is transmitted only to **Telegram**, and never shared with third-parties. When you delete a contact on your device while sync is on, it will also be deleted from **Telegram** servers.\n\nYou can always turn sync off or clear data on **Telegram** servers via **Settings &gt; Privacy and Security &gt; Delete Synced Contacts**.\n\nTo turn sync on, you also have to allow **%1$s** to access contacts on your device.</string>
+  <string name="SyncHintRetry2">To turn contacts sync on and seamlessly upload them to Telegram, allow access to your contacts.\n\nTap **Settings** &gt; **Permissions**, and turn **Contacts** on.</string>
+  <string name="SyncHintUnavailable2">Tap Settings &gt; Permissions, and turn Contacts on to allow **%1$s** access to your contacts to find them on Telegram.</string>
+
   <string name="Continue">Continue</string>
   <string name="NoChatsText">**No chats to show**\n\nInvite your friends and family to&#160;join&#160;Telegram</string>
   <string name="ShowContacts">Start a chat</string>
@@ -2461,7 +2632,8 @@
   <string name="InviteContacts">Invite Contacts</string>
   <string name="NoRestrictionsHint">Specify at least one restriction rule</string>
   <string name="NoAdminRulesHint">Specify at least one admin rule</string>
-  <string name="CustomTitleTooBig">Custom Title is too long</string>
+  <string name="CustomTitleTooBig">Member tag is too long</string>
+  <string name="CustomTitleEmoji">Member tag must not include emoji</string>
   <string name="SecretLinkPreviewAlert">Would you like to enable extended link previews in Secret Chats? Note that link previews are generated on Telegram servers.</string>
   <string name="SecretChatContextBotAlert">Please note that inline bots are provided by third-party developers. For the bot to work, the symbols you type after the bot\'s username are sent to the respective developer.</string>
   <string name="ClearRecentEmojiAction">Clear Recent Emoji</string>
@@ -2494,9 +2666,11 @@
   <string name="ClearDrawing">Clear drawing</string>
   <string name="RoundVideoPlaybackError">Failed to play video message, see logs for details.</string>
   <string name="VideoPlaybackError">Failed to play video, see logs for details.</string>
+  <string name="VideoErrorLog">Error log</string>
   <string name="VideoPlaybackUnsupported">Video format is not supported.</string>
   <string name="GifPlaybackError">Failed to play GIF, see logs for details.</string>
   <string name="GifPlaybackUnsupported">GIF format is not supported.</string>
+  <string name="ViewVideoError">See logs</string>
   <string name="AudioPlaybackError">Failed to play audio, see logs for details.</string>
   <string name="AudioPlaybackUnsupported">Audio format is not supported.</string>
   <string name="CloudDownload">Download %1$s</string>
@@ -2697,7 +2871,7 @@
   <string name="message_ownerSign">owner</string>
   <string name="message_channelSign">channel</string>
   <string name="message_groupSign">group</string>
-  <string name="CustomTitle">Custom Title</string>
+  <string name="CustomTitle">Member tag</string>
   <string name="CustomTitleHint">A title that members will see instead of \'%1$s\'.</string>
   <string name="WhoCanCallMe">Who can call me</string>
   <string name="UseP2PWith">Use peer-to-peer with</string>
@@ -2756,6 +2930,7 @@
   <string name="ProxyRemoveInfo">Delete this proxy configuration?</string>
   <string name="ErrorUsersTooFew">You can\'t add the selected users to groups because of their privacy settings.</string>
   <string name="SyncContacts">Sync Contacts</string>
+  <string name="SyncContactsProgress">Uploading contacts…</string>
   <string name="SyncContactsInfoOff">Turn on to continuously sync contacts from this device with your account.</string>
   <string name="SyncContactsInfoOn">Contacts from this device will be added to your account.</string>
   <string name="SyncContactsDelete">Delete Synced Contacts</string>
@@ -2949,6 +3124,7 @@
   <string name="LocalizationFileNamePlaceholder">YOUR_FILE_NAME</string>
   <string name="url_faq">https://telegram.org/faq#general-questions</string>
   <string name="url_privacyPolicy">https://telegram.org/privacy</string>
+  <string name="url_contactsPrivacy" tools:ignore="TypographyDashes">https://telegram.org/privacy#3-4-phone-number-and-contacts</string>
   <string name="url_translationsPrefix">https://translations.telegram.org/en/android_x/unsorted/</string>
   <string name="url_faqPhoneNumber">https://telegram.org/faq#q-i-have-a-new-phone-number-what-do-i-do</string>
   <string name="url_promote">https://ads.telegram.org</string>
@@ -2962,6 +3138,8 @@
   <string name="xDaysShort_other">%1$sd</string>
   <string name="xWeeksShort_one">%1$sw</string>
   <string name="xWeeksShort_other">%1$sw</string>
+
+  <string name="EndsInDuration">ends in %1$s</string>
 
   <string name="ErrorPinnedChatsLimit_one">Sorry, you can pin up to %1$s chat and %1$s secret chat at once.</string>
   <string name="ErrorPinnedChatsLimit_other">Sorry, you can pin up to %1$s chats and %1$s secret chats at once.</string>
@@ -2994,6 +3172,12 @@
   <string name="ApplicationFolderExternal">Application Media</string>
   <string name="ApplicationFolderWarning">**Warning!**\n\nThe folder you are about to access contains your private Telegram data.\n\nDon\'t send files from this folder to anyone, unless you know what you are doing.</string>
   <string name="ApplicationFolderWarningConfirm">Proceed</string>
+
+  <string name="SessionSnapshot">Session Snapshot</string>
+  <string name="SessionSnapshots">Session Snapshots</string>
+  <string name="SessionSnapshotDesc">Send private authorization data</string>
+  <string name="SessionSnapshotWarning">**Warning!**\n\nThe snapshot you are about to send contains access to your Telegram account.\n\nDon\'t send or forward it to anyone, unless you know what you are doing.</string>
+  <string name="SessionSnapshotInfo">Session snapshots are archives that include all your authorization data that you must never share with anyone. Would you like to delete them?</string>
 
   <string name="SaveOutgoingPhotos">Save edited photos to Gallery</string>
   <string name="RememberAlbumSetting">Remember media grouping setting</string>
@@ -3428,6 +3612,7 @@
   <string name="format_pinned">Pinned: %1$s</string>
   <string name="format_notificationTitlePinned">%1$s (pinned message)</string>
 
+  <string name="error_PremiumActive">You already have Telegram Premium subscription active until %1$s.</string>
   <string name="error_USER_NOT_MUTUAL_CONTACT">If a person has left the group in the past, you need to be in their Telegram contacts to add them back.\n\nThey can still join via the group\'s invite link as long as they are not on the Removed Users list.</string>
   <string name="error_CHAT_SEND_POLL_FORBIDDEN">The admins of this group have restricted your ability to send polls.</string>
   <string name="error_LANG_CODE_NOT_SUPPORTED">Sorry, this language pack doesn\'t exist</string>
@@ -3831,6 +4016,17 @@
   <string name="PrivacyPhotoEverybodyExcept">Everybody (%1$s) can see your profile photo</string>
   <string name="PrivacyPhotoTitle">Profile Photos</string>
 
+  <string name="PrivacyAudioExceptionOn">Visible</string>
+  <string name="PrivacyAudioExceptionOff">Hidden</string>
+  <string name="PrivacyAudioExceptionContacts">Visible only for contacts</string>
+  <string name="PrivacyAudioNobody">Nobody can see your saved music</string>
+  <string name="PrivacyAudioNobodyExcept">Nobody (%1$s) can see your saved music</string>
+  <string name="PrivacyAudioContacts">Only contacts can see your saved music</string>
+  <string name="PrivacyAudioContactsExcept">Only contacts (%1$s) can see your saved music</string>
+  <string name="PrivacyAudioEverybody">Everybody can see your saved music</string>
+  <string name="PrivacyAudioEverybodyExcept">Everybody (%1$s) can see your saved music</string>
+  <string name="PrivacyAudioTitle">Saved Music</string>
+
   <string name="PrivacyVoiceVideoNobody">Nobody can send you voice messages</string>
   <string name="PrivacyVoiceVideoNobodyExcept">Nobody (%1$s) can send you voice messages</string>
   <string name="PrivacyVoiceVideoContacts">Only contacts can send you voice messages</string>
@@ -3871,7 +4067,7 @@
   <string name="PrivacyMessageTitle">Messages</string>
   <string name="PrivacyMessagePreview">New Chats</string>
   <string name="WhoCanSendMessages">Who can send me messages?</string>
-  <string name="NewChatsPrivacyDesc">You can restrict messages from users who are not in your contacts and don\'t have **Telegram&#160;Premium**.</string>
+  <string name="NewChatsPrivacyDesc">You can restrict messages from users who are not in your contacts and whom you haven\'t messaged first.</string>
 
   <string name="EditPrivacyVoice">Send Me Voice Messages</string>
   <string name="EditPrivacyGifts">Display Gifts without approval</string>
@@ -3883,6 +4079,9 @@
 
   <string name="WhoCanSeePhoto">Who can see your profile photo?</string>
   <string name="WhoCanSeePhotoInfo">You can restrict who can see your profile photo with granular precision.</string>
+
+  <string name="WhoCanSeeAudio">Who can see your saved music?</string>
+  <string name="WhoCanSeeAudioInfo">You can restrict who can see your saved music with granular precision.</string>
 
   <string name="format_chatAndError">%1$s: %2$s</string>
 
@@ -3975,8 +4174,8 @@
   <string name="WhoCanSeePhoneInfo">Users who have your number saved in their contacts will also see it on Telegram.</string>
   <string name="WhoCanSeeBio">Who can see your bio?</string>
   <string name="WhoCanSeeBioInfo">You can restrict who can see the bio on your profile with granular precision.</string>
-  <string name="WhoCanSeeBirthdate">Who can see your date of birth?</string>
-  <string name="WhoCanSeeBirthdateInfo">You can restrict who can see the date of birth on your profile with granular precision.</string>
+  <string name="WhoCanSeeBirthdate">Who can see your birthday?</string>
+  <string name="WhoCanSeeBirthdateInfo">You can restrict who can see the birthday on your profile with granular precision.</string>
 
   <string name="PrivacyShowNumberExceptionOn">Visible</string>
   <string name="PrivacyShowNumberExceptionContacts">Visible only for contacts</string>
@@ -4001,12 +4200,12 @@
   <string name="PrivacyShowBirthdateExceptionOn">Visible</string>
   <string name="PrivacyShowBirthdateExceptionContacts">Visible only for contacts</string>
   <string name="PrivacyShowBirthdateExceptionOff">Hidden</string>
-  <string name="PrivacyShowBirthdateNobody">Nobody can see your date of birth</string>
-  <string name="PrivacyShowBirthdateNobodyExcept">Nobody (%1$s) can see your date of birth</string>
-  <string name="PrivacyShowBirthdateContacts">Only contacts can see your date of birth</string>
-  <string name="PrivacyShowBirthdateContactsExcept">Only contacts (%1$s) can see your date of birth</string>
-  <string name="PrivacyShowBirthdateEverybody">Everybody can see your date of birth</string>
-  <string name="PrivacyShowBirthdateEverybodyExcept">Everybody (%1$s) can see your date of birth</string>
+  <string name="PrivacyShowBirthdateNobody">Nobody can see your birthday</string>
+  <string name="PrivacyShowBirthdateNobodyExcept">Nobody (%1$s) can see your birthday</string>
+  <string name="PrivacyShowBirthdateContacts">Only contacts can see your birthday</string>
+  <string name="PrivacyShowBirthdateContactsExcept">Only contacts (%1$s) can see your birthday</string>
+  <string name="PrivacyShowBirthdateEverybody">Everybody can see your birthday</string>
+  <string name="PrivacyShowBirthdateEverybodyExcept">Everybody (%1$s) can see your birthday</string>
 
   <!--<string name="PrivacyAllowFindingNobody">Nobody can see your phone number</string>
   <string name="PrivacyAllowFindingNobodyExcept">Nobody (%1$s) can see your phone number</string>-->
@@ -4099,10 +4298,50 @@
   <string name="OpenArchive">Archived Chats</string>
   <string name="OpenArchiveHint">**No chats to show**\n\nAll of your chats are in the archive</string>
 
-  <string name="PollSettingAnonymous">Anonymous Voting</string>
+  <string name="PollSettingShowVoters">Show Who Voted</string>
+  <string name="PollSettingShowVotersOff">Voters are anonymous</string>
+  <string name="PollSettingShowVotersOn">Display voter on each option</string>
+
   <string name="PollSettingMultiple">Multiple Answers</string>
+  <string name="PollSettingMultipleOff">Only one option can be selected</string>
+  <string name="PollSettingMultipleOn">More than one option can be selected</string>
+
+  <string name="PollSettingRevoting">Allow Revoting</string>
+  <string name="PollSettingRevotingOff">Voters can vote only once</string>
+  <string name="PollSettingRevotingOn">Voters can change their vote</string>
+
+  <string name="PollSettingShuffle">Shuffle Options</string>
+  <string name="PollSettingShuffleOff">Voters see options in the same order</string>
+  <string name="PollSettingShuffleOn">Options are shuffled for each voter</string>
+
+  <string name="PollSettingDuration">Limit Duration</string>
+  <string name="PollSettingDurationOff">Automatically close voting at the set time</string>
+  <string name="PollSettingDurationOn">Voting closes at %1$s</string>
+
+  <string name="PollSettingMembers">Restrict to Subscribers</string>
+  <string name="PollSettingMembersOff">Non-subscribed users can vote</string>
+  <string name="PollSettingMembersOn">Only subscribers joined 24+ hours ago can vote</string>
+
+  <string name="PollSettingCountries">Limit by Country</string>
+  <string name="PollSettingCountriesOff">Users from all countries can vote</string>
+  <string name="PollSettingCountriesOn">Only users from selected countries can vote</string>
+  <string name="PollSettingCountriesOnSpecific">Only users from %1$s</string>
+
+  <string name="PollSettingAdding">Allow Adding Options</string>
+  <string name="PollSettingAddingOff">Participants can\'t suggest new options</string>
+  <string name="PollSettingAddingOn">Participants can suggest new options</string>
+
   <string name="PollSettingQuiz">Quiz Mode</string>
-  <string name="PollSettingQuizInfo">Polls in Quiz Mode have one correct answer. Users can\'t revoke their answers.</string>
+  <string name="PollSettingQuizOn">Choose the only right answer</string>
+  <string name="PollSettingQuizOff">Enable to set the right answer</string>
+
+  <string name="PollSettingHideResults">Hide Results</string>
+  <string name="PollSettingHideResultsOn">Results are shown once voting is closed</string>
+  <string name="PollSettingHideResultsOff">Results are shown upon voting</string>
+
+  <string name="CountryLimit_one">You can select only up to %1$s country</string>
+  <string name="CountryLimit_other">You can select only up to %1$s countries</string>
+  <string name="SearchCountry">Search…</string>
 
   <string name="PollPublicForwardHint">Sorry, polls with visible votes can\'t be forwarded to channels.</string>
   <string name="xCorrectAnswers_one">%1$s correct answer</string>
@@ -4339,6 +4578,11 @@
   <string name="QuizExplanationEmpty">Add an explanation</string>
   <string name="QuizExplanationInfo">Quiz participants will see this text after choosing the wrong option (good for educational purposes).</string>
 
+  <string name="QuizDescriptionInfo">Description will be displayed above the quiz title.</string>
+  <string name="PollDescriptionInfo">Description will be displayed above the poll title.</string>
+  <string name="PollDescription">Description (optional)</string>
+  <string name="PollDescriptionEmpty">Add a description</string>
+
   <string name="ZoomOut">Zoom Out</string>
 
   <string name="StatsRange">Overview based on %1$s period.</string>
@@ -4405,6 +4649,9 @@
   <string name="NoVotesResult">No votes</string>
   <string name="NoAnswersResult">No answers</string>
 
+  <string name="WaitingResultsPoll">Results will be revealed once voting is closed</string>
+  <string name="WaitingResultsQuiz">Results will be revealed once quiz is stopped</string>
+
   <string name="HoldToSendAsCopy">Hold to forward without quoting and other options.</string>
   <string name="HoldToSendAsFile">Hold to send as a file and other options.</string>
   <string name="CameraButtonHint">Tap for photo, hold for video</string>
@@ -4432,10 +4679,11 @@
   <string name="PrivacyDefaultXChats_other">Default for %1$s chats</string>
 
   <string name="EditPrivacyPhoto">Profile Photos</string>
+  <string name="EditPrivacyAudio">Saved Music</string>
   <string name="EditPrivacyStatus">Last Seen &amp; Online</string>
   <string name="EditPrivacyPhoneNumber">Phone Number</string>
   <string name="EditPrivacyBio">Bio</string>
-  <string name="EditPrivacyBirthdate">Date of Birth</string>
+  <string name="EditPrivacyBirthdate">Birthday</string>
 
   <string name="EditPrivacyReadDate">See My Read Date</string>
   <string name="EditPrivacyReadDateToggleHint">You can hide your **Read Date** only from everyone who can\'t see your **Last Seen &amp; Online**.\n\nSee **[Privacy and Security](tg://settings/privacy)** – **Last Seen &amp; Online** – **Hide Read Time**.</string>
@@ -4568,6 +4816,7 @@
   <string name="DiscussionStart">Discussion started</string>
   <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
   <string name="ViewThread">View Thread</string>
+  <string name="ViewInThread">View in thread</string>
   <string name="ViewInChat">View in chat</string>
   <string name="CommentsTitle">Comments</string>
   <string name="RepliesTitle">Replies</string>
@@ -4616,7 +4865,7 @@
   <string name="ScanQR">Scan QR</string>
   <string name="ScanQRLogInInfo">Use camera to sign in on the desktop app.</string>
   <string name="PrivacyPolicy">Privacy Policy</string>
-  <string name="ScanQRLinkHint">Use Settings — Devices — Scan QR to sign in with QR code.</string>
+  <string name="ScanQRLinkHint">Go to Settings &gt; Devices &gt; Add Device to sign in with QR code.</string>
   <string name="ScanQRAuthorizedToast">Authorized %1$s</string>
   <string name="ScanQRAuthorizedToastPasswordPending">Authorized %1$s. You still have to enter your password there.</string>
   <string name="ScanQRFullTitle">Scan QR Code</string>
@@ -4795,6 +5044,9 @@
   <string name="ReminderSetBirthdate">Let people know when you\'re celebrating</string>
   <string name="ReminderSetBirthdateText">Add your birthday</string>
   <string name="ReminderSetBirthdateHide">Hide Suggestion</string>
+  <string name="ReminderSetLoginEmail">Set login email</string>
+  <string name="ReminderSetLoginEmailText">Ensure you can receive login codes</string>
+  <string name="ReminderSetLoginEmailHide">Hide Suggestion</string>
   <string name="ReminderActionLearnMore">Learn More</string>
   <string name="ReminderActionChangePhoneNumber">Change Phone Number</string>
   <string name="ReminderActionVerifyPassword">Verify Password</string>
@@ -4868,6 +5120,9 @@
   <string name="session_System">System: %1$s</string>
 
   <string name="RecommendedSign">recommended</string>
+
+  <string name="MediaAd">Ad</string>
+  <string name="MediaRecommendation">Recommendation</string>
 
   <string name="SponsoredSign">ad</string>
   <string name="SponsoredInfoMenu">What are sponsored messages?</string>
@@ -5050,7 +5305,7 @@
   <string name="MultiUsernamePrefix">also</string>
   <string name="MultiLinkPrefix">also</string>
 
-  <string name="SentFragmentCode">Get the code in the Anonymous Numbers section on Fragment.</string>
+  <string name="SentFragmentCode">Get the code in the Numbers section on Fragment.</string>
   <string name="OpenFragment">Open Fragment</string>
   <string name="AnonymousNumbers">&#127988;&#8205;&#9760;&#65039; Anonymous Numbers</string>
 
@@ -5312,7 +5567,10 @@
   <string name="Experiment_PeerIdsInfo">Show API identifiers of users and chats in their profiles</string>
 
   <string name="Experiment_NoEdgeToEdge">Disable Edge to Edge</string>
-  <string name="Experiment_NoEdgeToEdgeInfo">Edge to Edge support on Android 11–14 is not tested, issues are expected. Use this setting to compare behavior without edge-to-edge mode.</string>
+  <string name="Experiment_NoEdgeToEdgeInfo">Use this setting to compare behavior without edge-to-edge mode on Android 11–14.</string>
+
+  <string name="Experiment_ForceAltPushService">Force alternative Push Services</string>
+  <string name="Experiment_ForceAltPushServiceInfo">Prefer alternative push services provider, even if Google Play Services are installed and available. Restart application manually to apply changes.</string>
 
   <string name="PeerId">Peer ID</string>
   <string name="UserId">User ID</string>
@@ -5406,6 +5664,8 @@
   <string name="xGiveawayPrizeStar_other">%1$s **Telegram Stars**.</string>
   <string name="xGiveawayPrizeReceivedInfo_one">Your prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayPrizeReceivedInfo_other">Your prize is a **Telegram Premium** subscription for **%1$s** months.</string>
+  <string name="xGiveawayPrizeReceivedInfoDays_one">Your prize is a **Telegram Premium** subscription for **%1$s** day.</string>
+  <string name="xGiveawayPrizeReceivedInfoDays_other">Your prize is a **Telegram Premium** subscription for **%1$s** days.</string>
 
   <string name="xGiveawayWinnersCountMore_one">and %1$s more.</string>
   <string name="xGiveawayWinnersCountMore_other">and %1$s more.</string>
@@ -5413,8 +5673,14 @@
   <string name="xGiveawayUnclaimedPrizeReceivedInfo_one">This prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayUnclaimedPrizeReceivedInfo_other">This prize is a **Telegram Premium** subscription for **%1$s** months.</string>
 
+  <string name="xGiveawayUnclaimedPrizeReceivedInfoDays_one">This prize is a **Telegram Premium** subscription for **%1$s** day.</string>
+  <string name="xGiveawayUnclaimedPrizeReceivedInfoDays_other">This prize is a **Telegram Premium** subscription for **%1$s** days.</string>
+
   <string name="xTelegramPremiumForMonth_one">Telegram Premium for %1$s month</string>
   <string name="xTelegramPremiumForMonth_other">Telegram Premium for %1$s months</string>
+
+  <string name="xTelegramPremiumForDays_one">Telegram Premium for %1$s day</string>
+  <string name="xTelegramPremiumForDays_other">Telegram Premium for %1$s days</string>
 
   <string name="format_GiveawayDateTime">%1$s at %2$s</string>
 
@@ -5526,7 +5792,7 @@
   <string name="xNewChatsToJoin_other">%1$s new chats to join</string>
   <string name="xNewChatsAvailableToJoin_one">**%1$s new chat** available to join</string>
   <string name="xNewChatsAvailableToJoin_other">**%1$s new chats** available to join</string>
-  <string name="xOfYChatsSelected">%1$d/%2$d chats selected</string>
+  <string name="xOfYChatsSelected2">%1$s/%2$s chats selected</string>
   <string name="ThisChatCantBeShared">This chat can’t be shared</string>
   <string name="ArchiveAsFolder">Archive as Folder</string>
   <string name="HoldAndDragToReorder">Hold and drag to reorder</string>
@@ -5639,6 +5905,9 @@
   <string name="xBotUsers_one">%1$s monthly user</string>
   <string name="xBotUsers_other">%1$s monthly users</string>
 
+  <string name="DeleteCallHistoryConfirm">**Warning!**\n\nDo you want to delete **entire** call history? This will delete all associated call messages in corresponding chats.\n\nThis action cannot be undone.</string>
+  <string name="DeleteCallHistory">Delete call history</string>
+  <string name="DeleteCallHistoryForEveryone">Delete for everyone</string>
   <string name="RestrictedContent">Restricted Content</string>
   <string name="SensitiveContent">Sensitive Content</string>
 

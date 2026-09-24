@@ -805,7 +805,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
   public void onProxyAvailabilityChanged (boolean isAvailable) { }
 
   @Override
-  public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
+  public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.Proxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
     int oldIndex = indexOfProxy(effectiveProxyId);
     // resetProxyConnection(oldIndex);
     if (!isCurrent) {

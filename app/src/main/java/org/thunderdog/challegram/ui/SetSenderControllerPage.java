@@ -353,6 +353,9 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
 
   @Override
   public boolean performOnBackPressed (boolean fromTop, boolean commit) {
+    if (super.performOnBackPressed(fromTop, commit)) {
+      return true;
+    }
     if (inSearchMode()) {
       if (commit) {
         closeSearchMode(null);

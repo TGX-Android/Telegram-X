@@ -1,0 +1,22 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <application>
+    <service
+      android:name="tgx.extension.hms.HuaweiPushListenerService"
+      android:exported="false"
+      android:foregroundServiceType="dataSync|remoteMessaging">
+      <intent-filter>
+        <action android:name="com.huawei.push.action.MESSAGING_EVENT"/>
+      </intent-filter>
+    </service>
+  </application>
+
+  <queries>
+    <intent>
+      <action android:name="com.huawei.hms.core.aidlservice" />
+    </intent>
+  </queries>
+
+</manifest>

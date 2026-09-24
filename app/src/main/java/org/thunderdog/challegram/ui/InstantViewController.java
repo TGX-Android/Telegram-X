@@ -188,7 +188,7 @@ public class InstantViewController extends ViewController<InstantViewController.
           return;
         boolean isOpen = ((PageBlockRichText) pageBlock).toggleDetailsOpened();
         if (isOpen) {
-          final ArrayList<PageBlock> blocks;
+          final List<PageBlock> blocks;
           try {
             blocks = PageBlock.parse(this, getUrl(), getArgumentsStrict().instantView, pageBlock, this, null);
           } catch (Throwable t) {
@@ -347,7 +347,7 @@ public class InstantViewController extends ViewController<InstantViewController.
 
   @Override
   protected View onCreateView (Context context) {
-    ArrayList<PageBlock> pageBlocks;
+    List<PageBlock> pageBlocks;
     try {
       pageBlocks = parsePageBlocks(getArgumentsStrict().instantView);
     } catch (PageBlock.UnsupportedPageBlockException e) {
@@ -368,7 +368,7 @@ public class InstantViewController extends ViewController<InstantViewController.
 
     recyclerView.addItemDecoration(new FillingDecoration(recyclerView, this) {
       @Override
-      protected int getFillingColor (int i, @NonNull View view) {
+      protected int getFillingColor (RecyclerView parent, int i, @NonNull View view) {
         PageBlock pageBlock = getPageBlock(view);
         int colorId = pageBlock != null ? pageBlock.getBackgroundColorId() : ColorId.NONE;
         if (colorId == ColorId.NONE) {
@@ -458,11 +458,11 @@ public class InstantViewController extends ViewController<InstantViewController.
     }
   }
 
-  private ArrayList<PageBlock> parsePageBlocks (TdApi.WebPageInstantView instantView) throws PageBlock.UnsupportedPageBlockException {
+  private List<PageBlock> parsePageBlocks (TdApi.WebPageInstantView instantView) throws PageBlock.UnsupportedPageBlockException {
     return PageBlock.parse(this, getUrl(), instantView, null, this, null);
   }
 
-  private void buildCells (ArrayList<PageBlock> blocks, boolean isReplace) {
+  private void buildCells (List<PageBlock> blocks, boolean isReplace) {
     Args args = getArgumentsStrict();
     final TdApi.WebPageInstantView instantView = args.instantView;
 
@@ -499,7 +499,7 @@ public class InstantViewController extends ViewController<InstantViewController.
               UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
               UI.openUrl(getUrl());
             } else {
-              ArrayList<PageBlock> pageBlocks;
+              List<PageBlock> pageBlocks;
               try {
                 pageBlocks = parsePageBlocks(instantView);
               } catch (PageBlock.UnsupportedPageBlockException ignored) {

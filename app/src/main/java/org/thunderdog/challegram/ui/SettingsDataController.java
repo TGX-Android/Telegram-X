@@ -367,7 +367,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
   }
 
   @Override
-  public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
+  public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.Proxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
     if (isCurrent) {
       adapter.updateValuedSettingById(R.id.btn_proxy);
     }

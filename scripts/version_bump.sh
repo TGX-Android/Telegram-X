@@ -4,6 +4,8 @@ set -e
 PROPERTY_NAME=${1:-version.app}
 VERSION_FILE=${2:-version.properties}
 
+git fetch origin -q && git reset -q --hard origin/main
+
 if [[ ! -f "$VERSION_FILE" ]]; then
   echo "version.properties not found! (Are you in the root folder?)" >&2; exit 1
 fi
@@ -35,5 +37,4 @@ fi
 
 echo "$COMMIT_MESSAGE"
 
-git commit --only "$VERSION_FILE" -m "$COMMIT_MESSAGE"
-git push
+git commit --only "$VERSION_FILE" -m "$COMMIT_MESSAGE" && git push

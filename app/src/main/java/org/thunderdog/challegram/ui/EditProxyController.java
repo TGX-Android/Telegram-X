@@ -148,7 +148,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     adapter.setTextChangeListener(this);
 
     final Settings.Proxy localProxy = getArgumentsStrict().existingProxy;
-    final TdApi.InternalLinkTypeProxy proxy = localProxy != null ? localProxy.proxy : null;
+    final TdApi.Proxy proxy = localProxy != null ? localProxy.proxy : null;
     final int mode = getArgumentsStrict().mode;
 
     int baseFillCount = 2;
@@ -293,34 +293,29 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     }
   }
 
-  private void addProxy (@NonNull TdApi.InternalLinkTypeProxy proxy) {
+  private void addProxy (@NonNull TdApi.Proxy proxy) {
     setInProgress(true);
     // Calling TDLib method just to validate input
-    tdlib.client().send(new TdApi.AddProxy(proxy.server, proxy.port, false, proxy.type), result -> runOnUiThreadOptional(() -> {
+    tdlib.send(new TdApi.AddProxy(proxy, false, ""), (addedProxy, error) -> runOnUiThreadOptional(() -> {
       setInProgress(false);
-      switch (result.getConstructor()) {
-        case TdApi.Proxy.CONSTRUCTOR: {
-          int proxyId = getArgumentsStrict().existingProxy != null ? getArgumentsStrict().existingProxy.id : Settings.PROXY_ID_NONE;
-          // Assuming values passed to AddProxy do not differ from the received TdApi.Proxy object
-          Settings.instance().addOrUpdateProxy(proxy, null, true, proxyId);
-          if (navigationController != null) {
-            ViewController<?> c = navigationController.getPreviousStackItem();
-            if (c != null && c.getId() != R.id.controller_proxyList) {
-              navigationController.getStack().insertBack(new SettingsProxyController(context, tdlib));
-            }
+      if (error != null) {
+        String errorText = TD.toErrorString(error);
+        context.tooltipManager()
+          .builder(getDoneButton())
+          .icon(R.drawable.baseline_warning_24)
+          .show(tdlib, errorText)
+          .hideDelayed();
+      } else {
+        int proxyId = getArgumentsStrict().existingProxy != null ? getArgumentsStrict().existingProxy.id : Settings.PROXY_ID_NONE;
+        // Assuming values passed to AddProxy do not differ from the received TdApi.Proxy object
+        Settings.instance().addOrUpdateProxy(proxy, null, true, proxyId);
+        if (navigationController != null) {
+          ViewController<?> c = navigationController.getPreviousStackItem();
+          if (c != null && c.getId() != R.id.controller_proxyList) {
+            navigationController.getStack().insertBack(new SettingsProxyController(context, tdlib));
           }
-          navigateBack();
-          break;
         }
-        case TdApi.Error.CONSTRUCTOR: {
-          String errorText = TD.toErrorString(result);
-          context.tooltipManager()
-            .builder(getDoneButton())
-            .icon(R.drawable.baseline_warning_24)
-            .show(tdlib, errorText)
-            .hideDelayed();
-          break;
-        }
+        navigateBack();
       }
     }));
   }
@@ -360,7 +355,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
       default:
         throw new IllegalStateException();
     }
-    addProxy(new TdApi.InternalLinkTypeProxy(server, StringUtils.parseInt(port), type));
+    addProxy(new TdApi.Proxy(server, StringUtils.parseInt(port), type));
     return true;
   }
 }

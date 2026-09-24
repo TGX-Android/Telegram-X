@@ -61,7 +61,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.BackEventCompat;
-import androidx.activity.ComponentActivity;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -164,7 +163,6 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import nl.dionsegijn.konfetti.xml.KonfettiView;
-import tgx.app.RecaptchaContext;
 import tgx.app.RecaptchaProviderRegistry;
 
 @SuppressWarnings("deprecation")
@@ -183,7 +181,6 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   protected @Nullable DrawerController drawer;
   protected OverlayView overlayView;
   protected Invalidator invalidator;
-  protected RecaptchaContext recaptcha;
 
   private final ReferenceList<ActivityListener> activityListeners = new ReferenceList<>();
 
@@ -242,6 +239,8 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
           return new ClickBait(R.drawable.baseline_sim_card_alert_14, true);
         case Tdlib.ResolvableProblem.SET_BIRTHDATE:
           return new ClickBait(R.drawable.baseline_cake_variant_14, false);
+        case Tdlib.ResolvableProblem.SET_LOGIN_EMAIL:
+          return new ClickBait(R.drawable.baseline_alternate_email_14, false);
       }
     }
     return null;
@@ -357,15 +356,7 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
       }
       onTdlibChanged();
       runEmulatorChecks();
-      if (tdlib.isUnauthorized()) {
-        // Pre-initialize recaptcha to possibly save some initialization time.
-        recaptcha.initialize();
-      }
     }
-  }
-
-  public final RecaptchaContext recaptche () {
-    return recaptcha;
   }
 
   private boolean ranEmulatorChecks, emulatorChecksFinished;
@@ -480,8 +471,7 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
     AppState.initApplication();
     AppState.ensureReady();
 
-    recaptcha = new RecaptchaContext(getApplication());
-    RecaptchaProviderRegistry.INSTANCE.addProvider(recaptcha);
+    RecaptchaProviderRegistry.setApplication(this.getApplication());
 
     appUpdater = new AppUpdater(this);
     roundVideoController = new RoundVideoController(this);
@@ -814,8 +804,13 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
     keyEventListeners.remove(listener);
   }
 
+  private boolean backKeyDownReceived;
+
   @Override
-  public boolean onKeyDown (int keyCode, KeyEvent event) {
+  public final boolean onKeyDown (int keyCode, KeyEvent event) {
+    if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+      backKeyDownReceived = true;
+    }
     boolean handled = false;
     for (KeyEventListener listener : keyEventListeners) {
       if (!handled && listener.onKeyDown(keyCode, event)) {
@@ -826,7 +821,14 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   }
 
   @Override
-  public boolean onKeyUp (int keyCode, KeyEvent event) {
+  public final boolean onKeyUp (int keyCode, KeyEvent event) {
+    if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU && !backKeyDownReceived) {
+        getOnBackPressedDispatcher().onBackPressed();
+        return true;
+      }
+      backKeyDownReceived = false;
+    }
     boolean handled = false;
     for (KeyEventListener listener : keyEventListeners) {
       if (!handled && listener.onKeyUp(keyCode, event)) {
@@ -3870,5 +3872,14 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
     konfettiView.start(
       KonfettiBuilder.buildKonfettiParty(pivotX, pivotY)
     );
+  }
+
+  private boolean activityReady;
+
+  public void markActivityReady () {
+    if (!activityReady) {
+      activityReady = true;
+      reportFullyDrawn();
+    }
   }
 }

@@ -18,8 +18,6 @@ import android.os.Build;
 
 import androidx.annotation.Nullable;
 
-import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
-
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -56,7 +54,7 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
     int mostMajor = Settings.DEFAULT_VIDEO_LIMIT, mostMinor = Settings.DEFAULT_VIDEO_LIMIT;
     int sourceId = 0;
     boolean noTranscoding = false;
-    long bitrate = DefaultVideoStrategy.BITRATE_UNKNOWN;
+    long bitrate = Settings.VideoLimit.BITRATE_UNKNOWN;
     int frameRate = Settings.DEFAULT_FRAME_RATE;
     CropState cropState = null;
     int argIndex = 0;
@@ -222,7 +220,7 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
         b.append(PREFIX_FRAME_RATE);
         b.append(videoLimit.fps);
       }
-      if (videoLimit.bitrate != DefaultVideoStrategy.BITRATE_UNKNOWN) {
+      if (videoLimit.bitrate != Settings.VideoLimit.BITRATE_UNKNOWN) {
         b.append(',');
         b.append(PREFIX_BITRATE);
         b.append(videoLimit.bitrate);

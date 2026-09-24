@@ -131,14 +131,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChang
             if (c != null) {
               ((EmojiStatusListController) c).removeRecentStickers();
             }
-            parentController.tdlib().client().send(new TdApi.ClearRecentEmojiStatuses(), parentController.tdlib().okHandler());
+            parentController.tdlib().send(new TdApi.ClearRecentEmojiStatuses(), parentController.tdlib().typedOkHandler());
             return true;
           }
           ViewController<?> c = adapter.getCachedItem(1);
           if (c != null) {
             ((EmojiMediaListController) c).removeRecentStickers();
           }
-          parentController.tdlib().client().send(new TdApi.ClearRecentStickers(), parentController.tdlib().okHandler());
+          parentController.tdlib().send(new TdApi.ClearRecentStickers(), parentController.tdlib().typedOkHandler());
         }
         return true;
       });
@@ -185,14 +185,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChang
               if (c != null) {
                 ((EmojiStatusListController) c).removeStickerSet(info);
               }
-              parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), parentController.tdlib().okHandler());
+              parentController.tdlib().send(new TdApi.ChangeStickerSet(info.getId(), false, false), parentController.tdlib().typedOkHandler());
             }
             return true;
           });
         }
       } else if (id == R.id.btn_addStickerSet) {
         info.unsetIsTrendingEmoji();
-        parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), true, false), parentController.tdlib().okHandler());
+        parentController.tdlib().send(new TdApi.ChangeStickerSet(info.getId(), true, false), parentController.tdlib().typedOkHandler());
       } else if (id == R.id.btn_copyLink) {
         TdApi.StickerSetInfo stickerSetInfo = info.getInfo();
         if (stickerSetInfo != null) {
@@ -213,7 +213,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChang
           if (themeProvider != null) {
             themeProvider.showOptions(Lang.getStringBold(R.string.RemoveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
               if (resultId == R.id.btn_delete) {
-                parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), parentController.tdlib().okHandler());
+                parentController.tdlib().send(new TdApi.ChangeStickerSet(info.getId(), false, false), parentController.tdlib().typedOkHandler());
               }
               return true;
             });
@@ -222,7 +222,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChang
           if (themeProvider != null) {
             themeProvider.showOptions(Lang.getStringBold(R.string.ArchiveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
               if (resultId == R.id.btn_delete) {
-                parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, true), parentController.tdlib().okHandler());
+                parentController.tdlib().send(new TdApi.ChangeStickerSet(info.getId(), false, true), parentController.tdlib().typedOkHandler());
               }
               return true;
             });

@@ -32,6 +32,7 @@ import androidx.annotation.UiThread;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
+import org.jetbrains.annotations.NotNull;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -51,7 +52,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.DeviceStorageError;
-import org.thunderdog.challegram.util.TokenRetriever;
 
 import java.io.File;
 import java.io.IOException;
@@ -86,6 +86,7 @@ import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.FilteredIterator;
+import tgx.bridge.TokenRetrieverListener;
 import tgx.td.JSON;
 import tgx.td.Td;
 
@@ -216,14 +217,14 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       if (extras.needReply) {
         long messageId = extras.messageIds[extras.messageIds.length - 1];
         if (extras.forceExternalReply) {
-          replyTo = new TdApi.InputMessageReplyToExternalMessage(extras.chatId, messageId, null, 0);
+          replyTo = new TdApi.InputMessageReplyToExternalMessage(extras.chatId, messageId, null, 0, "");
         } else {
-          replyTo = new TdApi.InputMessageReplyToMessage(messageId, null, 0);
+          replyTo = new TdApi.InputMessageReplyToMessage(messageId, null, 0, "");
         }
       } else {
         replyTo = null;
       }
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, replyTo, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
+      tdlib.sendMessage(extras.chatId, extras.topicId, replyTo, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
         if (sendingMessage == null) {
           UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
           if (onDone != null) {
@@ -312,7 +313,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private final CallManager calls = new CallManager(this);
   private final Settings.ProxyChangeListener proxyChangeListener = new Settings.ProxyChangeListener() {
     @Override
-    public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
+    public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.Proxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
       if (isCurrent) {
         for (TdlibAccount account : TdlibManager.this) {
           if (account.tdlib != null) {
@@ -1406,7 +1407,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         continue;
       long knownUserId = account.getKnownUserId();
       if (knownUserId == 0 || Arrays.binarySearch(excludeUserIds, knownUserId) < 0) {
-        Log.i(Log.TAG_FCM, "Unregistered accountId:%d userId:%d", account.id, knownUserId);
+        TDLib.Tag.notifications("Unregistered accountId:%d userId:%d", account.id, knownUserId);
         setDeviceRegistered(account.id, false);
         // TODO? account.tdlib().checkDeviceToken();
       }
@@ -1588,7 +1589,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return failureCount == 0;
   }
 
-  public void processPushOrSync (long pushId, int accountId, String payload, @Nullable Runnable after) {
+  public void processPushOrSync (long pushId, int accountId, String payload,  @Nullable Runnable after) {
     performTdlibTask(pushId, accountId, (account, onDone) -> account.tdlib().processPushOrSync(pushId, payload, onDone), Config.MAX_RUNNING_TDLIBS, null, after);
   }
 
@@ -1716,9 +1717,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       return;
     }
     setTokenState(TokenState.INITIALIZING);
-    TdlibNotificationUtils.getDeviceToken(retryCount, new TokenRetriever.RegisterCallback() {
+    TdlibNotificationUtils.getDeviceToken(UI.getAppContext(), retryCount, new TokenRetrieverListener() {
+
       @Override
-      public void onSuccess (@NonNull TdApi.DeviceToken token) {
+      public void onTokenRetrievalSuccess (TdApi.@NotNull DeviceToken token) {
         setDeviceToken(token);
         if (after != null) {
           after.runWithBool(true);
@@ -1726,8 +1728,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       }
 
       @Override
-      public void onError (@NonNull String errorKey, @Nullable Throwable e) {
-        Log.e(Log.TAG_FCM, "Failed to retrieve push token", e);
+      public void onTokenRetrievalError (@NotNull String errorKey, @org.jetbrains.annotations.Nullable Throwable e) {
+        TDLib.Tag.notifications("Failed to retrieve push token", e);
         setTokenState(TokenState.ERROR, errorKey, e);
         if (after != null) {
           after.runWithBool(false);
@@ -1810,6 +1812,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return device;
   }
 
+  private static final String JOB_TYPE_EVENT_REPORT = "event";
+  private static final String JOB_TYPE_CRASH_REPORT = "crash";
+
   private void reportEvent (String type, Map<String, Object> event) {
     AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
 
@@ -1822,9 +1827,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     event.put("device_id", Settings.instance().crashDeviceId());
 
     Tdlib tdlib = serviceTdlib();
-    tdlib.incrementJobReferenceCount();
-    tdlib.client().send(new TdApi.SaveApplicationLogEvent(type, appBuildInfo.maxCommitDate(), JSON.toObject(event)), result -> {
-      tdlib.decrementJobReferenceCount();
+    tdlib.incrementJobReferenceCount(JOB_TYPE_EVENT_REPORT);
+    tdlib.send(new TdApi.SaveApplicationLogEvent(type, appBuildInfo.maxCommitDate(), JSON.toObject(event)), (ok, error) -> {
+      tdlib.decrementJobReferenceCount(JOB_TYPE_EVENT_REPORT);
     });
   }
 
@@ -1842,7 +1847,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
             if (pendingRequests.get() != 0)
               return;
           }
-          tdlib.decrementJobReferenceCount();
+          tdlib.decrementJobReferenceCount(JOB_TYPE_CRASH_REPORT);
         };
         boolean isEmpty = true;
         for (Crash crash : savingCrashes) {
@@ -1850,7 +1855,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           if (saveFunction != null) {
             if (isEmpty) {
               isEmpty = false;
-              tdlib.incrementJobReferenceCount();
+              tdlib.incrementJobReferenceCount(JOB_TYPE_CRASH_REPORT);
             }
             synchronized (pendingRequests) {
               pendingRequests.incrementAndGet();
@@ -2409,8 +2414,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   // Lang pack
 
+  public static File getLanguageDatabaseDir () {
+    return new File(UI.getContext().getFilesDir(), "langpack");
+  }
+
   public static String getLanguageDatabasePath () {
-    File languageDatabaseDir = new File(UI.getContext().getFilesDir(), "langpack");
+    File languageDatabaseDir = getLanguageDatabaseDir();
     if (!FileUtils.createDirectory(languageDatabaseDir)) {
       throw new IllegalStateException("Cannot create working directory: " + languageDatabaseDir.getPath());
     }

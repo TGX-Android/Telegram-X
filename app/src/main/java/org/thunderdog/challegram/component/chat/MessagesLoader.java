@@ -182,20 +182,21 @@ public class MessagesLoader implements Client.ResultHandler {
       return new TdApi.MessageSourceChatEventLog();
     } else if (specialMode == MessagesLoader.SPECIAL_MODE_SEARCH) {
       return new TdApi.MessageSourceSearch();
-    } else if (getMessageThreadId() != 0) {
-      return new TdApi.MessageSourceMessageThreadHistory();
     } else if (topicId != null) {
-      switch (topicId.getConstructor()) {
-        case TdApi.MessageTopicForum.CONSTRUCTOR:
-          return new TdApi.MessageSourceForumTopicHistory();
-        case TdApi.MessageTopicDirectMessages.CONSTRUCTOR:
-          return new TdApi.MessageSourceDirectMessagesChatTopicHistory();
-        case TdApi.MessageTopicSavedMessages.CONSTRUCTOR:
-          return new TdApi.MessageSourceChatHistory();
-        default:
-          Td.assertMessageTopic_e5c08b7c();
+      return switch (topicId.getConstructor()) {
+        case TdApi.MessageTopicThread.CONSTRUCTOR ->
+          new TdApi.MessageSourceMessageThreadHistory();
+        case TdApi.MessageTopicForum.CONSTRUCTOR ->
+          new TdApi.MessageSourceForumTopicHistory();
+        case TdApi.MessageTopicDirectMessages.CONSTRUCTOR ->
+          new TdApi.MessageSourceDirectMessagesChatTopicHistory();
+        case TdApi.MessageTopicSavedMessages.CONSTRUCTOR ->
+          new TdApi.MessageSourceChatHistory();
+        default -> {
+          Td.assertMessageTopic_98b4a9a3();
           throw Td.unsupported(topicId);
-      }
+        }
+      };
     } else {
       return new TdApi.MessageSourceChatHistory();
     }
@@ -217,8 +218,9 @@ public class MessagesLoader implements Client.ResultHandler {
     return messageThread != null ? messageThread.getChatId() : chat != null ? chat.id : 0;
   }
 
-  public long getMessageThreadId () {
-    return messageThread != null ? messageThread.getMessageThreadId() : 0;
+  @Nullable
+  public TdApi.MessageTopic getMessageTopicId () {
+    return messageThread != null ? messageThread.getMessageTopicId() : null;
   }
 
   @Nullable
@@ -241,13 +243,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
   private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnread) {
     final long currentContextId = contextId;
-    if (DEBUG_HANDLER) {
-      Log.w("lastHandler = [new instance], error: %b", Log.generateException(1), lastHandler != null);
-    }
-    if (lastHandler != null) {
-      throw new IllegalStateException("lastHandler != null");
-    }
-    return lastHandler = new Client.ResultHandler() {
+    Client.ResultHandler handler = new Client.ResultHandler() {
       @Override
       public void onResult (final TdApi.Object object) {
         if (contextId != currentContextId) {
@@ -534,6 +530,16 @@ public class MessagesLoader implements Client.ResultHandler {
           needFindUnread && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
     };
+    synchronized (lock) {
+      if (DEBUG_HANDLER) {
+        Log.w("lastHandler = [new instance], error: %b", Log.generateException(1), lastHandler != null);
+      }
+      if (lastHandler != null) {
+        throw new IllegalStateException("lastHandler != null");
+      }
+      lastHandler = handler;
+      return handler;
+    }
   }
 
   public void reuse () {
@@ -974,7 +980,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       TdApi.MessageContent content;
       if (photo != null)
-        content = new TdApi.MessagePhoto(photo, text, false, false, false);
+        content = new TdApi.MessagePhoto(photo, null, text, false, false, false);
       else if (sticker != null)
         content = new TdApi.MessageSticker(sticker, false);
       else if (audio != null)
@@ -1185,7 +1191,7 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   private boolean loadMore (boolean fromTop, int count, boolean onlyLocal) {
-    if (isLoading || getChatId() == 0) {
+    if (isLoading || getChatId() == 0 || lastHandler != null) {
       return false;
     }
     if (fromTop) {
@@ -1221,19 +1227,20 @@ public class MessagesLoader implements Client.ResultHandler {
     return new TdApi.Message(
       event.id,
       event.memberId,
+      null,
       chatId,
       null,
       null,
       tdlib.isSelfSender(event.memberId),
       false, false, canBeSaved, false,
-      isChannel, false, false, false,
+      isChannel, false, false, false, false,
       event.date, 0,
       null, null, null, null,
-      null, null, null, 0, null,
+      null, null, null, null,
       null, 0, 0,
-      0, 0, 0, 0, null,
+      0, null, 0, 0, "", 0, null,
       0, 0,
-      null, null, null
+      null, null, null, null, null, 0, 0
     );
   }
 

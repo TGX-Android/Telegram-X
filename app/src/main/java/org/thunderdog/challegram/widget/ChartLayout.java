@@ -198,12 +198,11 @@ public class ChartLayout extends FrameLayout implements FactorAnimator.Target, A
     this.chartType = type;
     ViewSupport.setThemedBackground(this, ColorId.filling, themeProvider);
 
-    tdlib.client().send(new TdApi.GetAnimatedEmoji(ContentPreview.EMOJI_ABACUS.textRepresentation), result -> {
-      if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
-        TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
+    tdlib.send(new TdApi.GetAnimatedEmoji(ContentPreview.EMOJI_ABACUS.textRepresentation), (animatedEmoji, error) -> {
+      if (animatedEmoji != null) {
         tdlib.runOnUiThread(() -> {
-          placeholderSticker = emoji.sticker;
-          GifFile file = new GifFile(tdlib, emoji.sticker.sticker, GifFile.TYPE_TG_LOTTIE);
+          placeholderSticker = animatedEmoji.sticker;
+          GifFile file = new GifFile(tdlib, animatedEmoji.sticker.sticker, GifFile.TYPE_TG_LOTTIE);
           file.setScaleType(GifFile.FIT_CENTER);
           this.progressReceiver.requestFile(file);
           layoutBounds();

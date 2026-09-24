@@ -16,21 +16,27 @@ package org.thunderdog.challegram;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
+import android.text.TextUtils;
 
 import androidx.annotation.Keep;
+import androidx.media3.common.C;
+import androidx.media3.decoder.ffmpeg.FfmpegLibrary;
+import androidx.media3.decoder.flac.FlacLibrary;
+import androidx.media3.decoder.opus.OpusLibrary;
+import androidx.media3.decoder.vp9.VpxLibrary;
 
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.unsorted.NLoader;
 
 import java.nio.ByteBuffer;
+import java.util.Locale;
+
+import me.vkryl.leveldb.LevelDB;
+import tgx.flavor.NLoader;
 
 @SuppressWarnings ({"JniMissingFunction", "SpellCheckingInspection"})
 public final class N {
   private N () { }
-
-  public static boolean init () {
-    return NLoader.loadLibrary();
-  }
 
   // image.c
   public native static void calcCDT (ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
@@ -128,8 +134,40 @@ public final class N {
   }
 
   public native static void onFatalError (String msg, int cause);
-  public native static void throwDirect (String msg);
 
+  // Unavailable in legacy flavor
   public static native String[] getTgCallsVersions ();
   public static native String toHexString (byte[] array);
+
+  private static boolean loaded;
+
+  public static boolean init () {
+    if (!loaded) {
+      NLoader.loadLibraries();
+      loaded = true;
+    }
+    return true;
+  }
+
+  public static void setupLibraries () {
+    // Crashes if any of the libraries were not properly loaded
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+      OpusLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);
+      VpxLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);
+      FlacLibrary.setLibraries();
+      FfmpegLibrary.setLibraries();
+      if (BuildConfig.DEBUG) {
+        android.util.Log.v("tgx", String.format(Locale.US,
+          "leveldb %s, libopus %s, libvpx %s, ffmpeg %s, tgcalls %s",
+          LevelDB.getVersion(),
+          OpusLibrary.getVersion(),
+          VpxLibrary.getVersion(),
+          FfmpegLibrary.getVersion(),
+          BuildConfig.CALLS_AVAILABLE ?
+            TextUtils.join("+", N.getTgCallsVersions()) :
+            "disabled"
+        ));
+      }
+    }
+  }
 }

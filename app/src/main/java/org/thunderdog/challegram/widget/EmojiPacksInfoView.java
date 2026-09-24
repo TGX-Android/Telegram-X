@@ -61,11 +61,11 @@ public class EmojiPacksInfoView extends CustomTextView {
       this.key += 1;
 
       final int key = this.key;
-      parent.tdlib().client().send(new TdApi.GetStickerSet(emojiPacksIds[0]), (obj) -> {
-        if (obj.getConstructor() != TdApi.StickerSet.CONSTRUCTOR) return;
+      parent.tdlib().send(new TdApi.GetStickerSet(emojiPacksIds[0]), (stickerSet, error) -> {
+        if (stickerSet == null) return;
         UI.post(() -> {
           if (this.key != key) return;
-          this.lastInfo = Td.toStickerSetInfo((TdApi.StickerSet) obj);
+          this.lastInfo = Td.toStickerSetInfo(stickerSet);
           updateImpl(firstEmojiId, emojiPacksIds.length, onClickListener, lastInfo, false);
         });
       });

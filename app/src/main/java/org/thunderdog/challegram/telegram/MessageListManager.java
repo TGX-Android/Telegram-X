@@ -103,7 +103,7 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
       StringUtils.isEmpty(query) && // unsupported
       (sender == null || Td.equalsTo(message.senderId, sender)) &&
       (filter == null || Td.matchesFilter(message, filter)) &&
-      (topicId == null || Td.equalsTo(message.topicId, topicId))
+      (topicId == null || Td.matchesTopic(message.topicId, topicId))
     ));
   }
 

@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.widget;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -40,6 +39,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.UiThread;
 
 import org.drinkless.tdlib.TdApi;
@@ -58,6 +58,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
+import org.thunderdog.challegram.telegram.DisplayInformation;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -203,7 +204,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       contentWrap.setOutlineProvider(new android.view.ViewOutlineProvider() {
         @Override
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
           outline.setRoundRect(Math.round(drawingRect.left), Math.round(drawingRect.top), Math.round(drawingRect.right), Math.round(drawingRect.bottom), Screen.dp(RADIUS));
         }
@@ -1261,7 +1262,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     this.boundDataType = DataType.USER;
     this.boundUser = user;
-    addUserListeners(user, true);
+    addUserListeners(user.id, true);
 
     setHeaderUser(user);
   }
@@ -1270,16 +1271,22 @@ public class ForceTouchView extends FrameLayoutFix implements
     TdlibAccount account = TdlibManager.instanceForAccountId(accountId).account(accountId);
     TdApi.User user = account.getUser();
     if (user == null) {
-      // TODO: it's possible to support, but there's no need,
-      // as it's possible to just wait for myUser to load before opening the preview
-      throw new UnsupportedOperationException();
+      this.boundDataType = DataType.ACCOUNT;
+      this.boundAccount = account;
+      addUserListeners(account.getKnownUserId(), true);
+      setHeaderUser(account.getDisplayInformation());
+    } else {
+      this.boundDataType = DataType.USER;
+      this.boundUser = user;
+      addUserListeners(user.id, true);
+      setHeaderUser(user);
     }
 
-    this.boundDataType = DataType.USER;
-    this.boundUser = user;
-    addUserListeners(user, true);
+  }
 
-    setHeaderUser(user);
+  private void setHeaderUser (DisplayInformation displayInformation) {
+    headerView.setShowVerify(displayInformation.isVerified());
+    headerView.setText(TD.getUserName(displayInformation.getFirstName(), displayInformation.getLastName()), "");
   }
 
   private void setHeaderUser (TdApi.User user) {
@@ -1378,16 +1385,20 @@ public class ForceTouchView extends FrameLayoutFix implements
       boundChat = null;
     }
     if (boundUser != null) {
-      addUserListeners(boundUser, false);
+      addUserListeners(boundUser.id, false);
       boundUser = null;
+    }
+    if (boundAccount != null) {
+      addUserListeners(boundAccount.getKnownUserId(), false);
+      boundAccount = null;
     }
   }
 
-  private void addUserListeners (TdApi.User user, boolean add) {
+  private void addUserListeners (long userId, boolean add) {
     if (add) {
-      tdlib.cache().subscribeToUserUpdates(user.id, this);
+      tdlib.cache().subscribeToUserUpdates(userId, this);
     } else {
-      tdlib.cache().unsubscribeFromUserUpdates(user.id, this);
+      tdlib.cache().unsubscribeFromUserUpdates(userId, this);
     }
   }
 
@@ -1396,7 +1407,7 @@ public class ForceTouchView extends FrameLayoutFix implements
       tdlib.listeners().subscribeToChatUpdates(chat.id, this);
       tdlib.listeners().subscribeToSettingsUpdates(chat.id, this);
       if (messageThread == null || chat.id == messageThread.getChatId()) {
-        headerView.attachChatStatus(chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0);
+        headerView.attachChatStatus(chat.id, messageThread != null ? messageThread.getMessageTopicId() : null);
       }
       if (messageThread != null) {
         messageThread.addListener(this);
@@ -1521,7 +1532,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   }
 
   @Override
-  public void onMessageThreadReplyCountChanged (long chatId, long messageThreadId, int replyCount) {
+  public void onMessageThreadReplyCountChanged (long chatId, TdApi.MessageTopic topicId, int replyCount) {
     setChatSubtitle();
   }
 }

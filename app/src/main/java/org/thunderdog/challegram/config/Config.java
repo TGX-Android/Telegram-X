@@ -26,6 +26,8 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.theme.ColorId;
 
+import java.util.Locale;
+
 public class Config {
   public static final boolean SUPPORT_SYSTEM_UNDERLINE_SPAN = true;
   public static final boolean FOREGROUND_SYNC_ALWAYS_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -37,14 +39,13 @@ public class Config {
   public static final boolean RESTRICT_HIDING_MAIN_LIST = true;
   public static final boolean SEARCH_MESSAGES_ONLY_IN_SELECTED_FOLDER = BuildConfig.EXPERIMENTAL;
   public static final boolean CHAT_FOLDERS_UNSET_DEFAULT_ICONS = false; // Until there's a fix on server
+  public static final boolean TEST_TDLIB_RESTARTS = BuildConfig.DEBUG;
 
   public static final boolean TEST_MULTI_SPONSORED_MESSAGES = false;
   public static final boolean TEST_NEW_FEATURES_PROMPTS = false;
   public static final boolean ADJUST_STATUS_BAR_TO_AVOID_DISPLAY_CUTOUT = false;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
-
-  public static final boolean CAN_CHANGE_SELF_ADMIN_CUSTOM_TITLE = false;
 
   public static final boolean SHOW_EMOJI_TONE_PICKER_ALWAYS = true;
 
@@ -57,6 +58,17 @@ public class Config {
 
   // Allow stretch bounce in places where the glow looks ugly
   public static final boolean HAS_NICE_OVER_SCROLL_EFFECT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
+
+  // Telegram for iOS has a long-established bug and doesn't play rotated videos properly
+  // This affects all rotated videos (which even Telegram for iOS produces too).
+  // The only way around for the sender is to transcode video fully even when there's no need at all.
+  public static final boolean TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT = true;
+
+  public static final boolean ENABLE_BASELINE_PROFILE_HOOKS = BuildConfig.LAB_FLAVOR;
+
+  public static final boolean ENABLE_DELETE_CALL_HISTORY = BuildConfig.DEBUG;
+
+  public static final boolean DEBUG_TDLIB_REFERENCES = false;
 
   private static Boolean hasWebpSupport;
   public static boolean useBundledWebp () {
@@ -149,14 +161,17 @@ public class Config {
   public static final boolean CAMERA_ALLOW_SNAPSHOTS = false; // true;
   public static final boolean CAMERA_X_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
+  public static final int MAX_COPY_TEXT_LINE_COUNT = 12;
+
   public static final boolean CROP_USE_REGION_READER = true;
   public static final boolean CROP_ENABLED = true;
   public static final boolean MODERN_VIDEO_TRANSCODING_ENABLED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
+  public static final boolean LEGACY_VIDEO_TRANSCODING_ENABLED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && BuildConfig.LEGACY_FLAVOR;
 
   public static final boolean IN_APP_BROWSER_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1;
 
-  public static final boolean VIDEO_PLAYER_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
-  public static final boolean HLS_VIDEO_ENABLED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
+  public static final boolean VIDEO_PLAYER_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
+  public static final boolean HLS_VIDEO_ENABLED = VIDEO_PLAYER_AVAILABLE;
 
   public static final boolean FORCE_TOUCH_ENABLED = true;
   public static final boolean HOLD_TO_PREVIEW_AVAILABLE = true;
@@ -195,6 +210,10 @@ public class Config {
   public static final float DEFAULT_ICON_SWITCH_SCALE = .4f;
   public static final boolean CUTOUT_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.O;
   public static final boolean EXPLICIT_DICE_AVAILABLE = false;
+
+  public static final boolean FOREGROUND_SERVICE_DEMO = false;
+  public static final boolean FOREGROUND_CONTACTS_SYNC_DEMO = false;
+  public static final boolean TEST_SYNC_CONTACTS_PROMPT = false;
 
   public static boolean useCloudPlayback (TdApi.Message playPauseFile) {
     if (USE_CLOUD_PLAYER && playPauseFile != null) {
@@ -248,7 +267,7 @@ public class Config {
   public static final int MINIMUM_CALL_CONTACTS_SUGGESTIONS = 3;
 
   public static final boolean USE_CUSTOM_NAVIGATION_COLOR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
-  public static final boolean USE_TRANSPARENT_STATUS_BAR = BuildConfig.DEBUG;
+  public static final boolean USE_TRANSPARENT_STATUS_BAR = false;
 
   public static final boolean EDGE_TO_EDGE_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
   public static final boolean EDGE_TO_EDGE_CUSTOMIZABLE = EDGE_TO_EDGE_AVAILABLE && (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM || BuildConfig.TARGET_SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM);
@@ -277,7 +296,7 @@ public class Config {
   public static final boolean TEST_CHAT_COUNTERS = false;
 
   public static boolean isThemeDoc (TdApi.Document doc) {
-    return doc != null && doc.fileName != null && doc.fileName.toLowerCase().endsWith("." + BuildConfig.THEME_FILE_EXTENSION);
+    return doc != null && doc.fileName != null && doc.fileName.toLowerCase(Locale.ROOT).endsWith("." + BuildConfig.THEME_FILE_EXTENSION);
   }
 
   public static final boolean DISABLE_PASSWORD_INVISIBILITY = true;
@@ -313,9 +332,6 @@ public class Config {
   public static final boolean REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET = false;
 
   public static final boolean USE_INPUT_VIEW_CLIPPING_FIX = false;
-
-  public static final int VOIP_CONNECTION_MIN_LAYER = 65;
-  public static final boolean FORCE_DIRECT_TGVOIP = false;
 
   public static final boolean ALLOW_SPONSORED_MESSAGE_LINK_COPY = true;
   public static final boolean PROTECT_ANONYMOUS_VOTING = false;

@@ -2,6 +2,8 @@
 
 set(FLAC_DIR "${THIRDPARTY_DIR}/flac")
 set(INSTALL_MANPAGES OFF)
+set(INSTALL_CMAKE_CONFIG_MODULE OFF)
+
 add_subdirectory("${FLAC_DIR}"
   EXCLUDE_FROM_ALL
 )

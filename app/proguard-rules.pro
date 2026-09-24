@@ -45,8 +45,15 @@
 # Keep sync services
 -keep class org.thunderdog.challegram.sync.**
 
+# https://github.com/androidx/media/issues/2535
+-keep class androidx.media3.transformer.ExoPlayerAssetLoader$Factory { *; }
+
 # https://developers.google.com/ml-kit/known-issues#android_issues
 -keep class com.google.mlkit.nl.languageid.internal.LanguageIdentificationJni { *; }
+-keep class com.google.mlkit.nl.languageid.internal.ThickLanguageIdentifier { *; }
+-keepclasseswithmembernames class com.google.mlkit.nl.languageid.internal.LanguageIdentificationJni {
+  native <methods>;
+}
 
 # == THIRDPARTY ==
 
@@ -71,23 +78,6 @@
 -dontwarn org.conscrypt.ConscryptHostnameVerifier
 -dontwarn org.conscrypt.Conscrypt$Version
 -dontwarn org.conscrypt.Conscrypt
-
-# WebRTC
-
-# Keep items annotated with @CalledByNative
--keep @org.webrtc.CalledByNative public class *
--keepclassmembers class * {
-    @org.webrtc.CalledByNative *;
-}
-
-# Keep items annotated with @CalledByNativeUnchecked
--keep @org.webrtc.CalledByNativeUnchecked public class *
--keepclassmembers class * {
-    @org.webrtc.CalledByNativeUnchecked *;
-}
-
--keep class org.webrtc.** { *; }
--keepclassmembers class org.webrtc.** { *; }
 
 # Other
 

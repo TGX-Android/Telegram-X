@@ -29,6 +29,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 
 import me.vkryl.core.StringUtils;
 import tgx.td.Td;
@@ -78,14 +79,10 @@ public class InlineResultMention extends InlineResult<UserContext> {
   }
 
   public static boolean matchesPrefix (TdApi.User user, String prefix, boolean allowUsernameless) {
-    String check = prefix.toLowerCase();
-    String lowerFirst = user.firstName.toLowerCase();
-    String lowerLast = user.lastName.toLowerCase();
-    String check2 = TD.getUserName(lowerFirst, lowerLast);
-    if (check2.startsWith(check) || lowerLast.startsWith(check)) {
+    if (Strings.anyWordStartsWith(TD.getUserName(user), prefix)) {
       return allowUsernameless || Td.hasUsername(user);
     }
-    return (allowUsernameless || Td.hasUsername(user)) && Td.findUsernameByPrefix(user, check);
+    return (allowUsernameless || Td.hasUsername(user)) && Td.findUsernameByPrefix(user, prefix);
   }
 
   private String trimmedDescription;

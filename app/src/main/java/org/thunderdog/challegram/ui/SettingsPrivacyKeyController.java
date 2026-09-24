@@ -111,37 +111,40 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
   }
 
   public static int getIcon (TdApi.UserPrivacySetting privacySetting) {
-    switch (privacySetting.getConstructor()) {
-      case TdApi.UserPrivacySettingShowPhoneNumber.CONSTRUCTOR:
-        return R.drawable.baseline_call_24;
-      case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
-        return R.drawable.baseline_info_24;
-      case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR:
-        return R.drawable.baseline_cake_variant_24;
-      case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
-        return R.drawable.baseline_search_24;
-      case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
-        return R.drawable.baseline_visibility_24;
-      case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
-        return R.drawable.baseline_emoticon_outline_24;
-      case TdApi.UserPrivacySettingShowLinkInForwardedMessages.CONSTRUCTOR:
-        return R.drawable.baseline_forward_24;
-      case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
-        return R.drawable.baseline_person_add_24;
-      case TdApi.UserPrivacySettingAllowCalls.CONSTRUCTOR:
-        return R.drawable.baseline_phone_in_talk_24;
-      case TdApi.UserPrivacySettingAllowPeerToPeerCalls.CONSTRUCTOR:
-        return R.drawable.baseline_swap_horiz_24;
-      case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
-        return R.drawable.baseline_mic_24;
-      case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR:
-        return R.drawable.baseline_gift_outline_24;
-      case TdApi.UserPrivacySettingAllowUnpaidMessages.CONSTRUCTOR:
-        return R.drawable.baseline_premium_star_24;
-      default:
-        Td.assertUserPrivacySetting_6bbb3d7e();
+    return switch (privacySetting.getConstructor()) {
+      case TdApi.UserPrivacySettingShowPhoneNumber.CONSTRUCTOR ->
+        R.drawable.baseline_call_24;
+      case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR ->
+        R.drawable.baseline_info_24;
+      case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR ->
+        R.drawable.baseline_cake_variant_24;
+      case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR ->
+        R.drawable.baseline_search_24;
+      case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR ->
+        R.drawable.baseline_visibility_24;
+      case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR ->
+        R.drawable.baseline_emoticon_outline_24;
+      case TdApi.UserPrivacySettingShowProfileAudio.CONSTRUCTOR ->
+        R.drawable.baseline_music_note_24;
+      case TdApi.UserPrivacySettingShowLinkInForwardedMessages.CONSTRUCTOR ->
+        R.drawable.baseline_forward_24;
+      case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR ->
+        R.drawable.baseline_person_add_24;
+      case TdApi.UserPrivacySettingAllowCalls.CONSTRUCTOR ->
+        R.drawable.baseline_phone_in_talk_24;
+      case TdApi.UserPrivacySettingAllowPeerToPeerCalls.CONSTRUCTOR ->
+        R.drawable.baseline_swap_horiz_24;
+      case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR ->
+        R.drawable.baseline_mic_24;
+      case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR ->
+        R.drawable.baseline_gift_outline_24;
+      case TdApi.UserPrivacySettingAllowUnpaidMessages.CONSTRUCTOR ->
+        R.drawable.baseline_premium_star_24;
+      default -> {
+        Td.assertUserPrivacySetting_a60188bf();
         throw Td.unsupported(privacySetting);
-    }
+      }
+    };
   }
 
   public static int getName (TdApi.UserPrivacySetting privacyKey, boolean isException, boolean isMultiChatException) {
@@ -166,6 +169,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
         return isException ? R.string.EditPrivacyForward : R.string.PrivacyForwardLinkTitle;
       case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
         return isException ? R.string.EditPrivacyPhoto : R.string.PrivacyPhotoTitle;
+      case TdApi.UserPrivacySettingShowProfileAudio.CONSTRUCTOR:
+        return isException ? R.string.EditPrivacyAudio : R.string.PrivacyAudioTitle;
       case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
         return isException ? R.string.EditPrivacyVoice : R.string.PrivacyVoiceVideoTitle;
       case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR:
@@ -178,7 +183,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
           throw new UnsupportedOperationException();
         }
       default:
-        Td.assertUserPrivacySetting_6bbb3d7e();
+        Td.assertUserPrivacySetting_a60188bf();
         throw Td.unsupported(privacyKey);
     }
   }
@@ -364,6 +369,11 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
             hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, R.string.WhoCanSeePhotoInfo);
             break;
           }
+          case TdApi.UserPrivacySettingShowProfileAudio.CONSTRUCTOR: {
+            headerItem = new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.WhoCanSeeAudio);
+            hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, R.string.WhoCanSeeAudioInfo);
+            break;
+          }
           case TdApi.UserPrivacySettingAllowCalls.CONSTRUCTOR: {
             headerItem = new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.WhoCanCallMe);
             hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, R.string.VoiceCallPrivacyDesc);
@@ -427,7 +437,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
             throw new UnsupportedOperationException();
           }
           default: {
-            Td.assertUserPrivacySetting_6bbb3d7e();
+            Td.assertUserPrivacySetting_a60188bf();
             throw Td.unsupported(args.userPrivacySetting);
           }
         }
@@ -631,6 +641,9 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
             return privacyRules.getMode() != PrivacySettings.Mode.EVERYBODY || privacyRules.getMinusUserIdCount() > 0;
           case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
             return privacyRules.getMode() != PrivacySettings.Mode.EVERYBODY;
+          default:
+            Td.assertUserPrivacySetting_a60188bf();
+            break;
         }
         return false;
       }
@@ -828,7 +841,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
               break;
             }
             default: {
-              Td.assertUserPrivacySetting_6bbb3d7e();
+              Td.assertUserPrivacySetting_a60188bf();
               throw Td.unsupported(args.userPrivacySetting);
             }
           }

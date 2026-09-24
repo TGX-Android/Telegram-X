@@ -393,7 +393,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     int initialChunkSize = Screen.calculateLoadingItems(itemHeight, 5) + 5;
     int chunkSize = Screen.calculateLoadingItems(itemHeight, 25);
     loadingMore = true;
-    chatListSlice = new TdlibChatListSlice(tdlib, ChatPosition.CHAT_LIST_MAIN, null, true);
+    chatListSlice = tdlib.chatList(ChatPosition.CHAT_LIST_MAIN).slice(null, true, null);
 
 
     chatListSlice.initializeList(this, this::processChats, initialChunkSize, () -> {
@@ -432,7 +432,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   @Override
   public void destroy () {
     super.destroy();
-    chatListSlice.unsubscribeFromUpdates(this);
+    chatListSlice.performDestroy();
     if (headerCell != null) {
       headerCell.destroy();
     }
@@ -864,7 +864,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   private String lastQuery = "";
 
   @Override
-  public void searchUser (String query) {
+  public void searchForItems (String query) {
     if (query.equals(lastQuery)) {
         return;
     }

@@ -1545,7 +1545,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   }
 
   @Override
-  public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
+  public MediaStack collectMedias (long fromMessageId, boolean isSponsored, @Nullable TdApi.SearchMessagesFilter filter) {
     if (data == null || data.isEmpty()) {
       return null;
     }

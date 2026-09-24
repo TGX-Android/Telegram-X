@@ -299,7 +299,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
               inviteLinksRevoked.remove(link);
               smOnRevokedLinkDeleted(link);
               notifyParentIfPossible();
-              tdlib.client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), tdlib.okHandler());
+              tdlib.send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), tdlib.typedOkHandler());
             }
 
             return true;
@@ -358,7 +358,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           inviteLinksRevoked.clear();
           smOnRevokedLinksCleared(firstLink, lastLink);
           notifyParentIfPossible();
-          tdlib.client().send(new TdApi.DeleteAllRevokedChatInviteLinks(chatId, adminUserId), tdlib.okHandler());
+          tdlib.send(new TdApi.DeleteAllRevokedChatInviteLinks(chatId, adminUserId), tdlib.typedOkHandler());
         }
 
         return true;

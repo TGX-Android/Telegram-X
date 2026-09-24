@@ -1,16 +1,10 @@
 # opusfile
 
 set(OPUSFILE_DIR "${THIRDPARTY_DIR}/opusfile")
+set(OP_DISABLE_HTTP ON)
+set(OP_DISABLE_DOCS ON)
+set(OP_DISABLE_EXAMPLES ON)
 
-add_library(opusfile STATIC
-  "${OPUSFILE_DIR}/src/info.c"
-  "${OPUSFILE_DIR}/src/internal.c"
-  "${OPUSFILE_DIR}/src/opusfile.c"
-  "${OPUSFILE_DIR}/src/stream.c"
-)
-target_include_directories(opusfile PUBLIC
-  "${OPUSFILE_DIR}/include"
-)
-target_link_libraries(opusfile PUBLIC
-  ogg opus
+add_subdirectory("${OPUSFILE_DIR}"
+  EXCLUDE_FROM_ALL
 )

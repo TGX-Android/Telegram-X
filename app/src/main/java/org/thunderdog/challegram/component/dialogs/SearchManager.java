@@ -467,7 +467,7 @@ public class SearchManager {
     if (position != -1) {
       topChats.remove(position);
       topChatIds = ArrayUtils.removeElement(topChatIds, position);
-      tdlib.client().send(new TdApi.RemoveTopChat(new TdApi.TopChatCategoryUsers(), chatId), tdlib.okHandler());
+      tdlib.send(new TdApi.RemoveTopChat(new TdApi.TopChatCategoryUsers(), chatId), tdlib.typedOkHandler());
       if (topChatIds.length == 0) {
         listener.onRemoveTopChats(true, !StringUtils.isEmpty(lastQuery));
       } else {
@@ -567,7 +567,7 @@ public class SearchManager {
     final int[] state = new int[2]; // 1 - step, 2 - disallowSelf
     final LongList foundChatIds = new LongList(16);
 
-    tdlib.client().send(new TdApi.SearchChats(query, StringUtils.isEmpty(query) ? 20 : isFiltered() ? 50 : 30), new Client.ResultHandler() {
+    tdlib.client().send(new TdApi.SearchChats(query, null, StringUtils.isEmpty(query) ? 20 : isFiltered() ? 50 : 30), new Client.ResultHandler() {
       @Override
       public void onResult (final TdApi.Object object) {
         if (contextId != currentContextId) {
@@ -586,9 +586,9 @@ public class SearchManager {
             if (selfChatId != 0 && !StringUtils.isEmpty(query) && state[1] == 0) {
               state[1] = 1;
               if (foundChatIds.indexOf(selfChatId) == -1) {
-                String savedMessagesStr = Lang.getString(R.string.SavedMessages).toLowerCase();
-                String savedMessagesStr2 = Lang.getBuiltinString(R.string.SavedMessages).toLowerCase();
-                String check = query.trim().toLowerCase();
+                String savedMessagesStr = Lang.lowercase(Lang.getString(R.string.SavedMessages));
+                String savedMessagesStr2 = Lang.lowercase(Lang.getBuiltinString(R.string.SavedMessages));
+                String check = query.trim();
                 if (!StringUtils.isEmpty(check) && ((!StringUtils.isEmpty(savedMessagesStr) && Strings.anyWordStartsWith(savedMessagesStr, check, null)) || (!StringUtils.isEmpty(savedMessagesStr2) && Strings.anyWordStartsWith(savedMessagesStr2, check, null)))) {
                   TdApi.Chat chat = tdlib.chat(selfChatId);
                   if (chat != null) {
@@ -640,7 +640,7 @@ public class SearchManager {
             case 1:
               if (sentRequest = foundChatIds.size() < 100) {
                 Log.ensureReturnType(TdApi.SearchChatsOnServer.class, TdApi.Chats.class);
-                tdlib.client().send(new TdApi.SearchChatsOnServer(query, 100 - foundChatIds.size()), this);
+                tdlib.client().send(new TdApi.SearchChatsOnServer(query, null, 100 - foundChatIds.size()), this);
               }
               break;
             case 2:
@@ -782,7 +782,7 @@ public class SearchManager {
         }
       }
     }
-    tdlib.client().send(new TdApi.AddRecentlyFoundChat(chat.getAnyId()), tdlib.okHandler());
+    tdlib.send(new TdApi.AddRecentlyFoundChat(chat.getAnyId()), tdlib.typedOkHandler());
   }
 
   public void clearRecentlyFoundChats () {
@@ -792,7 +792,7 @@ public class SearchManager {
         setLocalChats(null, lastQuery);
         listener.onRemoveLocalChats(oldLocalChatsCount);
       }
-      tdlib.client().send(new TdApi.ClearRecentlyFoundChats(), tdlib.okHandler());
+      tdlib.send(new TdApi.ClearRecentlyFoundChats(), tdlib.typedOkHandler());
     }
   }
 
@@ -819,7 +819,7 @@ public class SearchManager {
       } else {
         listener.onRemoveLocalChat(foundChat.getId(), i, localChats.size() + 1);
       }
-      tdlib.client().send(new TdApi.RemoveRecentlyFoundChat(foundChat.getId()), tdlib.okHandler());
+      tdlib.send(new TdApi.RemoveRecentlyFoundChat(foundChat.getId()), tdlib.typedOkHandler());
     }
   }
 
@@ -869,7 +869,7 @@ public class SearchManager {
 
     tdlib.ui().post(runnable);
 
-    tdlib.send(new TdApi.SearchPublicChats(usernameQuery), (remoteChats, error) -> {
+    tdlib.send(new TdApi.SearchPublicChats(usernameQuery, null), (remoteChats, error) -> {
       if (contextId == currentContextId) {
         runnable.cancel();
         final ArrayList<TGFoundChat> foundChats;

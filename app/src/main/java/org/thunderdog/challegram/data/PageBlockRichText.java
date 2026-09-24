@@ -90,7 +90,6 @@ public class PageBlockRichText extends PageBlock {
 
   private @ColorId int backgroundColorId = ColorId.filling;
   private boolean isFullyRtl;
-  private boolean needQuote;
   private float textHorizontalOffset = TEXT_HORIZONTAL_OFFSET;
   private ClickHelper clickHelper;
 
@@ -106,8 +105,8 @@ public class PageBlockRichText extends PageBlock {
   // <p>: margin: 0 21px 12px;
 
   // Title of the page.
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockTitle title, boolean isFirst, boolean hasKicker, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, title);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockTitle title, int quoteLevel, boolean isFirst, boolean hasKicker, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, title, quoteLevel);
     setText(new TdApi.RichTextBold(title.title), getTitleProvider(), TextColorSets.InstantView.TITLE, openParameters);
     this.paddingTop = hasKicker ? 10f : isFirst ? 20f : 16f;
     // setPadding(16f);
@@ -115,31 +114,31 @@ public class PageBlockRichText extends PageBlock {
   }
 
   // Subtitle of the page
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockSubtitle subtitle, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, subtitle);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockSubtitle subtitle, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, subtitle, quoteLevel);
     this.paddingTop = 0;
     setText(subtitle.subtitle, getSubtitleProvider(), TextColorSets.InstantView.SUBTITLE, openParameters);
     // setPadding(8f);
   }
 
   // <h1> in the text
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockHeader header, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, header);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockHeader header, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, header, quoteLevel);
     setText(new TdApi.RichTextBold(header.header), getHeaderProvider(), TextColorSets.InstantView.HEADER, Text.FLAG_ARTICLE, openParameters);
     this.paddingTop = 14f;
     this.paddingBottom = 8f;
     // setPadding(14f);
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockSubheader header, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, header);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockSubheader header, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, header, quoteLevel);
     setText(new TdApi.RichTextBold(header.subheader), getSubheaderProvider(), TextColorSets.InstantView.SUBHEADER, Text.FLAG_ARTICLE, openParameters);
     this.paddingTop = 8f;
     // setPadding(14f);
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockKicker kicker, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, kicker);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockKicker kicker, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, kicker, quoteLevel);
     this.paddingTop = 16f;
     this.paddingBottom = 3f;
     setText(new TdApi.RichTextBold(kicker.kicker), getCaptionProvider(), TextColorSets.InstantView.CAPTION, Text.FLAG_ARTICLE, openParameters);
@@ -148,8 +147,8 @@ public class PageBlockRichText extends PageBlock {
 
   // Author & publication date of the page
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockAuthorDate authorDate, int viewCount, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, authorDate);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockAuthorDate authorDate, int quoteLevel, int viewCount, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, authorDate, quoteLevel);
     String author = TD.getText(authorDate.author).trim();
     this.paddingTop = this.paddingBottom = 8f;
     if (author.isEmpty() && authorDate.publishDate == 0) {
@@ -208,25 +207,25 @@ public class PageBlockRichText extends PageBlock {
     }
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockParagraph paragraph, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, paragraph);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockParagraph paragraph, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, paragraph, quoteLevel);
     setText(paragraph.text, getParagraphProvider(), TextColorSets.InstantView.NORMAL, Text.FLAG_ARTICLE, openParameters);
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockPreformatted preformatted, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, preformatted);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockPreformatted preformatted, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, preformatted, quoteLevel);
     setText(preformatted.text, getPreformattedProvider(), TextColorSets.InstantView.NORMAL, Text.FLAG_ARTICLE, openParameters);
     this.backgroundColorId = ColorId.iv_preBlockBackground;
     this.textHorizontalOffset = TEXT_HORIZONTAL_OFFSET_PRE_BLOCK;
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockRelatedArticles articles, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, articles);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockRelatedArticles articles, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, articles, quoteLevel);
     setText(new TdApi.RichTextBold(articles.header), getParagraphProvider(), TextColorSets.InstantView.CAPTION, openParameters);
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockTable table, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, table);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockTable table, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, table, quoteLevel);
     this.paddingTop = 15f;
     this.paddingBottom = 2f;
     setText(table.caption, getCaptionProvider(), TextColorSets.InstantView.CAPTION, Text.FLAG_ARTICLE | Text.FLAG_ALIGN_CENTER, openParameters);
@@ -234,8 +233,8 @@ public class PageBlockRichText extends PageBlock {
 
   private BoolAnimator detailsOpened;
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockDetails details, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, details);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockDetails details, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, details, quoteLevel);
     this.detailsOpened = new BoolAnimator(0, (id, factor, fraction, callee) -> currentViews.invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, details.isOpen);
     this.paddingTop = 15f;
     this.paddingBottom = 12f;
@@ -251,8 +250,8 @@ public class PageBlockRichText extends PageBlock {
     return detailsOpened != null;
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockList list, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, list);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockList list, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, list, quoteLevel);
     setText(new TdApi.RichTextPlain(""), getParagraphProvider(), TextColorSets.InstantView.NORMAL, openParameters);
   }
 
@@ -261,8 +260,8 @@ public class PageBlockRichText extends PageBlock {
   private ImageFile avatarFile;
   private AvatarPlaceholder avatarPlaceholder;
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockChatLink chatLink, boolean isOverlay, int viewCount, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, chatLink);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockChatLink chatLink, int quoteLevel, boolean isOverlay, int viewCount, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, chatLink, quoteLevel);
     this.paddingTop = this.paddingBottom = 16f;
     setText(new TdApi.RichTextBold(new TdApi.RichTextPlain(chatLink.title)), getParagraphProvider(), isOverlay ? TextColorSets.InstantView.CHAT_LINK_OVERLAY : TextColorSets.InstantView.NORMAL, openParameters);
     this.forceBackground = isOverlay;
@@ -320,7 +319,7 @@ public class PageBlockRichText extends PageBlock {
       subtitle = new TextWrapper(text.toString(), getCreditProvider(), this.text.getTextColorSet())
         .setEntities(TextEntity.valueOf(context.tdlib(), text.toString(), TD.toEntities(text, false), openParameters), null)
         .setMaxLines(1);
-      subtitle.prepare(getMaxWidth() - getTextPaddingLeft() - getTextPaddingRight() - (needQuote ? Screen.dp(QUOTE_OFFSET) : 0) - avatarSize);
+      subtitle.prepare(getMaxWidth() - getTextPaddingLeft() - getTextPaddingRight() - (quoteLevel * Screen.dp(QUOTE_OFFSET)) - avatarSize);
       if (currentViews.hasAnyTargetToInvalidate() && context.isAttachedToNavigationController() && SystemClock.uptimeMillis() - time > 50) {
         subtitleVisible = new BoolAnimator(0, (id, factor, fraction, callee) -> {
           currentViews.invalidate();
@@ -332,8 +331,8 @@ public class PageBlockRichText extends PageBlock {
     });
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockFooter footer, boolean isPost, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, footer);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockFooter footer, int quoteLevel, boolean isPost, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, footer, quoteLevel);
     setText(footer.footer, getFooterProvider(), TextColorSets.InstantView.FOOTER, openParameters);
     if (!isPost) {
       this.backgroundColorId = ColorId.NONE;
@@ -342,30 +341,20 @@ public class PageBlockRichText extends PageBlock {
     }
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockBlockQuote blockQuote, boolean isCredit, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, blockQuote);
-    if (isCredit) {
-      setText(blockQuote.credit, getCaptionProvider(), TextColorSets.InstantView.CAPTION, Text.FLAG_ARTICLE, openParameters);
-      if (!Td.isEmpty(blockQuote.text)) {
-        paddingTop = 3f;
-      } else {
-        paddingTop = 12f;
-      }
-      paddingBottom = 12f;
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockBlockQuote blockQuote, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, blockQuote, quoteLevel);
+    setText(blockQuote.credit, getCaptionProvider(), TextColorSets.InstantView.CAPTION, Text.FLAG_ARTICLE, openParameters);
+    if (blockQuote.blocks.length > 0) {
+      paddingTop = 3f;
     } else {
-      setText(blockQuote.text, getBlockQuoteProvider(), TextColorSets.InstantView.BLOCK_QUOTE, Text.FLAG_ARTICLE, openParameters);
-      if (!Td.isEmpty(blockQuote.credit)) {
-        paddingBottom = 3f;
-      } else {
-        paddingBottom = 12f;
-      }
       paddingTop = 12f;
     }
-    this.needQuote = true;
+    paddingBottom = 12f;
+    // TextColorSets.InstantView.BLOCK_QUOTE
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockPullQuote pullQuote, boolean isCredit, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, pullQuote);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockPullQuote pullQuote, int quoteLevel, boolean isCredit, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, pullQuote, quoteLevel);
     if (isCredit) {
       setText(pullQuote.credit, getCaptionProvider(), TextColorSets.InstantView.CAPTION, Text.FLAG_ALIGN_CENTER | Text.FLAG_ARTICLE, openParameters);
       paddingTop = 3f;
@@ -378,8 +367,8 @@ public class PageBlockRichText extends PageBlock {
     this.textHorizontalOffset = TEXT_HORIZONTAL_OFFSET_PULL_QUOTE;
   }
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlock mediaBlock, TdApi.PageBlockCaption caption, boolean isCredit, boolean isCover, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, mediaBlock);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlock mediaBlock, int quoteLevel, TdApi.PageBlockCaption caption, boolean isCredit, boolean isCover, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, mediaBlock, quoteLevel);
     if (isCredit) {
       if (!Td.isEmpty(caption.text)) {
         paddingTop = 2f;
@@ -403,8 +392,8 @@ public class PageBlockRichText extends PageBlock {
   private boolean needAvatar;
   private TdlibAccentColor accentColor;
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockEmbeddedPost embeddedPost, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(context, embeddedPost);
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockEmbeddedPost embeddedPost, int quoteLevel, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(context, embeddedPost, quoteLevel);
     setText(new TdApi.RichTexts(new TdApi.RichText[]{
       new TdApi.RichTextPlain(embeddedPost.author),
       new TdApi.RichTextPlain("\n"),
@@ -445,14 +434,6 @@ public class PageBlockRichText extends PageBlock {
       }
     }
     return 0;
-  }
-
-  @Override
-  public void mergeWith (PageBlock topBlock) {
-    super.mergeWith(topBlock);
-    if (topBlock instanceof PageBlockRichText) {
-      needQuote = ((PageBlockRichText) topBlock).needQuote;
-    }
   }
 
   private @Nullable TextWrapper text, subtitle;
@@ -511,7 +492,7 @@ public class PageBlockRichText extends PageBlock {
     if (text != null) {
       final int paddingLeft = getTextPaddingLeft();
       final int paddingRight = getTextPaddingRight();
-      final int textMaxWidth = width - paddingLeft - paddingRight - (needQuote ? Screen.dp(QUOTE_OFFSET) : 0);
+      final int textMaxWidth = width - paddingLeft - paddingRight - (quoteLevel * Screen.dp(QUOTE_OFFSET));
       Text text = this.text.prepare(textMaxWidth);
       if (subtitle != null) {
         subtitle.prepare(textMaxWidth);
@@ -604,7 +585,7 @@ public class PageBlockRichText extends PageBlock {
         }
       }
 
-      if (needQuote) {
+      for (int extraLevel = 0; extraLevel < quoteLevel; extraLevel++) {
         final int lineColor = Theme.getColor(ColorId.iv_blockQuoteLine);
         RectF rectF = Paints.getRectF();
         int lineWidth = Screen.dp(3f);
@@ -612,13 +593,13 @@ public class PageBlockRichText extends PageBlock {
         rectF.top = textTop - linePadding;
         rectF.bottom = textTop + linePadding + text.getHeight();
         if (isFullyRtl) {
-          rectF.right = viewWidth - textLeft;
-          rectF.left = viewWidth - textLeft - lineWidth;
+          rectF.right = viewWidth - textLeft - Screen.dp(QUOTE_OFFSET) * extraLevel;
+          rectF.left = rectF.right - lineWidth;
         } else {
-          rectF.left = textLeft;
-          rectF.right = textLeft + lineWidth;
+          rectF.left = textLeft + Screen.dp(QUOTE_OFFSET) * extraLevel;
+          rectF.right = rectF.left + lineWidth;
         }
-        c.drawRoundRect(rectF, lineWidth / 2, lineWidth / 2, Paints.fillingPaint(lineColor));
+        c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(lineColor));
 
         if (mergeTop) {
           c.drawRect(rectF.left, 0, rectF.right, rectF.top + lineWidth, Paints.fillingPaint(lineColor));
@@ -630,19 +611,17 @@ public class PageBlockRichText extends PageBlock {
 
       int textX = textLeft;
       int textEndX;
-      if (needQuote) {
+      if (quoteLevel > 0) {
         if (isFullyRtl) {
-          textEndX = viewWidth - textX - Screen.dp(QUOTE_OFFSET);
+          textEndX = viewWidth - textX - Screen.dp(QUOTE_OFFSET) * quoteLevel;
         } else {
-          textX += Screen.dp(QUOTE_OFFSET);
+          textX += Screen.dp(QUOTE_OFFSET) * quoteLevel;
           textEndX = textX + text.getWidth();
         }
       } else {
         textEndX = viewWidth - textX;
       }
-      if (needQuote) {
-        textLeft += Screen.dp(QUOTE_OFFSET);
-      }
+      textLeft += Screen.dp(QUOTE_OFFSET) * quoteLevel;
 
       if (detailsOpened != null) {
         int iconLeft = textLeft - Screen.dp(18f);

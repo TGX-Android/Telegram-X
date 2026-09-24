@@ -26,6 +26,12 @@
 
 int jni_init(JavaVM *vm, JNIEnv *env);
 
+#ifndef NO_ANDROIDX_MEDIA
+jint ffmpeg_jni_OnLoad(JavaVM* vm, void* reserved);
+jint opus_jni_OnLoad(JavaVM* vm, void* reserved);
+jint vpx_jni_OnLoad(JavaVM* vm, void* reserved);
+#endif
+
 jint JNI_OnLoad (JavaVM *vm, void *reserved) {
   JNIEnv *env = 0;
   srand(time(NULL));
@@ -47,6 +53,12 @@ jint JNI_OnLoad (JavaVM *vm, void *reserved) {
   /*if (gifvideoOnJNILoad(vm, env) == -1) {
       return -1;
   }*/
+
+#ifndef NO_ANDROIDX_MEDIA
+  ffmpeg_jni_OnLoad(vm, env);
+  opus_jni_OnLoad(vm, env);
+  vpx_jni_OnLoad(vm, env);
+#endif
 
   return JNI_VERSION_1_6;
 }

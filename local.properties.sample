@@ -27,3 +27,6 @@ telegram.api_hash=
 ## Obtain credentials to access YouTube API:
 # https://developers.google.com/youtube/android/player/register
 youtube.api_key=
+
+## Extension module to apply.
+tgx.extension=none

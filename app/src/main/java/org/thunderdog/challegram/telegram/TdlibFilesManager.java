@@ -806,7 +806,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
   }
 
   public void isFileLoadedAndExists (TdApi.File file, RunnableBool after) {
-    tdlib.runOnTdlibThread(() -> {
+    tdlib.executeOnTdlibThread(() -> {
       boolean loadedAndExists = TD.isFileLoadedAndExists(file);
       after.runWithBool(loadedAndExists);
     });

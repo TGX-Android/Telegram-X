@@ -116,6 +116,7 @@ import org.thunderdog.challegram.ui.RequestController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.Settings2FAController;
 import org.thunderdog.challegram.ui.SettingsController;
+import org.thunderdog.challegram.ui.SettingsDataController;
 import org.thunderdog.challegram.ui.SettingsFoldersController;
 import org.thunderdog.challegram.ui.SettingsLanguageController;
 import org.thunderdog.challegram.ui.SettingsLogOutController;
@@ -125,16 +126,19 @@ import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsPrivacyKeyController;
 import org.thunderdog.challegram.ui.SettingsProxyController;
 import org.thunderdog.challegram.ui.SettingsSessionsController;
+import org.thunderdog.challegram.ui.SettingsStickersAndEmojiController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
 import org.thunderdog.challegram.ui.SettingsWebsitesController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.ui.SimpleViewPagerController;
 import org.thunderdog.challegram.ui.camera.CameraController;
+import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.voip.VoIPLogs;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ForceTouchView;
@@ -358,11 +362,11 @@ public class TdlibUi extends Handler {
           }
 
           if (reportSpam) {
-            tdlib.client().send(new TdApi.ReportSupergroupSpam(ChatId.toSupergroupId(chatId), messageIds), tdlib.okHandler());
+            tdlib.send(new TdApi.ReportSupergroupSpam(ChatId.toSupergroupId(chatId), messageIds), tdlib.typedOkHandler());
           }
 
           if (deleteAll) {
-            tdlib.client().send(new TdApi.DeleteChatMessagesBySender(chatId, senderId), tdlib.okHandler());
+            tdlib.send(new TdApi.DeleteChatMessagesBySender(chatId, senderId), tdlib.typedOkHandler());
           } else {
             tdlib.deleteMessages(chatId, messageIds, true);
           }
@@ -589,6 +593,31 @@ public class TdlibUi extends Handler {
 
   public void showDeleteOptions (ViewController<?> context, MessageWithProperties message) {
     showDeleteOptions(context, new MessageWithProperties[] {message}, null);
+  }
+
+  public void showClearCallHistoryOptions (ViewController<?> context) {
+    tdlib.send(new TdApi.SearchCallMessages(null, 1, false), (result, error) -> {
+      if (error != null || result.messages.length == 0) {
+        return;
+      }
+      context.runOnUiThreadOptional(() ->
+        context.showSettings(new SettingsWrapBuilder(R.id.btn_delete)
+          .addHeaderItem(Lang.getMarkdownString(context, R.string.DeleteCallHistoryConfirm))
+          .setRawItems(new ListItem[] {
+            new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteCallHistoryForEveryone, false)
+          })
+          .setIntDelegate((id, result2) -> {
+            if (id == R.id.btn_delete) {
+              boolean revoke = result2.get(R.id.btn_deleteAll) != 0;
+              tdlib.clearCallsHistory(revoke, () ->
+                UI.showToast(R.string.Done, Toast.LENGTH_SHORT)
+              );
+            }
+          })
+          .setSaveStr(R.string.Delete)
+          .setSaveColorId(ColorId.textNegative))
+      );
+    });
   }
 
   public void showDeleteOptions (final ViewController<?> context, final MessageWithProperties[] messages, final @Nullable Runnable after) {
@@ -1377,7 +1406,7 @@ public class TdlibUi extends Handler {
       return;
     }
     TdApi.User user = contact.userId != 0 ? tdlib.cache().user(contact.userId) : null;
-    if (user != null) {
+    if (user != null && false) {
       addContact(context, user, contact.phoneNumber);
     } else {
       PhoneController controller = new PhoneController(context.context(), context.tdlib());
@@ -1522,9 +1551,9 @@ public class TdlibUi extends Handler {
           return false;
         }
         if (chat.type.getConstructor() == TdApi.ChatTypePrivate.CONSTRUCTOR) {
-          tdlib.client().send(new TdApi.AddChatMember(chat.id, userId, 0), tdlib.okHandler());
+          tdlib.send(new TdApi.AddChatMember(chat.id, userId, 0), tdlib.errorHandler());
         } else if (chat.type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR) {
-          tdlib.client().send(new TdApi.AddChatMembers(chat.id, new long[] {userId}), tdlib.okHandler());
+          tdlib.send(new TdApi.AddChatMembers(chat.id, new long[] {userId}), tdlib.errorHandler());
         } else {
           return false;
         }
@@ -2462,7 +2491,7 @@ public class TdlibUi extends Handler {
     if (messageLink.message != null) {
       // TODO support for album, media timestamp, etc
       MessageId messageId = new MessageId(messageLink.message.chatId, messageLink.message.id);
-      if (messageLink.messageThreadId != 0) {
+      if (Td.messageThreadId(messageLink.topicId) != 0) {
         // FIXME TDLib/Server: need GetMessageThread alternative that accepts (chatId, messageThreadId)
         context.tdlib().send(new TdApi.GetMessageThread(messageId.getChatId(), messageId.getMessageId()), (messageThreadInfo, error) -> {
           if (error != null) {
@@ -2479,6 +2508,7 @@ public class TdlibUi extends Handler {
                       repliedMessage.id,
                       null,
                       0,
+                      "",
                       null,
                       repliedMessage.date,
                       repliedMessage.content
@@ -2493,6 +2523,7 @@ public class TdlibUi extends Handler {
           }
         });
       } else {
+        // TODO: properly handle messageLink.topicId
         openMessage(context, messageLink.chatId, messageId, openParameters);
       }
     } else {
@@ -3501,6 +3532,9 @@ public class TdlibUi extends Handler {
       }
       return;
     }
+    Runnable unsupported = () -> {
+      showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+    };
     boolean ok = true;
     switch (linkType.getConstructor()) {
       case TdApi.InternalLinkTypeStickerSet.CONSTRUCTOR: {
@@ -3549,12 +3583,12 @@ public class TdlibUi extends Handler {
         break;
       }
       case TdApi.InternalLinkTypeProxy.CONSTRUCTOR: {
-        TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) linkType;
-        openProxyAlert(context, proxy.server, proxy.port, proxy.type, newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
-        break;
-      }
-      case TdApi.InternalLinkTypeUnsupportedProxy.CONSTRUCTOR: {
-        showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ProxyLinkUnsupported), openParameters);
+        TdApi.Proxy proxy = ((TdApi.InternalLinkTypeProxy) linkType).proxy;
+        if (proxy != null) {
+          openProxyAlert(context, proxy);
+        } else {
+          showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ProxyLinkUnsupported), openParameters);
+        }
         break;
       }
       case TdApi.InternalLinkTypeUserPhoneNumber.CONSTRUCTOR: {
@@ -3624,26 +3658,403 @@ public class TdlibUi extends Handler {
         startBot(context, game.botUsername, game.gameShortName, BOT_MODE_START_GAME, openParameters);
         break;
       }
-      case TdApi.InternalLinkTypeSettings.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeEditProfileSettings.CONSTRUCTOR: {
-        SettingsController c = new SettingsController(context.context(), context.tdlib());
-        context.context().navigation().navigateTo(c);
-        break;
-      }
-      case TdApi.InternalLinkTypeLanguageSettings.CONSTRUCTOR: {
-        SettingsLanguageController c = new SettingsLanguageController(context.context(), context.tdlib());
-        context.context().navigation().navigateTo(c);
-        break;
-      }
-      case TdApi.InternalLinkTypePrivacyAndSecuritySettings.CONSTRUCTOR: {
-        SettingsPrivacyController c = new SettingsPrivacyController(context.context(), context.tdlib());
-        context.context().navigation().navigateTo(c);
-        break;
-      }
-      case TdApi.InternalLinkTypeThemeSettings.CONSTRUCTOR: {
-        SettingsThemeController c = new SettingsThemeController(context.context(), context.tdlib());
-        c.setArguments(new SettingsThemeController.Args(SettingsThemeController.MODE_THEMES));
-        context.context().navigation().navigateTo(c);
+      case TdApi.InternalLinkTypeSettings.CONSTRUCTOR: {
+        TdApi.SettingsSection section = ((TdApi.InternalLinkTypeSettings) linkType).section;
+        ViewController<?> result = null;
+        if (section != null) {
+          switch (section.getConstructor()) {
+            case TdApi.SettingsSectionAppearance.CONSTRUCTOR: {
+              TdApi.SettingsSectionAppearance appearance = (TdApi.SettingsSectionAppearance) section;
+              switch (appearance.subsection) {
+                case "wallpapers":
+                case "wallpapers/edit":
+                case "wallpapers/set":
+                case "wallpapers/choose-photo": {
+                  MessagesController c = new MessagesController(context.context(), context.tdlib());
+                  c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER, null, null));
+                  result = c;
+                  break;
+                }
+
+                case "text-size":
+                case "text-size/use-system": {
+                  MessagesController c = new MessagesController(context.context(), context.tdlib());
+                  c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_FONT_SIZE, null, null));
+                  result = c;
+                  break;
+                }
+
+                case "your-color/profile":
+                case "your-color/profile/add-icons":
+                case "your-color/profile/use-gift":
+                case "your-color/profile/reset":
+                case "your-color/name":
+                case "your-color/name/add-icons":
+                case "your-color/name/use-gift":
+                case "app-icon":
+                case "tap-for-next-media": {
+                  // TODO
+                  unsupported.run();
+                  break;
+                }
+
+                case "stickers-and-emoji":
+                case "stickers-and-emoji/edit":
+                case "stickers-and-emoji/trending":
+                case "stickers-and-emoji/archived":
+                case "stickers-and-emoji/archived/edit":
+                case "stickers-and-emoji/emoji":
+                case "stickers-and-emoji/emoji/edit":
+                case "stickers-and-emoji/emoji/archived":
+                case "stickers-and-emoji/emoji/archived/edit":
+                case "stickers-and-emoji/emoji/suggest":
+                case "stickers-and-emoji/emoji/quick-reaction":
+                case "stickers-and-emoji/emoji/quick-reaction/choose":
+                case "stickers-and-emoji/suggest-by-emoji":
+                case "stickers-and-emoji/large-emoji":
+                case "stickers-and-emoji/dynamic-order":
+                case "stickers-and-emoji/emoji/show-more": {
+                  result = new SettingsStickersAndEmojiController(context.context(), context.tdlib());
+                  break;
+                }
+
+                case "animations": {
+                  SettingsThemeController c = new SettingsThemeController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsThemeController.Args(SettingsThemeController.MODE_INTERFACE_OPTIONS));
+                  result = c;
+                  break;
+                }
+
+                case "themes":
+                case "themes/edit":
+                case "themes/create":
+                case "night-mode":
+                case "auto-night-mode":
+                case "message-corners":
+                case "":
+                default: {
+                  SettingsThemeController c = new SettingsThemeController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsThemeController.Args(SettingsThemeController.MODE_THEMES));
+                  result = c;
+                  break;
+                }
+              }
+              break;
+            }
+            case TdApi.SettingsSectionChatFolders.CONSTRUCTOR: {
+              if (Settings.instance().chatFoldersEnabled()) {
+                SettingsFoldersController chatFolders = new SettingsFoldersController(context.context(), context.tdlib());
+                context.context().navigation().navigateTo(chatFolders);
+              } else {
+                showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+              }
+              break;
+            }
+            case TdApi.SettingsSectionDevices.CONSTRUCTOR: {
+              SettingsSessionsController sessions = new SettingsSessionsController(context.context(), context.tdlib());
+              SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
+              result = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController<?>[] {sessions, websites}, new String[] {Lang.uppercase(Lang.getString(R.string.Devices)), Lang.getString(R.string.Websites)}, false);
+              break;
+            }
+            case TdApi.SettingsSectionLanguage.CONSTRUCTOR: {
+              TdApi.SettingsSectionLanguage language = (TdApi.SettingsSectionLanguage) section;
+              switch (language.subsection) {
+                case "": break;
+                case "show-button": break; // for Show Translate Button toggle
+                case "translate-chats": break; // for Translate Entire Chats toggle,
+                case "do-not-translate": break; // for Do Not Translate language list.
+              }
+              result = new SettingsLanguageController(context.context(), context.tdlib());
+              break;
+            }
+            case TdApi.SettingsSectionFaq.CONSTRUCTOR: {
+              openFaq(context);
+              break;
+            }
+            case TdApi.SettingsSectionPrivacyPolicy.CONSTRUCTOR: {
+              openPrivacyPolicy(context);
+              break;
+            }
+            case TdApi.SettingsSectionAskQuestion.CONSTRUCTOR: {
+              openSupport(context.context().navigation().getCurrentStackItem());
+              break;
+            }
+            case TdApi.SettingsSectionPrivacyAndSecurity.CONSTRUCTOR: {
+              // Subsection of the section; may be one of
+              TdApi.SettingsSectionPrivacyAndSecurity privacyAndSecurity = (TdApi.SettingsSectionPrivacyAndSecurity) section;
+              switch (privacyAndSecurity.subsection) {
+                case "login-email": {
+                  NavigationController navigation = context.context().navigation();
+                  ViewController<?> current = navigation.getCurrentStackItem();
+                  if (current != null) {
+                    editLoginEmail(current);
+                  }
+                  break;
+                }
+
+                case "2sv":
+                case "2sv/change":
+                case "2sv/disable":
+                case "2sv/change-email": {
+                  NavigationController navigation = context.context().navigation();
+                  ViewController<?> current = navigation.getCurrentStackItem();
+                  if (current != null) {
+                    tdlib.send(new TdApi.GetPasswordState(), (passwordState, error) -> current.runOnUiThreadOptional(() -> {
+                      if (passwordState != null) {
+                        if (!passwordState.hasPassword) {
+                          Settings2FAController controller = new Settings2FAController(context.context(), context.tdlib());
+                          controller.setArguments(new Settings2FAController.Args(null, null, null));
+                          navigation.navigateTo(controller);
+                        } else {
+                          PasswordController controller = new PasswordController(context.context(), context.tdlib());
+                          controller.setArguments(new PasswordController.Args(PasswordController.MODE_UNLOCK_EDIT, passwordState));
+                          navigation.navigateTo(controller);
+                        }
+                      }
+                    }));
+                  }
+                  break;
+                }
+
+                case "active-websites":
+                case "active-websites/edit":
+                case "active-websites/disconnect-all": {
+                  result = new SettingsWebsitesController(context.context(), context.tdlib());
+                  break;
+                }
+
+                case "phone-number":
+                case "phone-number/never":
+                case "phone-number/always": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingShowPhoneNumber()));
+                  result = c;
+                  break;
+                }
+
+                case "last-seen":
+                case "last-seen/never":
+                case "last-seen/always":
+                case "last-seen/hide-read-time": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingShowStatus()));
+                  result = c;
+                  break;
+                }
+
+                case "profile-photos":
+                case "profile-photos/never":
+                case "profile-photos/always":
+                case "profile-photos/set-public":
+                case "profile-photos/update-public":
+                case "profile-photos/remove-public": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingShowProfilePhoto()));
+                  result = c;
+                  break;
+                }
+
+                case "bio":
+                case "bio/never":
+                case "bio/always": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingShowBio()));
+                  result = c;
+                  break;
+                }
+
+                case "gifts":
+                case "gifts/show-icon":
+                case "gifts/never":
+                case "gifts/always":
+                case "gifts/accepted-types": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingAutosaveGifts()));
+                  result = c;
+                  break;
+                }
+
+                case "birthday":
+                case "birthday/add":
+                case "birthday/never":
+                case "birthday/always": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingShowBirthdate()));
+                  result = c;
+                  break;
+                }
+
+                case "saved-music":
+                case "saved-music/never":
+                case "saved-music/always": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingShowProfileAudio()));
+                  result = c;
+                  break;
+                }
+
+                case "forwards":
+                case "forwards/never":
+                case "forwards/always": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingShowLinkInForwardedMessages()));
+                  result = c;
+                  break;
+                }
+
+                case "calls":
+                case "calls/never":
+                case "calls/always": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingAllowCalls()));
+                  result = c;
+                  break;
+                }
+
+                case "calls/p2p":
+                case "calls/p2p/never":
+                case "calls/p2p/always": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingAllowPeerToPeerCalls()));
+                  result = c;
+                  break;
+                }
+
+                case "calls/ios-integration": {
+                  // TODO different text?
+                  unsupported.run();
+                  break;
+                }
+
+                case "voice":
+                case "voice/never":
+                case "voice/always": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages()));
+                  result = c;
+                  break;
+                }
+
+                case "invites":
+                case "invites/never":
+                case "invites/always": {
+                  SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
+                  c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingAllowChatInvites()));
+                  result = c;
+                  break;
+                }
+
+                case "passcode":
+                case "passcode/disable":
+                case "passcode/change":
+                case "passcode/auto-lock":
+                case "passcode/face-id":
+                case "passcode/fingerprint": {
+                  openPasscodeSetup(context);
+                  break;
+                }
+
+                case "passkey":
+                case "passkey/create":
+
+                case "messages":
+                case "messages/set-price":
+                case "messages/exceptions":
+
+                case "blocked":
+                case "blocked/edit":
+                case "blocked/block-user":
+                case "blocked/block-user/chats":
+                case "blocked/block-user/contacts":
+
+                case "auto-delete":
+                case "auto-delete/set-custom":
+
+                case "self-destruct":
+
+                case "data-settings":
+                case "data-settings/sync-contacts":
+                case "data-settings/delete-synced":
+                case "data-settings/suggest-contacts":
+                case "data-settings/delete-cloud-drafts":
+                case "data-settings/clear-payment-info":
+                case "data-settings/link-previews":
+                case "data-settings/bot-settings":
+                case "data-settings/map-provider":
+                case "archive-and-mute":
+                  break;
+
+                case "":
+                default: {
+                  result = new SettingsPrivacyController(context.context(), context.tdlib());
+                  break;
+                }
+              }
+              break;
+            }
+            case TdApi.SettingsSectionNotifications.CONSTRUCTOR: {
+              break;
+            }
+            case TdApi.SettingsSectionEditProfile.CONSTRUCTOR: {
+              TdApi.SettingsSectionEditProfile editProfile = (TdApi.SettingsSectionEditProfile) section;
+              switch (editProfile.subsection) {
+                case "change-number": {
+                  result = new SettingsPhoneController(context.context(), context.tdlib());
+                  break;
+                }
+                case "":
+                case "set-photo":
+                case "first-name":
+                case "last-name":
+                case "emoji-status":
+                case "bio":
+                case "birthday":
+                case "username":
+                case "your-color":
+                case "channel":
+                case "add-account":
+                case "log-out":
+                case "profile-color/profile":
+                case "profile-color/profile/add-icons":
+                case "profile-color/profile/use-gift":
+                case "profile-color/name":
+                case "profile-color/name/add-icons":
+                case "profile-color/name/use-gift":
+                case "profile-photo/use-emoji": {
+                  result = new SettingsController(context.context(), context.tdlib());
+                  break;
+                }
+              }
+              break;
+            }
+            case TdApi.SettingsSectionDataAndStorage.CONSTRUCTOR: {
+              result = new SettingsDataController(context.context(), context.tdlib());
+              break;
+            }
+            case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
+            case TdApi.SettingsSectionSearch.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyStars.CONSTRUCTOR:
+            case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
+            case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
+            case TdApi.SettingsSectionPremium.CONSTRUCTOR:
+            case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
+            case TdApi.SettingsSectionBusiness.CONSTRUCTOR:
+            case TdApi.SettingsSectionInAppBrowser.CONSTRUCTOR:
+            case TdApi.SettingsSectionFeatures.CONSTRUCTOR: {
+              unsupported.run();
+              break;
+            }
+            default: {
+              Td.assertSettingsSection_c6f544dd();
+              throw Td.unsupported(section);
+            }
+          }
+        } else {
+          result = new SettingsController(context.context(), context.tdlib());
+        }
+        if (result != null) {
+          context.context().navigation().navigateTo(result);
+        }
         break;
       }
       case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
@@ -3671,17 +4082,10 @@ public class TdlibUi extends Handler {
         openExternalUrl(context, instantView.url, instantViewOpenParameters, after);
         break;
       }
-      case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
-        SettingsSessionsController sessions = new SettingsSessionsController(context.context(), context.tdlib());
-        SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
-        ViewController<?> c = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController<?>[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
-        context.context().navigation().navigateTo(c);
-        break;
-      }
 
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeLiveStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStoryAlbum.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
       case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
@@ -3689,19 +4093,32 @@ public class TdlibUi extends Handler {
 
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
 
-      case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
-      case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyToncoins.CONSTRUCTOR:
 
-      case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
-        showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+      case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR:
+
+      case TdApi.InternalLinkTypeCallsPage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeChatSelection.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMyProfilePage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewChannelChat.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewGroupChat.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewPrivateChat.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeNewStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeOauth.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumGiftPurchase.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeRequestManagedBot.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeSavedMessages.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeSearch.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeTextCompositionStyle.CONSTRUCTOR: {
+        unsupported.run();
         break;
       }
 
@@ -3723,12 +4140,6 @@ public class TdlibUi extends Handler {
             });
           }
         });
-        break;
-      }
-
-      case TdApi.InternalLinkTypeChangePhoneNumber.CONSTRUCTOR: {
-        SettingsPhoneController c = new SettingsPhoneController(context.context(), context.tdlib());
-        context.context().navigation().navigateTo(c);
         break;
       }
       case TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR: {
@@ -3762,15 +4173,6 @@ public class TdlibUi extends Handler {
           }
         });
         return;
-      }
-      case TdApi.InternalLinkTypeChatFolderSettings.CONSTRUCTOR: {
-        if (Settings.instance().chatFoldersEnabled()) {
-          SettingsFoldersController chatFolders = new SettingsFoldersController(context.context(), context.tdlib());
-          context.context().navigation().navigateTo(chatFolders);
-        } else {
-          showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
-        }
-        break;
       }
       case TdApi.InternalLinkTypeChatFolderInvite.CONSTRUCTOR: {
         if (Settings.instance().chatFoldersEnabled()) {
@@ -3835,12 +4237,67 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_eaa9fead();
+        Td.assertInternalLinkType_44babac4();
         throw Td.unsupported(linkType);
       }
     }
     if (after != null) {
       after.runWithBool(ok);
+    }
+  }
+
+  public void openPasscodeSetup (TdlibDelegate context) {
+    if (Passcode.instance().isEnabled()) {
+      PasscodeController passcode = new PasscodeController(context.context(), context.tdlib());
+      passcode.setPasscodeMode(PasscodeController.MODE_UNLOCK_SETUP);
+      context.context().navigation().navigateTo(passcode);
+    } else {
+      context.context().navigation().navigateTo(new PasscodeSetupController(context.context(), context.tdlib()));
+    }
+  }
+
+  public void openFaq (TdlibDelegate context) {
+    tdlib.ui().openUrl(context, Lang.getString(R.string.url_faq), new TdlibUi.UrlOpenParameters().forceInstantView());
+  }
+
+  public void openPrivacyPolicy (TdlibDelegate context) {
+    tdlib.ui().openUrl(context, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
+  }
+
+  public void editLoginEmail (ViewController<?> context) {
+    context.tdlib().send(new TdApi.GetPasswordState(), (passwordState, error) -> {
+      if (passwordState != null) {
+        context.runOnUiThreadOptional(() -> {
+          editLoginEmail(context, passwordState);
+        });
+      }
+    });
+  }
+
+  public void editLoginEmail (ViewController<?> context, @NonNull TdApi.PasswordState passwordState) {
+    Runnable act = () -> {
+      PasswordController controller = new PasswordController(context.context(), context.tdlib());
+      controller.setArguments(new PasswordController.Args(PasswordController.MODE_LOGIN_EMAIL_CHANGE, passwordState));
+      context.navigateTo(controller);
+    };
+    if (StringUtils.isEmpty(passwordState.loginEmailAddressPattern)) {
+      act.run();
+    } else {
+      ViewController.Options.Builder b = new ViewController.Options.Builder()
+        .info(Lang.getMarkdownString(context, R.string.ChangeEmailPromptText))
+        .item(new ViewController.OptionItem.Builder().id(R.id.btn_changeEmail).name(R.string.ChangeEmailPromptButton).icon(R.drawable.baseline_edit_24).build())
+        .cancelItem();
+      if (!StringUtils.isEmpty(passwordState.loginEmailAddressPattern)) {
+        // TODO(spoiler): replace `*` with the spoiler effect
+        b.title(passwordState.loginEmailAddressPattern);
+      }
+      context.showOptions(b.build(), (optionView, optionId) -> {
+          if (optionId == R.id.btn_changeEmail) {
+            act.run();
+          }
+          return true;
+        }
+      );
     }
   }
 
@@ -3892,10 +4349,15 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public void openProxyAlert (TdlibDelegate context, String server, int port, TdApi.ProxyType type, String proxyDescription) {
+  public void openProxyAlert (TdlibDelegate context, @Nullable TdApi.Proxy proxy) {
     ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c == null)
       return;
+    if (proxy == null) {
+      // unsupported proxy
+      return;
+    }
+    String proxyDescription = newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString();
 
     final SpannableStringBuilder msg = Strings.buildHtml(proxyDescription);
     msg.insert(0, "\n\n");
@@ -3904,7 +4366,7 @@ public class TdlibUi extends Handler {
     msg.setSpan(TD.newBoldSpan(title), 0, title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     msg.append("\n\n");
     msg.append(Lang.getString(R.string.EnableProxyAlertHint));
-    if (type.getConstructor() == TdApi.ProxyTypeMtproto.CONSTRUCTOR) {
+    if (proxy.type.getConstructor() == TdApi.ProxyTypeMtproto.CONSTRUCTOR) {
       msg.append("\n\n");
       msg.append(Lang.getString(R.string.EnableProxyAlertHintMtproto));
     }
@@ -3930,9 +4392,9 @@ public class TdlibUi extends Handler {
 
     c.showOptions(msg, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
       if (id == R.id.btn_addProxy) {
-        Settings.instance().addOrUpdateProxy(new TdApi.InternalLinkTypeProxy(server, port, type), null, true);
+        Settings.instance().addOrUpdateProxy(proxy, null, true);
       } else if (id == R.id.btn_save) {
-        Settings.instance().addOrUpdateProxy(new TdApi.InternalLinkTypeProxy(server, port, type), null, false);
+        Settings.instance().addOrUpdateProxy(proxy, null, false);
       }
       return true;
     });
@@ -4015,7 +4477,7 @@ public class TdlibUi extends Handler {
     removeAccount(context, tdlib.account(), true);
     /*context.showOptions(new int[]{R.id.btn_logout, R.id.btn_cancel}, new String[]{Lang.getString(R.string.LogOut), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, id -> {
       if (id == R.id.btn_logout) {
-        tdlib.client().send(new TdApi.LogOut(), tdlib.okHandler());
+        tdlib.send(new TdApi.LogOut(), tdlib.typedOkHandler());
         // TD.clearAll(tdlib.id(), true);
         ImageLoader.instance().clear(tdlib.id(), true);
         *//* TODO reset prefs
@@ -4131,12 +4593,12 @@ public class TdlibUi extends Handler {
         c.navigateTo(e);
       } else if (id == R.id.btn_proxyQr) {
         postDelayed(() -> c.openInAppCamera(new ViewController.CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).optionalMicrophone(true).qrModeSubtitle(R.string.ScanQRFullSubtitleProxy).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> {
-          context.tdlib().client().send(new TdApi.GetInternalLinkType(qrCode), result -> {
-            if (result.getConstructor() == TdApi.InternalLinkTypeProxy.CONSTRUCTOR) {
-              post(() -> {
-                TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) result;
-                openProxyAlert(context, proxy.server, proxy.port, proxy.type, TdlibUi.newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
-              });
+          context.tdlib().send(new TdApi.GetInternalLinkType(qrCode), (internalLinkType, error) -> {
+            if (internalLinkType != null && internalLinkType.getConstructor() == TdApi.InternalLinkTypeProxy.CONSTRUCTOR) {
+              TdApi.Proxy proxy = ((TdApi.InternalLinkTypeProxy) internalLinkType).proxy;
+              post(() ->
+                openProxyAlert(context, proxy)
+              );
             }
           });
         })), 250L);
@@ -4282,7 +4744,7 @@ public class TdlibUi extends Handler {
           return;
         }
         TdApi.ChatMemberStatusCreator oldStatus = ((TdApi.ChatMemberStatusCreator) status);
-        newStatus = new TdApi.ChatMemberStatusCreator(oldStatus.customTitle, oldStatus.isAnonymous, forceAdd);
+        newStatus = new TdApi.ChatMemberStatusCreator(oldStatus.isAnonymous, forceAdd);
         if (!forceAdd) {
           informationStr = Lang.getString(hasPublicLink ? (isChannel ? R.string.LeaveReturnPublicLinkHintChannel : R.string.LeaveReturnPublicLinkHintGroup) : (isChannel ? R.string.LeaveCreatorHintChannel : R.string.LeaveCreatorHintGroup));
           confirmButtonRes = isChannel ? R.string.LeaveChannel : R.string.LeaveMegaMenu;
@@ -4348,7 +4810,7 @@ public class TdlibUi extends Handler {
       long myUserId = tdlib.myUserId();
       if (myUserId != 0) {
         if (needAdd) {
-          tdlib.client().send(new TdApi.AddChatMember(chatId, myUserId, 0), tdlib.okHandler());
+          tdlib.send(new TdApi.AddChatMember(chatId, myUserId, 0), tdlib.errorHandler());
         } else {
           Client.ResultHandler handler = tdlib.okHandler();
           if (deleteChat) {
@@ -4356,7 +4818,7 @@ public class TdlibUi extends Handler {
               switch (result.getConstructor()) {
                 case TdApi.Ok.CONSTRUCTOR: {
                   if (ChatId.isBasicGroup(chatId)) {
-                    tdlib.client().send(new TdApi.DeleteChatHistory(chatId, true, false), tdlib.okHandler());
+                    tdlib.send(new TdApi.DeleteChatHistory(chatId, true, false), tdlib.typedOkHandler());
                   }
                   break;
                 }
@@ -4475,7 +4937,7 @@ public class TdlibUi extends Handler {
         })
         .setIntDelegate((id, result) -> {
           boolean clearHistory = result.get(R.id.btn_clearChatHistory) == R.id.btn_clearChatHistory;
-          tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, clearHistory), tdlib.okHandler());
+          tdlib.send(new TdApi.DeleteChatHistory(chatId, false, clearHistory), tdlib.typedOkHandler());
           U.run(after);
         }));
     } else {
@@ -4507,7 +4969,7 @@ public class TdlibUi extends Handler {
             if (needSecondaryConfirm && !isSecondaryConfirm) {
               showClearHistoryConfirm(context, chatId, after, true);
             } else {
-              tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, revoke), tdlib.okHandler());
+              tdlib.send(new TdApi.DeleteChatHistory(chatId, false, revoke), tdlib.typedOkHandler());
               U.run(after);
             }
           }
@@ -5018,7 +5480,7 @@ public class TdlibUi extends Handler {
         context.showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[] {R.id.btn_deleteLink, R.id.btn_cancel}, new String[] {Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
           if (id2 == R.id.btn_deleteLink) {
             if (onLinkDeleted != null) onLinkDeleted.run();
-            context.tdlib().client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), tdlib.okHandler());
+            context.tdlib().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), tdlib.typedOkHandler());
           }
 
           return true;
@@ -6012,7 +6474,7 @@ public class TdlibUi extends Handler {
     if (!StringUtils.isEmpty(author)) {
       conversion += "," + author;
     }
-    TdApi.InputMessageContent content = new TdApi.InputMessageDocument(new TdApi.InputFileGenerated(fileName, conversion, 0), null, false, null);
+    TdApi.InputMessageContent content = new TdApi.InputMessageDocument(new TdApi.InputDocument(new TdApi.InputFileGenerated(fileName, conversion, 0), null, false), null);
     ShareController c = new ShareController(context.context(), context.tdlib());
     c.setArguments(new ShareController.Args(content));
     c.show();
@@ -6778,7 +7240,7 @@ public class TdlibUi extends Handler {
       } else if (menuItemId == R.id.btn_sendNoMarkdown) {
         sendCallback.onSendRequested(Td.newSendOptions(), true);
       } else if (menuItemId == R.id.btn_sendNoSound) {
-        sendCallback.onSendRequested(Td.newSendOptions(0L, null, true), false);
+        sendCallback.onSendRequested(Td.newSendOptions(null, true), false);
       } else if (menuItemId == R.id.btn_sendOnceOnline) {
         sendCallback.onSendRequested(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
       }
@@ -6847,7 +7309,7 @@ public class TdlibUi extends Handler {
     context.showOptions(null, ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
       long seconds = 0;
       if (optionId == R.id.btn_sendNoSound) {
-        callback.runWithData(Td.newSendOptions(defaultSendOptions, 0L, null, true));
+        callback.runWithData(Td.newSendOptions(defaultSendOptions, null, true));
         return true;
       } else if (optionId == R.id.btn_sendOnceOnline) {
         callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()));
@@ -6879,13 +7341,13 @@ public class TdlibUi extends Handler {
         }
         context.showDateTimePicker(Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
           int sendDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis);
-          callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate)));
+          callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate, 0 /*TODO: repeat period*/)));
         }, forcedTheme);
         return true;
       }
       if (seconds > 0) {
         int sendDate = (int) (tdlib.currentTime(TimeUnit.SECONDS) + seconds);
-        callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate)));
+        callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate, 0 /*TODO: repeat period*/)));
       }
       return true;
     }, forcedTheme);
@@ -6896,7 +7358,7 @@ public class TdlibUi extends Handler {
     if (tdlib.cache().userContact(userId)) {
       context.showOptions(Lang.getStringBold(R.string.DeleteContactConfirm, tdlib.cache().userName(userId)), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
         if (!context.isDestroyed() && id1 == R.id.btn_delete) {
-          tdlib.client().send(new TdApi.RemoveContacts(new long[] {userId}), tdlib.okHandler());
+          tdlib.send(new TdApi.RemoveContacts(new long[] {userId}), tdlib.typedOkHandler());
         }
         return true;
       });
@@ -7055,8 +7517,11 @@ public class TdlibUi extends Handler {
       case TdApi.PremiumLimitTypeShareableChatFolderCount.CONSTRUCTOR:
         effectiveLimit = tdlib.addedShareableChatFolderCountMax();
         break;
+      case TdApi.PremiumLimitTypeMessageTextLength.CONSTRUCTOR:
+        effectiveLimit = tdlib.maxMessageTextLength();
+        break;
       default:
-        Td.assertPremiumLimitType_6d916432();
+        Td.assertPremiumLimitType_f8cc4a60();
         throw Td.unsupported(premiumLimitType);
     }
 
@@ -7730,7 +8195,8 @@ public class TdlibUi extends Handler {
           new int[] {R.id.btn_send, R.id.btn_cancel},
           new String[] {Lang.getString(R.string.SetBirthdateOk), Lang.getString(R.string.Cancel)},
           new int[] {ViewController.OptionColor.BLUE, ViewController.OptionColor.NORMAL},
-          new int[] {R.drawable.baseline_check_24, R.drawable.baseline_cancel_24}
+          new int[] {R.drawable.baseline_check_24, R.drawable.baseline_cancel_24},
+          Text.LINE_COUNT_UNLIMITED
         );
         options.setIgnoreOtherPopUps(true);
         controller.showOptions(options, (optionItemView, id) -> {
