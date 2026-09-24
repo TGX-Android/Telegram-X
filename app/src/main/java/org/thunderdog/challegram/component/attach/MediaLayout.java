@@ -1696,7 +1696,11 @@ public class MediaLayout extends FrameLayoutFix implements
   private void updateMediaOptionMargins () {
     int rightMargin = Screen.dp(55f) + (allowSpoiler ? Screen.dp(48f) : 0);
     Views.setRightMargin(hdMediaView, rightMargin);
-    Views.setRightMargin(groupMediaView, rightMargin + (allowHd ? Screen.dp(48f) : 0));
+    rightMargin += allowHd ? Screen.dp(48f) : 0;
+    Views.setRightMargin(groupMediaView, rightMargin);
+    rightMargin += Screen.dp(55f);
+    Views.setRightMargin(counterView, rightMargin);
+    Views.setRightMargin(counterHintView, rightMargin);
   }
 
   public void setNeedSpoiler (boolean needSpoiler) {
