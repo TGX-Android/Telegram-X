@@ -574,6 +574,21 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
+  public boolean allowSendHd () {
+    return mediaLayout.allowHd();
+  }
+
+  @Override
+  public boolean isSendHdEnabled () {
+    return mediaLayout.needHd();
+  }
+
+  @Override
+  public void onSendHdStateChanged (boolean sendHd) {
+    mediaLayout.setNeedHd(sendHd);
+  }
+
+  @Override
   public boolean showCaptionAboveMedia () {
     return mediaLayout.showCaptionAboveMedia();
   }

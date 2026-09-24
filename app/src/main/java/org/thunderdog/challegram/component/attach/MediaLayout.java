@@ -1678,7 +1678,15 @@ public class MediaLayout extends FrameLayoutFix implements
     }
   }
 
-  private void setNeedHd (boolean needHd) {
+  public boolean allowHd () {
+    return allowHd;
+  }
+
+  public boolean needHd () {
+    return needHd;
+  }
+
+  public void setNeedHd (boolean needHd) {
     if (this.needHd != needHd) {
       this.needHd = needHd;
       Settings.instance().setNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS, needHd);
