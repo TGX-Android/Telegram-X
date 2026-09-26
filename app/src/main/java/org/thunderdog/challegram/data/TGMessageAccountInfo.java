@@ -17,6 +17,7 @@ package org.thunderdog.challegram.data;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.view.Gravity;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -60,12 +61,16 @@ public class TGMessageAccountInfo extends TGMessage {
     useBubbles() ? getBubbleDateTextColor() : Theme.textAccentColor();
 
   private final Drawable footerIcon;
+  private final Drawable commonGroupsArrow;
   private Text title, subtitle, footer;
   private boolean footerHasIcon;
   private final List<Text> rowKeys = new ArrayList<>();
   private final List<Text> rowValues = new ArrayList<>();
   private final List<Text> notices = new ArrayList<>();
   private int cardWidth, cardHeight, keyColumnWidth, rowsWidth;
+  private final TGAvatars commonGroupsAvatars;
+  private boolean commonGroupsRequested;
+  private int commonGroupsRow = -1;
 
   public TGMessageAccountInfo (MessagesManager context, long chatId, TdApi.AccountInfo info) {
     super(context, TD.newFakeMessage(
@@ -74,6 +79,9 @@ public class TGMessageAccountInfo extends TGMessage {
     ));
     this.info = info;
     this.footerIcon = Drawables.get(context.controller().context().getResources(), R.drawable.baseline_error_18);
+    this.commonGroupsArrow = Drawables.get(context.controller().context().getResources(), R.drawable.round_keyboard_arrow_right_16);
+    this.commonGroupsAvatars = new TGAvatars(tdlib, this, currentViews);
+    this.commonGroupsAvatars.setDimensions(AVATAR_RADIUS, 1.5f, -4f);
   }
 
   public static boolean isEmpty (@Nullable TdApi.AccountInfo info) {
@@ -82,6 +90,23 @@ public class TGMessageAccountInfo extends TGMessage {
 
   public void onUserFullUpdated () {
     rebuildAndUpdateContent();
+  }
+
+  private void requestCommonGroups (long userId) {
+    if (commonGroupsRequested) {
+      return;
+    }
+    commonGroupsRequested = true;
+    tdlib.send(new TdApi.GetGroupsInCommon(userId, 0, 3), (chats, error) -> {
+      if (error == null) {
+        tdlib.ui().post(() -> {
+          if (!isDestroyed()) {
+            commonGroupsAvatars.setChatIds(chats.chatIds, false);
+            rebuildAndUpdateContent();
+          }
+        });
+      }
+    });
   }
 
   @Nullable
@@ -128,6 +153,8 @@ public class TGMessageAccountInfo extends TGMessage {
   private static final float ROW_SPACING = 6f;
   private static final float NOTICE_MARGIN = 14f;
   private static final float FOOTER_ICON_GAP = 6f;
+  private static final float AVATAR_RADIUS = 8f;
+  private static final float AVATARS_GAP = 6f;
 
   @Override
   protected void buildContent (int maxWidth) {
@@ -155,9 +182,12 @@ public class TGMessageAccountInfo extends TGMessage {
       keys.add(Lang.getString(R.string.AccountInfoRegistration));
       values.add(registration);
     }
+    commonGroupsRow = -1;
     if (groupInCommonCount > 0) {
+      commonGroupsRow = keys.size();
       keys.add(Lang.getString(R.string.AccountInfoCommonGroups));
       values.add(Lang.plural(R.string.xGroups, groupInCommonCount));
+      requestCommonGroups(userId);
     }
 
     rowKeys.clear();
@@ -170,9 +200,14 @@ public class TGMessageAccountInfo extends TGMessage {
     }
     int valueMaxWidth = Math.max(0, maxTextWidth - keyColumnWidth - Screen.dp(ROW_GAP));
     int valueColumnWidth = 0;
-    for (String value : values) {
-      Text text = newText(value, valueMaxWidth, true, false);
-      valueColumnWidth = Math.max(valueColumnWidth, text.getWidth());
+    int avatarsWidth = (int) commonGroupsAvatars.getAnimatedWidth();
+    for (int i = 0; i < values.size(); i++) {
+      int reservedWidth = 0;
+      if (i == commonGroupsRow) {
+        reservedWidth = (avatarsWidth > 0 ? Screen.dp(AVATARS_GAP) + avatarsWidth : 0) + commonGroupsArrow.getMinimumWidth();
+      }
+      Text text = newText(values.get(i), Math.max(0, valueMaxWidth - reservedWidth), true, false);
+      valueColumnWidth = Math.max(valueColumnWidth, text.getWidth() + reservedWidth);
       rowValues.add(text);
     }
     rowsWidth = rowKeys.isEmpty() ? 0 : keyColumnWidth + Screen.dp(ROW_GAP) + valueColumnWidth;
@@ -264,7 +299,23 @@ public class TGMessageAccountInfo extends TGMessage {
   }
 
   private int getRowHeight (int index) {
-    return Math.max(rowKeys.get(index).getHeight(), rowValues.get(index).getHeight());
+    int height = Math.max(rowKeys.get(index).getHeight(), rowValues.get(index).getHeight());
+    return index == commonGroupsRow ? Math.max(height, Screen.dp(AVATAR_RADIUS) * 2) : height;
+  }
+
+  @Override
+  public boolean needComplexReceiver () {
+    return true;
+  }
+
+  @Override
+  public void requestMediaContent (ComplexReceiver receiver, boolean invalidate, int invalidateArg) {
+    commonGroupsAvatars.requestFiles(receiver, invalidate, false);
+  }
+
+  @Override
+  public void onInvalidateMedia (TGAvatars avatars) {
+    invalidateContentReceiver();
   }
 
   @Override
@@ -282,7 +333,7 @@ public class TGMessageAccountInfo extends TGMessage {
   }
 
   @Override
-  protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
+  protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth, ComplexReceiver receiver) {
     if (title == null) {
       return;
     }
@@ -311,9 +362,23 @@ public class TGMessageAccountInfo extends TGMessage {
           y += Screen.dp(ROW_SPACING);
         }
         Text key = rowKeys.get(i);
-        key.draw(c, keysRight - key.getWidth(), y);
-        rowValues.get(i).draw(c, keysRight + Screen.dp(ROW_GAP), y);
-        y += getRowHeight(i);
+        Text value = rowValues.get(i);
+        int rowHeight = getRowHeight(i);
+        key.draw(c, keysRight - key.getWidth(), y + (rowHeight - key.getHeight()) / 2);
+        value.draw(c, keysRight + Screen.dp(ROW_GAP), y + (rowHeight - value.getHeight()) / 2);
+        if (i == commonGroupsRow) {
+          int avatarsX = keysRight + Screen.dp(ROW_GAP) + value.getWidth() + Screen.dp(AVATARS_GAP);
+          commonGroupsAvatars.draw(c, receiver, avatarsX, y + rowHeight / 2, Gravity.LEFT, 1f);
+          int arrowX = avatarsX + (int) commonGroupsAvatars.getAnimatedWidth();
+          if (commonGroupsAvatars.getAnimatedWidth() == 0) {
+            arrowX -= Screen.dp(AVATARS_GAP);
+          }
+          Drawables.draw(c, commonGroupsArrow,
+            arrowX, y + (rowHeight - commonGroupsArrow.getMinimumHeight()) / 2f,
+            Paints.getPorterDuffPaint(primaryColorSet.defaultTextColor())
+          );
+        }
+        y += rowHeight;
       }
     }
 
