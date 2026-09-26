@@ -18,6 +18,8 @@ import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -43,6 +45,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 
@@ -71,6 +74,23 @@ public class TGMessageAccountInfo extends TGMessage {
   private final TGAvatars commonGroupsAvatars;
   private boolean commonGroupsRequested;
   private int commonGroupsRow = -1;
+  private int commonGroupsRowTop, commonGroupsRowBottom;
+
+  private final ClickHelper clickHelper = new ClickHelper(new ClickHelper.Delegate() {
+    @Override
+    public boolean needClickAt (View view, float x, float y) {
+      return isWithinCard(x, y);
+    }
+
+    @Override
+    public void onClickAt (View view, float x, float y) {
+      TdApi.Chat chat = tdlib.chat(getChatId());
+      if (chat != null) {
+        boolean openGroupsInCommon = commonGroupsRow != -1 && y >= commonGroupsRowTop && y < commonGroupsRowBottom;
+        tdlib.ui().openChatProfile(messagesController(), chat, null, null, openGroupsInCommon);
+      }
+    }
+  });
 
   public TGMessageAccountInfo (MessagesManager context, long chatId, TdApi.AccountInfo info) {
     super(context, TD.newFakeMessage(
@@ -303,6 +323,27 @@ public class TGMessageAccountInfo extends TGMessage {
     return index == commonGroupsRow ? Math.max(height, Screen.dp(AVATAR_RADIUS) * 2) : height;
   }
 
+  private boolean isWithinCard (float x, float y) {
+    int top = getContentY();
+    return title != null && Math.abs(x - width / 2f) <= cardWidth / 2f && y >= top && y < top + cardHeight;
+  }
+
+  @Override
+  public boolean onTouchEvent (MessageView view, MotionEvent e) {
+    if (super.onTouchEvent(view, e)) {
+      return true;
+    }
+    boolean res = footer != null && !footerHasIcon && footer.onTouchEvent(view, e);
+    return res || clickHelper.onTouchEvent(view, e);
+  }
+
+  @Override
+  public boolean performLongPress (View view, float x, float y) {
+    boolean res = super.performLongPress(view, x, y);
+    clickHelper.cancel(view, x, y);
+    return res;
+  }
+
   @Override
   public boolean needComplexReceiver () {
     return true;
@@ -367,6 +408,8 @@ public class TGMessageAccountInfo extends TGMessage {
         key.draw(c, keysRight - key.getWidth(), y + (rowHeight - key.getHeight()) / 2);
         value.draw(c, keysRight + Screen.dp(ROW_GAP), y + (rowHeight - value.getHeight()) / 2);
         if (i == commonGroupsRow) {
+          commonGroupsRowTop = y - Screen.dp(ROW_SPACING) / 2;
+          commonGroupsRowBottom = y + rowHeight + Screen.dp(ROW_SPACING) / 2;
           int avatarsX = keysRight + Screen.dp(ROW_GAP) + value.getWidth() + Screen.dp(AVATARS_GAP);
           commonGroupsAvatars.draw(c, receiver, avatarsX, y + rowHeight / 2, Gravity.LEFT, 1f);
           int arrowX = avatarsX + (int) commonGroupsAvatars.getAnimatedWidth();
