@@ -2035,7 +2035,7 @@ public class Lang {
     return systemDate(timeMs, STYLE_LONG, "d MMMM yyyy");
   }
 
-  private static String monthYearFull (long unixTime, TimeUnit unit) {
+  public static String monthYearFull (long unixTime, TimeUnit unit) {
     long timeMs = unit.toMillis(unixTime);
     return StringUtils.ucfirst(systemDateWithoutDay(timeMs, STYLE_LONG, "LLLL yyyy"), dateFormatLocale());
   }
