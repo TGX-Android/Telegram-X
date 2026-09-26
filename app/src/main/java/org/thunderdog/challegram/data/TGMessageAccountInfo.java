@@ -52,7 +52,7 @@ import me.vkryl.core.StringUtils;
 import tgx.td.Td;
 
 public class TGMessageAccountInfo extends TGMessage {
-  private final TdApi.AccountInfo info;
+  private TdApi.AccountInfo info;
 
   private final TextColorSet primaryColorSet = () ->
     useBubbles() ? getBubbleTransparentTextColor(manager) : Theme.textAccentColor();
@@ -108,7 +108,12 @@ public class TGMessageAccountInfo extends TGMessage {
     return info == null || (StringUtils.isEmpty(info.phoneNumberCountryCode) && registrationText(info) == null);
   }
 
-  public void onUserFullUpdated () {
+  public void setAccountInfo (TdApi.AccountInfo info) {
+    this.info = info;
+    rebuildAndUpdateContent();
+  }
+
+  public void updateUserInfo () {
     rebuildAndUpdateContent();
   }
 

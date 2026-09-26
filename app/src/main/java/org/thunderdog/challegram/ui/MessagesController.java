@@ -8292,15 +8292,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (!needActionBar() || botHelper != null) {
       return;
     }
-    if (accountInfoMessage != null && !accountInfoMessage.isDestroyed()) {
-      return;
-    }
     TdApi.Chat chat = tdlib.chat(getChatId());
     if (chat == null || chat.actionBar == null || chat.actionBar.getConstructor() != TdApi.ChatActionBarReportAddBlock.CONSTRUCTOR) {
       return;
     }
     TdApi.AccountInfo info = ((TdApi.ChatActionBarReportAddBlock) chat.actionBar).accountInfo;
     if (TGMessageAccountInfo.isEmpty(info)) {
+      return;
+    }
+    if (accountInfoMessage != null && !accountInfoMessage.isDestroyed()) {
+      accountInfoMessage.setAccountInfo(info);
       return;
     }
     accountInfoMessage = new TGMessageAccountInfo(manager, chat.id, info);
@@ -11113,6 +11114,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onUserUpdated (TdApi.User user) {
+    if (chat != null && user != null && TD.getUserId(chat) == user.id) {
+      runOnUiThreadOptional(() -> {
+        if (accountInfoMessage != null && !accountInfoMessage.isDestroyed()) {
+          accountInfoMessage.updateUserInfo();
+        }
+      });
+    }
     if (chat != null && user != null && headerCell != null && TD.getUserId(chat) == user.id) {
       runOnUiThreadOptional(() -> {
         headerCell.setEmojiStatus(user);
@@ -11132,7 +11140,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (chat != null && TD.getUserId(chat) == userId) {
         updateBottomBar(true);
         if (accountInfoMessage != null && !accountInfoMessage.isDestroyed()) {
-          accountInfoMessage.onUserFullUpdated();
+          accountInfoMessage.updateUserInfo();
         }
       }
     });
