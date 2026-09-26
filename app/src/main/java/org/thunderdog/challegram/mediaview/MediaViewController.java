@@ -6910,13 +6910,19 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private TooltipOverlayView.TooltipInfo brushToneHint;
 
   private void hidePaintEditor () {
-    paintView.setEditorVisible(false);
-    if (paintingItem.setPaintState(paintingItem.getPaintState(), false)) {
-      mediaView.getBaseReceiver().invalidate();
+    if (paintView != null) {
+      paintView.setEditorVisible(false);
     }
-    paintView.pause();
-    paintView.setScaleX(1f);
-    paintView.setScaleY(1f);
+    if (paintingItem != null && paintingItem.setPaintState(paintingItem.getPaintState(), false)) {
+      if (mediaView != null) {
+        mediaView.getBaseReceiver().invalidate();
+      }
+    }
+    if (paintView != null) {
+      paintView.pause();
+      paintView.setScaleX(1f);
+      paintView.setScaleY(1f);
+    }
     showDefaultBrushHint();
   }
 

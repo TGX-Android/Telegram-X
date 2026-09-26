@@ -139,8 +139,8 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
         if (msg.isOutgoing) {
           msg = messages.get(1);
         }
-        TdApi.Location l1 = myLocation != null ? myLocation : ((TdApi.MessageLocation) outputMessage.content).location;
-        TdApi.Location l2 = ((TdApi.MessageLocation) msg.content).location;
+        TdApi.Location l1 = myLocation != null ? myLocation : ((TdApi.MessageLiveLocation) outputMessage.content).location.location;
+        TdApi.Location l2 = ((TdApi.MessageLiveLocation) msg.content).location.location;
         float distance = U.distanceBetween(l1.latitude, l1.longitude, l2.latitude, l2.longitude);
         return Lang.lowercase(Lang.shortDistanceToPerson(distance));
       }
