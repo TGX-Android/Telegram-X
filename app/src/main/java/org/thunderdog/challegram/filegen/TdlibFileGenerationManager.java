@@ -195,7 +195,16 @@ public final class TdlibFileGenerationManager {
       case TASK_GENERATE_PHOTO: {
         PhotoGenerationInfo info = (PhotoGenerationInfo) msg.obj;
         try {
-          generatePhoto(info);
+          try {
+            generatePhoto(info);
+          } catch (OutOfMemoryError e) {
+            if (info.getResolutionLimit() <= PhotoGenerationInfo.SIZE_LIMIT) {
+              throw e;
+            }
+            Log.e("Not enough memory to generate HD photo, falling back to SD", e);
+            info.setResolutionLimit(PhotoGenerationInfo.SIZE_LIMIT);
+            generatePhoto(info);
+          }
         } catch (Throwable t) {
           Log.e("Cannot generate photo", t);
           failGeneration(info, ERROR_UNKNOWN, "Unknown error, see logs for details");
