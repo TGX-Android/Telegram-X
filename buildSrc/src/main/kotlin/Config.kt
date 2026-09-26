@@ -91,6 +91,8 @@ data class ApplicationConfig(
   val isHuaweiBuild: Boolean,
   val forceOptimize: Boolean,
   val doNotObfuscate: Boolean,
+  val useNTgCalls: Boolean,
+
   val build: BuildVersions,
 
   val nativeLibraryVersion: String,

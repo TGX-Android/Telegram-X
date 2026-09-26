@@ -78,6 +78,8 @@ abstract class AppConfigurationSource : ValueSource<ApplicationConfig, AppConfig
       doNotObfuscate =
         isExampleBuild ||
           properties.getProperty("app.dontobfuscate")?.toBoolean() ?: false,
+      useNTgCalls =
+        properties.getProperty("app.ntgcalls")?.toBoolean() ?: false,
       telegramApiId =
         properties.getIntOrThrow("telegram.api_id"),
       telegramApiHash =

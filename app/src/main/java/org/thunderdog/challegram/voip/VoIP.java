@@ -24,6 +24,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import io.github.pytgcalls.NTgCalls;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
@@ -307,8 +308,8 @@ public class VoIP {
 
   public static String[] getAvailableVersions (boolean allowFilter) {
     String[] tgCallsVersions;
-    if (BuildConfig.CALLS_AVAILABLE) {
-      tgCallsVersions = N.getTgCallsVersions();
+    if (BuildConfig.USE_NTGCALLS || BuildConfig.CALLS_AVAILABLE) {
+      tgCallsVersions = N.getTgCallsLibVersions();
     } else {
       tgCallsVersions = new String[0];
     }
@@ -331,13 +332,23 @@ public class VoIP {
   public static final int CONNECTION_MAX_LAYER = 92;
 
   public static TdApi.CallProtocol getProtocol () {
+    if (BuildConfig.USE_NTGCALLS) {
+      var protocol = NTgCalls.getProtocol();
+      return new TdApi.CallProtocol(
+        protocol.udp_p2p,
+        protocol.udp_reflector,
+        protocol.min_layer,
+        protocol.max_layer,
+        protocol.library_versions.toArray(new String[0])
+      );
+    }
     return new TdApi.CallProtocol(
       true,
       true,
       CONNECTION_MIN_LAYER,
       CONNECTION_MAX_LAYER,
       getAvailableVersions(true)
-   );
+    );
   }
 
   private static int getNativeBufferSize (Context context) {
@@ -369,8 +380,8 @@ public class VoIP {
     boolean isMicDisabled
   ) throws IllegalArgumentException {
     final String[] tgCallsVersions;
-    if (BuildConfig.CALLS_AVAILABLE) {
-      tgCallsVersions = N.getTgCallsVersions();
+    if (BuildConfig.USE_NTGCALLS || BuildConfig.CALLS_AVAILABLE) {
+      tgCallsVersions = N.getTgCallsLibVersions();
     } else {
       tgCallsVersions = new String[0];
     }
