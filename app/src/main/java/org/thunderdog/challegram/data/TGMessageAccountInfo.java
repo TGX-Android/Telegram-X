@@ -27,10 +27,13 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 
@@ -42,9 +45,10 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 
+import tgx.td.Td;
+
 public class TGMessageAccountInfo extends TGMessage {
   private final TdApi.AccountInfo info;
-  private int groupInCommonCount;
 
   private final TextColorSet primaryColorSet = () ->
     useBubbles() ? getBubbleTransparentTextColor(manager) : Theme.textAccentColor();
@@ -57,18 +61,18 @@ public class TGMessageAccountInfo extends TGMessage {
 
   private final Drawable footerIcon;
   private Text title, subtitle, footer;
+  private boolean footerHasIcon;
   private final List<Text> rowKeys = new ArrayList<>();
   private final List<Text> rowValues = new ArrayList<>();
   private final List<Text> notices = new ArrayList<>();
   private int cardWidth, cardHeight, keyColumnWidth, rowsWidth;
 
-  public TGMessageAccountInfo (MessagesManager context, long chatId, TdApi.AccountInfo info, int groupInCommonCount) {
+  public TGMessageAccountInfo (MessagesManager context, long chatId, TdApi.AccountInfo info) {
     super(context, TD.newFakeMessage(
       chatId, context.controller().tdlib().sender(chatId),
       new TdApi.MessageText(new TdApi.FormattedText("", null), null, null)
     ));
     this.info = info;
-    this.groupInCommonCount = groupInCommonCount;
     this.footerIcon = Drawables.get(context.controller().context().getResources(), R.drawable.baseline_error_18);
   }
 
@@ -76,11 +80,8 @@ public class TGMessageAccountInfo extends TGMessage {
     return info == null || (StringUtils.isEmpty(info.phoneNumberCountryCode) && registrationText(info) == null);
   }
 
-  public void setGroupInCommonCount (int groupInCommonCount) {
-    if (this.groupInCommonCount != groupInCommonCount) {
-      this.groupInCommonCount = groupInCommonCount;
-      rebuildAndUpdateContent();
-    }
+  public void onUserFullUpdated () {
+    rebuildAndUpdateContent();
   }
 
   @Nullable
@@ -134,6 +135,8 @@ public class TGMessageAccountInfo extends TGMessage {
     int maxTextWidth = Math.max(0, maxCardWidth - Screen.dp(PADDING) * 2);
     long userId = tdlib.chatUserId(getChatId());
     TdApi.User user = tdlib.cache().user(userId);
+    TdApi.UserFullInfo userFull = tdlib.cache().userFull(userId, false);
+    int groupInCommonCount = userFull != null ? userFull.groupInCommonCount : 0;
 
     title = newText(tdlib.cache().userName(userId), maxTextWidth, true, false);
     subtitle = newText(Lang.getString(user != null && user.isContact ?
@@ -175,15 +178,34 @@ public class TGMessageAccountInfo extends TGMessage {
     rowsWidth = rowKeys.isEmpty() ? 0 : keyColumnWidth + Screen.dp(ROW_GAP) + valueColumnWidth;
 
     boolean isVerified = user != null && user.verificationStatus != null && user.verificationStatus.isVerified;
+    long botVerificationIconId = user != null && user.verificationStatus != null ? user.verificationStatus.botVerificationIconCustomEmojiId : 0;
     int footerIconWidth = footerIcon.getMinimumWidth() + Screen.dp(FOOTER_ICON_GAP);
-    footer = isVerified ? null : newText(
-      Lang.getString(R.string.AccountInfoNotOfficial),
-      Math.max(0, maxTextWidth - footerIconWidth), false, true
-    );
+    footer = null;
+    footerHasIcon = false;
+    if (user != null && !isVerified) {
+      if (botVerificationIconId != 0) {
+        TdApi.BotVerification verification = userFull != null ? userFull.botVerification : null;
+        if (verification != null && !Td.isEmpty(verification.customDescription)) {
+          FormattedText text = FormattedText.concat(" ",
+            FormattedText.customEmoji(tdlib, EmojiStatusHelper.EMOJI, verification.iconCustomEmojiId),
+            FormattedText.valueOf(this, verification.customDescription, null)
+          );
+          footer = new Text.Builder(text, maxTextWidth, getServiceTextStyleProvider(useBubbles()), secondaryColorSet, (text1, specificMedia) -> {
+            if (footer == text1) {
+              invalidateTextMediaReceiver(text1, specificMedia);
+            }
+          }).viewProvider(currentViews).maxLineCount(5).textFlags(Text.FLAG_ALIGN_CENTER).build();
+        }
+      } else {
+        footer = newText(Lang.getString(R.string.AccountInfoNotOfficial), Math.max(0, maxTextWidth - footerIconWidth), false, true);
+        footerHasIcon = true;
+      }
+    }
+    invalidateTextMediaReceiver();
 
     int contentWidth = Math.max(Math.max(title.getWidth(), subtitle.getWidth()), rowsWidth);
     if (footer != null) {
-      contentWidth = Math.max(contentWidth, footerIconWidth + footer.getWidth());
+      contentWidth = Math.max(contentWidth, (footerHasIcon ? footerIconWidth : 0) + footer.getWidth());
     }
     cardWidth = Math.min(maxCardWidth, contentWidth + Screen.dp(PADDING) * 2);
 
@@ -195,7 +217,7 @@ public class TGMessageAccountInfo extends TGMessage {
       }
     }
     if (footer != null) {
-      cardHeight += Screen.dp(12f) + Math.max(footer.getHeight(), footerIcon.getMinimumHeight());
+      cardHeight += Screen.dp(12f) + getCardFooterHeight();
     }
     cardHeight += Screen.dp(14f);
 
@@ -226,6 +248,19 @@ public class TGMessageAccountInfo extends TGMessage {
       .allBold()
       .build()
     );
+  }
+
+  private int getCardFooterHeight () {
+    return footerHasIcon ? Math.max(footer.getHeight(), footerIcon.getMinimumHeight()) : footer.getHeight();
+  }
+
+  @Override
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    if (footer != null && !footerHasIcon) {
+      footer.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
+    }
   }
 
   private int getRowHeight (int index) {
@@ -284,14 +319,19 @@ public class TGMessageAccountInfo extends TGMessage {
 
     if (footer != null) {
       y += Screen.dp(12f);
-      int iconSize = footerIcon.getMinimumWidth();
-      int footerHeight = Math.max(footer.getHeight(), footerIcon.getMinimumHeight());
-      int left = centerX - (iconSize + Screen.dp(FOOTER_ICON_GAP) + footer.getWidth()) / 2;
-      Drawables.draw(c, footerIcon,
-        left, y + (footerHeight - footerIcon.getMinimumHeight()) / 2f,
-        Paints.getPorterDuffPaint(secondaryColorSet.defaultTextColor())
-      );
-      footer.draw(c, left + iconSize + Screen.dp(FOOTER_ICON_GAP), y + (footerHeight - footer.getHeight()) / 2);
+      if (footerHasIcon) {
+        int iconSize = footerIcon.getMinimumWidth();
+        int footerHeight = getCardFooterHeight();
+        int left = centerX - (iconSize + Screen.dp(FOOTER_ICON_GAP) + footer.getWidth()) / 2;
+        Drawables.draw(c, footerIcon,
+          left, y + (footerHeight - footerIcon.getMinimumHeight()) / 2f,
+          Paints.getPorterDuffPaint(secondaryColorSet.defaultTextColor())
+        );
+        footer.draw(c, left + iconSize + Screen.dp(FOOTER_ICON_GAP), y + (footerHeight - footer.getHeight()) / 2);
+      } else {
+        int left = centerX - footer.getWidth() / 2;
+        footer.draw(c, left, left + footer.getWidth(), 0, y, null, 1f, view.getTextMediaReceiver());
+      }
     }
 
     y = top + cardHeight;

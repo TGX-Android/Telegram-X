@@ -8225,8 +8225,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (TGMessageAccountInfo.isEmpty(info)) {
       return;
     }
-    TdApi.UserFullInfo userFull = tdlib.cache().userFull(TD.getUserId(chat), false);
-    accountInfoMessage = new TGMessageAccountInfo(manager, chat.id, info, userFull != null ? userFull.groupInCommonCount : 0);
+    accountInfoMessage = new TGMessageAccountInfo(manager, chat.id, info);
     manager.setHeaderMessage(accountInfoMessage);
   }
 
@@ -11043,7 +11042,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (chat != null && TD.getUserId(chat) == userId) {
         updateBottomBar(true);
         if (accountInfoMessage != null && !accountInfoMessage.isDestroyed()) {
-          accountInfoMessage.setGroupInCommonCount(userFull.groupInCommonCount);
+          accountInfoMessage.onUserFullUpdated();
         }
       }
     });
