@@ -8255,6 +8255,35 @@ public class MessagesController extends ViewController<MessagesController.Argume
     items.add(new TopBarView.Item(notice).setShowDismissRight());
   }
 
+  private TopBarView.Item newJoinRequestItem (TdApi.ChatActionBarJoinRequest joinRequest, long chatId) {
+    FormattedText learnMore = new FormattedText(Lang.getString(R.string.ChatActionBarJoinRequestLearnMore)).allClickable(this, new ClickableSpan() {
+      @Override
+      public void onClick (@NonNull View widget) {
+        showJoinRequestInfo(joinRequest);
+      }
+    }, true, null);
+    CharSequence text = Lang.getString(joinRequest.isChannel ? R.string.JoinRequestChannelAdminNotice : R.string.JoinRequestGroupAdminNotice,
+      (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 2 ? learnMore : Lang.newBoldSpan(needFakeBold),
+      tdlib.cache().userFirstName(tdlib.chatUserId(chatId)), joinRequest.title, learnMore
+    );
+    return new TopBarView.Item(FormattedText.valueOf(text, tdlib, null))
+      .setShowDismissRight()
+      .setNoticeClickListener(v -> showJoinRequestInfo(joinRequest));
+  }
+
+  private void showJoinRequestInfo (TdApi.ChatActionBarJoinRequest joinRequest) {
+    AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
+    b.setTitle(Lang.getString(joinRequest.isChannel ? R.string.JoinRequestChannelAdminTitle : R.string.JoinRequestGroupAdminTitle));
+    if (joinRequest.requestDate > 0) {
+      String date = Lang.getRelativeDate(joinRequest.requestDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, false, 0, R.string.JoinRequestDate, false);
+      b.setMessage(Lang.getStringBold(R.string.JoinRequestAdminInfo, joinRequest.title, date));
+    } else {
+      b.setMessage(Lang.getStringBold(R.string.JoinRequestAdminInfoNoDate, joinRequest.title));
+    }
+    b.setPositiveButton(Lang.getString(R.string.IUnderstand), (dialog, which) -> dialog.dismiss());
+    showAlert(b);
+  }
+
   private TopBarView.Item newUnarchiveItem (long chatId) {
     return new TopBarView.Item(R.id.btn_unarchiveChat, R.string.UnarchiveUnmute, v -> {
       tdlib.send(new TdApi.AddChatToList(chatId, new TdApi.ChatListMain()), tdlib.typedOkHandler());
@@ -8423,12 +8452,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
           TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
           if (Config.ENABLE_NEW_CHAT_ACTION_BAR) {
-            int noticeRes = joinRequest.isChannel ?
-              R.string.JoinRequestChannelAdminNotice : R.string.JoinRequestGroupAdminNotice;
-            items.add(new TopBarView.Item(Lang.getStringBold(noticeRes,
-              tdlib.cache().userFirstName(tdlib.chatUserId(chatId)),
-              joinRequest.title
-            )).setShowDismissRight());
+            items.add(newJoinRequestItem(joinRequest, chatId));
           }
           break;
         }

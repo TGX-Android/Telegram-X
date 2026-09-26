@@ -5890,8 +5890,25 @@
   <string name="PlaybackSpeedHintSwipe">Hold and swipe horizontally for precise adjustment</string>
   <string name="PlaybackSpeedHintTemplate">%1$s.\n%2$s.</string>
 
-  <string name="JoinRequestChannelAdminNotice">%1$s is an admin of %2$s, a channel you requested to join</string>
-  <string name="JoinRequestGroupAdminNotice">%1$s is an admin of %2$s, a group you requested to join</string>
+  <string name="JoinRequestChannelAdminNotice">%1$s is an admin of %2$s, a channel you requested to join. %3$s</string>
+  <string name="JoinRequestGroupAdminNotice">%1$s is an admin of %2$s, a group you requested to join. %3$s</string>
+  <string name="ChatActionBarJoinRequestLearnMore">Learn more</string>
+  <string name="IUnderstand">I understand</string>
+  <string name="JoinRequestGroupAdminTitle">Chat with group\'s admin</string>
+  <string name="JoinRequestChannelAdminTitle">Chat with channel\'s admin</string>
+  <string name="JoinRequestAdminInfo">You received this message because you requested to join %1$s %2$s.</string>
+  <string name="JoinRequestAdminInfoNoDate">You received this message because you requested to join %1$s.</string>
+  <string name="JoinRequestDate_now">just now</string>
+  <string name="JoinRequestDate_seconds_one">%1$s second ago</string>
+  <string name="JoinRequestDate_seconds_other">%1$s seconds ago</string>
+  <string name="JoinRequestDate_minutes_one">%1$s minute ago</string>
+  <string name="JoinRequestDate_minutes_other">%1$s minutes ago</string>
+  <string name="JoinRequestDate_hours_one">%1$s hour ago</string>
+  <string name="JoinRequestDate_hours_other">%1$s hours ago</string>
+  <string name="JoinRequestDate_today">today at %1$s</string>
+  <string name="JoinRequestDate_yesterday">yesterday at %1$s</string>
+  <string name="JoinRequestDate_weekday">on %1$s at %2$s</string>
+  <string name="JoinRequestDate_date">on %1$s at %2$s</string>
   <string name="ChatActionBarEmojiStatusNotice">**%1$s** is using %2$s as a custom emoji status next to their name. **%3$s**</string>
   <string name="ChatActionBarEmojiStatusLearnMore">Learn more</string>
 
