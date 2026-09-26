@@ -82,6 +82,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     boolean noDismiss;
     int iconRes;
     boolean showDismissRight;
+    View.OnClickListener noticeClickListener;
 
     public Item (int id, int stringRes, View.OnClickListener onClickListener) {
       this.id = id;
@@ -124,6 +125,11 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
 
     public Item setShowDismissRight () {
       this.showDismissRight = true;
+      return this;
+    }
+
+    public Item setNoticeClickListener (View.OnClickListener noticeClickListener) {
+      this.noticeClickListener = noticeClickListener;
       return this;
     }
   }
@@ -367,13 +373,27 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
             NOTICE_DISMISS_PADDING_DP : CONTENT_HORIZONTAL_PADDING_DP),
           Screen.dp(NOTICE_BOTTOM_PADDING_DP)
         );
-        noticeText.setLayoutParams(new LinearLayout.LayoutParams(
-          ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ));
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(noticeText);
         }
-        actionsContainer.addView(noticeText);
+        if (item.noticeClickListener != null) {
+          FrameLayoutFix noticeLayout = new FrameLayoutFix(getContext());
+          noticeLayout.setBackgroundResource(R.drawable.bg_btn_header);
+          noticeLayout.setOnClickListener(item.noticeClickListener);
+          noticeLayout.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+          ));
+          noticeText.setLayoutParams(FrameLayoutFix.newParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+          ));
+          noticeLayout.addView(noticeText);
+          actionsContainer.addView(noticeLayout);
+        } else {
+          noticeText.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+          ));
+          actionsContainer.addView(noticeText);
+        }
       }
     }
 
@@ -392,6 +412,9 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     clearThemeListeners(actionsList);
     for (int i = 0; i < actionsContainer.getChildCount(); i++) {
       View child = actionsContainer.getChildAt(i);
+      if (child instanceof FrameLayoutFix && ((FrameLayoutFix) child).getChildCount() > 0) {
+        child = ((FrameLayoutFix) child).getChildAt(0);
+      }
       if (child instanceof Destroyable) {
         ((Destroyable) child).performDestroy();
       }
