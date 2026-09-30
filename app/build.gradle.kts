@@ -935,6 +935,7 @@ dependencies {
   flavorImplementation(
     libs.androidx.work.runtime.legacy,
     libs.androidx.work.runtime.lollipop,
+    libs.androidx.work.runtime.marshmallow,
     libs.androidx.work.runtime.latest
   )
   flavorImplementation(
@@ -970,11 +971,13 @@ dependencies {
   flavorImplementation(
     libs.google.play.services.base.legacy,
     libs.google.play.services.base.lollipop,
+    libs.google.play.services.base.marshmallow,
     libs.google.play.services.base.latest
   )
   flavorImplementation(
     libs.google.play.services.basement.legacy,
     libs.google.play.services.basement.lollipop,
+    libs.google.play.services.basement.marshmallow,
     libs.google.play.services.basement.latest
   )
   flavorImplementation(
