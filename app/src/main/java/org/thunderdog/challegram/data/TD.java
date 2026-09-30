@@ -51,6 +51,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 import androidx.annotation.StringRes;
+import androidx.annotation.WorkerThread;
 import androidx.collection.LongSparseArray;
 
 import org.drinkless.tdlib.Client;
@@ -81,6 +82,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibEntitySpan;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
@@ -113,6 +115,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.html.HtmlEncoder;
@@ -3884,6 +3887,21 @@ public class TD {
       return file;
     }
 
+    private @Nullable TdApi.File fullSizeFile;
+
+    public DownloadedFile setFullSizeFile (@Nullable TdApi.File fullSizeFile) {
+      this.fullSizeFile = fullSizeFile != null && fullSizeFile.id != file.id ? fullSizeFile : null;
+      return this;
+    }
+
+    @WorkerThread
+    public String getFullSizePath () {
+      if (fullSizeFile != null && TD.isFileLoadedAndExists(fullSizeFile)) {
+        return fullSizeFile.local.path;
+      }
+      return getPath();
+    }
+
     public static DownloadedFile valueOfPhoto (Tdlib tdlib, TdApi.File file, boolean isWebp) {
       return new DownloadedFile(tdlib, file, isWebp ? "image/webp" : "image/jpg", new TdApi.FileTypePhoto());
     }
@@ -4223,6 +4241,51 @@ public class TD {
     })) {
       return;
     }
+    for (DownloadedFile file : files) {
+      if (file.fullSizeFile != null) {
+        new Thread(() -> {
+          downloadFullSizeFiles(files);
+          saveFilesImpl(context, files);
+        }, "SaveFullSizeFiles").start();
+        return;
+      }
+    }
+    saveFilesImpl(context, files);
+  }
+
+  @WorkerThread
+  private static void downloadFullSizeFiles (List<DownloadedFile> files) {
+    List<DownloadedFile> pending = new ArrayList<>();
+    for (DownloadedFile file : files) {
+      TdApi.File fullSizeFile = file.fullSizeFile;
+      if (fullSizeFile != null && fullSizeFile.local.canBeDownloaded && !TD.isFileLoadedAndExists(fullSizeFile)) {
+        pending.add(file);
+      }
+    }
+    if (pending.isEmpty()) {
+      return;
+    }
+    CountDownLatch latch = new CountDownLatch(pending.size());
+    for (DownloadedFile file : pending) {
+      TdApi.File fullSizeFile = file.fullSizeFile;
+      file.tdlib.client().send(new TdApi.DownloadFile(fullSizeFile.id, TdlibFilesManager.PRIORITY_USER_REQUEST_DOWNLOAD, 0, 0, true), result -> {
+        if (result.getConstructor() == TdApi.File.CONSTRUCTOR) {
+          Td.copyTo((TdApi.File) result, fullSizeFile);
+        }
+        latch.countDown();
+      });
+    }
+    try {
+      latch.await(1, TimeUnit.MINUTES);
+    } catch (InterruptedException ignored) { }
+    for (DownloadedFile file : pending) {
+      if (!TD.isFileLoaded(file.fullSizeFile)) {
+        file.tdlib.send(new TdApi.CancelDownloadFile(file.fullSizeFile.id, false), file.tdlib.typedOkHandler());
+      }
+    }
+  }
+
+  private static void saveFilesImpl (BaseActivity context, List<DownloadedFile> files) {
     Background.instance().post(() -> {
       int savedCount = 0;
       int allSavedType = -1;
@@ -4240,7 +4303,7 @@ public class TD {
             break;
           }
           case TdApi.FileTypePhoto.CONSTRUCTOR: {
-            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_PHOTO, null);
+            ok = U.copyToGalleryImpl(file.getFullSizePath(), savedType = U.TYPE_PHOTO, null);
             break;
           }
           default: {
@@ -4431,9 +4494,11 @@ public class TD {
   public static @Nullable DownloadedFile getDownloadedFile (Tdlib tdlib, TdApi.Message msg) {
     switch (msg.content.getConstructor()) {
       case TdApi.MessagePhoto.CONSTRUCTOR: {
-        TdApi.PhotoSize size = MediaWrapper.buildTargetFile(((TdApi.MessagePhoto) msg.content).photo);
+        TdApi.Photo photo = ((TdApi.MessagePhoto) msg.content).photo;
+        TdApi.PhotoSize size = MediaWrapper.buildTargetFile(photo);
         if (size != null && TD.isFileLoaded(size.photo)) {
-          return DownloadedFile.valueOfPhoto(tdlib, size.photo, false);
+          TdApi.PhotoSize biggestSize = Td.findBiggest(photo);
+          return DownloadedFile.valueOfPhoto(tdlib, size.photo, false).setFullSizeFile(biggestSize != null ? biggestSize.photo : null);
         }
         return null;
       }
@@ -6272,8 +6337,11 @@ public class TD {
         content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(new TdApi.InputVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo)), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
       }
     } else {
+      final boolean isFiltered = file.getFiltersState() != null && !file.getFiltersState().isEmpty();
+      final int resolutionLimit = isFiltered ? 0 : PhotoGenerationInfo.preferredResolutionLimit();
+      final int sizeLimit = resolutionLimit != 0 ? resolutionLimit : PhotoGenerationInfo.SIZE_LIMIT;
       int[] size = new int[2];
-      file.getOutputSize(size);
+      file.getOutputSize(size, sizeLimit);
 
       final int width = size[0];
       final int height = size[1];
@@ -6282,7 +6350,7 @@ public class TD {
       if (asFiles && PhotoGenerationInfo.isEmpty(file)) {
         inputFile = TD.createInputFile(file.getFilePath());
       } else {
-        inputFile = PhotoGenerationInfo.newFile(file);
+        inputFile = PhotoGenerationInfo.newFile(file, sizeLimit);
       }
 
       TdApi.FormattedText caption = file.getCaption(true, !disableMarkdown);

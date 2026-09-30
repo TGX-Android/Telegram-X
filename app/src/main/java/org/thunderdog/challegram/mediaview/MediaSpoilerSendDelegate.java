@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.mediaview;
 
+import android.os.Build;
+
 import androidx.annotation.CallSuper;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class MediaSpoilerSendDelegate implements MediaSendDelegate {
   private final AtomicBoolean showCaptionAboveMedia = new AtomicBoolean();
   private final AtomicBoolean hideMedia = new AtomicBoolean();
+  private final AtomicBoolean sendHd = new AtomicBoolean();
 
   @Override
   public final boolean allowHideMedia () {
@@ -36,6 +39,21 @@ public abstract class MediaSpoilerSendDelegate implements MediaSendDelegate {
   @CallSuper
   public void onHideMediaStateChanged (boolean hideMedia) {
     this.hideMedia.set(hideMedia);
+  }
+
+  @Override
+  public boolean allowSendHd () {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
+  }
+
+  @Override
+  public boolean isSendHdEnabled () {
+    return allowSendHd() && sendHd.get();
+  }
+
+  @Override
+  public void onSendHdStateChanged (boolean sendHd) {
+    this.sendHd.set(sendHd);
   }
 
   @Override

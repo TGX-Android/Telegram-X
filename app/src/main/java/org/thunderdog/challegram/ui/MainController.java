@@ -2303,6 +2303,16 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return messageCaption != null;
   }
 
+  private static @Nullable TdApi.InputFileGenerated getGeneratedPhotoFile (TdApi.InputMessageContent content) {
+    if (content.getConstructor() == TdApi.InputMessagePhoto.CONSTRUCTOR) {
+      TdApi.InputFile file = ((TdApi.InputMessagePhoto) content).photo.photo;
+      if (file.getConstructor() == TdApi.InputFileGenerated.CONSTRUCTOR) {
+        return (TdApi.InputFileGenerated) file;
+      }
+    }
+    return null;
+  }
+
   private void shareContents (final Tdlib tdlib, final String type, final ArrayList<TdApi.InputMessageContent> contents, boolean mergeAlbum) {
     if (contents.isEmpty()) {
       throw new IllegalArgumentException("Unsupported content type: " + type);
@@ -2311,8 +2321,43 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       ShareController c = new ShareController(context, tdlib);
 
       ShareController.ShareProviderDelegate shareDelegate = new ShareController.ShareProviderDelegate() {
+        private boolean sendHd, hdApplied;
+
+        @Override
+        public boolean allowSendHd () {
+          if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return false;
+          }
+          for (TdApi.InputMessageContent content : contents) {
+            if (getGeneratedPhotoFile(content) != null) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        @Override
+        public boolean isSendHdEnabled () {
+          return sendHd;
+        }
+
+        @Override
+        public void onSendHdStateChanged (boolean sendHd) {
+          this.sendHd = sendHd;
+        }
+
         @Override
         public void generateFunctionsForChat (long chatId, TdApi.Chat chat, TdApi.MessageSendOptions sendOptions, ArrayList<TdApi.Function<?>> functions) {
+          if (sendHd && !hdApplied) {
+            hdApplied = true;
+            for (TdApi.InputMessageContent content : contents) {
+              TdApi.InputFileGenerated file = getGeneratedPhotoFile(content);
+              if (file != null) {
+                String conversion = PhotoGenerationInfo.editResolutionLimit(file.conversion, PhotoGenerationInfo.SIZE_LIMIT_HD);
+                ((TdApi.InputMessagePhoto) content).photo.photo = new TdApi.InputFileGenerated(file.originalPath, conversion, 0);
+              }
+            }
+          }
           List<TdApi.InputMessageContent> album = null;
           for (TdApi.InputMessageContent content : contents) {
             content = tdlib.filegen().createThumbnail(content, ChatId.isSecret(chatId));

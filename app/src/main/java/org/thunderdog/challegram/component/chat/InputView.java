@@ -1602,7 +1602,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, true, 512);
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageSticker(new TdApi.InputSticker(generated, null, imageWidth, imageHeight), null), isSecretChat);
           } else {
-            TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
+            TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, PhotoGenerationInfo.preferredResolutionLimit());
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(new TdApi.InputPhoto(generated, null, null, null, imageWidth, imageHeight), null, false, null, false), isSecretChat);
           }
 

@@ -33,6 +33,7 @@ import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.crop.CropStateParser;
 import org.thunderdog.challegram.mediaview.data.FiltersState;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.InputStream;
 
@@ -41,6 +42,7 @@ import me.vkryl.core.StringUtils;
 
 public class PhotoGenerationInfo extends GenerationInfo {
   public static final int SIZE_LIMIT = 1280;
+  public static final int SIZE_LIMIT_HD = 2560;
 
   private int rotation; // 0, 90, 180 or 270
   private boolean isFiltered;
@@ -93,6 +95,10 @@ public class PhotoGenerationInfo extends GenerationInfo {
 
   public int getResolutionLimit () {
     return resolutionLimit;
+  }
+
+  public void setResolutionLimit (int resolutionLimit) {
+    this.resolutionLimit = resolutionLimit;
   }
 
   public boolean getAllowTransparency () {
@@ -176,6 +182,7 @@ public class PhotoGenerationInfo extends GenerationInfo {
       Rect regionRect = null;
       if (Config.CROP_USE_REGION_READER && opts.inSampleSize > 1 && cropState.getDegreesAroundCenter() == 0) { // TODO BitmapRegionDecoder support for getDegreesAroundCenter() != 0
         BitmapRegionDecoder decoder = null;
+        Throwable regionError = null;
         try {
           regionRect = new Rect();
 
@@ -185,7 +192,7 @@ public class PhotoGenerationInfo extends GenerationInfo {
           regionRect.bottom = (int) Math.floor(bottom * (double) originalHeight);
 
           BitmapFactory.Options regionOptions = new BitmapFactory.Options();
-          regionOptions.inSampleSize = ImageReader.calculateInSampleSize(regionRect.width(), regionRect.height(), PhotoGenerationInfo.SIZE_LIMIT, PhotoGenerationInfo.SIZE_LIMIT);
+          regionOptions.inSampleSize = ImageReader.calculateInSampleSize(regionRect.width(), regionRect.height(), Math.max(resolutionLimit, SIZE_LIMIT), Math.max(resolutionLimit, SIZE_LIMIT));
 
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             decoder = BitmapRegionDecoder.newInstance(is);
@@ -198,12 +205,16 @@ public class PhotoGenerationInfo extends GenerationInfo {
             Log.i("BitmapRegionDecoder.newInstance returned null");
           }
         } catch (Throwable t) {
+          regionError = t;
           Log.i("BitmapRegionDecoder failed", t);
         }
         if (decoder != null) {
           try {
             decoder.recycle();
           } catch (Throwable ignored) { }
+        }
+        if (regionError != null) {
+          rethrowIfHdOutOfMemory(regionError);
         }
       }
       regionDecoderState = bitmapRegion != null ? REGION_OK : REGION_ERROR;
@@ -218,12 +229,19 @@ public class PhotoGenerationInfo extends GenerationInfo {
         try {
           result = BitmapFactory.decodeStream(newIs, null, opts);
         } catch (Throwable t) {
+          rethrowIfHdOutOfMemory(t);
           Log.w("Cannot read bitmap", t);
         }
         return result;
       }
     } else {
       return BitmapFactory.decodeStream(is, null, opts);
+    }
+  }
+
+  private void rethrowIfHdOutOfMemory (Throwable t) {
+    if (t instanceof OutOfMemoryError && resolutionLimit > SIZE_LIMIT) {
+      throw (OutOfMemoryError) t;
     }
   }
 
@@ -358,6 +376,10 @@ public class PhotoGenerationInfo extends GenerationInfo {
     return Bitmap.createBitmap(source, bitmapLeft, bitmapTop, bitmapRight - bitmapLeft, bitmapBottom - bitmapTop, matrix, false);
   }
 
+  public static int preferredResolutionLimit () {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Settings.instance().getNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS) ? SIZE_LIMIT_HD : 0;
+  }
+
   public static TdApi.InputFileGenerated newFile (String path, int rotation) {
     /*String visualPath = path;
     if (!Strings.isEmpty(path)) {
@@ -393,8 +415,12 @@ public class PhotoGenerationInfo extends GenerationInfo {
   }
 
   public static TdApi.InputFileGenerated newFile (ImageGalleryFile file) {
+    return newFile(file, SIZE_LIMIT);
+  }
+
+  public static TdApi.InputFileGenerated newFile (ImageGalleryFile file, int sizeLimit) {
     String path = file.getTargetPath();
-    return new TdApi.InputFileGenerated(path, makeConversion(file, lastModified(path)), 0);
+    return new TdApi.InputFileGenerated(path, makeConversion(file, lastModified(path), sizeLimit), 0);
   }
 
   private static String makeConversion (int rotation, long lastModifiedTime, String parameters) {
@@ -431,7 +457,7 @@ public class PhotoGenerationInfo extends GenerationInfo {
     return b.toString();
   }
 
-  private static String makeConversion (ImageGalleryFile file, long lastModifiedTime) {
+  private static String makeConversion (ImageGalleryFile file, long lastModifiedTime, int sizeLimit) {
     StringBuilder b = new StringBuilder(TYPE_PHOTO);
     b.append(file.getRotation());
 
@@ -451,6 +477,10 @@ public class PhotoGenerationInfo extends GenerationInfo {
     if (paintState != null && !paintState.isEmpty()) {
       b.append(",p:");
       b.append(paintState.saveAndSerializeToString());
+    }
+
+    if (sizeLimit != SIZE_LIMIT) {
+      b.append(",l:").append(sizeLimit);
     }
 
     if (BuildConfig.DEBUG) {

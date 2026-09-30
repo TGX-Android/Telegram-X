@@ -26,6 +26,10 @@ public interface MediaSendDelegate {
   boolean isHideMediaEnabled ();
   void onHideMediaStateChanged (boolean hideMedia);
 
+  boolean allowSendHd ();
+  boolean isSendHdEnabled ();
+  void onSendHdStateChanged (boolean sendHd);
+
   boolean allowShowCaptionAboveMedia ();
   boolean showCaptionAboveMedia ();
   void onShowCaptionAboveMediaStateChanged (boolean showCaptionAboveMedia);

@@ -296,6 +296,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
           previewSize = smallestSize;
         }
       }
+      TdApi.PhotoSize biggestSize = Td.findBiggest(photo.sizes);
+      if (biggestSize != null && targetSize != null && biggestSize.photo.id != targetSize.photo.id && (biggestSize.photo.local.canBeDownloaded || TD.isFileLoadedAndExists(biggestSize.photo))) {
+        previewSize = targetSize;
+        targetSize = biggestSize;
+      }
     }
 
     if (isDocument && targetSize == null && previewSize != null) {
@@ -326,6 +331,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       if (isWebp) {
         this.previewImageFile.setWebp();
       }
+      MediaWrapper.applyMaxSize(previewImageFile, previewSize);
     } else {
       this.previewImageFile = null;
     }
