@@ -1,6 +1,7 @@
 [versions]
 android-gradle-plugin = "9.4.1"
 
+kotlin = "2.4.20"
 ksp = "2.3.4"
 desugaring = "2.1.5"
 
@@ -63,7 +64,7 @@ androidx-tracing-latest = "2.0.3"
 
 firebase-messaging-latest = "25.1.3"
 
-google-recaptcha-latest = "18.9.2" # 18.9.3 is compiled with Kotlin 2.4.0, waiting for AGP update.
+google-recaptcha-latest = "18.9.3"
 
 google-play-billing-latest = "9.1.0"
 google-play-integrity-latest = "1.6.0"
@@ -140,6 +141,7 @@ desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "des
 androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "androidx-multidex" }
 
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
