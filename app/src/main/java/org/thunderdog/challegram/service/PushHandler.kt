@@ -1,7 +1,7 @@
 package org.thunderdog.challegram.service
 
 import android.app.Service
-import org.drinkless.tdlib.TdApi
+import org.drinkless.tdlib.TdApi.DeviceToken
 import org.thunderdog.challegram.Log
 import org.thunderdog.challegram.TDLib
 import org.thunderdog.challegram.telegram.TdlibManager
@@ -11,7 +11,7 @@ import tgx.bridge.PushManager
 import tgx.td.stringify
 
 class PushHandler : PushManager {
-  override fun onNewToken(service: Service, token: TdApi.DeviceToken) {
+  override fun onNewToken(service: Service, token: DeviceToken) {
     UI.initApp(service.applicationContext)
     log("onNewToken %s, sending to all accounts", token)
     TdlibManager.instance().runWithWakeLock { manager ->
