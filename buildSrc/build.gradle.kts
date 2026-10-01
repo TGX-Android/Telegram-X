@@ -8,17 +8,17 @@ plugins {
 
 java {
   toolchain {
-    languageVersion = JavaLanguageVersion.of(21)
+    languageVersion = JavaLanguageVersion.of(25)
   }
 }
 
 kotlin {
   compilerOptions {
     allWarningsAsErrors = true
-    jvmTarget = JvmTarget.JVM_21
+    jvmTarget = JvmTarget.JVM_25
   }
   jvmToolchain {
-    languageVersion = JavaLanguageVersion.of(21)
+    languageVersion = JavaLanguageVersion.of(25)
   }
 }
 
