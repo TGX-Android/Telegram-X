@@ -4,9 +4,9 @@ import ApplicationConfig
 import BuildVersions
 import PullRequest
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.logging.Logging
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
-import tgx.gradle.fatal
 import tgx.gradle.getIntOrThrow
 import tgx.gradle.getOrThrow
 import tgx.gradle.loadProperties
@@ -45,16 +45,22 @@ abstract class AppConfigurationSource : ValueSource<ApplicationConfig, AppConfig
       require(it == "none" || it == "hms")
     }
 
-    if (properties.getProperty("telegram.api_id", "").isEmpty() || properties.getProperty("telegram.api_hash").isEmpty()) {
-      fatal("""
-        Telegram API credentials missing.
-        
-        Set them in your local.properties file:
-        telegram.api_id=YOUR_API_ID_HERE
-        telegram.api_hash=YOUR_API_HASH_HERE
-        
-        Obtain them at https://core.telegram.org/api/obtaining_api_id
-      """.trimIndent())
+    val sampleApiId = defaults.getIntOrThrow("telegram.api_id")
+    val apiId = properties.getProperty("telegram.api_id").takeIf { !it.isNullOrEmpty() }?.toInt() ?: sampleApiId
+    val apiHash = getOrDefault(properties, "telegram.api_hash", defaults)
+    
+    if (apiId == sampleApiId) {
+      Logging.getLogger(AppConfigurationSource::class.java).apply {
+        warn("""
+          Telegram API credentials are missing.
+          
+          Set them in your local.properties file:
+          telegram.api_id=YOUR_API_ID_HERE
+          telegram.api_hash=YOUR_API_HASH_HERE
+          
+          Obtain them at https://core.telegram.org/api/obtaining_api_id
+        """.trimIndent())
+      }
     }
 
     return ApplicationConfig(
@@ -79,9 +85,9 @@ abstract class AppConfigurationSource : ValueSource<ApplicationConfig, AppConfig
         isExampleBuild ||
           properties.getProperty("app.dontobfuscate")?.toBoolean() ?: false,
       telegramApiId =
-        properties.getIntOrThrow("telegram.api_id"),
+        apiId,
       telegramApiHash =
-        properties.getOrThrow("telegram.api_hash"),
+        apiHash,
       safetyNetToken =
         properties.getProperty("safetynet.api_key", "").takeIf {
           keystoreFilePath != null
