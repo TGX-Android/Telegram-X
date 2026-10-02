@@ -28,6 +28,32 @@ val appliedNdkVersion = if (useLegacyNdk) {
 }
 val ndkMinSdkVersion = appliedNdkVersion.ndkVersionToMinSdk()
 
+val validateGitSetupTask = tasks.register<ValidateGitSetupTask>("validateGitSetup") {
+  group = "Setup"
+  description = "Ensures git modules and LFS objects are fetched correctly"
+
+  gitmodulesFile.set(layout.projectDirectory.file("../.gitmodules"))
+  submoduleMarkers.from(providers.fileContents(
+    layout.projectDirectory.file("../.gitmodules")
+  ).asText.map { gitmodules ->
+    Regex("""^\s*path\s*=\s*(.+)$""", RegexOption.MULTILINE)
+      .findAll(gitmodules).map { it.groupValues[1].trim() }.map { "../$it/.git" }.toList()
+  })
+  lfsFiles.from(
+    layout.projectDirectory.dir(
+      "../tdlib/src/main/libs"
+    ).asFileTree.matching {
+      include("*/*/*.so")
+    },
+    layout.projectDirectory.dir(
+      "../tdlib/openssl"
+    ).asFileTree.matching {
+      include("*/*/lib/libcryptox.so")
+      include("*/*/lib/libsslx.so")
+    }
+  )
+}
+
 val generateThemes = tasks.register<GenerateThemesTask>("generateThemes") {
   group = "Setup"
   description = "Generates fresh ids, theme resources and utility methods based on current theme files"
@@ -135,6 +161,7 @@ val patchJetpackMediaTasks = Sdk.VARIANTS.values.associateBy({ it.jetpackMediaFl
     outputDir.set(layout.buildDirectory.dir(
       "generated/tgx/androidx-media/${variant.jetpackMediaFlavor}"
     ))
+    dependsOn(validateGitSetupTask)
   }
 }
 
@@ -164,6 +191,7 @@ val patchOpusTask = tasks.register<PatchOpusTask>(
   outputDir.set(layout.buildDirectory.dir(
     "generated/tgx/opus"
   ))
+  dependsOn(validateGitSetupTask)
 }
 
 val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
@@ -208,6 +236,7 @@ val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
       outputDir.set(layout.buildDirectory.dir(
         "generated/tgx/libvpx/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
       ))
+      dependsOn(validateGitSetupTask)
     })
   }
 }.toMap()
@@ -260,7 +289,7 @@ val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
       outputDir.set(layout.buildDirectory.dir(
         "generated/tgx/ffmpeg/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
       ))
-      dependsOn(buildLibvpxTasks[key] ?: error("libvpx task not found for $key"))
+      dependsOn(validateGitSetupTask, buildLibvpxTasks[key] ?: error("libvpx task not found for $key"))
     }
     Pair(key, task)
   }
@@ -699,7 +728,7 @@ android {
         })
         dependsOn(*nativeBuildTasks.toTypedArray())
       }
-      variant.lifecycleTasks.registerPreBuild(buildNativeTask)
+      variant.lifecycleTasks.registerPreBuild(validateGitSetupTask, buildNativeTask)
       buildNativeTasks["${sdkVariant.flavor}${abiVariant.flavor.uppercaseFirstChar()}"] = buildNativeTask
 
       variant.sources.res?.apply {
@@ -885,7 +914,10 @@ afterEvaluate {
     require(buildNativeTask != null) {
       "Could not find buildNativeTask for $variantName (${this.variantName})"
     }
-    dependsOn(buildNativeTask)
+    dependsOn(validateGitSetupTask, buildNativeTask)
+  }
+  tasks.named("preBuild") {
+    dependsOn(validateGitSetupTask)
   }
 }
 
