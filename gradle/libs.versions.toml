@@ -5,6 +5,8 @@ kotlin = "2.4.20"
 ksp = "2.3.4"
 desugaring = "2.1.5"
 
+jgit = "7.8.0.202609011348-r"
+
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 
@@ -142,6 +144,8 @@ androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "andr
 
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
+jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "jgit" }
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }

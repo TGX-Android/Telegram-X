@@ -44,6 +44,7 @@ dependencies {
   implementation(libs.kotlin.gradle.plugin)
   implementation(libs.okhttp.latest)
   implementation(libs.kotlinx.serialization.json)
+  implementation(libs.jgit)
 }
 
 apply(from = "${rootDir.parentFile}/properties.gradle.kts")

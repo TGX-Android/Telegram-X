@@ -7,7 +7,7 @@ import com.android.build.api.variant.impl.VariantOutputImpl
 import com.android.build.gradle.tasks.ExternalNativeBuildTask
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
-import tgx.gradle.source.GitVersionSource
+import tgx.gradle.source.GitInformationSource
 import tgx.gradle.task.*
 import java.util.*
 
@@ -376,7 +376,7 @@ android {
 
     buildConfigString("TDLIB_VERSION", tdlibVersion)
 
-    val tgxGitVersionProvider = providers.of(GitVersionSource::class) {
+    val tgxGitVersionProvider = providers.of(GitInformationSource::class) {
       parameters.module = layout.projectDirectory
     }
     val tgxGit = tgxGitVersionProvider.get()
@@ -412,7 +412,7 @@ android {
 
     // OpenSSL version
 
-    val openSslGit = providers.of(GitVersionSource::class) {
+    val openSslGit = providers.of(GitInformationSource::class) {
       parameters.module = layout.projectDirectory.dir("../tdlib/source/openssl")
     }.get()
     buildConfigString("OPENSSL_COMMIT", openSslGit.commitHashShort)
@@ -420,23 +420,23 @@ android {
 
     // WebRTC version
 
-    val webrtcGit = providers.of(GitVersionSource::class) {
-      parameters.module = layout.projectDirectory.dir("jni/third_party/webrtc")
+    val webrtcGit = providers.of(GitInformationSource::class) {
+      parameters.module = layout.projectDirectory.dir("jni/tgvoip/third_party/webrtc")
     }.get()
     buildConfigString("WEBRTC_COMMIT", webrtcGit.commitHashShort)
     buildConfigString("WEBRTC_COMMIT_URL", webrtcGit.commitUrl)
 
     // tgcalls version
 
-    val tgcallsGit = providers.of(GitVersionSource::class) {
-      parameters.module = layout.projectDirectory.dir("jni/third_party/tgcalls")
+    val tgcallsGit = providers.of(GitInformationSource::class) {
+      parameters.module = layout.projectDirectory.dir("jni/tgvoip/third_party/tgcalls")
     }.get()
     buildConfigString("TGCALLS_COMMIT", tgcallsGit.commitHashShort)
     buildConfigString("TGCALLS_COMMIT_URL", tgcallsGit.commitUrl)
 
     // FFmpeg version
 
-    val ffmpegGit = providers.of(GitVersionSource::class) {
+    val ffmpegGit = providers.of(GitInformationSource::class) {
       parameters.module = layout.projectDirectory.dir("jni/third_party/ffmpeg")
     }.get()
     buildConfigString("FFMPEG_COMMIT", ffmpegGit.commitHashShort)
@@ -444,7 +444,7 @@ android {
 
     // WebP version
 
-    val webpGit = providers.of(GitVersionSource::class) {
+    val webpGit = providers.of(GitInformationSource::class) {
       parameters.module = layout.projectDirectory.dir("jni/third_party/webp")
     }.get()
     buildConfigString("WEBP_COMMIT", webpGit.commitHashShort)

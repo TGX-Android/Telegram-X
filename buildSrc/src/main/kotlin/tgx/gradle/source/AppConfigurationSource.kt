@@ -48,7 +48,7 @@ abstract class AppConfigurationSource : ValueSource<ApplicationConfig, AppConfig
     val sampleApiId = defaults.getIntOrThrow("telegram.api_id")
     val apiId = properties.getProperty("telegram.api_id").takeIf { !it.isNullOrEmpty() }?.toInt() ?: sampleApiId
     val apiHash = getOrDefault(properties, "telegram.api_hash", defaults)
-    
+
     if (apiId == sampleApiId) {
       Logging.getLogger(AppConfigurationSource::class.java).apply {
         warn("""
