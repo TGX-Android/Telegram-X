@@ -14,17 +14,15 @@
 
 package tgx.gradle.task
 
+import org.gradle.api.logging.Logging
 import tgx.gradle.fatal
 import java.io.File
-import java.io.FileOutputStream
 import java.io.Writer
-import java.nio.channels.FileChannel
-import java.nio.file.StandardOpenOption
+import java.nio.file.Files
 import java.util.*
 
-fun isWindowsHost(): Boolean {
-  return System.getProperty("os.name").startsWith("Windows")
-}
+fun isWindowsHost(): Boolean =
+  System.getProperty("os.name").startsWith("Windows")
 
 fun writeTextToFile(file: File, mkdirs: Boolean = true, block: () -> String) {
   writeToFileImpl(file, mkdirs) { outFile ->
@@ -35,16 +33,17 @@ fun writeTextToFile(file: File, mkdirs: Boolean = true, block: () -> String) {
 
 fun writeToFile(file: File, mkdirs: Boolean = true, block: (Writer) -> Unit) {
   writeToFileImpl(file, mkdirs) { outFile ->
-    FileOutputStream(outFile).use { stream ->
-      stream.bufferedWriter().use {
-        try {
-          block(it)
-        } catch (t: Throwable) {
-          outFile.delete()
-          throw t
+    try {
+      outFile.bufferedWriter().use {
+        block(it)
+      }
+    } catch (t: Throwable) {
+      if (outFile.exists() && !outFile.delete()) {
+        Logging.getLogger("TaskFunctions").apply {
+          error("Unable to delete temp file: ${outFile.absolutePath}")
         }
       }
-      stream.flush()
+      throw t
     }
   }
 }
@@ -74,15 +73,11 @@ private fun writeToFileImpl(file: File, mkdirs: Boolean = true, block: (File) ->
 
   if (file.exists()) {
     if (!areFileContentsIdentical(file, outFile)) {
-      if (isWindowsHost()) {
-        Thread.sleep(300)
-        System.gc()
-      }
       copyOrReplace(outFile, file)
     }
     if (!outFile.delete() && outFile.exists()) {
       // Give time to unlock the file and try again
-      for(i in 0..7) {
+      for (i in 0..7) {
         Thread.sleep(300)
         System.gc()
         if (outFile.delete()) return
@@ -96,27 +91,18 @@ private fun writeToFileImpl(file: File, mkdirs: Boolean = true, block: (File) ->
 }
 
 fun copyOrReplace(fromFile: File, toFile: File) {
-  FileChannel.open(fromFile.toPath(), StandardOpenOption.READ).use { inChannel ->
-    FileChannel.open(toFile.toPath(), setOf(
-      StandardOpenOption.WRITE,
-      StandardOpenOption.TRUNCATE_EXISTING)
-    ).use { outChannel ->
-      inChannel.transferTo(0, inChannel.size(), outChannel)
+  if (Files.isSameFile(fromFile.toPath(), toFile.toPath())) {
+    fatal("Trying to copy into the same file: ${fromFile.absolutePath} -> ${toFile.absolutePath}")
+  }
+  fromFile.inputStream().use { input ->
+    toFile.outputStream().use { output ->
+      input.copyTo(output)
     }
   }
 }
 
-fun areFileContentsIdentical(a: File, b: File): Boolean {
-  val areIdentical: Boolean
-  FileChannel.open(a.toPath(), StandardOpenOption.READ).use { fileChannelA ->
-    FileChannel.open(b.toPath(), StandardOpenOption.READ).use { fileChannelB ->
-      val mapA = fileChannelA.map(FileChannel.MapMode.READ_ONLY, 0, fileChannelA.size())
-      val mapB = fileChannelB.map(FileChannel.MapMode.READ_ONLY, 0, fileChannelB.size())
-      areIdentical = mapA == mapB
-    }
-  }
-  return areIdentical
-}
+fun areFileContentsIdentical(a: File, b: File): Boolean =
+  a.length() == b.length() && Files.mismatch(a.toPath(), b.toPath()) == -1L
 
 fun String.camelCaseToUpperCase(): String {
   val upperCase = StringBuilder()
