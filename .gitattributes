@@ -1,2 +1,16 @@
-app/jniLibs/*/*.so filter=lfs diff=lfs merge=lfs -text
-*.zip -delta
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.webp binary
+*.ttf binary
+*.mp3 binary
+*.wav binary
+*.jar binary
+
+*.tgx-theme text eol=lf
+*.dic text eol=lf
+
+gradlew text eol=lf
