@@ -182,6 +182,7 @@ public class NavigationStack {
     }
     stack.get(index).destroy();
     stack.set(index, c);
+    notifyStackChanged();
   }
 
   public ViewController<?> removeById (int id) {

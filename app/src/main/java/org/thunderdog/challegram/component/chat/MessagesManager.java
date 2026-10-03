@@ -42,6 +42,9 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageVideo;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.data.MessageTopics;
+import org.thunderdog.challegram.data.ForumHistory;
+import org.thunderdog.challegram.data.ForumTopicContext;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -493,7 +496,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     long maxMessageId = maxPinnedMessageId();
     if (maxMessageId != 0) {
-      tdlib.settings().dismissMessage(loader.getChatId(), maxMessageId);
+      tdlib.settings().dismissMessage(loader.getChatId(), loader.getMessageTopicId(), maxMessageId);
       setPinnedMessagesAvailable(false);
     }
   }
@@ -509,7 +512,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private void checkPinnedMessages () {
     long chatId = loader.getChatId();
     setPinnedMessagesAvailable(pinnedMessages != null && pinnedMessages.isAvailable() &&
-      !(tdlib.settings().isMessageDismissed(chatId, pinnedMessages.getMaxMessageId()) || tdlib.chatRestricted(chatId))
+      !(tdlib.settings().isMessageDismissed(chatId, loader.getMessageTopicId(), pinnedMessages.getMaxMessageId()) || tdlib.chatRestricted(chatId))
     );
   }
 
@@ -528,7 +531,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void restorePinnedMessage () {
-    tdlib.settings().restorePinnedMessages(loader.getChatId());
+    tdlib.settings().restorePinnedMessages(loader.getChatId(), loader.getMessageTopicId());
     setPinnedMessagesAvailable(pinnedMessages != null && pinnedMessages.isAvailable());
   }
 
@@ -598,11 +601,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Search
 
   public void openSearch (TdApi.Chat chat, String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
-    loader.setChat(chat, null, null, MessagesLoader.SPECIAL_MODE_SEARCH, filter);
+    if (pinnedMessages != null) { pinnedMessages.performDestroy(); pinnedMessages = null; }
+    loader.setChat(chat, null, controller.getMessageTopicId(), MessagesLoader.SPECIAL_MODE_SEARCH, filter);
     loader.setSearchParameters(query, sender, filter);
     adapter.setChatType(chat.type);
     if (filter != null && Td.isPinnedFilter(filter)) {
-      initPinned(chat.id, 1, 1);
+      initPinned(chat.id, controller.getMessageTopicId(), 1, 1);
     }
     if (highlightMessageId != null) {
       loadFromMessage(highlightMessageId, highlightMode, true);
@@ -664,9 +668,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessageListManager.MaxMessageIdListener pinnedMessageAvailabilityChangeListener = new MessageListManager.MaxMessageIdListener() {
     @Override
     public void onMaxMessageIdChanged (ListManager<TdApi.Message> list, long maxMessageId) {
+      if (list != pinnedMessages) return;
       if (maxMessageId != 0) {
         long chatId = loader.getChatId();
-        setPinnedMessagesAvailable(!(tdlib.settings().isMessageDismissed(chatId, maxMessageId) || tdlib.chatRestricted(chatId)));
+        setPinnedMessagesAvailable(!(tdlib.settings().isMessageDismissed(chatId, loader.getMessageTopicId(), maxMessageId) || tdlib.chatRestricted(chatId)));
       } else if (!list.isAvailable()) {
         setPinnedMessagesAvailable(false);
       }
@@ -675,8 +680,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessageListManager.ChangeListener pinnedMessageListener = new MessageListManager.ChangeListener() {
     @Override
     public void onAvailabilityChanged (ListManager<TdApi.Message> list, boolean isAvailable) {
+      if (list != pinnedMessages) return;
       long chatId = loader.getChatId();
-      if (!isAvailable || !(tdlib.settings().hasDismissedMessages(chatId) || tdlib.chatRestricted(chatId))) {
+      if (!isAvailable || !(tdlib.settings().hasDismissedMessages(chatId, loader.getMessageTopicId()) || tdlib.chatRestricted(chatId))) {
         // Either list became unavailable,
         // or it has no dismissed pinned messages
         setPinnedMessagesAvailable(isAvailable);
@@ -693,8 +699,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private void initPinned (long chatId, int initialLoadCount, int loadCount) {
-    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, null, null, null, new TdApi.SearchMessagesFilterPinned());
+  private void initPinned (long chatId, @Nullable TdApi.MessageTopic topicId, int initialLoadCount, int loadCount) {
+    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, topicId, null, null, new TdApi.SearchMessagesFilterPinned());
     this.pinnedMessages.addMaxMessageIdListener(pinnedMessageAvailabilityChangeListener);
     this.pinnedMessages.addChangeListener(new MessageListManager.ChangeListener() {
       @Override
@@ -711,6 +717,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void openChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.MessageTopic topicId, TdApi.SearchMessagesFilter filter, MessagesController context, boolean areScheduled, boolean needPinnedMessages) {
+    if (pinnedMessages != null) { pinnedMessages.performDestroy(); pinnedMessages = null; }
+    // Scheduled messages have no persisted history position or unread anchor.
+    if (areScheduled && (highlightMode == HIGHLIGHT_MODE_POSITION_RESTORE || highlightMode == HIGHLIGHT_MODE_UNREAD || highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT)) {
+      setHighlightMessageId(null, HIGHLIGHT_MODE_NONE);
+    }
     if (chat.id != 0) {
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
         Log.i(Log.TAG_MESSAGES_LOADER, "[CREATE] chatId:%d", chat.id);
@@ -719,7 +730,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       // readOneShot = true;
     }
     if (chat.id != 0 && messageThread == null && !areScheduled && needPinnedMessages) {
-      initPinned(chat.id, 10, 50);
+      initPinned(chat.id, MessageTopics.effectiveTopic(messageThread, topicId), 10, 50);
     } else {
       this.pinnedMessages = null;
     }
@@ -732,11 +743,18 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       loader.setChat(chat, messageThread, topicId, areScheduled ? MessagesLoader.SPECIAL_MODE_SCHEDULED : MessagesLoader.SPECIAL_MODE_NONE, filter);
       clearHeaderMessage();
       adapter.setChatType(chat.type);
-      if (highlightMessageId != null) {
-        loadFromMessage(highlightMessageId, highlightMode, true);
-      } else {
-        loadFromStart();
-      }
+      if (ForumHistory.isForum(topicId)) adapter.reset(null);
+      context.whenForumTopicReady(() -> {
+        // Resolve automatic unread anchors only after the topic's own read state.
+        if (ForumHistory.isForum(topicId) && !areScheduled && filter == null && context.hasAutomaticAnchor()) {
+          ForumTopicContext forum = context.getForumTopicContext();
+          TdApi.ForumTopic value = forum != null ? forum.topic() : null;
+          int mode = getAnchorHighlightMode(tdlib.id(), chat, messageThread, topicId, value);
+          setHighlightMessageId(getAnchorMessageId(tdlib.id(), chat, messageThread, topicId, mode, value), mode);
+        }
+        if (highlightMessageId != null) loadFromMessage(highlightMessageId, highlightMode, true);
+        else loadFromStart();
+      });
     }
     messageViewer = tdlib.ui().attachViewportToRecyclerView(loader.viewport(), controller.getMessagesView(), new TdlibUi.MessageViewCallback() {
       @Override
@@ -767,7 +785,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           return false;
         MessageProvider provider = (MessageProvider) view;
         TGMessage msg = provider.getMessage();
-        if (msg.markAsViewed() || msg.containsUnreadReactions()) {
+        if (msg.markAsViewed() || msg.containsUnreadReactions() || msg.containsUnreadPollVotes()) {
           long messageId = msg.getBiggestId();
           if (msg.containsUnreadMention() && messageId > lastViewedMentionMessageId) {
             lastViewedMentionMessageId = messageId;
@@ -810,6 +828,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void loadFromStart () {
     loadFromStart(new MessageId(loader.getChatId(), 0), null);
   }
+
+  public void retryForumHistory () { loader.retryForumHistory(); }
 
   public boolean hasReturnMessage () {
     return highlightMessageId != null && returnToMessageIds != null && returnToMessageIds.length > 0;
@@ -1900,7 +1920,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         return;
     }
     TdApi.MessageTopic topicId = loader.getMessageTopicId();
-    if (!Td.matchesTopic(message.getMessageTopicId(), topicId)) {
+    if (!ForumHistory.matches(message.getMessage(), loader.getChatId(), topicId, areScheduled())) {
       return;
     }
     ThreadInfo messageThread = loader.getMessageThread();
@@ -2283,7 +2303,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     TdApi.Chat chat = tdlib.chatStrict(chatId);
     ThreadInfo messageThread = loader.getMessageThread();
-    long lastReadInboxMessageId = messageThread != null ? messageThread.getLastReadInboxMessageId() : chat.lastReadInboxMessageId;
+    ForumTopicContext forum = loader.getForumTopicContext();
+    long lastReadInboxMessageId = forum != null ? forum.lastReadInbox() : messageThread != null ? messageThread.getLastReadInboxMessageId() : chat.lastReadInboxMessageId;
 
     int index = 0;
     main: while (index < adapter.getMessageCount()) {
@@ -2372,6 +2393,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       prevItem = item;
     }
+  }
+
+  public void updateForumReadState (TdApi.ForumTopic topic) {
+    if (areScheduled() || !ForumHistory.isForum(loader.getMessageTopicId()) ||
+        topic.info.chatId != loader.getChatId() || topic.info.forumTopicId != ((TdApi.MessageTopicForum) loader.getMessageTopicId()).forumTopicId) return;
+    TGMessage previous = null;
+    for (int i = adapter.getMessageCount() - 1; i >= 0; i--) {
+      TGMessage item = adapter.getMessage(i);
+      if (item.updateUnread(item.isOutgoing() ? topic.lastReadOutboxMessageId : topic.lastReadInboxMessageId, previous)) invalidateViewAt(i);
+      previous = item;
+    }
+  }
+
+  public void refreshEmptyText () {
+    if (adapter.getMessageCount() == 0) adapter.notifyItemChanged(0);
   }
 
   // Collectors
@@ -2553,6 +2589,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return !(inSpecialMode() || readMessagesDisabled());
   }
 
+  public void saveForumTabsAnchor () { saveScrollPosition(); }
+
   private void saveScrollPosition () {
     if (!canRead()) {
       return;
@@ -2602,7 +2640,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         scrollMessageId = message.getBiggestId();
         scrollMessageOtherIds = message.getOtherMessageIds(scrollMessageId);
         scrollChatId = message.getChatId();
-        if (threadInfo != null) {
+        if (loader.getForumTopicContext() != null) {
+          readFully = scrollChatId == loader.getChatId() && loader.getForumTopicContext().lastMessageId() == scrollMessageId;
+        } else if (threadInfo != null) {
           readFully = scrollChatId == loader.getChatId() && threadInfo.getLastMessageId() == scrollMessageId;
         } else {
           TdApi.Chat chat = tdlib.chat(scrollChatId);
@@ -2692,6 +2732,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Empty text
 
   public void setEmptyText (TextView view, boolean isLoaded) {
+    String forumError = controller.getForumHistoryErrorText();
+    if (forumError != null) { view.setText(forumError); return; }
     if (loader.getSpecialMode() == MessagesLoader.SPECIAL_MODE_RESTRICTED) {
       String restrictionText = Lang.getRestrictionText(tdlib.chatRestriction(loader.getChatId()));
       if (!StringUtils.isEmpty(restrictionText)) {
@@ -3064,7 +3106,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     if (highlightMode == HIGHLIGHT_MODE_POSITION_RESTORE) {
       final int accountId = tdlib.id();
-      Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageTopicId());
+      Settings.SavedMessageId messageId = !inSpecialMode() ? Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageTopicId()) : null;
       int offset = messageId != null ? messageId.offsetPixels - scrollMessage.getExtraPadding() : 0;
       this.returnToMessageIds = messageId != null ? messageId.returnToMessageIds : null;
       scrollToPositionWithOffset(index, offset, false);
@@ -3305,8 +3347,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public static final int CHATS_THRESHOLD = 1;
 
   public static boolean canGoUnread (TdApi.Chat chat, @Nullable ThreadInfo threadInfo) {
+    return canGoUnread(chat, threadInfo, null);
+  }
+
+  public static boolean canGoUnread (TdApi.Chat chat, @Nullable ThreadInfo threadInfo, @Nullable TdApi.MessageTopic topicId) {
+    return canGoUnread(chat, threadInfo, topicId, null);
+  }
+
+  public static boolean canGoUnread (TdApi.Chat chat, @Nullable ThreadInfo threadInfo, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.ForumTopic forum) {
+    if (ForumHistory.isForum(topicId)) return ForumTopicContext.canGoUnread(forum);
     if (threadInfo != null) {
       return threadInfo.hasUnreadMessages(chat) && threadInfo.getLastReadInboxMessageId() != 0;
+    }
+    // Per-topic read state is loaded separately; never borrow the whole-chat anchor.
+    if (topicId != null) {
+      return false;
     }
     return chat.unreadCount >= CHATS_THRESHOLD &&
             chat.lastReadInboxMessageId != 0 && chat.lastReadInboxMessageId != MessageId.MAX_VALID_ID &&
@@ -3315,12 +3370,20 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public static int getAnchorHighlightMode (int accountId, TdApi.Chat chat, @Nullable ThreadInfo threadInfo) {
+    return getAnchorHighlightMode(accountId, chat, threadInfo, null);
+  }
+
+  public static int getAnchorHighlightMode (int accountId, TdApi.Chat chat, @Nullable ThreadInfo threadInfo, @Nullable TdApi.MessageTopic topicId) {
+    return getAnchorHighlightMode(accountId, chat, threadInfo, topicId, null);
+  }
+
+  public static int getAnchorHighlightMode (int accountId, TdApi.Chat chat, @Nullable ThreadInfo threadInfo, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.ForumTopic forum) {
     if (chat == null) {
       return HIGHLIGHT_MODE_NONE;
     }
-    boolean canGoUnread = canGoUnread(chat, threadInfo);
+    boolean canGoUnread = canGoUnread(chat, threadInfo, topicId, forum);
     Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, chat.id,
-      threadInfo != null ? threadInfo.getMessageTopicId() : null
+      MessageTopics.effectiveTopic(threadInfo, topicId)
     );
     boolean preferUnreadFirst = messageId == null || messageId.readFully;
     if (preferUnreadFirst) {
@@ -3341,10 +3404,18 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public static MessageId getAnchorMessageId (int accountId, TdApi.Chat chat, @Nullable ThreadInfo threadInfo, int anchorMode) {
+    return getAnchorMessageId(accountId, chat, threadInfo, null, anchorMode);
+  }
+
+  public static MessageId getAnchorMessageId (int accountId, TdApi.Chat chat, @Nullable ThreadInfo threadInfo, @Nullable TdApi.MessageTopic topicId, int anchorMode) {
+    return getAnchorMessageId(accountId, chat, threadInfo, topicId, anchorMode, null);
+  }
+
+  public static MessageId getAnchorMessageId (int accountId, TdApi.Chat chat, @Nullable ThreadInfo threadInfo, @Nullable TdApi.MessageTopic topicId, int anchorMode, @Nullable TdApi.ForumTopic forum) {
     switch (anchorMode) {
       case HIGHLIGHT_MODE_POSITION_RESTORE: {
         Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(
-          accountId, chat.id, threadInfo != null ? threadInfo.getMessageTopicId() : null
+          accountId, chat.id, MessageTopics.effectiveTopic(threadInfo, topicId)
         );
         return messageId != null && messageId.id.getMessageId() != 0 ? messageId.id : null;
       }
@@ -3352,6 +3423,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case HIGHLIGHT_MODE_UNREAD_NEXT: {
         if (threadInfo != null) {
           return new MessageId(threadInfo.getChatId(), threadInfo.getLastReadInboxMessageId() == 0 ? MessageId.MIN_VALID_ID : threadInfo.getLastReadInboxMessageId());
+        } else if (ForumHistory.isForum(topicId) && forum != null) {
+          return new MessageId(chat.id, forum.lastReadInboxMessageId != 0 ? forum.lastReadInboxMessageId : MessageId.MIN_VALID_ID);
+        } else if (topicId != null) {
+          return null;
         } else if (chat.lastReadOutboxMessageId == MessageId.MAX_VALID_ID || ChatId.isMultiChat(chat.id)) {
           return new MessageId(chat.id, chat.lastReadInboxMessageId);
         } else {
@@ -3420,6 +3495,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   @Override
   public void onNewMessage (final TdApi.Message message) {
+    if (message.chatId != loader.getChatId() || !Td.matchesTopic(message.topicId, loader.getMessageTopicId())) return;
     final ThreadInfo messageThread = loader.getMessageThread();
     if (TD.isScheduled(message) == areScheduled()) {
       if (indexOfSentMessage(message.chatId, message.id) != -1)
@@ -3443,11 +3519,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public List<TGMessage> parseMessages (List<TdApi.Message> messages) {
     final List<TGMessage> parsedMessages = new ArrayList<>(messages.size());
+    if (messages.isEmpty()) return parsedMessages;
     final TdApi.Chat chat = tdlib.chatStrict(messages.get(0).chatId);
     final ThreadInfo messageThread = loader.getMessageThread();
     TGMessage cur = null;
     LongSparseArray<TdApi.ChatAdministrator> chatAdmins = this.chatAdmins;
     for (TdApi.Message message : messages) {
+      if (ForumHistory.isForum(loader.getMessageTopicId()) && !ForumHistory.matches(message, loader.getChatId(), loader.getMessageTopicId(), areScheduled())) continue;
       if (cur != null) {
         if (cur.combineWith(message, true)) {
           continue;
@@ -3491,7 +3569,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     tdlib.ui().post(() -> {
-      if (loader.getChatId() == message.chatId) {
+      if (ForumHistory.matches(message, loader.getChatId(), loader.getMessageTopicId(), areScheduled())) {
         updateMessageSendSucceeded(message, oldMessageId);
       }
     });
@@ -3505,7 +3583,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     tdlib.ui().post(() -> {
-      if (loader.getChatId() == message.chatId) {
+      if (ForumHistory.matches(message, loader.getChatId(), loader.getMessageTopicId(), areScheduled())) {
         updateMessageSendFailed(message, oldMessageId);
       }
     });
@@ -3566,6 +3644,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (loader.getChatId() == chatId) {
         updateMessageUnreadReactions(messageId, unreadReactions);
       }
+    });
+  }
+
+  @Override public void onMessageUnreadPollVotesChanged (long chatId, long messageId, boolean hasUnreadPollVote, int unreadPollVoteCount) {
+    int sentMessageIndex = indexOfSentMessage(chatId, messageId);
+    if (sentMessageIndex != -1) sentMessages.get(sentMessageIndex).containsUnreadPollVotes = hasUnreadPollVote;
+    tdlib.ui().post(() -> {
+      if (loader.getChatId() != chatId) return;
+      TGMessage message = adapter.findMessageById(messageId);
+      if (message != null) message.setMessageUnreadPollVote(messageId, hasUnreadPollVote);
     });
   }
 

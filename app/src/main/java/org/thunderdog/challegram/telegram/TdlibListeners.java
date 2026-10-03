@@ -395,13 +395,13 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void subscribeToForumTopicUpdates (long chatId, long messageThreadId, ForumTopicInfoListener listener) {
-    specificForumTopicListeners.add(chatId + "_" + messageThreadId, listener);
+  public void subscribeToForumTopicUpdates (long chatId, int forumTopicId, ForumTopicInfoListener listener) {
+    specificForumTopicListeners.add(uniqueForumTopicKey(chatId, forumTopicId), listener);
   }
 
   @AnyThread
-  public void unsubscribeFromForumTopicUpdates (long chatId, long messageThreadId, ForumTopicInfoListener listener) {
-    specificForumTopicListeners.remove(chatId + "_" + messageThreadId, listener);
+  public void unsubscribeFromForumTopicUpdates (long chatId, int forumTopicId, ForumTopicInfoListener listener) {
+    specificForumTopicListeners.remove(uniqueForumTopicKey(chatId, forumTopicId), listener);
   }
 
   @AnyThread
@@ -1333,7 +1333,7 @@ public class TdlibListeners {
 
   void updateForumTopic (TdApi.UpdateForumTopic update) {
     runForumUpdate(update.chatId, update.forumTopicId, listener ->
-      listener.onForumTopicUpdated(update.chatId, update.forumTopicId, update.isPinned, update.lastReadInboxMessageId, update.lastReadOutboxMessageId, update.notificationSettings)
+      listener.onForumTopicUpdated(update)
     );
   }
 

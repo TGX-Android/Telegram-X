@@ -17,6 +17,8 @@ package org.thunderdog.challegram.component.chat;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
+import android.os.Bundle;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
@@ -108,6 +110,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final ComplexReceiver reactionAvatarsReceiver;
   private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
+  private final ComplexReceiver forumTopicReceiver;
   private final DoubleImageReceiver replyReceiver;
   private final RefreshRateLimiter refreshRateLimiter, highRefreshRateLimiter;
   private ComplexReceiver footerTextMediaReceiver;
@@ -139,6 +142,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       .setUpdateListener(highRefreshRateLimiter);
     textMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
+    forumTopicReceiver = new ComplexReceiver().setUpdateListener(refreshRateLimiter);
     emojiStatusReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     replyTextMediaReceiver = new ComplexReceiver()
@@ -184,6 +188,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     gifReceiver.destroy();
     reactionsComplexReceiver.performDestroy();
     textMediaReceiver.performDestroy();
+    forumTopicReceiver.performDestroy();
     emojiStatusReceiver.performDestroy();
     if (contentReceiver != null) {
       contentReceiver.destroy();
@@ -309,11 +314,16 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
+    // A forum author avatar may be inside the header instead of in the outer gutter.
+    // Rebinding an equally tall row does not necessarily trigger onMeasure.
+    message.layoutAvatar(this, avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
     message.requestCommentsResources(avatarsReceiver, false);
     message.requestGiveawayAvatars(giveawayAvatarsReceiver, false);
     message.requestReactionsResources(reactionAvatarsReceiver, false);
     message.requestAllTextMedia(this);
+    setFocusable(message.hasForumTopicButton());
+    setImportantForAccessibility(message.hasForumTopicButton() ? IMPORTANT_FOR_ACCESSIBILITY_YES : IMPORTANT_FOR_ACCESSIBILITY_AUTO);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
       previewReceiver.setRadius(message.getImageContentRadius(true));
@@ -429,6 +439,24 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     msg.draw(this, c, avatarReceiver, replyReceiver, replyTextMediaReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
   }
 
+  public ComplexReceiver getForumTopicReceiver () { return forumTopicReceiver; }
+
+  @Override public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    super.onInitializeAccessibilityNodeInfo(info);
+    if (msg != null && msg.hasForumTopicButton()) {
+      String topic = Lang.getString(R.string.ForumOpenTopicAction, msg.forumTopicLabel());
+      if (!msg.messagesController().inSelectMode()) info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.btn_openForumTopic, topic));
+      if (info.getContentDescription() == null) info.setContentDescription(topic + ". " + ContentPreview.getChatListPreview(msg.tdlib(), msg.getChatId(), msg.getMessage(), true).buildText(false));
+    }
+  }
+
+  @Override public boolean performAccessibilityAction (int action, Bundle arguments) {
+    if (action == R.id.btn_openForumTopic && msg != null && msg.hasForumTopicButton() && !msg.messagesController().inSelectMode()) {
+      msg.openForumTopic(); return true;
+    }
+    return super.performAccessibilityAction(action, arguments);
+  }
+
   public AvatarReceiver getAvatarReceiver () {
     return avatarReceiver;
   }
@@ -495,6 +523,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
       textMediaReceiver.attach();
+      forumTopicReceiver.attach();
       emojiStatusReceiver.attach();
       replyReceiver.attach();
       replyTextMediaReceiver.attach();
@@ -518,6 +547,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       gifReceiver.detach();
       reactionsComplexReceiver.detach();
       textMediaReceiver.detach();
+      forumTopicReceiver.detach();
       emojiStatusReceiver.detach();
       replyReceiver.detach();
       replyTextMediaReceiver.detach();

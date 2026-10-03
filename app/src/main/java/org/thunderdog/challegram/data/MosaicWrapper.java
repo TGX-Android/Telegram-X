@@ -330,6 +330,7 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
       MosaicItemInfo info = new MosaicItemInfo(this, item, 0, width, height, (float) width / (float) height);
 
       switch (fitMode) {
+        case MODE_FIT_WIDTH_BOUNDED:
         case MODE_FIT_WIDTH: {
           float scale = (float) layoutWidth / (float) width;
           width = layoutWidth;
@@ -743,12 +744,38 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
     for (MosaicItemInfo info : itemInfos) {
       mosaicWidth = Math.max(mosaicWidth, Math.round(info.x + info.width));
       mosaicHeight = Math.max(mosaicHeight, Math.round(info.y + info.height));
+    }
+
+    if (fitMode == MODE_FIT_WIDTH_BOUNDED && mosaicWidth > 0 && mosaicHeight > 0) {
+      // Expand the cell bounds, not the decoded images. Each receiver center-crops its
+      // source; preserve the inter-cell gutters and cap the total album height.
+      int boundedHeight = Math.min(layoutHeight, mosaicHeight);
+      for (MosaicItemInfo info : itemInfos) {
+        int left = (info.position & POSITION_LEFT) != 0 ? 0 : fitCellEdge(info.x, mosaicWidth, layoutWidth, spacing, false);
+        int right = (info.position & POSITION_RIGHT) != 0 ? layoutWidth : fitCellEdge(info.x + info.width, mosaicWidth, layoutWidth, spacing, true);
+        int top = (info.position & POSITION_TOP) != 0 ? 0 : fitCellEdge(info.y, mosaicHeight, boundedHeight, spacing, false);
+        int bottom = (info.position & POSITION_BOTTOM) != 0 ? boundedHeight : fitCellEdge(info.y + info.height, mosaicHeight, boundedHeight, spacing, true);
+        info.x = left;
+        info.y = top;
+        info.width = Math.max(1, right - left);
+        info.height = Math.max(1, bottom - top);
+      }
+      mosaicWidth = layoutWidth;
+      mosaicHeight = boundedHeight;
+    }
+
+    for (MosaicItemInfo info : itemInfos) {
       info.target.buildContent(info.width, info.height);
       info.target.setImageScaling(Math.min(info.width, info.height));
       info.target.setNeedRound(info.needTopLeftRounding(), info.needTopRightRounding(), info.needBottomRightRounding(), info.needBottomLeftRounding());
     }
 
     return setMosaic(mosaicWidth, mosaicHeight, itemInfos, fitMode, animateChanges, isRetry);
+  }
+
+  private static int fitCellEdge (int edge, int sourceSize, int targetSize, float spacing, boolean end) {
+    float halfGap = spacing * .5f * (end ? 1f : -1f);
+    return Math.round((edge + halfGap) * targetSize / sourceSize - halfGap);
   }
 
   private static float multiHeight (float[] ratios, int start, int end, int maxWidth, float spacing) {
@@ -797,6 +824,8 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
   public static final int MODE_FIT_AS_IS = 0;
   public static final int MODE_FIT_WIDTH = 1;
   public static final int MODE_FIT_HEIGHT = 2;
+  /** Fill the width with center-cropped cells while keeping the requested height cap. */
+  public static final int MODE_FIT_WIDTH_BOUNDED = 3;
 
   private int setMosaic (int width, int height, MosaicItemInfo[] items, int fitMode, boolean animate, boolean isRetry) {
     if (!isRetry) {
