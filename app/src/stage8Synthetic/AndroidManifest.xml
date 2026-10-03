@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test-only target. It cannot access the network or launch Telegram components/accounts. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools">
+  <uses-permission tools:node="removeAll" />
+  <!-- The merger can otherwise infer this legacy permission from old library target SDKs. -->
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+  <application android:name="android.app.Application" android:label="Stage8 UI checks"
+    android:allowBackup="false" android:supportsRtl="true" android:theme="@style/AppTheme">
+    <provider tools:node="removeAll" />
+    <service tools:node="removeAll" />
+    <receiver tools:node="removeAll" />
+    <activity tools:node="removeAll" />
+    <activity-alias tools:node="removeAll" />
+  </application>
+</manifest>
