@@ -14,3 +14,11 @@
 
 -keep class org.webrtc.** { *; }
 -keepclassmembers class org.webrtc.** { *; }
+-keep class org.jni_zero.** { *; }
+-keepclassmembers class org.jni_zero.** { *; }
+
+-keep class io.github.pytgcalls.** { *; }
+-keepclassmembers class io.github.pytgcalls.** { *; }
+
+-dontwarn org.jni_zero.JniZeroJni
+-keep class org.jni_zero.JniZeroJni { *; }
