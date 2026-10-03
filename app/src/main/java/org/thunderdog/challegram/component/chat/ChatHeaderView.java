@@ -34,6 +34,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ThemeDeprecated;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Fonts;
@@ -184,7 +185,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     }
     float radius = Screen.dp(19);
     topicPaint.setColor(0xff000000 | (topicIcon != null ? topicIcon.color : 0x6fb9f0));
-    c.drawRoundRect(cx - radius, cy - radius, cx + radius, cy + radius - Screen.dp(3), Screen.dp(12), Screen.dp(12), topicPaint);
+    DrawAlgorithms.drawRoundRect(c, Screen.dp(12), cx - radius, cy - radius, cx + radius, cy + radius - Screen.dp(3), topicPaint);
     topicTail.reset();
     topicTail.moveTo(cx - radius + Screen.dp(3), cy + radius - Screen.dp(9));
     topicTail.lineTo(cx - radius + Screen.dp(3), cy + radius + Screen.dp(2));

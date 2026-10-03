@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.text.Editable;
@@ -159,7 +160,9 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
 
   @Override protected View onCreateView (Context context) {
     recycler = new RecyclerView(context);
-    recycler.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      recycler.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+    }
     ViewSupport.setThemedBackground(recycler, ColorId.background, this);
     recycler.setClipToPadding(false);
     recycler.setPadding(Screen.dp(12), Screen.dp(12), Screen.dp(12), Screen.dp(12) + extraBottomInset);
@@ -229,7 +232,9 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
   private LinearLayout column () {
     LinearLayout view = new LinearLayout(context());
     view.setOrientation(LinearLayout.VERTICAL);
-    view.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      view.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+    }
     return view;
   }
 
@@ -282,7 +287,9 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
     count.setGravity(Gravity.END);
     card.addView(count);
     nameError = label(13, ColorId.textNegative);
-    nameError.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      nameError.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    }
     card.addView(nameError);
     colors = new LinearLayout(context());
     int[] colorLabels = {R.string.ForumColorBlue, R.string.ForumColorYellow, R.string.ForumColorPurple, R.string.ForumColorGreen, R.string.ForumColorPink, R.string.ForumColorRed};
@@ -307,7 +314,9 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
     hint.setPadding(Screen.dp(4), Screen.dp(10), Screen.dp(4), Screen.dp(10));
     content.addView(hint);
     error = label(14, ColorId.textNegative);
-    error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    }
     content.addView(error);
     retryTopic = button(Lang.getString(R.string.ForumEditorRetry), () -> {
       metadataMissing = false; metadataFailed = false; tdlib.topics().retryTopic(key()); updateForm();
@@ -340,7 +349,9 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
     pickerHeader.addView(heading);
     pickerStatus = label(14, ColorId.textLight);
     pickerStatus.setGravity(Gravity.CENTER);
-    pickerStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      pickerStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    }
     pickerHeader.addView(pickerStatus);
     retryPicker = button(Lang.getString(R.string.ForumEditorRetry), this::loadCatalog);
     pickerHeader.addView(retryPicker);
@@ -364,10 +375,16 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
     Context context = searchInput.getContext();
     LinearLayout row = new LinearLayout(context);
     row.setGravity(Gravity.CENTER_VERTICAL);
-    row.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      row.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+    }
     ViewSupport.setThemedBackground(row, ColorId.background, this).setCornerRadius(24);
     searchInput.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
-    searchInput.setPaddingRelative(Screen.dp(16), Screen.dp(8), Screen.dp(8), Screen.dp(8));
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      searchInput.setPaddingRelative(Screen.dp(16), Screen.dp(8), Screen.dp(8), Screen.dp(8));
+    } else {
+      searchInput.setPadding(Screen.dp(16), Screen.dp(8), Screen.dp(8), Screen.dp(8));
+    }
     row.addView(searchInput, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
     clearSearchButton = new ImageButton(context);

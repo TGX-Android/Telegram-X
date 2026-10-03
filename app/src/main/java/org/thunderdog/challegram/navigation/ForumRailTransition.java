@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.data.ForumRailLayout;
+import org.thunderdog.challegram.tool.Views;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -65,7 +66,7 @@ public final class ForumRailTransition {
       int save = canvas.save();
       canvas.translate(x, y);
       canvas.scale(radius, radius);
-      if (alpha < 1f) canvas.saveLayerAlpha(-2f, -2f, 2f, 2f, Math.round(255f * alpha));
+      if (alpha < 1f) Views.saveLayerAlpha(canvas, -2f, -2f, 2f, 2f, Math.round(255f * alpha), Canvas.ALL_SAVE_FLAG);
       drawing.draw(canvas, decorations);
       canvas.restoreToCount(save);
     }

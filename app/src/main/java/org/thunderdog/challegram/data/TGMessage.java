@@ -10032,7 +10032,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     int buttonWidth = forumTopicButton.getWidth() + Screen.dp(24);
     int left = Lang.rtl() ? width - Screen.dp(16) - buttonWidth : Screen.dp(16);
     forumTopicButtonBounds.set(left, top, left + buttonWidth, top + height);
-    canvas.drawRoundRect(left, top + Screen.dp(4), left + buttonWidth, top + height - Screen.dp(4), Screen.dp(14), Screen.dp(14), Paints.fillingPaint(Theme.getColor(ColorId.bubbleIn_background)));
+    DrawAlgorithms.drawRoundRect(canvas, Screen.dp(14), left, top + Screen.dp(4), left + buttonWidth, top + height - Screen.dp(4), Paints.fillingPaint(Theme.getColor(ColorId.bubbleIn_background)));
     forumTopicButton.draw(canvas, left + Screen.dp(12), top + (height - forumTopicButton.getHeight()) / 2, null, 1f, view.getForumTopicReceiver());
   }
 

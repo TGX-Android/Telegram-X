@@ -23,3 +23,9 @@ This deliberately narrow, tall crop shows every synthetic item. Labels ellipsize
 ![Synthetic side topic selector with RTL and enlarged text](images/forum/03-selector-side-dark-rtl-font180.png)
 
 See `FORUM_ACCEPTANCE.md` for the broader, separately recorded device/server acceptance matrix and the account-isolated test target.
+
+## Legacy Android behavior
+
+On API 16–17, forum navigation uses the same-progress fade instead of avatar morphing because view clip bounds require API 18. API 18+ keeps the morph transition. Relative layout and live-region APIs are guarded; API 16 uses the platform's left-to-right layout with physical padding/margins. Labeled accessibility actions are registered on API 21+, while older versions retain node descriptions and standard click behavior.
+
+These compatibility paths need separate old-device verification; the component images above were not captured on legacy Android.

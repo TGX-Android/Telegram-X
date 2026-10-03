@@ -29,6 +29,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
@@ -445,7 +446,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     super.onInitializeAccessibilityNodeInfo(info);
     if (msg != null && msg.hasForumTopicButton()) {
       String topic = Lang.getString(R.string.ForumOpenTopicAction, msg.forumTopicLabel());
-      if (!msg.messagesController().inSelectMode()) info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.btn_openForumTopic, topic));
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !msg.messagesController().inSelectMode()) {
+        AccessibilityNodeInfoCompat.wrap(info).addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(R.id.btn_openForumTopic, topic));
+      }
       if (info.getContentDescription() == null) info.setContentDescription(topic + ". " + ContentPreview.getChatListPreview(msg.tdlib(), msg.getChatId(), msg.getMessage(), true).buildText(false));
     }
   }

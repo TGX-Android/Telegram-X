@@ -3,6 +3,7 @@ package org.thunderdog.challegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -67,13 +68,17 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     addThemeBackgroundColorListener(scroll, ColorId.background);
     column = new LinearLayout(context);
     column.setOrientation(LinearLayout.VERTICAL);
-    column.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      column.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+    }
     int pad = Screen.dp(16); column.setPadding(0, 0, 0, pad);
     scroll.addView(column);
     status = new TextView(context); status.setTextSize(16); status.setTextColor(Theme.textAccentColor());
     status.setTypeface(Fonts.getRobotoMedium()); status.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
     status.setMinHeight(Screen.dp(56)); status.setFocusable(true);
-    status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    }
     status.setBackground(Theme.transparentSelector());
     addThemeTextColorListener(status, ColorId.text);
     status.setPadding(pad, pad, pad, pad); column.addView(status, new LinearLayout.LayoutParams(-1, -2));
@@ -226,7 +231,9 @@ public final class ForumTopicNotificationController extends ViewController<Forum
   @Override protected void handleLanguagePackEvent (int event, int arg1) {
     super.handleLanguagePackEvent(event, arg1);
     if (column != null) {
-      column.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        column.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+      }
       hint.setText(Lang.getString(R.string.ForumProfileSettingsHint)); render();
     }
   }

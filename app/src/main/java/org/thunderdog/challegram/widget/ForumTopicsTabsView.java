@@ -573,8 +573,12 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       label.setTextSize(TypedValue.COMPLEX_UNIT_SP, side() ? Math.min(11f, 30f / fontScale()) : 14);
       label.setMaxLines(side() ? 2 : 1);
       label.setGravity(side() ? Gravity.CENTER : (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-      if (Build.VERSION.SDK_INT >= 17) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         label.setTextDirection(Lang.rtl() ? View.TEXT_DIRECTION_FIRST_STRONG_RTL : View.TEXT_DIRECTION_FIRST_STRONG_LTR);
+      } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        // Before API 23 FIRST_STRONG uses the view's layout direction as its fallback.
+        label.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+        label.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
       }
       StringBuilder description = new StringBuilder(item.id == 0 ? string(R.string.ForumTabsAllDescription) : label(item));
       if (item.selected) append(description, R.string.ForumTabsSelected);

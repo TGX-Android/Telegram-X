@@ -3,12 +3,14 @@ package org.thunderdog.challegram.navigation;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Lang;
@@ -210,8 +212,10 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     transitionTopics = right.getValue();
     transitionChats = chats;
     transitionMainAlpha = transitionMain.getAlpha();
-    transitionMainClip = transitionMain.getClipBounds();
-    allowAvatarMorph = morph;
+    transitionMainClip = ViewCompat.getClipBounds(transitionMain);
+    // Before API 18 clipping is unavailable: use the same-progress fade without capturing avatars.
+    // Navigation draws the opaque topic body after the source, so it still covers the fading source.
+    allowAvatarMorph = morph && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
     setTransitionProgress(progress);
     return true;
   }
@@ -237,7 +241,7 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
       Lang.rtl() ? getWidth() : edge, transitionMain.getHeight());
     if (transitionMainClip != null && !transitionClip.intersect(transitionMainClip)) transitionClip.setEmpty();
     // Some source roots have elevation; they must never paint over the incoming topic pane.
-    transitionMain.setClipBounds(transitionClip);
+    ViewCompat.setClipBounds(transitionMain, transitionClip);
   }
 
   void startTransitionWhenReady (Runnable start) {
@@ -268,7 +272,7 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     if (transitionMain != null) {
       transitionMain.setAlpha(transitionMainAlpha);
       transitionMain.setTranslationX(0f);
-      transitionMain.setClipBounds(transitionMainClip);
+      ViewCompat.setClipBounds(transitionMain, transitionMainClip);
     }
     transitionMainClip = null;
     transitionMain = transitionTopics = null;

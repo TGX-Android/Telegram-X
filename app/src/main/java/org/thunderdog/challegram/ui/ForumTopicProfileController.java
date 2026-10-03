@@ -6,6 +6,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.os.SystemClock;
@@ -21,6 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.core.widget.TextViewCompat;
 
@@ -160,7 +162,13 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     customIcon = new CustomTextView(context, tdlib); customIcon.setTextSize(64); customIcon.setTextColorId(ColorId.text);
     customIcon.setPadding(Screen.dp(7), Screen.dp(3), 0, 0); customIcon.setSingleLine(true);
     iconFrame.addView(customIcon, new FrameLayout.LayoutParams(-1, -1));
-    iconFrame.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      iconFrame.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+    } else {
+      iconFrame.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+      regularIcon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+      customIcon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+    }
     title = text(24, ColorId.text); title.setTypeface(Typeface.DEFAULT, Typeface.BOLD); title.setGravity(Gravity.CENTER);
     title.setPadding(0, pad, 0, 0); profile.addView(title, new LinearLayout.LayoutParams(-1, -2));
     group = text(16, ColorId.textLight); group.setGravity(Gravity.CENTER); group.setMinHeight(Screen.dp(48));
@@ -238,19 +246,36 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     linkLabel.setPadding(0, Screen.dp(4), 0, 0);
     texts.addView(linkText, new LinearLayout.LayoutParams(-1, -2));
     texts.addView(linkLabel, new LinearLayout.LayoutParams(-1, -2));
-    texts.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      texts.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+    } else {
+      texts.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+      linkText.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+      linkLabel.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+    }
     linkRow.addView(texts, new LinearLayout.LayoutParams(0, -2, 1));
     linkCopy = new ImageView(context); linkCopy.setImageResource(R.drawable.baseline_content_copy_24);
     linkCopy.setColorFilter(Theme.getColor(ColorId.icon)); addThemeFilterListener(linkCopy, ColorId.icon);
     linkCopy.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
     LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(Screen.dp(24), Screen.dp(24));
-    iconParams.setMarginStart(Screen.dp(16)); linkRow.addView(linkCopy, iconParams);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      iconParams.setMarginStart(Screen.dp(16));
+    } else {
+      Views.setMargins(iconParams, Screen.dp(16), 0, 0, 0);
+    }
+    linkRow.addView(linkCopy, iconParams);
     linkRow.setOnClickListener(v -> copyLink());
     linkRow.setAccessibilityDelegate(new View.AccessibilityDelegate() {
       @Override public void onInitializeAccessibilityNodeInfo (View host, AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(host, info); info.setClassName("android.widget.Button");
-        if (host.isEnabled()) info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK,
-          Lang.getString(profileLink.state() == ForumTopicProfileLink.State.READY ? R.string.CopyLink : R.string.FirebaseErrorResolveTryAgain)));
+        if (host.isEnabled()) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            AccessibilityNodeInfoCompat.wrap(info).addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(AccessibilityNodeInfo.ACTION_CLICK,
+              Lang.getString(profileLink.state() == ForumTopicProfileLink.State.READY ? R.string.CopyLink : R.string.FirebaseErrorResolveTryAgain)));
+          } else {
+            info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+          }
+        }
       }
     });
     LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
@@ -450,8 +475,10 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     boolean unavailable = terminal || metadataError != null || !tdlib.chatAvailable(tdlib.chat(getChatId()));
     boolean hasLink = !unavailable && profileLink.matches(getChatId(), getForumTopicId()) && profileLink.state() == ForumTopicProfileLink.State.READY;
     boolean failed = unavailable || profileLink.state() == ForumTopicProfileLink.State.UNAVAILABLE;
-    linkRow.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
-    linkText.setTextDirection(hasLink ? View.TEXT_DIRECTION_LTR : View.TEXT_DIRECTION_INHERIT);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      linkRow.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+      linkText.setTextDirection(hasLink ? View.TEXT_DIRECTION_LTR : View.TEXT_DIRECTION_INHERIT);
+    }
     linkText.setText(hasLink ? profileLink.displayUrl() : Lang.getString(failed ? R.string.NoLinkInfo : R.string.LoadingInformation));
     linkLabel.setText(Lang.getString(failed && ready() ? R.string.FirebaseErrorResolveTryAgain :
       hasLink && !profileLink.isPublic() ? R.string.ForumProfileTopicLink : R.string.InviteLink));
@@ -459,7 +486,9 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     linkRow.setEnabled(ready() && (hasLink || failed));
     linkRow.setContentDescription(Lang.getString(R.string.ForumProfileSettingValue, linkLabel.getText(), linkText.getText()));
     linkHint.setText(Lang.getString(R.string.ForumProfileLinkHint));
-    linkHint.setLayoutDirection(linkRow.getLayoutDirection());
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      linkHint.setLayoutDirection(linkRow.getLayoutDirection());
+    }
     linkHint.setVisibility(hasLink && !profileLink.isPublic() ? View.VISIBLE : View.GONE);
   }
   private void togglePin () {
