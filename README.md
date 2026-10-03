@@ -20,50 +20,48 @@ This is the complete source code and the build instructions for the official alt
 
 ### Prerequisites
 
-* At least **5,34GB** of free disk space: **487,10MB** for source codes and around **4,85GB** for files generated after building all variants
-* **4GB** of RAM
-* **macOS** or **Linux**-based operating system.
+* Repository must be fetched via `git`
+* **JDK** or **[Android Studio](https://developer.android.com/studio/)** (with compatible bundled JDK)
+* At least **8GB** of RAM
+* At least **7,32GB** of free disk space when cloning with `--shallow-submodules --depth=1`
+* At least **2-5x** times more disk space for files generated during build process.
 
 #### macOS
 
 * [Homebrew](https://brew.sh)
-* git with LFS, wget and sed: `$ brew install git git-lfs wget gsed && git lfs install`
+* git with LFS: `$ brew install git git-lfs && git lfs install`
+* JDK: `$ brew install openjdk@25`
 
 #### Ubuntu
 
 * git with LFS: `# apt install git git-lfs`
-* Run `$ git lfs install` for the current user, if you didn't have `git-lfs` previously installed
+* Run `$ git lfs install` if you just installed `git-lfs`
+* JDK: `# apt install openjdk-25-jdk`
+* If multiple JDK versions are installed:<br/>`# update-java-alternatives --list`<br/>`# update-java-alternatives --set java-1.25.0-openjdk-amd64` (or other compatible version)
 
 #### Windows
 
-* **Telegram X** does not provide official build instructions for Windows platform. It is recommended to rely on Linux distributions instead.
+* [MSYS2](https://www.msys2.org/#installation)
+* Update packages: `pacman -Syu`
+* Run `pacman -S --needed make diffutils pkgconf`
+* Set `msys2.dir` in `local.properties` after cloning the repository
 
 ### Building
 
-1. `$ git clone --recursive --depth=1 --shallow-submodules https://github.com/TGX-Android/Telegram-X tgx` — clone **Telegram X** with submodules
-2. In case you forgot the `--recursive` flag, `cd` into `tgx` directory and: `$ git submodule init && git submodule update --init --recursive --depth=1`
-3. Create `keystore.properties` file outside of source tree with the following properties:<br/>`keystore.file`: absolute path to the keystore file<br/>`keystore.password`: password for the keystore<br/>`key.alias`: key alias that will be used to sign the app<br/>`key.password`: key password.<br/>**Warning**: keep this file safe and make sure nobody, except you, has access to it. For production builds one could use a separate user with home folder encryption to avoid harm from physical theft
-4. `$ cd tgx`
-5. Run `$ scripts/./setup.sh` and follow up the instructions
-6. If you specified package name that's different from the one Telegram X uses, [setup Firebase](https://firebase.google.com/docs/android/setup) and replace `google-services.json` with the one that's suitable for the `app.id` you need
-7. Now you can open the project using **[Android Studio](https://developer.android.com/studio/)** or build manually from the command line: `./gradlew assembleUniversalRelease`.
-
-### Quick setup for development
-
-If you are developing a [contribution](https://github.com/TGX-Android/Telegram-X/blob/main/docs/PULL_REQUEST_TEMPLATE.md) to the project, you may follow the simpler building steps:
-
 1. `$ git clone --recursive https://github.com/TGX-Android/Telegram-X tgx`
-2. `$ cd tgx`
-3. [Obtain Telegram API credentials](https://core.telegram.org/api/obtaining_api_id)
-4. Create `local.properties` file in the root project folder using any text editor:<br/><pre># Location where you have Android SDK installed
-sdk.dir=YOUR_ANDROID_SDK_FOLDER
-\# Telegram API credentials obtained at previous step
-telegram.api_id=YOUR_TELEGRAM_API_ID
-telegram.api_hash=YOUR_TELEGRAM_API_HASH</pre>
-5. Run `$ scripts/./setup.sh` — this will download required Android SDK packages and build native dependencies that aren't part of project's [CMakeLists.txt](/app/jni/CMakeLists.txt)
-6. Open and build project via [Android Studio](https://developer.android.com/studio) or by using one of `./gradlew assemble` commands in terminal
+2. In case you forgot the `--recursive` flag, `cd` into `tgx` directory and run: `$ git submodule update --init --recursive`
+3. Open project via **[Android Studio](https://developer.android.com/studio/)** or build manually from the command line: `./gradlew assembleLatestUniversalDebug`
+4. If build fails, follow the instructions provided in the error message.
 
-After submitting a pull request and its initial review, special build including your contribution will be published in [@tgx_prs](https://t.me/tgx_prs) channel, where it can be tested by the community. In case any issues or bugs found, you may push more commits to an existing PR that address them and request to publish a newer build by using comments section of pull request or in [@tgx_dev](https://t.me/tgx_dev) chat.
+#### Publishing
+
+1. [Obtain Telegram API credentials](https://core.telegram.org/api/obtaining_api_id)
+2. Create `local.properties` file in the root project folder using any text editor:<br/><pre># Location where you have Android SDK installed
+   sdk.dir=YOUR_ANDROID_SDK_FOLDER
+   \# Telegram API credentials obtained at previous step
+   telegram.api_id=YOUR_TELEGRAM_API_ID
+   telegram.api_hash=YOUR_TELEGRAM_API_HASH</pre>
+3. [Setup Firebase](https://firebase.google.com/docs/android/setup) and replace `google-services.json` with the one that's suitable for your `app.id`
 
 ## Reproducing public builds
 
@@ -71,7 +69,8 @@ In order to verify that there is no additional source code injected inside offic
 
 * **21.04**: for builds published before [26th May 2023](https://github.com/TGX-Android/Telegram-X/commit/e9a054a0f469a98a13f7e0d751539687fef8759b)
 * **22.04.2 LTS**: for builds published before 27th September 2025
-* **24.04 LTS**: for any newer releases.
+* **24.04 LTS**: for builds published before 1st October 2026
+* **26.04 LTS**: for any newer releases
 
 And update its configuration:
 
@@ -83,15 +82,6 @@ And update its configuration:
 6. Follow up the build instruction from the previous section
 7. Run `$ apkanalyzer apk compare --different-only <remote-apk> <reproduced-apk>`
 8. If only signature files and metadata differ, build reproduction is successful.
-
-In future build reproduction might become easier. Here's a list of related PR-welcome TODOs:
-
-* Project path must not affect the resulting `.so` files, so user & project location requirement could be removed
-* When building native binaries on **macOS**, `.comment` ELF section differs from the one built with **Linux** version of NDK. It must be removed or made deterministic without any side-effects like breaking `native-debug-symbols.zip` (or should be reported to NDK team?)
-* Checksums of cold APK builds always differ, even though the same keystore applied and generated inner APK contents do not differ. Real cause must be investigated and fixed, if possible.<br/>To generate cold build, invoke `$ scripts/./reset.sh` and `$ scripts/./setup.sh --skip-sdk-setup`.<br/>**Warning**: this will also reset changes inside some of the submodules ([ffmpeg](/app/jni/thirdparty/ffmpeg), [libvpx](/app/jni/thirdparty/libvpx), [webp](/app/jni/thirdparty/webp), [opus](/app/jni/thirdparty/opus) and [ExoPlayer](/app/jni/thirdparty/exoplayer))
-* Move local pull requests squash-merging from [Publisher](https://github.com/TGX-Android/Publisher) to some script inside this repository to make reproduction of builds that include them easier.
-
-<i>PS: [Docker](https://www.docker.com) is not considered an option, as it just hides away these tasks, and requires that all published APKs must be built using it.</i>
 
 ## Verifying side-loaded APKs
 
