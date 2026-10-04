@@ -43,6 +43,41 @@ Record each case as **pass**, **fail**, or **not run**, with the build revision 
 
 Deletion, role changes, logout, message sending and notification-delivery tests require a suitable authorized test account/data set. Do not destroy existing user data merely to complete the checklist. Public before/after media must use a separate synthetic demonstration data set with no private identifiers or content.
 
+## Maintainer-reported device acceptance - 2026-10-04
+
+The maintainer manually tested the installed development-fork builds below. This is user-reported functional acceptance, not a new instrumentation run or an independent device retest. Source revisions come from the recorded build/install provenance.
+
+| Device | Installed variant and source | Reported result |
+|---|---|---|
+| Pixel 6, modern Android, ARM64 | `latestArm64Debug`, `4fef04fb` | **PASS** for the performed manual checks; no errors reported |
+| Pixel 6, modern Android, ARM64 | `latestArm64Release`, `6b3ee60e` | **PASS** for the performed manual checks; no errors reported |
+| Android 4.2.1 / API 17 / armeabi-v7a | `legacyArm32Debug`, `6b3ee60e` | Login and the forum flows listed below **PASS**; one minor icon-color defect remains |
+
+The legacy report covers both forum presentations: the common stream with topic selectors and the dedicated topic list with a chat rail.
+
+| Legacy scenario | User-reported result |
+|---|---|
+| Sign in and load authenticated forum content | **PASS**; supersedes the earlier network-blocked, startup-only result |
+| Topic previews and unread badges in the chat list, for both presentations | **PASS** for display; not a claim about every read-state scenario |
+| Change topic-selector placement, switch topics, display messages | **PASS** |
+| Open and use the create-topic interface | **PASS** for the interface; a new server-created topic was not separately reported |
+| Display the dedicated topic list, enter topics and load their message histories | **PASS** |
+| Display/scroll the chat rail and animate the transition | **PASS** |
+| Display/filter topic attachments and copy the topic link | **PASS** for the exercised categories and link-copy flow |
+| Theme colors of topic-profile action icons | **FAIL, minor visual issue**; tracked as P8-10 below, with no functional impact reported |
+
+The old device is noticeably slow. The maintainer attributes this to its hardware; no benchmark or root-cause measurement was performed, so this is not performance acceptance.
+
+These APKs belong to the development fork, not the feature-only PR APK at production-code revision `e19ed7b5`. The forum compatibility fixes are present in both branches, but their packaging and remaining changes differ. This report does not replace an exact-PR-APK runtime check, the final 153-case synthetic Android rerun, API 16 testing, or the remaining role-revocation, offline/process-death, live IME/mixed-topic push, ABI and tablet matrix. Existing legacy lint limitations are unchanged. Private screen photos and chat/account data are deliberately not included.
+
+### P8-10 - Legacy topic-profile action icon colors (deferred)
+
+On Android 4.2.1, the Messages, Mute/Unmute and Pin/Unpin action icons in the topic profile can appear black while their labels and card backgrounds retain theme colors. No functional failure was reported. The maintainer accepted this as a minor cosmetic follow-up for the next version; it is not fixed by this documentation update.
+
+Scope: inspect `ForumTopicProfileController.ActionView` (a framework `TextView`), its compound-drawable tint setup, `setIcon()` replacement and theme-change listener. Verify the pre-21 tint path before choosing a compatible drawable-tint helper or compatible view. Do not change topic actions, permissions or navigation as part of this visual fix.
+
+Acceptance: on API 17 and a modern device, action icons use the intended semantic theme color on first display, light/dark theme changes and mute/pin icon replacement; disabled/pressed states remain legible; actions and accessibility remain unchanged. Completion requires a focused rendering regression, relevant legacy API/build checks and recorded device confirmation. The visual cause and fix have not yet been runtime-verified.
+
 ## Upstream PR packaging
 
 The fork's main working branch includes separate Windows-build, TDLib-prebuilt selection and branding commits before the functional forum commits. Do not submit that combined branch directly upstream. Prepare the feature-only branch from current upstream `main`, select only the forum commits, review the complete diff and repeat the relevant checks. Any required build/TDLib fix should be handled as a clearly declared separate dependency, not hidden in the feature PR. Keep branding, local reports, build artifacts and private captures out.
