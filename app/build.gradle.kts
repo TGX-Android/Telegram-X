@@ -574,7 +574,7 @@ android {
             "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
             "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}",
             "-DTGX_FLAVOR=${variant.flavor}",
-            "-DTGX_ROOT_DIR=${project.isolated.rootProject.projectDirectory.asFile.absolutePath}",
+            "-DTGX_ROOT_DIR=${project.isolated.rootProject.projectDirectory.asFile.absoluteFile.invariantSeparatorsPath}",
             "-DFFMPEG_LIBS=${Config.FFMPEG_LIBS.joinToString(";")}"
           )
 
@@ -592,7 +592,7 @@ android {
               "generated/tgx/ffmpeg/${variant.flavor}"
             )
           ).map {
-            "-D${it.key}=${it.value.get().asFile.absolutePath}"
+            "-D${it.key}=${it.value.get().asFile.absoluteFile.invariantSeparatorsPath}"
           }.toTypedArray()
           arguments(*dirs)
         }
