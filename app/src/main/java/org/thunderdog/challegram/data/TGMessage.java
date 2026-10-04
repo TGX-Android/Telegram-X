@@ -9677,6 +9677,24 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return TD.canCopyText(getNewestMessage());
   }
 
+  public @Nullable Text getTextSelectionLayout () {
+    return null;
+  }
+
+  public float getTextSelectionOffsetX () {
+    int offset = getSelectableContentOffset(manager().getSelectableFactor());
+    return getTranslation() + (Lang.rtl() ? -offset : offset);
+  }
+
+  public @Nullable Text findTextSelection (float x, float y) {
+    Text text = getTextSelectionLayout();
+    return text != null && text.isTextAt(x - getTextSelectionOffsetX(), y) ? text : null;
+  }
+
+  public boolean canSelectText (Text text) {
+    return text != null && text == getTextSelectionLayout() && canBeSaved() && canCopyText();
+  }
+
   public boolean isTranslatable () {
     return !Td.isEmpty(textToTranslate) && (flags & FLAG_UNSUPPORTED) == 0 && !Settings.instance().isNotTranslatableLanguage(textToTranslateOriginalLanguage);
   }

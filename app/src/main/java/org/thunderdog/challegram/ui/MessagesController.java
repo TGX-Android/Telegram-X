@@ -103,6 +103,7 @@ import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.chat.InvisibleImageView;
 import org.thunderdog.challegram.component.chat.JoinRequestsView;
 import org.thunderdog.challegram.component.chat.MessageSenderButton;
+import org.thunderdog.challegram.component.chat.MessageTextSelection;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesAdapter;
@@ -767,6 +768,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (previewMode == PREVIEW_MODE_NONE && !isInForceTouchMode()) {
       inputView = new InputView(context, tdlib, this) {
+        @Override
+        protected boolean onKeyboardBackPress () {
+          return messageTextSelection != null && messageTextSelection.dismiss(true);
+        }
+
         @Override
         protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
           super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -1752,6 +1758,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onLeaveSelectMode () {
+    dismissMessageTextSelection();
     if (pagerContentView != null) {
       pagerContentView.setPagingEnabled(true);
     }
@@ -4180,6 +4187,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onBlur () {
+    dismissMessageTextSelection();
     saveDraft();
 
     super.onBlur();
@@ -4265,6 +4273,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void destroy () {
+    dismissMessageTextSelection();
     resetSelectableControl();
 
     discardAttachedFiles(false);
@@ -5529,6 +5538,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public boolean hasSendSomeMediaPermission () {
     return chat != null && tdlib.canSendSendSomeMedia(chat) && !isEventLog();
+  }
+
+  // Text selection
+
+  private @Nullable MessageTextSelection messageTextSelection;
+
+  public boolean selectMessageText (MessageView anchor, float x, float y) {
+    TGMessage message = anchor.getMessage();
+    if (message == null || message.isDestroyed() || anchor.getWindowToken() == null || (!isFocused() && !getParentOrSelf().isFocused())) {
+      return false;
+    }
+    Text text = message.findTextSelection(x, y);
+    if (text == null || !message.canSelectText(text)) {
+      return false;
+    }
+    dismissMessageTextSelection();
+    messageTextSelection = new MessageTextSelection(anchor, message, text);
+    return messageTextSelection.show(x, y);
+  }
+
+  private void dismissMessageTextSelection () {
+    if (messageTextSelection != null) {
+      messageTextSelection.dismiss(false);
+      messageTextSelection = null;
+    }
   }
 
   // test
