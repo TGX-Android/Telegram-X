@@ -22,9 +22,10 @@ set(THIRDPARTY_DIR "${PROJECT_SOURCE_DIR}/third_party")
 set(TDLIB_DIR "${TGX_ROOT_DIR}/tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
+# ENABLE_TGVOIP may be passed by gradle depending on app.ntgcalls
 if(${TGX_FLAVOR} STREQUAL "legacy")
   set(ENABLE_TGVOIP no)
-else()
+elseif(NOT DEFINED ENABLE_TGVOIP)
   set(ENABLE_TGVOIP yes)
 endif()
 
