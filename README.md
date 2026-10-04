@@ -41,10 +41,13 @@ This is the complete source code and the build instructions for the official alt
 
 #### Windows
 
-* [MSYS2](https://www.msys2.org/#installation)
+* [MSYS2](https://www.msys2.org/#installation) (**UCRT64** environment)
 * Update packages: `pacman -Syu`
-* Run `pacman -S --needed make diffutils pkgconf`
-* Set `msys2.dir` in `local.properties` after cloning the repository
+* Run `pacman -S --needed git mingw-w64-ucrt-x86_64-git-lfs perl make diffutils`
+* Run `git lfs install`
+* Run `git config --global core.longpaths true`
+* Clone the repository
+* Set `msys2.dir` in `local.properties` after cloning
 
 ### Building
 
