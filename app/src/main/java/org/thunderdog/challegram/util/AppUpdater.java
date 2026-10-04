@@ -46,6 +46,7 @@ import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -181,9 +182,10 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   private boolean preferTelegramChannelFlow () {
     // TODO: add server config to force
-    return googlePlayUpdateManager == null ||
-      forceTelegramChannelFlow ||
-      (googlePlayFlowError && AppInstallationUtil.isAppSideLoaded(UI.getAppContext()));
+    if (googlePlayUpdateManager == null ||
+      forceTelegramChannelFlow) return true;
+    if (!googlePlayFlowError) return false;
+    return AppInstallationUtil.isAppSideLoaded(AppContext.get());
   }
 
   public static AppInstallationUtil.PublicMarketUrls publicMarketUrls () {
@@ -197,7 +199,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   }
 
   public static AppInstallationUtil.DownloadUrl getDownloadUrl (@Nullable String serverSuggestedDownloadUrl) {
-    @AppInstallationUtil.InstallerId int installerId = AppInstallationUtil.getInstallerId(UI.getAppContext());
+    @AppInstallationUtil.InstallerId int installerId = AppInstallationUtil.getInstallerId(AppContext.get());
     AppInstallationUtil.PublicMarketUrls publicMarketUrls = publicMarketUrls();
     return publicMarketUrls.toDownloadUrl(installerId, serverSuggestedDownloadUrl);
   }
@@ -236,7 +238,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           }
           case UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS:
           case UpdateAvailability.UPDATE_NOT_AVAILABLE: {
-            if (AppInstallationUtil.isAppSideLoaded(UI.getAppContext())) {
+            if (AppInstallationUtil.isAppSideLoaded(AppContext.get())) {
               onGooglePlayFlowError();
             } else {
               onUpdateUnavailable();
@@ -326,7 +328,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       onUpdateUnavailable();
       return;
     }
-    if (BuildConfig.EXPERIMENTAL || (!AppInstallationUtil.allowInAppTelegramUpdates(UI.getAppContext()) && !tdlib.hasUrgentInAppUpdate())) {
+    if (BuildConfig.EXPERIMENTAL || (!AppInstallationUtil.allowInAppTelegramUpdates(AppContext.get()) && !tdlib.hasUrgentInAppUpdate())) {
       onUpdateUnavailable();
       return;
     }

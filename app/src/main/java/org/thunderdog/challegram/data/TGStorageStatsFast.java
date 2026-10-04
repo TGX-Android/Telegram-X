@@ -28,7 +28,7 @@ import org.thunderdog.challegram.mediaview.paint.PaintState;
 import org.thunderdog.challegram.telegram.SessionSnapshot;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.voip.VoIPPersistentConfig;
@@ -89,7 +89,7 @@ public class TGStorageStatsFast {
 
     File[] internalJunk;
     try {
-      internalJunk = UI.getAppContext().getFilesDir().listFiles((dir, name) ->
+      internalJunk = AppContext.get().getFilesDir().listFiles((dir, name) ->
         "vcf".equals(name) || "tdlib_accounts_debug.bin".equals(name) || (name.startsWith("tdlib") && name.endsWith("_debug"))
       );
     } catch (Throwable t) {
@@ -100,7 +100,7 @@ public class TGStorageStatsFast {
 
     File[] externalJunk;
     try {
-      File file = UI.getAppContext().getExternalFilesDir(null);
+      File file = AppContext.get().getExternalFilesDir(null);
       if (file != null) {
         externalJunk = file.listFiles(
           (dir, name) -> name.startsWith("x_account") && name.endsWith("_debug")

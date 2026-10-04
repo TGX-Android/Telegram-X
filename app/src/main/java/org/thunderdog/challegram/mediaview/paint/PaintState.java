@@ -21,7 +21,7 @@ import androidx.collection.SparseArrayCompat;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.core.Background;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -91,7 +91,7 @@ public class PaintState {
   }
 
   public static File getPaintsDir () {
-    return new File(UI.getAppContext().getFilesDir(), "paints");
+    return new File(AppContext.get().getFilesDir(), "paints");
   }
 
   public static PaintState parse (String in) {
@@ -175,7 +175,7 @@ public class PaintState {
 
     if (size >= 256) {
       int paintId = Settings.instance().getPaintId();
-      File paintCacheDirectory = new File(UI.getAppContext().getFilesDir(), "paints");
+      File paintCacheDirectory = new File(AppContext.get().getFilesDir(), "paints");
       if (FileUtils.createDirectory(paintCacheDirectory)) {
         File file;
         do {

@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.util.Calendar;
 
@@ -113,14 +114,14 @@ public class DateManager {
         filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
         filter.addAction(Intent.ACTION_TIME_CHANGED);
         try {
-          UI.getAppContext().registerReceiver(dateChangeReceiver, filter);
+          AppContext.get().registerReceiver(dateChangeReceiver, filter);
           this.dateWatcherRegistered = true;
         } catch (Throwable t) {
           Log.w("Unable to register date change receiver", t);
         }
       } else {
         try {
-          UI.getAppContext().unregisterReceiver(dateChangeReceiver);
+          AppContext.get().unregisterReceiver(dateChangeReceiver);
           this.dateWatcherRegistered = false;
         } catch (Throwable t) {
           Log.i("Unable to unregister date change receiver", t);
