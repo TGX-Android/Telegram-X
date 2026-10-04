@@ -78,6 +78,7 @@ data class BuildVersions(
 
 data class ApplicationConfig(
   val sdkDir: String,
+  val msys2Dir: String,
 
   val applicationName: String,
   val applicationId: String,

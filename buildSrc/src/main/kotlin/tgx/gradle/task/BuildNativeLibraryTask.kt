@@ -15,6 +15,9 @@ abstract class BuildNativeLibraryTask : DefaultTask() {
   @get:Internal
   abstract val sdkDir: DirectoryProperty
 
+  @get:Internal
+  abstract val msys2Dir: DirectoryProperty
+
   @get:Input
   abstract val ndkVersion: Property<String>
 
@@ -53,7 +56,7 @@ abstract class BuildNativeLibraryTask : DefaultTask() {
     logFile: File,
     commands: Map<String, Array<String>>
   ) {
-    for (command in commands) {
+    for ((key, value) in commands) {
       logFile.outputStream().use { log ->
         exec.exec {
           standardOutput = log
@@ -61,10 +64,10 @@ abstract class BuildNativeLibraryTask : DefaultTask() {
           isIgnoreExitValue = true
           workingDir = buildDir
           environment(env)
-          commandLine(*command.value)
+          commandLine(*value)
         }.let { result ->
           if (result.exitValue != 0) {
-            fatal("$tag ${command.key} failed [${sdkFlavor.get()}, ${abi.get()}], see: ${logFile.absolutePath}")
+            fatal("$tag $key failed [${sdkFlavor.get()}, ${abi.get()}], see: ${logFile.absolutePath}")
           }
         }
       }

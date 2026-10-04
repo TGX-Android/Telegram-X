@@ -176,6 +176,7 @@ val patchOpusTask = tasks.register<PatchOpusTask>(
 ) {
   group = "Setup"
   description = "Creates a patched copy of opus"
+  msys2Dir.set(msys2Directory(config.msys2Dir))
   inputDir.set(layout.projectDirectory.dir(
     "jni/third_party/opus"
   ))
@@ -210,7 +211,7 @@ val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
       description = "Builds libvpx for ${sdkVariant.flavor}, $abiVariant flavor"
       // System
       sdkDir.set(File(config.sdkDir))
-      // sdkDir.fileValue(File(config.sdkDir))
+      msys2Dir.set(msys2Directory(config.msys2Dir))
       ndkVersion.set(android.ndkVersion)
       hostTag.set(findHostTag())
       // Input
@@ -262,7 +263,8 @@ val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
       group = "Setup"
       description = "Builds FFmpeg for ${sdkVariant.flavor}, $abiVariant flavor"
       // System
-      sdkDir.fileValue(File(config.sdkDir))
+      sdkDir.set(File(config.sdkDir))
+      msys2Dir.set(msys2Directory(config.msys2Dir))
       ndkVersion.set(android.ndkVersion)
       hostTag.set(findHostTag())
       // Input

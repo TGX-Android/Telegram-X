@@ -7,9 +7,13 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.logging.Logging
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
+import tgx.gradle.fatal
 import tgx.gradle.getIntOrThrow
 import tgx.gradle.getOrThrow
 import tgx.gradle.loadProperties
+import tgx.gradle.task.isWindowsHost
+import tgx.gradle.task.validateMsys2Dir
+import java.io.File
 import java.util.*
 
 private fun getOrDefault(properties: Properties, key: String, defaults: Properties): String {
@@ -63,10 +67,35 @@ abstract class AppConfigurationSource : ValueSource<ApplicationConfig, AppConfig
       }
     }
 
+    val sdkDir = properties.getOrThrow("sdk.dir").also {
+      if (it.isEmpty()) {
+        fatal("sdk.dir is not set")
+      }
+      if (it.any(Char::isWhitespace)) {
+        fatal("sdk.dir contains whitespace: $it")
+      }
+    }
+
+    val msys2Dir = if (isWindowsHost()) {
+      properties.getOrThrow("msys2.dir").also {
+        if (it.isEmpty()) {
+          fatal("msys2.dir is not set")
+        }
+        if (it.any(Char::isWhitespace)) {
+          fatal("msys2.dir contains whitespace: $it")
+        }
+        validateMsys2Dir(File(it))
+      }
+    } else {
+      ""
+    }
+
     return ApplicationConfig(
       // local.properties & local.properties.sample
       sdkDir =
-        properties.getOrThrow("sdk.dir"),
+        sdkDir,
+      msys2Dir =
+        msys2Dir,
       applicationName =
         applicationName,
       applicationId =
