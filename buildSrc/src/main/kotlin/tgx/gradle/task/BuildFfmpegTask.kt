@@ -179,7 +179,7 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
         sysroot.resolve("usr/lib")
       ).toPosixPath()}",
 
-      "PATH" to arrayOf(
+      PATH to arrayOf(
         requireDir(
           prebuilt.resolve("bin")
         ).absolutePath,

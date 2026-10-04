@@ -112,7 +112,7 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
       "CXXFLAGS" to "$cppFlags -std=c++17",
       "LDFLAGS" to ldFlags.joinToString(" "),
 
-      "PATH" to arrayOf(
+      PATH to arrayOf(
         requireDir(
           prebuilt.resolve("bin")
         ).absolutePath,

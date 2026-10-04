@@ -278,3 +278,9 @@ fun File.resolveNdkBinary(path: String): File =
   } else {
     resolve(path)
   }
+
+val PATH =
+  if (isWindowsHost())
+    "Path"
+  else
+    "PATH"
