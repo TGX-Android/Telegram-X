@@ -32,6 +32,7 @@ val validateGitSetupTask = tasks.register<ValidateGitSetupTask>("validateGitSetu
   group = "Setup"
   description = "Ensures git modules and LFS objects are fetched correctly"
 
+  mainDir.set(layout.projectDirectory.dir(".."))
   gitmodulesFile.set(layout.projectDirectory.file("../.gitmodules"))
   submoduleMarkers.from(providers.fileContents(
     layout.projectDirectory.file("../.gitmodules")
