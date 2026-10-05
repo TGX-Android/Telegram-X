@@ -23,7 +23,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.widget.ForumTopicsTabsLayout;
 import org.thunderdog.challegram.widget.ForumTopicsTabsView;
 
@@ -77,7 +77,7 @@ public final class ForumUpstreamDemo {
     require(files.equals(directory.getParentFile()), "Demo output must stay in target filesDir");
     require(directory.isDirectory() || directory.mkdir(), "Cannot create demo output directory");
 
-    Object previousContext = get(UI.class, "appContext");
+    Object previousContext = get(AppContext.class, "context");
     Object previousRtl = get(Lang.class, "languageRtl");
     Object previousListeners = get(Lang.class, "languageListeners");
     Object previousDensity = get(Screen.class, "_lastDensity");
@@ -96,7 +96,7 @@ public final class ForumUpstreamDemo {
       set(Lang.class, "languageRtl", previousRtl);
       set(Lang.class, "languageListeners", previousListeners);
       set(Screen.class, "_lastDensity", previousDensity);
-      set(UI.class, "appContext", previousContext);
+      set(AppContext.class, "context", previousContext);
       environment.assertNoAccountInitialization();
     }
   }
