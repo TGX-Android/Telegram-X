@@ -85,7 +85,7 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
           prebuilt.resolve("lib64/clang/12.0.9/lib/linux")
         27 ->
           prebuilt.resolve("lib/clang/18/lib/linux")
-        29 ->
+        30 ->
           prebuilt.resolve("lib/clang/21/lib/linux")
         else ->
           error("Unsupported NDK version: $ndkVersion")
