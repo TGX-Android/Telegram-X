@@ -26,7 +26,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ public class MediaLocationFinder {
   private MediaLocationFinder () {
     LocationManager manager = null;
     try {
-      manager = (LocationManager) UI.getAppContext().getSystemService(Context.LOCATION_SERVICE);
+      manager = (LocationManager) AppContext.get().getSystemService(Context.LOCATION_SERVICE);
     } catch (Throwable t) {
       Log.e("LocationService is unavailable", t);
     }
@@ -60,7 +60,7 @@ public class MediaLocationFinder {
     if (manager == null) {
       return null;
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && UI.getAppContext().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && AppContext.get().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
       return null;
     }
     List<String> providers = manager.getProviders(true);

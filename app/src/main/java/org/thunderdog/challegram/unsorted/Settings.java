@@ -832,12 +832,12 @@ public class Settings {
   private final ScheduleHandler handler = new ScheduleHandler(this);
 
   public File getDirectory () {
-    File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
+    File pmcDir = new File(AppContext.get().getFilesDir(), "pmc");
     return new File(pmcDir, "db");
   }
 
   private Settings () {
-    File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
+    File pmcDir = new File(AppContext.get().getFilesDir(), "pmc");
     boolean didNotExist = !pmcDir.exists();
     if (Config.ENABLE_BASELINE_PROFILE_HOOKS && didNotExist) {
       if (SessionSnapshot.restoreSnapshot()) {
@@ -2026,7 +2026,7 @@ public class Settings {
         break;
       }
       case VERSION_32: {
-        File zoomTables = new File(UI.getAppContext().getFilesDir(), "ZoomTables.data");
+        File zoomTables = new File(AppContext.get().getFilesDir(), "ZoomTables.data");
         if (zoomTables.exists() && !zoomTables.delete()) {
 
         }
@@ -2326,7 +2326,7 @@ public class Settings {
   private void migratePrefsToPmc () {
     // Main
 
-    SharedPreferences main = UI.getAppContext().getSharedPreferences(STORAGE_MAIN, Context.MODE_PRIVATE);
+    SharedPreferences main = AppContext.get().getSharedPreferences(STORAGE_MAIN, Context.MODE_PRIVATE);
     Log.load(main);
 
     final int settingsVersion = main.getInt(KEY_VERSION, 0);
@@ -2460,7 +2460,7 @@ public class Settings {
     SharedPreferences bots = null;
     File botsPrefs = U.sharedPreferencesFile(STORAGE_BOTS);
     if (botsPrefs != null) {
-      bots = UI.getAppContext().getSharedPreferences(STORAGE_BOTS, Context.MODE_PRIVATE);
+      bots = AppContext.get().getSharedPreferences(STORAGE_BOTS, Context.MODE_PRIVATE);
       editor = movePreferences(bots, pmc, editor, null);
     }
 
@@ -2469,13 +2469,13 @@ public class Settings {
     SharedPreferences keyboard = null;
     File keyboardPrefs = U.sharedPreferencesFile(STORAGE_KEYBOARD);
     if (keyboardPrefs != null) {
-      keyboard = UI.getAppContext().getSharedPreferences(STORAGE_KEYBOARD, Context.MODE_PRIVATE);
+      keyboard = AppContext.get().getSharedPreferences(STORAGE_KEYBOARD, Context.MODE_PRIVATE);
       editor = movePreferences(keyboard, pmc, editor, "keyboard_");
     }
 
     // Emoji
 
-    SharedPreferences emoji = UI.getAppContext().getSharedPreferences(STORAGE_EMOJI, Context.MODE_PRIVATE);
+    SharedPreferences emoji = AppContext.get().getSharedPreferences(STORAGE_EMOJI, Context.MODE_PRIVATE);
     Map<String, ?> allEmoji = emoji.getAll();
     if (allEmoji != null && !allEmoji.isEmpty()) {
       if (editor == null) {
@@ -2608,7 +2608,7 @@ public class Settings {
 
   @Deprecated
   public static File getProxyConfigFile () {
-    return new File(UI.getAppContext().getFilesDir(), /*debug ? "tdlib_proxy_debug.bin" :*/ "tdlib_proxy.bin");
+    return new File(AppContext.get().getFilesDir(), /*debug ? "tdlib_proxy_debug.bin" :*/ "tdlib_proxy.bin");
   }
 
   @Deprecated
@@ -3151,7 +3151,7 @@ public class Settings {
       int nightMode = pmc.getInt(KEY_NIGHT_MODE, NIGHT_MODE_DEFAULT);
       if (nightMode == NIGHT_MODE_AUTO) {
         try {
-          SensorManager sensorManager = (SensorManager) UI.getAppContext().getSystemService(Context.SENSOR_SERVICE);
+          SensorManager sensorManager = (SensorManager) AppContext.get().getSystemService(Context.SENSOR_SERVICE);
           if (sensorManager != null) {
             if (sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT) == null) {
               Log.e("Disabling night mode, because light sensor is unavailable");

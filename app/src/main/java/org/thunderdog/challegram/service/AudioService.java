@@ -57,7 +57,7 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,7 +109,7 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
   public void onCreate () {
     super.onCreate();
 
-    UI.initApp(getApplicationContext());
+    AppContext.init(getApplicationContext());
 
     this.handler = new EventHandler(this);
 

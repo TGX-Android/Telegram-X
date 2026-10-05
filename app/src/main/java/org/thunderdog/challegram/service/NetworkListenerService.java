@@ -20,7 +20,7 @@ import android.os.IBinder;
 
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 public class NetworkListenerService extends Service {
   @Nullable
@@ -31,7 +31,7 @@ public class NetworkListenerService extends Service {
 
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {
-    UI.initApp(getApplicationContext());
+    AppContext.init(getApplicationContext());
     return START_STICKY;
   }
 }

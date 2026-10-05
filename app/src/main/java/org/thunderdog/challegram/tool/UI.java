@@ -59,7 +59,7 @@ import org.thunderdog.challegram.service.NetworkListenerService;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.unsorted.AppState;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Unlockable;
 
@@ -93,7 +93,6 @@ public class UI {
     int UNKNOWN = -1, RESUMED = 0, PAUSED = 1, DESTROYED = 2;
   }
 
-  private static Context appContext;
   private static WeakReference<BaseActivity> uiContext;
   private static UIHandler _appHandler;
   private static Handler _progressHandler;
@@ -115,18 +114,10 @@ public class UI {
     return Looper.myLooper() == Looper.getMainLooper();
   }
 
-  public static void initApp (final Context context) {
-    if (appContext == null && context != null) {
-      synchronized (UI.class) {
-        if (appContext != null)
-          return;
-        appContext = context;
-      }
-      AppState.initApplication();
-      if (TEST_MODE != TEST_MODE_AUTO && DeviceUtils.isTestLabDevice(context)) {
-        TEST_MODE = TEST_MODE_AUTO;
-        TdlibManager.setTestLabConfig();
-      }
+  public static void prepareTestLab () {
+    if (TEST_MODE != TEST_MODE_AUTO && DeviceUtils.isTestLabDevice(AppContext.get())) {
+      TEST_MODE = TEST_MODE_AUTO;
+      TdlibManager.setTestLabConfig();
     }
   }
 
@@ -146,12 +137,7 @@ public class UI {
 
   public static void setContext (BaseActivity context) {
     uiContext = new WeakReference<>(context);
-    if (appContext == null) {
-      initApp(context.getApplicationContext());
-      if (appContext == null) {
-        initApp(context);
-      }
-    }
+    AppContext.init(context.getApplicationContext());
   }
 
   private static boolean startServiceImpl (Context context, Intent intent, boolean isForeground) {
@@ -213,7 +199,7 @@ public class UI {
 
   public static void startNotificationService () {
     if (Config.SERVICES_ENABLED) {
-      startService(new Intent(getAppContext(), NetworkListenerService.class), false, false, null);
+      startService(new Intent(AppContext.get(), NetworkListenerService.class), false, false, null);
     }
   }
 
@@ -221,7 +207,7 @@ public class UI {
     if (isTablet == null) {
       synchronized (UI.class) {
         if (isTablet == null) {
-          isTablet = appContext.getResources().getBoolean(R.bool.isTablet);
+          isTablet = getResources().getBoolean(R.bool.isTablet);
         }
       }
     }
@@ -322,7 +308,7 @@ public class UI {
     if (_appHandler == null) {
       synchronized (UIHandler.class) {
         if (_appHandler == null)
-          _appHandler = new UIHandler(appContext);
+          _appHandler = new UIHandler(AppContext.get());
       }
     }
     return _appHandler;
@@ -364,22 +350,16 @@ public class UI {
 
   public static Context getContext () {
     final BaseActivity context = getUiContext();
-    return context != null ? context : appContext;
+    return context != null ? context : AppContext.get();
   }
 
   public static boolean needAmPm () {
-    if (appContext != null) {
-      try {
-        return !DateFormat.is24HourFormat(appContext);
-      } catch (Throwable t) {
-        Log.w(t);
-      }
+    try {
+      return !DateFormat.is24HourFormat(AppContext.get());
+    } catch (Throwable t) {
+      Log.w(t);
     }
     return false;
-  }
-
-  public static Context getAppContext () {
-    return appContext;
   }
 
   public static void startActivity (Intent intent) {
@@ -388,7 +368,7 @@ public class UI {
       context.startActivity(intent);
     } else {
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-      getAppContext().startActivity(intent);
+      AppContext.get().startActivity(intent);
     }
   }
 
@@ -432,7 +412,7 @@ public class UI {
   }
 
   public static Resources getResources () {
-    return appContext.getResources();
+    return AppContext.get().getResources();
   }
 
   public static void removePendingRunnable (Runnable runnable) {
@@ -693,15 +673,15 @@ public class UI {
   }
 
   public static int getOrientation () {
-    return appContext.getResources().getConfiguration().orientation;
+    return getResources().getConfiguration().orientation;
   }
 
   public static boolean isPortrait () {
-    return appContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+    return getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
   }
 
   public static boolean isLandscape () {
-    return appContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+    return getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
   }
 
   public static void setPlayProgress (TGAudio audio, float progress, int seconds) {
@@ -817,7 +797,7 @@ public class UI {
   @Nullable
   public static String[] getInputLanguages () {
     final Set<String> inputLanguages = new LinkedHashSet<>();
-    InputMethodManager imm = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+    InputMethodManager imm = (InputMethodManager) AppContext.get().getSystemService(Context.INPUT_METHOD_SERVICE);
     if (imm != null) {
       String inputLanguageCode = null;
       try {

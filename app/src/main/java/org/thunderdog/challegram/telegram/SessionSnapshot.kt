@@ -3,7 +3,7 @@
 package org.thunderdog.challegram.telegram
 
 import org.thunderdog.challegram.Log
-import org.thunderdog.challegram.tool.UI
+import org.thunderdog.challegram.unsorted.AppContext
 import org.thunderdog.challegram.unsorted.Settings
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -19,7 +19,7 @@ private data class SnapshotPath(
 )
 
 fun getSnapshotsDir(): File =
-  File(UI.getAppContext().filesDir, "snapshots")
+  File(AppContext.get().filesDir, "snapshots")
 
 @Throws(IOException::class)
 fun createSnapshotWithAllAccounts(): File {
@@ -73,7 +73,7 @@ fun createSnapshotWithAllAccounts(): File {
     }
   }
 
-  val baseDir = UI.getAppContext().filesDir
+  val baseDir = AppContext.get().filesDir
   ZipOutputStream(BufferedOutputStream(outputFile.outputStream())).use { zos ->
     for (source in inputFiles) {
       if (source.exists()) {
@@ -100,7 +100,7 @@ fun createSnapshotWithAllAccounts(): File {
 
 @Suppress("Deprecation")
 private fun getPublicDirectory(): File =
-  UI.getAppContext().externalMediaDirs.first()
+  AppContext.get().externalMediaDirs.first()
 
 fun restoreSnapshot(): Boolean {
   val publicDir = getPublicDirectory()
@@ -110,7 +110,7 @@ fun restoreSnapshot(): Boolean {
     return false
   }
 
-  val targetDirectory = UI.getAppContext().filesDir
+  val targetDirectory = AppContext.get().filesDir
 
   ZipInputStream(BufferedInputStream(targetFile.inputStream())).use { zis ->
     var entry = zis.nextEntry

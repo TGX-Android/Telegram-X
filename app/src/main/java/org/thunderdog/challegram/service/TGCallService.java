@@ -71,6 +71,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.SoundPoolMap;
 import org.thunderdog.challegram.voip.ConnectionStateListener;
@@ -278,7 +279,7 @@ public class TGCallService extends Service implements
   @Override
   public void onCreate () {
     super.onCreate();
-    UI.initApp(getApplicationContext());
+    AppContext.init(getApplicationContext());
     reference = new WeakReference<>(this);
 
     soundPoolMap = new SoundPoolMap(AudioManager.STREAM_VOICE_CALL);

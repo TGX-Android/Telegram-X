@@ -96,6 +96,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.StringList;
@@ -652,7 +653,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     Background.instance().post(() -> {
       try {
-        File vcfCacheDirectory = new File(UI.getAppContext().getFilesDir(), "vcf");
+        File vcfCacheDirectory = new File(AppContext.get().getFilesDir(), "vcf");
         if (!FileUtils.createDirectory(vcfCacheDirectory))
           return;
         File file = new File(vcfCacheDirectory, "temp.vcf");

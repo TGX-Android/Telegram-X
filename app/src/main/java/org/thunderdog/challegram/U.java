@@ -141,6 +141,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.TextController;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.text.TextReplacementSpan;
@@ -237,7 +238,7 @@ public class U {
 
   public static boolean isRoaming() {
     try {
-      ConnectivityManager cm = (ConnectivityManager) UI.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+      ConnectivityManager cm = (ConnectivityManager) AppContext.get().getSystemService(Context.CONNECTIVITY_SERVICE);
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         android.net.Network network = cm.getActiveNetwork();
         android.net.NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
@@ -366,7 +367,7 @@ public class U {
     ArrayList<String> results = null;
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) { //Method 1 for KitKat & above
-      File[] externalDirs = UI.getAppContext().getExternalFilesDirs(null);
+      File[] externalDirs = AppContext.get().getExternalFilesDirs(null);
 
       for (File file : externalDirs) {
         String path = file.getPath().split("/Android")[0];
@@ -917,7 +918,7 @@ public class U {
   public static String getNotificationChannel (String id, int stringRes) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       android.app.NotificationChannel channel = new android.app.NotificationChannel(id, Lang.getString(stringRes), NotificationManager.IMPORTANCE_LOW);
-      NotificationManager manager = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+      NotificationManager manager = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
       try {
         manager.createNotificationChannel(channel);
       } catch (Throwable t) {
@@ -1184,7 +1185,7 @@ public class U {
   public static Uri contentUriFromFile (File file) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
       try {
-        return FileProvider.getUriForFile(UI.getAppContext(), Config.FILE_PROVIDER_AUTHORITY, file);
+        return FileProvider.getUriForFile(AppContext.get(), Config.FILE_PROVIDER_AUTHORITY, file);
       } catch (Throwable t) {
         Log.e("Can't create content uri for path", t);
         // UI.showToast("Could not open path: " + file.getPath() + ", reason: " + t.getMessage(), Toast.LENGTH_LONG);
@@ -1994,9 +1995,9 @@ public class U {
       FileUtils.deleteFile(file);
       return;
     }
-    MediaScannerConnection.scanFile(UI.getAppContext(), new String[] {file.getPath()}, null, (path, uri) -> {
+    MediaScannerConnection.scanFile(AppContext.get(), new String[] {file.getPath()}, null, (path, uri) -> {
       if (uri != null) {
-        UI.getAppContext().getContentResolver().delete(uri, null, null);
+        AppContext.get().getContentResolver().delete(uri, null, null);
       }
       FileUtils.deleteFile(file);
     });
@@ -2010,7 +2011,7 @@ public class U {
     if (file == null)
       return;
     /*String mimeType = TGMimeType.mimeTypeForExtension(U.getExtension(file.getPath()));
-    MediaScannerConnection.scanFile(UI.getAppContext(), new String[] {file.getPath()}, !Strings.isEmpty(mimeType) ? new String[] {mimeType} : null, (path, uri) -> {
+    MediaScannerConnection.scanFile(AppContext.get(), new String[] {file.getPath()}, !Strings.isEmpty(mimeType) ? new String[] {mimeType} : null, (path, uri) -> {
 
     });*/
     Uri uri = Uri.fromFile(file);
@@ -2370,13 +2371,13 @@ public class U {
       "Device: " + Build.MANUFACTURER + " " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
       "Screen: " + Screen.widestSide() + "x" + Screen.smallestSide() + " (density: " + Screen.density() + ", fps: " + Screen.refreshRate() + ")" + "\n" +
       "Build: `" + Build.FINGERPRINT + "`\n" +
-      "Package: " + UI.getAppContext().getPackageName() + "\n" +
+      "Package: " + AppContext.get().getPackageName() + "\n" +
       "Locale: " + locale + (!locale.equals(appLocale) ? " (app: " + appLocale + ")" : "");
-    String installerName = AppInstallationUtil.getInstallerPackageName(UI.getAppContext());
+    String installerName = AppInstallationUtil.getInstallerPackageName(AppContext.get());
     if (!StringUtils.isEmpty(installerName)) {
       metadata += "\nInstaller: " + AppInstallationUtil.prettifyPackageName(installerName);
     }
-    String initiatorName = AppInstallationUtil.getInitiatorPackageName(UI.getAppContext());
+    String initiatorName = AppInstallationUtil.getInitiatorPackageName(AppContext.get());
     if (!StringUtils.isEmpty(initiatorName)) {
       metadata += "\nInitiator: " + AppInstallationUtil.prettifyPackageName(initiatorName);
     }
@@ -2398,7 +2399,7 @@ public class U {
   @Nullable
   public static String getApkFingerprint (String algorithm, boolean needSeparator) {
     try {
-      final PackageInfo info = UI.getAppContext().getPackageManager()
+      final PackageInfo info = AppContext.get().getPackageManager()
         .getPackageInfo(BuildConfig.APPLICATION_ID, PackageManager.GET_SIGNATURES);
       for (Signature signature : info.signatures) {
         final MessageDigest md = MessageDigest.getInstance(algorithm);
@@ -2648,9 +2649,9 @@ public class U {
     try {
       File appDir;
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        appDir = UI.getAppContext().getDataDir();
+        appDir = AppContext.get().getDataDir();
       } else {
-        appDir = UI.getAppContext().getFilesDir().getParentFile();
+        appDir = AppContext.get().getFilesDir().getParentFile();
       }
       File prefsDir = new File(appDir, "shared_prefs");
       if (prefsDir.exists()) {
@@ -2668,7 +2669,7 @@ public class U {
   public static boolean deleteSharedPreferences (String name) {
     try {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        return UI.getAppContext().deleteSharedPreferences(name);
+        return AppContext.get().deleteSharedPreferences(name);
       } else {
         File file = sharedPreferencesFile(name);
         return file != null && file.delete();
@@ -2928,7 +2929,7 @@ public class U {
 
   public static boolean isInternalUri (Uri uri) {
     String pathString = normalizeFilePath(uri.getPath());
-    File dir = UI.getAppContext().getFilesDir();
+    File dir = AppContext.get().getFilesDir();
     return !StringUtils.isEmpty(pathString) && pathString.startsWith(dir.getPath());
   }
 
@@ -3450,7 +3451,7 @@ public class U {
 
   public static String[] getInputLanguages () {
     final List<String> inputLanguages = new ArrayList<>();
-    InputMethodManager imm = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+    InputMethodManager imm = (InputMethodManager) AppContext.get().getSystemService(Context.INPUT_METHOD_SERVICE);
     if (imm != null) {
       String inputLanguageCode = null;
       try {

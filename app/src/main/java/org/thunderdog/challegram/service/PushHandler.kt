@@ -5,14 +5,14 @@ import org.drinkless.tdlib.TdApi.DeviceToken
 import org.thunderdog.challegram.Log
 import org.thunderdog.challegram.TDLib
 import org.thunderdog.challegram.telegram.TdlibManager
-import org.thunderdog.challegram.tool.UI
+import org.thunderdog.challegram.unsorted.AppContext
 import org.thunderdog.challegram.unsorted.Settings
 import tgx.bridge.PushManager
 import tgx.td.stringify
 
 class PushHandler : PushManager {
   override fun onNewToken(service: Service, token: DeviceToken) {
-    UI.initApp(service.applicationContext)
+    AppContext.init(service.applicationContext)
     log("onNewToken %s, sending to all accounts", token)
     TdlibManager.instance().runWithWakeLock { manager ->
       manager.setDeviceToken(token)
@@ -20,7 +20,7 @@ class PushHandler : PushManager {
   }
 
   override fun onMessageReceived(service: Service, message: Map<String, Any>, sentTime: Long, ttl: Int) {
-    UI.initApp(service.applicationContext)
+    AppContext.init(service.applicationContext)
     val pushId = Settings.instance().newPushId()
 
     val payload = stringify(message)

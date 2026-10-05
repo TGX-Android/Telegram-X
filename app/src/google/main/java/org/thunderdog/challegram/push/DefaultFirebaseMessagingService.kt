@@ -5,7 +5,7 @@ import com.google.firebase.messaging.RemoteMessage
 import org.thunderdog.challegram.TDLib
 import org.thunderdog.challegram.telegram.TdlibAccount
 import org.thunderdog.challegram.telegram.TdlibManager
-import org.thunderdog.challegram.tool.UI
+import org.thunderdog.challegram.unsorted.AppContext
 import tgx.bridge.PushManagerBridge
 
 @Suppress("MissingFirebaseInstanceTokenRefresh")
@@ -19,7 +19,7 @@ abstract class DefaultFirebaseMessagingService : FirebaseMessagingService() {
   }
 
   override fun onDeletedMessages() {
-    UI.initApp(applicationContext)
+    AppContext.init(applicationContext)
     TDLib.Tag.notifications("onDeletedMessages: performing sync for all accounts")
     TdlibManager.makeSync(applicationContext, TdlibAccount.NO_ID, TdlibManager.SYNC_CAUSE_DELETED_MESSAGES, 0, !TdlibManager.inUiThread(), 0)
   }
