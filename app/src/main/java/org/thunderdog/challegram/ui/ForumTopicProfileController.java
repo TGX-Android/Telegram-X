@@ -22,6 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.core.widget.TextViewCompat;
@@ -296,7 +297,8 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     params.setMargins(Screen.dp(4), Screen.dp(4), Screen.dp(4), Screen.dp(4));
     row.addView(button, params); button.setOnClickListener(v -> action.run()); return button;
   }
-  private final class ActionView extends TextView {
+  // TextViewCompat requires the support tint interface for compound icons before API 23.
+  private final class ActionView extends AppCompatTextView {
     private int iconId;
     ActionView (Context context) {
       super(context);
