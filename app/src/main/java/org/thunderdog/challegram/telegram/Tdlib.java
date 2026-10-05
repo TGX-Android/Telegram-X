@@ -79,6 +79,8 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.TGCountry;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EditRightsController;
+import org.thunderdog.challegram.unsorted.AppContext;
+import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ChangeLogList;
@@ -6026,7 +6028,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (deviceToken != null && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
         state = TdlibManager.TokenState.OK;
       }
-      String tokenProvider = TdlibNotificationUtils.getDeviceTokenRetriever().name;
+      String tokenProvider = DeviceTokenRetrieverInstance.get().name;
       String error = context().getTokenError();
       switch (state) {
         case TdlibManager.TokenState.ERROR: {
@@ -6072,7 +6074,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
     }
     final long timeZoneOffset = timeZoneOffset();
-    final Context context = UI.getAppContext();
+    final Context context = AppContext.get();
     params.put("package_id", context.getPackageName());
     String installerName = AppInstallationUtil.getInstallerPackageName(context);
     if (!StringUtils.isEmpty(installerName)) {
@@ -6168,7 +6170,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       updateNotificationParameters(client);
       client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
       client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
-      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded(UI.getAppContext()))), okHandler);
+      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded(AppContext.get()))), okHandler);
       client.send(new TdApi.SetOption("process_pinned_messages_as_mentions", new TdApi.OptionValueBoolean(true)), okHandler);
     }
     checkConnectionParams(client, true);
@@ -6797,7 +6799,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean youtubePipEnabled () {
-    return !options.youtubePipDisabled || AppInstallationUtil.isAppSideLoaded(UI.getAppContext());
+    if (!options.youtubePipDisabled) return true;
+    return AppInstallationUtil.isAppSideLoaded(AppContext.get());
   }
 
   public List<RtcServer> rtcServers () {
@@ -9232,7 +9235,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     long projectId = 0;
     try {
-      FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
+      FirebaseOptions options = FirebaseOptions.fromResource(AppContext.get());
       String projectIdRaw = options != null ? options.getGcmSenderId() : "";
       if (!StringUtils.isEmpty(projectIdRaw)) {
         projectId = Long.parseLong(projectIdRaw);
@@ -9248,7 +9251,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         .setNonce(nonce)
         .setCloudProjectNumber(projectId)
         .build();
-      IntegrityManager integrityManager = IntegrityManagerFactory.create(UI.getAppContext());
+      IntegrityManager integrityManager = IntegrityManagerFactory.create(AppContext.get());
       Task<IntegrityTokenResponse> integrityTokenResponse = integrityManager.requestIntegrityToken(request);
       integrityTokenResponse
         .addOnSuccessListener(r -> {

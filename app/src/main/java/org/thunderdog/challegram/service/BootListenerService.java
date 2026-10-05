@@ -23,7 +23,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 public class BootListenerService extends Service {
   @Nullable
@@ -34,7 +34,7 @@ public class BootListenerService extends Service {
 
   @Override
   public int onStartCommand (Intent intent, int flags, int startId) {
-    UI.initApp(getApplicationContext());
+    AppContext.init(getApplicationContext());
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
       stopSelf();
     } else {

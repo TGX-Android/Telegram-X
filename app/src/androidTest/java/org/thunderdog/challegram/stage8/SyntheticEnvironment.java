@@ -12,7 +12,7 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.theme.ThemeSet;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * In-memory presentation globals only. Never call UI.initApp, Settings.instance,
+ * In-memory presentation globals only. Never call AppContext.init, Settings.instance,
  * ThemeManager's constructor, TdlibManager.instance, or ForumTopicView.setTopic here.
  * ThemeManager's constructor subscribes to the account manager; constructor-free allocation
  * is intentionally confined to these tests. All reflected globals are restored per case.
@@ -40,7 +40,7 @@ public final class SyntheticEnvironment implements AutoCloseable {
     assertNoAccountInitialization();
     themeManager = allocate(ThemeManager.class);
     try {
-      replace(UI.class, "appContext", target);
+      replace(AppContext.class, "context", target);
       replace(ThemeManager.class, "instance", themeManager);
       replace(Lang.class, "languageSettingsLoaded", true);
       replace(Lang.class, "languageRtl", false);
@@ -59,7 +59,7 @@ public final class SyntheticEnvironment implements AutoCloseable {
     Configuration configuration = new Configuration(target.getResources().getConfiguration());
     configuration.fontScale = fontScale;
     Context context = target.createConfigurationContext(configuration);
-    set(UI.class, "appContext", context);
+    set(AppContext.class, "context", context);
     set(Lang.class, "languageRtl", rtl);
     set(themeManager, "_currentTheme", ThemeSet.getBuiltinTheme(themeId));
     return context;

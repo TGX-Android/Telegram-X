@@ -34,6 +34,7 @@ val validateGitSetupTask = tasks.register<ValidateGitSetupTask>("validateGitSetu
   group = "Setup"
   description = "Ensures git modules and LFS objects are fetched correctly"
 
+  mainDir.set(layout.projectDirectory.dir(".."))
   gitmodulesFile.set(layout.projectDirectory.file("../.gitmodules"))
   submoduleMarkers.from(providers.fileContents(
     layout.projectDirectory.file("../.gitmodules")
@@ -178,6 +179,7 @@ val patchOpusTask = tasks.register<PatchOpusTask>(
 ) {
   group = "Setup"
   description = "Creates a patched copy of opus"
+  msys2Dir.set(msys2Directory(config.msys2Dir))
   inputDir.set(layout.projectDirectory.dir(
     "jni/third_party/opus"
   ))
@@ -212,7 +214,7 @@ val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
       description = "Builds libvpx for ${sdkVariant.flavor}, $abiVariant flavor"
       // System
       sdkDir.set(File(config.sdkDir))
-      // sdkDir.fileValue(File(config.sdkDir))
+      msys2Dir.set(msys2Directory(config.msys2Dir))
       ndkVersion.set(android.ndkVersion)
       hostTag.set(findHostTag())
       // Input
@@ -264,7 +266,8 @@ val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
       group = "Setup"
       description = "Builds FFmpeg for ${sdkVariant.flavor}, $abiVariant flavor"
       // System
-      sdkDir.fileValue(File(config.sdkDir))
+      sdkDir.set(File(config.sdkDir))
+      msys2Dir.set(msys2Directory(config.msys2Dir))
       ndkVersion.set(android.ndkVersion)
       hostTag.set(findHostTag())
       // Input
@@ -579,7 +582,7 @@ android {
             "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
             "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}",
             "-DTGX_FLAVOR=${variant.flavor}",
-            "-DTGX_ROOT_DIR=${project.isolated.rootProject.projectDirectory.asFile.absolutePath}",
+            "-DTGX_ROOT_DIR=${project.isolated.rootProject.projectDirectory.asFile.absoluteFile.invariantSeparatorsPath}",
             "-DFFMPEG_LIBS=${Config.FFMPEG_LIBS.joinToString(";")}"
           )
 
@@ -597,7 +600,7 @@ android {
               "generated/tgx/ffmpeg/${variant.flavor}"
             )
           ).map {
-            "-D${it.key}=${it.value.get().asFile.absolutePath}"
+            "-D${it.key}=${it.value.get().asFile.absoluteFile.invariantSeparatorsPath}"
           }.toTypedArray()
           arguments(*dirs)
         }

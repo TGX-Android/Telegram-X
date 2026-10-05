@@ -636,7 +636,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       navigation.insertController(c, 0);
       return;
     }
-    if (IntroController.isIntroAttemptedButFailed()) {
+    if (IntroController.isIntroAttemptedButFailed() || !IntroController.hasDefaultGlConfig()) {
       navigation.initController(new PhoneController(this, account.tdlib()));
     } else {
       navigation.initController(new IntroController(this, account.tdlib()));

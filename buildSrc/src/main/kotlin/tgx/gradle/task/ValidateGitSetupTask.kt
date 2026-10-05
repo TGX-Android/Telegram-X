@@ -3,12 +3,17 @@ package tgx.gradle.task
 import org.eclipse.jgit.lfs.LfsPointer
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.*
 import tgx.gradle.fatal
+import tgx.gradle.requireDir
 import java.io.File
 
 abstract class ValidateGitSetupTask : DefaultTask() {
+  @get:Internal
+  abstract val mainDir: DirectoryProperty
+
   @get:InputFile
   @get:PathSensitive(PathSensitivity.RELATIVE)
   abstract val gitmodulesFile: RegularFileProperty
@@ -23,6 +28,13 @@ abstract class ValidateGitSetupTask : DefaultTask() {
 
   @TaskAction
   fun validateGitSetup() {
+    val mainRepo = requireDir(mainDir.get().asFile)
+    if (!mainRepo.resolve(".git").isDirectory) {
+      fatal("Fetch repository with submodules via git")
+    }
+    if (mainRepo.absolutePath.any(Char::isWhitespace)) {
+      fatal("Repository path must not have whitespaces")
+    }
     val missing = submoduleMarkers.filterNot {
       it.exists()
     }.map {

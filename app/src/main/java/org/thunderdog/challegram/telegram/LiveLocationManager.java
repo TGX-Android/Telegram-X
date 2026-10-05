@@ -35,6 +35,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.LocationHelper;
 import org.thunderdog.challegram.service.LiveLocationService;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -97,7 +98,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
   public LiveLocationManager (TdlibManager context) {
     // this.context = context;
     this.handler = new UiHandler(this);
-    this.helper = new LocationHelper(UI.getAppContext(), this, false, true);
+    this.helper = new LocationHelper(AppContext.get(), this, false, true);
     this.isResumed = UI.getUiState() == UI.State.RESUMED;
     UI.addStateListener(this);
   }
@@ -272,7 +273,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
           serviceLaunchCancellationSignal.cancel();
           serviceLaunchCancellationSignal = null;
         }
-        Intent serviceIntent = new Intent(UI.getAppContext(), LiveLocationService.class);
+        Intent serviceIntent = new Intent(AppContext.get(), LiveLocationService.class);
         if (isFull) {
           serviceLaunchCancellationSignal = new CancellationSignal();
           UI.startService(serviceIntent, true, true, serviceLaunchCancellationSignal);
@@ -283,7 +284,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
           }
           dispatchLocation(location, heading);
         } else {
-          UI.getAppContext().stopService(serviceIntent);
+          AppContext.get().stopService(serviceIntent);
           cancelLocationWorker();
           dispatchLocation(null, 0);
         }

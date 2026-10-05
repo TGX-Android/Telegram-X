@@ -14,8 +14,11 @@
 
 package tgx.gradle.task
 
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.logging.Logging
 import tgx.gradle.fatal
+import tgx.gradle.requireDir
+import tgx.gradle.requireFile
 import java.io.File
 import java.io.Writer
 import java.nio.file.Files
@@ -200,3 +203,84 @@ fun String.unwrapDoubleQuotes(): String {
 }
 
 fun String.wrapInDoubleQuotes(): String = "\"$this\""
+
+fun String.fixNewLines(): String =
+  if (isWindowsHost()) {
+    this.replace("\r\n", "\n")
+  } else {
+    this
+  }
+
+fun validateMsys2Dir(dir: File): File =
+  requireDir(dir.resolve("usr/bin")).also { bin ->
+    requireFile(bin.resolve("msys-2.0.dll"))
+  }
+
+fun msys2Directory(dir: String): File? =
+  if (isWindowsHost()) {
+    if (dir.isEmpty()) {
+      fatal("msys2.dir is not set")
+    }
+    if (dir.any(Char::isWhitespace)) {
+      fatal("msys2.dir contains whitespace: $dir")
+    }
+    File(dir).also { msys2 ->
+      validateMsys2Dir(msys2)
+    }
+  } else {
+    null
+  }
+
+fun msys2Path(dir: DirectoryProperty): String? =
+  if (isWindowsHost()) {
+    requireDir(dir.get().asFile.resolve("usr/bin")).absolutePath
+  } else {
+    null
+  }
+
+private fun msys2Binary(name: String, msys2: DirectoryProperty): String =
+  requireFile(msys2.get().asFile.resolve("usr/bin/$name.exe")).absolutePath
+
+fun resolveBinary(name: String, msys2: DirectoryProperty): String =
+  if (isWindowsHost()) {
+    msys2Binary(name, msys2)
+  } else {
+    name
+  }
+
+fun resolveScript(file: File, msys2: DirectoryProperty): Array<String> =
+  if (isWindowsHost()) {
+    arrayOf(
+      msys2Binary("bash", msys2),
+      requireFile(file).toPosixPath()
+    )
+  } else {
+    arrayOf(requireFile(file).toPosixPath())
+  }
+
+private fun String.toPosixPath(): String =
+  if (length >= 2 && this[1] == ':') {
+    "/${this[0].lowercaseChar()}${substring(2).replace('\\', '/')}"
+  } else {
+    replace('\\', '/')
+  }
+
+fun File.toPosixPath(): String =
+  if (isWindowsHost()) {
+    absolutePath.toPosixPath()
+  } else {
+    absolutePath
+  }
+
+fun File.resolveNdkBinary(path: String): File =
+  if (isWindowsHost()) {
+    resolve("${path}.exe")
+  } else {
+    resolve(path)
+  }
+
+val PATH =
+  if (isWindowsHost())
+    "Path"
+  else
+    "PATH"

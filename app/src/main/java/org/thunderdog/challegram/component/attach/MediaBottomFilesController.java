@@ -65,6 +65,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingsAdapter;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.Permissions;
 
@@ -220,8 +221,8 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
       } else if (currentPath.startsWith(KEY_FOLDER)) {
         String path = currentPath.substring(KEY_FOLDER.length());
         operation = buildFolder(path, parentPath);
-        String internalPath = UI.getAppContext().getFilesDir().getPath();
-        File external = UI.getAppContext().getExternalFilesDir(null);
+        String internalPath = AppContext.get().getFilesDir().getPath();
+        File external = AppContext.get().getExternalFilesDir(null);
         String externalPath = external != null ? external.getPath() : null;
         if (!isUpper && (path.equals(internalPath) || path.equals(externalPath))) {
           before = after -> showOptions(Lang.getMarkdownString(this, R.string.ApplicationFolderWarning), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ApplicationFolderWarningConfirm), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_warning_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
@@ -673,7 +674,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           MediaStore.Downloads.IS_PENDING
         };
         try {
-          try (Cursor c = UI.getAppContext().getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, MediaStore.Downloads.IS_PENDING + " != 1", null, MediaStore.Downloads.DATE_MODIFIED + " desc, " + MediaStore.Downloads.DATE_ADDED + " desc")) {
+          try (Cursor c = AppContext.get().getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, MediaStore.Downloads.IS_PENDING + " != 1", null, MediaStore.Downloads.DATE_MODIFIED + " desc, " + MediaStore.Downloads.DATE_ADDED + " desc")) {
             if (c == null) {
               openAlert(this, R.string.AppName, R.string.AccessError);
               return null;
@@ -737,7 +738,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           MediaStore.Audio.Media.ALBUM_ID,
         };
         try {
-          Cursor c = UI.getAppContext().getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.DATE_ADDED + " desc");
+          Cursor c = AppContext.get().getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.DATE_ADDED + " desc");
           if (c == null) {
             openAlert(this, R.string.AppName, R.string.AccessError);
             return null;

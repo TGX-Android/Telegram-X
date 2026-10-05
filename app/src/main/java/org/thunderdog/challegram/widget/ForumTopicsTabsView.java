@@ -44,6 +44,7 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 
@@ -91,7 +92,7 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
   public ForumTopicsTabsView (ViewController<?> owner, Listener listener) {
     // A constructor-free, null-TDLib presentation owner can use the already supplied app
     // context. This is also useful for isolated previews; it never acquires an account.
-    super(owner.context() != null ? owner.context() : UI.getAppContext());
+    super(owner.context() != null ? owner.context() : AppContext.get());
     this.owner = owner;
     this.listener = listener;
     setWillNotDraw(false);

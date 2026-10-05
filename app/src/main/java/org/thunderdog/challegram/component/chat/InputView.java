@@ -302,7 +302,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
               type = new TdApi.TextEntityTypeBlockQuote();
             } else {
               if (BuildConfig.DEBUG) {
-                Log.i("Menu item: %s %s", UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
+                Log.i("Menu item: %s %s", UI.getResources().getResourceName(item.getItemId()), item.getTitle());
               }
               continue;
             }
