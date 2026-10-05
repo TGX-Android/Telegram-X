@@ -70,13 +70,29 @@ The old device is noticeably slow. The maintainer attributes this to its hardwar
 
 These APKs belong to the development fork, not the feature-only PR APK at production-code revision `e19ed7b5`. The forum compatibility fixes are present in both branches, but their packaging and remaining changes differ. This report does not replace an exact-PR-APK runtime check, the final 153-case synthetic Android rerun, API 16 testing, or the remaining role-revocation, offline/process-death, live IME/mixed-topic push, ABI and tablet matrix. Existing legacy lint limitations are unchanged. Private screen photos and chat/account data are deliberately not included.
 
-### P8-10 - Legacy topic-profile action icon colors (deferred)
+### P8-10 - Legacy topic-profile action icon colors
 
-On Android 4.2.1, the Messages, Mute/Unmute and Pin/Unpin action icons in the topic profile can appear black while their labels and card backgrounds retain theme colors. No functional failure was reported. The maintainer accepted this as a minor cosmetic follow-up for the next version; it is not fixed by this documentation update.
+On Android 4.2.1, the Messages, Mute/Unmute and Pin/Unpin action icons in the topic profile could appear black while their labels and card backgrounds retained theme colors. The October 4 report recorded this as a cosmetic follow-up, with no functional failure reported.
 
-Scope: inspect `ForumTopicProfileController.ActionView` (a framework `TextView`), its compound-drawable tint setup, `setIcon()` replacement and theme-change listener. Verify the pre-21 tint path before choosing a compatible drawable-tint helper or compatible view. Do not change topic actions, permissions or navigation as part of this visual fix.
+The October 5 fix changes only `ForumTopicProfileController.ActionView` to `AppCompatTextView`. Before API 23, `TextViewCompat` compound-icon tint requires a support interface that the framework `TextView` does not implement. The existing semantic `ColorId.textLink`, theme listeners, icon replacement, disabled alpha, click handlers and accessibility role are retained. Topic actions, permissions and navigation are unchanged.
 
-Acceptance: on API 17 and a modern device, action icons use the intended semantic theme color on first display, light/dark theme changes and mute/pin icon replacement; disabled/pressed states remain legible; actions and accessibility remain unchanged. Completion requires a focused rendering regression, relevant legacy API/build checks and recorded device confirmation. The visual cause and fix have not yet been runtime-verified.
+Acceptance: on API 17 and a modern device, action icons use the intended semantic theme color on first display, light/dark theme changes and mute/pin icon replacement; disabled/pressed states remain legible; actions and accessibility remain unchanged. Six account-isolated Android rendering checks pass, including the pre-23 support-tint path, live theme updates and independent drawable colors. On October 5 the maintainer also manually confirmed that the updated legacy APK now displays colored icons on Android 4.2.1. **P8-10 is fixed and accepted** for the reported defect; the manual report did not separately enumerate every theme/state combination.
+
+## Upstream integration and regression rerun - 2026-10-05
+
+Both branches merge upstream `805209e60e4bcccff5757ad5f0e8014f0dcbd7a0`, including upstream Windows support, AppContext/multidex startup fixes, the OpenGL intro fallback and FFmpeg `e594a518`. TDLib/OpenSSL pins are unchanged. The PR adds no native, submodule, branding or Windows-build changes relative to this new base.
+
+- Production fix: development fork `4493005b`, feature-only PR `3c111fa3`. The topic-profile production file is identical in both.
+- Modern JVM checks: **517/517**, 36 suites, zero failures/errors/skips, in each branch.
+- Legacy JVM checks: **517/517**, 36 suites, zero failures/errors/skips, in each branch.
+- PR synthetic Android checks at `1b16636a`: **159/159 PASS** on a physical API 37 device, including all six P8-10 checks. This supersedes the previous final-candidate instrumentation NOT RUN. The first rerun exposed one stale reflection reference in the test-only component gallery after upstream moved AppContext; it was adapted before the successful full rerun.
+- PR modern Debug production-source lint: no new issues; the existing baseline filters 17 warnings. Test-source UAST remains excluded locally, with executable tests reported separately.
+- PR normal ARM64 Release at `1b16636a`: compilation/packaging, explicit R8/resource shrinking and production-source Release lint pass. The unchanged baseline filters 17 warnings. This is an unsigned validation APK, not the signed development-fork Release installed on the device.
+- Legacy production-source lint still reports **51 errors / 15 warnings**, plus 17 baseline-filtered warnings. Each of the 51 diagnostic source snippets is present unchanged in upstream `805209e6`; no issue is reported in the new forum classes. This is source comparison, not an independent lint run of a clean base, and no new baseline hides these findings.
+- Fork modern ARM64 Debug/Release and legacy ARMv7 Debug builds pass after running their native build tasks against the updated source pins. Release R8/resource shrinking and production-source lint pass (17 existing baseline-filtered warnings). APK metadata, signatures, selected native binaries and modern 16 KiB alignment pass validation.
+- All three fork APKs were installed as updates on their intended devices. Installed APK hashes match the verified artifacts and original UIDs/first-install timestamps are preserved. Modern Debug/Release cold starts pass. Legacy visual acceptance is maintainer-reported; an initial ADB wait timed out while two host ADB versions conflicted, so that timing is not a performance result.
+
+Synthetic packages have a separate UID, no application components or network permissions and no account input; they were removed after the run. PR validation on Windows uses a local-only worktree harness and native libraries from the newly built fork at the same upstream pins; it is not an independent native build of the PR checkout. These results are not a new full server/role/lifecycle/ABI acceptance matrix or an API 16 device test. Private account data, device identifiers and captures are not published.
 
 ## Upstream PR packaging
 
