@@ -20,9 +20,12 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.StringRes;
 
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
@@ -224,5 +227,31 @@ public class HeaderButton extends View {
     if (this.progress != null) {
       this.progress.setProgress(progress, progressFactor > 0f);
     }
+  }
+
+  // Accessibility
+
+  private @StringRes int contentDescriptionRes;
+
+  public HeaderButton setContentDescriptionRes (@StringRes int contentDescriptionRes) {
+    if (this.contentDescriptionRes != contentDescriptionRes) {
+      this.contentDescriptionRes = contentDescriptionRes;
+      setContentDescription(contentDescriptionRes != 0 ? Lang.getString(contentDescriptionRes) : null);
+    }
+    return this;
+  }
+
+  @Override
+  public CharSequence getContentDescription () {
+    if (contentDescriptionRes != 0) {
+      // Resolve every time, so the description follows language pack changes
+      return Lang.getString(contentDescriptionRes);
+    }
+    return super.getContentDescription();
+  }
+
+  @Override
+  public CharSequence getAccessibilityClassName () {
+    return Button.class.getName();
   }
 }
