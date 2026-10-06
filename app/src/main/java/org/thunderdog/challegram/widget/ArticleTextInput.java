@@ -11,8 +11,12 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextWatcher;
-import android.text.style.CharacterStyle;
+import android.text.style.MetricAffectingSpan;
 import android.text.style.ReplacementSpan;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputConnectionWrapper;
 import android.widget.EditText;
 import androidx.annotation.NonNull;
 import org.drinkless.tdlib.TdApi;
@@ -27,7 +31,7 @@ import me.vkryl.core.lambda.RunnableData;
 
 /** Editor spans retain the complete TDLib node, including metadata not visible in its label. */
 public final class ArticleTextInput extends EditText {
-  private static final class NodeSpan extends CharacterStyle {
+  private static final class NodeSpan extends MetricAffectingSpan {
     final TdApi.RichText node;
     final int order;
     NodeSpan (TdApi.RichText node, int order) { this.node = node; this.order = order; }
@@ -45,20 +49,33 @@ public final class ArticleTextInput extends EditText {
         default: paint.setColor(Theme.textLinkColor()); break;
       }
     }
+    @Override public void updateMeasureState (TextPaint paint) { updateDrawState(paint); }
   }
   private static final class AtomSpan extends ReplacementSpan {
     final TdApi.RichText node;
     final String label;
-    AtomSpan (TdApi.RichText node) {
+    final Context context;
+    AtomSpan (Context context, TdApi.RichText node) {
+      this.context = context;
       this.node = node;
       String text = ArticleRichText.plain(node);
       label = node instanceof TdApi.RichTextAnchor ? "⚑ " + ((TdApi.RichTextAnchor) node).name : node instanceof TdApi.RichTextReference ? "※ " + ((TdApi.RichTextReference) node).name : text.isEmpty() ? "◆" : text;
     }
+    private android.graphics.Bitmap formula (Paint paint) {
+      return node instanceof TdApi.RichTextMathematicalExpression ? org.thunderdog.challegram.data.article.ArticleMath.render(context, ((TdApi.RichTextMathematicalExpression) node).expression, paint.getTextSize()) : null;
+    }
     @Override public int getSize (@NonNull Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt metrics) {
+      android.graphics.Bitmap image = formula(paint);
+      if (image != null) {
+        if (metrics != null) { Paint.FontMetricsInt original = paint.getFontMetricsInt(); metrics.ascent = Math.min(original.ascent, -image.getHeight()); metrics.top = Math.min(original.top, metrics.ascent); metrics.descent = original.descent; metrics.bottom = original.bottom; }
+        return image.getWidth() + 8;
+      }
       return (int) Math.ceil(paint.measureText(label)) + 8;
     }
     @Override public void draw (@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
       int color = paint.getColor();
+      android.graphics.Bitmap image = formula(paint);
+      if (image != null) { canvas.drawBitmap(image, x + 4, y - image.getHeight(), paint); return; }
       paint.setColor(Theme.textLinkColor());
       canvas.drawText(label, x + 4, y, paint);
       paint.setColor(color);
@@ -69,6 +86,10 @@ public final class ArticleTextInput extends EditText {
   private int order;
   private boolean settingText;
   private Runnable selectionListener;
+  public interface BoundaryListener { boolean onEnter (); boolean onBackspace (); }
+  private BoundaryListener boundaryListener;
+  private final ArrayList<TdApi.RichText> typingFormats = new ArrayList<>();
+  public void setBoundaryListener (BoundaryListener listener) { boundaryListener = listener; }
   public void setSelectionListener (Runnable listener) { selectionListener = listener; }
   @Override protected void onSelectionChanged (int start, int end) { super.onSelectionChanged(start, end); if (!settingText && selectionListener != null) selectionListener.run(); }
 
@@ -78,6 +99,11 @@ public final class ArticleTextInput extends EditText {
     setTextColor(Theme.textAccentColor());
     setTextSize(16f);
     setSingleLine(false);
+    setBackground(null);
+    setPadding(0, org.thunderdog.challegram.tool.Screen.dp(5), 0, org.thunderdog.challegram.tool.Screen.dp(5));
+    setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
+    setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+    setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
     setFilters(new InputFilter[] {(source, start, end, destination, dstart, dend) -> {
       for (AtomSpan span : destination.getSpans(dstart, dend, AtomSpan.class)) {
         int a = destination.getSpanStart(span), b = destination.getSpanEnd(span);
@@ -88,13 +114,18 @@ public final class ArticleTextInput extends EditText {
     setRichText(value);
     addTextChangedListener(new TextWatcher() {
       @Override public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
-      @Override public void onTextChanged (CharSequence s, int start, int before, int count) { }
+      @Override public void onTextChanged (CharSequence s, int start, int before, int count) {
+        if (!settingText && count > 0 && s instanceof Editable) for (TdApi.RichText format : typingFormats)
+          ((Editable) s).setSpan(new NodeSpan(ArticleCodec.copy(format, TdApi.RichText.class), order++), start, start + count, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
       @Override public void afterTextChanged (Editable text) { if (!settingText) notifyChanged(); }
     });
   }
 
   public void setRichText (TdApi.RichText value) {
     settingText = true;
+    order = 0;
+    typingFormats.clear();
     SpannableStringBuilder text = new SpannableStringBuilder();
     append(text, value);
     setText(text);
@@ -112,7 +143,7 @@ public final class ArticleTextInput extends EditText {
       int start = out.length(), index = order++;
       if (child == null) {
         out.append('\ufffc');
-        out.setSpan(new AtomSpan(ArticleCodec.copy(value, TdApi.RichText.class)), start, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        out.setSpan(new AtomSpan(getContext(), ArticleCodec.copy(value, TdApi.RichText.class)), start, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       } else {
         append(out, child);
         if (start != out.length()) out.setSpan(new NodeSpan(ArticleCodec.copy(value, TdApi.RichText.class), index), start, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -121,7 +152,12 @@ public final class ArticleTextInput extends EditText {
   }
 
   public TdApi.RichText richText () {
-    Editable text = getText();
+    return richText(getText());
+  }
+  public TdApi.RichText richText (int start, int end) {
+    return richText(new SpannableStringBuilder(getText(), start, end));
+  }
+  private TdApi.RichText richText (Spanned text) {
     TreeSet<Integer> boundaries = new TreeSet<>();
     boundaries.add(0); boundaries.add(text.length());
     for (Object span : text.getSpans(0, text.length(), Object.class)) {
@@ -149,16 +185,28 @@ public final class ArticleTextInput extends EditText {
 
   public void format (TdApi.RichText wrapper) {
     int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
-    if (start < 0 || start == end) return;
+    if (start < 0) return;
+    if (start == end) {
+      for (int i = 0; i < typingFormats.size(); i++) if (typingFormats.get(i).getConstructor() == wrapper.getConstructor()) { typingFormats.remove(i); return; }
+      typingFormats.add(wrapper); return;
+    }
     Editable text = getText();
-    boolean removed = false;
+    boolean covered = true;
+    for (int i = start; i < end; i++) {
+      boolean styled = false;
+      for (NodeSpan span : text.getSpans(i, i + 1, NodeSpan.class)) if (span.node.getConstructor() == wrapper.getConstructor()) { styled = true; break; }
+      if (!styled) { covered = false; break; }
+    }
     for (NodeSpan span : text.getSpans(start, end, NodeSpan.class)) {
-      if (span.node.getConstructor() == wrapper.getConstructor() && text.getSpanStart(span) == start && text.getSpanEnd(span) == end) {
-        text.removeSpan(span); removed = true;
+      if (span.node.getConstructor() == wrapper.getConstructor()) {
+        int a = text.getSpanStart(span), b = text.getSpanEnd(span);
+        text.removeSpan(span);
+        if (a < start) text.setSpan(new NodeSpan(span.node, span.order), a, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (b > end) text.setSpan(new NodeSpan(span.node, span.order), end, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
     }
-    if (!removed) text.setSpan(new NodeSpan(wrapper, order++), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-    invalidate();
+    if (!covered) text.setSpan(new NodeSpan(wrapper, order++), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    requestLayout(); invalidate();
     notifyChanged();
   }
 
@@ -189,10 +237,38 @@ public final class ArticleTextInput extends EditText {
     Object span = selectedSpan(); if (span == null) return;
     int start = getText().getSpanStart(span), end = getText().getSpanEnd(span);
     getText().removeSpan(span);
-    if (span instanceof AtomSpan) getText().setSpan(new AtomSpan(value), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    if (span instanceof AtomSpan) getText().setSpan(new AtomSpan(getContext(), value), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     else getText().setSpan(new NodeSpan(value, ((NodeSpan) span).order), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     requestLayout(); invalidate(); notifyChanged();
   }
 
   private void notifyChanged () { if (listener != null) listener.runWithData(richText()); }
+
+  private boolean backspaceBoundary () {
+    return boundaryListener != null && getSelectionStart() == 0 && getSelectionEnd() == 0 && boundaryListener.onBackspace();
+  }
+  @Override public boolean onKeyDown (int keyCode, KeyEvent event) {
+    if (keyCode == KeyEvent.KEYCODE_DEL && backspaceBoundary()) return true;
+    if (keyCode == KeyEvent.KEYCODE_ENTER && !event.isShiftPressed() && boundaryListener != null && boundaryListener.onEnter()) return true;
+    return super.onKeyDown(keyCode, event);
+  }
+  @Override public InputConnection onCreateInputConnection (EditorInfo info) {
+    InputConnection base = super.onCreateInputConnection(info);
+    if (base == null) return null;
+    return new InputConnectionWrapper(base, false) {
+      @Override public boolean commitText (CharSequence text, int position) {
+        if ("\n".contentEquals(text) && boundaryListener != null) {
+          super.finishComposingText();
+          if (boundaryListener.onEnter()) return true;
+        }
+        return super.commitText(text, position);
+      }
+      @Override public boolean deleteSurroundingText (int before, int after) {
+        return before == 1 && after == 0 && backspaceBoundary() || super.deleteSurroundingText(before, after);
+      }
+      @Override public boolean deleteSurroundingTextInCodePoints (int before, int after) {
+        return before == 1 && after == 0 && backspaceBoundary() || super.deleteSurroundingTextInCodePoints(before, after);
+      }
+    };
+  }
 }

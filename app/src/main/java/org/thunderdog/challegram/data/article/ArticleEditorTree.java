@@ -15,8 +15,9 @@ public final class ArticleEditorTree {
   public static final class Group {
     private final Supplier<TdApi.InputPageBlock[]> getter;
     private final Consumer<TdApi.InputPageBlock[]> setter;
-    Group (Supplier<TdApi.InputPageBlock[]> getter, Consumer<TdApi.InputPageBlock[]> setter) { this.getter = getter; this.setter = setter; }
+    public Group (Supplier<TdApi.InputPageBlock[]> getter, Consumer<TdApi.InputPageBlock[]> setter) { this.getter = getter; this.setter = setter; }
     public TdApi.InputPageBlock[] blocks () { return getter.get(); }
+    public void replace (int index, TdApi.InputPageBlock block) { TdApi.InputPageBlock[] result = blocks().clone(); result[index] = block; setter.accept(result); }
     public void insert (int index, TdApi.InputPageBlock block) {
       List<TdApi.InputPageBlock> result = new ArrayList<>(Arrays.asList(blocks()));
       result.add(index, block); setter.accept(result.toArray(new TdApi.InputPageBlock[0]));
@@ -38,7 +39,7 @@ public final class ArticleEditorTree {
     public final Group group;
     public final int index, depth;
     public final TdApi.InputPageBlock block;
-    Entry (Group group, int index, int depth) { this.group = group; this.index = index; this.depth = depth; block = group.blocks()[index]; }
+    public Entry (Group group, int index, int depth) { this.group = group; this.index = index; this.depth = depth; block = group.blocks()[index]; }
   }
   public enum FieldName { TEXT, CREDIT, CAPTION, HEADER, CELL, BUTTON }
   public static final class TextField {

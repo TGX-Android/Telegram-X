@@ -13,7 +13,13 @@ import android.text.TextWatcher;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CheckBox;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.view.Gravity;
+import org.thunderdog.challegram.widget.ArticleDocumentView;
+import org.thunderdog.challegram.widget.ArticleEditorPopup;
+import org.thunderdog.challegram.widget.ArticleEditorMedia;
+import org.thunderdog.challegram.tool.Keyboard;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
@@ -51,7 +57,7 @@ import java.util.concurrent.ExecutorService;
 import tgx.td.Td;
 import tgx.td.client.TdlibOptions;
 
-/** Structured article composition. The working tree is never replaced with a plain-text projection. */
+/** Inline rich-document composition. Drafts, history and transmission retain the complete TDLib tree. */
 public final class ArticleEditorController extends ViewController<ArticleEditorController.Args> {
   public static final class Args {
     public final MessagesController owner;
@@ -71,14 +77,18 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   private static final ExecutorService IMPORTS = Executors.newSingleThreadExecutor();
   private ArticleHistory history;
   private ArticleDraftStore store;
-  private LinearLayout fields;
+  private ArticleDocumentView fields;
   private ScrollView scroll;
   private ArticleTextInput focused;
   private final List<ArticleTextInput> textInputs = new ArrayList<>();
   private boolean restoring;
-  private Button sendButton;
+  private ImageView sendButton, undoButton, redoButton;
+  private LinearLayout tools;
+  private View toolAnchor;
+  private boolean formatsVisible;
+  private org.thunderdog.challegram.widget.EmojiLayout emojiPanel;
+  private final List<ArticleEditorMedia> mediaViews = new ArrayList<>();
   private LinearLayout root;
-  private CheckBox rtlControl;
   private boolean sending, sent, draftWriteFailed, recoveryPending, importing;
   private boolean draftTouched;
   private final Handler handler = new Handler(Looper.getMainLooper());
@@ -87,7 +97,9 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   public ArticleEditorController (Context context, Tdlib tdlib) { super(context, tdlib); }
   @Override public int getId () { return R.id.controller_articleEditor; }
   @Override public CharSequence getName () { return Lang.getString(getArgumentsStrict().messageId == 0 ? R.string.ArticleCreate : R.string.ArticleEdit); }
-  @Override protected int getBackButton () { return BackHeaderButton.TYPE_BACK; }
+  @Override protected int getBackButton () { return BackHeaderButton.TYPE_NONE; }
+  @Override protected int getHeaderHeight () { return 0; }
+  @Override protected boolean useDropShadow () { return false; }
 
   @Override protected View onCreateView (Context context) {
     Args args = getArgumentsStrict();
@@ -107,54 +119,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     }
     working = initial.toInput();
     history = new ArticleHistory(initial);
-    root = new LinearLayout(context);
-    root.setOrientation(LinearLayout.VERTICAL);
-    root.setBackgroundColor(Theme.fillingColor());
-    root.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    LinearLayout actions = new LinearLayout(context);
-    button(actions, R.string.ArticleUndo, () -> restore(history.undo()));
-    button(actions, R.string.ArticleRedo, () -> restore(history.redo()));
-    button(actions, R.string.ArticlePreview, this::preview);
-    button(actions, R.string.ArticleAddBlock, () -> addBlock(ArticleEditorTree.root(working), ArticleEditorTree.root(working).blocks().length));
-    HorizontalScrollView actionScroll = new HorizontalScrollView(context);
-    actionScroll.addView(actions); root.addView(actionScroll);
-    scroll = new ScrollView(context);
-    fields = new LinearLayout(context);
-    fields.setOrientation(LinearLayout.VERTICAL);
-    fields.setPadding(Screen.dp(12f), 0, Screen.dp(12f), Screen.dp(24f));
-    scroll.addView(fields);
-    root.addView(scroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
-    HorizontalScrollView formattingScroll = new HorizontalScrollView(context);
-    LinearLayout formatting = new LinearLayout(context);
-    formattingScroll.addView(formatting);
-    button(formatting, R.string.ArticleBold, () -> format(new TdApi.RichTextBold(emptyText())));
-    button(formatting, R.string.ArticleItalic, () -> format(new TdApi.RichTextItalic(emptyText())));
-    button(formatting, R.string.ArticleUnderline, () -> format(new TdApi.RichTextUnderline(emptyText())));
-    button(formatting, R.string.ArticleStrike, () -> format(new TdApi.RichTextStrikethrough(emptyText())));
-    button(formatting, R.string.ArticleSpoiler, () -> format(new TdApi.RichTextSpoiler(emptyText())));
-    button(formatting, R.string.ArticleCode, () -> format(new TdApi.RichTextFixed(emptyText())));
-    button(formatting, R.string.ArticleLink, () -> prompt(R.string.ArticleLink, "https://", url -> format(new TdApi.RichTextUrl(emptyText(), url, false))));
-    button(formatting, R.string.ArticleFormula, () -> prompt(R.string.ArticleFormula, "", value -> { if (focused != null) focused.insert(new TdApi.RichTextMathematicalExpression(value)); }));
-    button(formatting, R.string.ArticleEmoji, this::emojiPicker);
-    button(formatting, R.string.ArticleUser, () -> {
-      ArticleTextInput target = focused;
-      if (target != null) pickUser(user -> target.format(new TdApi.RichTextMentionName(emptyText(), user)));
-    });
-    button(formatting, R.string.ArticleButton, () -> {
-      ArticleTextInput target = focused;
-      if (target != null) prompt(R.string.ArticleLink, "https://", url -> target.format(new TdApi.RichTextButton(new TdApi.InlineButton(emptyText(), new TdApi.ButtonStyleDefault(), new TdApi.InlineKeyboardButtonTypeUrl(url)))));
-    });
-    button(formatting, R.string.ArticleMoreFormats, this::moreFormats);
-    button(formatting, R.string.ArticleEditElement, this::editElement);
-    root.addView(formattingScroll);
-    LinearLayout footer = new LinearLayout(context);
-    CheckBox rtl = rtlControl = new CheckBox(context);
-    rtl.setText(Lang.getString(R.string.ArticleRtl)); rtl.setChecked(working.isRtl);
-    rtl.setOnCheckedChangeListener((view, checked) -> { working.isRtl = checked; if (!restoring) changed(); });
-    footer.addView(rtl, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-    sendButton = button(footer, args.messageId == 0 ? R.string.Send : R.string.Save, this::send);
-    root.addView(footer);
-    rebuildFields();
+    createEditorLayout(context, args.messageId != 0);
     if (recoveryPending) {
       ArticleDraftStore.Snapshot recovered = recovery;
       handler.post(() -> new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(R.string.ArticleDraftConflict))
@@ -179,6 +144,162 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       });
     }
     return root;
+  }
+
+  private void createEditorLayout (Context context, boolean editing) {
+    root = new LinearLayout(context);
+    root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Theme.fillingColor());
+    root.setLayoutParams(new ViewGroup.LayoutParams(-1, -1));
+    FrameLayout page = new FrameLayout(context); root.addView(page, new LinearLayout.LayoutParams(-1, 0, 1));
+    scroll = new ScrollView(context); scroll.setFillViewport(true); scroll.setClipToPadding(false);
+    fields = new ArticleDocumentView(context, new ArticleDocumentView.Delegate() {
+      @Override public void changed (boolean structural) { if (structural) structureChanged(); else ArticleEditorController.this.changed(); }
+      @Override public void selection (ArticleTextInput input) {
+        focused = input; rememberSelection();
+        boolean selected = input.getSelectionStart() != input.getSelectionEnd();
+        if (selected != formatsVisible) { formatsVisible = selected; rebuildTools(); }
+      }
+      @Override public void options (ArticleEditorTree.Entry entry) { blockOptions(entry); }
+      @Override public void media (ArticleEditorTree.Entry entry, LinearLayout parent) {
+        ArticleEditorMedia media = new ArticleEditorMedia(ArticleEditorController.this, entry.block, () -> blockOptions(entry)); mediaViews.add(media); parent.addView(media, new LinearLayout.LayoutParams(-1, -2));
+      }
+      @Override public void formula (ArticleEditorTree.Entry entry, TextView view) {
+        TdApi.InputPageBlockMathematicalExpression formula = (TdApi.InputPageBlockMathematicalExpression) entry.block;
+        renderFormula(view, formula.expression);
+        view.setOnClickListener(v -> formulaEditor(formula.expression, text -> { formula.expression = text; structureChanged(); }));
+      }
+    });
+    scroll.addView(fields); page.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
+    ImageView back = ArticleEditorPopup.icon(context, R.drawable.baseline_arrow_back_24, R.string.ArticleBack, this::navigateBack);
+    FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(Screen.dp(44), Screen.dp(44), Gravity.TOP | Gravity.LEFT); backParams.setMargins(Screen.dp(8), Screen.dp(8), 0, 0); page.addView(back, backParams);
+    LinearLayout historyBar = new LinearLayout(context); historyBar.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 24));
+    undoButton = icon(historyBar, R.drawable.article_iv_undo, R.string.ArticleUndo, () -> restore(history.undo()), 41);
+    redoButton = icon(historyBar, R.drawable.article_iv_redo, R.string.ArticleRedo, () -> restore(history.redo()), 41);
+    FrameLayout.LayoutParams historyParams = new FrameLayout.LayoutParams(Screen.dp(82), Screen.dp(44), Gravity.TOP | Gravity.RIGHT); historyParams.setMargins(0, Screen.dp(8), Screen.dp(8), 0); page.addView(historyBar, historyParams);
+    historyBar.setOnLongClickListener(v -> { preview(); return true; });
+    LinearLayout bottom = new LinearLayout(context); bottom.setGravity(Gravity.CENTER_VERTICAL); bottom.setPadding(Screen.dp(8), Screen.dp(8), Screen.dp(8), Screen.dp(8));
+    ImageView ai = icon(bottom, R.drawable.article_input_ai, R.string.ArticleAi, this::aiMenu, 44); ai.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 24));
+    HorizontalScrollView toolsScroll = new HorizontalScrollView(context); toolsScroll.setHorizontalScrollBarEnabled(false); toolsScroll.setFillViewport(true);
+    tools = new LinearLayout(context); tools.setGravity(Gravity.CENTER); tools.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 24)); toolsScroll.addView(tools, new ViewGroup.LayoutParams(-1, Screen.dp(44)));
+    LinearLayout.LayoutParams toolsParams = new LinearLayout.LayoutParams(0, Screen.dp(44), 1); toolsParams.setMargins(Screen.dp(8), 0, Screen.dp(8), 0); bottom.addView(toolsScroll, toolsParams);
+    sendButton = icon(bottom, !editing ? R.drawable.article_send_plane_24 : R.drawable.baseline_check_24, !editing ? R.string.Send : R.string.Save, this::send, 44); sendButton.setColorFilter(android.graphics.Color.WHITE); sendButton.setBackground(ArticleEditorPopup.background(Theme.textLinkColor(), 24));
+    root.addView(bottom, new LinearLayout.LayoutParams(-1, Screen.dp(60)));
+    rebuildTools(); rebuildFields(); updateHistory();
+  }
+
+  private ImageView icon (LinearLayout parent, int resource, int label, Runnable action, int width) {
+    ImageView view = ArticleEditorPopup.icon(context(), resource, label, () -> {
+      if (!sending && !importing && !recoveryPending) { toolAnchor = parent; action.run(); }
+    });
+    view.setBackground(null); int inset = Screen.dp((width - 24) / 2f); view.setPadding(inset, Screen.dp(10), inset, Screen.dp(10));
+    view.setOnClickListener(v -> { if (!sending && !importing && !recoveryPending) { toolAnchor = v; action.run(); } });
+    parent.addView(view, new LinearLayout.LayoutParams(Screen.dp(width), Screen.dp(44))); return view;
+  }
+  private void updateHistory () {
+    if (undoButton == null) return;
+    undoButton.setEnabled(history.canUndo()); undoButton.setAlpha(history.canUndo() ? 1 : .35f);
+    redoButton.setEnabled(history.canRedo()); redoButton.setAlpha(history.canRedo() ? 1 : .35f);
+  }
+  private void rebuildTools () {
+    if (tools == null) return; tools.removeAllViews();
+    if (formatsVisible) {
+      icon(tools, R.drawable.article_formatting_bold, R.string.ArticleBold, () -> format(new TdApi.RichTextBold(emptyText())), 38);
+      icon(tools, R.drawable.article_formatting_italic, R.string.ArticleItalic, () -> format(new TdApi.RichTextItalic(emptyText())), 38);
+      icon(tools, R.drawable.article_formatting_underline, R.string.ArticleUnderline, () -> format(new TdApi.RichTextUnderline(emptyText())), 38);
+      icon(tools, R.drawable.article_formatting_strikethrough, R.string.ArticleStrike, () -> format(new TdApi.RichTextStrikethrough(emptyText())), 38);
+      icon(tools, R.drawable.article_formatting_spoiler, R.string.ArticleSpoiler, () -> format(new TdApi.RichTextSpoiler(emptyText())), 38);
+      icon(tools, R.drawable.article_iv_code, R.string.ArticleCode, () -> format(new TdApi.RichTextFixed(emptyText())), 38);
+      icon(tools, R.drawable.article_media_link_24, R.string.ArticleLink, () -> prompt(R.string.ArticleLink, "https://", value -> format(new TdApi.RichTextUrl(emptyText(), value, false))), 38);
+      icon(tools, R.drawable.baseline_more_horiz_24, R.string.ArticleMoreFormats, this::moreFormats, 38);
+      return;
+    }
+    icon(tools, R.drawable.baseline_emoticon_outline_24, R.string.ArticleEmoji, this::emojiPicker, 38);
+    icon(tools, R.drawable.article_iv_text, R.string.ArticleFormat, this::textMenu, 38);
+    icon(tools, R.drawable.article_iv_lists, R.string.ArticleList, this::listMenu, 38);
+    icon(tools, R.drawable.article_iv_table, R.string.ArticleTable, () -> fields.insert(newBlock(R.string.ArticleTable)), 38);
+    icon(tools, R.drawable.article_iv_math, R.string.ArticleFormula, () -> formulaEditor("", value -> fields.insert(new TdApi.InputPageBlockMathematicalExpression(value))), 38);
+    icon(tools, R.drawable.article_outline_poll_attach_24, R.string.ArticleAttachment, this::attachmentMenu, 38);
+  }
+  private void textMenu () {
+    new ArticleEditorPopup(context())
+      .item(R.drawable.article_iv_text2, R.string.ArticleParagraph, () -> fields.convert(TdApi.InputPageBlockParagraph::new))
+      .item(R.drawable.article_iv_h1, R.string.ArticleHeading, () -> headingMenu())
+      .item(R.drawable.article_iv_code, R.string.ArticleCode, () -> fields.convert(text -> new TdApi.InputPageBlockPreformatted(text, "")))
+      .item(R.drawable.article_iv_footer, R.string.ArticleFooter, () -> fields.convert(TdApi.InputPageBlockFooter::new))
+      .item(R.drawable.article_iv_quote, R.string.ArticleQuote, () -> fields.convert(text -> new TdApi.InputPageBlockBlockQuote(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(text)}, emptyText())))
+      .item(R.drawable.article_iv_pullquote, R.string.ArticleExpandableQuote, () -> fields.convert(text -> new TdApi.InputPageBlockExpandableBlockQuote(text, emptyText())))
+      .item(R.drawable.article_iv_divider, R.string.ArticleDivider, () -> fields.insert(new TdApi.InputPageBlockDivider()))
+      .item(R.drawable.article_formatting_bold, R.string.ArticleMoreFormats, () -> { formatsVisible = true; rebuildTools(); })
+      .item(R.drawable.baseline_more_horiz_24, R.string.ArticleBlockOptions, () -> { ArticleEditorTree.Entry entry = fields.focusedEntry(); if (entry != null) blockOptions(entry); })
+      .show(toolAnchor);
+  }
+  private void headingMenu () {
+    ArticleEditorPopup popup = new ArticleEditorPopup(context());
+    int[] icons = {R.drawable.article_iv_h1, R.drawable.article_iv_h2, R.drawable.article_iv_h3, R.drawable.article_iv_h4, R.drawable.article_iv_h5, R.drawable.article_iv_h6};
+    popup.icons(icons, new int[] {R.string.ArticleHeading, R.string.ArticleHeading, R.string.ArticleHeading, R.string.ArticleHeading, R.string.ArticleHeading, R.string.ArticleHeading}, index -> fields.convert(text -> new TdApi.InputPageBlockSectionHeading(text, index + 1))).show(toolAnchor);
+  }
+  private void listMenu () {
+    new ArticleEditorPopup(context())
+      .item(R.drawable.article_iv_text2, R.string.ArticleNoList, () -> fields.listStyle(0))
+      .item(R.drawable.article_iv_list, R.string.ArticleBulleted, () -> fields.listStyle(1))
+      .item(R.drawable.article_iv_ordered_list, R.string.ArticleNumbered, () -> fields.listStyle(2))
+      .item(R.drawable.article_iv_todo, R.string.ArticleChecklist, () -> fields.listStyle(3))
+      .item(R.drawable.article_iv_details, R.string.ArticleToggle, () -> fields.convert(text -> new TdApi.InputPageBlockDetails(text, paragraph(), true)))
+      .item(R.drawable.article_iv_list_tab, R.string.ArticleIndent, () -> fields.indent(false))
+      .item(R.drawable.article_iv_list_untab, R.string.ArticleOutdent, () -> fields.indent(true)).show(toolAnchor);
+  }
+  private void attachmentMenu () {
+    ArticleEditorPopup popup = new ArticleEditorPopup(context());
+    int[] types = {R.string.Photo, R.string.Video, R.string.Gif, R.string.Audio, R.string.File, R.string.ArticleVoiceNote};
+    for (int type : types) popup.item(0, type, () -> pickMedia(mediaKind(type), fields::insert));
+    popup.item(0, R.string.Location, () -> prompt(R.string.ArticleCoordinates, "", value -> { TdApi.Location location = parseLocation(value); if (location != null) fields.insert(new TdApi.InputPageBlockMap(location, 15, 640, 360, emptyCaption())); }));
+    popup.item(R.drawable.article_iv_button, R.string.ArticleButton, () -> fields.insert(newBlock(R.string.ArticleButton)));
+    popup.item(R.drawable.baseline_visibility_24, R.string.ArticlePreview, this::preview);
+    popup.item(R.drawable.baseline_more_horiz_24, R.string.ArticleAddBlock, () -> { ArticleEditorTree.Entry entry = fields.focusedEntry(); ArticleEditorTree.Group group = entry == null ? ArticleEditorTree.root(working) : entry.group; addBlock(group, entry == null ? group.blocks().length : entry.index + 1); });
+    popup.show(toolAnchor);
+  }
+  private void renderFormula (TextView view, String value) {
+    android.graphics.Bitmap bitmap = org.thunderdog.challegram.data.article.ArticleMath.render(context(), value, Screen.dp(18));
+    if (bitmap == null) { view.setCompoundDrawables(null, null, null, null); view.setText(value.isEmpty() ? Lang.getString(R.string.ArticleFormula) : value); }
+    else {
+      android.graphics.drawable.BitmapDrawable drawable = new android.graphics.drawable.BitmapDrawable(context().getResources(), bitmap);
+      drawable.setColorFilter(Theme.textAccentColor(), android.graphics.PorterDuff.Mode.SRC_IN);
+      int maxWidth = context().getResources().getDisplayMetrics().widthPixels - Screen.dp(40); float scale = Math.min(1f, (float) maxWidth / bitmap.getWidth());
+      drawable.setBounds(0, 0, (int) (bitmap.getWidth() * scale), (int) (bitmap.getHeight() * scale));
+      view.setText(""); view.setCompoundDrawables(null, drawable, null, null);
+    }
+  }
+  private void formulaEditor (String initial, Consumer<String> result) {
+    android.app.Dialog dialog = new android.app.Dialog(context(), Theme.dialogTheme());
+    LinearLayout content = new LinearLayout(context()); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(Screen.dp(16), Screen.dp(16), Screen.dp(16), Screen.dp(8)); content.setBackgroundColor(Theme.fillingColor());
+    TextView preview = new TextView(context()); preview.setTextColor(Theme.textAccentColor()); preview.setGravity(Gravity.CENTER); preview.setMinHeight(Screen.dp(64)); content.addView(preview, new LinearLayout.LayoutParams(-1, -2));
+    EditText expression = new EditText(context()); expression.setHint(Lang.getString(R.string.ArticleFormula)); expression.setText(initial); expression.setTextColor(Theme.textAccentColor()); expression.setSingleLine(false); expression.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI); content.addView(expression, new LinearLayout.LayoutParams(-1, -2)); renderFormula(preview, initial);
+    expression.addTextChangedListener(new TextWatcher() {
+      @Override public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
+      @Override public void onTextChanged (CharSequence s, int start, int before, int count) { renderFormula(preview, s.toString()); }
+      @Override public void afterTextChanged (Editable text) { }
+    });
+    button(content, R.string.Done, () -> { result.accept(expression.getText().toString()); dialog.dismiss(); });
+    dialog.setContentView(content); dialog.setOnShowListener(ignored -> { expression.requestFocus(); Keyboard.show(expression); });
+    dialog.show(); if (dialog.getWindow() != null) { dialog.getWindow().setLayout(-1, -2); dialog.getWindow().setGravity(Gravity.BOTTOM); dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE); }
+  }
+  private void aiMenu () {
+    if (sending || importing || recoveryPending) return;
+    new ArticleEditorPopup(context())
+      .item(0, R.string.ArticleAiFix, () -> runAi(new TdApi.FixRichMessageWithAi(new ArticleDocument(working).toInput())))
+      .item(0, R.string.ArticleAiRewrite, () -> prompt(R.string.ArticleAiPrompt, "", prompt -> runAi(new TdApi.ComposeRichMessageWithAi(new ArticleDocument(working).toInput(), "", "", prompt, false))))
+      .item(0, R.string.ArticleAiCreate, () -> prompt(R.string.ArticleAiPrompt, "", prompt -> runAi(new TdApi.CreateRichMessageWithAi(prompt, Lang.locale().getLanguage(), false))))
+      .item(0, R.string.ArticleAiTranslate, () -> prompt(R.string.ArticleLanguage, Lang.locale().getLanguage(), language -> runAi(new TdApi.ComposeRichMessageWithAi(new ArticleDocument(working).toInput(), language, "", "", false))))
+      .show(toolAnchor);
+  }
+  private void runAi (TdApi.Function<TdApi.RichMessage> request) {
+    saveDraft(); setSending(true);
+    tdlib.send(request, (result, error) -> handler.post(() -> {
+      if (isDestroyed()) return; setSending(false);
+      if (error != null) { UI.showError(error); return; }
+      if (result == null || !result.isFull) { UI.showToast(R.string.ArticleAiFailed, Toast.LENGTH_LONG); return; }
+      working = ArticleDocument.received(result).toInput(); structureChanged(); updateHistory();
+    }));
   }
 
   private Button button (LinearLayout parent, int text, Runnable action) {
@@ -207,20 +328,20 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   }
 
   private void emojiPicker () {
+    if (emojiPanel != null) { closeEmoji(); if (focused != null) Keyboard.show(focused); return; }
     if (focused == null) return;
-    ArticleTextInput target = focused;
-    org.thunderdog.challegram.widget.EmojiLayout emoji = new org.thunderdog.challegram.widget.EmojiLayout(context());
-    AlertDialog dialog = new AlertDialog.Builder(context(), Theme.dialogTheme()).setView(emoji).setNegativeButton(Lang.getString(R.string.Done), null).create();
-    emoji.initWithMediasEnabled(this, false, new org.thunderdog.challegram.widget.EmojiLayout.Listener() {
-      @Override public void onEnterEmoji (String value) { target.insert(new TdApi.RichTextPlain(value)); }
-      @Override public void onEnterCustomEmoji (org.thunderdog.challegram.component.sticker.TGStickerObj sticker) { target.insert(new TdApi.RichTextCustomEmoji(sticker.getCustomEmojiId(), sticker.getAllEmoji())); }
+    Keyboard.hide(focused);
+    emojiPanel = new org.thunderdog.challegram.widget.EmojiLayout(context());
+    emojiPanel.initWithMediasEnabled(this, false, new org.thunderdog.challegram.widget.EmojiLayout.Listener() {
+      @Override public void onEnterEmoji (String value) { if (focused != null) focused.insert(new TdApi.RichTextPlain(value)); }
+      @Override public void onEnterCustomEmoji (org.thunderdog.challegram.component.sticker.TGStickerObj sticker) { if (focused != null) focused.insert(new TdApi.RichTextCustomEmoji(sticker.getCustomEmojiId(), sticker.getAllEmoji())); }
     }, this, false);
-    emoji.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(360f)));
-    dialog.setOnDismissListener(ignored -> emoji.destroy()); dialog.show();
+    root.addView(emojiPanel, new LinearLayout.LayoutParams(-1, Screen.dp(280)));
   }
+  private void closeEmoji () { if (emojiPanel != null) { root.removeView(emojiPanel); emojiPanel.destroy(); emojiPanel = null; } }
   private void moreFormats () {
     if (focused == null) return;
-    choose(R.string.ArticleMoreFormats, Arrays.asList(R.string.ArticleMarked, R.string.ArticleSubscript, R.string.ArticleSuperscript, R.string.ArticleEmail, R.string.ArticlePhone, R.string.ArticleMention, R.string.ArticleHashtag, R.string.ArticleCashtag, R.string.ArticleBankCard, R.string.ArticleCommand, R.string.ArticleDate, R.string.ArticleAnchor, R.string.ArticleAnchorLink, R.string.ArticleReference, R.string.ArticleReferenceLink), Arrays.asList(
+    choose(R.string.ArticleMoreFormats, Arrays.asList(R.string.ArticleMarked, R.string.ArticleSubscript, R.string.ArticleSuperscript, R.string.ArticleEmail, R.string.ArticlePhone, R.string.ArticleMention, R.string.ArticleHashtag, R.string.ArticleCashtag, R.string.ArticleBankCard, R.string.ArticleCommand, R.string.ArticleDate, R.string.ArticleAnchor, R.string.ArticleAnchorLink, R.string.ArticleReference, R.string.ArticleReferenceLink, R.string.ArticleButton, R.string.ArticleUser, R.string.ArticleFormula, R.string.ArticleEditElement), Arrays.asList(
       () -> format(new TdApi.RichTextMarked(emptyText())), () -> format(new TdApi.RichTextSubscript(emptyText())), () -> format(new TdApi.RichTextSuperscript(emptyText())),
       () -> prompt(R.string.ArticleEmail, "", value -> format(new TdApi.RichTextEmailAddress(emptyText(), value))),
       () -> prompt(R.string.ArticlePhone, "", value -> format(new TdApi.RichTextPhoneNumber(emptyText(), value))),
@@ -235,7 +356,11 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       () -> prompt(R.string.ArticleAnchor, "", value -> focused.insert(new TdApi.RichTextAnchor(value))),
       () -> prompt(R.string.ArticleAnchorLink, "", value -> format(new TdApi.RichTextAnchorLink(emptyText(), value, ""))),
       () -> prompt(R.string.ArticleReference, "", name -> prompt(R.string.ArticleReferenceBody, "", value -> focused.insert(new TdApi.RichTextReference(name, new TdApi.RichTextPlain(value))))),
-      () -> prompt(R.string.ArticleReferenceLink, "", value -> format(new TdApi.RichTextReferenceLink(emptyText(), value, "")))));
+      () -> prompt(R.string.ArticleReferenceLink, "", value -> format(new TdApi.RichTextReferenceLink(emptyText(), value, ""))),
+      () -> prompt(R.string.ArticleLink, "https://", value -> format(new TdApi.RichTextButton(new TdApi.InlineButton(emptyText(), new TdApi.ButtonStyleDefault(), new TdApi.InlineKeyboardButtonTypeUrl(value))))),
+      () -> { ArticleTextInput target = focused; pickUser(user -> target.format(new TdApi.RichTextMentionName(emptyText(), user))); },
+      () -> { ArticleTextInput target = focused; formulaEditor("", value -> target.insert(new TdApi.RichTextMathematicalExpression(value))); },
+      this::editElement));
   }
   private void editElement () {
     if (focused == null) return;
@@ -296,63 +421,16 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
 
   private void rebuildFields () {
     int scrollY = scroll.getScrollY();
-    fields.removeAllViews();
-    textInputs.clear();
-    focused = null;
-    for (ArticleEditorTree.Entry entry : ArticleEditorTree.entries(working)) {
-      LinearLayout card = new LinearLayout(context());
-      card.setOrientation(LinearLayout.VERTICAL);
-      card.setPadding(Screen.dp(Math.min(4, entry.depth) * 12f), Screen.dp(6f), 0, Screen.dp(12f));
-      LinearLayout bar = new LinearLayout(context());
-      TextView name = new TextView(context()); name.setText(Lang.getString(blockName(entry.block))); name.setTextColor(Theme.textAccentColor());
-      bar.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-      button(bar, R.string.ArticleBlockOptions, () -> blockOptions(entry));
-      card.addView(bar);
-      for (ArticleEditorTree.TextField field : ArticleEditorTree.fields(entry.block)) {
-        ArticleTextInput input = new ArticleTextInput(context(), field.value, value -> { field.set.accept(value); changed(); });
-        input.setHint(Lang.getString(field.name == ArticleEditorTree.FieldName.CREDIT ? R.string.ArticleCredit : field.name == ArticleEditorTree.FieldName.CAPTION ? R.string.ArticleCaption : R.string.ArticleText));
-        textInputs.add(input);
-        input.setOnFocusChangeListener((view, hasFocus) -> { if (hasFocus) { focused = input; rememberSelection(); } });
-        input.setSelectionListener(this::rememberSelection);
-        card.addView(input, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-      }
-      if (entry.block instanceof TdApi.InputPageBlockMathematicalExpression) {
-        TdApi.InputPageBlockMathematicalExpression formula = (TdApi.InputPageBlockMathematicalExpression) entry.block;
-        textField(card, R.string.ArticleFormula, formula.expression, value -> formula.expression = value);
-      } else if (entry.block instanceof TdApi.InputPageBlockAnchor) {
-        TdApi.InputPageBlockAnchor anchor = (TdApi.InputPageBlockAnchor) entry.block;
-        textField(card, R.string.ArticleAnchor, anchor.name, value -> anchor.name = value);
-      } else if (entry.block instanceof TdApi.InputPageBlockPreformatted) {
-        TdApi.InputPageBlockPreformatted code = (TdApi.InputPageBlockPreformatted) entry.block;
-        textField(card, R.string.ArticleLanguage, code.language, value -> code.language = value);
-      } else if (entry.block instanceof TdApi.InputPageBlockButtonRow) {
-        for (TdApi.InlineButton key : ((TdApi.InputPageBlockButtonRow) entry.block).buttons) {
-          if (key.type instanceof TdApi.InlineKeyboardButtonTypeUrl) textField(card, R.string.ArticleLink, ((TdApi.InlineKeyboardButtonTypeUrl) key.type).url, value -> ((TdApi.InlineKeyboardButtonTypeUrl) key.type).url = value);
-          else if (key.type instanceof TdApi.InlineKeyboardButtonTypeCopyText) textField(card, R.string.ArticleCopyButton, ((TdApi.InlineKeyboardButtonTypeCopyText) key.type).text, value -> ((TdApi.InlineKeyboardButtonTypeCopyText) key.type).text = value);
-        }
-      }
-      mediaProperties(card, entry);
-      if (entry.block instanceof TdApi.InputPageBlockList) listProperties(card, (TdApi.InputPageBlockList) entry.block);
-      if (entry.block instanceof TdApi.InputPageBlockTable) tableProperties(card, (TdApi.InputPageBlockTable) entry.block);
-      fields.addView(card);
-    }
+    for (ArticleEditorMedia media : mediaViews) media.performDestroy(); mediaViews.clear();
+    textInputs.clear(); fields.bind(working); textInputs.addAll(fields.inputs()); rememberSelection();
     scroll.post(() -> scroll.scrollTo(0, scrollY));
-  }
-
-  private void textField (LinearLayout parent, int label, String value, Consumer<String> setter) {
-    EditText edit = new EditText(context()); edit.setTextColor(Theme.textAccentColor()); edit.setHint(Lang.getString(label)); edit.setText(value);
-    edit.addTextChangedListener(new TextWatcher() {
-      @Override public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
-      @Override public void onTextChanged (CharSequence s, int start, int before, int count) { setter.accept(s.toString()); changed(); }
-      @Override public void afterTextChanged (Editable s) { }
-    });
-    parent.addView(edit);
   }
 
   private void changed () {
     if (sending || restoring) return;
     draftTouched = true;
     history.push(new ArticleDocument(working));
+    updateHistory();
     rememberSelection();
     handler.removeCallbacks(saveDraft); handler.postDelayed(saveDraft, 600);
   }
@@ -362,17 +440,18 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   private void structureChanged () { changed(); if (!isDestroyed()) rebuildFields(); }
   private void restore (ArticleDocument document) {
     int[] selection = history.selection(); restoring = true;
-    working = document.toInput(); rtlControl.setChecked(working.isRtl); rebuildFields();
+    working = document.toInput(); rebuildFields();
     if (selection[0] >= 0 && selection[0] < textInputs.size()) {
       ArticleTextInput field = textInputs.get(selection[0]); field.requestFocus(); focused = field;
       field.setSelection(Math.max(0, Math.min(field.length(), selection[1])), Math.max(0, Math.min(field.length(), selection[2])));
     }
-    restoring = false;
+    restoring = false; updateHistory();
     scroll.post(() -> scroll.scrollTo(0, selection[3]));
     handler.removeCallbacks(saveDraft); handler.postDelayed(saveDraft, 600);
   }
 
   private void blockOptions (ArticleEditorTree.Entry entry) {
+    if (toolAnchor == null || toolAnchor.getWindowToken() == null) toolAnchor = focused != null ? focused : tools;
     List<Integer> labels = new ArrayList<>(); List<Runnable> actions = new ArrayList<>();
     labels.add(R.string.ArticleMoveUp); actions.add(() -> { entry.group.move(entry.index, -1); structureChanged(); });
     labels.add(R.string.ArticleMoveDown); actions.add(() -> { entry.group.move(entry.index, 1); structureChanged(); });
@@ -400,6 +479,54 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
         try { ((TdApi.InputPageBlockSectionHeading) entry.block).size = Math.max(1, Math.min(6, Integer.parseInt(value))); structureChanged(); } catch (NumberFormatException e) { UI.showToast(R.string.ArticleInvalidValue, Toast.LENGTH_SHORT); }
       }));
     }
+    TdApi.PageBlockCaption caption = ArticleEditorTree.caption(entry.block);
+    if (caption != null) {
+      labels.add(R.string.ArticleCredit); actions.add(() -> prompt(R.string.ArticleCredit, ArticleRichText.plain(caption.credit), value -> { if (!value.equals(ArticleRichText.plain(caption.credit))) { caption.credit = new TdApi.RichTextPlain(value); structureChanged(); } }));
+    }
+    ArticleMediaFiles.Kind kind = mediaKind(blockName(entry.block));
+    if (kind != null) {
+      labels.add(R.string.ArticleReplaceMedia); actions.add(() -> pickMedia(kind, replacement -> {
+        TdApi.PageBlockCaption after = ArticleEditorTree.caption(replacement); after.text = caption.text; after.credit = caption.credit;
+        if (entry.block instanceof TdApi.InputPageBlockPhoto) ((TdApi.InputPageBlockPhoto) replacement).hasSpoiler = ((TdApi.InputPageBlockPhoto) entry.block).hasSpoiler;
+        if (entry.block instanceof TdApi.InputPageBlockVideo) ((TdApi.InputPageBlockVideo) replacement).hasSpoiler = ((TdApi.InputPageBlockVideo) entry.block).hasSpoiler;
+        if (entry.block instanceof TdApi.InputPageBlockAnimation) ((TdApi.InputPageBlockAnimation) replacement).hasSpoiler = ((TdApi.InputPageBlockAnimation) entry.block).hasSpoiler;
+        entry.group.replace(entry.index, replacement); structureChanged();
+      }));
+    }
+    if (entry.block instanceof TdApi.InputPageBlockPhoto || entry.block instanceof TdApi.InputPageBlockVideo || entry.block instanceof TdApi.InputPageBlockAnimation) {
+      labels.add(R.string.ArticleSpoiler); actions.add(() -> {
+        if (entry.block instanceof TdApi.InputPageBlockPhoto) { TdApi.InputPageBlockPhoto b = (TdApi.InputPageBlockPhoto) entry.block; b.hasSpoiler = !b.hasSpoiler; }
+        else if (entry.block instanceof TdApi.InputPageBlockVideo) { TdApi.InputPageBlockVideo b = (TdApi.InputPageBlockVideo) entry.block; b.hasSpoiler = !b.hasSpoiler; }
+        else { TdApi.InputPageBlockAnimation b = (TdApi.InputPageBlockAnimation) entry.block; b.hasSpoiler = !b.hasSpoiler; }
+        structureChanged();
+      });
+    }
+    if (entry.block instanceof TdApi.InputPageBlockAudio) {
+      TdApi.InputAudio audio = ((TdApi.InputPageBlockAudio) entry.block).audio;
+      labels.add(R.string.ArticleAudioTitle); actions.add(() -> prompt(R.string.ArticleAudioTitle, audio.title, value -> { audio.title = value; structureChanged(); }));
+      labels.add(R.string.ArticlePerformer); actions.add(() -> prompt(R.string.ArticlePerformer, audio.performer, value -> { audio.performer = value; structureChanged(); }));
+    }
+    if (entry.block instanceof TdApi.InputPageBlockPreformatted) {
+      TdApi.InputPageBlockPreformatted code = (TdApi.InputPageBlockPreformatted) entry.block;
+      labels.add(R.string.ArticleLanguage); actions.add(() -> prompt(R.string.ArticleLanguage, code.language, value -> { code.language = value; changed(); }));
+    }
+    if (entry.block instanceof TdApi.InputPageBlockButtonRow) {
+      TdApi.InputPageBlockButtonRow row = (TdApi.InputPageBlockButtonRow) entry.block;
+      for (int i = 0; i < row.buttons.length; i++) { int index = i; labels.add(R.string.ArticleEditElement); actions.add(() -> buttonOptions(row, index)); }
+      labels.add(R.string.ArticleAddButton); actions.add(() -> { row.buttons = Arrays.copyOf(row.buttons, row.buttons.length + 1); row.buttons[row.buttons.length - 1] = new TdApi.InlineButton(emptyText(), new TdApi.ButtonStyleDefault(), new TdApi.InlineKeyboardButtonTypeUrl("https://")); structureChanged(); });
+      labels.add(R.string.ArticleAlignment); actions.add(() -> alignment(value -> { row.align = value; structureChanged(); }));
+    }
+    if (entry.block instanceof TdApi.InputPageBlockTable) {
+      TdApi.InputPageBlockTable table = (TdApi.InputPageBlockTable) entry.block;
+      labels.add(R.string.ArticleTableBorder); actions.add(() -> { table.isBordered = !table.isBordered; structureChanged(); });
+      labels.add(R.string.ArticleTableStriped); actions.add(() -> { table.isStriped = !table.isStriped; structureChanged(); });
+      labels.add(R.string.ArticleTableCompact); actions.add(() -> { table.isCompact = !table.isCompact; structureChanged(); });
+    }
+    if (entry.block instanceof TdApi.InputPageBlockMap) {
+      TdApi.InputPageBlockMap map = (TdApi.InputPageBlockMap) entry.block;
+      labels.add(R.string.ArticleCoordinates); actions.add(() -> prompt(R.string.ArticleCoordinates, map.location.latitude + ", " + map.location.longitude, value -> { TdApi.Location location = parseLocation(value); if (location != null) { map.location = location; structureChanged(); } }));
+    }
+    labels.add(R.string.ArticleRtl); actions.add(() -> { working.isRtl = !working.isRtl; structureChanged(); });
     choose(R.string.ArticleBlockOptions, labels, actions);
   }
 
@@ -471,6 +598,10 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   }
 
   private void choose (int title, List<Integer> labels, List<Runnable> actions) {
+    if (toolAnchor != null && toolAnchor.getWindowToken() != null) {
+      ArticleEditorPopup popup = new ArticleEditorPopup(context());
+      for (int i = 0; i < labels.size(); i++) popup.item(0, labels.get(i), actions.get(i)); popup.show(toolAnchor); return;
+    }
     String[] text = new String[labels.size()]; for (int i = 0; i < text.length; i++) text[i] = Lang.getString(labels.get(i));
     new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(title)).setItems(text, (dialog, which) -> actions.get(which).run()).show();
   }
@@ -512,10 +643,6 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     try { context().startActivityForResult(intent, PICK_MEDIA); }
     catch (RuntimeException e) { context().putActivityResultHandler(PICK_MEDIA, null); UI.showToast(R.string.ArticleMediaImportFailed, Toast.LENGTH_LONG); }
   }
-  private void checkBox (LinearLayout parent, int label, boolean checked, Consumer<Boolean> setter) {
-    CheckBox check = new CheckBox(context()); check.setText(Lang.getString(label)); check.setTextColor(Theme.textAccentColor()); check.setChecked(checked);
-    check.setOnCheckedChangeListener((view, value) -> { setter.accept(value); changed(); }); parent.addView(check);
-  }
   private void prepareMedia (TdApi.InputPageBlock block) {
     TdApi.InputMessageContent content = null;
     if (block instanceof TdApi.InputPageBlockPhoto) content = new TdApi.InputMessagePhoto(((TdApi.InputPageBlockPhoto) block).photo, null, false, null, false);
@@ -525,43 +652,6 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     else if (block instanceof TdApi.InputPageBlockDocument) content = new TdApi.InputMessageDocument(((TdApi.InputPageBlockDocument) block).document, null);
     if (content != null) tdlib.filegen().createThumbnail(content, false);
   }
-  private void integerField (LinearLayout parent, int label, int value, int min, int max, Consumer<Integer> setter) {
-    textField(parent, label, Integer.toString(value), text -> { try { int number = Integer.parseInt(text); if (number >= min && number <= max) setter.accept(number); } catch (NumberFormatException ignored) { } });
-  }
-  private void mediaProperties (LinearLayout card, ArticleEditorTree.Entry entry) {
-    TdApi.InputPageBlock block = entry.block;
-    ArticleMediaFiles.Kind kind = mediaKind(blockName(block));
-    if (kind != null) button(card, R.string.ArticleReplaceMedia, () -> pickMedia(kind, replacement -> {
-      TdApi.PageBlockCaption before = ArticleEditorTree.caption(block), after = ArticleEditorTree.caption(replacement);
-      after.text = before.text; after.credit = before.credit;
-      if (block instanceof TdApi.InputPageBlockPhoto) ((TdApi.InputPageBlockPhoto) replacement).hasSpoiler = ((TdApi.InputPageBlockPhoto) block).hasSpoiler;
-      if (block instanceof TdApi.InputPageBlockVideo) ((TdApi.InputPageBlockVideo) replacement).hasSpoiler = ((TdApi.InputPageBlockVideo) block).hasSpoiler;
-      if (block instanceof TdApi.InputPageBlockAnimation) ((TdApi.InputPageBlockAnimation) replacement).hasSpoiler = ((TdApi.InputPageBlockAnimation) block).hasSpoiler;
-      entry.group.remove(entry.index); entry.group.insert(entry.index, replacement); structureChanged();
-    }));
-    if (block instanceof TdApi.InputPageBlockPhoto) { TdApi.InputPageBlockPhoto b = (TdApi.InputPageBlockPhoto) block; checkBox(card, R.string.ArticleSpoiler, b.hasSpoiler, value -> b.hasSpoiler = value); }
-    if (block instanceof TdApi.InputPageBlockVideo) { TdApi.InputPageBlockVideo b = (TdApi.InputPageBlockVideo) block; checkBox(card, R.string.ArticleSpoiler, b.hasSpoiler, value -> b.hasSpoiler = value); }
-    if (block instanceof TdApi.InputPageBlockAnimation) { TdApi.InputPageBlockAnimation b = (TdApi.InputPageBlockAnimation) block; checkBox(card, R.string.ArticleSpoiler, b.hasSpoiler, value -> b.hasSpoiler = value); }
-    if (block instanceof TdApi.InputPageBlockAudio) {
-      TdApi.InputAudio audio = ((TdApi.InputPageBlockAudio) block).audio;
-      textField(card, R.string.ArticleAudioTitle, audio.title, value -> audio.title = value);
-      textField(card, R.string.ArticlePerformer, audio.performer, value -> audio.performer = value);
-    }
-    if (block instanceof TdApi.InputPageBlockMap) {
-      TdApi.InputPageBlockMap map = (TdApi.InputPageBlockMap) block;
-      button(card, R.string.ArticleCoordinates, () -> prompt(R.string.ArticleCoordinates, map.location.latitude + ", " + map.location.longitude, value -> { TdApi.Location location = parseLocation(value); if (location != null) { map.location = location; structureChanged(); } }));
-      integerField(card, R.string.ArticleMapZoom, map.zoom, 0, 24, value -> map.zoom = value);
-    }
-    if (block instanceof TdApi.InputPageBlockButtonRow) {
-      TdApi.InputPageBlockButtonRow row = (TdApi.InputPageBlockButtonRow) block;
-      button(card, R.string.ArticleAddButton, () -> { row.buttons = Arrays.copyOf(row.buttons, row.buttons.length + 1); row.buttons[row.buttons.length - 1] = new TdApi.InlineButton(emptyText(), new TdApi.ButtonStyleDefault(), new TdApi.InlineKeyboardButtonTypeUrl("https://")); structureChanged(); });
-      for (int i = 0; i < row.buttons.length; i++) {
-        final int index = i;
-        Button options = button(card, R.string.ArticleButton, () -> buttonOptions(row, index)); options.setText(Lang.getString(R.string.ArticleButtonNumber, i + 1));
-      }
-      button(card, R.string.ArticleAlignment, () -> alignment(value -> { row.align = value; structureChanged(); }));
-    }
-  }
   private TdApi.Location parseLocation (String text) {
     try {
       String[] coordinates = text.trim().split("[,;\\s]+");
@@ -570,48 +660,6 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       if (Double.isNaN(lat) || Double.isNaN(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) throw new IllegalArgumentException();
       return new TdApi.Location(lat, lon, 0);
     } catch (IllegalArgumentException e) { UI.showToast(R.string.ArticleInvalidValue, Toast.LENGTH_SHORT); return null; }
-  }
-  private void listProperties (LinearLayout card, TdApi.InputPageBlockList list) {
-    for (int i = 0; i < list.items.length; i++) {
-      final int index = i; TdApi.InputPageBlockListItem item = list.items[i];
-      LinearLayout itemCard = new LinearLayout(context()); itemCard.setOrientation(LinearLayout.VERTICAL); card.addView(itemCard);
-      checkBox(itemCard, R.string.ArticleCheckbox, item.hasCheckbox, value -> item.hasCheckbox = value);
-      checkBox(itemCard, R.string.ArticleChecked, item.isChecked, value -> item.isChecked = value);
-      integerField(itemCard, R.string.ArticleListStart, item.value, 0, Integer.MAX_VALUE, value -> item.value = value);
-      button(itemCard, R.string.ArticleListStyle, () -> {
-        String[] styles = {"•", "1", "a", "A", "i", "I"};
-        new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(R.string.ArticleListStyle)).setItems(styles, (dialog, which) -> {
-          for (int j = 0; j < list.items.length; j++) { list.items[j].type = which == 0 ? "" : styles[which]; list.items[j].value = which == 0 ? 0 : j + 1; }
-          structureChanged();
-        }).show();
-      });
-      button(itemCard, R.string.Delete, () -> { ArrayList<TdApi.InputPageBlockListItem> items = new ArrayList<>(Arrays.asList(list.items)); items.remove(index); list.items = items.toArray(new TdApi.InputPageBlockListItem[0]); structureChanged(); });
-      button(itemCard, R.string.ArticleMoveUp, () -> { if (index > 0) { list.items[index] = list.items[index - 1]; list.items[index - 1] = item; structureChanged(); } });
-      button(itemCard, R.string.ArticleMoveDown, () -> { if (index + 1 < list.items.length) { list.items[index] = list.items[index + 1]; list.items[index + 1] = item; structureChanged(); } });
-    }
-  }
-  private static TdApi.PageBlockTableCell cell () { return new TdApi.PageBlockTableCell(emptyText(), false, 1, 1, new TdApi.PageBlockHorizontalAlignmentLeft(), new TdApi.PageBlockVerticalAlignmentTop()); }
-  private void tableProperties (LinearLayout card, TdApi.InputPageBlockTable table) {
-    checkBox(card, R.string.ArticleTableBorder, table.isBordered, value -> table.isBordered = value);
-    checkBox(card, R.string.ArticleTableStriped, table.isStriped, value -> table.isStriped = value);
-    checkBox(card, R.string.ArticleTableCompact, table.isCompact, value -> table.isCompact = value);
-    button(card, R.string.ArticleAddRow, () -> { int count = table.cells.length == 0 ? 2 : table.cells[0].length; table.cells = Arrays.copyOf(table.cells, table.cells.length + 1); TdApi.PageBlockTableCell[] row = new TdApi.PageBlockTableCell[count]; for (int i = 0; i < count; i++) row[i] = cell(); table.cells[table.cells.length - 1] = row; structureChanged(); });
-    button(card, R.string.ArticleAddColumn, () -> { for (int r = 0; r < table.cells.length; r++) { TdApi.PageBlockTableCell[] row = table.cells[r]; row = Arrays.copyOf(row, row.length + 1); row[row.length - 1] = cell(); table.cells[r] = row; } structureChanged(); });
-    button(card, R.string.ArticleRemoveRow, () -> { if (table.cells.length > 0) table.cells = Arrays.copyOf(table.cells, table.cells.length - 1); structureChanged(); });
-    button(card, R.string.ArticleRemoveColumn, () -> { for (int r = 0; r < table.cells.length; r++) if (table.cells[r].length > 0) table.cells[r] = Arrays.copyOf(table.cells[r], table.cells[r].length - 1); structureChanged(); });
-    for (int r = 0; r < table.cells.length; r++) for (int c = 0; c < table.cells[r].length; c++) {
-      TdApi.PageBlockTableCell cell = table.cells[r][c];
-      Button properties = button(card, R.string.ArticleCell, () -> {
-        LinearLayout form = new LinearLayout(context()); form.setOrientation(LinearLayout.VERTICAL);
-        checkBox(form, R.string.ArticleCellHeader, cell.isHeader, value -> cell.isHeader = value);
-        integerField(form, R.string.ArticleColspan, cell.colspan, 1, tdlib.options().richMessageTableColumnCountMax, value -> cell.colspan = value);
-        integerField(form, R.string.ArticleRowspan, cell.rowspan, 1, table.cells.length, value -> cell.rowspan = value);
-        button(form, R.string.ArticleAlignment, () -> alignment(value -> { cell.align = value; changed(); }));
-        button(form, R.string.ArticleVerticalAlignment, () -> choose(R.string.ArticleVerticalAlignment, Arrays.asList(R.string.ArticleTop, R.string.ArticleMiddle, R.string.ArticleBottom), Arrays.asList(() -> { cell.valign = new TdApi.PageBlockVerticalAlignmentTop(); changed(); }, () -> { cell.valign = new TdApi.PageBlockVerticalAlignmentMiddle(); changed(); }, () -> { cell.valign = new TdApi.PageBlockVerticalAlignmentBottom(); changed(); })));
-        new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(R.string.ArticleCell)).setView(form).setPositiveButton(Lang.getString(R.string.Done), (dialog, which) -> structureChanged()).show();
-      });
-      properties.setText(Lang.getString(R.string.ArticleCellPosition, r + 1, c + 1));
-    }
   }
   private void alignment (Consumer<TdApi.PageBlockHorizontalAlignment> callback) {
     choose(R.string.ArticleAlignment, Arrays.asList(R.string.ArticleLeft, R.string.ArticleCenter, R.string.ArticleRight), Arrays.asList(() -> callback.accept(new TdApi.PageBlockHorizontalAlignmentLeft()), () -> callback.accept(new TdApi.PageBlockHorizontalAlignmentCenter()), () -> callback.accept(new TdApi.PageBlockHorizontalAlignmentRight())));
@@ -723,7 +771,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       }));
     });
   }
-  private void setSending (boolean value) { sending = value; enableTree(root, !value); }
+  private void setSending (boolean value) { sending = value; enableTree(root, !value); if (!value) updateHistory(); }
   private static void enableTree (View view, boolean enabled) {
     view.setEnabled(enabled);
     if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) enableTree(((ViewGroup) view).getChildAt(i), enabled);
@@ -737,5 +785,5 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     } else saveDraft();
   }
   @Override public void onBlur () { saveDraft(); super.onBlur(); }
-  @Override public void destroy () { saveDraft(); handler.removeCallbacks(saveDraft); super.destroy(); }
+  @Override public void destroy () { saveDraft(); handler.removeCallbacks(saveDraft); closeEmoji(); for (ArticleEditorMedia media : mediaViews) media.performDestroy(); mediaViews.clear(); super.destroy(); }
 }
