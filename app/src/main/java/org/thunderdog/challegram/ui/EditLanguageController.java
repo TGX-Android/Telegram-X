@@ -517,7 +517,7 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_editLangPackString) {
       header.addButton(menu, R.id.menu_btn_view, getHeaderIconColorId(), this, R.drawable.baseline_open_in_browser_24, Screen.dp(49f), R.drawable.bg_btn_header)
-        .setContentDescriptionRes(R.string.OpenPreviewInSecretChatActionBrowser);
+        .setContentDescriptionRes(R.string.AccDescrOpenInBrowser);
       header.addMoreButton(menu, this, getHeaderIconColorId());
     }
   }
