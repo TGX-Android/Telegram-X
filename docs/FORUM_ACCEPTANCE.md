@@ -109,7 +109,9 @@ Both branches merge upstream `51a2ba25d3be54b656e4fcf5eea484fdab5820b1` (version
 
 Qualification: PR checks use the same local-only Windows worktree harness, with Java/Kotlin/resources/tests from the PR checkout and native libraries from the newly built product at matching upstream pins. TDLib/OpenSSL remain pinned prebuilts. This is not an independent PR-native or Linux build. Test-source UAST remains excluded locally; executable JVM checks are reported separately.
 
-No APK was installed and no new device/server test was performed in this integration task. Modern Debug packaging, legacy builds/lint, the 159-case Android instrumentation suite and manual acceptance were not rerun on the October 6 native update. Their October 4-5 results above remain historical evidence, not validation of this exact new native candidate. Existing API 16, legacy-lint and wider role/lifecycle/ABI-matrix limitations remain open.
+The build-verification phase did not install APKs. In a subsequent maintainer-requested update, the signed product ARM64 Release at `fd94dc5e` was installed on the Pixel 6 (API 37). The installed APK hash matches the verified artifact, the original app UID/first-install timestamp are preserved, and the existing Debug package/hash/install metadata are unchanged. Explicit-activity cold launch passed; the process remained alive with no fatal exception observed for that process. This is an install/startup smoke check, not authenticated forum/server acceptance or a runtime test of the normal PR APK.
+
+Modern Debug packaging, legacy builds/lint, the 159-case Android instrumentation suite and manual forum acceptance were not rerun on the October 6 native update. Their October 4-5 results above remain historical evidence, not validation of this exact new native candidate. Existing API 16, legacy-lint and wider role/lifecycle/ABI-matrix limitations remain open.
 
 ## Upstream PR packaging
 
