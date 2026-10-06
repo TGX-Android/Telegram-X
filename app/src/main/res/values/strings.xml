@@ -5915,5 +5915,6 @@
   <string name="AccDescrMoreOptions">More options</string>
   <string name="AccDescrPipMode">Picture-in-Picture mode</string>
   <string name="AccDescrKeyboard">Keyboard</string>
+  <string name="AccDescrOpenInBrowser">Open in browser</string>
 
 </resources>
