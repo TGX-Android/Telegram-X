@@ -403,11 +403,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_search) {
       if (canCopyLink()) {
-        header.addButton(menu, R.id.menu_btn_copy, getHeaderIconColorId(), this, R.drawable.baseline_link_24, Screen.dp(49f), R.drawable.bg_btn_header);
+        header.addButton(menu, R.id.menu_btn_copy, getHeaderIconColorId(), this, R.drawable.baseline_link_24, Screen.dp(49f), R.drawable.bg_btn_header)
+          .setContentDescriptionRes(R.string.CopyLink);
       }
       int exportState = getExportContentState();
       if (exportState != EXPORT_NONE) {
-        header.addButton(menu, R.id.menu_btn_forward, getHeaderIconColorId(), this, R.drawable.baseline_share_24, Screen.dp(49f), R.drawable.bg_btn_header);
+        header.addButton(menu, R.id.menu_btn_forward, getHeaderIconColorId(), this, R.drawable.baseline_share_24, Screen.dp(49f), R.drawable.bg_btn_header)
+          .setContentDescriptionRes(R.string.Share);
       }
       header.addSearchButton(menu, this, getHeaderIconColorId()).setTouchDownListener((v, e) -> {
         resetTopEnsuredState();

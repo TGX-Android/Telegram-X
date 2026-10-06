@@ -373,6 +373,9 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
   private void setTranslatedStatus (int status, boolean animated) {
     translationCounterDrawable.setStatus(status, animated);
+    if (translationHeaderButton != null) {
+      translationHeaderButton.setContentDescriptionRes(status == TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT ? R.string.Translate : R.string.TranslateOff);
+    }
     if (status == TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT) {
       headerCell.setTitle(Lang.getLanguageName(messageOriginalLanguage, Lang.getString(R.string.TranslateLangUnknown)), animated);
       headerCell.setSubtitle(Lang.getString(R.string.TranslateOriginal), animated);
@@ -431,6 +434,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     translationHeaderButton =  headerView.addButton(menu, R.id.menu_done, getHeaderIconColorId(), this, 0, Screen.dp(60), R.drawable.bg_btn_header);
     translationHeaderButton.setCustomDrawable(translationCounterDrawable);
+    translationHeaderButton.setContentDescriptionRes(mTranslationsManager.getCurrentTranslatedLanguage() != null ? R.string.TranslateOff : R.string.Translate);
     headerView.getBackButton().setTranslationY(Screen.dp(7.5f));
     translationHeaderButton.setTranslationY(Screen.dp(7.5f));
   }
