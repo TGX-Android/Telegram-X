@@ -6781,6 +6781,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (baseAdapter != null) {
       baseAdapter.onLanguagePackEvent(event, arg1);
     }
+    if (counterDismiss != null) {
+      counterDismiss.setContentDescription(Lang.getString(R.string.AccDescrClose));
+    }
   }
 
   @Override
