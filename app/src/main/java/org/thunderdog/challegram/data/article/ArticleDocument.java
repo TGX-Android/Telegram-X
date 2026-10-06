@@ -40,6 +40,15 @@ public final class ArticleDocument {
 
   public byte[] save () { return snapshot.clone(); }
 
+  /** The server consumes this sending option; it is not a change to the draft's content. */
+  public boolean hasSameContent (ArticleDocument other) {
+    if (other == null) return false;
+    if (equals(other)) return true;
+    TdApi.InputRichMessage left = toInput(), right = other.toInput();
+    left.detectAutomaticBlocks = right.detectAutomaticBlocks = false;
+    return Arrays.equals(ArticleCodec.encode(left), ArticleCodec.encode(right));
+  }
+
   @Override public boolean equals (Object other) {
     return other instanceof ArticleDocument && Arrays.equals(snapshot, ((ArticleDocument) other).snapshot);
   }

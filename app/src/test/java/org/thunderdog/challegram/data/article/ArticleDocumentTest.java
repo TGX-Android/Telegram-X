@@ -78,6 +78,22 @@ public class ArticleDocumentTest {
     assertTrue(document.toInput().isRtl);
   }
 
+  @Test public void cloudDraftComparisonIgnoresOnlyTheConsumedDetectionOption () {
+    ArticleDocument cloud = ArticleDocument.received(mixed());
+    TdApi.InputRichMessage input = cloud.toInput();
+    input.detectAutomaticBlocks = true;
+    ArticleDocument local = new ArticleDocument(input);
+    assertNotEquals(local, cloud);
+    assertTrue(local.hasSameContent(cloud));
+    assertTrue(local.toInput().detectAutomaticBlocks);
+    input.isRtl = !input.isRtl;
+    assertFalse(new ArticleDocument(input).hasSameContent(cloud));
+    input.isRtl = !input.isRtl;
+    TdApi.InputPageBlockParagraph first = (TdApi.InputPageBlockParagraph) ((TdApi.RichMessageSourceBlocks) input.source).blocks[0];
+    ((TdApi.RichTextUrl) ((TdApi.RichTexts) first.text).texts[1]).url = "https://example.org/changed";
+    assertFalse(new ArticleDocument(input).hasSameContent(cloud));
+  }
+
   @Test public void nullableDateFormattingAndInlineButtonSurvive () throws Exception {
     TdApi.RichTextDateTime date = new TdApi.RichTextDateTime(text("Дата"), 12345, new TdApi.DateTimeFormattingTypeRelative());
     TdApi.RichTextDateTime copy = (TdApi.RichTextDateTime) ArticleCodec.decode(ArticleCodec.encode(date));

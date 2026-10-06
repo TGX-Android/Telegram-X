@@ -130,7 +130,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       // A newly typed ordinary draft is authoritative over an old, already-cleared article draft.
       if (args.fromComposer && recovery != null && recovery.pendingMessageId == 0) recovery = null;
       draftTouched = args.fromComposer || recovery != null;
-      if (recovery != null && (recovery.baseline.equals(initial) || recovery.document.equals(initial) || recovery.pendingMessageId != 0)) {
+      if (recovery != null && (recovery.baseline.hasSameContent(initial) || recovery.document.hasSameContent(initial) || recovery.pendingMessageId != 0)) {
         initial = recovery.document; baseline = recovery.baseline; pendingMessageId = recovery.pendingMessageId;
       } else if (recovery != null) recoveryPending = true;
     } catch (IOException | IllegalStateException e) {
@@ -175,7 +175,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     root = new LinearLayout(context) {
       @Override protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
         int top = org.thunderdog.challegram.navigation.HeaderView.getTopOffset();
-        if (getPaddingTop() != top) setPadding(0, top, 0, 0);
+        if (getPaddingTop() != top) setPadding(getPaddingLeft(), top, getPaddingRight(), getPaddingBottom());
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
       }
     };
