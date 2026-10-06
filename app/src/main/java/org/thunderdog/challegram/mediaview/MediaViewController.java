@@ -1628,12 +1628,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (Config.MASKS_TEXTS_AVAILABLE) {
       HeaderButton masksButton = header.genButton(R.id.menu_btn_masks, R.drawable.deproko_baseline_masks_24, ColorId.white, null, Screen.dp(49f), header);
+      masksButton.setContentDescriptionRes(R.string.Masks);
       masksButton.setBackgroundResource(R.drawable.bg_btn_header_light);
       masksButton.setVisibility(canViewMasks() ? View.VISIBLE : View.GONE);
       menu.addView(masksButton);
     }
 
     HeaderButton pipButton = header.genButton(R.id.menu_btn_pictureInPicture, R.drawable.deproko_baseline_outinline_24, ColorId.white, null, Screen.dp(49f), header);
+    pipButton.setContentDescriptionRes(R.string.AccDescrPipMode);
     pipButton.setBackgroundResource(R.drawable.bg_btn_header_light);
     pipButton.setVisibility(canGoPip() ? View.VISIBLE : View.GONE);
     menu.addView(pipButton);

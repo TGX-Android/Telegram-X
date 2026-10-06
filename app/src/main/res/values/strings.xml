@@ -5909,4 +5909,11 @@
   <string name="RestrictedContent">Restricted Content</string>
   <string name="SensitiveContent">Sensitive Content</string>
 
+  <string name="AccDescrOpenMenu">Open navigation menu</string>
+  <string name="AccDescrGoBack">Go back</string>
+  <string name="AccDescrClose">Close</string>
+  <string name="AccDescrMoreOptions">More options</string>
+  <string name="AccDescrPipMode">Picture-in-Picture mode</string>
+  <string name="AccDescrKeyboard">Keyboard</string>
+
 </resources>
