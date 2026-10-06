@@ -64,4 +64,34 @@ public class ArticleComposerTest {
     assertEquals("0:05", input.text);
     try { blocks("text", new TdApi.TextEntity(3, 3, new TdApi.TextEntityTypeBold())); fail("Invalid bounds accepted"); } catch (IllegalArgumentException expected) { }
   }
+
+  @Test public void detectedLinkRetainsOverlappingTextStyle () {
+    String url = "https://example.org";
+    TdApi.FormattedText input = new TdApi.FormattedText(url, new TdApi.TextEntity[] {new TdApi.TextEntity(0, url.length(), new TdApi.TextEntityTypeBold())});
+    ArticleDocument result = ArticleComposer.fromText(input, new TdApi.TextEntity[] {new TdApi.TextEntity(0, url.length(), new TdApi.TextEntityTypeUrl())}, false);
+    final boolean[] seen = new boolean[2];
+    ArticleCodec.visit(result.toInput(), (node, depth) -> {
+      if (node instanceof TdApi.RichTextUrl) { seen[0] = true; assertEquals(url, ((TdApi.RichTextUrl) node).url); }
+      if (node instanceof TdApi.RichTextBold) seen[1] = true;
+    });
+    assertArrayEquals(new boolean[] {true, true}, seen);
+    assertEquals(1, input.entities.length);
+  }
+
+  @Test public void detectedLinksDoNotOverrideExplicitLinksOrCode () {
+    String url = "https://example.org";
+    TdApi.FormattedText input = new TdApi.FormattedText(url + " " + url, new TdApi.TextEntity[] {
+      new TdApi.TextEntity(0, url.length(), new TdApi.TextEntityTypeTextUrl("https://example.net")),
+      new TdApi.TextEntity(url.length() + 1, url.length(), new TdApi.TextEntityTypeCode())
+    });
+    ArticleDocument result = ArticleComposer.fromText(input, new TdApi.TextEntity[] {
+      new TdApi.TextEntity(0, url.length(), new TdApi.TextEntityTypeUrl()),
+      new TdApi.TextEntity(url.length() + 1, url.length(), new TdApi.TextEntityTypeUrl())
+    }, false);
+    final int[] links = {0};
+    ArticleCodec.visit(result.toInput(), (node, depth) -> {
+      if (node instanceof TdApi.RichTextUrl) { links[0]++; assertEquals("https://example.net", ((TdApi.RichTextUrl) node).url); }
+    });
+    assertEquals(1, links[0]);
+  }
 }

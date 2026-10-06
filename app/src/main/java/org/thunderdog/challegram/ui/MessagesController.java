@@ -7752,7 +7752,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     boolean fromComposer = document == null && inputView != null && !inputView.getText().toString().isEmpty();
     if (document == null) {
       try {
-        document = fromComposer ? org.thunderdog.challegram.data.article.ArticleComposer.fromText(inputView.getOutputText(true), Lang.rtl()) : org.thunderdog.challegram.data.article.ArticleDocument.empty();
+        if (fromComposer) {
+          TdApi.FormattedText text = inputView.getOutputText(true);
+          document = org.thunderdog.challegram.data.article.ArticleComposer.fromText(text, Td.findEntities(text.text), Lang.rtl());
+        } else {
+          document = org.thunderdog.challegram.data.article.ArticleDocument.empty();
+        }
       } catch (IllegalArgumentException e) {
         UI.showToast(R.string.ArticleReadOnly, Toast.LENGTH_LONG);
         return;

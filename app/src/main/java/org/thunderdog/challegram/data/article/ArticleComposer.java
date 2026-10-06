@@ -16,6 +16,32 @@ public final class ArticleComposer {
     return lineCount > 2 && text != null && !text.toString().trim().isEmpty();
   }
 
+  /** Add TDLib-detected links without replacing explicit links, code or atomic entities. */
+  public static ArticleDocument fromText (TdApi.FormattedText input, TdApi.TextEntity[] detected, boolean rtl) {
+    if (input == null || input.text == null) throw new IllegalArgumentException("Missing composer text");
+    ArrayList<TdApi.TextEntity> entities = new ArrayList<>();
+    if (input.entities != null) entities.addAll(Arrays.asList(input.entities));
+    if (detected != null) for (TdApi.TextEntity candidate : detected) {
+      if (candidate == null || candidate.type == null || candidate.offset < 0 || candidate.length <= 0 || candidate.offset > input.text.length() - candidate.length) continue;
+      boolean allowed = true;
+      for (TdApi.TextEntity existing : entities) {
+        if (existing == null || existing.type == null) throw new IllegalArgumentException("Invalid composer entity");
+        if (existing.offset < candidate.offset + candidate.length && candidate.offset < existing.offset + existing.length && !allowsDetectedLink(existing.type)) {
+          allowed = false; break;
+        }
+      }
+      if (allowed) entities.add(candidate);
+    }
+    return fromText(new TdApi.FormattedText(input.text, entities.toArray(new TdApi.TextEntity[0])), rtl);
+  }
+
+  private static boolean allowsDetectedLink (TdApi.TextEntityType type) {
+    return type instanceof TdApi.TextEntityTypeBold || type instanceof TdApi.TextEntityTypeItalic ||
+      type instanceof TdApi.TextEntityTypeUnderline || type instanceof TdApi.TextEntityTypeStrikethrough ||
+      type instanceof TdApi.TextEntityTypeSpoiler || type instanceof TdApi.TextEntityTypeBlockQuote ||
+      type instanceof TdApi.TextEntityTypeExpandableBlockQuote;
+  }
+
   public static ArticleDocument fromText (TdApi.FormattedText input, boolean rtl) {
     if (input == null || input.text == null) throw new IllegalArgumentException("Missing composer text");
     TdApi.TextEntity[] entities = input.entities == null ? new TdApi.TextEntity[0] : input.entities.clone();

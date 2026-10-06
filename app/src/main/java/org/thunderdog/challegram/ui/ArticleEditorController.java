@@ -107,6 +107,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   @Override public CharSequence getName () { return Lang.getString(getArgumentsStrict().messageId == 0 ? R.string.ArticleCreate : R.string.ArticleEdit); }
   @Override protected int getBackButton () { return BackHeaderButton.TYPE_NONE; }
   @Override protected int getHeaderHeight () { return 0; }
+  @Override protected boolean usePopupMode () { return true; }
   @Override protected boolean useDropShadow () { return false; }
 
   @Override protected View onCreateView (Context context) {
@@ -162,7 +163,13 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   }
 
   private void createEditorLayout (Context context, boolean editing) {
-    root = new LinearLayout(context);
+    root = new LinearLayout(context) {
+      @Override protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+        int top = org.thunderdog.challegram.navigation.HeaderView.getTopOffset();
+        if (getPaddingTop() != top) setPadding(0, top, 0, 0);
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+      }
+    };
     root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Theme.fillingColor());
     root.setLayoutParams(new ViewGroup.LayoutParams(-1, -1));
     FrameLayout page = new FrameLayout(context); root.addView(page, new LinearLayout.LayoutParams(-1, 0, 1));
