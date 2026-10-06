@@ -268,7 +268,7 @@ public class MediaLayout extends FrameLayoutFix implements
           };
         }
         if (target != null && target.canOpenArticleEditor()) {
-          MediaBottomBar.BarItem article = new MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, R.string.Article, ColorId.attachFile);
+          MediaBottomBar.BarItem article = new MediaBottomBar.BarItem(R.drawable.article_document_24, R.string.Article, ColorId.attachFile);
           MediaBottomBar.BarItem[] expandedItems = new MediaBottomBar.BarItem[items.length + 1];
           System.arraycopy(items, 0, expandedItems, rtl ? 1 : 0, items.length);
           expandedItems[rtl ? 0 : items.length] = article;

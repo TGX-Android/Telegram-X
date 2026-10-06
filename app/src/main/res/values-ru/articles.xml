@@ -136,6 +136,7 @@
   <string name="ArticleNoList">Без списка</string>
   <string name="ArticleHighlightRow">Выделить строку</string>
   <string name="ArticleHighlightColumn">Выделить столбец</string>
+  <string name="ArticleHighlightCell">Выделить ячейку</string>
   <string name="ArticleMergeCells">Объединить ячейки</string>
   <string name="ArticleUnmergeCells">Разделить ячейки</string>
   <string name="ArticleInsertAbove">Вставить выше</string>
@@ -160,4 +161,20 @@
   <string name="ArticleAiPrompt">Задание для ИИ</string>
   <string name="ArticleBack">Назад</string>
   <string name="ArticleAiFailed">Не удалось создать статью. Ваш черновик сохранён.</string>
+  <string name="ArticleAiStyle">Стиль</string>
+  <string name="ArticleAiFixTab">Исправить</string>
+  <string name="ArticleAiPromptTab">Запрос</string>
+  <string name="ArticleAiCreateStyle">Создать</string>
+  <string name="ArticleAiStyleTitle">Название стиля</string>
+  <string name="ArticleAiEmojify">Добавить эмодзи</string>
+  <string name="ArticleAiGenerate">Создать текст</string>
+  <string name="ArticleAiWorking">Создание текста…</string>
+  <string name="ArticleAiLanguageMenu">%1$s ▾</string>
+  <string name="ArticleAiAddToPage">Добавить на страницу</string>
+  <string name="ArticleExpandEditor">Открыть редактор статьи</string>
+  <string name="ArticleHeadingNumber">Заголовок %1$d</string>
+  <string name="ArticleTextStyleText">Текст</string>
+  <string name="ArticleInsertDate">Вставить дату</string>
+  <string name="ArticleDateTitle">Добавить дату</string>
+  <string name="ArticleInlineCopy">Копировать</string>
 </resources>

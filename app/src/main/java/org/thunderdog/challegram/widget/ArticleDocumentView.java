@@ -42,6 +42,7 @@ public final class ArticleDocumentView extends LinearLayout {
   private ArticleTextInput focused;
   private TdApi.InputPageBlock focusAfter;
   private int focusOffset;
+  private int focusEndOffset = -1;
   private static final class ListContext {
     final ArticleEditorTree.Entry parent; final TdApi.InputPageBlockList list; final int index;
     ListContext (ArticleEditorTree.Entry parent, TdApi.InputPageBlockList list, int index) { this.parent = parent; this.list = list; this.index = index; }
@@ -51,10 +52,61 @@ public final class ArticleDocumentView extends LinearLayout {
   }
   public List<ArticleTextInput> inputs () { return inputs; }
   public ArticleEditorTree.Entry focusedEntry () { return entries.get(focused); }
+  public TdApi.InputPageBlock selectedBlock () {
+    ArticleEditorTree.Entry quote = focusedQuote();
+    ArticleEditorTree.Entry entry = focusedEntry();
+    return quote != null ? quote.block : entry == null ? null : entry.block;
+  }
+  private ArticleEditorTree.Entry focusedQuote () {
+    ArticleEditorTree.Entry entry = focusedEntry();
+    return entry == null ? null : findQuote(ArticleEditorTree.root(document), entry.block, null);
+  }
+  private ArticleEditorTree.Entry findQuote (ArticleEditorTree.Group group, TdApi.InputPageBlock target, ArticleEditorTree.Entry parent) {
+    for (int i = 0; i < group.blocks().length; i++) {
+      ArticleEditorTree.Entry entry = new ArticleEditorTree.Entry(group, i, 0);
+      boolean quote = entry.block instanceof TdApi.InputPageBlockBlockQuote || entry.block instanceof TdApi.InputPageBlockExpandableBlockQuote || entry.block instanceof TdApi.InputPageBlockPullQuote;
+      if (entry.block == target) return quote ? entry : parent;
+      for (ArticleEditorTree.Group child : ArticleEditorTree.children(entry.block)) {
+        ArticleEditorTree.Entry found = findQuote(child, target, quote ? entry : parent);
+        if (found != null) return found;
+      }
+    }
+    return null;
+  }
+  public int selectedListStyle () {
+    ArticleEditorTree.Entry entry = focusedEntry(); if (entry == null) return 0;
+    if (entry.block instanceof TdApi.InputPageBlockDetails) return 4;
+    ListContext list = listContexts.get(entry.block);
+    if (list == null) return 0;
+    TdApi.InputPageBlockListItem item = list.list.items[list.index];
+    return item.hasCheckbox ? 3 : item.value != 0 ? 2 : 1;
+  }
+  public boolean canChangeTextStyle () {
+    ArticleEditorTree.Entry entry = focusedEntry(); if (entry == null) return false;
+    TdApi.InputPageBlock block = entry.block;
+    boolean supported = block instanceof TdApi.InputPageBlockParagraph || block instanceof TdApi.InputPageBlockSectionHeading || block instanceof TdApi.InputPageBlockPreformatted || block instanceof TdApi.InputPageBlockFooter || block instanceof TdApi.InputPageBlockPullQuote || block instanceof TdApi.InputPageBlockExpandableBlockQuote;
+    if (!supported) return false;
+    for (ArticleTextInput input : inputs) if (entries.get(input).block == block) return input == focused;
+    return false;
+  }
+  public boolean canIndent () {
+    ArticleEditorTree.Entry entry = focusedEntry(); if (entry == null) return false;
+    ListContext list = listContexts.get(entry.block);
+    return list == null ? canChangeTextStyle() : list.index > 0;
+  }
+  public boolean canOutdent () { ArticleEditorTree.Entry entry = focusedEntry(); return entry != null && listContexts.containsKey(entry.block); }
+  public boolean showTableMenu (View anchor) {
+    if (focused == null) return false;
+    for (android.view.ViewParent parent = focused.getParent(); parent != null; parent = parent.getParent()) {
+      if (parent instanceof ArticleTableEditor) return ((ArticleTableEditor) parent).showCellMenu(focused, anchor);
+    }
+    return false;
+  }
   public void bind (TdApi.InputRichMessage value) {
     ArticleEditorTree.Entry old = focusedEntry();
     TdApi.InputPageBlock target = focusAfter != null ? focusAfter : old == null ? null : old.block;
     int offset = focusAfter != null ? focusOffset : focused == null ? 0 : focused.getSelectionStart();
+    int endOffset = focusAfter != null && focusEndOffset >= 0 ? focusEndOffset : offset;
     int subfield = 0;
     if (focusAfter == null && old != null) for (ArticleTextInput input : inputs) { if (input == focused) break; if (entries.get(input).block == old.block) subfield++; }
     removeAllViews(); inputs.clear(); entries.clear(); listContexts.clear(); focused = null; document = value;
@@ -71,9 +123,10 @@ public final class ArticleDocumentView extends LinearLayout {
       tail.setOnFocusChangeListener((v, hasFocus) -> { if (hasFocus) { focused = null; delegate.selection(tail); } });
     }
     for (ArticleTextInput input : inputs) if (entries.get(input).block == target && subfield-- == 0) {
-      input.requestFocus(); focused = input; input.setSelection(Math.max(0, Math.min(input.length(), offset))); break;
+      input.requestFocus(); focused = input; input.setSelection(Math.max(0, Math.min(input.length(), offset)), Math.max(0, Math.min(input.length(), endOffset))); break;
     }
     focusAfter = null;
+    focusEndOffset = -1;
   }
   private void renderGroup (LinearLayout parent, ArticleEditorTree.Group group, int depth, ListContext listContext) {
     for (int i = 0; i < group.blocks().length; i++) {
@@ -207,7 +260,17 @@ public final class ArticleDocumentView extends LinearLayout {
   public void listStyle (int style) {
     ArticleEditorTree.Entry entry = focusedEntry(); if (entry == null) return;
     ListContext context = listContexts.get(entry.block);
-    if (style == 0) { if (context != null) exitList(context); return; }
+    if (style == 0) {
+      if (context != null) exitList(context);
+      else if (entry.block instanceof TdApi.InputPageBlockDetails) {
+        TdApi.InputPageBlockDetails details = (TdApi.InputPageBlockDetails) entry.block;
+        TdApi.InputPageBlockParagraph header = new TdApi.InputPageBlockParagraph(details.header);
+        entry.group.replace(entry.index, header);
+        for (int i = 0; i < details.blocks.length; i++) entry.group.insert(entry.index + 1 + i, details.blocks[i]);
+        structural(header, 0);
+      }
+      return;
+    }
     TdApi.InputPageBlockList list;
     if (context == null) {
       list = new TdApi.InputPageBlockList(new TdApi.InputPageBlockListItem[] {new TdApi.InputPageBlockListItem(new TdApi.InputPageBlock[] {entry.block}, style == 3, false, style == 2 ? 1 : 0, style == 2 ? "1" : "")});
@@ -217,7 +280,8 @@ public final class ArticleDocumentView extends LinearLayout {
     structural(entry.block, focused == null ? 0 : focused.getSelectionStart());
   }
   public void indent (boolean outdent) {
-    ArticleEditorTree.Entry entry = focusedEntry(); if (entry == null) return; ListContext context = listContexts.get(entry.block); if (context == null) return;
+    ArticleEditorTree.Entry entry = focusedEntry(); if (entry == null) return; ListContext context = listContexts.get(entry.block);
+    if (context == null) { if (!outdent && canChangeTextStyle()) listStyle(1); return; }
     if (outdent) {
       ListContext outer = listContexts.get(context.parent.block);
       if (outer == null) { exitList(context); return; }
@@ -237,8 +301,37 @@ public final class ArticleDocumentView extends LinearLayout {
   }
   public void convert (Function<TdApi.RichText, TdApi.InputPageBlock> converter) {
     ArticleEditorTree.Entry entry = focusedEntry(); if (entry == null || focused == null) return;
-    if (!(entry.block instanceof TdApi.InputPageBlockParagraph || entry.block instanceof TdApi.InputPageBlockSectionHeading || entry.block instanceof TdApi.InputPageBlockFooter || entry.block instanceof TdApi.InputPageBlockPreformatted)) return;
-    TdApi.InputPageBlock block = converter.apply(focused.richText()); entry.group.replace(entry.index, block); structural(block, focused.getSelectionStart());
+    if (!canChangeTextStyle()) return;
+    ArticleEditorTree.Entry quote = focusedQuote();
+    TdApi.InputPageBlock block = converter.apply(focused.richText()); entry.group.replace(entry.index, block);
+    if (quote != null && quote.block != entry.block && quote.block instanceof TdApi.InputPageBlockBlockQuote) unwrapQuote(quote);
+    structural(block, focused.getSelectionStart());
+  }
+  private void unwrapQuote (ArticleEditorTree.Entry quote) {
+    TdApi.InputPageBlockBlockQuote block = (TdApi.InputPageBlockBlockQuote) quote.block;
+    quote.group.remove(quote.index);
+    int position = quote.index;
+    for (TdApi.InputPageBlock child : block.blocks) quote.group.insert(position++, child);
+    if (!ArticleRichText.plain(block.credit).isEmpty()) quote.group.insert(position, new TdApi.InputPageBlockFooter(block.credit));
+  }
+  public void toggleQuoteSelection () {
+    ArticleEditorTree.Entry entry = focusedEntry(); if (entry == null || focused == null || !canChangeTextStyle()) return;
+    ArticleEditorTree.Entry quote = focusedQuote();
+    if (quote != null) {
+      if (quote.block instanceof TdApi.InputPageBlockBlockQuote) { unwrapQuote(quote); structural(entry.block, focused.getSelectionStart()); }
+      else convert(TdApi.InputPageBlockParagraph::new);
+      return;
+    }
+    int start = Math.max(0, Math.min(focused.getSelectionStart(), focused.getSelectionEnd())), end = Math.max(start, Math.max(focused.getSelectionStart(), focused.getSelectionEnd()));
+    if (start == end) { start = 0; end = focused.length(); }
+    TdApi.InputPageBlockParagraph selected = new TdApi.InputPageBlockParagraph(focused.richText(start, end));
+    TdApi.RichText before = focused.richText(0, start), after = focused.richText(end, focused.length());
+    int at = entry.index; entry.group.remove(at);
+    if (start > 0) entry.group.insert(at++, new TdApi.InputPageBlockParagraph(before));
+    entry.group.insert(at++, new TdApi.InputPageBlockBlockQuote(new TdApi.InputPageBlock[] {selected}, new TdApi.RichTextPlain("")));
+    if (end < focused.length()) entry.group.insert(at, new TdApi.InputPageBlockParagraph(after));
+    focusEndOffset = end - start;
+    structural(selected, 0);
   }
   public void insert (TdApi.InputPageBlock block) {
     ArticleEditorTree.Entry entry = focusedEntry(); ArticleEditorTree.Group group = entry == null ? ArticleEditorTree.root(document) : entry.group;
@@ -251,5 +344,31 @@ public final class ArticleDocumentView extends LinearLayout {
       group.insert(index, block); group.insert(index + 1, new TdApi.InputPageBlockParagraph(after));
     } else group.insert(index, block);
     structural(block, 0);
+  }
+  public boolean replaceSelection (ArticleTextInput target, int start, int end, TdApi.InputPageBlock[] replacement) {
+    ArticleEditorTree.Entry entry = entries.get(target);
+    if (entry == null || start < 0 || end < start || end > target.length()) return false;
+    if (replacement.length == 1 && replacement[0] instanceof TdApi.InputPageBlockParagraph) {
+      target.setSelection(start, end); target.insert(((TdApi.InputPageBlockParagraph) replacement[0]).text); return true;
+    }
+    // Captions and table cells cannot contain block nodes. Keep the original if AI
+    // returns a structure which this selection cannot represent losslessly.
+    if (!(entry.block instanceof TdApi.InputPageBlockParagraph)) return false;
+    TdApi.RichText before = target.richText(0, start), after = target.richText(end, target.length());
+    int index = entry.index; entry.group.remove(index);
+    if (start > 0) entry.group.insert(index++, new TdApi.InputPageBlockParagraph(before));
+    for (TdApi.InputPageBlock block : replacement) entry.group.insert(index++, block);
+    TdApi.InputPageBlockParagraph tail = new TdApi.InputPageBlockParagraph(after); entry.group.insert(index, tail);
+    structural(tail, 0); return true;
+  }
+  public void insertBlocks (TdApi.InputPageBlock[] blocks) {
+    ArticleEditorTree.Entry entry = focusedEntry();
+    if (entry != null && entry.block instanceof TdApi.InputPageBlockParagraph && focused != null) {
+      int at = Math.max(0, focused.getSelectionStart()); replaceSelection(focused, at, at, blocks); return;
+    }
+    ArticleEditorTree.Group group = entry == null ? ArticleEditorTree.root(document) : entry.group;
+    int at = entry == null ? group.blocks().length : entry.index + 1;
+    for (TdApi.InputPageBlock block : blocks) group.insert(at++, block);
+    TdApi.InputPageBlockParagraph tail = new TdApi.InputPageBlockParagraph(new TdApi.RichTextPlain("")); group.insert(at, tail); structural(tail, 0);
   }
 }

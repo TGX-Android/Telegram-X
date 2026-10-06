@@ -184,6 +184,31 @@ public final class ArticleTextInput extends EditText {
   }
 
   public void format (TdApi.RichText wrapper) {
+    applyFormat(wrapper, false);
+  }
+
+  /** Set metadata (for example a link target) without toggling off an existing wrapper. */
+  public void setFormat (TdApi.RichText wrapper) { applyFormat(wrapper, true); }
+
+  public boolean isFormatApplied (int constructor) {
+    int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
+    if (start < 0) return false;
+    if (start == end) {
+      for (TdApi.RichText format : typingFormats) if (format.getConstructor() == constructor) return true;
+      return false;
+    }
+    NodeSpan[] spans = getText().getSpans(start, end, NodeSpan.class);
+    Arrays.sort(spans, Comparator.comparingInt(getText()::getSpanStart));
+    int coveredUntil = start;
+    for (NodeSpan span : spans) if (span.node.getConstructor() == constructor) {
+      if (getText().getSpanStart(span) > coveredUntil) return false;
+      coveredUntil = Math.max(coveredUntil, getText().getSpanEnd(span));
+      if (coveredUntil >= end) return true;
+    }
+    return false;
+  }
+
+  private void applyFormat (TdApi.RichText wrapper, boolean replace) {
     int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
     if (start < 0) return;
     if (start == end) {
@@ -191,14 +216,11 @@ public final class ArticleTextInput extends EditText {
       typingFormats.add(wrapper); return;
     }
     Editable text = getText();
-    boolean covered = true;
-    for (int i = start; i < end; i++) {
-      boolean styled = false;
-      for (NodeSpan span : text.getSpans(i, i + 1, NodeSpan.class)) if (span.node.getConstructor() == wrapper.getConstructor()) { styled = true; break; }
-      if (!styled) { covered = false; break; }
-    }
+    boolean covered = !replace && isFormatApplied(wrapper.getConstructor());
     for (NodeSpan span : text.getSpans(start, end, NodeSpan.class)) {
-      if (span.node.getConstructor() == wrapper.getConstructor()) {
+      boolean conflictingLink = wrapper instanceof TdApi.RichTextDateTime && span.node instanceof TdApi.RichTextUrl || wrapper instanceof TdApi.RichTextUrl && span.node instanceof TdApi.RichTextDateTime;
+      boolean conflictingIndex = wrapper instanceof TdApi.RichTextSubscript && span.node instanceof TdApi.RichTextSuperscript || wrapper instanceof TdApi.RichTextSuperscript && span.node instanceof TdApi.RichTextSubscript;
+      if (span.node.getConstructor() == wrapper.getConstructor() || conflictingLink || conflictingIndex) {
         int a = text.getSpanStart(span), b = text.getSpanEnd(span);
         text.removeSpan(span);
         if (a < start) text.setSpan(new NodeSpan(span.node, span.order), a, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -208,6 +230,7 @@ public final class ArticleTextInput extends EditText {
     if (!covered) text.setSpan(new NodeSpan(wrapper, order++), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     requestLayout(); invalidate();
     notifyChanged();
+    if (selectionListener != null) selectionListener.run();
   }
 
   public void insert (TdApi.RichText value) {

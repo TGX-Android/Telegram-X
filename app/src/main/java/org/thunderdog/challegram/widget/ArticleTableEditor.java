@@ -59,9 +59,20 @@ public final class ArticleTableEditor extends ViewGroup {
     for (int i = 0; i < (row ? grid.columns() : grid.rows()); i++) { TdApi.PageBlockTableCell cell = row ? grid.cell(index, i) : grid.cell(i, index); if (!out.contains(cell)) out.add(cell); }
     return out;
   }
-  private void menu (View anchor, int index, boolean row) {
-    List<TdApi.PageBlockTableCell> selection = selected(index, row);
-    ArticleEditorPopup popup = new ArticleEditorPopup(getContext());
+  public boolean showCellMenu (ArticleTextInput input, View anchor) {
+    for (CellView view : cells) if (view.input == input) {
+      TdApi.PageBlockTableCell cell = view.cell;
+      ArticleEditorPopup popup = new ArticleEditorPopup(getContext());
+      alignment(popup, java.util.Collections.singletonList(cell));
+      popup.checked(R.drawable.article_iv_table_highlight, R.string.ArticleHighlightCell, cell.isHeader, () -> { cell.isHeader = !cell.isHeader; structureChanged.run(); });
+      if (cell.colspan > 1 || cell.rowspan > 1)
+        popup.item(R.drawable.article_iv_table_unmerge, R.string.ArticleUnmergeCells, () -> { grid.unmerge(view.row, view.column); structureChanged.run(); });
+      popup.show(anchor);
+      return true;
+    }
+    return false;
+  }
+  private void alignment (ArticleEditorPopup popup, List<TdApi.PageBlockTableCell> selection) {
     popup.icons(new int[] {R.drawable.article_iv_align_horiz_left, R.drawable.article_iv_align_horiz_middle, R.drawable.article_iv_align_horiz_right, R.drawable.article_iv_align_vert_top, R.drawable.article_iv_align_vert_middle, R.drawable.article_iv_align_vert_bottom},
       new int[] {R.string.ArticleLeft, R.string.ArticleCenter, R.string.ArticleRight, R.string.ArticleTop, R.string.ArticleMiddle, R.string.ArticleBottom}, which -> {
         for (TdApi.PageBlockTableCell cell : selection) {
@@ -70,12 +81,17 @@ public final class ArticleTableEditor extends ViewGroup {
         }
         structureChanged.run();
       });
+  }
+  private void menu (View anchor, int index, boolean row) {
+    List<TdApi.PageBlockTableCell> selection = selected(index, row);
+    ArticleEditorPopup popup = new ArticleEditorPopup(getContext());
+    alignment(popup, selection);
     popup.item(R.drawable.article_iv_table_highlight, row ? R.string.ArticleHighlightRow : R.string.ArticleHighlightColumn, () -> { boolean all = true; for (TdApi.PageBlockTableCell cell : selection) all &= cell.isHeader; for (TdApi.PageBlockTableCell cell : selection) cell.isHeader = !all; structureChanged.run(); });
-    popup.item(R.drawable.article_iv_table_merge, R.string.ArticleMergeCells, () -> {
+    if (selection.size() > 1) popup.item(R.drawable.article_iv_table_merge, R.string.ArticleMergeCells, () -> {
       if (!grid.merge(row ? index : 0, row ? 0 : index, row ? index : grid.rows() - 1, row ? grid.columns() - 1 : index)) UI.showToast(R.string.ArticleTableMergeInvalid, Toast.LENGTH_SHORT);
       else structureChanged.run();
     });
-    popup.item(R.drawable.article_iv_table_unmerge, R.string.ArticleUnmergeCells, () -> {
+    if (selection.size() == 1 && (selection.get(0).colspan > 1 || selection.get(0).rowspan > 1)) popup.item(R.drawable.article_iv_table_unmerge, R.string.ArticleUnmergeCells, () -> {
       for (int i = 0; i < (row ? grid.columns() : grid.rows()); i++) grid.unmerge(row ? index : i, row ? i : index); structureChanged.run();
     });
     popup.item(row ? R.drawable.article_iv_table_insert_top : R.drawable.article_iv_table_insert_left, row ? R.string.ArticleInsertAbove : R.string.ArticleInsertLeft, () -> { if (row) grid.insertRow(index); else grid.insertColumn(index); structureChanged.run(); });

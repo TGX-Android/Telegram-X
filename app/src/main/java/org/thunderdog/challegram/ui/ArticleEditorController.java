@@ -64,6 +64,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     public final long chatId, messageId, userId;
     public final TdApi.MessageTopic topic;
     public final ArticleDocument document;
+    public boolean fromComposer;
     public Args (MessagesController owner, long messageId, ArticleDocument document) {
       this.owner = owner; this.chatId = owner.getChatId(); this.topic = owner.getMessageTopicId(); this.messageId = messageId; this.document = document; this.userId = owner.tdlib().myUserId();
     }
@@ -84,10 +85,16 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   private boolean restoring;
   private ImageView sendButton, undoButton, redoButton;
   private LinearLayout tools;
+  private LinearLayout bottom;
+  private boolean editingArticle;
+  private final java.util.Map<ImageView, Integer> formatButtons = new java.util.LinkedHashMap<>();
+  private ImageView textTool, listTool, quoteTool, linkTool, dateTool, inlineButtonTool;
   private View toolAnchor;
   private boolean formatsVisible;
   private org.thunderdog.challegram.widget.EmojiLayout emojiPanel;
   private android.app.Dialog formulaDialog;
+  private android.app.Dialog dateDialog;
+  private android.app.Dialog aiDialog;
   private final List<ArticleEditorMedia> mediaViews = new ArrayList<>();
   private LinearLayout root;
   private boolean sending, sent, draftWriteFailed, recoveryPending, importing;
@@ -110,7 +117,9 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     try {
       store = new ArticleDraftStore(context, tdlib.id(), args.userId, args.chatId, args.topic, args.messageId);
       recovery = store.read();
-      draftTouched = recovery != null;
+      // A newly typed ordinary draft is authoritative over an old, already-cleared article draft.
+      if (args.fromComposer && recovery != null && recovery.pendingMessageId == 0) recovery = null;
+      draftTouched = args.fromComposer || recovery != null;
       if (recovery != null && (recovery.baseline.equals(initial) || recovery.document.equals(initial) || recovery.pendingMessageId != 0)) {
         initial = recovery.document; baseline = recovery.baseline; pendingMessageId = recovery.pendingMessageId;
       } else if (recovery != null) recoveryPending = true;
@@ -121,6 +130,11 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     working = initial.toInput();
     history = new ArticleHistory(initial);
     createEditorLayout(context, args.messageId != 0);
+    if (args.fromComposer && !textInputs.isEmpty()) {
+      ArticleTextInput last = textInputs.get(textInputs.size() - 1);
+      last.requestFocus(); last.setSelection(last.length());
+      handler.postDelayed(() -> { if (!isDestroyed()) Keyboard.show(last); }, 200);
+    }
     if (recoveryPending) {
       ArticleDraftStore.Snapshot recovered = recovery;
       handler.post(() -> new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(R.string.ArticleDraftConflict))
@@ -159,6 +173,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
         focused = input; rememberSelection();
         boolean selected = input.getSelectionStart() != input.getSelectionEnd();
         if (selected != formatsVisible) { formatsVisible = selected; rebuildTools(); }
+        updateToolState();
       }
       @Override public void options (ArticleEditorTree.Entry entry) { blockOptions(entry); }
       @Override public void media (ArticleEditorTree.Entry entry, LinearLayout parent) {
@@ -182,12 +197,8 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     redoButton = icon(historyBar, R.drawable.article_iv_redo, R.string.ArticleRedo, () -> restore(history.redo()), 41);
     FrameLayout.LayoutParams historyParams = new FrameLayout.LayoutParams(Screen.dp(82), Screen.dp(44), Gravity.TOP | Gravity.RIGHT); historyParams.setMargins(0, Screen.dp(8), Screen.dp(8), 0); page.addView(historyBar, historyParams);
     historyBar.setOnLongClickListener(v -> { preview(); return true; });
-    LinearLayout bottom = new LinearLayout(context); bottom.setGravity(Gravity.CENTER_VERTICAL); bottom.setPadding(Screen.dp(8), Screen.dp(8), Screen.dp(8), Screen.dp(8));
-    ImageView ai = icon(bottom, R.drawable.article_input_ai, R.string.ArticleAi, this::aiMenu, 44); ai.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 24));
-    HorizontalScrollView toolsScroll = new HorizontalScrollView(context); toolsScroll.setHorizontalScrollBarEnabled(false); toolsScroll.setFillViewport(true);
-    tools = new LinearLayout(context); tools.setGravity(Gravity.CENTER); tools.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 24)); toolsScroll.addView(tools, new ViewGroup.LayoutParams(-1, Screen.dp(44)));
-    LinearLayout.LayoutParams toolsParams = new LinearLayout.LayoutParams(0, Screen.dp(44), 1); toolsParams.setMargins(Screen.dp(8), 0, Screen.dp(8), 0); bottom.addView(toolsScroll, toolsParams);
-    sendButton = icon(bottom, !editing ? R.drawable.article_send_plane_24 : R.drawable.baseline_check_24, !editing ? R.string.Send : R.string.Save, this::send, 44); sendButton.setColorFilter(android.graphics.Color.WHITE); sendButton.setBackground(ArticleEditorPopup.background(Theme.textLinkColor(), 24));
+    editingArticle = editing;
+    bottom = new LinearLayout(context); bottom.setGravity(Gravity.CENTER_VERTICAL); bottom.setPadding(Screen.dp(8), Screen.dp(8), Screen.dp(8), Screen.dp(8));
     root.addView(bottom, new LinearLayout.LayoutParams(-1, Screen.dp(60)));
     rebuildTools(); rebuildFields(); updateHistory();
   }
@@ -206,62 +217,132 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     redoButton.setEnabled(history.canRedo()); redoButton.setAlpha(history.canRedo() ? 1 : .35f);
   }
   private void rebuildTools () {
-    if (tools == null) return; tools.removeAllViews();
+    if (bottom == null) return;
+    bottom.removeAllViews(); formatButtons.clear();
+    textTool = listTool = quoteTool = linkTool = dateTool = inlineButtonTool = null;
+    ImageView ai = icon(bottom, R.drawable.article_input_ai, R.string.ArticleAi, this::aiMenu, 44);
+    ai.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 22));
+    HorizontalScrollView toolsScroll = new HorizontalScrollView(context()); toolsScroll.setHorizontalScrollBarEnabled(false);
+    toolsScroll.setFillViewport(!formatsVisible); toolsScroll.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 22));
+    if (android.os.Build.VERSION.SDK_INT >= 21) toolsScroll.setClipToOutline(true);
+    tools = new LinearLayout(context()); tools.setGravity(Gravity.CENTER); tools.setPadding(Screen.dp(2), 0, Screen.dp(2), 0);
+    toolsScroll.addView(tools, new ViewGroup.LayoutParams(formatsVisible ? -2 : -1, Screen.dp(44)));
+    LinearLayout.LayoutParams toolsParams = new LinearLayout.LayoutParams(0, Screen.dp(44), 1); toolsParams.leftMargin = Screen.dp(8);
+    bottom.addView(toolsScroll, toolsParams);
     if (formatsVisible) {
-      icon(tools, R.drawable.article_formatting_bold, R.string.ArticleBold, () -> format(new TdApi.RichTextBold(emptyText())), 38);
-      icon(tools, R.drawable.article_formatting_italic, R.string.ArticleItalic, () -> format(new TdApi.RichTextItalic(emptyText())), 38);
-      icon(tools, R.drawable.article_formatting_underline, R.string.ArticleUnderline, () -> format(new TdApi.RichTextUnderline(emptyText())), 38);
-      icon(tools, R.drawable.article_formatting_strikethrough, R.string.ArticleStrike, () -> format(new TdApi.RichTextStrikethrough(emptyText())), 38);
-      icon(tools, R.drawable.article_formatting_spoiler, R.string.ArticleSpoiler, () -> format(new TdApi.RichTextSpoiler(emptyText())), 38);
-      icon(tools, R.drawable.article_iv_code, R.string.ArticleCode, () -> format(new TdApi.RichTextFixed(emptyText())), 38);
-      icon(tools, R.drawable.article_media_link_24, R.string.ArticleLink, () -> prompt(R.string.ArticleLink, "https://", value -> format(new TdApi.RichTextUrl(emptyText(), value, false))), 38);
-      icon(tools, R.drawable.baseline_more_horiz_24, R.string.ArticleMoreFormats, this::moreFormats, 38);
-      return;
+      styleTool(R.drawable.article_formatting_bold, R.string.ArticleBold, new TdApi.RichTextBold(emptyText()));
+      styleTool(R.drawable.article_formatting_italic, R.string.ArticleItalic, new TdApi.RichTextItalic(emptyText()));
+      styleTool(R.drawable.article_formatting_underline, R.string.ArticleUnderline, new TdApi.RichTextUnderline(emptyText()));
+      styleTool(R.drawable.article_formatting_strikethrough, R.string.ArticleStrike, new TdApi.RichTextStrikethrough(emptyText()));
+      styleTool(R.drawable.article_formatting_spoiler, R.string.ArticleSpoiler, new TdApi.RichTextSpoiler(emptyText()));
+      styleTool(R.drawable.article_iv_code, R.string.ArticleCode, new TdApi.RichTextFixed(emptyText()));
+      styleTool(R.drawable.article_formatting_marked, R.string.ArticleMarked, new TdApi.RichTextMarked(emptyText()));
+      styleTool(R.drawable.article_iv_sub, R.string.ArticleSubscript, new TdApi.RichTextSubscript(emptyText()));
+      styleTool(R.drawable.article_iv_super, R.string.ArticleSuperscript, new TdApi.RichTextSuperscript(emptyText()));
+      quoteTool = icon(tools, R.drawable.article_iv_quote, R.string.ArticleQuote, fields::toggleQuoteSelection, 40);
+      inlineButtonTool = icon(tools, R.drawable.article_iv_button, R.string.ArticleButton, this::inlineButtonMenu, 40);
+      LinearLayout links = toolGroup();
+      linkTool = icon(links, R.drawable.article_media_link_24, R.string.ArticleLink, this::linkEditor, 38);
+      dateTool = icon(links, R.drawable.baseline_date_range_24, R.string.ArticleInsertDate, this::dateEditor, 38);
+      icon(toolGroup(), R.drawable.article_iv_math, R.string.ArticleFormula, this::inlineFormulaEditor, 38);
+      sendButton = null;
+    } else {
+      icon(tools, R.drawable.baseline_emoticon_outline_24, R.string.ArticleEmoji, this::emojiPicker, 40);
+      textTool = icon(tools, R.drawable.article_iv_text, R.string.ArticleFormat, this::textMenu, 40);
+      listTool = icon(tools, R.drawable.article_iv_lists, R.string.ArticleList, this::listMenu, 40);
+      icon(tools, R.drawable.article_iv_table, R.string.ArticleTable, () -> { if (!fields.showTableMenu(toolAnchor)) fields.insert(newBlock(R.string.ArticleTable)); }, 40);
+      icon(tools, R.drawable.article_iv_math, R.string.ArticleFormula, () -> formulaEditor("", value -> fields.insert(new TdApi.InputPageBlockMathematicalExpression(value))), 40);
+      icon(tools, R.drawable.article_outline_poll_attach_24, R.string.ArticleAttachment, this::attachmentMenu, 40);
+      sendButton = icon(bottom, !editingArticle ? R.drawable.article_send_plane_24 : R.drawable.baseline_check_24, !editingArticle ? R.string.Send : R.string.Save, this::send, 44);
+      ((LinearLayout.LayoutParams) sendButton.getLayoutParams()).leftMargin = Screen.dp(8);
+      sendButton.setColorFilter(android.graphics.Color.WHITE); sendButton.setBackground(ArticleEditorPopup.background(Theme.textLinkColor(), 22));
     }
-    icon(tools, R.drawable.baseline_emoticon_outline_24, R.string.ArticleEmoji, this::emojiPicker, 38);
-    icon(tools, R.drawable.article_iv_text, R.string.ArticleFormat, this::textMenu, 38);
-    icon(tools, R.drawable.article_iv_lists, R.string.ArticleList, this::listMenu, 38);
-    icon(tools, R.drawable.article_iv_table, R.string.ArticleTable, () -> fields.insert(newBlock(R.string.ArticleTable)), 38);
-    icon(tools, R.drawable.article_iv_math, R.string.ArticleFormula, () -> formulaEditor("", value -> fields.insert(new TdApi.InputPageBlockMathematicalExpression(value))), 38);
-    icon(tools, R.drawable.article_outline_poll_attach_24, R.string.ArticleAttachment, this::attachmentMenu, 38);
+    updateToolState();
+  }
+  private LinearLayout toolGroup () {
+    LinearLayout group = new LinearLayout(context()); group.setGravity(Gravity.CENTER_VERTICAL);
+    group.setPadding(Screen.dp(2), 0, Screen.dp(2), 0);
+    group.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 22));
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, Screen.dp(44)); params.leftMargin = Screen.dp(8);
+    bottom.addView(group, params); return group;
+  }
+  private void styleTool (int icon, int label, TdApi.RichText wrapper) {
+    ImageView button = icon(tools, icon, label, () -> format(wrapper), 40);
+    formatButtons.put(button, wrapper.getConstructor());
+  }
+  private void selectTool (ImageView view, boolean selected, boolean enabled) {
+    if (view == null) return;
+    view.setSelected(selected); view.setEnabled(enabled && !sending && !importing && !recoveryPending);
+    view.setAlpha(view.isEnabled() ? 1f : .35f);
+    view.setColorFilter(selected ? Theme.textLinkColor() : Theme.textAccentColor());
+    view.setBackground(selected ? ArticleEditorPopup.background(androidx.core.graphics.ColorUtils.setAlphaComponent(Theme.textLinkColor(), 32), 22) : null);
+  }
+  private void updateToolState () {
+    if (fields == null) return;
+    TdApi.InputPageBlock block = fields.selectedBlock();
+    boolean heading = block instanceof TdApi.InputPageBlockSectionHeading;
+    for (java.util.Map.Entry<ImageView, Integer> style : formatButtons.entrySet()) {
+      boolean enabled = focused != null && !(heading && (style.getValue() == TdApi.RichTextBold.CONSTRUCTOR || style.getValue() == TdApi.RichTextItalic.CONSTRUCTOR));
+      selectTool(style.getKey(), focused != null && focused.isFormatApplied(style.getValue()), enabled);
+    }
+    boolean quote = block instanceof TdApi.InputPageBlockBlockQuote || block instanceof TdApi.InputPageBlockPullQuote || block instanceof TdApi.InputPageBlockExpandableBlockQuote;
+    selectTool(quoteTool, quote, fields.canChangeTextStyle());
+    selectTool(inlineButtonTool, false, focused != null && !focused.isFormatApplied(TdApi.RichTextButton.CONSTRUCTOR));
+    selectTool(linkTool, focused != null && focused.isFormatApplied(TdApi.RichTextUrl.CONSTRUCTOR), focused != null);
+    selectTool(dateTool, focused != null && focused.isFormatApplied(TdApi.RichTextDateTime.CONSTRUCTOR), focused != null);
+    int listStyle = fields.selectedListStyle();
+    selectTool(textTool, listStyle == 0 && fields.canChangeTextStyle(), fields.canChangeTextStyle());
+    selectTool(listTool, listStyle != 0, fields.canChangeTextStyle() || listStyle != 0);
+    if (textTool != null) {
+      int resource = heading ? new int[] {R.drawable.article_iv_h1, R.drawable.article_iv_h2, R.drawable.article_iv_h3, R.drawable.article_iv_h4, R.drawable.article_iv_h5, R.drawable.article_iv_h6}[Math.max(0, Math.min(5, ((TdApi.InputPageBlockSectionHeading) block).size - 1))] :
+        block instanceof TdApi.InputPageBlockPreformatted ? R.drawable.article_iv_code : block instanceof TdApi.InputPageBlockFooter ? R.drawable.article_iv_footer :
+        block instanceof TdApi.InputPageBlockPullQuote ? R.drawable.article_iv_pullquote : quote ? R.drawable.article_iv_quote : R.drawable.article_iv_text;
+      textTool.setImageResource(resource);
+    }
+    if (listTool != null) listTool.setImageResource(listStyle == 2 ? R.drawable.article_iv_ordered_list : listStyle == 3 ? R.drawable.article_iv_todo : listStyle == 4 ? R.drawable.article_iv_details : R.drawable.article_iv_lists);
   }
   private void textMenu () {
+    TdApi.InputPageBlock block = fields.selectedBlock();
     new ArticleEditorPopup(context())
-      .item(R.drawable.article_iv_text2, R.string.ArticleParagraph, () -> fields.convert(TdApi.InputPageBlockParagraph::new))
-      .item(R.drawable.article_iv_h1, R.string.ArticleHeading, () -> headingMenu())
-      .item(R.drawable.article_iv_code, R.string.ArticleCode, () -> fields.convert(text -> new TdApi.InputPageBlockPreformatted(text, "")))
-      .item(R.drawable.article_iv_footer, R.string.ArticleFooter, () -> fields.convert(TdApi.InputPageBlockFooter::new))
-      .item(R.drawable.article_iv_quote, R.string.ArticleQuote, () -> fields.convert(text -> new TdApi.InputPageBlockBlockQuote(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(text)}, emptyText())))
-      .item(R.drawable.article_iv_pullquote, R.string.ArticleExpandableQuote, () -> fields.convert(text -> new TdApi.InputPageBlockExpandableBlockQuote(text, emptyText())))
-      .item(R.drawable.article_iv_divider, R.string.ArticleDivider, () -> fields.insert(new TdApi.InputPageBlockDivider()))
-      .item(R.drawable.article_formatting_bold, R.string.ArticleMoreFormats, () -> { formatsVisible = true; rebuildTools(); })
-      .item(R.drawable.baseline_more_horiz_24, R.string.ArticleBlockOptions, () -> { ArticleEditorTree.Entry entry = fields.focusedEntry(); if (entry != null) blockOptions(entry); })
+      .checked(R.drawable.article_iv_h1, R.string.ArticleHeading, block instanceof TdApi.InputPageBlockSectionHeading, this::headingMenu)
+      .checked(R.drawable.article_iv_text2, R.string.ArticleTextStyleText, block instanceof TdApi.InputPageBlockParagraph, () -> fields.convert(TdApi.InputPageBlockParagraph::new))
+      .checked(R.drawable.article_iv_quote, R.string.ArticleQuote, block instanceof TdApi.InputPageBlockBlockQuote || block instanceof TdApi.InputPageBlockExpandableBlockQuote, () -> fields.convert(text -> new TdApi.InputPageBlockBlockQuote(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(text)}, emptyText())))
+      .checked(R.drawable.article_iv_pullquote, R.string.ArticlePullQuote, block instanceof TdApi.InputPageBlockPullQuote, () -> fields.convert(text -> new TdApi.InputPageBlockPullQuote(text, emptyText())))
+      .checked(R.drawable.article_iv_code, R.string.ArticleCode, block instanceof TdApi.InputPageBlockPreformatted, () -> fields.convert(text -> new TdApi.InputPageBlockPreformatted(text, "")))
+      .checked(R.drawable.article_iv_footer, R.string.ArticleFooter, block instanceof TdApi.InputPageBlockFooter, () -> fields.convert(TdApi.InputPageBlockFooter::new))
       .show(toolAnchor);
   }
   private void headingMenu () {
     ArticleEditorPopup popup = new ArticleEditorPopup(context());
+    popup.item(R.drawable.baseline_arrow_back_24, R.string.ArticleBack, this::textMenu).gap();
     int[] icons = {R.drawable.article_iv_h1, R.drawable.article_iv_h2, R.drawable.article_iv_h3, R.drawable.article_iv_h4, R.drawable.article_iv_h5, R.drawable.article_iv_h6};
-    popup.icons(icons, new int[] {R.string.ArticleHeading, R.string.ArticleHeading, R.string.ArticleHeading, R.string.ArticleHeading, R.string.ArticleHeading, R.string.ArticleHeading}, index -> fields.convert(text -> new TdApi.InputPageBlockSectionHeading(text, index + 1))).show(toolAnchor);
+    TdApi.InputPageBlock block = fields.selectedBlock();
+    for (int i = 0; i < icons.length; i++) {
+      int level = i + 1;
+      popup.heading(icons[i], level, block instanceof TdApi.InputPageBlockSectionHeading && ((TdApi.InputPageBlockSectionHeading) block).size == level, () -> fields.convert(text -> new TdApi.InputPageBlockSectionHeading(text, level)));
+    }
+    popup.show(toolAnchor);
   }
   private void listMenu () {
-    new ArticleEditorPopup(context())
-      .item(R.drawable.article_iv_text2, R.string.ArticleNoList, () -> fields.listStyle(0))
-      .item(R.drawable.article_iv_list, R.string.ArticleBulleted, () -> fields.listStyle(1))
-      .item(R.drawable.article_iv_ordered_list, R.string.ArticleNumbered, () -> fields.listStyle(2))
-      .item(R.drawable.article_iv_todo, R.string.ArticleChecklist, () -> fields.listStyle(3))
-      .item(R.drawable.article_iv_details, R.string.ArticleToggle, () -> fields.convert(text -> new TdApi.InputPageBlockDetails(text, paragraph(), true)))
-      .item(R.drawable.article_iv_list_tab, R.string.ArticleIndent, () -> fields.indent(false))
-      .item(R.drawable.article_iv_list_untab, R.string.ArticleOutdent, () -> fields.indent(true)).show(toolAnchor);
+    int style = fields.selectedListStyle();
+    ArticleEditorPopup popup = new ArticleEditorPopup(context())
+      .checked(0, R.string.ArticleNoList, style == 0, () -> fields.listStyle(0))
+      .checked(R.drawable.article_iv_list, R.string.ArticleBulleted, style == 1, () -> fields.listStyle(1))
+      .checked(R.drawable.article_iv_ordered_list, R.string.ArticleNumbered, style == 2, () -> fields.listStyle(2))
+      .checked(R.drawable.article_iv_todo, R.string.ArticleChecklist, style == 3, () -> fields.listStyle(3))
+      .checked(R.drawable.article_iv_details, R.string.ArticleToggle, style == 4, () -> fields.convert(text -> new TdApi.InputPageBlockDetails(text, paragraph(), true)));
+    if (fields.canIndent() || fields.canOutdent()) popup.gap();
+    if (fields.canIndent()) popup.item(R.drawable.article_iv_list_tab, R.string.ArticleIndent, () -> fields.indent(false));
+    if (fields.canOutdent()) popup.item(R.drawable.article_iv_list_untab, R.string.ArticleOutdent, () -> fields.indent(true));
+    popup.show(toolAnchor);
   }
   private void attachmentMenu () {
-    ArticleEditorPopup popup = new ArticleEditorPopup(context());
-    int[] types = {R.string.Photo, R.string.Video, R.string.Gif, R.string.Audio, R.string.File, R.string.ArticleVoiceNote};
-    for (int type : types) popup.item(0, type, () -> pickMedia(mediaKind(type), fields::insert));
-    popup.item(0, R.string.Location, () -> prompt(R.string.ArticleCoordinates, "", value -> { TdApi.Location location = parseLocation(value); if (location != null) fields.insert(new TdApi.InputPageBlockMap(location, 15, 640, 360, emptyCaption())); }));
-    popup.item(R.drawable.article_iv_button, R.string.ArticleButton, () -> fields.insert(newBlock(R.string.ArticleButton)));
-    popup.item(R.drawable.baseline_visibility_24, R.string.ArticlePreview, this::preview);
-    popup.item(R.drawable.baseline_more_horiz_24, R.string.ArticleAddBlock, () -> { ArticleEditorTree.Entry entry = fields.focusedEntry(); ArticleEditorTree.Group group = entry == null ? ArticleEditorTree.root(working) : entry.group; addBlock(group, entry == null ? group.blocks().length : entry.index + 1); });
-    popup.show(toolAnchor);
+    new ArticleEditorPopup(context())
+      .item(R.drawable.baseline_image_24, R.string.Gallery, () -> pickMedia(null, fields::insert))
+      .item(R.drawable.baseline_insert_drive_file_24, R.string.File, () -> pickMedia(ArticleMediaFiles.Kind.DOCUMENT, fields::insert))
+      .item(R.drawable.baseline_music_note_24, R.string.Music, () -> pickMedia(ArticleMediaFiles.Kind.AUDIO, fields::insert))
+      .item(R.drawable.baseline_location_on_24, R.string.Location, () -> prompt(R.string.ArticleCoordinates, "", value -> { TdApi.Location location = parseLocation(value); if (location != null) fields.insert(new TdApi.InputPageBlockMap(location, 15, 640, 360, emptyCaption())); }))
+      .show(toolAnchor);
   }
   private void renderFormula (TextView view, String value) {
     android.graphics.Bitmap bitmap = org.thunderdog.challegram.data.article.ArticleMath.render(context(), value, Screen.dp(18));
@@ -274,6 +355,37 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       view.setText(""); view.setCompoundDrawables(null, drawable, null, null);
     }
   }
+  private void linkEditor () {
+    if (focused == null) return;
+    ArticleTextInput target = focused;
+    TdApi.RichText element = target.selectedElement();
+    String url = element instanceof TdApi.RichTextUrl ? ((TdApi.RichTextUrl) element).url : "https://";
+    prompt(R.string.ArticleLink, url, value -> { if (!value.trim().isEmpty()) target.setFormat(new TdApi.RichTextUrl(emptyText(), value.trim(), false)); });
+  }
+  private void inlineButtonMenu () {
+    if (focused == null) return;
+    ArticleTextInput target = focused;
+    new ArticleEditorPopup(context())
+      .item(R.drawable.article_media_link_24, R.string.ArticleLink, () -> prompt(R.string.ArticleLink, "https://", value -> target.setFormat(new TdApi.RichTextButton(new TdApi.InlineButton(emptyText(), new TdApi.ButtonStyleDefault(), new TdApi.InlineKeyboardButtonTypeUrl(value))))))
+      .item(R.drawable.baseline_content_copy_24, R.string.ArticleInlineCopy, () -> prompt(R.string.ArticleCopyButton, ArticleRichText.plain(target.richText(Math.min(target.getSelectionStart(), target.getSelectionEnd()), Math.max(target.getSelectionStart(), target.getSelectionEnd()))), value -> target.setFormat(new TdApi.RichTextButton(new TdApi.InlineButton(emptyText(), new TdApi.ButtonStyleDefault(), new TdApi.InlineKeyboardButtonTypeCopyText(value))))))
+      .item(R.drawable.baseline_person_24, R.string.ArticleUser, () -> pickUser(user -> target.setFormat(new TdApi.RichTextButton(new TdApi.InlineButton(emptyText(), new TdApi.ButtonStyleDefault(), new TdApi.InlineKeyboardButtonTypeUser(user))))))
+      .show(toolAnchor);
+  }
+  private void inlineFormulaEditor () {
+    if (focused == null) return;
+    ArticleTextInput target = focused;
+    int start = Math.min(target.getSelectionStart(), target.getSelectionEnd()), end = Math.max(target.getSelectionStart(), target.getSelectionEnd());
+    formulaEditor(ArticleRichText.plain(target.richText(start, end)), value -> target.insert(new TdApi.RichTextMathematicalExpression(value)));
+  }
+  private void dateEditor () {
+    if (focused == null) return;
+    ArticleTextInput target = focused; TdApi.RichText element = target.selectedElement();
+    TdApi.RichTextDateTime initial = element instanceof TdApi.RichTextDateTime ? (TdApi.RichTextDateTime) element : null;
+    Keyboard.hide(target);
+    dateDialog = org.thunderdog.challegram.widget.ArticleDatePicker.show(context(), initial == null ? System.currentTimeMillis() : initial.unixTime * 1000L, seconds -> {
+      if (!isDestroyed()) target.setFormat(new TdApi.RichTextDateTime(emptyText(), seconds, initial == null ? new TdApi.DateTimeFormattingTypeRelative() : initial.formattingType));
+    });
+  }
   private void formulaEditor (String initial, Consumer<String> result) {
     formulaDialog = ArticleFormulaEditor.show(context(), initial, value -> {
       if (!isDestroyed() && (!initial.isEmpty() || !value.trim().isEmpty())) result.accept(value);
@@ -281,20 +393,20 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   }
   private void aiMenu () {
     if (sending || importing || recoveryPending) return;
-    new ArticleEditorPopup(context())
-      .item(0, R.string.ArticleAiFix, () -> runAi(new TdApi.FixRichMessageWithAi(new ArticleDocument(working).toInput())))
-      .item(0, R.string.ArticleAiRewrite, () -> prompt(R.string.ArticleAiPrompt, "", prompt -> runAi(new TdApi.ComposeRichMessageWithAi(new ArticleDocument(working).toInput(), "", "", prompt, false))))
-      .item(0, R.string.ArticleAiCreate, () -> prompt(R.string.ArticleAiPrompt, "", prompt -> runAi(new TdApi.CreateRichMessageWithAi(prompt, Lang.locale().getLanguage(), false))))
-      .item(0, R.string.ArticleAiTranslate, () -> prompt(R.string.ArticleLanguage, Lang.locale().getLanguage(), language -> runAi(new TdApi.ComposeRichMessageWithAi(new ArticleDocument(working).toInput(), language, "", "", false))))
-      .show(toolAnchor);
-  }
-  private void runAi (TdApi.Function<TdApi.RichMessage> request) {
-    saveDraft(); setSending(true);
-    tdlib.send(request, (result, error) -> handler.post(() -> {
-      if (isDestroyed()) return; setSending(false);
-      if (error != null) { UI.showError(error); return; }
-      if (!applyAiResult(result)) UI.showToast(R.string.ArticleAiFailed, Toast.LENGTH_LONG);
-    }));
+    ArticleTextInput target = focused;
+    int start = target == null ? 0 : Math.max(0, Math.min(target.getSelectionStart(), target.getSelectionEnd()));
+    int end = target == null ? 0 : Math.max(start, Math.max(target.getSelectionStart(), target.getSelectionEnd()));
+    boolean create = start == end;
+    TdApi.InputRichMessage selection = create ? null : new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(target.richText(start, end))}), working.isRtl, true);
+    if (target != null) Keyboard.hide(target);
+    ArticleDocument before = new ArticleDocument(working);
+    aiDialog = org.thunderdog.challegram.widget.ArticleAiEditor.show(context(), tdlib, selection, create, result -> {
+      if (isDestroyed() || !before.equals(new ArticleDocument(working))) return false;
+      TdApi.InputPageBlock[] blocks = ((TdApi.RichMessageSourceBlocks) result.toInput().source).blocks;
+      if (create) fields.insertBlocks(blocks);
+      else if (!fields.replaceSelection(target, start, end, blocks)) { UI.showToast(R.string.ArticleAiFailed, Toast.LENGTH_LONG); return false; }
+      return true;
+    });
   }
 
   private boolean applyAiResult (TdApi.RichMessage result) {
@@ -438,6 +550,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     draftTouched = true;
     history.push(new ArticleDocument(working));
     updateHistory();
+    updateToolState();
     rememberSelection();
     handler.removeCallbacks(saveDraft); handler.postDelayed(saveDraft, 600);
   }
@@ -463,6 +576,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     labels.add(R.string.ArticleMoveUp); actions.add(() -> { entry.group.move(entry.index, -1); structureChanged(); });
     labels.add(R.string.ArticleMoveDown); actions.add(() -> { entry.group.move(entry.index, 1); structureChanged(); });
     labels.add(R.string.ArticleAddAfter); actions.add(() -> addBlock(entry.group, entry.index + 1));
+    labels.add(R.string.ArticleMoreFormats); actions.add(this::moreFormats);
     labels.add(R.string.Delete); actions.add(() -> { entry.group.remove(entry.index); structureChanged(); });
     List<ArticleEditorTree.Group> children = ArticleEditorTree.children(entry.block);
     for (int i = 0; i < children.size(); i++) {
@@ -626,16 +740,19 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     if (type == R.string.ArticleVoiceNote) return ArticleMediaFiles.Kind.VOICE;
     return null;
   }
-  private void pickMedia (ArticleMediaFiles.Kind kind, Consumer<TdApi.InputPageBlock> callback) {
+  private void pickMedia (@Nullable ArticleMediaFiles.Kind kind, Consumer<TdApi.InputPageBlock> callback) {
     Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
     intent.addCategory(Intent.CATEGORY_OPENABLE);
     intent.setType(kind == ArticleMediaFiles.Kind.PHOTO ? "image/*" : kind == ArticleMediaFiles.Kind.VIDEO ? "video/*" : kind == ArticleMediaFiles.Kind.AUDIO || kind == ArticleMediaFiles.Kind.VOICE ? "audio/*" : "*/*");
+    if (kind == null) intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[] {"image/*", "video/*"});
     context().putActivityResultHandler(PICK_MEDIA, (request, result, data) -> {
       if (result != Activity.RESULT_OK || data == null || data.getData() == null || isDestroyed()) return;
       Uri uri = data.getData(); importing = true; enableTree(root, false);
+      String mime = context().getContentResolver().getType(uri);
+      ArticleMediaFiles.Kind selectedKind = kind != null ? kind : mime != null && mime.startsWith("video/") ? ArticleMediaFiles.Kind.VIDEO : "image/gif".equals(mime) ? ArticleMediaFiles.Kind.ANIMATION : ArticleMediaFiles.Kind.PHOTO;
       IMPORTS.execute(() -> {
         try {
-          TdApi.InputPageBlock media = ArticleMediaFiles.importFile(context().getApplicationContext(), tdlib.id(), getArgumentsStrict().userId, uri, kind, (tdlib.hasPremium() ? 4L : 2L) * 1024 * 1024 * 1024);
+          TdApi.InputPageBlock media = ArticleMediaFiles.importFile(context().getApplicationContext(), tdlib.id(), getArgumentsStrict().userId, uri, selectedKind, (tdlib.hasPremium() ? 4L : 2L) * 1024 * 1024 * 1024);
           handler.post(() -> {
             importing = false;
             // Preserve a completed import even if Android closed the editor during the picker flow.
@@ -778,7 +895,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       }));
     });
   }
-  private void setSending (boolean value) { sending = value; enableTree(root, !value); if (!value) updateHistory(); }
+  private void setSending (boolean value) { sending = value; enableTree(root, !value); if (!value) { updateHistory(); updateToolState(); } }
   private static void enableTree (View view, boolean enabled) {
     view.setEnabled(enabled);
     if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) enableTree(((ViewGroup) view).getChildAt(i), enabled);
@@ -792,5 +909,5 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     } else saveDraft();
   }
   @Override public void onBlur () { saveDraft(); super.onBlur(); }
-  @Override public void destroy () { if (formulaDialog != null) formulaDialog.dismiss(); saveDraft(); handler.removeCallbacks(saveDraft); closeEmoji(); for (ArticleEditorMedia media : mediaViews) media.performDestroy(); mediaViews.clear(); super.destroy(); }
+  @Override public void destroy () { if (aiDialog != null) aiDialog.dismiss(); if (dateDialog != null) dateDialog.dismiss(); if (formulaDialog != null) formulaDialog.dismiss(); saveDraft(); handler.removeCallbacks(saveDraft); closeEmoji(); for (ArticleEditorMedia media : mediaViews) media.performDestroy(); mediaViews.clear(); super.destroy(); }
 }

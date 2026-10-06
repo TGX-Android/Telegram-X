@@ -360,6 +360,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private EmojiLayout emojiLayout;
   private TextFormattingLayout textFormattingLayout;
   private AttachLinearLayout attachButtons;
+  private ImageView articleExpandButton;
   private ImageView emojiButton;
   private VoiceVideoButtonView recordButton;
   private SendButton sendButton;
@@ -808,6 +809,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       inputView.setSelectionChangeListener(this);
       inputView.setSpanChangeListener(this::onInputSpansChanged);
+      inputView.addTextChangedListener(new android.text.TextWatcher() {
+        @Override public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
+        @Override public void onTextChanged (CharSequence s, int start, int before, int count) { }
+        @Override public void afterTextChanged (android.text.Editable s) { inputView.post(MessagesController.this::updateArticleExpandButton); }
+      });
     }
 
     if (!inPreviewMode) {
@@ -1471,6 +1477,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (previewMode == PREVIEW_MODE_NONE) {
       contentView.addView(emojiButton);
       contentView.addView(attachButtons);
+      articleExpandButton = new ImageView(context);
+      articleExpandButton.setImageResource(R.drawable.article_iv_fullscreen);
+      articleExpandButton.setScaleType(ImageView.ScaleType.CENTER);
+      articleExpandButton.setColorFilter(Theme.iconColor());
+      addThemeFilterListener(articleExpandButton, ColorId.icon);
+      articleExpandButton.setContentDescription(Lang.getString(R.string.ArticleExpandEditor));
+      articleExpandButton.setVisibility(View.GONE);
+      articleExpandButton.setOnClickListener(v -> openArticleEditor(null, true));
+      RippleSupport.setCircleBackground(articleExpandButton, 49f, 4f, ColorId.filling, false, this);
+      RelativeLayout.LayoutParams articleParams = new RelativeLayout.LayoutParams(Screen.dp(49), Screen.dp(49));
+      articleParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+      articleParams.addRule(Lang.rtl() ? RelativeLayout.ALIGN_PARENT_LEFT : RelativeLayout.ALIGN_PARENT_RIGHT);
+      contentView.addView(articleExpandButton, articleParams);
       contentView.addView(sendButton);
       contentView.addView(messageSenderButton);
 
@@ -7628,6 +7647,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     emojiButton.setTranslationY(y);
     attachButtons.setTranslationY(y);
     messageSenderButton.setTranslationY(y);
+    updateArticleExpandButton();
 
     if (prevButtonsY != y) {
       prevButtonsY = y;
@@ -7683,6 +7703,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return !ChatId.isSecret(getChatId()) && canWriteMessages() && ("enabled".equals(mode) || "premium".equals(mode) && tdlib.hasPremium());
   }
 
+  private void updateArticleExpandButton () {
+    if (articleExpandButton == null || inputView == null) return;
+    boolean show = getChatId() != 0 && !isEditingMessage() && !inPreviewMode() && canCreateArticles() && inputView.isEnabled() &&
+      org.thunderdog.challegram.data.article.ArticleComposer.needsExpand(inputView.getLineCount(), inputView.getText());
+    articleExpandButton.setVisibility(show ? View.VISIBLE : View.GONE);
+    if (show) articleExpandButton.setTranslationY(bottomWrap.getTop() + inputView.getTop() - getKeyboardOffset());
+  }
+
   public boolean canOpenArticleEditor () {
     TdApi.DraftMessage draft = getDraftMessage();
     return canCreateArticles() || draft != null && (draft.content instanceof TdApi.DraftMessageContentRichMessage || draft.content instanceof TdApi.DraftMessageContentInputRichMessage);
@@ -7693,6 +7721,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void openArticleEditor (@Nullable TdApi.Message message) {
+    openArticleEditor(message, false);
+  }
+
+  private void openArticleEditor (@Nullable TdApi.Message message, boolean expandComposer) {
     if (message == null && !canOpenArticleEditor()) return;
     saveDraft();
     if (inSelectMode()) finishSelectMode(-1);
@@ -7708,15 +7740,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else openArticleDocument(message.id, article);
       return;
     }
-    TdApi.DraftMessage draft = getDraftMessage();
+    // The expand action promotes exactly the visible input, even if a previous
+    // server draft update has not arrived yet.
+    TdApi.DraftMessage draft = expandComposer ? null : getDraftMessage();
     if (draft != null && draft.content instanceof TdApi.DraftMessageContentRichMessage) {
       openArticleDocument(0, ((TdApi.DraftMessageContentRichMessage) draft.content).message);
       return;
     }
     org.thunderdog.challegram.data.article.ArticleDocument document = draft != null && draft.content instanceof TdApi.DraftMessageContentInputRichMessage ?
-      new org.thunderdog.challegram.data.article.ArticleDocument(((TdApi.DraftMessageContentInputRichMessage) draft.content).message) : org.thunderdog.challegram.data.article.ArticleDocument.empty();
+      new org.thunderdog.challegram.data.article.ArticleDocument(((TdApi.DraftMessageContentInputRichMessage) draft.content).message) : null;
+    boolean fromComposer = document == null && inputView != null && !inputView.getText().toString().isEmpty();
+    if (document == null) {
+      try {
+        document = fromComposer ? org.thunderdog.challegram.data.article.ArticleComposer.fromText(inputView.getOutputText(true), Lang.rtl()) : org.thunderdog.challegram.data.article.ArticleDocument.empty();
+      } catch (IllegalArgumentException e) {
+        UI.showToast(R.string.ArticleReadOnly, Toast.LENGTH_LONG);
+        return;
+      }
+    }
     ArticleEditorController editor = new ArticleEditorController(context(), tdlib);
-    editor.setArguments(new ArticleEditorController.Args(this, 0, document));
+    ArticleEditorController.Args args = new ArticleEditorController.Args(this, 0, document);
+    args.fromComposer = fromComposer;
+    editor.setArguments(args);
     navigateTo(editor);
   }
 
@@ -7734,9 +7779,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void saveArticleDraft (org.thunderdog.challegram.data.article.ArticleDocument document, long chatId, TdApi.MessageTopic topic) {
     if (getChatId() != chatId || !matchesArticleTopic(topic) || !canSaveDraft()) return;
     ReplyInfo reply = getCurrentReplyId();
-    TdApi.DraftMessage draft = new TdApi.DraftMessage(reply != null ? reply.toInputMessageReply() : null, (int) tdlib.currentTime(TimeUnit.SECONDS), new TdApi.DraftMessageContentInputRichMessage(document.toInput()), 0, getInputSuggestedPostInfo(reply));
+    TdApi.InputRichMessage input = document.toInput();
+    boolean empty = input.source instanceof TdApi.RichMessageSourceBlocks;
+    if (empty) for (TdApi.InputPageBlock block : ((TdApi.RichMessageSourceBlocks) input.source).blocks) {
+      if (!(block instanceof TdApi.InputPageBlockParagraph) || !org.thunderdog.challegram.data.article.ArticleRichText.plain(((TdApi.InputPageBlockParagraph) block).text).trim().isEmpty()) { empty = false; break; }
+    }
+    TdApi.DraftMessageContent content = empty ? new TdApi.DraftMessageContentText(new TdApi.FormattedText("", new TdApi.TextEntity[0]), null) : new TdApi.DraftMessageContentInputRichMessage(input);
+    TdApi.DraftMessage draft = empty && reply == null ? null : new TdApi.DraftMessage(reply != null ? reply.toInputMessageReply() : null, (int) tdlib.currentTime(TimeUnit.SECONDS), content, 0, getInputSuggestedPostInfo(reply));
     if (messageThread != null) messageThread.setDraft(draft);
     tdlib.send(new TdApi.SetChatDraftMessage(getChatId(), getMessageTopicId(), draft), tdlib.typedOkHandler());
+    if (inputView != null && !isFocused()) inputView.setInput("", true, false);
   }
 
   public boolean sendArticle (org.thunderdog.challegram.data.article.ArticleDocument document, long chatId, TdApi.MessageTopic topic, TdApi.MessageSendOptions options, RunnableData<TdApi.Message> after) {

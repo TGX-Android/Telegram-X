@@ -6045,6 +6045,7 @@
   <string name="ArticleNoList">None</string>
   <string name="ArticleHighlightRow">Highlight row</string>
   <string name="ArticleHighlightColumn">Highlight column</string>
+  <string name="ArticleHighlightCell">Highlight cell</string>
   <string name="ArticleMergeCells">Merge cells</string>
   <string name="ArticleUnmergeCells">Unmerge cells</string>
   <string name="ArticleInsertAbove">Insert above</string>
@@ -6069,4 +6070,20 @@
   <string name="ArticleAiPrompt">Instructions for AI</string>
   <string name="ArticleBack">Back</string>
   <string name="ArticleAiFailed">Could not generate the article. Your draft is preserved.</string>
+  <string name="ArticleAiStyle">Style</string>
+  <string name="ArticleAiFixTab">Fix</string>
+  <string name="ArticleAiPromptTab">Prompt</string>
+  <string name="ArticleAiCreateStyle">Create</string>
+  <string name="ArticleAiStyleTitle">Style name</string>
+  <string name="ArticleAiEmojify">emojify</string>
+  <string name="ArticleAiGenerate">Generate</string>
+  <string name="ArticleAiWorking">Generating…</string>
+  <string name="ArticleAiLanguageMenu">%1$s ▾</string>
+  <string name="ArticleAiAddToPage">Add to page</string>
+  <string name="ArticleExpandEditor">Expand into article editor</string>
+  <string name="ArticleHeadingNumber">Heading %1$d</string>
+  <string name="ArticleTextStyleText">Text</string>
+  <string name="ArticleInsertDate">Insert date</string>
+  <string name="ArticleDateTitle">Add date</string>
+  <string name="ArticleInlineCopy">Copy</string>
 </resources>

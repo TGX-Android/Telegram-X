@@ -80,6 +80,69 @@ public final class ArticleEditorChecks {
     input.setSelection(6); input.format(new TdApi.RichTextItalic(text(""))); input.getText().append("z");
     require(input.richText(6, 7) instanceof TdApi.RichTextItalic, "A caret format was not applied to newly typed text");
   }
+  public static void selectionFormattingState (Context context) {
+    ArticleTextInput input = new ArticleTextInput(context, new TdApi.RichTexts(new TdApi.RichText[] {new TdApi.RichTextBold(text("ab")), text("cd")}), ignored -> { });
+    input.setSelection(0, 4);
+    require(!input.isFormatApplied(TdApi.RichTextBold.CONSTRUCTOR), "Mixed selection reported as fully bold");
+    input.format(new TdApi.RichTextBold(text("")));
+    require(input.isFormatApplied(TdApi.RichTextBold.CONSTRUCTOR), "Applying bold did not cover the selection");
+    input.setFormat(new TdApi.RichTextUrl(text(""), "https://example.org/one", false));
+    input.setFormat(new TdApi.RichTextUrl(text(""), "https://example.org/two", false));
+    require(input.isFormatApplied(TdApi.RichTextBold.CONSTRUCTOR), "Changing link metadata lost bold");
+    require(((TdApi.RichTextUrl) input.selectedElement()).url.equals("https://example.org/two"), "Link update toggled the link off");
+    input.format(new TdApi.RichTextSubscript(text("")));
+    input.format(new TdApi.RichTextSuperscript(text("")));
+    require(input.isFormatApplied(TdApi.RichTextSuperscript.CONSTRUCTOR) && !input.isFormatApplied(TdApi.RichTextSubscript.CONSTRUCTOR), "Conflicting index styles remained active");
+    input.format(new TdApi.RichTextBold(text("")));
+    require(!input.isFormatApplied(TdApi.RichTextBold.CONSTRUCTOR) && input.isFormatApplied(TdApi.RichTextUrl.CONSTRUCTOR), "Removing bold damaged the link");
+  }
+  public static void selectedQuoteAndListMenuState (Context context) {
+    Fixture fixture = new Fixture(context, new TdApi.InputPageBlockParagraph(new TdApi.RichTextUrl(text("before middle after"), "https://example.org", false)));
+    ArticleTextInput input = fixture.focus(0, 7); input.setSelection(7, 13);
+    require(fixture.view.canIndent() && !fixture.view.canOutdent(), "Plain text has incorrect indentation actions");
+    fixture.view.toggleQuoteSelection();
+    require(fixture.blocks().length == 3 && fixture.blocks()[1] instanceof TdApi.InputPageBlockBlockQuote, "Quote did not split around the selection");
+    require(fixture.view.selectedBlock() instanceof TdApi.InputPageBlockBlockQuote, "Quote selection state was lost");
+    require(fixture.view.inputs().get(1).getSelectionEnd() == 6, "Quote did not preserve selection");
+    require(((TdApi.InputPageBlockParagraph) ((TdApi.InputPageBlockBlockQuote) fixture.blocks()[1]).blocks[0]).text instanceof TdApi.RichTextUrl, "Quote lost its link");
+    fixture.view.toggleQuoteSelection();
+    require(fixture.blocks()[1] instanceof TdApi.InputPageBlockParagraph, "Quote did not toggle off");
+    fixture.focus(1, 0); fixture.view.listStyle(3);
+    require(fixture.view.selectedListStyle() == 3 && fixture.view.canOutdent(), "Checklist menu state is incorrect");
+    fixture.view.listStyle(0); require(fixture.view.selectedListStyle() == 0, "None did not exit the list");
+  }
+  public static void selectionToolbar (Context context) throws Exception {
+    PresentationActivity activity = allocate(PresentationActivity.class); activity.attachPresentation(context);
+    org.thunderdog.challegram.ui.ArticleEditorController controller = new org.thunderdog.challegram.ui.ArticleEditorController(activity, null);
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {paragraph("Select these words")}), false, false);
+    set(controller, "working", input); set(controller, "history", new org.thunderdog.challegram.data.article.ArticleHistory(new org.thunderdog.challegram.data.article.ArticleDocument(input)));
+    java.lang.reflect.Method build = controller.getClass().getDeclaredMethod("createEditorLayout", Context.class, boolean.class); build.setAccessible(true);
+    android.os.Handler handler = (android.os.Handler) get(controller, "handler");
+    try {
+      build.invoke(controller, activity, false);
+      require(get(controller, "sendButton") != null, "Normal toolbar lacks send");
+      ArticleTextInput selected = ((ArticleDocumentView) get(controller, "fields")).inputs().get(0); selected.requestFocus(); selected.setSelection(0, 6);
+      require(get(controller, "sendButton") == null, "Send remains in selection toolbar");
+      LinearLayout styles = (LinearLayout) get(controller, "tools");
+      require(styles.getChildCount() == 11, "Selection style group differs from Telegram");
+      require(get(controller, "linkTool") != null && get(controller, "dateTool") != null && get(controller, "inlineButtonTool") != null, "Selection actions missing");
+      styles.getChildAt(0).performClick();
+      require(styles.getChildAt(0).isSelected() && selected.isFormatApplied(TdApi.RichTextBold.CONSTRUCTOR), "Applied bold is not marked active");
+      styles.getChildAt(0).performClick(); require(!styles.getChildAt(0).isSelected(), "Bold toggle state is stale");
+      selected.setSelection(6);
+      require(get(controller, "sendButton") != null && ((LinearLayout) get(controller, "tools")).getChildCount() == 6, "Normal toolbar was not restored");
+    } finally { handler.removeCallbacksAndMessages(null); }
+  }
+  public static void aiSelectionPreservesSurrounding (Context context) {
+    Fixture fixture = new Fixture(context, new TdApi.InputPageBlockParagraph(new TdApi.RichTextUrl(text("before typo after"), "https://example.org/keep", false)), paragraph("Other paragraph"));
+    ArticleTextInput input = fixture.focus(0, 7); input.setSelection(7, 11);
+    require(fixture.view.replaceSelection(input, 7, 11, new TdApi.InputPageBlock[] {paragraph("fixed")}), "AI selection was not applied");
+    require(ArticleRichText.plain(((TdApi.InputPageBlockParagraph) fixture.blocks()[0]).text).equals("before fixed after"), "AI replaced surrounding text");
+    require(input.richText(0, 6) instanceof TdApi.RichTextUrl && input.richText(13, 18) instanceof TdApi.RichTextUrl, "AI damaged surrounding link metadata");
+    require(fixture.blocks().length == 2 && ArticleRichText.plain(((TdApi.InputPageBlockParagraph) fixture.blocks()[1]).text).equals("Other paragraph"), "AI changed another block");
+    require(fixture.view.replaceSelection(input, 7, 12, new TdApi.InputPageBlock[] {new TdApi.InputPageBlockSectionHeading(text("Heading"), 2), paragraph("Result")}), "Structured AI selection was not applied");
+    require(fixture.blocks().length == 5 && fixture.blocks()[1] instanceof TdApi.InputPageBlockSectionHeading, "Structured replacement lost its block type");
+  }
   public static void inlineTableCanvas (Context context) throws Exception {
     TdApi.PageBlockTableCell[][] cells = new TdApi.PageBlockTableCell[3][3];
     for (int r = 0; r < 3; r++) for (int c = 0; c < 3; c++) cells[r][c] = new TdApi.PageBlockTableCell(text(r == 0 ? "Column " + (c + 1) : "Cell " + r + "," + c), r == 0, 1, 1, new TdApi.PageBlockHorizontalAlignmentLeft(), new TdApi.PageBlockVerticalAlignmentTop());
