@@ -97,6 +97,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   private android.app.Dialog aiDialog;
   private final List<ArticleEditorMedia> mediaViews = new ArrayList<>();
   private LinearLayout root;
+  private View emptyHeader;
   private boolean sending, sent, draftWriteFailed, recoveryPending, importing;
   private boolean draftTouched;
   private final Handler handler = new Handler(Looper.getMainLooper());
@@ -105,6 +106,14 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   public ArticleEditorController (Context context, Tdlib tdlib) { super(context, tdlib); }
   @Override public int getId () { return R.id.controller_articleEditor; }
   @Override public CharSequence getName () { return Lang.getString(getArgumentsStrict().messageId == 0 ? R.string.ArticleCreate : R.string.ArticleEdit); }
+  @Override public View getCustomHeaderCell () {
+    // The document owns its navigation controls. A default title also intercepts their touches.
+    if (emptyHeader == null) {
+      emptyHeader = new View(context());
+      emptyHeader.setLayoutParams(new FrameLayout.LayoutParams(0, 0));
+    }
+    return emptyHeader;
+  }
   @Override protected int getBackButton () { return BackHeaderButton.TYPE_NONE; }
   @Override protected int getHeaderHeight () { return 0; }
   @Override protected boolean usePopupMode () { return true; }
