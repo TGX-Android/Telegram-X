@@ -94,6 +94,23 @@ Both branches merge upstream `805209e60e4bcccff5757ad5f0e8014f0dcbd7a0`, includi
 
 Synthetic packages have a separate UID, no application components or network permissions and no account input; they were removed after the run. PR validation on Windows uses a local-only worktree harness and native libraries from the newly built fork at the same upstream pins; it is not an independent native build of the PR checkout. These results are not a new full server/role/lifecycle/ABI acceptance matrix or an API 16 device test. Private account data, device identifiers and captures are not published.
 
+## Upstream integration and build verification - 2026-10-06
+
+Both branches merge upstream `51a2ba25d3be54b656e4fcf5eea484fdab5820b1` (version 1816). This updates the primary NDK to `30.0.16248370`, tgcalls to `1a00b961`, WebRTC to `7b03082f` and the TDLib module to `33726bdd`. The TDLib source/API remains `42e6a525`; its Java API file is unchanged, while native prebuilts now target r30. FFmpeg remains `e594a518`.
+
+- The development fork's product branch is now `main`; the feature-only PR source remains `upstream/forum-topics`. Product branding and Windows refinements are not merged into the PR branch.
+- Product build source: `fd94dc5e`. PR build source: `9a0903af`. The subsequent acceptance-record commits change documentation only.
+- Modern JVM checks in each branch: **517/517**, 36 suites, no failures/errors/skips.
+- PR normal ARM64 Release compilation/packaging, explicit R8/resource shrinking and production-source Debug/Release lint pass. Lint reports no new issues, with the same 17 baseline-filtered warnings. The APK embeds the expected full PR commit; forum classes are represented in the archived R8 mapping.
+- The unsigned PR validation APK includes seven supplied native inputs matching the new product native outputs at the same r30 pins. All 11 packaged native libraries pass ELF/ZIP 16 KiB alignment checks.
+- The signed product ARM64 Release passes R8/resource shrinking and production-source Release lint (17 existing baseline-filtered warnings). APK identity, production/Firebase configuration, the existing v2/v3 certificate, native inputs and 16 KiB ZIP/ELF alignment pass validation. Its embedded full commit and all 11 packaged libraries match the new build outputs; APK and mapping are archived together.
+- Fork build infrastructure: **29/29** tests, including the real MSYS2 check. **9/9** synthetic CMake TDLib resolver fixtures pass; these do not replace the actual r30 native build above.
+- All 56 recursive submodules match their pins without tracked edits after the native build. The PR diff adds no gitlink, native or Windows-build changes relative to the new upstream base. Source endings retain upstream LF, with the prescribed CRLF checkout for `gradlew.bat`.
+
+Qualification: PR checks use the same local-only Windows worktree harness, with Java/Kotlin/resources/tests from the PR checkout and native libraries from the newly built product at matching upstream pins. TDLib/OpenSSL remain pinned prebuilts. This is not an independent PR-native or Linux build. Test-source UAST remains excluded locally; executable JVM checks are reported separately.
+
+No APK was installed and no new device/server test was performed in this integration task. Modern Debug packaging, legacy builds/lint, the 159-case Android instrumentation suite and manual acceptance were not rerun on the October 6 native update. Their October 4-5 results above remain historical evidence, not validation of this exact new native candidate. Existing API 16, legacy-lint and wider role/lifecycle/ABI-matrix limitations remain open.
+
 ## Upstream PR packaging
 
 The fork's main working branch includes separate Windows-build, TDLib-prebuilt selection and branding commits before the functional forum commits. Do not submit that combined branch directly upstream. Prepare the feature-only branch from current upstream `main`, select only the forum commits, review the complete diff and repeat the relevant checks. Any required build/TDLib fix should be handled as a clearly declared separate dependency, not hidden in the feature PR. Keep branding, local reports, build artifacts and private captures out.
