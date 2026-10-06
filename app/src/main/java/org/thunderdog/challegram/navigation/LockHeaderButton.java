@@ -50,6 +50,7 @@ public class LockHeaderButton extends HeaderButton implements View.OnClickListen
     base = Drawables.get(getResources(), R.drawable.baseline_lock_base_24);
 
     setId(R.id.menu_btn_lock);
+    setContentDescriptionRes(R.string.PasscodeTitle);
     setButtonBackground(ThemeDeprecated.headerSelector());
     setVisibility(Passcode.instance().isEnabled() ? View.VISIBLE : View.GONE);
     setOnClickListener(this);

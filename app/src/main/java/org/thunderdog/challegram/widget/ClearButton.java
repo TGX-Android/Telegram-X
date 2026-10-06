@@ -22,6 +22,7 @@ import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.HeaderButton;
 import org.thunderdog.challegram.theme.ColorId;
@@ -53,6 +54,7 @@ public class ClearButton extends HeaderButton {
     paint.setColor(0xffffffff);
     paint.setStrokeWidth(Screen.dp(2f));
 
+    setContentDescriptionRes(R.string.Clear);
     setLayoutParams(new LinearLayout.LayoutParams(totalWidth, ViewGroup.LayoutParams.MATCH_PARENT));
   }
 

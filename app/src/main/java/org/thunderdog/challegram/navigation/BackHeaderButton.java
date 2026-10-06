@@ -23,6 +23,7 @@ import android.view.View;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -56,6 +57,8 @@ public class BackHeaderButton extends HeaderButton implements View.OnClickListen
     paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     paint.setStrokeWidth(Screen.dp(2f));
     paint.setColor(Theme.headerBackColor());
+
+    updateContentDescription();
   }
 
   private int color;
@@ -95,7 +98,19 @@ public class BackHeaderButton extends HeaderButton implements View.OnClickListen
   public void setFactor (float factor) {
     if (this.factor != factor) {
       this.factor = factor;
+      updateContentDescription();
       invalidate();
+    }
+  }
+
+  private void updateContentDescription () {
+    // Describe the icon that is currently displayed: 0f = menu, 1f = back, 2f = close
+    if (factor < .5f) {
+      setContentDescriptionRes(R.string.AccDescrOpenMenu);
+    } else if (factor < 1.5f) {
+      setContentDescriptionRes(R.string.AccDescrGoBack);
+    } else {
+      setContentDescriptionRes(R.string.AccDescrClose);
     }
   }
 
