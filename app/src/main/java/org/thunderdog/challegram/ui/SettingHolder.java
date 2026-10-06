@@ -142,6 +142,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_EMPTY_OFFSET: { // 0 OK
         return Screen.dp(12f) + Size.getMaximumHeaderSizeDifference();
       }
+      case ListItem.TYPE_EMPTY_OFFSET_NO_HEAD: {
+        return Screen.dp(12f);
+      }
       case ListItem.TYPE_INFO_SETTING:
       case ListItem.TYPE_VALUED_SETTING:
       case ListItem.TYPE_VALUED_SETTING_WITH_RADIO: { // 6, 5 OK
