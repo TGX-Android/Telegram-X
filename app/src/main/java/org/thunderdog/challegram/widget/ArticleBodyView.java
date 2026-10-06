@@ -38,12 +38,19 @@ public final class ArticleBodyView extends ViewGroup implements Destroyable {
   private PageBlock.ListItemInfo pressedCheckbox;
   private int boundTop, boundBottom;
   private final Rect viewport = new Rect();
-  private final ViewTreeObserver.OnScrollChangedListener visibilityListener = () -> {
-    if (message != null && getLocalVisibleRect(viewport) && (viewport.top < boundTop || Math.min(viewport.bottom, message.getArticleBodyHeight()) > boundBottom)) requestLayout();
+  private final ViewTreeObserver.OnPreDrawListener visibilityListener = () -> {
+    // RecyclerView can move an already measured item without measuring its children again.
+    // Check after layout, when local visibility reflects the item's new position.
+    if (message != null && getLocalVisibleRect(viewport) &&
+        (viewport.top < boundTop || Math.min(viewport.bottom, message.getArticleBodyHeight()) > boundBottom)) {
+      requestLayout();
+      return false;
+    }
+    return true;
   };
 
-  @Override protected void onAttachedToWindow () { super.onAttachedToWindow(); getViewTreeObserver().addOnScrollChangedListener(visibilityListener); }
-  @Override protected void onDetachedFromWindow () { getViewTreeObserver().removeOnScrollChangedListener(visibilityListener); super.onDetachedFromWindow(); }
+  @Override protected void onAttachedToWindow () { super.onAttachedToWindow(); getViewTreeObserver().addOnPreDrawListener(visibilityListener); }
+  @Override protected void onDetachedFromWindow () { getViewTreeObserver().removeOnPreDrawListener(visibilityListener); super.onDetachedFromWindow(); }
 
   public ArticleBodyView (Context context) {
     super(context);
@@ -176,13 +183,12 @@ public final class ArticleBodyView extends ViewGroup implements Destroyable {
     if (message == null) return;
     int save = canvas.save();
     canvas.clipRect(0, 0, getWidth(), message.getArticleBodyHeight());
-    Rect visible = new Rect(); getLocalVisibleRect(visible);
     for (int i = 0; i < visibleRows.size(); i++) {
       View child = getChildAt(i);
       TGMessageArticle.Row row = visibleRows.get(i);
-      boolean inViewport = row.top < visible.bottom && row.top + row.height > visible.top;
-      setAttached(child, attached && inViewport);
-      if (!inViewport) continue;
+      // Record every bound child, including the overscan window. Hardware display lists
+      // survive scrolling: omitting an offscreen row here leaves a permanent blank when
+      // RecyclerView moves it onscreen without invalidating this view's display list.
       drawChild(canvas, child, getDrawingTime());
       PageBlock.ListItemInfo[] list = row.block.getListItem();
       if (list != null) {
