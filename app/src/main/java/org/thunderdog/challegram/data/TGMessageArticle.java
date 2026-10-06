@@ -37,7 +37,7 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
   private List<PageBlock> blocks;
   private List<Row> rows = Collections.emptyList();
   private int width, height, bodyHeight, revision, requestGeneration;
-  private boolean expanded, loading, loadFailed;
+  private boolean loading, loadFailed;
   private boolean checkboxPending;
   private String pendingAnchor;
   private java.lang.ref.WeakReference<ArticleBodyView> pendingAnchorView;
@@ -68,7 +68,7 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
       ArrayList<PageBlockMedia> media = new ArrayList<>();
       for (PageBlock block : blocks) {
         if (block instanceof PageBlockMedia) ((PageBlockMedia) block).setArticleMessage(getMessage());
-        if (block instanceof PageBlockFile) ((PageBlockFile) block).getFile().setMessage(getMessage());
+        if (block instanceof PageBlockFile) ((PageBlockFile) block).setArticleMessage(this);
         if (block instanceof PageBlockMedia && ((PageBlockMedia) block).bindToList(controller(), null, media)) media.add((PageBlockMedia) block);
       }
     }
@@ -86,8 +86,10 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
       top += rowHeight;
     }
     rows = Collections.unmodifiableList(measured);
-    bodyHeight = expanded ? top : Math.min(top, Screen.dp(900f));
-    height = bodyHeight + ((!article.isFull || bodyHeight < top) ? Screen.dp(48f) : 0);
+    // A media block must not consume a fixed preview budget and hide all text below it.
+    // Child views are already virtualized, so the complete document can retain its height.
+    bodyHeight = top;
+    height = bodyHeight + (!article.isFull ? Screen.dp(48f) : 0);
     revision++;
   }
 
@@ -104,11 +106,7 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
 
   public void expandArticle () {
     if (loading) return;
-    if (article.isFull) {
-      expanded = true;
-      rebuildArticle();
-      return;
-    }
+    if (article.isFull) return;
     final int generation = ++requestGeneration;
     final long messageId = getId();
     loading = true;
@@ -123,7 +121,6 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
       } else {
         article = full;
         displayArticle = null;
-        expanded = true;
       }
       rebuildArticle();
       if (article.isFull && pendingAnchor != null) {
@@ -134,9 +131,18 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
     }));
   }
 
+  @Override protected void onMessageAttachStateChange (boolean attached) {
+    super.onMessageAttachStateChange(attached);
+    // Full loading is part of reading a message, not an action hidden behind its last row.
+    if (attached && !article.isFull && !loading && !loadFailed) {
+      UI.post(() -> {
+        if (isAttachedToView() && !article.isFull && !loading && !loadFailed) expandArticle();
+      });
+    }
+  }
+
   public boolean scrollToAnchor (ArticleBodyView view, String anchor) {
     if (displayArticle != null && org.thunderdog.challegram.data.article.ArticleNavigation.revealAnchor(displayArticle, anchor)) {
-      expanded = true;
       rebuildArticle();
       return view.scrollToLoadedAnchor(this, anchor);
     }
@@ -196,6 +202,7 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
     article = ((TdApi.MessageRichMessage) content).message;
     displayArticle = null;
     rebuildArticle();
+    if (isAttachedToView() && !article.isFull) onMessageAttachStateChange(true);
     return true;
   }
 

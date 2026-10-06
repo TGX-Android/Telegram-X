@@ -144,6 +144,31 @@ public final class ArticleBodyViewChecks {
     } finally { body.performDestroy(); bitmap.recycle(); }
   }
 
+  public static void albumCaptions (Context context) throws Exception {
+    TdApi.PageBlockCaption caption = new TdApi.PageBlockCaption(new TdApi.RichTextUrl(new TdApi.RichTextPlain("A link inside a slide caption"), "https://example.org/caption", false), new TdApi.RichTextPlain("Credit"));
+    TdApi.PageBlockPhoto photo = new TdApi.PageBlockPhoto(null, caption, "", false);
+    TdApi.PageBlockCaption empty = new TdApi.PageBlockCaption(new TdApi.RichTextPlain(""), new TdApi.RichTextPlain(""));
+    for (TdApi.PageBlock album : new TdApi.PageBlock[] {new TdApi.PageBlockSlideshow(new TdApi.PageBlock[] {photo}, empty), new TdApi.PageBlockCollage(new TdApi.PageBlock[] {photo}, empty)}) {
+      List<PageBlock> rows = PageBlock.parseArticle(allocate(MessagesController.class), new TdApi.RichMessage(new TdApi.PageBlock[] {album, new TdApi.PageBlockFooter(new TdApi.RichTextPlain("Footer after album"))}, false, true), null);
+      int captions = 0;
+      for (PageBlock row : rows) {
+        if (row instanceof org.thunderdog.challegram.data.PageBlockRichText && row.getOriginalBlock() == photo) { captions++; require(row.getHeight(null, Screen.dp(288)) > Screen.dp(20), "Album caption measured empty"); }
+        require(!(row instanceof org.thunderdog.challegram.data.PageBlockSimple), "Instant View separator leaked into a message");
+      }
+      require(captions == 2, "Album lost a child caption or its credit: " + captions);
+    }
+  }
+
+  public static void fullArticleHeight (Context context) throws Exception {
+    TGMessageArticle message = message(0); TdApi.PageBlock[] paragraphs = new TdApi.PageBlock[100];
+    for (int i = 0; i < paragraphs.length; i++) paragraphs[i] = new TdApi.PageBlockParagraph(new TdApi.RichTextPlain("Paragraph " + i + ": long articles retain every line and the final link."));
+    set(message, "article", new TdApi.RichMessage(paragraphs, false, true));
+    java.lang.reflect.Method build = TGMessageArticle.class.getDeclaredMethod("buildContent", int.class); build.setAccessible(true); build.invoke(message, Screen.dp(288));
+    int sum = 0; for (TGMessageArticle.Row row : message.getArticleRows()) sum += row.height;
+    require(sum > Screen.dp(900), "The fixture does not exercise the old preview limit");
+    require(message.getArticleBodyHeight() == sum && !message.hasExpandButton(), "A complete document was artificially truncated");
+  }
+
   private static TdApi.PageBlockTableCell cell (String text, boolean header) {
     return new TdApi.PageBlockTableCell(new TdApi.RichTextPlain(text), header, 1, 1,
       new TdApi.PageBlockHorizontalAlignmentLeft(), new TdApi.PageBlockVerticalAlignmentTop());

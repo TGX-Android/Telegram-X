@@ -95,6 +95,9 @@ public final class ArticleBodyView extends ViewGroup implements Destroyable {
       PageBlock block = row.block;
       View child = SettingHolder.create(getContext(), message.tdlib(), block.getRelatedViewType(), null,
         view -> click(view, block), view -> longClick(view, block), message.controller(), null, null).itemView;
+      // Instant View's adapter supplies opaque list backgrounds; messages use their
+      // parent chat surface. This also prevents spacer rows painting colored bars.
+      child.setBackground(null);
       addView(child, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
       child.setTag(block);
       if (child instanceof PageBlockView) ((PageBlockView) child).setBlock(block);

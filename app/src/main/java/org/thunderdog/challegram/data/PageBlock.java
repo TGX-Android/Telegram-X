@@ -357,6 +357,7 @@ public abstract class PageBlock {
     private boolean isCover;
     private boolean isPost;
     private boolean isClosed;
+    private boolean isRichMessage;
     private PageBlock coverBlock;
     private final int viewCount;
 
@@ -405,6 +406,8 @@ public abstract class PageBlock {
     private boolean hasKicker;
 
     private void setClosed (boolean isClosed, ViewController<?> context, List<PageBlock> out, boolean needOffset) {
+      // Instant View's section backgrounds/shadows do not belong inside a chat message.
+      if (isRichMessage) return;
       if (this.isClosed != isClosed) {
         this.isClosed = isClosed;
         if (needOffset && isClosed && !((lastBlock != null && lastBlock.block != null) && (lastBlock.block.getConstructor() == TdApi.PageBlockDetails.CONSTRUCTOR || lastBlock.block.getConstructor() == TdApi.PageBlockChatLink.CONSTRUCTOR))) {
@@ -495,6 +498,7 @@ public abstract class PageBlock {
   /** Rich messages have no web page URL or Instant View lifecycle. */
   public static List<PageBlock> parseArticle (ViewController<?> parent, TdApi.RichMessage article, @Nullable Text.ClickCallback callback) {
     ParseContext context = new ParseContext(null, article.isRtl, 0, null);
+    context.isRichMessage = true;
     List<PageBlock> out = new ArrayList<>();
     for (TdApi.PageBlock block : article.blocks) {
       try {
@@ -512,6 +516,15 @@ public abstract class PageBlock {
 
   private static PageBlockRichText unsupported (ViewController<?> parent, TdApi.PageBlock original, int quoteLevel) {
     return new PageBlockRichText(parent, original, new TdApi.RichTextPlain(Lang.getString(R.string.ArticleUnsupportedBlock)), quoteLevel, 16f, false, null);
+  }
+
+  private static void processChildCaptions (ViewController<?> parent, TdApi.PageBlock[] children, ParseContext context, @Nullable TdlibUi.UrlOpenParameters parameters, List<PageBlock> out) {
+    for (TdApi.PageBlock child : children) {
+      TdApi.PageBlockCaption caption = child instanceof TdApi.PageBlockPhoto ? ((TdApi.PageBlockPhoto) child).caption :
+        child instanceof TdApi.PageBlockVideo ? ((TdApi.PageBlockVideo) child).caption :
+        child instanceof TdApi.PageBlockAnimation ? ((TdApi.PageBlockAnimation) child).caption : null;
+      context.processCaption(parent, child, caption, parameters, out);
+    }
   }
 
   private static void parse (ViewController<?> parent, List<PageBlock> out, ParseContext context, TdApi.PageBlock block, @Nullable TdlibUi.UrlOpenParameters openParameters) throws UnsupportedPageBlockException {
@@ -765,6 +778,7 @@ public abstract class PageBlock {
       case TdApi.PageBlockCollage.CONSTRUCTOR: {
         TdApi.PageBlockCollage collageRaw = (TdApi.PageBlockCollage) block;
         if (collageRaw.blocks.length == 0) {
+          context.processCaption(parent, collageRaw, collageRaw.caption, openParameters, out);
           break;
         }
         boolean isOk = true;
@@ -782,6 +796,7 @@ public abstract class PageBlock {
         if (isOk) {
           PageBlockMedia collage = new PageBlockMedia(parent, collageRaw, context.quoteLevel());
           context.process(collage, out);
+          if (context.isRichMessage) processChildCaptions(parent, collageRaw.blocks, context, openParameters, out);
           context.processCaption(parent, collageRaw, collageRaw.caption, openParameters, out);
         } else {
           for (TdApi.PageBlock child : collageRaw.blocks) parse(parent, out, context, child, openParameters);
@@ -793,6 +808,7 @@ public abstract class PageBlock {
         TdApi.PageBlockSlideshow slideshowRaw = (TdApi.PageBlockSlideshow) block;
 
         if (slideshowRaw.blocks.length == 0) {
+          context.processCaption(parent, slideshowRaw, slideshowRaw.caption, openParameters, out);
           break;
         }
 
@@ -811,6 +827,7 @@ public abstract class PageBlock {
         if (isOk) {
           PageBlockMedia slideshow = new PageBlockMedia(parent, slideshowRaw, context.quoteLevel());
           context.process(slideshow, out);
+          if (context.isRichMessage) processChildCaptions(parent, slideshowRaw.blocks, context, openParameters, out);
           context.processCaption(parent, slideshowRaw, slideshowRaw.caption, openParameters, out);
         } else {
           for (TdApi.PageBlock child : slideshowRaw.blocks) parse(parent, out, context, child, openParameters);
