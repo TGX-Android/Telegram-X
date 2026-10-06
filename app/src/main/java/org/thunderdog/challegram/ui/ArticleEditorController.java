@@ -8,8 +8,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -19,6 +17,7 @@ import android.view.Gravity;
 import org.thunderdog.challegram.widget.ArticleDocumentView;
 import org.thunderdog.challegram.widget.ArticleEditorPopup;
 import org.thunderdog.challegram.widget.ArticleEditorMedia;
+import org.thunderdog.challegram.widget.ArticleFormulaEditor;
 import org.thunderdog.challegram.tool.Keyboard;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
@@ -31,6 +30,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.article.ArticleDocument;
+import org.thunderdog.challegram.data.article.ArticleAiResult;
 import org.thunderdog.challegram.data.article.ArticleDraftStore;
 import org.thunderdog.challegram.data.article.ArticleEditorTree;
 import org.thunderdog.challegram.data.article.ArticleHistory;
@@ -87,6 +87,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   private View toolAnchor;
   private boolean formatsVisible;
   private org.thunderdog.challegram.widget.EmojiLayout emojiPanel;
+  private android.app.Dialog formulaDialog;
   private final List<ArticleEditorMedia> mediaViews = new ArrayList<>();
   private LinearLayout root;
   private boolean sending, sent, draftWriteFailed, recoveryPending, importing;
@@ -166,7 +167,11 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       @Override public void formula (ArticleEditorTree.Entry entry, TextView view) {
         TdApi.InputPageBlockMathematicalExpression formula = (TdApi.InputPageBlockMathematicalExpression) entry.block;
         renderFormula(view, formula.expression);
-        view.setOnClickListener(v -> formulaEditor(formula.expression, text -> { formula.expression = text; structureChanged(); }));
+        view.setOnClickListener(v -> formulaEditor(formula.expression, text -> {
+          if (text.trim().isEmpty()) entry.group.remove(entry.index);
+          else formula.expression = text;
+          structureChanged();
+        }));
       }
     });
     scroll.addView(fields); page.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
@@ -270,18 +275,9 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     }
   }
   private void formulaEditor (String initial, Consumer<String> result) {
-    android.app.Dialog dialog = new android.app.Dialog(context(), Theme.dialogTheme());
-    LinearLayout content = new LinearLayout(context()); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(Screen.dp(16), Screen.dp(16), Screen.dp(16), Screen.dp(8)); content.setBackgroundColor(Theme.fillingColor());
-    TextView preview = new TextView(context()); preview.setTextColor(Theme.textAccentColor()); preview.setGravity(Gravity.CENTER); preview.setMinHeight(Screen.dp(64)); content.addView(preview, new LinearLayout.LayoutParams(-1, -2));
-    EditText expression = new EditText(context()); expression.setHint(Lang.getString(R.string.ArticleFormula)); expression.setText(initial); expression.setTextColor(Theme.textAccentColor()); expression.setSingleLine(false); expression.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI); content.addView(expression, new LinearLayout.LayoutParams(-1, -2)); renderFormula(preview, initial);
-    expression.addTextChangedListener(new TextWatcher() {
-      @Override public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
-      @Override public void onTextChanged (CharSequence s, int start, int before, int count) { renderFormula(preview, s.toString()); }
-      @Override public void afterTextChanged (Editable text) { }
+    formulaDialog = ArticleFormulaEditor.show(context(), initial, value -> {
+      if (!isDestroyed() && (!initial.isEmpty() || !value.trim().isEmpty())) result.accept(value);
     });
-    button(content, R.string.Done, () -> { result.accept(expression.getText().toString()); dialog.dismiss(); });
-    dialog.setContentView(content); dialog.setOnShowListener(ignored -> { expression.requestFocus(); Keyboard.show(expression); });
-    dialog.show(); if (dialog.getWindow() != null) { dialog.getWindow().setLayout(-1, -2); dialog.getWindow().setGravity(Gravity.BOTTOM); dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE); }
   }
   private void aiMenu () {
     if (sending || importing || recoveryPending) return;
@@ -297,9 +293,20 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     tdlib.send(request, (result, error) -> handler.post(() -> {
       if (isDestroyed()) return; setSending(false);
       if (error != null) { UI.showError(error); return; }
-      if (result == null || !result.isFull) { UI.showToast(R.string.ArticleAiFailed, Toast.LENGTH_LONG); return; }
-      working = ArticleDocument.received(result).toInput(); structureChanged(); updateHistory();
+      if (!applyAiResult(result)) UI.showToast(R.string.ArticleAiFailed, Toast.LENGTH_LONG);
     }));
+  }
+
+  private boolean applyAiResult (TdApi.RichMessage result) {
+    final TdApi.InputRichMessage accepted;
+    try { accepted = ArticleAiResult.toDocument(result).toInput(); }
+    catch (IllegalArgumentException | IllegalStateException invalidResult) {
+      // The original draft and undo history stay intact if any part of the response is uneditable.
+      return false;
+    }
+    working = accepted;
+    structureChanged();
+    return true;
   }
 
   private Button button (LinearLayout parent, int text, Runnable action) {
@@ -785,5 +792,5 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     } else saveDraft();
   }
   @Override public void onBlur () { saveDraft(); super.onBlur(); }
-  @Override public void destroy () { saveDraft(); handler.removeCallbacks(saveDraft); closeEmoji(); for (ArticleEditorMedia media : mediaViews) media.performDestroy(); mediaViews.clear(); super.destroy(); }
+  @Override public void destroy () { if (formulaDialog != null) formulaDialog.dismiss(); saveDraft(); handler.removeCallbacks(saveDraft); closeEmoji(); for (ArticleEditorMedia media : mediaViews) media.performDestroy(); mediaViews.clear(); super.destroy(); }
 }

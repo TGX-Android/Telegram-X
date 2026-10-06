@@ -205,7 +205,22 @@ for name in concrete:
     lines.extend([f"      case TdApi.{name}.CONSTRUCTOR: {{", f"        TdApi.{name} v = (TdApi.{name}) value;"])
     for t, f in classes[name][1]: lines.extend(visit_field(t, "v." + f, "        "))
     lines.extend(["        return;", "      }"])
-lines.extend(['      default: throw new IOException("Unsupported article tree constructor: " + value.getConstructor());', "    }", "  }", "}", ""])
+lines.extend(['      default: throw new IOException("Unsupported article tree constructor: " + value.getConstructor());', "    }", "  }", "",
+              "  /** Rewrites rich-text fields in place, including nested captions, table cells and wrappers. */",
+              "  public static void transformRichTexts (TdApi.Object tree, java.util.function.UnaryOperator<TdApi.RichText> transform) {",
+              "    visit(tree, (value, depth) -> {", "      switch (value.getConstructor()) {"])
+for name in concrete:
+    fields = [(t, f) for t, f in classes[name][1] if t in ("RichText", "RichText[]")]
+    if not fields:
+        continue
+    lines.extend([f"        case TdApi.{name}.CONSTRUCTOR: {{", f"          TdApi.{name} v = (TdApi.{name}) value;"])
+    for t, f in fields:
+        if t == "RichText[]":
+            lines.append(f"          if (v.{f} != null) for (int i = 0; i < v.{f}.length; i++) if (v.{f}[i] != null) v.{f}[i] = transform.apply(v.{f}[i]);")
+        else:
+            lines.append(f"          if (v.{f} != null) v.{f} = transform.apply(v.{f});")
+    lines.extend(["          break;", "        }"])
+lines.extend(["      }", "    });", "  }", "}", ""])
 DEST.parent.mkdir(parents=True, exist_ok=True)
 DEST.write_text("\n".join(lines), encoding="utf-8", newline="\n")
 print(f"Generated {len(concrete)} typed constructors, schema {schema_hash}")

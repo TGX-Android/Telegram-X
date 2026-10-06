@@ -5277,4 +5277,288 @@ public final class ArticleCodec {
       default: throw new IOException("Unsupported article tree constructor: " + value.getConstructor());
     }
   }
+
+  /** Rewrites rich-text fields in place, including nested captions, table cells and wrappers. */
+  public static void transformRichTexts (TdApi.Object tree, java.util.function.UnaryOperator<TdApi.RichText> transform) {
+    visit(tree, (value, depth) -> {
+      switch (value.getConstructor()) {
+        case TdApi.InlineButton.CONSTRUCTOR: {
+          TdApi.InlineButton v = (TdApi.InlineButton) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.InputPageBlockBlockQuote.CONSTRUCTOR: {
+          TdApi.InputPageBlockBlockQuote v = (TdApi.InputPageBlockBlockQuote) value;
+          if (v.credit != null) v.credit = transform.apply(v.credit);
+          break;
+        }
+        case TdApi.InputPageBlockDetails.CONSTRUCTOR: {
+          TdApi.InputPageBlockDetails v = (TdApi.InputPageBlockDetails) value;
+          if (v.header != null) v.header = transform.apply(v.header);
+          break;
+        }
+        case TdApi.InputPageBlockExpandableBlockQuote.CONSTRUCTOR: {
+          TdApi.InputPageBlockExpandableBlockQuote v = (TdApi.InputPageBlockExpandableBlockQuote) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          if (v.credit != null) v.credit = transform.apply(v.credit);
+          break;
+        }
+        case TdApi.InputPageBlockFooter.CONSTRUCTOR: {
+          TdApi.InputPageBlockFooter v = (TdApi.InputPageBlockFooter) value;
+          if (v.footer != null) v.footer = transform.apply(v.footer);
+          break;
+        }
+        case TdApi.InputPageBlockParagraph.CONSTRUCTOR: {
+          TdApi.InputPageBlockParagraph v = (TdApi.InputPageBlockParagraph) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.InputPageBlockPreformatted.CONSTRUCTOR: {
+          TdApi.InputPageBlockPreformatted v = (TdApi.InputPageBlockPreformatted) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.InputPageBlockPullQuote.CONSTRUCTOR: {
+          TdApi.InputPageBlockPullQuote v = (TdApi.InputPageBlockPullQuote) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          if (v.credit != null) v.credit = transform.apply(v.credit);
+          break;
+        }
+        case TdApi.InputPageBlockSectionHeading.CONSTRUCTOR: {
+          TdApi.InputPageBlockSectionHeading v = (TdApi.InputPageBlockSectionHeading) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.InputPageBlockTable.CONSTRUCTOR: {
+          TdApi.InputPageBlockTable v = (TdApi.InputPageBlockTable) value;
+          if (v.caption != null) v.caption = transform.apply(v.caption);
+          break;
+        }
+        case TdApi.InputPageBlockThinking.CONSTRUCTOR: {
+          TdApi.InputPageBlockThinking v = (TdApi.InputPageBlockThinking) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.PageBlockAuthorDate.CONSTRUCTOR: {
+          TdApi.PageBlockAuthorDate v = (TdApi.PageBlockAuthorDate) value;
+          if (v.author != null) v.author = transform.apply(v.author);
+          break;
+        }
+        case TdApi.PageBlockBlockQuote.CONSTRUCTOR: {
+          TdApi.PageBlockBlockQuote v = (TdApi.PageBlockBlockQuote) value;
+          if (v.credit != null) v.credit = transform.apply(v.credit);
+          break;
+        }
+        case TdApi.PageBlockCaption.CONSTRUCTOR: {
+          TdApi.PageBlockCaption v = (TdApi.PageBlockCaption) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          if (v.credit != null) v.credit = transform.apply(v.credit);
+          break;
+        }
+        case TdApi.PageBlockDetails.CONSTRUCTOR: {
+          TdApi.PageBlockDetails v = (TdApi.PageBlockDetails) value;
+          if (v.header != null) v.header = transform.apply(v.header);
+          break;
+        }
+        case TdApi.PageBlockExpandableBlockQuote.CONSTRUCTOR: {
+          TdApi.PageBlockExpandableBlockQuote v = (TdApi.PageBlockExpandableBlockQuote) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          if (v.credit != null) v.credit = transform.apply(v.credit);
+          break;
+        }
+        case TdApi.PageBlockFooter.CONSTRUCTOR: {
+          TdApi.PageBlockFooter v = (TdApi.PageBlockFooter) value;
+          if (v.footer != null) v.footer = transform.apply(v.footer);
+          break;
+        }
+        case TdApi.PageBlockHeader.CONSTRUCTOR: {
+          TdApi.PageBlockHeader v = (TdApi.PageBlockHeader) value;
+          if (v.header != null) v.header = transform.apply(v.header);
+          break;
+        }
+        case TdApi.PageBlockKicker.CONSTRUCTOR: {
+          TdApi.PageBlockKicker v = (TdApi.PageBlockKicker) value;
+          if (v.kicker != null) v.kicker = transform.apply(v.kicker);
+          break;
+        }
+        case TdApi.PageBlockParagraph.CONSTRUCTOR: {
+          TdApi.PageBlockParagraph v = (TdApi.PageBlockParagraph) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.PageBlockPreformatted.CONSTRUCTOR: {
+          TdApi.PageBlockPreformatted v = (TdApi.PageBlockPreformatted) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.PageBlockPullQuote.CONSTRUCTOR: {
+          TdApi.PageBlockPullQuote v = (TdApi.PageBlockPullQuote) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          if (v.credit != null) v.credit = transform.apply(v.credit);
+          break;
+        }
+        case TdApi.PageBlockRelatedArticles.CONSTRUCTOR: {
+          TdApi.PageBlockRelatedArticles v = (TdApi.PageBlockRelatedArticles) value;
+          if (v.header != null) v.header = transform.apply(v.header);
+          break;
+        }
+        case TdApi.PageBlockSectionHeading.CONSTRUCTOR: {
+          TdApi.PageBlockSectionHeading v = (TdApi.PageBlockSectionHeading) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.PageBlockSubheader.CONSTRUCTOR: {
+          TdApi.PageBlockSubheader v = (TdApi.PageBlockSubheader) value;
+          if (v.subheader != null) v.subheader = transform.apply(v.subheader);
+          break;
+        }
+        case TdApi.PageBlockSubtitle.CONSTRUCTOR: {
+          TdApi.PageBlockSubtitle v = (TdApi.PageBlockSubtitle) value;
+          if (v.subtitle != null) v.subtitle = transform.apply(v.subtitle);
+          break;
+        }
+        case TdApi.PageBlockTable.CONSTRUCTOR: {
+          TdApi.PageBlockTable v = (TdApi.PageBlockTable) value;
+          if (v.caption != null) v.caption = transform.apply(v.caption);
+          break;
+        }
+        case TdApi.PageBlockTableCell.CONSTRUCTOR: {
+          TdApi.PageBlockTableCell v = (TdApi.PageBlockTableCell) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.PageBlockThinking.CONSTRUCTOR: {
+          TdApi.PageBlockThinking v = (TdApi.PageBlockThinking) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.PageBlockTitle.CONSTRUCTOR: {
+          TdApi.PageBlockTitle v = (TdApi.PageBlockTitle) value;
+          if (v.title != null) v.title = transform.apply(v.title);
+          break;
+        }
+        case TdApi.RichTextAnchorLink.CONSTRUCTOR: {
+          TdApi.RichTextAnchorLink v = (TdApi.RichTextAnchorLink) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextBankCardNumber.CONSTRUCTOR: {
+          TdApi.RichTextBankCardNumber v = (TdApi.RichTextBankCardNumber) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextBold.CONSTRUCTOR: {
+          TdApi.RichTextBold v = (TdApi.RichTextBold) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextBotCommand.CONSTRUCTOR: {
+          TdApi.RichTextBotCommand v = (TdApi.RichTextBotCommand) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextCashtag.CONSTRUCTOR: {
+          TdApi.RichTextCashtag v = (TdApi.RichTextCashtag) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextDateTime.CONSTRUCTOR: {
+          TdApi.RichTextDateTime v = (TdApi.RichTextDateTime) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextDiff.CONSTRUCTOR: {
+          TdApi.RichTextDiff v = (TdApi.RichTextDiff) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          if (v.oldText != null) v.oldText = transform.apply(v.oldText);
+          break;
+        }
+        case TdApi.RichTextEmailAddress.CONSTRUCTOR: {
+          TdApi.RichTextEmailAddress v = (TdApi.RichTextEmailAddress) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextFixed.CONSTRUCTOR: {
+          TdApi.RichTextFixed v = (TdApi.RichTextFixed) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextHashtag.CONSTRUCTOR: {
+          TdApi.RichTextHashtag v = (TdApi.RichTextHashtag) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextItalic.CONSTRUCTOR: {
+          TdApi.RichTextItalic v = (TdApi.RichTextItalic) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextMarked.CONSTRUCTOR: {
+          TdApi.RichTextMarked v = (TdApi.RichTextMarked) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextMention.CONSTRUCTOR: {
+          TdApi.RichTextMention v = (TdApi.RichTextMention) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextMentionName.CONSTRUCTOR: {
+          TdApi.RichTextMentionName v = (TdApi.RichTextMentionName) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextPhoneNumber.CONSTRUCTOR: {
+          TdApi.RichTextPhoneNumber v = (TdApi.RichTextPhoneNumber) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextReference.CONSTRUCTOR: {
+          TdApi.RichTextReference v = (TdApi.RichTextReference) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextReferenceLink.CONSTRUCTOR: {
+          TdApi.RichTextReferenceLink v = (TdApi.RichTextReferenceLink) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextSpoiler.CONSTRUCTOR: {
+          TdApi.RichTextSpoiler v = (TdApi.RichTextSpoiler) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextStrikethrough.CONSTRUCTOR: {
+          TdApi.RichTextStrikethrough v = (TdApi.RichTextStrikethrough) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextSubscript.CONSTRUCTOR: {
+          TdApi.RichTextSubscript v = (TdApi.RichTextSubscript) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextSuperscript.CONSTRUCTOR: {
+          TdApi.RichTextSuperscript v = (TdApi.RichTextSuperscript) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextUnderline.CONSTRUCTOR: {
+          TdApi.RichTextUnderline v = (TdApi.RichTextUnderline) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTextUrl.CONSTRUCTOR: {
+          TdApi.RichTextUrl v = (TdApi.RichTextUrl) value;
+          if (v.text != null) v.text = transform.apply(v.text);
+          break;
+        }
+        case TdApi.RichTexts.CONSTRUCTOR: {
+          TdApi.RichTexts v = (TdApi.RichTexts) value;
+          if (v.texts != null) for (int i = 0; i < v.texts.length; i++) if (v.texts[i] != null) v.texts[i] = transform.apply(v.texts[i]);
+          break;
+        }
+      }
+    });
+  }
 }

@@ -5928,6 +5928,8 @@
   <string name="ArticleCode">Code</string>
   <string name="ArticleLink">Link</string>
   <string name="ArticleFormula">Formula</string>
+  <string name="ArticleFormulaEquation">LaTeX Equation</string>
+  <string name="ArticleFormulaError">Error</string>
   <string name="ArticleRtl">Right to left</string>
   <string name="ArticleCredit">Credit</string>
   <string name="ArticleCaption">Caption</string>

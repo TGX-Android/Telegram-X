@@ -83,6 +83,8 @@
   <string name="ArticleCode">Код</string>
   <string name="ArticleLink">Ссылка</string>
   <string name="ArticleFormula">Формула</string>
+  <string name="ArticleFormulaEquation">Формула LaTeX</string>
+  <string name="ArticleFormulaError">Ошибка</string>
   <string name="ArticleRtl">Справа налево</string>
   <string name="ArticleCredit">Авторство</string>
   <string name="ArticleCaption">Подпись</string>

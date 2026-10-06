@@ -126,6 +126,46 @@ public final class ArticleEditorChecks {
       finally { bitmap.recycle(); }
     } finally { handler.removeCallbacksAndMessages(null); }
   }
+  public static void aiResultDoesNotCrash (Context context) throws Exception {
+    PresentationActivity activity = allocate(PresentationActivity.class); activity.attachPresentation(context);
+    org.thunderdog.challegram.ui.ArticleEditorController controller = new org.thunderdog.challegram.ui.ArticleEditorController(activity, null);
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {paragraph("Thsi is a test.")}), false, false);
+    org.thunderdog.challegram.data.article.ArticleDocument original = new org.thunderdog.challegram.data.article.ArticleDocument(input);
+    set(controller, "working", input); set(controller, "history", new org.thunderdog.challegram.data.article.ArticleHistory(original));
+    java.lang.reflect.Method build = controller.getClass().getDeclaredMethod("createEditorLayout", Context.class, boolean.class); build.setAccessible(true);
+    java.lang.reflect.Method apply = controller.getClass().getDeclaredMethod("applyAiResult", TdApi.RichMessage.class); apply.setAccessible(true);
+    android.os.Handler handler = (android.os.Handler) get(controller, "handler");
+    try {
+      build.invoke(controller, activity, false);
+      TdApi.RichMessage corrected = new TdApi.RichMessage(new TdApi.PageBlock[] {new TdApi.PageBlockParagraph(new TdApi.RichTextDiff(text("This is a test."), text("Thsi is a test.")))}, false, true);
+      require((Boolean) apply.invoke(controller, corrected), "AI correction was not accepted");
+      ArticleDocumentView document = (ArticleDocumentView) get(controller, "fields");
+      require(document.inputs().get(0).getText().toString().equals("This is a test."), "Corrected text is not visible in the editor");
+      ((View) get(controller, "undoButton")).performClick();
+      require(original.equals(new org.thunderdog.challegram.data.article.ArticleDocument((TdApi.InputRichMessage) get(controller, "working"))), "Undo did not restore the pre-AI draft");
+      TdApi.RichMessage unsupported = new TdApi.RichMessage(new TdApi.PageBlock[] {new TdApi.PageBlockUnsupported()}, false, true);
+      require(!(Boolean) apply.invoke(controller, unsupported), "Unsupported AI output was accepted");
+      require(original.equals(new org.thunderdog.challegram.data.article.ArticleDocument((TdApi.InputRichMessage) get(controller, "working"))), "Rejected AI output modified the draft");
+      ((View) get(controller, "redoButton")).performClick();
+      require(((ArticleDocumentView) get(controller, "fields")).inputs().get(0).getText().toString().equals("This is a test."), "Rejected output damaged the redo history");
+    } finally { handler.removeCallbacksAndMessages(null); }
+  }
+
+  public static void aiIconCentered (Context context) {
+    android.graphics.drawable.Drawable icon = androidx.core.content.ContextCompat.getDrawable(context, org.thunderdog.challegram.R.drawable.article_input_ai);
+    require(icon != null, "Missing AI icon");
+    Bitmap image = Bitmap.createBitmap(144, 144, Bitmap.Config.ARGB_8888);
+    try {
+      icon.setBounds(0, 0, 144, 144); icon.draw(new Canvas(image));
+      int left = 144, top = 144, right = -1, bottom = -1;
+      for (int y = 0; y < 144; y++) for (int x = 0; x < 144; x++) if (android.graphics.Color.alpha(image.getPixel(x, y)) > 128) {
+        left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x); bottom = Math.max(bottom, y);
+      }
+      require(right > left && bottom > top, "AI glyph is empty");
+      require(Math.abs(left + right - 143) <= 2 && Math.abs(top + bottom - 143) <= 2, "AI letters are not centred in the button drawable");
+    } finally { image.recycle(); }
+  }
+
   private static TdApi.PageBlockTableCell tableCell (String value, boolean header) { TdApi.PageBlockTableCell cell = org.thunderdog.challegram.data.article.ArticleTableGrid.empty(); cell.text = text(value); cell.isHeader = header; return cell; }
   private static java.lang.reflect.Field field (Class<?> type, String name) throws Exception {
     for (Class<?> cls = type; cls != null; cls = cls.getSuperclass()) try { java.lang.reflect.Field field = cls.getDeclaredField(name); field.setAccessible(true); return field; } catch (NoSuchFieldException ignored) { }
