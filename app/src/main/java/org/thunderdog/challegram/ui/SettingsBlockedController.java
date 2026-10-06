@@ -77,7 +77,8 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_contacts) {
-      header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, getHeaderIconColorId(), this, Screen.dp(49f));
+      header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, getHeaderIconColorId(), this, Screen.dp(49f))
+        .setContentDescriptionRes(R.string.BlockSender);
     }
   }
 
