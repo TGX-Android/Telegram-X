@@ -118,6 +118,11 @@ public class PageBlockTable extends PageBlock implements Destroyable {
     final int bottomMargin = Screen.dp(MARGIN_BOTTOM);
     final int defaultWidth = (maxContentWidth - horizontalMargin * 2);
 
+    if (totalColumnsCount == 0 || totalRowsCount == 0) {
+      tableHeight = customTableWidth = 0;
+      return topMargin + bottomMargin;
+    }
+
     for (Cell cell : cellsList) {
       cell.prepareToBuild(defaultWidth);
     }
@@ -188,7 +193,7 @@ public class PageBlockTable extends PageBlock implements Destroyable {
   @Override
   public boolean handleTouchEvent (View view, MotionEvent e) {
     for (Cell cell : cellsList) {
-      if (cell.text != null && cell.text.onTouchEvent(view, e, context instanceof Text.ClickCallback ? (Text.ClickCallback) context : null))
+      if (cell.text != null && cell.text.onTouchEvent(view, e, textClickCallback != null ? textClickCallback : context instanceof Text.ClickCallback ? (Text.ClickCallback) context : null))
         return true;
     }
     return false;

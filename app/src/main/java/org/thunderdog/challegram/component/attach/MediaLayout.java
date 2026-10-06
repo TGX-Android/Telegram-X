@@ -217,7 +217,7 @@ public class MediaLayout extends FrameLayoutFix implements
     this.target = target;
     this.rtl = Lang.rtl();
     this.needVote = false;
-    final MediaBottomBar.BarItem[] items;
+    MediaBottomBar.BarItem[] items;
     final int index;
 
     switch (mode) {
@@ -267,7 +267,14 @@ public class MediaLayout extends FrameLayoutFix implements
               new MediaBottomBar.BarItem(R.drawable.deproko_baseline_bots_24, R.string.InlineBot, ColorId.attachInlineBot)
           };
         }
-        index = 2;
+        if (target != null && target.canOpenArticleEditor()) {
+          MediaBottomBar.BarItem article = new MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, R.string.Article, ColorId.attachFile);
+          MediaBottomBar.BarItem[] expandedItems = new MediaBottomBar.BarItem[items.length + 1];
+          System.arraycopy(items, 0, expandedItems, rtl ? 1 : 0, items.length);
+          expandedItems[rtl ? 0 : items.length] = article;
+          items = expandedItems;
+        }
+        index = rtl ? items.length - 3 : 2;
         mode = MODE_DEFAULT;
         break;
       }
@@ -694,7 +701,14 @@ public class MediaLayout extends FrameLayoutFix implements
       return false;
     }
 
-    switch (toIndex) {
+    switch (rtl ? controllers.length - toIndex - 1 : toIndex) {
+      case 5: {
+        if (target != null) {
+          target.openArticleEditor(null);
+          hide(false);
+        }
+        return false;
+      }
       case 3: {
         boolean googleMapsInstalled;
         try {

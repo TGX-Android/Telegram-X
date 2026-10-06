@@ -421,6 +421,9 @@ public abstract class InlineResult <T> implements MessageSourceProvider {
 
   public static InlineResult<?> valueOf (BaseActivity context, Tdlib tdlib, TdApi.PageBlock pageBlock, TGPlayerController.PlayListBuilder builder) {
     switch (pageBlock.getConstructor()) {
+      case TdApi.PageBlockDocument.CONSTRUCTOR: {
+        return new InlineResultCommon(context, tdlib, new TdApi.InlineQueryResultDocument("", ((TdApi.PageBlockDocument) pageBlock).document, "", ""));
+      }
       case TdApi.PageBlockAudio.CONSTRUCTOR: {
         return new InlineResultCommon(context, tdlib, (TdApi.PageBlockAudio) pageBlock, builder);
       }

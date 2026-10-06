@@ -437,6 +437,25 @@ public class PageBlockRichText extends PageBlock {
   }
 
   private @Nullable TextWrapper text, subtitle;
+  private boolean articleRtl;
+
+  public void setArticleRtl (boolean rtl) {
+    articleRtl = rtl;
+    if (text != null) text.setTextFlagEnabled(Text.FLAG_ALIGN_RIGHT, rtl);
+    if (subtitle != null) subtitle.setTextFlagEnabled(Text.FLAG_ALIGN_RIGHT, rtl);
+  }
+
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlock original, TdApi.RichText richText, int quoteLevel, float textSize, boolean bold, @Nullable TdlibUi.UrlOpenParameters parameters) {
+    super(context, original, quoteLevel);
+    setText(bold ? new TdApi.RichTextBold(richText) : richText, Paints.robotoStyleProvider(textSize), TextColorSets.InstantView.NORMAL, Text.FLAG_ARTICLE, parameters);
+  }
+
+  @Override
+  public void setTextClickCallback (@Nullable Text.ClickCallback callback) {
+    super.setTextClickCallback(callback);
+    if (text != null) text.setClickCallback(callback);
+    if (subtitle != null) subtitle.setClickCallback(callback);
+  }
 
   private void setText (TdApi.RichText richText, TextStyleProvider textStyleProvider, TextColorSet colorSet, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     setText(richText, textStyleProvider, colorSet, 0, openParameters);
@@ -497,7 +516,7 @@ public class PageBlockRichText extends PageBlock {
       if (subtitle != null) {
         subtitle.prepare(textMaxWidth);
       }
-      this.isFullyRtl = text.isFullyRtl();
+      this.isFullyRtl = articleRtl || text.isFullyRtl();
       return this.text.getHeight() + getContentTop() + getTextPaddingBottom();
     }
     return 0;

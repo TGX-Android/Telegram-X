@@ -28,6 +28,8 @@ import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -55,6 +57,11 @@ public abstract class PageBlock {
   protected final TdApi.PageBlock block;
   protected final int quoteLevel;
   protected MultipleViewProvider currentViews;
+  protected @Nullable Text.ClickCallback textClickCallback;
+
+  public void setTextClickCallback (@Nullable Text.ClickCallback callback) {
+    textClickCallback = callback;
+  }
 
   protected boolean mergeBottom, mergeTop;
 
@@ -358,9 +365,13 @@ public abstract class PageBlock {
     private final List<TdApi.PageBlockBlockQuote> openQuotes = new ArrayList<>();
 
     public ParseContext (String url, TdApi.WebPageInstantView instantView, TGPlayerController.PlayListBuilder playListBuilder) {
+      this(url, instantView.isRtl, instantView.viewCount, playListBuilder);
+    }
+
+    public ParseContext (String url, boolean isRtl, int viewCount, TGPlayerController.PlayListBuilder playListBuilder) {
       this.url = url;
-      this.isRtl = instantView.isRtl;
-      this.viewCount = instantView.viewCount;
+      this.isRtl = isRtl;
+      this.viewCount = viewCount;
       this.playListBuilder = playListBuilder;
     }
 
@@ -481,8 +492,56 @@ public abstract class PageBlock {
 
   public static class UnsupportedPageBlockException extends Exception { }
 
+  /** Rich messages have no web page URL or Instant View lifecycle. */
+  public static List<PageBlock> parseArticle (ViewController<?> parent, TdApi.RichMessage article, @Nullable Text.ClickCallback callback) {
+    ParseContext context = new ParseContext(null, article.isRtl, 0, null);
+    List<PageBlock> out = new ArrayList<>();
+    for (TdApi.PageBlock block : article.blocks) {
+      try {
+        parse(parent, out, context, block, null);
+      } catch (UnsupportedPageBlockException e) {
+        context.process(unsupported(parent, block, context.quoteLevel()), out);
+      }
+    }
+    for (PageBlock block : out) {
+      block.setTextClickCallback(callback);
+      if (block instanceof PageBlockRichText) ((PageBlockRichText) block).setArticleRtl(article.isRtl);
+    }
+    return out;
+  }
+
+  private static PageBlockRichText unsupported (ViewController<?> parent, TdApi.PageBlock original, int quoteLevel) {
+    return new PageBlockRichText(parent, original, new TdApi.RichTextPlain(Lang.getString(R.string.ArticleUnsupportedBlock)), quoteLevel, 16f, false, null);
+  }
+
   private static void parse (ViewController<?> parent, List<PageBlock> out, ParseContext context, TdApi.PageBlock block, @Nullable TdlibUi.UrlOpenParameters openParameters) throws UnsupportedPageBlockException {
     switch (block.getConstructor()) {
+      case TdApi.PageBlockSectionHeading.CONSTRUCTOR: {
+        TdApi.PageBlockSectionHeading heading = (TdApi.PageBlockSectionHeading) block;
+        context.process(new PageBlockRichText(parent, block, heading.text, context.quoteLevel(), heading.size == 1 ? 24f : heading.size == 2 ? 21f : 19f, true, openParameters), out);
+        break;
+      }
+      case TdApi.PageBlockThinking.CONSTRUCTOR: {
+        context.process(new PageBlockRichText(parent, block, new TdApi.RichTextItalic(((TdApi.PageBlockThinking) block).text), context.quoteLevel(), 14f, false, openParameters), out);
+        break;
+      }
+      case TdApi.PageBlockMathematicalExpression.CONSTRUCTOR: {
+        context.process(new PageBlockFormula(parent, (TdApi.PageBlockMathematicalExpression) block, context.quoteLevel()), out);
+        break;
+      }
+      case TdApi.PageBlockButtonRow.CONSTRUCTOR: {
+        context.process(new PageBlockButtons(parent, (TdApi.PageBlockButtonRow) block, context.quoteLevel()), out);
+        break;
+      }
+      case TdApi.PageBlockExpandableBlockQuote.CONSTRUCTOR: {
+        TdApi.PageBlockExpandableBlockQuote quote = (TdApi.PageBlockExpandableBlockQuote) block;
+        context.process(new PageBlockExpandableQuote(parent, quote, context.quoteLevel(), openParameters), out);
+        break;
+      }
+      case TdApi.PageBlockUnsupported.CONSTRUCTOR: {
+        context.process(unsupported(parent, block, context.quoteLevel()), out);
+        break;
+      }
       // Page cover
       case TdApi.PageBlockCover.CONSTRUCTOR: {
         TdApi.PageBlockCover cover = (TdApi.PageBlockCover) block;
@@ -573,7 +632,7 @@ public abstract class PageBlock {
         }
         if (!Td.isEmpty(quoteRaw.credit)) {
           PageBlockRichText credit = new PageBlockRichText(parent, quoteRaw, context.quoteLevel(), openParameters);
-          credit.mergeWith(out.get(out.size() - 1));
+          if (!out.isEmpty()) credit.mergeWith(out.get(out.size() - 1));
           context.process(credit, out);
         }
         context.openQuotes.remove(context.openQuotes.size() - 1);
@@ -597,7 +656,7 @@ public abstract class PageBlock {
         int itemIndex = 0;
         ListInfo listInfo = new ListInfo(listRaw);
         for (TdApi.PageBlockListItem item : listRaw.items) {
-          ListItemInfo itemInfo = new ListItemInfo(listInfo, itemIndex, item.label, PageBlockRichText.getListTextProvider());
+          ListItemInfo itemInfo = new ListItemInfo(listInfo, itemIndex, item.hasCheckbox ? (item.isChecked ? "☑" : "☐") : item.label, PageBlockRichText.getListTextProvider());
           listInfo.maxLabelWidth = Math.max(listInfo.maxLabelWidth, itemInfo.label.getWidth());
           ListItemInfo[] lastListItemInfo = context.openedList;
           if (lastListItemInfo == null) {
@@ -724,6 +783,9 @@ public abstract class PageBlock {
           PageBlockMedia collage = new PageBlockMedia(parent, collageRaw, context.quoteLevel());
           context.process(collage, out);
           context.processCaption(parent, collageRaw, collageRaw.caption, openParameters, out);
+        } else {
+          for (TdApi.PageBlock child : collageRaw.blocks) parse(parent, out, context, child, openParameters);
+          context.processCaption(parent, collageRaw, collageRaw.caption, openParameters, out);
         }
         break;
       }
@@ -750,11 +812,22 @@ public abstract class PageBlock {
           PageBlockMedia slideshow = new PageBlockMedia(parent, slideshowRaw, context.quoteLevel());
           context.process(slideshow, out);
           context.processCaption(parent, slideshowRaw, slideshowRaw.caption, openParameters, out);
+        } else {
+          for (TdApi.PageBlock child : slideshowRaw.blocks) parse(parent, out, context, child, openParameters);
+          context.processCaption(parent, slideshowRaw, slideshowRaw.caption, openParameters, out);
         }
         break;
       }
 
       // File
+      case TdApi.PageBlockDocument.CONSTRUCTOR: {
+        TdApi.PageBlockDocument document = (TdApi.PageBlockDocument) block;
+        if (document.document != null) {
+          context.process(new PageBlockFile(parent, document, context.quoteLevel(), context.url, context.playListBuilder), out);
+        }
+        context.processCaption(parent, document, document.caption, openParameters, out);
+        break;
+      }
       case TdApi.PageBlockAudio.CONSTRUCTOR: {
         TdApi.PageBlockAudio audioRaw = (TdApi.PageBlockAudio) block;
         if (audioRaw.audio != null) {
@@ -818,7 +891,8 @@ public abstract class PageBlock {
       }
 
       default: {
-        throw new UnsupportedOperationException(block.toString());
+        context.process(unsupported(parent, block, context.quoteLevel()), out);
+        break;
       }
     }
   }

@@ -48,7 +48,7 @@ public class PageBlockFile extends PageBlock {
 
   @Override
   public boolean onClick (View view, boolean isLongPress) {
-    if (!isLongPress) {
+    if (!isLongPress && block.getConstructor() != TdApi.PageBlockDocument.CONSTRUCTOR) {
       context.tdlib().context().player().playPauseMessage(context.tdlib(), result.getPlayPauseMessage(), playListBuilder);
       return true;
     }
@@ -66,7 +66,8 @@ public class PageBlockFile extends PageBlock {
 
   @Override
   protected int computeHeight (View view, int width) {
-    return 0;
+    result.layout(width, null);
+    return result.getHeight();
   }
 
   @Override

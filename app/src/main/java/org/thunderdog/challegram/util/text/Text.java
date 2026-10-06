@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.util.text;
 
 import android.graphics.Canvas;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -1191,6 +1192,25 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     TextPaint paint = getTextPaint(entity);
     Paint.FontMetricsInt fontMetricsInt = Paints.getFontMetricsInt(paint);
     emojiSize = Math.abs(fontMetricsInt.descent - fontMetricsInt.ascent) + Screen.dp(2f);
+
+    if (entity != null && entity.getMathematicalExpression() != null) {
+      Bitmap formula = org.thunderdog.challegram.data.article.ArticleMath.render(UI.getContext(), entity.getMathematicalExpression(), paint.getTextSize());
+      if (formula != null) {
+        int available = getLineMaxWidth(getLineCount(), currentY);
+        int formulaWidth = Math.min(available, formula.getWidth());
+        int formulaHeight = Math.max(1, (int) ((float) formula.getHeight() * formulaWidth / formula.getWidth()));
+        if (currentX > 0 && currentX + formulaWidth > available) newLineOrEllipsis(out, in);
+        lastPart = null;
+        TextPart part = new TextPart(this, in, start, end, getLineCount(), paragraphCount);
+        part.setXY(currentX, currentY);
+        part.setWidth(formulaWidth); part.setHeight(formulaHeight);
+        part.setEntity(entity); part.setBidiEntity(getBidiEntity(start));
+        String key = "formula_" + paint.getTextSize() + "_" + entity.getMathematicalExpression();
+        part.attachToMedia(newOrExistingMedia(key, start, end, (keyId, id) -> new TextMedia(this, entity.tdlib, keyId, id, formula)));
+        out.add(part); currentX += formulaWidth; maxPartHeight = Math.max(formulaHeight, maxPartHeight);
+        return;
+      }
+    }
 
     if (in.endsWith("wtftest")) {
       in.toString();
@@ -2703,6 +2723,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   // Touch util
 
   public interface ClickCallback {
+    default boolean allowCopyText () { return true; }
     @Nullable
     default ThemeDelegate getForcedTheme (View view, Text text) { return null; }
     default boolean forceInstantView (String link) { return false; }

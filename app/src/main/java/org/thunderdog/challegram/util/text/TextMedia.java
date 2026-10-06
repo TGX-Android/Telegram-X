@@ -13,6 +13,8 @@
 package org.thunderdog.challegram.util.text;
 
 import android.graphics.Canvas;
+import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.graphics.Path;
 
 import androidx.annotation.NonNull;
@@ -65,6 +67,12 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   private ImageFile miniThumbnail, thumbnail;
   private ImageFile imageFile;
   private GifFile gifFile;
+  private Bitmap formula;
+
+  public TextMedia (Text source, Tdlib tdlib, String keyId, long id, Bitmap formula) {
+    this.source = source; this.tdlib = tdlib; this.keyId = keyId; this.id = id;
+    this.formula = formula; this.width = formula.getWidth(); this.height = formula.getHeight(); this.customEmojiId = 0;
+  }
 
   public TextMedia (Text source, Tdlib tdlib, String keyId, long id, int size, long customEmojiId) {
     if (tdlib == null)
@@ -269,6 +277,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   }
 
   public void requestFiles (ComplexReceiver receiver) {
+    if (formula != null) return;
     long displayMediaKey = getDisplayMediaKey();
     if (displayMediaKey == -1)
       throw new IllegalStateException();
@@ -286,6 +295,10 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   }
 
   public void draw (Canvas c, ComplexReceiver receiver, int left, int top, int right, int bottom, float alpha, long displayMediaKey) {
+    if (formula != null) {
+      c.drawBitmap(formula, null, new Rect(left, top, right, bottom), Paints.fillingPaint(ColorUtils.alphaColor(alpha, Theme.textAccentColor())));
+      return;
+    }
     if (isCustomEmoji() && customEmoji == null) {
       if (BuildConfig.DEBUG) {
         c.drawCircle(left + (right - left) / 2f, top + (bottom - top) / 2f, height / 2f, Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0xffff0000)));
