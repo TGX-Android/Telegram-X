@@ -50,6 +50,7 @@ public class StopwatchHeaderButton extends HeaderButton implements FactorAnimato
     this.circlePaint.setColor(0xffffffff);
 
     setId(R.id.menu_btn_stopwatch);
+    setContentDescriptionRes(R.string.MessageLifetime);
     setButtonBackground(ThemeDeprecated.headerSelector());
     setPadding(0, Screen.dp(2f), 0, 0);
     setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(WIDTH), ViewGroup.LayoutParams.MATCH_PARENT));
