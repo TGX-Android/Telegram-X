@@ -10,6 +10,25 @@ import static org.junit.Assert.*;
 public class ArticleDocumentTest {
   private static TdApi.RichText text (String value) { return new TdApi.RichTextPlain(value); }
 
+  @Test public void localMediaDraftMatchesTdlibEchoWithoutHidingRealChanges () {
+    TdApi.InputPageBlockDocument file = new TdApi.InputPageBlockDocument(new TdApi.InputDocument(new TdApi.InputFileLocal("/draft/qa.txt"), null, false), null);
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {file}), false, true);
+    ArticleDocument local = new ArticleDocument(input);
+    file.document.document = new TdApi.InputFileId(42);
+    file.document.disableContentTypeDetection = true;
+    file.caption = new TdApi.PageBlockCaption(text(""), new TdApi.RichTexts(new TdApi.RichText[0]));
+    input.detectAutomaticBlocks = false;
+    ArticleDocument cloud = new ArticleDocument(input);
+    java.util.Map<String, Integer> paths = java.util.Collections.singletonMap("/draft/qa.txt", 42);
+    assertFalse(local.hasSameContent(cloud));
+    assertTrue(local.hasSameContent(cloud, paths));
+    assertTrue(((TdApi.InputPageBlockDocument) ((TdApi.RichMessageSourceBlocks) local.toInput().source).blocks[0]).document.document instanceof TdApi.InputFileLocal);
+    file.caption.text = text("Changed on another client");
+    assertFalse(local.hasSameContent(new ArticleDocument(input), paths));
+    file.caption.text = text(""); file.document.document = new TdApi.InputFileId(43);
+    assertFalse(local.hasSameContent(new ArticleDocument(input), paths));
+  }
+
   private static TdApi.RichMessage mixed () {
     TdApi.File file = new TdApi.File();
     file.id = 42;

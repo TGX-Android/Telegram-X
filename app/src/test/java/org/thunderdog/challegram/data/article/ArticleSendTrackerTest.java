@@ -6,6 +6,24 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class ArticleSendTrackerTest {
+  @Test public void deletingPendingMessageRestoresDraftWithoutReportingSuccess () {
+    Observer observer = new Observer(); ArticleSendTracker tracker = observer.tracker();
+    tracker.accept(message(1, -1, new TdApi.MessageSendingStatePending()));
+    tracker.onMessagesDeleted(2, new long[] {-1});
+    tracker.onMessagesDeleted(1, new long[] {-2});
+    assertEquals(0, observer.completed);
+    tracker.onMessagesDeleted(1, new long[] {-1});
+    assertEquals(1, observer.completed); assertFalse(observer.success); assertNull(observer.error);
+    tracker.cancel(); tracker.onMessageSendSucceeded(message(1, 10, null), -1);
+    assertEquals(1, observer.unsubscribed); assertEquals(1, observer.completed);
+  }
+  @Test public void deletionBeforeSendCallbackAndUnrelatedChatResultsAreHandled () {
+    Observer observer = new Observer(); ArticleSendTracker tracker = observer.tracker();
+    tracker.onMessageSendSucceeded(message(2, 11, null), -1);
+    tracker.onMessagesDeleted(1, new long[] {-1});
+    tracker.accept(message(1, -1, new TdApi.MessageSendingStatePending()));
+    assertEquals(1, observer.completed); assertFalse(observer.success); assertEquals(1, observer.unsubscribed);
+  }
   private static TdApi.Message message (long chatId, long id, TdApi.MessageSendingState state) {
     TdApi.Message message = new TdApi.Message(); message.chatId = chatId; message.id = id; message.sendingState = state; return message;
   }

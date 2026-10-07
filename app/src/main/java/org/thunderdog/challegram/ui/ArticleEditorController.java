@@ -65,6 +65,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     public final TdApi.MessageTopic topic;
     public final ArticleDocument document;
     public boolean fromComposer;
+    public final java.util.Map<String, Integer> localDraftFiles = new java.util.HashMap<>();
     public Args (MessagesController owner, long messageId, ArticleDocument document) {
       this.owner = owner; this.chatId = owner.getChatId(); this.topic = owner.getMessageTopicId(); this.messageId = messageId; this.document = document; this.userId = owner.tdlib().myUserId();
     }
@@ -131,7 +132,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       // A newly typed ordinary draft is authoritative over an old, already-cleared article draft.
       if (args.fromComposer && recovery != null && recovery.pendingMessageId == 0) recovery = null;
       draftTouched = args.fromComposer || recovery != null;
-      if (recovery != null && (recovery.baseline.hasSameContent(initial) || recovery.document.hasSameContent(initial) || recovery.pendingMessageId != 0)) {
+      if (recovery != null && (recovery.baseline.hasSameContent(initial, args.localDraftFiles) || recovery.document.hasSameContent(initial, args.localDraftFiles) || recovery.pendingMessageId != 0)) {
         initial = recovery.document; baseline = recovery.baseline; pendingMessageId = recovery.pendingMessageId;
       } else if (recovery != null) recoveryPending = true;
     } catch (IOException | IllegalStateException e) {

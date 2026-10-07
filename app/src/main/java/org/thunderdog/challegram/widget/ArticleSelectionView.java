@@ -14,6 +14,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.KeyEvent;
 import android.widget.ScrollView;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -54,6 +55,56 @@ public final class ArticleSelectionView extends View {
   public int from () { return from; }
   public int to () { return to; }
   public boolean updating () { return updating; }
+  /** A hardware navigation key must also update the document's selection overlay. */
+  public boolean navigate (int keyCode, KeyEvent event) {
+    if (!active()) return false;
+    boolean backward;
+    switch (keyCode) {
+      case KeyEvent.KEYCODE_DPAD_LEFT:
+      case KeyEvent.KEYCODE_DPAD_UP:
+      case KeyEvent.KEYCODE_MOVE_HOME: backward = true; break;
+      case KeyEvent.KEYCODE_DPAD_RIGHT:
+      case KeyEvent.KEYCODE_DPAD_DOWN:
+      case KeyEvent.KEYCODE_MOVE_END:
+      case KeyEvent.KEYCODE_ESCAPE: backward = false; break;
+      default: return false;
+    }
+    if (event.isShiftPressed() && keyCode != KeyEvent.KEYCODE_ESCAPE) {
+      ArticleTextInput target = last;
+      int offset = to;
+      Layout layout = target.getLayout();
+      int next = offset;
+      if (layout != null) {
+        switch (keyCode) {
+          case KeyEvent.KEYCODE_DPAD_LEFT: next = layout.getOffsetToLeftOf(offset); break;
+          case KeyEvent.KEYCODE_DPAD_RIGHT: next = layout.getOffsetToRightOf(offset); break;
+          case KeyEvent.KEYCODE_MOVE_HOME: next = layout.getLineStart(layout.getLineForOffset(offset)); break;
+          case KeyEvent.KEYCODE_MOVE_END: next = layout.getLineEnd(layout.getLineForOffset(offset)); break;
+          default:
+            updating = true;
+            android.text.Selection.setSelection(target.getText(), offset);
+            if (backward) android.text.Selection.moveUp(target.getText(), layout); else android.text.Selection.moveDown(target.getText(), layout);
+            next = target.getSelectionEnd();
+            updating = false;
+        }
+      } else if (backward && offset > 0) next = Character.offsetByCodePoints(target.getText(), offset, -1);
+      else if (!backward && offset < target.length()) next = Character.offsetByCodePoints(target.getText(), offset, 1);
+      if (next == offset) {
+        List<ArticleTextInput> inputs = document.inputs(); int index = inputs.indexOf(target) + (backward ? -1 : 1);
+        if (index >= 0 && index < inputs.size()) { target = inputs.get(index); next = backward ? target.length() : 0; }
+      }
+      select(first, from, target, next);
+      return true;
+    }
+    ArticleTextInput target = backward ? first : last;
+    int offset = backward ? from : to;
+    ArticleTextInput previous = first; int previousOffset = from;
+    clear();
+    previous.setSelection(previousOffset);
+    target.requestFocus(); target.setSelection(offset);
+    document.selectionChanged(target);
+    return true;
+  }
   public void clear () {
     for (java.util.Map.Entry<ArticleTextInput, Integer> entry : highlightColors.entrySet()) entry.getKey().setHighlightColor(entry.getValue());
     highlightColors.clear();

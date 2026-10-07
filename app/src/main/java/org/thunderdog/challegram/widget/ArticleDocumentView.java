@@ -419,6 +419,9 @@ public final class ArticleDocumentView extends LinearLayout implements me.vkryl.
   private void register (ArticleTextInput input, ArticleEditorTree.Entry entry) {
     inputs.add(input); entries.put(input, entry);
     input.setDocumentActions(new ArticleTextInput.DocumentActions() {
+      @Override public boolean navigate (int keyCode, android.view.KeyEvent event) {
+        return selection != null && selection.navigate(keyCode, event);
+      }
       @Override public boolean replace (CharSequence text) {
         if (!hasMultipleSelection()) return false;
         if (text.length() == 0) { replaceSelectedBlocks(new TdApi.InputPageBlock[0]); return true; }

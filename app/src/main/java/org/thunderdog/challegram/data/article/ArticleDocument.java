@@ -42,12 +42,51 @@ public final class ArticleDocument {
 
   /** Compare draft contents after the server consumes sending options and clears blank text. */
   public boolean hasSameContent (ArticleDocument other) {
+    return hasSameContent(other, java.util.Collections.emptyMap());
+  }
+
+  /** File IDs in TDLib's draft echo can replace the local paths supplied by the editor. */
+  public boolean hasSameContent (ArticleDocument other, java.util.Map<String, Integer> localFiles) {
     if (other == null) return false;
     if (equals(other)) return true;
     TdApi.InputRichMessage left = toInput(), right = other.toInput();
     left.detectAutomaticBlocks = right.detectAutomaticBlocks = false;
+    normalizeDraft(left, localFiles);
+    normalizeDraft(right, localFiles);
     if (left.isRtl == right.isRtl && blankParagraphs(left) && blankParagraphs(right)) return true;
     return Arrays.equals(ArticleCodec.encode(left), ArticleCodec.encode(right));
+  }
+
+  private static TdApi.InputFile normalizeFile (TdApi.InputFile file, java.util.Map<String, Integer> localFiles) {
+    Integer id = file instanceof TdApi.InputFileLocal ? localFiles.get(((TdApi.InputFileLocal) file).path) : null;
+    return id != null ? new TdApi.InputFileId(id) : file;
+  }
+
+  private static void normalizeDraft (TdApi.InputRichMessage message, java.util.Map<String, Integer> localFiles) {
+    ArticleCodec.visit(message, (value, depth) -> {
+      if (value instanceof TdApi.InputPageBlock && ArticleEditorTree.isMedia((TdApi.InputPageBlock) value)) {
+        TdApi.PageBlockCaption caption = ArticleEditorTree.editCaption((TdApi.InputPageBlock) value);
+        if (caption.text == null || blankText(caption.text)) caption.text = new TdApi.RichTextPlain("");
+        if (caption.credit == null || blankText(caption.credit)) caption.credit = new TdApi.RichTextPlain("");
+      }
+      if (value instanceof TdApi.InputDocument) {
+        TdApi.InputDocument media = (TdApi.InputDocument) value;
+        media.document = normalizeFile(media.document, localFiles);
+        media.disableContentTypeDetection = true;
+      } else if (value instanceof TdApi.InputPhoto) {
+        TdApi.InputPhoto media = (TdApi.InputPhoto) value; media.photo = normalizeFile(media.photo, localFiles);
+      } else if (value instanceof TdApi.InputVideo) {
+        TdApi.InputVideo media = (TdApi.InputVideo) value; media.video = normalizeFile(media.video, localFiles);
+      } else if (value instanceof TdApi.InputAnimation) {
+        TdApi.InputAnimation media = (TdApi.InputAnimation) value; media.animation = normalizeFile(media.animation, localFiles);
+      } else if (value instanceof TdApi.InputAudio) {
+        TdApi.InputAudio media = (TdApi.InputAudio) value; media.audio = normalizeFile(media.audio, localFiles);
+      } else if (value instanceof TdApi.InputVoiceNote) {
+        TdApi.InputVoiceNote media = (TdApi.InputVoiceNote) value; media.voiceNote = normalizeFile(media.voiceNote, localFiles);
+      } else if (value instanceof TdApi.InputThumbnail) {
+        TdApi.InputThumbnail thumbnail = (TdApi.InputThumbnail) value; thumbnail.thumbnail = normalizeFile(thumbnail.thumbnail, localFiles);
+      }
+    });
   }
 
   private static boolean blankParagraphs (TdApi.InputRichMessage message) {

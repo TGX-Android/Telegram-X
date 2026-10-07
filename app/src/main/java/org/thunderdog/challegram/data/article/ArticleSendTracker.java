@@ -17,6 +17,7 @@ public final class ArticleSendTracker implements MessageListener {
   private final long chatId;
   private final Callback callback;
   private final Map<Long, TdApi.Error> earlyResults = new HashMap<>();
+  private final java.util.Set<Long> earlyDeletions = new java.util.HashSet<>();
   private long messageId;
   private boolean accepted, complete;
 
@@ -29,9 +30,11 @@ public final class ArticleSendTracker implements MessageListener {
     this.chatId = chatId; this.callback = callback; this.unsubscribe = unsubscribe;
   }
   public synchronized void cancel () {
+    if (complete) return;
     complete = true;
     unsubscribe.run();
     earlyResults.clear();
+    earlyDeletions.clear();
   }
   public synchronized boolean isComplete () { return complete; }
   public synchronized void accept (TdApi.Message message) {
@@ -42,11 +45,20 @@ public final class ArticleSendTracker implements MessageListener {
     if (message.sendingState instanceof TdApi.MessageSendingStateFailed) { finish(false, ((TdApi.MessageSendingStateFailed) message.sendingState).error); return; }
     if (message.sendingState == null) { finish(true, null); return; }
     callback.onPending(messageId);
-    if (earlyResults.containsKey(messageId)) finish(earlyResults.get(messageId) == null, earlyResults.get(messageId));
+    if (earlyDeletions.contains(messageId)) finish(false, null);
+    else if (earlyResults.containsKey(messageId)) finish(earlyResults.get(messageId) == null, earlyResults.get(messageId));
     earlyResults.clear();
+    earlyDeletions.clear();
   }
-  @Override public synchronized void onMessageSendSucceeded (TdApi.Message message, long oldMessageId) { result(oldMessageId, null); }
-  @Override public synchronized void onMessageSendFailed (TdApi.Message message, long oldMessageId, TdApi.Error error) { result(oldMessageId, error); }
+  @Override public synchronized void onMessageSendSucceeded (TdApi.Message message, long oldMessageId) { if (message.chatId == chatId) result(oldMessageId, null); }
+  @Override public synchronized void onMessageSendFailed (TdApi.Message message, long oldMessageId, TdApi.Error error) { if (message.chatId == chatId) result(oldMessageId, error); }
+  @Override public synchronized void onMessagesDeleted (long chatId, long[] messageIds) {
+    if (complete || this.chatId != chatId) return;
+    for (long id : messageIds) {
+      if (accepted && id == messageId) { finish(false, null); return; }
+      if (!accepted && earlyDeletions.size() < 64) earlyDeletions.add(id);
+    }
+  }
   private void result (long id, TdApi.Error error) {
     if (complete) return;
     if (!accepted) { if (earlyResults.size() < 64) earlyResults.put(id, error); }
@@ -56,6 +68,7 @@ public final class ArticleSendTracker implements MessageListener {
     complete = true;
     unsubscribe.run();
     earlyResults.clear();
+    earlyDeletions.clear();
     callback.onComplete(success, error);
   }
 }

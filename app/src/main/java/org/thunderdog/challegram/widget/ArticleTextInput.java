@@ -92,7 +92,7 @@ public final class ArticleTextInput extends CustomEmojiEditText {
   private Runnable selectionListener;
   public interface BoundaryListener { boolean onEnter (); boolean onBackspace (); }
   private BoundaryListener boundaryListener;
-  public interface DocumentActions { boolean replace (CharSequence text); boolean menu (int id); }
+  public interface DocumentActions { boolean replace (CharSequence text); boolean menu (int id); boolean navigate (int keyCode, KeyEvent event); }
   private DocumentActions documentActions;
   public void setDocumentActions (DocumentActions actions) { documentActions = actions; }
   private final ArrayList<TdApi.RichText> typingFormats = new ArrayList<>();
@@ -304,6 +304,7 @@ public final class ArticleTextInput extends CustomEmojiEditText {
   }
   @Override public boolean onKeyDown (int keyCode, KeyEvent event) {
     if (documentActions != null) {
+      if (documentActions.navigate(keyCode, event)) return true;
       if (event.isCtrlPressed()) {
         int action = keyCode == KeyEvent.KEYCODE_A ? android.R.id.selectAll : keyCode == KeyEvent.KEYCODE_C ? android.R.id.copy : keyCode == KeyEvent.KEYCODE_X ? android.R.id.cut : keyCode == KeyEvent.KEYCODE_V ? android.R.id.paste : 0;
         if (action != 0 && documentActions.menu(action)) return true;

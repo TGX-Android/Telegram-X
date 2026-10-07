@@ -81,6 +81,24 @@ public final class ArticleEditorChecks {
     require(fixture.view.replaceSelectedBlocks(new TdApi.InputPageBlock[] {paragraph("replacement")}), "Replacement rejected a cross-block range");
     require(fixture.blocks().length == 1 && ArticleRichText.plain(((TdApi.InputPageBlockParagraph) fixture.blocks()[0]).text).equals("Alreplacementmma"), "Replacement lost text outside the selection");
   }
+  public static void hardwareSelectionNavigation (Context context) {
+    Fixture fixture = new Fixture(context, paragraph("Alpha"), paragraph("Beta"));
+    ArticleSelectionView selection = new ArticleSelectionView(context, fixture.view, new android.widget.ScrollView(context)); fixture.view.setSelectionView(selection);
+    ArticleTextInput first = fixture.view.inputs().get(0), last = fixture.view.inputs().get(1);
+    selection.select(first, 0, last, last.length());
+    require(first.onKeyDown(KeyEvent.KEYCODE_DPAD_RIGHT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT)), "Document did not consume Right");
+    require(!selection.active() && last.getSelectionStart() == 4 && last.getSelectionEnd() == 4, "Right left a stale selection");
+    last.onCreateInputConnection(new EditorInfo()).commitText("!", 1);
+    require(fixture.blocks().length == 2 && ArticleRichText.plain(((TdApi.InputPageBlockParagraph) fixture.blocks()[0]).text).equals("Alpha"), "Typing after Right destroyed preceding blocks");
+    require(ArticleRichText.plain(((TdApi.InputPageBlockParagraph) fixture.blocks()[1]).text).equals("Beta!"), "Typing after Right did not append");
+    selection.select(first, 0, last, last.length());
+    first.onKeyDown(KeyEvent.KEYCODE_DPAD_LEFT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT));
+    require(!selection.active() && first.getSelectionStart() == 0 && first.getSelectionEnd() == 0, "Left did not collapse to the beginning");
+    selection.select(first, 0, last, last.length());
+    first.onKeyDown(KeyEvent.KEYCODE_DPAD_LEFT, new KeyEvent(0, 0, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT, 0, KeyEvent.META_SHIFT_ON));
+    require(selection.active() && selection.to() == last.length() - 1, "Shift Left did not shrink the selected range");
+    fixture.view.performDestroy();
+  }
   public static void blockReordering (Context context) {
     Fixture fixture = new Fixture(context, paragraph("First"), paragraph("Second"), paragraph("Third"));
     ArticleEditorTree.Group group = ArticleEditorTree.root(fixture.document);

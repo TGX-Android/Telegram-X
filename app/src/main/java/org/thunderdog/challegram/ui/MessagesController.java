@@ -7774,7 +7774,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     try {
       org.thunderdog.challegram.data.article.ArticleDocument document = org.thunderdog.challegram.data.article.ArticleDocument.received(article);
       ArticleEditorController editor = new ArticleEditorController(context(), tdlib);
-      editor.setArguments(new ArticleEditorController.Args(this, messageId, document));
+      ArticleEditorController.Args args = new ArticleEditorController.Args(this, messageId, document);
+      if (messageId == 0) org.thunderdog.challegram.data.article.ArticleCodec.visit(article, (value, depth) -> {
+        if (value instanceof TdApi.File) {
+          TdApi.File file = (TdApi.File) value;
+          if (file.id > 0 && file.local != null && !StringUtils.isEmpty(file.local.path)) args.localDraftFiles.put(file.local.path, file.id);
+        }
+      });
+      editor.setArguments(args);
       navigateTo(editor);
     } catch (IllegalArgumentException e) {
       UI.showToast(R.string.ArticleReadOnly, Toast.LENGTH_LONG);
