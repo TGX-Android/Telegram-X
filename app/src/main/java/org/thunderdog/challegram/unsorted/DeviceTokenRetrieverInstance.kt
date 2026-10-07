@@ -8,16 +8,14 @@ object DeviceTokenRetrieverInstance {
 
   @JvmStatic
   @Synchronized
+  @Suppress("USELESS_ELVIS")
   fun initialize(): Boolean {
     return deviceTokenRetriever.let {
       if (it != null) {
         it
       } else {
         val retriever = PushManagerBridge.onCreateNewTokenRetriever(AppContext.get())
-        //noinspection ConstantConditions
-        if (retriever == null) {
-          return false
-        }
+          ?: return false
         deviceTokenRetriever = retriever
         retriever
       }
