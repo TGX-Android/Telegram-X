@@ -69,7 +69,7 @@ public final class ArticleAiEditor extends LinearLayout {
     if (!create) {
       LinearLayout modes = new LinearLayout(context); modes.setPadding(Screen.dp(4), Screen.dp(4), Screen.dp(4), Screen.dp(4)); modes.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 28));
       int[] labels = {R.string.ArticleAiTranslate, R.string.ArticleAiStyle, R.string.ArticleAiFixTab};
-      int[] icons = {R.drawable.article_outline_ai_translate2, R.drawable.article_menu_rewrite, R.drawable.article_menu_proofread};
+      int[] icons = {R.drawable.article_outline_ai_translate2_24, R.drawable.article_menu_rewrite_24, R.drawable.article_menu_proofread_24};
       for (int i = 0; i < 3; i++) { final int mode = i; tabs[i] = chip(Lang.getString(labels[i]), icons[i], () -> selectTab(mode)); modes.addView(tabs[i], new LayoutParams(0, Screen.dp(52), 1)); }
       addView(modes, row(-2, 8));
     }
@@ -106,8 +106,8 @@ public final class ArticleAiEditor extends LinearLayout {
   private void rebuildStyles () {
     destroyEmojiViews(styles);
     styles.removeAllViews();
-    addStyle(Lang.getString(R.string.ArticleAiPromptTab), R.drawable.article_iv_prompt, "", () -> { styleName = ""; prompt.setVisibility(VISIBLE); result = null; updateDone(); });
-    addStyle(Lang.getString(R.string.ArticleAiCreateStyle), R.drawable.article_tone_create, null, this::createStyle);
+    addStyle(Lang.getString(R.string.ArticleAiPromptTab), R.drawable.article_iv_prompt_24, "", () -> { styleName = ""; prompt.setVisibility(VISIBLE); result = null; updateDone(); });
+    addStyle(Lang.getString(R.string.ArticleAiCreateStyle), R.drawable.article_tone_create_24, null, this::createStyle);
     for (TdApi.TextCompositionStyle style : knownStyles.values()) {
       TextView item = addStyle(style.title, 0, style.name, () -> { styleName = style.name; prompt.setVisibility(GONE); request(); });
       String label = "✨\n" + style.title;

@@ -227,8 +227,8 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     ImageView back = ArticleEditorPopup.icon(context, R.drawable.baseline_arrow_back_24, R.string.ArticleBack, this::navigateBack);
     FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(Screen.dp(44), Screen.dp(44), Gravity.TOP | Gravity.LEFT); backParams.setMargins(Screen.dp(8), Screen.dp(8), 0, 0); page.addView(back, backParams);
     LinearLayout historyBar = new LinearLayout(context); historyBar.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 24));
-    undoButton = icon(historyBar, R.drawable.article_iv_undo, R.string.ArticleUndo, () -> restore(history.undo()), 41);
-    redoButton = icon(historyBar, R.drawable.article_iv_redo, R.string.ArticleRedo, () -> restore(history.redo()), 41);
+    undoButton = icon(historyBar, R.drawable.article_iv_undo_24, R.string.ArticleUndo, () -> restore(history.undo()), 41);
+    redoButton = icon(historyBar, R.drawable.article_iv_redo_24, R.string.ArticleRedo, () -> restore(history.redo()), 41);
     FrameLayout.LayoutParams historyParams = new FrameLayout.LayoutParams(Screen.dp(82), Screen.dp(44), Gravity.TOP | Gravity.RIGHT); historyParams.setMargins(0, Screen.dp(8), Screen.dp(8), 0); page.addView(historyBar, historyParams);
     historyBar.setOnLongClickListener(v -> { preview(); return true; });
     editingArticle = editing;
@@ -254,7 +254,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     if (bottom == null) return;
     bottom.removeAllViews(); formatButtons.clear();
     textTool = listTool = quoteTool = linkTool = dateTool = inlineButtonTool = null;
-    ImageView ai = icon(bottom, R.drawable.article_input_ai, R.string.ArticleAi, this::aiMenu, 44);
+    ImageView ai = icon(bottom, R.drawable.article_input_ai_24, R.string.ArticleAi, this::aiMenu, 44);
     ai.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 22));
     HorizontalScrollView toolsScroll = new HorizontalScrollView(context()); toolsScroll.setHorizontalScrollBarEnabled(false);
     toolsScroll.setFillViewport(!formatsVisible); toolsScroll.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 22));
@@ -264,28 +264,28 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     LinearLayout.LayoutParams toolsParams = new LinearLayout.LayoutParams(0, Screen.dp(44), 1); toolsParams.leftMargin = Screen.dp(8);
     bottom.addView(toolsScroll, toolsParams);
     if (formatsVisible) {
-      styleTool(R.drawable.article_formatting_bold, R.string.ArticleBold, new TdApi.RichTextBold(emptyText()));
-      styleTool(R.drawable.article_formatting_italic, R.string.ArticleItalic, new TdApi.RichTextItalic(emptyText()));
-      styleTool(R.drawable.article_formatting_underline, R.string.ArticleUnderline, new TdApi.RichTextUnderline(emptyText()));
-      styleTool(R.drawable.article_formatting_strikethrough, R.string.ArticleStrike, new TdApi.RichTextStrikethrough(emptyText()));
-      styleTool(R.drawable.article_formatting_spoiler, R.string.ArticleSpoiler, new TdApi.RichTextSpoiler(emptyText()));
-      styleTool(R.drawable.article_iv_code, R.string.ArticleCode, new TdApi.RichTextFixed(emptyText()));
-      styleTool(R.drawable.article_formatting_marked, R.string.ArticleMarked, new TdApi.RichTextMarked(emptyText()));
-      styleTool(R.drawable.article_iv_sub, R.string.ArticleSubscript, new TdApi.RichTextSubscript(emptyText()));
-      styleTool(R.drawable.article_iv_super, R.string.ArticleSuperscript, new TdApi.RichTextSuperscript(emptyText()));
-      quoteTool = icon(tools, R.drawable.article_iv_quote, R.string.ArticleQuote, fields::toggleQuoteSelection, 40);
-      inlineButtonTool = icon(tools, R.drawable.article_iv_button, R.string.ArticleButton, this::inlineButtonMenu, 40);
+      styleTool(R.drawable.article_formatting_bold_24, R.string.ArticleBold, new TdApi.RichTextBold(emptyText()));
+      styleTool(R.drawable.article_formatting_italic_24, R.string.ArticleItalic, new TdApi.RichTextItalic(emptyText()));
+      styleTool(R.drawable.article_formatting_underline_24, R.string.ArticleUnderline, new TdApi.RichTextUnderline(emptyText()));
+      styleTool(R.drawable.article_formatting_strikethrough_24, R.string.ArticleStrike, new TdApi.RichTextStrikethrough(emptyText()));
+      styleTool(R.drawable.article_formatting_spoiler_24, R.string.ArticleSpoiler, new TdApi.RichTextSpoiler(emptyText()));
+      styleTool(R.drawable.article_iv_code_24, R.string.ArticleCode, new TdApi.RichTextFixed(emptyText()));
+      styleTool(R.drawable.article_formatting_marked_24, R.string.ArticleMarked, new TdApi.RichTextMarked(emptyText()));
+      styleTool(R.drawable.article_iv_sub_24, R.string.ArticleSubscript, new TdApi.RichTextSubscript(emptyText()));
+      styleTool(R.drawable.article_iv_super_24, R.string.ArticleSuperscript, new TdApi.RichTextSuperscript(emptyText()));
+      quoteTool = icon(tools, R.drawable.article_iv_quote_24, R.string.ArticleQuote, fields::toggleQuoteSelection, 40);
+      inlineButtonTool = icon(tools, R.drawable.article_iv_button_24, R.string.ArticleButton, this::inlineButtonMenu, 40);
       LinearLayout links = toolGroup();
       linkTool = icon(links, R.drawable.article_media_link_24, R.string.ArticleLink, this::linkEditor, 38);
       dateTool = icon(links, R.drawable.baseline_date_range_24, R.string.ArticleInsertDate, this::dateEditor, 38);
-      icon(toolGroup(), R.drawable.article_iv_math, R.string.ArticleFormula, this::inlineFormulaEditor, 38);
+      icon(toolGroup(), R.drawable.article_iv_math_24, R.string.ArticleFormula, this::inlineFormulaEditor, 38);
       sendButton = null;
     } else {
       icon(tools, R.drawable.baseline_emoticon_outline_24, R.string.ArticleEmoji, this::emojiPicker, 40);
-      textTool = icon(tools, R.drawable.article_iv_text, R.string.ArticleFormat, this::textMenu, 40);
-      listTool = icon(tools, R.drawable.article_iv_lists, R.string.ArticleList, this::listMenu, 40);
-      icon(tools, R.drawable.article_iv_table, R.string.ArticleTable, () -> { if (!fields.showTableMenu(toolAnchor)) fields.insert(newBlock(R.string.ArticleTable)); }, 40);
-      icon(tools, R.drawable.article_iv_math, R.string.ArticleFormula, () -> formulaEditor("", value -> fields.insert(new TdApi.InputPageBlockMathematicalExpression(value))), 40);
+      textTool = icon(tools, R.drawable.article_iv_text_24, R.string.ArticleFormat, this::textMenu, 40);
+      listTool = icon(tools, R.drawable.article_iv_lists_24, R.string.ArticleList, this::listMenu, 40);
+      icon(tools, R.drawable.article_iv_table_24, R.string.ArticleTable, () -> { if (!fields.showTableMenu(toolAnchor)) fields.insert(newBlock(R.string.ArticleTable)); }, 40);
+      icon(tools, R.drawable.article_iv_math_24, R.string.ArticleFormula, () -> formulaEditor("", value -> fields.insert(new TdApi.InputPageBlockMathematicalExpression(value))), 40);
       icon(tools, R.drawable.article_outline_poll_attach_24, R.string.ArticleAttachment, this::attachmentMenu, 40);
       sendButton = icon(bottom, !editingArticle ? R.drawable.article_send_plane_24 : R.drawable.baseline_check_24, !editingArticle ? R.string.Send : R.string.Save, this::send, 44);
       ((LinearLayout.LayoutParams) sendButton.getLayoutParams()).leftMargin = Screen.dp(8);
@@ -328,28 +328,28 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     selectTool(textTool, listStyle == 0 && fields.canChangeTextStyle(), fields.canChangeTextStyle());
     selectTool(listTool, listStyle != 0, fields.canChangeTextStyle() || listStyle != 0);
     if (textTool != null) {
-      int resource = heading ? new int[] {R.drawable.article_iv_h1, R.drawable.article_iv_h2, R.drawable.article_iv_h3, R.drawable.article_iv_h4, R.drawable.article_iv_h5, R.drawable.article_iv_h6}[Math.max(0, Math.min(5, ((TdApi.InputPageBlockSectionHeading) block).size - 1))] :
-        block instanceof TdApi.InputPageBlockPreformatted ? R.drawable.article_iv_code : block instanceof TdApi.InputPageBlockFooter ? R.drawable.article_iv_footer :
-        block instanceof TdApi.InputPageBlockPullQuote ? R.drawable.article_iv_pullquote : quote ? R.drawable.article_iv_quote : R.drawable.article_iv_text;
+      int resource = heading ? new int[] {R.drawable.article_iv_h1_24, R.drawable.article_iv_h2_24, R.drawable.article_iv_h3_24, R.drawable.article_iv_h4_24, R.drawable.article_iv_h5_24, R.drawable.article_iv_h6_24}[Math.max(0, Math.min(5, ((TdApi.InputPageBlockSectionHeading) block).size - 1))] :
+        block instanceof TdApi.InputPageBlockPreformatted ? R.drawable.article_iv_code_24 : block instanceof TdApi.InputPageBlockFooter ? R.drawable.article_iv_footer_24 :
+        block instanceof TdApi.InputPageBlockPullQuote ? R.drawable.article_iv_pullquote_24 : quote ? R.drawable.article_iv_quote_24 : R.drawable.article_iv_text_24;
       textTool.setImageResource(resource);
     }
-    if (listTool != null) listTool.setImageResource(listStyle == 2 ? R.drawable.article_iv_ordered_list : listStyle == 3 ? R.drawable.article_iv_todo : listStyle == 4 ? R.drawable.article_iv_details : R.drawable.article_iv_lists);
+    if (listTool != null) listTool.setImageResource(listStyle == 2 ? R.drawable.article_iv_ordered_list_24 : listStyle == 3 ? R.drawable.article_iv_todo_24 : listStyle == 4 ? R.drawable.article_iv_details_24 : R.drawable.article_iv_lists_24);
   }
   private void textMenu () {
     TdApi.InputPageBlock block = fields.selectedBlock();
     new ArticleEditorPopup(context())
-      .checked(R.drawable.article_iv_h1, R.string.ArticleHeading, block instanceof TdApi.InputPageBlockSectionHeading, this::headingMenu)
-      .checked(R.drawable.article_iv_text2, R.string.ArticleTextStyleText, block instanceof TdApi.InputPageBlockParagraph, () -> fields.convert(TdApi.InputPageBlockParagraph::new))
-      .checked(R.drawable.article_iv_quote, R.string.ArticleQuote, block instanceof TdApi.InputPageBlockBlockQuote || block instanceof TdApi.InputPageBlockExpandableBlockQuote, () -> fields.convert(text -> new TdApi.InputPageBlockBlockQuote(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(text)}, emptyText())))
-      .checked(R.drawable.article_iv_pullquote, R.string.ArticlePullQuote, block instanceof TdApi.InputPageBlockPullQuote, () -> fields.convert(text -> new TdApi.InputPageBlockPullQuote(text, emptyText())))
-      .checked(R.drawable.article_iv_code, R.string.ArticleCode, block instanceof TdApi.InputPageBlockPreformatted, () -> fields.convert(text -> new TdApi.InputPageBlockPreformatted(text, "")))
-      .checked(R.drawable.article_iv_footer, R.string.ArticleFooter, block instanceof TdApi.InputPageBlockFooter, () -> fields.convert(TdApi.InputPageBlockFooter::new))
+      .checked(R.drawable.article_iv_h1_24, R.string.ArticleHeading, block instanceof TdApi.InputPageBlockSectionHeading, this::headingMenu)
+      .checked(R.drawable.article_iv_text2_24, R.string.ArticleTextStyleText, block instanceof TdApi.InputPageBlockParagraph, () -> fields.convert(TdApi.InputPageBlockParagraph::new))
+      .checked(R.drawable.article_iv_quote_24, R.string.ArticleQuote, block instanceof TdApi.InputPageBlockBlockQuote || block instanceof TdApi.InputPageBlockExpandableBlockQuote, () -> fields.convert(text -> new TdApi.InputPageBlockBlockQuote(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(text)}, emptyText())))
+      .checked(R.drawable.article_iv_pullquote_24, R.string.ArticlePullQuote, block instanceof TdApi.InputPageBlockPullQuote, () -> fields.convert(text -> new TdApi.InputPageBlockPullQuote(text, emptyText())))
+      .checked(R.drawable.article_iv_code_24, R.string.ArticleCode, block instanceof TdApi.InputPageBlockPreformatted, () -> fields.convert(text -> new TdApi.InputPageBlockPreformatted(text, "")))
+      .checked(R.drawable.article_iv_footer_24, R.string.ArticleFooter, block instanceof TdApi.InputPageBlockFooter, () -> fields.convert(TdApi.InputPageBlockFooter::new))
       .show(toolAnchor);
   }
   private void headingMenu () {
     ArticleEditorPopup popup = new ArticleEditorPopup(context());
     popup.item(R.drawable.baseline_arrow_back_24, R.string.ArticleBack, this::textMenu).gap();
-    int[] icons = {R.drawable.article_iv_h1, R.drawable.article_iv_h2, R.drawable.article_iv_h3, R.drawable.article_iv_h4, R.drawable.article_iv_h5, R.drawable.article_iv_h6};
+    int[] icons = {R.drawable.article_iv_h1_24, R.drawable.article_iv_h2_24, R.drawable.article_iv_h3_24, R.drawable.article_iv_h4_24, R.drawable.article_iv_h5_24, R.drawable.article_iv_h6_24};
     TdApi.InputPageBlock block = fields.selectedBlock();
     for (int i = 0; i < icons.length; i++) {
       int level = i + 1;
@@ -361,13 +361,13 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     int style = fields.selectedListStyle();
     ArticleEditorPopup popup = new ArticleEditorPopup(context())
       .checked(0, R.string.ArticleNoList, style == 0, () -> fields.listStyle(0))
-      .checked(R.drawable.article_iv_list, R.string.ArticleBulleted, style == 1, () -> fields.listStyle(1))
-      .checked(R.drawable.article_iv_ordered_list, R.string.ArticleNumbered, style == 2, () -> fields.listStyle(2))
-      .checked(R.drawable.article_iv_todo, R.string.ArticleChecklist, style == 3, () -> fields.listStyle(3))
-      .checked(R.drawable.article_iv_details, R.string.ArticleToggle, style == 4, () -> fields.convert(text -> new TdApi.InputPageBlockDetails(text, paragraph(), true)));
+      .checked(R.drawable.article_iv_list_24, R.string.ArticleBulleted, style == 1, () -> fields.listStyle(1))
+      .checked(R.drawable.article_iv_ordered_list_24, R.string.ArticleNumbered, style == 2, () -> fields.listStyle(2))
+      .checked(R.drawable.article_iv_todo_24, R.string.ArticleChecklist, style == 3, () -> fields.listStyle(3))
+      .checked(R.drawable.article_iv_details_24, R.string.ArticleToggle, style == 4, () -> fields.convert(text -> new TdApi.InputPageBlockDetails(text, paragraph(), true)));
     if (fields.canIndent() || fields.canOutdent()) popup.gap();
-    if (fields.canIndent()) popup.item(R.drawable.article_iv_list_tab, R.string.ArticleIndent, () -> fields.indent(false));
-    if (fields.canOutdent()) popup.item(R.drawable.article_iv_list_untab, R.string.ArticleOutdent, () -> fields.indent(true));
+    if (fields.canIndent()) popup.item(R.drawable.article_iv_list_tab_24, R.string.ArticleIndent, () -> fields.indent(false));
+    if (fields.canOutdent()) popup.item(R.drawable.article_iv_list_untab_24, R.string.ArticleOutdent, () -> fields.indent(true));
     popup.show(toolAnchor);
   }
   private void attachmentMenu () {

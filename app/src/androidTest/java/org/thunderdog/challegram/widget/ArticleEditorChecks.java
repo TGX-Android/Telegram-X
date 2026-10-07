@@ -252,7 +252,7 @@ public final class ArticleEditorChecks {
   }
 
   public static void aiIconCentered (Context context) {
-    android.graphics.drawable.Drawable icon = androidx.core.content.ContextCompat.getDrawable(context, org.thunderdog.challegram.R.drawable.article_input_ai);
+    android.graphics.drawable.Drawable icon = androidx.core.content.ContextCompat.getDrawable(context, org.thunderdog.challegram.R.drawable.article_input_ai_24);
     require(icon != null, "Missing AI icon");
     Bitmap image = Bitmap.createBitmap(144, 144, Bitmap.Config.ARGB_8888);
     try {

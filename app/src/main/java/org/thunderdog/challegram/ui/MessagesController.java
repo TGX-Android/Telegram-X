@@ -1478,7 +1478,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.addView(emojiButton);
       contentView.addView(attachButtons);
       articleExpandButton = new ImageView(context);
-      articleExpandButton.setImageResource(R.drawable.article_iv_fullscreen);
+      articleExpandButton.setImageResource(R.drawable.article_iv_fullscreen_24);
       articleExpandButton.setScaleType(ImageView.ScaleType.CENTER);
       articleExpandButton.setColorFilter(Theme.iconColor());
       addThemeFilterListener(articleExpandButton, ColorId.icon);
