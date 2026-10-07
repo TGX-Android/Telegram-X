@@ -156,11 +156,77 @@ class ForumTopicStoreTest {
     assertEquals(ForumTopicStore.PAGINATION_ERROR, session.snapshot.error!!.code)
   }
 
-  @Test fun advancingCursorWithoutNewRowsStops() {
+  @Test fun advancingCursorWithoutNewRowsContinuesAndMergesUpdates() {
     val session = loaded(topic())
     session.loadMore()
-    backend.next<TdApi.GetForumTopics>().reply(page(topic(), cursor = ForumTopicStore.Cursor(999, 999, 17)))
+    backend.next<TdApi.GetForumTopics>().reply(page(topic().apply { unreadCount = 3 }, cursor = ForumTopicStore.Cursor(999, 999, 17)))
+    assertNull(session.snapshot.error)
+    assertFalse(session.snapshot.endReached)
+    assertEquals(3, session.snapshot.topics.single().unreadCount)
+    session.loadMore()
+    assertEquals(999, (backend.next<TdApi.GetForumTopics>().request as TdApi.GetForumTopics).offsetDate)
+    backend.next<TdApi.GetForumTopics>().reply(page(topic(18)))
+    assertEquals(setOf(17, 18), ids(session).toSet())
+    session.loadMore()
+    backend.next<TdApi.GetForumTopics>().reply(page())
+    assertTrue(session.snapshot.endReached)
+    assertNull(session.snapshot.error)
+  }
+
+  @Test fun hiddenGeneralOverlapAfterShortPageReachesEndDespiteApproximateCount() {
+    val general = topic(1).apply { info.isHidden = true; info.isClosed = true }
+    val session = ForumTopicStore(backend).openList(100, "") { }
+    backend.next<TdApi.GetForumTopics>().reply(page(general, topic(17), total = 1))
+    assertFalse(session.snapshot.endReached)
+    session.loadMore()
+    backend.next<TdApi.GetForumTopics>().reply(page(general, total = 1))
+    assertNull(session.snapshot.error)
+    assertFalse(session.snapshot.endReached)
+    assertEquals(setOf(1, 17), ids(session).toSet())
+    session.loadMore()
+    backend.next<TdApi.GetForumTopics>().reply(page(total = 1))
+    assertTrue(session.snapshot.endReached)
+    assertFalse(session.snapshot.stale)
+    assertNull(session.snapshot.error)
+    session.loadMore()
+    assertEquals(3, backend.calls.size)
+  }
+
+  @Test fun unboundedAdvancingOverlapStopsAndRefreshResetsTheBudget() {
+    val session = loaded(topic())
+    repeat(ForumTopicStore.MAX_OVERLAP_PAGES + 1) { index ->
+      session.loadMore()
+      backend.next<TdApi.GetForumTopics>().reply(page(topic(), cursor = ForumTopicStore.Cursor(1000 + index, 1, 17)))
+      if (index < ForumTopicStore.MAX_OVERLAP_PAGES) assertNull(session.snapshot.error)
+    }
     assertEquals(ForumTopicStore.PAGINATION_ERROR, session.snapshot.error!!.code)
+    val calls = backend.calls.size
+    session.loadMore()
+    backend.advance(60000)
+    assertEquals(calls, backend.calls.size)
+    session.retry()
+    backend.next<TdApi.GetForumTopics>().reply(page(topic()))
+    session.loadMore()
+    backend.next<TdApi.GetForumTopics>().reply(page(topic(), cursor = ForumTopicStore.Cursor(2000, 1, 17)))
+    assertNull(session.snapshot.error)
+  }
+
+  @Test fun newRowsResetConsecutiveOverlapBudget() {
+    val session = loaded(topic())
+    repeat(2) { pass ->
+      repeat(ForumTopicStore.MAX_OVERLAP_PAGES) { index ->
+        session.loadMore()
+        backend.next<TdApi.GetForumTopics>().reply(page(topic(), cursor = ForumTopicStore.Cursor(1000 + pass * 100 + index, 1, 17)))
+        assertNull(session.snapshot.error)
+      }
+      session.loadMore()
+      backend.next<TdApi.GetForumTopics>().reply(page(topic(18 + pass)))
+      assertNull(session.snapshot.error)
+    }
+    session.loadMore()
+    backend.next<TdApi.GetForumTopics>().reply(page())
+    assertTrue(session.snapshot.endReached)
+    assertEquals(setOf(17, 18, 19), ids(session).toSet())
   }
 
   @Test fun malformedEmptyPageDoesNotLoop() {

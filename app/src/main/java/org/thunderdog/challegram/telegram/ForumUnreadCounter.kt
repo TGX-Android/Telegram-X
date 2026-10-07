@@ -31,6 +31,7 @@ class ForumUnreadCounter(private val backend: ForumTopicStore.Backend, initially
   private class Scan(val revision: Long) {
     val topics = HashMap<Int, ReadState>()
     val cursors = HashSet<ForumTopicStore.Cursor>()
+    var overlapPages = 0
     var cursor = ForumTopicStore.Cursor()
   }
   private inner class State(val chatId: Long) {
@@ -225,8 +226,11 @@ class ForumUnreadCounter(private val backend: ForumTopicStore.Backend, initially
       state.reads[topic.info.forumTopicId]?.let { if (it > value.inbox) value = value.readThrough(it) }
       scan.topics[topic.info.forumTopicId] = value
     }
+    // Hidden General and other overlaps can advance the cursor without adding a topic.
+    // Keep walking to authoritative EOF, with the same bounded overlap as the list.
+    scan.overlapPages = if (scan.topics.size == oldSize) scan.overlapPages + 1 else 0
     if (result.topics.isEmpty() || next.isEmpty || next == cursor || !scan.cursors.add(next) ||
-      scan.topics.size == oldSize || scan.topics.size > MAX_TOPICS) { fail(state); return }
+      scan.overlapPages > ForumTopicStore.MAX_OVERLAP_PAGES || scan.topics.size > MAX_TOPICS) { fail(state); return }
     scan.cursor = next
     queue.add(state)
   }

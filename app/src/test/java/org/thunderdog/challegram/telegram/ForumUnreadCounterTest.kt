@@ -132,6 +132,57 @@ class ForumUnreadCounterTest {
     assertEquals(ForumUnreadCounter.UNKNOWN, counter.cachedCount(100))
   }
 
+  @Test fun `hidden General overlap completes the count only at EOF`() {
+    val general = unread(1).apply { info.isHidden = true; info.isClosed = true }
+    counter.observe(100) { }; attach()
+    backend.next<TdApi.GetForumTopics>().reply(page(general, topic(17), total = 1))
+    backend.advance(0)
+    reply(general)
+    assertEquals(ForumUnreadCounter.UNKNOWN, counter.cachedCount(100))
+    reply()
+    assertEquals(1, counter.cachedCount(100))
+    assertEquals(3, backend.calls.size)
+  }
+
+  @Test fun `overlap updates and later topics are included without double counting`() {
+    counter.observe(100) { }; attach(); reply(unread())
+    backend.next<TdApi.GetForumTopics>().reply(page(topic(), cursor = ForumTopicStore.Cursor(999, 999, 17)))
+    backend.advance(0)
+    assertEquals(ForumUnreadCounter.UNKNOWN, counter.cachedCount(100))
+    reply(unread(30)); reply()
+    assertEquals(1, counter.cachedCount(100))
+  }
+
+  @Test fun `unbounded advancing overlaps keep previous complete count and stop`() {
+    counter.observe(100) { }; attach(); load(unread())
+    counter.invalidate(100); backend.advance(); reply(topic())
+    repeat(ForumTopicStore.MAX_OVERLAP_PAGES + 1) { index ->
+      backend.next<TdApi.GetForumTopics>().reply(page(topic(), cursor = ForumTopicStore.Cursor(1000 + index, 1, 17)))
+      backend.advance(0)
+    }
+    val calls = backend.calls.size
+    backend.advance(180000)
+    assertEquals(calls, backend.calls.size)
+    assertEquals(1, counter.cachedCount(100))
+    counter.refreshVisible(); backend.advance(); reply(topic())
+    backend.next<TdApi.GetForumTopics>().reply(page(topic(), cursor = ForumTopicStore.Cursor(2000, 1, 17)))
+    backend.advance(0); reply()
+    assertEquals(0, counter.cachedCount(100))
+  }
+
+  @Test fun `new topics reset the consecutive overlap budget`() {
+    counter.observe(100) { }; attach(); reply(topic())
+    repeat(2) { pass ->
+      repeat(ForumTopicStore.MAX_OVERLAP_PAGES) { index ->
+        backend.next<TdApi.GetForumTopics>().reply(page(topic(), cursor = ForumTopicStore.Cursor(1000 + pass * 100 + index, 1, 17)))
+        backend.advance(0)
+      }
+      reply(unread(18 + pass))
+    }
+    reply()
+    assertEquals(2, counter.cachedCount(100))
+  }
+
   @Test fun `foreign chat and malformed page never produce a total`() {
     counter.observe(100) { }; attach(); reply(topic(chat = 200))
     assertEquals(ForumUnreadCounter.UNKNOWN, counter.cachedCount(100))

@@ -108,6 +108,7 @@ class ForumTopicStore(
     val pinnedRanks = LinkedHashMap<Key, Int>()
     val sessions = LinkedHashSet<ListSession>()
     val seenCursors = HashSet<Cursor>()
+    var overlapPages = 0
     var cursor = Cursor()
     var totalCount = -1
     var initialized = false
@@ -297,6 +298,7 @@ class ForumTopicStore(
       // Retain updates arriving after refresh began, but replace old page membership.
       state.ids.removeAll { key -> records[key]?.let { maxOf(it.infoStamp, it.updateStamp, it.dirtyStamp, it.fullStamp) <= request.stamp } != false }
       state.seenCursors.clear()
+      state.overlapPages = 0
       state.pinnedRanks.clear()
       state.previewTruncated = false
     }
@@ -316,8 +318,13 @@ class ForumTopicStore(
     state.previewStamp = request.stamp
     backend.schedule(PREVIEW_CACHE_MS) { onOwner { if (lists[state.key] === state && state.previewStamp == request.stamp) state.previewFresh = false } }
     state.endReached = result.topics.isEmpty() && next.isEmpty
+    // TDLib may return an overlapping page (notably hidden General) before EOF.
+    // Cursor progress, not the number of newly inserted rows, allows the next page.
+    // Bound consecutive overlap to keep a changing, broken cursor from looping forever.
+    state.overlapPages = if (request.kind == Load.MORE && result.topics.isNotEmpty() &&
+        state.ids.none { it !in previousIds }) state.overlapPages + 1 else 0
     if (!state.endReached && (next.isEmpty || next == request.cursor || !state.seenCursors.add(next) ||
-        (request.kind == Load.MORE && state.ids.none { it !in previousIds }) || result.topics.isEmpty())) {
+        state.overlapPages > MAX_OVERLAP_PAGES || result.topics.isEmpty())) {
       state.error = TdApi.Error(PAGINATION_ERROR, "Forum topic pagination made no progress; refresh to retry")
     }
     if (!next.isEmpty) state.cursor = next
@@ -711,6 +718,7 @@ class ForumTopicStore(
     const val REQUEST_TIMEOUT_MS = 15000L
     const val MAX_TOPIC_REQUESTS = 4
     const val PAGINATION_ERROR = -1
+    const val MAX_OVERLAP_PAGES = 8
     @JvmStatic fun normalizeQuery(query: String): String = query.trim()
 
     private fun sameInfo(a: TdApi.ForumTopicInfo?, b: TdApi.ForumTopicInfo?): Boolean = a === b || a != null && b != null &&
