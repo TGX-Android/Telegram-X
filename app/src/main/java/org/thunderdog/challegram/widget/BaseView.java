@@ -258,6 +258,18 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     }
   }
 
+  protected final boolean canPerformLongClickAction () {
+    return isEnabled() && onLongClickListener != null;
+  }
+
+  /**
+   * Long presses reach the long click listener through {@link ClickHelper},
+   * so {@link View#performLongClick()} does not call it.
+   */
+  protected final boolean performLongClickAction () {
+    return canPerformLongClickAction() && onLongClickListener.onLongClick(this);
+  }
+
   @Override
   public boolean needLongPress (float x, float y) {
     return isEnabled() && (onLongClickListener != null || needForceTouch(x, y) != FORCE_TOUCH_NONE);

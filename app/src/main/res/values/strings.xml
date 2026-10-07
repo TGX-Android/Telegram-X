@@ -5918,5 +5918,13 @@
   <string name="AccDescrOpenInBrowser">Open in browser</string>
   <string name="AccDescrUnreadChats_one">%1$s unread chat</string>
   <string name="AccDescrUnreadChats_other">%1$s unread chats</string>
+  <string name="AccDescrVerified">Verified</string>
+  <string name="AccDescrChatPinned">Pinned</string>
+  <string name="AccDescrMentionReaction">With new reaction</string>
+  <string name="AccDescrSentDate">Sent %1$s</string>
+  <string name="AccDescrReceivedDate">Received %1$s</string>
+  <string name="AccDescrMsgSending">Sending</string>
+  <string name="AccDescrMsgRead">Seen</string>
+  <string name="AccDescrMsgUnread">Not seen</string>
 
 </resources>

@@ -698,6 +698,30 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return (textFlags & FLAG_ELLIPSIZED) != 0;
   }
 
+  /**
+   * @return length of the beginning of {@link #getText()} that is drawn before the ellipsis,
+   * or length of the whole text when it is not ellipsized
+   */
+  public int getVisibleTextLength () {
+    if (originalText == null) {
+      return 0;
+    }
+    if (!isEllipsized() || parts == null) {
+      return originalText.length();
+    }
+    int length = 0;
+    for (TextPart part : parts) {
+      String line = part.getLine();
+      if (line == originalText) {
+        length = Math.max(length, part.getEnd());
+      } else if (line != suffix && !Strings.ELLIPSIS.equals(line)) {
+        // Shortened copy of the text that follows, drawn in front of the ellipsis
+        length += part.getEnd() - part.getStart();
+      }
+    }
+    return Math.min(length, originalText.length());
+  }
+
   // Getters
 
   public boolean isEmpty () {
