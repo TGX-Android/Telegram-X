@@ -714,9 +714,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       String line = part.getLine();
       if (line == originalText) {
         length = Math.max(length, part.getEnd());
-      } else if (line != suffix && !Strings.ELLIPSIS.equals(line)) {
+      } else if (part.getOriginalStart() != -1) {
         // Shortened copy of the text that follows, drawn in front of the ellipsis
-        length += part.getEnd() - part.getStart();
+        length = Math.max(length, part.getOriginalStart() + part.getEnd() - part.getStart());
       }
     }
     return Math.min(length, originalText.length());
@@ -1910,6 +1910,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
         final float defaultEllipsisWidth = U.measureText(defaultEllipsis, getTextPaint(entity));
         if (hasEllipsizedPart && !StringUtils.equalsOrBothEmpty(ellipsis, defaultEllipsis) && ellipsis.length() > defaultEllipsis.length()) {
           TextPart ellipsisPart = new TextPart(this, ellipsis, 0, ellipsis.length() - defaultEllipsis.length(), lineIndex, paragraphIndex);
+          ellipsisPart.setOriginalStart(start);
           ellipsisPart.setXY(currentX, currentY);
           ellipsisPart.setWidth(ellipsisWidth - defaultEllipsisWidth);
           ellipsisPart.setEntity(entity);
@@ -1974,6 +1975,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
               ellipsisWidth = BiDiUtils.measureTextRun(lastPart.getBidiEntity(), ellipsis, paint);
               final float defaultEllipsisWidth2 = U.measureText(defaultEllipsis, paint);
               if (currentX + ellipsisWidth <= lineMaxWidth) {
+                lastPart.setOriginalStart(lastPart.getStart());
                 lastPart.setLine(ellipsis, 0, ellipsis.length() - defaultEllipsis.length());
                 lastPart.setWidth(ellipsisWidth - defaultEllipsisWidth2);
                 currentX += (int) (ellipsisWidth - defaultEllipsisWidth2);

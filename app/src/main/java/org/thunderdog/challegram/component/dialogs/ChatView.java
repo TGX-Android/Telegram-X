@@ -854,9 +854,16 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     } else if (unreadCount == Tdlib.CHAT_FAILED && chat.isArchive()) {
       appendAccessibilityPart(b, Lang.getString(R.string.failed));
     }
-    int mentionCount = chat.getUnreadMentionCount();
-    if (mentionCount > 0) {
-      appendAccessibilityPart(b, Lang.plural(R.string.mentionCount, mentionCount));
+    if (chat.isArchive()) {
+      // Archive only knows about the chats loaded so far, so it shows a mention badge without a count
+      if (chat.hasUnreadMentions()) {
+        appendAccessibilityPart(b, Lang.getString(R.string.AccDescrMentionUnread));
+      }
+    } else {
+      int mentionCount = chat.getUnreadMentionCount();
+      if (mentionCount > 0) {
+        appendAccessibilityPart(b, Lang.plural(R.string.mentionCount, mentionCount));
+      }
     }
     if (chat.hasUnreadReactions()) {
       appendAccessibilityPart(b, Lang.getString(R.string.AccDescrMentionReaction));

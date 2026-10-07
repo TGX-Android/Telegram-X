@@ -850,12 +850,12 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     }
   }
 
+  /**
+   * @return number of unread mentions, or 0 for the archive, which only knows about the chats loaded so far,
+   * see {@link #hasUnreadMentions()}
+   */
   public int getUnreadMentionCount () {
-    if (isArchive()) {
-      return archive.unreadMentionCount();
-    } else {
-      return chat.unreadMentionCount;
-    }
+    return chat != null ? chat.unreadMentionCount : 0;
   }
 
   public boolean hasScheduledMessages () {

@@ -52,6 +52,7 @@ public class TextPart {
   private @BiDiEntity int bidiEntity;
 
   private int lineIndex, paragraphIndex;
+  private int originalStart = -1;
 
   public TextPart (Text source, String line, int start, int end, int lineIndex, int paragraphIndex) {
     this.source = source;
@@ -74,6 +75,22 @@ public class TextPart {
     this.line = line;
     this.start = start;
     this.end = end;
+  }
+
+  /**
+   * Marks this part as a shortened copy of the source text, drawn in front of the ellipsis.
+   *
+   * @param originalStart offset in the source text where the copied text starts
+   */
+  public void setOriginalStart (int originalStart) {
+    this.originalStart = originalStart;
+  }
+
+  /**
+   * @return offset in the source text where the shortened copy starts, or -1
+   */
+  public int getOriginalStart () {
+    return originalStart;
   }
 
   public void setLineIndex (int lineIndex, int paragraphIndex) {

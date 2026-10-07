@@ -190,16 +190,6 @@ public final class TdlibChatList implements Comparator<TdlibChatList.Entry> {
     }
   }
 
-  public int unreadMentionCount () {
-    synchronized (list) {
-      int count = 0;
-      for (Entry entry : list) {
-        count += entry.chat.unreadMentionCount;
-      }
-      return count;
-    }
-  }
-
   public boolean hasUnreadReactions () {
     synchronized (list) {
       for (Entry entry : list) {
