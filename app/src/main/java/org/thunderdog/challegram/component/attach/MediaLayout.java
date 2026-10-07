@@ -114,6 +114,7 @@ public class MediaLayout extends FrameLayoutFix implements
     void onMediaSelected (ImageGalleryFile file, boolean asFile, boolean spoiler);
     void onFileSelected (String path, boolean audio);
     void onLocationSelected (TdApi.Location location, String title);
+    void onOpenGallery (boolean asFile);
   }
 
   public static final long REVEAL_DURATION = 220l;
@@ -1413,6 +1414,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public void openGallery (boolean sendAsFile) {
     hide(false);
+    if (callback instanceof ArticleCallback) { ((ArticleCallback) callback).onOpenGallery(sendAsFile); return; }
     UI.openGalleryDelayed(UI.getContext(getContext()), sendAsFile);
   }
 
@@ -1527,7 +1529,7 @@ public class MediaLayout extends FrameLayoutFix implements
       groupMediaFactor = needGroupMedia ? 1f : 0f;
       bottomBar.addView(counterHintView);
 
-      sendButton = new SendButton(getContext(), R.drawable.deproko_baseline_send_24) {
+      sendButton = new SendButton(getContext(), isArticlePicker() ? R.drawable.baseline_check_24 : R.drawable.deproko_baseline_send_24) {
         @Override
         public boolean onTouchEvent (MotionEvent e) {
           return isEnabled() && Views.isValid(this) && super.onTouchEvent(e);

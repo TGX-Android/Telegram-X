@@ -279,7 +279,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   public boolean supportsMediaGrouping () {
-    return true;
+    return !mediaLayout.isArticlePicker();
   }
 
   private static int calculateSpanCount (int width, int height) {

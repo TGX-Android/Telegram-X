@@ -418,14 +418,20 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
         TdApi.PageBlockCaption caption = emptyCaption(); caption.text = new TdApi.RichTextPlain(title);
         fields.insert(new TdApi.InputPageBlockMap(location, 15, 640, 360, caption));
       }
+      @Override public void onOpenGallery (boolean asFile) { pickMedia(asFile ? ArticleMediaFiles.Kind.DOCUMENT : null, fields::insert); }
     });
-    if (type == 0 || type == 3) picker.init(type == 0 ? org.thunderdog.challegram.component.attach.MediaLayout.MODE_GALLERY : org.thunderdog.challegram.component.attach.MediaLayout.MODE_LOCATION, null);
+    if (type == 3) picker.init(org.thunderdog.challegram.component.attach.MediaLayout.MODE_LOCATION, null);
     else {
       picker.setItemsAdapter(new org.thunderdog.challegram.component.attach.MediaLayout.ItemsAdapter() {
-        @Override public org.thunderdog.challegram.component.attach.MediaBottomBar.BarItem[] getBottomBarItems () { return new org.thunderdog.challegram.component.attach.MediaBottomBar.BarItem[] {new org.thunderdog.challegram.component.attach.MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, type == 2 ? R.string.Music : R.string.File, org.thunderdog.challegram.theme.ColorId.attachFile)}; }
+        @Override public org.thunderdog.challegram.component.attach.MediaBottomBar.BarItem[] getBottomBarItems () { return new org.thunderdog.challegram.component.attach.MediaBottomBar.BarItem[] {new org.thunderdog.challegram.component.attach.MediaBottomBar.BarItem(type == 0 ? R.drawable.baseline_image_24 : type == 2 ? R.drawable.baseline_music_note_24 : R.drawable.baseline_insert_drive_file_24, type == 0 ? R.string.Gallery : type == 2 ? R.string.Music : R.string.File, org.thunderdog.challegram.theme.ColorId.attachFile)}; }
         @Override public int getDefaultItemIndex () { return 0; }
-        @Override public boolean needBottomBar () { return false; }
-        @Override public org.thunderdog.challegram.component.attach.MediaBottomBaseController<?> createControllerForIndex (int index) { org.thunderdog.challegram.component.attach.MediaBottomFilesController files = new org.thunderdog.challegram.component.attach.MediaBottomFilesController(picker); files.setMusicOnly(type == 2); return files; }
+        @Override public boolean needBottomBar () { return true; }
+        @Override public org.thunderdog.challegram.component.attach.MediaBottomBaseController<?> createControllerForIndex (int index) {
+          if (type == 0) return new org.thunderdog.challegram.component.attach.MediaBottomGalleryController(picker);
+          org.thunderdog.challegram.component.attach.MediaBottomFilesController files = new org.thunderdog.challegram.component.attach.MediaBottomFilesController(picker);
+          files.setMusicOnly(type == 2);
+          return files;
+        }
       });
       picker.setFilesControllerDelegate(new org.thunderdog.challegram.component.attach.MediaBottomFilesController.Delegate() {
         @Override public boolean showRestriction (View view, int right) { return false; }

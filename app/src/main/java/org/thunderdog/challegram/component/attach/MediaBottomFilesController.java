@@ -380,7 +380,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
 
   @Override
   public boolean supportsMediaGrouping () {
-    return true;
+    return !mediaLayout.isArticlePicker();
   }
 
   private void setFilesItems (final LoadOperation context, final ArrayList<ListItem> items, final boolean extend) {
