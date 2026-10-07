@@ -850,6 +850,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     }
   }
 
+  /**
+   * @return number of unread mentions, or 0 for the archive, which only knows about the chats loaded so far,
+   * see {@link #hasUnreadMentions()}
+   */
+  public int getUnreadMentionCount () {
+    return chat != null ? chat.unreadMentionCount : 0;
+  }
+
   public boolean hasScheduledMessages () {
     if (isArchive()) {
       return archive.hasScheduledMessages();
@@ -1039,7 +1047,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
           }
         }
       } else {
-        int date = chat.draftMessage != null && showDraft() ? chat.draftMessage.date : chat.lastMessage != null ? chat.lastMessage.date : 0;
+        int date = getDate();
         time = date != 0 ? Lang.timeOrDateShort(date, TimeUnit.SECONDS) : "";
       }
     }
@@ -1054,7 +1062,17 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     return changed;
   }
 
-  private int getViewCount () {
+  /**
+   * @return date of the draft or the last message, which is shown as the time of the chat
+   */
+  public int getDate () {
+    if (isArchive()) {
+      return archive.maxDate();
+    }
+    return chat.draftMessage != null && showDraft() ? chat.draftMessage.date : chat.lastMessage != null ? chat.lastMessage.date : 0;
+  }
+
+  public int getViewCount () {
     return chat == null || !TD.isOut(chat.lastMessage) ? 0 : TD.getViewCount(chat.lastMessage.interactionInfo);
   }
 
@@ -1507,6 +1525,29 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   @Nullable
   public Text getText () {
     return trimmedText;
+  }
+
+  /**
+   * @return text shown in place of the message for accessibility services
+   */
+  @Nullable
+  public String getAccessibilityText () {
+    if (StringUtils.isEmpty(text)) {
+      return null;
+    }
+    String result = text;
+    if (trimmedText != null && trimmedText.isEllipsized() && StringUtils.equalsOrBothEmpty(trimmedText.getText(), text)) {
+      // Long text is cut off in the list, so read the part that is drawn
+      int visibleLength = trimmedText.getVisibleTextLength();
+      if (visibleLength > 0) {
+        result = text.substring(0, visibleLength).trim();
+      }
+    }
+    if (currentPreview != null && currentPreview.emoji != null && currentPreview.emoji.iconRepresentation != 0 && currentPreview.placeholderText != 0 && !Td.isEmpty(currentPreview.formattedText)) {
+      // Icon in front of the text stands for the content type, e.g. a photo with a caption
+      result = Lang.getString(currentPreview.placeholderText) + Lang.getConcatSeparator() + result;
+    }
+    return result;
   }
 
   @Nullable

@@ -19,9 +19,15 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.text.TextPaint;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.CheckBox;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
@@ -64,11 +70,13 @@ import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.widget.BaseView;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import tgx.td.ChatPosition;
 
@@ -208,7 +216,12 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   public void setIsSelected (boolean isSelected, boolean animated) {
+    boolean changed = this.isSelected.getValue() != isSelected;
     this.isSelected.setValue(isSelected, animated);
+    if (changed) {
+      // Selection is drawn on canvas, so let accessibility services know that it changed
+      sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+    }
   }
 
   public void setAnimationsDisabled (boolean disabled) {
@@ -408,6 +421,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       }
     }
     requestContent();
+    if (isScreenReaderEnabled()) {
+      updateAccessibilityDescription();
+    }
   }
 
   @Override
@@ -566,6 +582,10 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   protected void onDraw (Canvas c) {
     if (chat == null) {
       return;
+    }
+
+    if (isScreenReaderEnabled()) {
+      updateAccessibilityDescription();
     }
 
     final int chatListMode = getChatListMode();
@@ -756,5 +776,208 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   @Override
   public int getVisibleMessageFlags () {
     return TdlibMessageViewer.Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION | (chat != null && chat.needRefreshInteractionInfo() ? TdlibMessageViewer.Flags.REFRESH_INTERACTION_INFO : 0);
+  }
+
+  // Accessibility
+
+  private boolean isScreenReaderEnabled () {
+    AccessibilityManager manager = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+    return manager != null && manager.isEnabled() && manager.isTouchExplorationEnabled();
+  }
+
+  private void updateAccessibilityDescription () {
+    // Everything in the row is drawn on canvas. The description is kept on the view,
+    // so accessibility services are notified when it changes, e.g. when the chat
+    // shown in a reused row changes, or when the focused row gets a new message
+    setContentDescription(buildAccessibilityDescription());
+  }
+
+  private static void appendAccessibilityPart (StringBuilder b, @Nullable CharSequence part) {
+    if (!StringUtils.isEmpty(part)) {
+      if (b.length() > 0) {
+        b.append(Lang.getConcatSeparator());
+      }
+      b.append(part);
+    }
+  }
+
+  private @Nullable String buildAccessibilityDescription () {
+    if (chat == null) {
+      return null;
+    }
+    StringBuilder b = new StringBuilder();
+
+    Text title = chat.getTitle();
+    String titleText = title != null ? title.getText() : null;
+    if (chat.isArchive()) {
+      appendAccessibilityPart(b, titleText);
+    } else if (chat.isSecretChat()) {
+      appendAccessibilityPart(b, StringUtils.isEmpty(titleText) ? null : Lang.getString(R.string.ChatTitleSecretChat, titleText));
+    } else {
+      if (chat.isChannel()) {
+        appendAccessibilityPart(b, Lang.getString(R.string.Channel));
+      } else if (chat.isGroup() || chat.isSupergroup()) {
+        appendAccessibilityPart(b, Lang.getString(R.string.Group));
+      } else if (tdlib.isBotChat(chat.getChatId())) {
+        appendAccessibilityPart(b, Lang.getString(R.string.Bot));
+      }
+      appendAccessibilityPart(b, titleText);
+    }
+
+    if (chat.showFake()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.FakeMark));
+    } else if (chat.showScam()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.ScamMark));
+    }
+    if (chat.showVerify()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.AccDescrVerified));
+    }
+    if (chat.showMute()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.CategoryMuted));
+    }
+    if (chat.isOnline()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.status_Online));
+    }
+    if (chat.getScheduleAnimator().getValue()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.ScheduledMessages));
+    }
+    if (!chat.isArchive() && chat.isPinned()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.AccDescrChatPinned));
+    }
+
+    int unreadCount = chat.getUnreadCount();
+    if (unreadCount > 0) {
+      // Archive counts chats, see TGChat.getTotalUnreadCount()
+      appendAccessibilityPart(b, Lang.plural(chat.isArchive() ? R.string.AccDescrUnreadChats : R.string.xNewMessages, unreadCount));
+    } else if (unreadCount == Tdlib.CHAT_MARKED_AS_UNREAD) {
+      appendAccessibilityPart(b, Lang.getString(R.string.CategoryUnread));
+    } else if (unreadCount == Tdlib.CHAT_FAILED && chat.isArchive()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.failed));
+    }
+    if (chat.isArchive()) {
+      // Archive only knows about the chats loaded so far, so it shows a mention badge without a count
+      if (chat.hasUnreadMentions()) {
+        appendAccessibilityPart(b, Lang.getString(R.string.AccDescrMentionUnread));
+      }
+    } else {
+      int mentionCount = chat.getUnreadMentionCount();
+      if (mentionCount > 0) {
+        appendAccessibilityPart(b, Lang.plural(R.string.mentionCount, mentionCount));
+      }
+    }
+    if (chat.hasUnreadReactions()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.AccDescrMentionReaction));
+    }
+
+    if (chat.isArchive()) {
+      return b.toString();
+    }
+
+    if (chat.getSource() != null) {
+      // Proxy sponsor or public service announcement label is shown in place of the time
+      appendAccessibilityPart(b, chat.getTime());
+    } else {
+      int date = chat.getDate();
+      if (date != 0) {
+        String timestamp = Lang.getRelativeTimestamp(date, TimeUnit.SECONDS);
+        if (chat.showDraft()) {
+          appendAccessibilityPart(b, timestamp);
+        } else {
+          appendAccessibilityPart(b, Lang.getString(chat.isOutgoing() ? R.string.AccDescrSentDate : R.string.AccDescrReceivedDate, timestamp));
+        }
+      }
+    }
+
+    if (chat.isFailed()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.failed));
+    } else if (chat.isSending()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.AccDescrMsgSending));
+    } else if (chat.isOutgoing() && !chat.isSelfChat()) {
+      if (chat.showViews()) {
+        appendAccessibilityPart(b, Lang.plural(R.string.xViews, chat.getViewCount()));
+      } else {
+        appendAccessibilityPart(b, Lang.getString(chat.isUnread() ? R.string.AccDescrMsgUnread : R.string.AccDescrMsgRead));
+      }
+    }
+
+    TdlibStatusManager.Helper status = chat.statusHelper();
+    TdlibStatusManager.ChatState state = status != null ? status.drawingState() : null;
+    String chatAction = state != null && state.visibility() > 0f ? status.fullText() : null;
+    if (!StringUtils.isEmpty(chatAction)) {
+      // Chat action, e.g. typing, is drawn in place of the message
+      appendAccessibilityPart(b, chatAction);
+    } else if (!chat.isSecretChat() || chat.showDraft()) {
+      // Like Telegram for Android, secret chats don't expose their messages
+      Text prefix = chat.getPrefix();
+      if (prefix != null) {
+        appendAccessibilityPart(b, prefix.getText());
+      }
+      appendAccessibilityPart(b, chat.getAccessibilityText());
+    }
+
+    return b.toString();
+  }
+
+  private boolean isSelectable () {
+    if (isSelected.getValue()) {
+      return true;
+    }
+    if (chat == null || chat.isArchive()) {
+      return false;
+    }
+    ViewController<?> c = ViewController.findAncestor(this);
+    return c != null && c.getParentOrSelf().inSelectMode();
+  }
+
+  @Override
+  public CharSequence getAccessibilityClassName () {
+    // Chats are checked and unchecked while chats are being selected
+    return isSelectable() ? CheckBox.class.getName() : super.getAccessibilityClassName();
+  }
+
+  @Override
+  public void onInitializeAccessibilityEvent (AccessibilityEvent event) {
+    super.onInitializeAccessibilityEvent(event);
+    if (isSelectable()) {
+      event.setChecked(isSelected.getValue());
+    }
+  }
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    // Description is also updated when drawn while a screen reader is on,
+    // but other accessibility services may ask for it at any time
+    updateAccessibilityDescription();
+    super.onInitializeAccessibilityNodeInfo(info);
+    if (canPerformLongClickAction()) {
+      info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+    }
+    if (isSelectable()) {
+      info.setCheckable(true);
+      info.setChecked(isSelected.getValue());
+    }
+  }
+
+  @Override
+  public boolean performAccessibilityAction (int action, @Nullable Bundle arguments) {
+    if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+      // BaseView delivers taps through ClickHelper and its performClick() does nothing,
+      // so send accessibility clicks to the same listener a tap reaches
+      float x = getMeasuredWidth() / 2f, y = getMeasuredHeight() / 2f;
+      if (needClickAt(this, x, y)) {
+        onClickAt(this, x, y);
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+        return true;
+      }
+    } else if (action == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
+      // Opens chat options, as a long press does. Chat preview and dragging of pinned chats
+      // aren't started, because they follow the finger that holds the row
+      if (performLongClickAction()) {
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
+        return true;
+      }
+    }
+    return super.performAccessibilityAction(action, arguments);
   }
 }

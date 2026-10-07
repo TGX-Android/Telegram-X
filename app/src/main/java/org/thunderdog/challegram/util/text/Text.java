@@ -698,6 +698,30 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return (textFlags & FLAG_ELLIPSIZED) != 0;
   }
 
+  /**
+   * @return length of the beginning of {@link #getText()} that is drawn before the ellipsis,
+   * or length of the whole text when it is not ellipsized
+   */
+  public int getVisibleTextLength () {
+    if (originalText == null) {
+      return 0;
+    }
+    if (!isEllipsized() || parts == null) {
+      return originalText.length();
+    }
+    int length = 0;
+    for (TextPart part : parts) {
+      String line = part.getLine();
+      if (line == originalText) {
+        length = Math.max(length, part.getEnd());
+      } else if (part.getOriginalStart() != -1) {
+        // Shortened copy of the text that follows, drawn in front of the ellipsis
+        length = Math.max(length, part.getOriginalStart() + part.getEnd() - part.getStart());
+      }
+    }
+    return Math.min(length, originalText.length());
+  }
+
   // Getters
 
   public boolean isEmpty () {
@@ -1886,6 +1910,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
         final float defaultEllipsisWidth = U.measureText(defaultEllipsis, getTextPaint(entity));
         if (hasEllipsizedPart && !StringUtils.equalsOrBothEmpty(ellipsis, defaultEllipsis) && ellipsis.length() > defaultEllipsis.length()) {
           TextPart ellipsisPart = new TextPart(this, ellipsis, 0, ellipsis.length() - defaultEllipsis.length(), lineIndex, paragraphIndex);
+          ellipsisPart.setOriginalStart(start);
           ellipsisPart.setXY(currentX, currentY);
           ellipsisPart.setWidth(ellipsisWidth - defaultEllipsisWidth);
           ellipsisPart.setEntity(entity);
@@ -1950,6 +1975,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
               ellipsisWidth = BiDiUtils.measureTextRun(lastPart.getBidiEntity(), ellipsis, paint);
               final float defaultEllipsisWidth2 = U.measureText(defaultEllipsis, paint);
               if (currentX + ellipsisWidth <= lineMaxWidth) {
+                lastPart.setOriginalStart(lastPart.getStart());
                 lastPart.setLine(ellipsis, 0, ellipsis.length() - defaultEllipsis.length());
                 lastPart.setWidth(ellipsisWidth - defaultEllipsisWidth2);
                 currentX += (int) (ellipsisWidth - defaultEllipsisWidth2);
