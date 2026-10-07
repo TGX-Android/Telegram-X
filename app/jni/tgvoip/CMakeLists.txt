@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 project(tgcalls VERSION 1.0.0 LANGUAGES C CXX)
 
 message(STATUS "Building ${PROJECT_NAME} platform: ${ANDROID_PLATFORM} abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
