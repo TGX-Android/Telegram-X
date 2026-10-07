@@ -319,6 +319,10 @@ public final class ArticleTextInput extends CustomEmojiEditText {
   @Override public boolean onTextContextMenuItem (int id) {
     return documentActions != null && documentActions.menu(id) || super.onTextContextMenuItem(id);
   }
+  @Override public boolean onDragEvent (android.view.DragEvent event) {
+    // Block moves belong to the document; EditText otherwise consumes the drop as text.
+    return !(event.getLocalState() instanceof org.thunderdog.challegram.data.article.ArticleEditorTree.Entry) && super.onDragEvent(event);
+  }
   @Override protected InputConnection createInputConnection (EditorInfo info) {
     InputConnection base = super.createInputConnection(info);
     if (base == null) return null;

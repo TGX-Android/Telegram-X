@@ -183,6 +183,7 @@ public final class ArticleAiEditor extends LinearLayout {
     title.setSingleLine(true); description.setMaxLines(5);
     long[] emoji = {editing == null ? 0 : editing.customEmojiId};
     TextView icon = label(Lang.getString(R.string.ArticleEmoji), 18); form.addView(icon, new LayoutParams(-1, Screen.dp(48)));
+    if (emoji[0] != 0) icon.setText(org.thunderdog.challegram.data.TD.toCharSequence(new TdApi.FormattedText("✨", new TdApi.TextEntity[] {new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(emoji[0]))})));
     icon.setOnClickListener(v -> {
       org.thunderdog.challegram.tool.Keyboard.hide(title);
       Dialog picker = new Dialog(getContext(), Theme.dialogTheme()); EmojiLayout panel = new EmojiLayout(getContext());

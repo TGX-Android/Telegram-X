@@ -32,6 +32,7 @@ public final class ArticleSelectionView extends View {
   private float startX, startY, endX, endY, dragX, dragY;
   private ActionMode mode;
   private boolean updating;
+  private final java.util.IdentityHashMap<ArticleTextInput, Integer> highlightColors = new java.util.IdentityHashMap<>();
   private final Runnable autoScroll = new Runnable() {
     @Override public void run () {
       if (dragging == 0) return;
@@ -54,6 +55,8 @@ public final class ArticleSelectionView extends View {
   public int to () { return to; }
   public boolean updating () { return updating; }
   public void clear () {
+    for (java.util.Map.Entry<ArticleTextInput, Integer> entry : highlightColors.entrySet()) entry.getKey().setHighlightColor(entry.getValue());
+    highlightColors.clear();
     first = last = null; dragging = 0; removeCallbacks(autoScroll);
     if (mode != null) { ActionMode old = mode; mode = null; old.finish(); }
     invalidate();
@@ -66,6 +69,10 @@ public final class ArticleSelectionView extends View {
       int offset = startOffset; startOffset = endOffset; endOffset = offset;
     }
     first = start; last = end; from = Math.max(0, Math.min(start.length(), startOffset)); to = Math.max(0, Math.min(end.length(), endOffset));
+    for (ArticleTextInput input : inputs) {
+      if (!highlightColors.containsKey(input)) highlightColors.put(input, input.getHighlightColor());
+      input.setHighlightColor(android.graphics.Color.TRANSPARENT);
+    }
     updating = true;
     first.requestFocus(); first.setSelection(from, first == last ? to : first.length());
     updating = false;
