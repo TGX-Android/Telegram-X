@@ -90,7 +90,7 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
       int indent = 0;
       if (block.getListItem() != null) {
         indent = Screen.dp(18f);
-        for (PageBlock.ListItemInfo item : block.getListItem()) indent += Math.max(Screen.dp(16f), item.list.maxLabelWidth + Screen.dp(4f));
+        for (PageBlock.ListItemInfo item : block.getListItem()) indent += item.list.getIndent();
         indent = Math.min(indent, rowWidth / 2);
       }
       if (article.isRtl) right += indent; else left += indent;

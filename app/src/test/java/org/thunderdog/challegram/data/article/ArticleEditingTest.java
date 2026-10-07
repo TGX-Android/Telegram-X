@@ -112,4 +112,49 @@ public class ArticleEditingTest {
     assertEquals("AZ.", ArticleListLabels.label(52, "A")); assertEquals("xiv.", ArticleListLabels.label(14, "i"));
     assertEquals("3999.", ArticleListLabels.label(3999, "1")); assertEquals("2147483647.", ArticleListLabels.label(Integer.MAX_VALUE, "I"));
   }
+
+  @Test public void receivedFileWithoutCaptionCanBeEditedWithoutChangingItsReference () {
+    TdApi.File file = new TdApi.File(42, 115, 115, null, null);
+    TdApi.RichMessage received = new TdApi.RichMessage(new TdApi.PageBlock[] {
+      new TdApi.PageBlockParagraph(text("before")),
+      new TdApi.PageBlockDocument(new TdApi.Document("notes.txt", "text/plain", null, null, file), null),
+      new TdApi.PageBlockParagraph(text("after"))
+    }, false, true);
+    ArticleDocument original = ArticleDocument.received(received);
+    TdApi.InputRichMessage working = original.toInput();
+    TdApi.InputPageBlockDocument document = (TdApi.InputPageBlockDocument) ((TdApi.RichMessageSourceBlocks) working.source).blocks[1];
+    assertTrue(ArticleEditorTree.isMedia(document));
+    java.util.List<ArticleEditorTree.TextField> fields = ArticleEditorTree.fields(document);
+    assertEquals(2, fields.size());
+    assertEquals("", ArticleRichText.plain(fields.get(0).value));
+    assertNull(document.caption);
+    assertEquals(original, new ArticleDocument(working));
+    fields.get(0).set.accept(new TdApi.RichTextUrl(text("caption"), "https://example.org", false));
+    fields.get(1).set.accept(text("credit"));
+    TdApi.InputPageBlock[] saved = ((TdApi.RichMessageSourceBlocks) new ArticleDocument(working).toInput().source).blocks;
+    TdApi.InputPageBlockDocument result = (TdApi.InputPageBlockDocument) saved[1];
+    assertEquals(42, ((TdApi.InputFileId) result.document.document).id);
+    assertEquals("https://example.org", ((TdApi.RichTextUrl) result.caption.text).url);
+    assertEquals("credit", ArticleRichText.plain(result.caption.credit));
+    assertEquals("before", ArticleRichText.plain(((TdApi.InputPageBlockParagraph) saved[0]).text));
+    assertEquals("after", ArticleRichText.plain(((TdApi.InputPageBlockParagraph) saved[2]).text));
+  }
+
+  @Test public void remoteFilePreviewRetainsResolvedNameWithoutRewritingInput () {
+    ArticleDocument original = new ArticleDocument(input(new TdApi.InputPageBlockDocument(new TdApi.InputDocument(new TdApi.InputFileId(42), null, true), null)));
+    TdApi.RichMessage preview = new ArticlePreviewMapper(
+      file -> new TdApi.File(((TdApi.InputFileId) file).id, 115, 115, null, null),
+      file -> ((TdApi.InputFileId) file).id == 42 ? "notes.txt" : null).preview(original);
+    TdApi.PageBlockDocument document = (TdApi.PageBlockDocument) preview.blocks[0];
+    assertEquals("notes.txt", document.document.fileName);
+    assertEquals(42, document.document.document.id);
+    assertNull(document.caption);
+    assertEquals(original, ArticleDocument.received(preview));
+  }
+
+  @Test public void generatedFilePreviewUsesOriginalName () {
+    ArticleDocument original = new ArticleDocument(input(new TdApi.InputPageBlockDocument(new TdApi.InputDocument(new TdApi.InputFileGenerated("/tmp/report.txt", "copy", 115), null, true), null)));
+    TdApi.RichMessage preview = new ArticlePreviewMapper(file -> new TdApi.File(42, 115, 115, null, null)).preview(original);
+    assertEquals("report.txt", ((TdApi.PageBlockDocument) preview.blocks[0]).document.fileName);
+  }
 }

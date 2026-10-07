@@ -201,9 +201,8 @@ public final class ArticleBodyView extends ViewGroup implements Destroyable {
         for (int j = list.length - 1; j >= 0; j--) {
           PageBlock.ListItemInfo item = list[j];
           if (item.firstBlock != row.block) break;
-          int labelX = rtl ? x : x - item.label.getWidth();
-          item.label.draw(canvas, labelX, labelX, 0, row.top + row.block.getBulletTop(), null, 1f);
-          x += (rtl ? 1 : -1) * Math.max(Screen.dp(16f), item.list.maxLabelWidth + Screen.dp(4f));
+          item.drawMarker(canvas, x, row.top + row.block.getBulletTop(), rtl, 1f);
+          x += (rtl ? 1 : -1) * item.list.getIndent();
         }
       }
     }

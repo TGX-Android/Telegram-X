@@ -384,8 +384,7 @@ public final class ArticleDocumentView extends LinearLayout implements me.vkryl.
     boolean quote = block instanceof TdApi.InputPageBlockBlockQuote || block instanceof TdApi.InputPageBlockExpandableBlockQuote || block instanceof TdApi.InputPageBlockPullQuote;
     if (quote) { section.setPadding(Screen.dp(12), Screen.dp(4), Screen.dp(8), Screen.dp(4)); section.setBackground(ArticleEditorPopup.background(0x18888888, 4)); }
     if (block instanceof TdApi.InputPageBlockBlockQuote) renderGroup(section, ArticleEditorTree.children(block).get(0), entry.depth + 1, null);
-    TdApi.PageBlockCaption mediaCaption = ArticleEditorTree.caption(block);
-    if (mediaCaption != null) delegate.media(entry, section);
+    if (ArticleEditorTree.isMedia(block)) delegate.media(entry, section);
     if (block instanceof TdApi.InputPageBlockCollage || block instanceof TdApi.InputPageBlockSlideshow) {
       ArticleEditorTree.Group children = ArticleEditorTree.children(block).get(0);
       for (int i = 0; i < children.blocks().length; i++) {

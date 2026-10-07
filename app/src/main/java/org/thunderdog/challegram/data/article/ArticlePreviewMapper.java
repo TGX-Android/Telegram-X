@@ -7,7 +7,12 @@ import java.util.function.Function;
 /** Builds a detached local preview without sending or normalizing the editable document. */
 public final class ArticlePreviewMapper {
   private final Function<TdApi.InputFile, TdApi.File> files;
-  public ArticlePreviewMapper (Function<TdApi.InputFile, TdApi.File> files) { this.files = files; }
+  private final Function<TdApi.InputFile, String> fileNames;
+  public ArticlePreviewMapper (Function<TdApi.InputFile, TdApi.File> files) { this(files, file -> ""); }
+  public ArticlePreviewMapper (Function<TdApi.InputFile, TdApi.File> files, Function<TdApi.InputFile, String> fileNames) {
+    this.files = files;
+    this.fileNames = fileNames;
+  }
   public TdApi.RichMessage preview (ArticleDocument document) {
     TdApi.InputRichMessage input = document.toInput();
     return new TdApi.RichMessage(blocks(((TdApi.RichMessageSourceBlocks) input.source).blocks), input.isRtl, true);
@@ -20,7 +25,12 @@ public final class ArticlePreviewMapper {
   private TdApi.Thumbnail thumb (TdApi.InputThumbnail thumbnail) {
     return thumbnail == null ? null : new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), thumbnail.width, thumbnail.height, files.apply(thumbnail.thumbnail));
   }
-  private String name (TdApi.InputFile file) { return file instanceof TdApi.InputFileLocal ? new java.io.File(((TdApi.InputFileLocal) file).path).getName() : ""; }
+  private String name (TdApi.InputFile file) {
+    if (file instanceof TdApi.InputFileLocal) return new java.io.File(((TdApi.InputFileLocal) file).path).getName();
+    if (file instanceof TdApi.InputFileGenerated) return new java.io.File(((TdApi.InputFileGenerated) file).originalPath).getName();
+    String name = fileNames.apply(file);
+    return name != null ? name : "";
+  }
   private TdApi.PageBlock block (TdApi.InputPageBlock input) {
     switch (input.getConstructor()) {
       case TdApi.InputPageBlockSectionHeading.CONSTRUCTOR: { TdApi.InputPageBlockSectionHeading b = (TdApi.InputPageBlockSectionHeading) input; return new TdApi.PageBlockSectionHeading(b.text, b.size); }

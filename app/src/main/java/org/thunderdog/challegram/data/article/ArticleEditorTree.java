@@ -110,10 +110,12 @@ public final class ArticleEditorTree {
         break;
       }
     }
-    TdApi.PageBlockCaption caption = caption(block);
-    if (caption != null) {
-      out.add(new TextField(FieldName.CAPTION, caption.text, value -> caption.text = value));
-      out.add(new TextField(FieldName.CREDIT, caption.credit, value -> caption.credit = value));
+    if (isMedia(block)) {
+      TdApi.PageBlockCaption caption = caption(block);
+      // Received media may omit an empty caption. Expose its editing fields without
+      // changing the document until the user actually enters a caption or credit.
+      out.add(new TextField(FieldName.CAPTION, caption != null ? caption.text : new TdApi.RichTextPlain(""), value -> editCaption(block).text = value));
+      out.add(new TextField(FieldName.CREDIT, caption != null ? caption.credit : new TdApi.RichTextPlain(""), value -> editCaption(block).credit = value));
     }
     return out;
   }
@@ -131,5 +133,41 @@ public final class ArticleEditorTree {
       case TdApi.InputPageBlockSlideshow.CONSTRUCTOR: return ((TdApi.InputPageBlockSlideshow) block).caption;
       default: return null;
     }
+  }
+
+  public static boolean isMedia (TdApi.InputPageBlock block) {
+    switch (block.getConstructor()) {
+      case TdApi.InputPageBlockPhoto.CONSTRUCTOR:
+      case TdApi.InputPageBlockVideo.CONSTRUCTOR:
+      case TdApi.InputPageBlockAnimation.CONSTRUCTOR:
+      case TdApi.InputPageBlockAudio.CONSTRUCTOR:
+      case TdApi.InputPageBlockDocument.CONSTRUCTOR:
+      case TdApi.InputPageBlockVoiceNote.CONSTRUCTOR:
+      case TdApi.InputPageBlockMap.CONSTRUCTOR:
+      case TdApi.InputPageBlockCollage.CONSTRUCTOR:
+      case TdApi.InputPageBlockSlideshow.CONSTRUCTOR:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public static TdApi.PageBlockCaption editCaption (TdApi.InputPageBlock block) {
+    TdApi.PageBlockCaption caption = caption(block);
+    if (caption != null) return caption;
+    caption = new TdApi.PageBlockCaption(new TdApi.RichTextPlain(""), new TdApi.RichTextPlain(""));
+    switch (block.getConstructor()) {
+      case TdApi.InputPageBlockPhoto.CONSTRUCTOR: ((TdApi.InputPageBlockPhoto) block).caption = caption; break;
+      case TdApi.InputPageBlockVideo.CONSTRUCTOR: ((TdApi.InputPageBlockVideo) block).caption = caption; break;
+      case TdApi.InputPageBlockAnimation.CONSTRUCTOR: ((TdApi.InputPageBlockAnimation) block).caption = caption; break;
+      case TdApi.InputPageBlockAudio.CONSTRUCTOR: ((TdApi.InputPageBlockAudio) block).caption = caption; break;
+      case TdApi.InputPageBlockDocument.CONSTRUCTOR: ((TdApi.InputPageBlockDocument) block).caption = caption; break;
+      case TdApi.InputPageBlockVoiceNote.CONSTRUCTOR: ((TdApi.InputPageBlockVoiceNote) block).caption = caption; break;
+      case TdApi.InputPageBlockMap.CONSTRUCTOR: ((TdApi.InputPageBlockMap) block).caption = caption; break;
+      case TdApi.InputPageBlockCollage.CONSTRUCTOR: ((TdApi.InputPageBlockCollage) block).caption = caption; break;
+      case TdApi.InputPageBlockSlideshow.CONSTRUCTOR: ((TdApi.InputPageBlockSlideshow) block).caption = caption; break;
+      default: throw new IllegalArgumentException("Block has no media caption");
+    }
+    return caption;
   }
 }

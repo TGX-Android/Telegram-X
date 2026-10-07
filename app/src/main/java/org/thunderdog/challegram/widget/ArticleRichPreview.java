@@ -33,7 +33,7 @@ public final class ArticleRichPreview extends LinearLayout implements Destroyabl
       else if (view instanceof CustomResultView) ((CustomResultView) view).setInlineResult(((PageBlockFile) block).getFile());
       LayoutParams params = new LayoutParams(-1, -2);
       if (block.getListItem() != null) {
-        int indent = 0; for (PageBlock.ListItemInfo item : block.getListItem()) indent += Math.max(Screen.dp(16), item.list.maxLabelWidth + Screen.dp(4));
+        int indent = 0; for (PageBlock.ListItemInfo item : block.getListItem()) indent += item.list.getIndent();
         if (article.isRtl) params.rightMargin = indent; else params.leftMargin = indent;
       }
       addView(view, params); attach(view, attached);
@@ -55,8 +55,8 @@ public final class ArticleRichPreview extends LinearLayout implements Destroyabl
       int x = rtl ? child.getRight() : child.getLeft();
       for (int j = items.length - 1; j >= 0; j--) {
         PageBlock.ListItemInfo item = items[j]; if (item.firstBlock != block) break;
-        int left = rtl ? x : x - item.label.getWidth(); item.label.draw(canvas, left, left, 0, child.getTop() + block.getBulletTop(), null, 1f);
-        x += (rtl ? 1 : -1) * Math.max(Screen.dp(16), item.list.maxLabelWidth + Screen.dp(4));
+        item.drawMarker(canvas, x, child.getTop() + block.getBulletTop(), rtl, 1f);
+        x += (rtl ? 1 : -1) * item.list.getIndent();
       }
     }
   }

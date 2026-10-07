@@ -40,16 +40,20 @@ public final class ArticleEditorMedia extends LinearLayout implements Destroyabl
       if (value instanceof TdApi.PageBlockCaption) { ((TdApi.PageBlockCaption) value).text = new TdApi.RichTextPlain(""); ((TdApi.PageBlockCaption) value).credit = new TdApi.RichTextPlain(""); }
     });
     Map<Integer, TdApi.File> files = new ConcurrentHashMap<>(); Set<Integer> ids = new java.util.HashSet<>();
+    Map<Integer, String> fileNames = new ConcurrentHashMap<>();
     ArticleCodec.visit(detached, (value, depth) -> { if (value instanceof TdApi.InputFileId) ids.add(((TdApi.InputFileId) value).id); });
-    Runnable ready = () -> post(() -> { if (!destroyed) build(detached, files); });
+    Runnable ready = () -> post(() -> { if (!destroyed) build(detached, files, fileNames); });
     if (ids.isEmpty()) ready.run();
     else {
       TextView loading = new TextView(getContext()); loading.setText(Lang.getString(R.string.ArticleLoading)); loading.setTextColor(Theme.textDecentColor()); loading.setMinHeight(Screen.dp(64)); addView(loading);
-      AtomicInteger remaining = new AtomicInteger(ids.size());
-      for (int id : ids) controller.tdlib().send(new TdApi.GetFile(id), (file, error) -> { if (file != null) files.put(id, file); if (remaining.decrementAndGet() == 0) ready.run(); });
+      AtomicInteger remaining = new AtomicInteger(ids.size() * 2);
+      for (int id : ids) {
+        controller.tdlib().send(new TdApi.GetFile(id), (file, error) -> { if (file != null) files.put(id, file); if (remaining.decrementAndGet() == 0) ready.run(); });
+        controller.tdlib().send(new TdApi.GetSuggestedFileName(id, ""), (name, error) -> { if (name != null) fileNames.put(id, name.text); if (remaining.decrementAndGet() == 0) ready.run(); });
+      }
     }
   }
-  private void build (TdApi.InputPageBlock input, Map<Integer, TdApi.File> files) {
+  private void build (TdApi.InputPageBlock input, Map<Integer, TdApi.File> files, Map<Integer, String> fileNames) {
     removeAllViews();
     ArticlePreviewMapper mapper = new ArticlePreviewMapper(value -> {
       if (value instanceof TdApi.InputFileId) {
@@ -58,7 +62,7 @@ public final class ArticleEditorMedia extends LinearLayout implements Destroyabl
       }
       String path = value instanceof TdApi.InputFileLocal ? ((TdApi.InputFileLocal) value).path : value instanceof TdApi.InputFileGenerated ? ((TdApi.InputFileGenerated) value).originalPath : "";
       long size = new java.io.File(path).length(); return new TdApi.File(-Math.max(1, path.hashCode() & 0x7fffffff), size, size, new TdApi.LocalFile(path, false, false, false, true, 0, size, size), new TdApi.RemoteFile("", "", false, false, 0));
-    });
+    }, value -> value instanceof TdApi.InputFileId ? fileNames.get(((TdApi.InputFileId) value).id) : null);
     TdApi.RichMessage article = mapper.preview(new ArticleDocument(new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {input}), false, false)));
     blocks.addAll(PageBlock.parseArticle(controller, article, null)); ArrayList<PageBlockMedia> media = new ArrayList<>();
     for (PageBlock block : blocks) {

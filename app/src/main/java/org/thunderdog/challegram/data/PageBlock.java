@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
@@ -50,6 +51,7 @@ import java.util.List;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ColorUtils;
 import tgx.td.Td;
 
 public abstract class PageBlock {
@@ -334,9 +336,14 @@ public abstract class PageBlock {
   public static class ListInfo {
     public final TdApi.PageBlockList list;
     public float maxLabelWidth;
+    public boolean hasCheckbox;
 
     public ListInfo (TdApi.PageBlockList list) {
       this.list = list;
+    }
+
+    public int getIndent () {
+      return Math.max(Screen.dp(16f), (int) Math.ceil(maxLabelWidth) + Screen.dp(hasCheckbox ? 8f : 4f));
     }
   }
 
@@ -350,6 +357,32 @@ public abstract class PageBlock {
       this.list = list;
       this.itemIndex = itemIndex;
       this.label = new Text.Builder(label, Screen.dp(100f), provider, TextColorSets.InstantView.NORMAL).build();
+    }
+
+    public int getMarkerWidth () {
+      return list.list.items[itemIndex].hasCheckbox ? Screen.dp(20f) : label.getWidth();
+    }
+
+    public void drawMarker (Canvas canvas, int textEdge, int top, boolean rtl, float alpha) {
+      TdApi.PageBlockListItem item = list.list.items[itemIndex];
+      int width = getMarkerWidth();
+      int gap = Screen.dp(list.hasCheckbox ? 8f : 0f);
+      int left = rtl ? textEdge + gap : textEdge - gap - width;
+      if (!item.hasCheckbox) {
+        label.draw(canvas, left, left, 0, top, null, alpha);
+        return;
+      }
+      // Keep both states the same size; emoji glyphs change their width and baseline.
+      int color = ColorUtils.alphaColor(alpha, item.isChecked ? Theme.radioFillingColor() : Theme.radioOutlineColor());
+      float inset = item.isChecked ? 0 : Screen.dp(1f);
+      RectF rect = Paints.getRectF();
+      rect.set(left + inset, top + inset, left + width - inset, top + width - inset);
+      canvas.drawRoundRect(rect, Screen.dp(4f), Screen.dp(4f), item.isChecked ? Paints.fillingPaint(color) : Paints.getProgressPaint(color, Screen.dp(2f)));
+      if (item.isChecked) {
+        Paint paint = Paints.getProgressPaint(ColorUtils.alphaColor(alpha, Theme.radioCheckColor()), Screen.dp(2f));
+        canvas.drawLine(left + Screen.dp(4f), top + Screen.dp(10f), left + Screen.dp(8f), top + Screen.dp(14f), paint);
+        canvas.drawLine(left + Screen.dp(8f), top + Screen.dp(14f), left + Screen.dp(16f), top + Screen.dp(6f), paint);
+      }
     }
   }
 
@@ -675,8 +708,9 @@ public abstract class PageBlock {
         int itemIndex = 0;
         ListInfo listInfo = new ListInfo(listRaw);
         for (TdApi.PageBlockListItem item : listRaw.items) {
-          ListItemInfo itemInfo = new ListItemInfo(listInfo, itemIndex, item.hasCheckbox ? (item.isChecked ? "☑" : "☐") : item.label, PageBlockRichText.getListTextProvider());
-          listInfo.maxLabelWidth = Math.max(listInfo.maxLabelWidth, itemInfo.label.getWidth());
+          ListItemInfo itemInfo = new ListItemInfo(listInfo, itemIndex, item.hasCheckbox ? "" : item.label, PageBlockRichText.getListTextProvider());
+          listInfo.hasCheckbox |= item.hasCheckbox;
+          listInfo.maxLabelWidth = Math.max(listInfo.maxLabelWidth, itemInfo.getMarkerWidth());
           ListItemInfo[] lastListItemInfo = context.openedList;
           if (lastListItemInfo == null) {
             context.openedList = new ListItemInfo[] {itemInfo};

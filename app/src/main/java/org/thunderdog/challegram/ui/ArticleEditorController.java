@@ -622,6 +622,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     if (problem != null) { UI.showToast(problem == ArticleValidator.Problem.EMPTY ? R.string.ArticleEmpty : R.string.ArticleLimitExceeded, Toast.LENGTH_LONG); return; }
     ArticleDocument document = new ArticleDocument(working); saveDraft();
     java.util.Map<Integer, TdApi.File> files = new java.util.concurrent.ConcurrentHashMap<>();
+    java.util.Map<Integer, String> fileNames = new java.util.concurrent.ConcurrentHashMap<>();
     java.util.Set<Integer> ids = new java.util.HashSet<>();
     ArticleCodec.visit(working, (value, depth) -> { if (value instanceof TdApi.InputFileId) ids.add(((TdApi.InputFileId) value).id); });
     Runnable show = () -> runOnUiThreadOptional(() -> {
@@ -633,14 +634,17 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
             return new TdApi.File(-Math.max(1, path.hashCode() & 0x7fffffff), size, size, new TdApi.LocalFile(path, false, false, false, true, 0, size, size), new TdApi.RemoteFile("", "", false, false, 0));
           }
           throw new IllegalArgumentException("File is not ready for preview");
-        }).preview(document);
+        }, file -> file instanceof TdApi.InputFileId ? fileNames.get(((TdApi.InputFileId) file).id) : null).preview(document);
         ArticlePreviewController controller = new ArticlePreviewController(context(), tdlib); controller.setArguments(article); navigateTo(controller);
       } catch (IllegalArgumentException e) { UI.showToast(R.string.ArticlePreviewFailed, Toast.LENGTH_LONG); }
     });
     if (ids.isEmpty()) show.run();
     else {
-      java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(ids.size());
-      for (int id : ids) tdlib.send(new TdApi.GetFile(id), (file, error) -> { if (file != null) files.put(id, file); if (remaining.decrementAndGet() == 0) show.run(); });
+      java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(ids.size() * 2);
+      for (int id : ids) {
+        tdlib.send(new TdApi.GetFile(id), (file, error) -> { if (file != null) files.put(id, file); if (remaining.decrementAndGet() == 0) show.run(); });
+        tdlib.send(new TdApi.GetSuggestedFileName(id, ""), (name, error) -> { if (name != null) fileNames.put(id, name.text); if (remaining.decrementAndGet() == 0) show.run(); });
+      }
     }
   }
   private static TdApi.RichText emptyText () { return new TdApi.RichTextPlain(""); }
@@ -710,13 +714,14 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       }));
     }
     TdApi.PageBlockCaption caption = ArticleEditorTree.caption(entry.block);
-    if (caption != null) {
-      labels.add(R.string.ArticleCredit); actions.add(() -> prompt(R.string.ArticleCredit, ArticleRichText.plain(caption.credit), value -> { if (!value.equals(ArticleRichText.plain(caption.credit))) { caption.credit = new TdApi.RichTextPlain(value); structureChanged(); } }));
+    if (ArticleEditorTree.isMedia(entry.block)) {
+      String credit = caption != null ? ArticleRichText.plain(caption.credit) : "";
+      labels.add(R.string.ArticleCredit); actions.add(() -> prompt(R.string.ArticleCredit, credit, value -> { if (!value.equals(credit)) { ArticleEditorTree.editCaption(entry.block).credit = new TdApi.RichTextPlain(value); structureChanged(); } }));
     }
     ArticleMediaFiles.Kind kind = mediaKind(blockName(entry.block));
     if (kind != null) {
       labels.add(R.string.ArticleReplaceMedia); actions.add(() -> pickMedia(kind, replacement -> {
-        TdApi.PageBlockCaption after = ArticleEditorTree.caption(replacement); after.text = caption.text; after.credit = caption.credit;
+        if (caption != null) { TdApi.PageBlockCaption after = ArticleEditorTree.editCaption(replacement); after.text = caption.text; after.credit = caption.credit; }
         if (entry.block instanceof TdApi.InputPageBlockPhoto) ((TdApi.InputPageBlockPhoto) replacement).hasSpoiler = ((TdApi.InputPageBlockPhoto) entry.block).hasSpoiler;
         if (entry.block instanceof TdApi.InputPageBlockVideo) ((TdApi.InputPageBlockVideo) replacement).hasSpoiler = ((TdApi.InputPageBlockVideo) entry.block).hasSpoiler;
         if (entry.block instanceof TdApi.InputPageBlockAnimation) ((TdApi.InputPageBlockAnimation) replacement).hasSpoiler = ((TdApi.InputPageBlockAnimation) entry.block).hasSpoiler;

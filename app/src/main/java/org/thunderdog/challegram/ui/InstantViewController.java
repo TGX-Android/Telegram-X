@@ -389,7 +389,7 @@ public class InstantViewController extends ViewController<InstantViewController.
           if (info != null) {
             outRect.left = Screen.dp(18f);
             for (PageBlock.ListItemInfo itemInfo : info) {
-              outRect.left += Math.max(Screen.dp(16f), itemInfo.list.maxLabelWidth + Screen.dp(4f));
+              outRect.left += itemInfo.list.getIndent();
             }
           }
         }
@@ -413,9 +413,8 @@ public class InstantViewController extends ViewController<InstantViewController.
               PageBlock.ListItemInfo itemInfo = info[i];
               if (itemInfo.firstBlock != null && itemInfo.firstBlock != pageBlock)
                 break;
-              int x = left - itemInfo.label.getWidth();
-              itemInfo.label.draw(c, x, x, 0, top, null, alpha);
-              left -= Math.max(Screen.dp(16f), itemInfo.list.maxLabelWidth + Screen.dp(4f));
+              itemInfo.drawMarker(c, left, top, false, alpha);
+              left -= itemInfo.list.getIndent();
             }
           }
         }

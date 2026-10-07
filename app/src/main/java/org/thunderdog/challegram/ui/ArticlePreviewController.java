@@ -38,7 +38,7 @@ public final class ArticlePreviewController extends RecyclerViewController<TdApi
     recycler.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override public void getItemOffsets (@NonNull Rect out, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         PageBlock block = block(view); int indent = 0;
-        if (block != null && block.getListItem() != null) for (PageBlock.ListItemInfo item : block.getListItem()) indent += Math.max(Screen.dp(16), item.list.maxLabelWidth + Screen.dp(4));
+        if (block != null && block.getListItem() != null) for (PageBlock.ListItemInfo item : block.getListItem()) indent += item.list.getIndent();
         if (getArgumentsStrict().isRtl) out.right = indent; else out.left = indent;
       }
       @Override public void onDrawOver (@NonNull Canvas canvas, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
@@ -49,9 +49,8 @@ public final class ArticlePreviewController extends RecyclerViewController<TdApi
           PageBlock.ListItemInfo[] items = block.getListItem();
           for (int j = items.length - 1; j >= 0; j--) {
             PageBlock.ListItemInfo item = items[j]; if (item.firstBlock != block) break;
-            int labelX = rtl ? x : x - item.label.getWidth();
-            item.label.draw(canvas, labelX, labelX, 0, child.getTop() + block.getBulletTop(), null, 1f);
-            x += (rtl ? 1 : -1) * Math.max(Screen.dp(16), item.list.maxLabelWidth + Screen.dp(4));
+            item.drawMarker(canvas, x, child.getTop() + block.getBulletTop(), rtl, 1f);
+            x += (rtl ? 1 : -1) * item.list.getIndent();
           }
         }
       }
