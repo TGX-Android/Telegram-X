@@ -81,11 +81,11 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
     boolean fullWidth = useFullWidth();
     int top = 0;
     for (PageBlock block : blocks) {
-      // Like ordinary channel posts, media spans the message while text and files
-      // align with the normal caption column. Nested media retains its indentation.
+      // Channel articles use the whole message width. Text and files need only
+      // small reading margins, not the ordinary message's avatar column.
       boolean fullWidthMedia = fullWidth && block instanceof PageBlockMedia && block.isIndependent();
-      int left = fullWidth && !fullWidthMedia ? getRealContentX() : 0;
-      int right = fullWidth && !fullWidthMedia ? Math.max(0, maxWidth - left - getRealContentMaxWidth()) : 0;
+      int left = fullWidth && !fullWidthMedia ? Screen.dp(16f) : 0;
+      int right = left;
       int rowWidth = Math.max(1, maxWidth - left - right);
       int indent = 0;
       if (block.getListItem() != null) {

@@ -194,7 +194,7 @@ public final class ArticleBodyViewChecks {
       source.isChannelPost = mode != 2;
       ((TestManager) message.manager()).bubbles = mode == 1;
       boolean rtl = mode == 3;
-      TdApi.PageBlockParagraph paragraph = new TdApi.PageBlockParagraph(new TdApi.RichTextPlain("Message text uses the normal caption column without an extra page margin."));
+      TdApi.PageBlockParagraph paragraph = new TdApi.PageBlockParagraph(new TdApi.RichTextPlain("Channel articles use the screen width with small margins on both sides."));
       TdApi.PageBlockPhoto photo = new TdApi.PageBlockPhoto(null,
         new TdApi.PageBlockCaption(new TdApi.RichTextPlain(""), new TdApi.RichTextPlain("")), "", false);
       TdApi.RichMessage article = new TdApi.RichMessage(new TdApi.PageBlock[] {
@@ -228,8 +228,8 @@ public final class ArticleBodyViewChecks {
           TGMessageArticle.Row row = message.getArticleRows().get(i);
           View child = body.getChildAt(i);
           boolean media = row.block instanceof PageBlockMedia;
-          int left = fullWidth && !media ? captionLeft : 0;
-          int right = fullWidth && !media ? captionRight : 0;
+          int left = fullWidth && !media ? Screen.dp(16) : 0;
+          int right = left;
           require(child.getLeft() == left + (rtl ? 0 : row.indent) &&
             child.getRight() == bodyWidth - right - (rtl ? row.indent : 0),
             "Wrong article child bounds, mode=" + mode + ", block=" + row.block.getClass().getSimpleName());
@@ -247,7 +247,7 @@ public final class ArticleBodyViewChecks {
             hit.setAccessible(true);
             float labelX = rtl ? child.getRight() + row.indent / 2f : child.getLeft() - row.indent / 2f;
             require(hit.invoke(body, labelX, (float) row.top + 1) != null, "Checkbox lost its shifted hit area");
-            if (fullWidth) require(hit.invoke(body, 1f, (float) row.top + 1) == null, "Avatar gutter toggles the checkbox");
+            if (fullWidth) require(hit.invoke(body, 1f, (float) row.top + 1) == null, "Outer margin toggles the checkbox");
           }
         }
         // Reusing PageBlock in chats must leave standalone Instant View margins intact.
