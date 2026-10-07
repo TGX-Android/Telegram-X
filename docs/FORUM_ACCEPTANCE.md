@@ -113,6 +113,21 @@ The build-verification phase did not install APKs. In a subsequent maintainer-re
 
 Modern Debug packaging, legacy builds/lint, the 159-case Android instrumentation suite and manual forum acceptance were not rerun on the October 6 native update. Their October 4-5 results above remain historical evidence, not validation of this exact new native candidate. Existing API 16, legacy-lint and wider role/lifecycle/ABI-matrix limitations remain open.
 
+## Overlapping topic pagination correction - 2026-10-07
+
+Correction `0f704cc2` allows a non-empty page containing only already loaded topics when its cursor advances. TDLib can return hidden General again before the final empty page; rejecting that overlap caused a false load-error footer after the visible topics had loaded. The same correction applies to the complete unread-topic scan. Approximate total counts and short pages still do not terminate pagination prematurely.
+
+Repeated/cyclic cursors, malformed pages and request errors remain errors. More than eight consecutive pages without new topics stop a broken advancing-cursor loop; a new topic or refresh resets the budget. Incomplete unread scans retain the previous complete count. Seven additional regression cases and the revised overlap expectation cover hidden General, updated duplicates, later new topics, budget/reset behavior and EOF.
+
+- Feature-only revision `0f704cc2`: **524/524 JVM tests pass**, no failures/errors/skips. Production-source Debug lint has no new issues, with the unchanged baseline filtering 17 warnings.
+- Development-product revision `ac5f556c` contains the identical four Kotlin source/test files: **585/585 JVM tests pass**. Modern ARM64 Debug and signed Release build successfully; Release includes R8/resource shrinking and freshly fetched translations. Production Debug/Release lint has no new issues. The product has unrelated features not included in this PR.
+- Both product APKs were installed as updates on a Pixel 6 / API 37. APK hashes, existing signing certificate, Firebase/package isolation, native inputs and 16 KiB alignment checks pass. App UID and first-install metadata are preserved; updating each variant leaves the other variant unchanged. No current-process fatal exception was observed during the checks.
+- On both installed variants, the originally affected forum displays its complete topic list without an error footer. Explicit refresh, searching for General and returning to the full list also pass. Read-only Debug inspection additionally confirms authoritative EOF, no store error/pending request, and a completed fresh unread scan. Its live refresh follows an ordinary page, an overlapping hidden-General page, then an empty page with an empty cursor.
+
+These are scoped product-device checks, not runtime acceptance of the normal feature-only PR APK or a new full server/lifecycle/legacy/ABI matrix. Test-source UAST remains excluded by the local Windows harness; executable JVM tests ran. Native code/pins are unchanged by the fix and the matching r30 outputs were reused, not rebuilt. No messages were sent and no topics/accounts were modified. Private chat/account/device identifiers and captures are not published.
+
+This correction remains on the validated upstream base `51a2ba25`. Upstream `7e3e3a3b` appeared during verification and changes native flags plus the TDLib/OpenSSL platform-specific layout and leveldb pin. It is not included in this focused correction; integrating it needs a separate native-build validation. No latest-upstream or complete merge-readiness claim is made by this update.
+
 ## Upstream PR packaging
 
 The fork's main working branch includes separate Windows-build, TDLib-prebuilt selection and branding commits before the functional forum commits. Do not submit that combined branch directly upstream. Prepare the feature-only branch from current upstream `main`, select only the forum commits, review the complete diff and repeat the relevant checks. Any required build/TDLib fix should be handled as a clearly declared separate dependency, not hidden in the feature PR. Keep branding, local reports, build artifacts and private captures out.
