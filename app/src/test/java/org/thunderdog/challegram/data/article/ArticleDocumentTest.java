@@ -94,6 +94,29 @@ public class ArticleDocumentTest {
     assertFalse(new ArticleDocument(input).hasSameContent(cloud));
   }
 
+  @Test public void clearedDraftDoesNotConflictWithAnEmptyCloudDraft () {
+    ArticleDocument empty = ArticleDocument.empty();
+    TdApi.InputRichMessage input = empty.toInput();
+    input.detectAutomaticBlocks = false;
+    input.source = new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {
+      new TdApi.InputPageBlockParagraph(new TdApi.RichTexts(new TdApi.RichText[0])),
+      new TdApi.InputPageBlockParagraph(new TdApi.RichTexts(new TdApi.RichText[] {text("  "), text("\n")}))
+    });
+    assertTrue(empty.hasSameContent(new ArticleDocument(input)));
+    assertTrue(new ArticleDocument(input).hasSameContent(empty));
+    input.isRtl = true;
+    assertFalse(empty.hasSameContent(new ArticleDocument(input)));
+    input.isRtl = false;
+    input.source = new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {
+      new TdApi.InputPageBlockParagraph(new TdApi.RichTextReference("anchor", text("")))
+    });
+    assertFalse(empty.hasSameContent(new ArticleDocument(input)));
+    input.source = new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(text("kept"))});
+    assertFalse(empty.hasSameContent(new ArticleDocument(input)));
+    input.source = new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[0]);
+    assertTrue(empty.hasSameContent(new ArticleDocument(input)));
+  }
+
   @Test public void nullableDateFormattingAndInlineButtonSurvive () throws Exception {
     TdApi.RichTextDateTime date = new TdApi.RichTextDateTime(text("Дата"), 12345, new TdApi.DateTimeFormattingTypeRelative());
     TdApi.RichTextDateTime copy = (TdApi.RichTextDateTime) ArticleCodec.decode(ArticleCodec.encode(date));

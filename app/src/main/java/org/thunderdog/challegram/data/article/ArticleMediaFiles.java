@@ -23,7 +23,8 @@ public final class ArticleMediaFiles {
   public enum Kind { PHOTO, VIDEO, ANIMATION, AUDIO, DOCUMENT, VOICE }
 
   public static TdApi.InputPageBlock importFile (Context context, int accountId, long userId, Uri uri, Kind kind, long maxBytes) throws IOException {
-    String name = "attachment";
+    String name = "file".equals(uri.getScheme()) ? uri.getLastPathSegment() : "attachment";
+    if (name == null) name = "attachment";
     try (Cursor cursor = context.getContentResolver().query(uri, new String[] {OpenableColumns.DISPLAY_NAME}, null, null, null)) {
       if (cursor != null && cursor.moveToFirst() && !cursor.isNull(0)) name = cursor.getString(0);
     } catch (RuntimeException ignored) { }

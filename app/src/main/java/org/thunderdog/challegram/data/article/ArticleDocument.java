@@ -40,13 +40,30 @@ public final class ArticleDocument {
 
   public byte[] save () { return snapshot.clone(); }
 
-  /** The server consumes this sending option; it is not a change to the draft's content. */
+  /** Compare draft contents after the server consumes sending options and clears blank text. */
   public boolean hasSameContent (ArticleDocument other) {
     if (other == null) return false;
     if (equals(other)) return true;
     TdApi.InputRichMessage left = toInput(), right = other.toInput();
     left.detectAutomaticBlocks = right.detectAutomaticBlocks = false;
+    if (left.isRtl == right.isRtl && blankParagraphs(left) && blankParagraphs(right)) return true;
     return Arrays.equals(ArticleCodec.encode(left), ArticleCodec.encode(right));
+  }
+
+  private static boolean blankParagraphs (TdApi.InputRichMessage message) {
+    for (TdApi.InputPageBlock block : ((TdApi.RichMessageSourceBlocks) message.source).blocks) {
+      if (!(block instanceof TdApi.InputPageBlockParagraph) || !blankText(((TdApi.InputPageBlockParagraph) block).text)) return false;
+    }
+    return true;
+  }
+
+  private static boolean blankText (TdApi.RichText text) {
+    if (text instanceof TdApi.RichTextPlain) return ((TdApi.RichTextPlain) text).text.trim().isEmpty();
+    if (text instanceof TdApi.RichTexts) {
+      for (TdApi.RichText part : ((TdApi.RichTexts) text).texts) if (!blankText(part)) return false;
+      return true;
+    }
+    return false; // An empty anchor or other semantic object must still be preserved.
   }
 
   @Override public boolean equals (Object other) {
