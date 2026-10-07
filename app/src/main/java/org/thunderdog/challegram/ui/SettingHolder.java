@@ -28,11 +28,14 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -755,6 +758,47 @@ public class SettingHolder extends RecyclerView.ViewHolder {
                 if (themeProvider != null) {
                   themeProvider.addThemeInvalidateListener(togglerView);
                 }
+
+                // The disabled item only draws the row, so the clickable wrap reports its text instead.
+                // When the whole row toggles, the wrap acts as the switch and the toggler is just its look.
+                final boolean isSwitch = viewType == ListItem.TYPE_DRAWER_ITEM_WITH_RADIO;
+                item.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                if (isSwitch) {
+                  togglerView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                }
+                wrap.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+                  @Override
+                  public void onPopulateAccessibilityEvent (View host, AccessibilityEvent event) {
+                    super.onPopulateAccessibilityEvent(host, event);
+                    CharSequence text = item.getAccessibilityText();
+                    if (!TextUtils.isEmpty(text)) {
+                      event.getText().add(text);
+                    }
+                  }
+
+                  @Override
+                  public void onInitializeAccessibilityEvent (View host, AccessibilityEvent event) {
+                    super.onInitializeAccessibilityEvent(host, event);
+                    if (isSwitch) {
+                      event.setClassName(Switch.class.getName());
+                      event.setChecked(togglerView.isEnabled());
+                    }
+                  }
+
+                  @Override
+                  public void onInitializeAccessibilityNodeInfo (View host, AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfo(host, info);
+                    CharSequence text = item.getAccessibilityText();
+                    if (!TextUtils.isEmpty(text)) {
+                      info.setText(text);
+                    }
+                    if (isSwitch) {
+                      info.setClassName(Switch.class.getName());
+                      info.setCheckable(true);
+                      info.setChecked(togglerView.isEnabled());
+                    }
+                  }
+                });
                 break;
               }
               case ListItem.TYPE_LIVE_LOCATION_TARGET: {

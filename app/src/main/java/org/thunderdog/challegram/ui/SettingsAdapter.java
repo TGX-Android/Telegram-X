@@ -1611,6 +1611,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         button.setRadioEnabled(item.isSelected(), false);
         button.setId(item.getId());
         button.checkRtl(true);
+        // Separately clickable toggler is named after its row
+        button.setContentDescription(item.getString());
         break;
       }
       case ListItem.TYPE_COLOR_PICKER: {

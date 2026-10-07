@@ -18,12 +18,17 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
@@ -34,6 +39,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
@@ -47,6 +53,7 @@ import org.thunderdog.challegram.widget.SimplestCheckBox;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -60,10 +67,12 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   private int textLeft;
 
   private float checkFactor;
+  private boolean isCheckable;
   private BoolAnimator checkAnimator;
   private AvatarReceiver receiver;
   private final EmojiStatusHelper emojiStatusHelper;
   private Counter counter;
+  private int unreadCount;
 
   public DrawerItemView (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -85,11 +94,13 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   }
 
   public void setChecked (boolean isChecked, boolean animated) {
+    isCheckable = true;
     if (isChecked != isChecked()) {
       if (checkAnimator == null) {
         checkAnimator = new BoolAnimator(ANIMATOR_CHECK, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
       }
       checkAnimator.setValue(isChecked, animated);
+      notifyAccessibilityContentChanged();
     }
   }
 
@@ -133,6 +144,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
       this.text = text;
       trimText(true);
       invalidate();
+      notifyAccessibilityContentChanged();
     }
   }
 
@@ -246,6 +258,10 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   }
 
   public void setUnreadCount (int unreadCount, boolean muted, boolean animated) {
+    if (this.unreadCount != unreadCount) {
+      this.unreadCount = unreadCount;
+      notifyAccessibilityContentChanged();
+    }
     if (unreadCount == 0 && this.counter == null && iconDrawableRes == 0)
       return;
     if (this.counter == null || iconDrawableRes != 0) {
@@ -341,5 +357,70 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (counter != null) {
       counter.draw(c, rtl ? Screen.dp(24f) : viewWidth - Screen.dp(24f), getMeasuredHeight() / 2f, Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT, 1f, this, ColorId.badgeFailedText);
     }
+  }
+
+  // Accessibility
+
+  private void notifyAccessibilityContentChanged () {
+    // Text, unread counter and check mark are drawn on canvas,
+    // so let accessibility services know that the reported content changed
+    sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+  }
+
+  public @Nullable CharSequence getAccessibilityText () {
+    if (StringUtils.isEmpty(text)) {
+      return null;
+    }
+    if (iconDrawableRes == 0 && unreadCount > 0) {
+      // Same unit as TdlibBadgeCounter, which provides the unread count
+      boolean countMessages = BitwiseUtils.hasFlag(Settings.instance().getBadgeFlags(), Settings.BADGE_FLAG_MESSAGES);
+      return text + Lang.getConcatSeparator() + Lang.plural(countMessages ? R.string.xNewMessages : R.string.AccDescrUnreadChats, unreadCount);
+    }
+    return text;
+  }
+
+  @Override
+  public void onPopulateAccessibilityEvent (AccessibilityEvent event) {
+    super.onPopulateAccessibilityEvent(event);
+    CharSequence text = getAccessibilityText();
+    if (!TextUtils.isEmpty(text)) {
+      event.getText().add(text);
+    }
+  }
+
+  @Override
+  public void onInitializeAccessibilityEvent (AccessibilityEvent event) {
+    super.onInitializeAccessibilityEvent(event);
+    if (isCheckable) {
+      event.setChecked(isChecked());
+    }
+  }
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    super.onInitializeAccessibilityNodeInfo(info);
+    CharSequence text = getAccessibilityText();
+    if (!TextUtils.isEmpty(text)) {
+      info.setText(text);
+    }
+    if (isCheckable) {
+      info.setCheckable(true);
+      info.setChecked(isChecked());
+    }
+  }
+
+  @Override
+  public boolean performAccessibilityAction (int action, @Nullable Bundle arguments) {
+    if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+      // BaseView delivers taps through ClickHelper and its performClick() does nothing,
+      // so send accessibility clicks to the same listener a tap reaches
+      float x = getMeasuredWidth() / 2f, y = getMeasuredHeight() / 2f;
+      if (needClickAt(this, x, y)) {
+        onClickAt(this, x, y);
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+        return true;
+      }
+    }
+    return super.performAccessibilityAction(action, arguments);
   }
 }

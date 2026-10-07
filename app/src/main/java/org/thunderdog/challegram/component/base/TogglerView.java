@@ -25,6 +25,9 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Switch;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
@@ -162,7 +165,11 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
   }
 
   public void setRadioEnabled (boolean isEnabled, boolean animated) {
+    boolean changed = this.isEnabled.getValue() != isEnabled;
     this.isEnabled.setValue(isEnabled, animated);
+    if (changed) {
+      notifyAccessibilityContentChanged();
+    }
   }
 
   @Override
@@ -177,7 +184,9 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) { }
 
   public boolean toggle (boolean animated) {
-    return isEnabled.toggleValue(animated);
+    boolean result = isEnabled.toggleValue(animated);
+    notifyAccessibilityContentChanged();
+    return result;
   }
 
   /*public boolean isAnimating () {
@@ -308,6 +317,39 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
       c.drawLine(origX - linePart + offsetX + offsetGlobal + removeLeft, origY - linePart + offsetY + offsetGlobalY + removeLeft, origX + linePart * (1f - factor) + offsetX + offsetGlobal, origY + linePart * (1f - factor) + offsetY + offsetGlobalY, strokePaint);
 
       // c.restore();
+    }
+  }
+
+  // Accessibility
+
+  private void notifyAccessibilityContentChanged () {
+    // Toggle state is drawn on canvas, so let accessibility services know it changed
+    sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+  }
+
+  @Override
+  public CharSequence getAccessibilityClassName () {
+    return Switch.class.getName();
+  }
+
+  @Override
+  public void onInitializeAccessibilityEvent (AccessibilityEvent event) {
+    super.onInitializeAccessibilityEvent(event);
+    event.setChecked(isEnabled());
+    // isEnabled() reports the toggle state, not whether the view is enabled
+    event.setEnabled(super.isEnabled());
+  }
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    super.onInitializeAccessibilityNodeInfo(info);
+    info.setCheckable(true);
+    info.setChecked(isEnabled());
+    // isEnabled() reports the toggle state, not whether the view is enabled,
+    // so super left out the click action while the toggler is off
+    info.setEnabled(super.isEnabled());
+    if (isClickable() && super.isEnabled()) {
+      info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
     }
   }
 }
