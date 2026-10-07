@@ -98,13 +98,23 @@ public final class ArticleBodyViewChecks {
 
   public static void richTextRows (Context context) throws Exception {
     TGMessageArticle message = message(0);
+    TdApi.RichText reference = new TdApi.RichTextReference("paragraph-id", new TdApi.RichTexts(new TdApi.RichText[] {
+      new TdApi.RichTextBold(new TdApi.RichTextPlain("Bold introduction. ")),
+      new TdApi.RichTextPlain("Paragraphs remain visible while the article scrolls. "),
+      new TdApi.RichTextReference("nested-id", new TdApi.RichTextUrl(new TdApi.RichTextPlain("Open link"), "https://example.com/article", false))
+    }));
+    org.thunderdog.challegram.util.text.FormattedText formatted = org.thunderdog.challegram.util.text.FormattedText.parseRichText(message.controller(), reference, null);
+    require(formatted.text.equals("Bold introduction. Paragraphs remain visible while the article scrolls. Open link"), "Named paragraph discarded its contents");
+    boolean anchor = false, link = false;
+    for (org.thunderdog.challegram.util.text.TextEntity entity : formatted.entities) {
+      anchor |= entity.hasAnchor("paragraph-id");
+      if (entity instanceof org.thunderdog.challegram.util.text.TextEntityCustom)
+        link |= "https://example.com/article".equals(((org.thunderdog.challegram.util.text.TextEntityCustom) entity).getLinkIfUrl());
+    }
+    require(anchor && link, "Named paragraph lost its anchor or nested URL");
     TdApi.RichMessage article = new TdApi.RichMessage(new TdApi.PageBlock[] {
       new TdApi.PageBlockSectionHeading(new TdApi.RichTextPlain("Article rendering"), 2),
-      new TdApi.PageBlockParagraph(new TdApi.RichTexts(new TdApi.RichText[] {
-        new TdApi.RichTextBold(new TdApi.RichTextPlain("Bold introduction. ")),
-        new TdApi.RichTextPlain("Paragraphs remain visible while the article scrolls. "),
-        new TdApi.RichTextUrl(new TdApi.RichTextPlain("Open link"), "https://example.com/article", false)
-      })),
+      new TdApi.PageBlockParagraph(reference),
       new TdApi.PageBlockList(new TdApi.PageBlockListItem[] {
         new TdApi.PageBlockListItem("1.", new TdApi.PageBlock[] {new TdApi.PageBlockParagraph(new TdApi.RichTextPlain("First list item"))}, false, false, 1, "1"),
         new TdApi.PageBlockListItem("2.", new TdApi.PageBlock[] {new TdApi.PageBlockParagraph(new TdApi.RichTextPlain("Second list item"))}, false, false, 2, "1")

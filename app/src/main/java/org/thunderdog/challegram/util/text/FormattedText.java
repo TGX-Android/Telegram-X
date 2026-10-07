@@ -491,6 +491,9 @@ public class FormattedText {
         TdApi.RichTextReference reference = (TdApi.RichTextReference) in;
         TextEntityCustom custom = new TextEntityCustom(context, context.tdlib(), "", offset[0], offset[0], TextEntityCustom.FLAG_REFERENCE, null).setAnchorOrReferenceName(reference.name, true);
         entities.add(custom);
+        // A named reference is also visible content. Rich messages use it around
+        // whole paragraphs; keeping only the anchor silently erased their text.
+        parseRichText(context, reference.text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters, inlineButton);
         break;
       }
       case TdApi.RichTextBold.CONSTRUCTOR: {
