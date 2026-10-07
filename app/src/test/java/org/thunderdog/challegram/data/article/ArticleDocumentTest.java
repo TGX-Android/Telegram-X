@@ -10,6 +10,22 @@ import static org.junit.Assert.*;
 public class ArticleDocumentTest {
   private static TdApi.RichText text (String value) { return new TdApi.RichTextPlain(value); }
 
+  @Test public void mergedTdlibFileIdsDoNotCauseDraftConflicts () {
+    TdApi.File first = new TdApi.File(); first.id = 10; first.remote = new TdApi.RemoteFile("", "same-unique-file", false, true, 0);
+    TdApi.File second = new TdApi.File(); second.id = 20; second.remote = new TdApi.RemoteFile("", "same-unique-file", false, true, 0);
+    java.util.Map<Integer, TdApi.File> files = new java.util.HashMap<>(); files.put(10, first); files.put(20, second);
+    TdApi.InputDocument media = new TdApi.InputDocument(new TdApi.InputFileId(10), null, true);
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockDocument(media, null)}), false, false);
+    ArticleDocument before = new ArticleDocument(input); media.document = new TdApi.InputFileId(20);
+    ArticleDocument after = new ArticleDocument(input);
+    assertFalse(before.hasSameContent(after));
+    assertTrue(before.hasSameContent(after, ArticleDraftFiles.identities(files)));
+    second.remote.uniqueId = "different-file";
+    assertFalse(before.hasSameContent(after, ArticleDraftFiles.identities(files)));
+    files.put(10, second); // GetFile(oldId) can itself resolve to the new ID.
+    assertTrue(before.hasSameContent(after, ArticleDraftFiles.identities(files)));
+  }
+
   @Test public void draftFileAliasesRequireIdenticalContents () throws Exception {
     java.nio.file.Path local = java.nio.file.Files.createTempFile("article-import", ".txt");
     java.nio.file.Path cached = java.nio.file.Files.createTempFile("article-tdlib", ".txt");

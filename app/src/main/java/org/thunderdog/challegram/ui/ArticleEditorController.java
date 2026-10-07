@@ -176,11 +176,14 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   private void resolveDraftConflict (ArticleDraftStore.Snapshot recovered, Args args) {
     enableTree(root, false);
     java.util.Set<Integer> ids = new java.util.HashSet<>();
-    ArticleCodec.visit(args.document.toInput(), (value, depth) -> { if (value instanceof TdApi.InputFileId) ids.add(((TdApi.InputFileId) value).id); });
-    java.util.Map<String, Integer> paths = new java.util.concurrent.ConcurrentHashMap<>(args.localDraftFiles);
+    for (ArticleDocument document : new ArticleDocument[] {args.document, recovered.document, recovered.baseline})
+      ArticleCodec.visit(document.toInput(), (value, depth) -> { if (value instanceof TdApi.InputFileId) ids.add(((TdApi.InputFileId) value).id); });
+    java.util.Map<Integer, TdApi.File> files = new java.util.concurrent.ConcurrentHashMap<>();
     Runnable compare = () -> IMPORTS.execute(() -> {
+      java.util.Map<String, Integer> paths = org.thunderdog.challegram.data.article.ArticleDraftFiles.identities(files);
       java.util.Map<String, Integer> aliases = org.thunderdog.challegram.data.article.ArticleDraftFiles.aliases(recovered.document, paths);
-      boolean same = recovered.document.hasSameContent(args.document, aliases);
+      aliases.putAll(org.thunderdog.challegram.data.article.ArticleDraftFiles.aliases(recovered.baseline, paths));
+      boolean same = recovered.document.hasSameContent(args.document, aliases) || recovered.baseline.hasSameContent(args.document, aliases);
       handler.post(() -> {
         if (isDestroyed() || args.userId != tdlib.myUserId()) return;
         if (same) { recoverDraft(recovered); return; }
@@ -194,7 +197,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     else {
       java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(ids.size());
       for (int id : ids) tdlib.send(new TdApi.GetFile(id), (file, error) -> {
-        if (file != null && file.local != null && !file.local.path.isEmpty()) paths.put(file.local.path, file.id);
+        if (file != null) files.put(id, file);
         if (remaining.decrementAndGet() == 0) compare.run();
       });
     }

@@ -58,7 +58,8 @@ public final class ArticleDocument {
   }
 
   private static TdApi.InputFile normalizeFile (TdApi.InputFile file, java.util.Map<String, Integer> localFiles) {
-    Integer id = file instanceof TdApi.InputFileLocal ? localFiles.get(((TdApi.InputFileLocal) file).path) : null;
+    Integer id = file instanceof TdApi.InputFileLocal ? localFiles.get(((TdApi.InputFileLocal) file).path) :
+      file instanceof TdApi.InputFileId ? localFiles.get("id:" + ((TdApi.InputFileId) file).id) : null;
     return id != null ? new TdApi.InputFileId(id) : file;
   }
 
