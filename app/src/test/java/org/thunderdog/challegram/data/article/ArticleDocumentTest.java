@@ -10,6 +10,22 @@ import static org.junit.Assert.*;
 public class ArticleDocumentTest {
   private static TdApi.RichText text (String value) { return new TdApi.RichTextPlain(value); }
 
+  @Test public void draftFileAliasesRequireIdenticalContents () throws Exception {
+    java.nio.file.Path local = java.nio.file.Files.createTempFile("article-import", ".txt");
+    java.nio.file.Path cached = java.nio.file.Files.createTempFile("article-tdlib", ".txt");
+    try {
+      java.nio.file.Files.write(local, new byte[] {1, 2, 3}); java.nio.file.Files.write(cached, new byte[] {1, 2, 3});
+      ArticleDocument document = new ArticleDocument(new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {
+        new TdApi.InputPageBlockDocument(new TdApi.InputDocument(new TdApi.InputFileLocal(local.toString()), null, true), null)}), false, true));
+      java.util.Map<String, Integer> files = java.util.Collections.singletonMap(cached.toString(), 42);
+      assertEquals(Integer.valueOf(42), ArticleDraftFiles.aliases(document, files).get(local.toString()));
+      java.nio.file.Files.write(cached, new byte[] {3, 2, 1});
+      assertFalse(ArticleDraftFiles.aliases(document, files).containsKey(local.toString()));
+      java.nio.file.Files.delete(cached);
+      assertFalse(ArticleDraftFiles.aliases(document, files).containsKey(local.toString()));
+    } finally { java.nio.file.Files.deleteIfExists(local); java.nio.file.Files.deleteIfExists(cached); }
+  }
+
   @Test public void localMediaDraftMatchesTdlibEchoWithoutHidingRealChanges () {
     TdApi.InputPageBlockDocument file = new TdApi.InputPageBlockDocument(new TdApi.InputDocument(new TdApi.InputFileLocal("/draft/qa.txt"), null, false), null);
     TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {file}), false, true);

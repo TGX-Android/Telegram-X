@@ -149,11 +149,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     }
     if (recoveryPending) {
       ArticleDraftStore.Snapshot recovered = recovery;
-      handler.post(() -> new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(R.string.ArticleDraftConflict))
-        .setMessage(Lang.getString(R.string.ArticleDraftConflictHint)).setCancelable(false)
-        .setPositiveButton(Lang.getString(R.string.ArticleRecoverLocal), (dialog, which) -> {
-          recoveryPending = false; baseline = recovered.baseline; restore(recovered.document); history = new ArticleHistory(recovered.document); saveDraft();
-        }).setNegativeButton(Lang.getString(R.string.ArticleUseServer), (dialog, which) -> { recoveryPending = false; saveDraft(); }).show());
+      resolveDraftConflict(recovered, args);
     }
     if (pendingMessageId != 0) {
       setSending(true);
@@ -171,6 +167,37 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       });
     }
     return root;
+  }
+
+  private void recoverDraft (ArticleDraftStore.Snapshot recovered) {
+    recoveryPending = false; baseline = recovered.baseline; restore(recovered.document); history = new ArticleHistory(recovered.document); enableTree(root, true); updateToolState(); updateHistory(); saveDraft();
+  }
+
+  private void resolveDraftConflict (ArticleDraftStore.Snapshot recovered, Args args) {
+    enableTree(root, false);
+    java.util.Set<Integer> ids = new java.util.HashSet<>();
+    ArticleCodec.visit(args.document.toInput(), (value, depth) -> { if (value instanceof TdApi.InputFileId) ids.add(((TdApi.InputFileId) value).id); });
+    java.util.Map<String, Integer> paths = new java.util.concurrent.ConcurrentHashMap<>(args.localDraftFiles);
+    Runnable compare = () -> IMPORTS.execute(() -> {
+      java.util.Map<String, Integer> aliases = org.thunderdog.challegram.data.article.ArticleDraftFiles.aliases(recovered.document, paths);
+      boolean same = recovered.document.hasSameContent(args.document, aliases);
+      handler.post(() -> {
+        if (isDestroyed() || args.userId != tdlib.myUserId()) return;
+        if (same) { recoverDraft(recovered); return; }
+        new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(R.string.ArticleDraftConflict))
+          .setMessage(Lang.getString(R.string.ArticleDraftConflictHint)).setCancelable(false)
+          .setPositiveButton(Lang.getString(R.string.ArticleRecoverLocal), (dialog, which) -> recoverDraft(recovered))
+          .setNegativeButton(Lang.getString(R.string.ArticleUseServer), (dialog, which) -> { recoveryPending = false; enableTree(root, true); saveDraft(); updateToolState(); updateHistory(); }).show();
+      });
+    });
+    if (ids.isEmpty()) compare.run();
+    else {
+      java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(ids.size());
+      for (int id : ids) tdlib.send(new TdApi.GetFile(id), (file, error) -> {
+        if (file != null && file.local != null && !file.local.path.isEmpty()) paths.put(file.local.path, file.id);
+        if (remaining.decrementAndGet() == 0) compare.run();
+      });
+    }
   }
 
   private void createEditorLayout (Context context, boolean editing) {
