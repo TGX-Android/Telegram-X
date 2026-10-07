@@ -40,7 +40,7 @@ public final class ArticleDocument {
 
   public byte[] save () { return snapshot.clone(); }
 
-  /** Compare draft contents after the server consumes sending options and clears blank text. */
+  /** Compare content after the server consumes sending options and canonicalizes text. */
   public boolean hasSameContent (ArticleDocument other) {
     return hasSameContent(other, java.util.Collections.emptyMap());
   }
@@ -70,6 +70,9 @@ public final class ArticleDocument {
         if (caption.text == null || blankText(caption.text)) caption.text = new TdApi.RichTextPlain("");
         if (caption.credit == null || blankText(caption.credit)) caption.credit = new TdApi.RichTextPlain("");
       }
+      if (value instanceof TdApi.PageBlockTableCell && ((TdApi.PageBlockTableCell) value).text == null) {
+        ((TdApi.PageBlockTableCell) value).text = new TdApi.RichTextPlain("");
+      }
       if (value instanceof TdApi.InputDocument) {
         TdApi.InputDocument media = (TdApi.InputDocument) value;
         media.document = normalizeFile(media.document, localFiles);
@@ -88,6 +91,30 @@ public final class ArticleDocument {
         TdApi.InputThumbnail thumbnail = (TdApi.InputThumbnail) value; thumbnail.thumbnail = normalizeFile(thumbnail.thumbnail, localFiles);
       }
     });
+    ArticleCodec.transformRichTexts(message, ArticleDocument::normalizeText);
+  }
+
+  private static TdApi.RichText normalizeText (TdApi.RichText text) {
+    if (!(text instanceof TdApi.RichTexts)) return text;
+    java.util.List<TdApi.RichText> parts = new java.util.ArrayList<>();
+    appendText(parts, text);
+    if (parts.isEmpty()) return new TdApi.RichTextPlain("");
+    return parts.size() == 1 ? parts.get(0) : new TdApi.RichTexts(parts.toArray(new TdApi.RichText[0]));
+  }
+
+  private static void appendText (java.util.List<TdApi.RichText> parts, TdApi.RichText text) {
+    if (text instanceof TdApi.RichTexts) {
+      for (TdApi.RichText part : ((TdApi.RichTexts) text).texts) appendText(parts, part);
+    } else if (text instanceof TdApi.RichTextPlain) {
+      String value = ((TdApi.RichTextPlain) text).text;
+      if (value.isEmpty()) return;
+      if (!parts.isEmpty() && parts.get(parts.size() - 1) instanceof TdApi.RichTextPlain) {
+        ((TdApi.RichTextPlain) parts.get(parts.size() - 1)).text += value;
+      } else parts.add(new TdApi.RichTextPlain(value));
+    } else {
+      // Even an empty link, anchor, button or formatting wrapper has semantics.
+      parts.add(text);
+    }
   }
 
   private static boolean blankParagraphs (TdApi.InputRichMessage message) {

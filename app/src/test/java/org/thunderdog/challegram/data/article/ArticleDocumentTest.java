@@ -10,6 +10,65 @@ import static org.junit.Assert.*;
 public class ArticleDocumentTest {
   private static TdApi.RichText text (String value) { return new TdApi.RichTextPlain(value); }
 
+  @Test public void serverTextSegmentationAndEmptyTableCellsDoNotConflict () {
+    TdApi.InputPageBlockParagraph paragraph = new TdApi.InputPageBlockParagraph(new TdApi.RichTextBold(text("Article title")));
+    TdApi.PageBlockTableCell cell = new TdApi.PageBlockTableCell(text(""), false, 1, 1,
+      new TdApi.PageBlockHorizontalAlignmentLeft(), new TdApi.PageBlockVerticalAlignmentTop());
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {
+      paragraph, new TdApi.InputPageBlockTable(text("Table"), new TdApi.PageBlockTableCell[][] {{cell}}, true, false, false)
+    }), false, true);
+    ArticleDocument local = new ArticleDocument(input);
+    byte[] original = local.save();
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text(""), new TdApi.RichTextBold(
+      new TdApi.RichTexts(new TdApi.RichText[] {text("Article"), new TdApi.RichTexts(new TdApi.RichText[] {text(""), text(" title")})}))});
+    cell.text = null;
+    input.detectAutomaticBlocks = false;
+    ArticleDocument cloud = new ArticleDocument(input);
+    assertNotEquals(local, cloud);
+    assertTrue(local.hasSameContent(cloud));
+    assertTrue(cloud.hasSameContent(local));
+    assertArrayEquals(original, local.save());
+    cell.text = text("Changed cell");
+    assertFalse(local.hasSameContent(new ArticleDocument(input)));
+    cell.text = null; cell.isHeader = true;
+    assertFalse(local.hasSameContent(new ArticleDocument(input)));
+  }
+
+  @Test public void contentComparisonKeepsWhitespaceLinksAndEmptySemanticElements () {
+    TdApi.InputPageBlockParagraph paragraph = new TdApi.InputPageBlockParagraph(text("a b"));
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {paragraph}), false, false);
+    ArticleDocument before = new ArticleDocument(input);
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text("a"), text(" "), text("b")});
+    assertTrue(before.hasSameContent(new ArticleDocument(input)));
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text("a"), text("b")});
+    assertFalse(before.hasSameContent(new ArticleDocument(input)));
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text("a b"), new TdApi.RichTextReference("anchor", text(""))});
+    assertFalse(before.hasSameContent(new ArticleDocument(input)));
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text("a b"), new TdApi.RichTextUrl(text(""), "https://example.org", false)});
+    assertFalse(before.hasSameContent(new ArticleDocument(input)));
+    paragraph.text = new TdApi.RichTextBold(text("a b"));
+    assertFalse(before.hasSameContent(new ArticleDocument(input)));
+  }
+
+  @Test public void refreshedMediaReferenceDoesNotHideConcurrentTextOrFileChanges () {
+    TdApi.RichMessage message = mixed();
+    TdApi.File file = ((TdApi.PageBlockPhoto) message.blocks[1]).photo.sizes[0].photo;
+    file.remote = new TdApi.RemoteFile("old-token", "same-file", false, true, 0);
+    ArticleDocument baseline = ArticleDocument.received(message);
+    TdApi.File refreshed = ArticleCodec.copy(file, TdApi.File.class);
+    refreshed.id = 77; refreshed.remote.id = "new-token";
+    ((TdApi.PageBlockPhoto) message.blocks[1]).photo.sizes[0].photo = refreshed;
+    java.util.Map<String, TdApi.File> files = new java.util.HashMap<>();
+    files.put("remote:old-token", file); files.put("remote:new-token", refreshed);
+    assertTrue(baseline.hasSameContent(ArticleDocument.received(message), ArticleDraftFiles.identities(files)));
+    TdApi.RichTextUrl link = (TdApi.RichTextUrl) ((TdApi.RichTexts) ((TdApi.PageBlockParagraph) message.blocks[0]).text).texts[1];
+    String originalUrl = link.url;
+    link.url = "https://example.org/concurrent-edit";
+    assertFalse(baseline.hasSameContent(ArticleDocument.received(message), ArticleDraftFiles.identities(files)));
+    link.url = originalUrl; refreshed.remote.uniqueId = "different-file";
+    assertFalse(baseline.hasSameContent(ArticleDocument.received(message), ArticleDraftFiles.identities(files)));
+  }
+
   @Test public void receivedMediaUsesPersistentReferencesAcrossTdlibRestarts () throws Exception {
     TdApi.RichMessage message = mixed();
     TdApi.File file = ((TdApi.PageBlockPhoto) message.blocks[1]).photo.sizes[0].photo;

@@ -969,13 +969,24 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
         if (error != null) { UI.showError(error); finishSending(false); return; }
         ArticleDocument remote;
         try { remote = ArticleDocument.received(full); } catch (IllegalArgumentException e) { UI.showToast(R.string.ArticleReadOnly, Toast.LENGTH_LONG); finishSending(false); return; }
-        if (!remote.equals(baseline)) {
-          finishSending(false);
-          new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(R.string.ArticleEditConflict))
-            .setMessage(Lang.getString(R.string.ArticleEditConflictHint))
-            .setPositiveButton(Lang.getString(R.string.ArticleOverwrite), (dialog, which) -> { baseline = remote; edit(snapshot); })
-            .setNegativeButton(Lang.getString(R.string.Cancel), null).show();
-        } else edit(snapshot);
+        if (remote.hasSameContent(baseline)) { edit(snapshot); return; }
+        ArticleDocument previous = baseline;
+        // A refreshed remote reference is not a concurrent edit. Resolve both
+        // documents before comparing, including any recovered local upload.
+        ArticleFiles.resolve(tdlib, new TdApi.Object[] {remote.toInput(), previous.toInput()}, false, resolved -> IMPORTS.execute(() -> {
+          java.util.Map<String, Integer> files = org.thunderdog.challegram.data.article.ArticleDraftFiles.identities(resolved.files);
+          java.util.Map<String, Integer> aliases = org.thunderdog.challegram.data.article.ArticleDraftFiles.aliases(previous, files);
+          boolean same = remote.hasSameContent(previous, aliases);
+          handler.post(() -> {
+            if (isDestroyed() || args.userId != tdlib.myUserId()) return;
+            if (same) { edit(snapshot); return; }
+            finishSending(false);
+            new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(R.string.ArticleEditConflict))
+              .setMessage(Lang.getString(R.string.ArticleEditConflictHint))
+              .setPositiveButton(Lang.getString(R.string.ArticleOverwrite), (dialog, which) -> { baseline = remote; edit(snapshot); })
+              .setNegativeButton(Lang.getString(R.string.Cancel), null).show();
+          });
+        }));
       }));
     }
   }

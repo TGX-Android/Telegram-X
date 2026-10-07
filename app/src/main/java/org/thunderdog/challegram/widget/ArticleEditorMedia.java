@@ -20,6 +20,7 @@ import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import java.util.ArrayList;
 import java.util.List;
 import me.vkryl.core.lambda.Destroyable;
@@ -37,7 +38,9 @@ public final class ArticleEditorMedia extends LinearLayout implements Destroyabl
       if (value instanceof TdApi.PageBlockCaption) { ((TdApi.PageBlockCaption) value).text = new TdApi.RichTextPlain(""); ((TdApi.PageBlockCaption) value).credit = new TdApi.RichTextPlain(""); }
     });
     TextView loading = new TextView(getContext()); loading.setText(Lang.getString(R.string.ArticleLoading)); loading.setTextColor(Theme.textDecentColor()); loading.setMinHeight(Screen.dp(64)); addView(loading);
-    ArticleFiles.resolve(controller.tdlib(), new TdApi.Object[] {detached}, true, resolved -> post(() -> {
+    // Before API 24, View.post on an unattached view uses the calling thread's
+    // run queue. A fast TDLib response can arrive before this view is attached.
+    ArticleFiles.resolve(controller.tdlib(), new TdApi.Object[] {detached}, true, resolved -> UI.post(() -> {
       if (!destroyed) build(detached, resolved);
     }));
   }

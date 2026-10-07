@@ -95,6 +95,11 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
       }
       if (article.isRtl) right += indent; else left += indent;
       int rowHeight = block.getHeight(null, Math.max(1, rowWidth - indent));
+      // Photos may sit behind the channel avatar, but text and file controls
+      // must start below it when they occupy the avatar column as well.
+      if (top == 0 && rowHeight > 0 && fullWidth && !fullWidthMedia && hasHeader()) {
+        top = Math.max(0, getHeaderPadding() + xAvatarRadius * 2 - getContentY());
+      }
       measured.add(new Row(block, top, rowHeight, indent, left, right));
       top += rowHeight;
     }
