@@ -30,6 +30,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.article.ArticleDocument;
+import org.thunderdog.challegram.data.article.ArticleFiles;
 import org.thunderdog.challegram.data.article.ArticleAiResult;
 import org.thunderdog.challegram.data.article.ArticleDraftStore;
 import org.thunderdog.challegram.data.article.ArticleEditorTree;
@@ -175,12 +176,8 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
 
   private void resolveDraftConflict (ArticleDraftStore.Snapshot recovered, Args args) {
     enableTree(root, false);
-    java.util.Set<Integer> ids = new java.util.HashSet<>();
-    for (ArticleDocument document : new ArticleDocument[] {args.document, recovered.document, recovered.baseline})
-      ArticleCodec.visit(document.toInput(), (value, depth) -> { if (value instanceof TdApi.InputFileId) ids.add(((TdApi.InputFileId) value).id); });
-    java.util.Map<Integer, TdApi.File> files = new java.util.concurrent.ConcurrentHashMap<>();
-    Runnable compare = () -> IMPORTS.execute(() -> {
-      java.util.Map<String, Integer> paths = org.thunderdog.challegram.data.article.ArticleDraftFiles.identities(files);
+    ArticleFiles.resolve(tdlib, new TdApi.Object[] {args.document.toInput(), recovered.document.toInput(), recovered.baseline.toInput()}, false, resolved -> IMPORTS.execute(() -> {
+      java.util.Map<String, Integer> paths = org.thunderdog.challegram.data.article.ArticleDraftFiles.identities(resolved.files);
       java.util.Map<String, Integer> aliases = org.thunderdog.challegram.data.article.ArticleDraftFiles.aliases(recovered.document, paths);
       aliases.putAll(org.thunderdog.challegram.data.article.ArticleDraftFiles.aliases(recovered.baseline, paths));
       boolean same = recovered.document.hasSameContent(args.document, aliases) || recovered.baseline.hasSameContent(args.document, aliases);
@@ -192,15 +189,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
           .setPositiveButton(Lang.getString(R.string.ArticleRecoverLocal), (dialog, which) -> recoverDraft(recovered))
           .setNegativeButton(Lang.getString(R.string.ArticleUseServer), (dialog, which) -> { recoveryPending = false; enableTree(root, true); saveDraft(); updateToolState(); updateHistory(); }).show();
       });
-    });
-    if (ids.isEmpty()) compare.run();
-    else {
-      java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(ids.size());
-      for (int id : ids) tdlib.send(new TdApi.GetFile(id), (file, error) -> {
-        if (file != null) files.put(id, file);
-        if (remaining.decrementAndGet() == 0) compare.run();
-      });
-    }
+    }));
   }
 
   private void createEditorLayout (Context context, boolean editing) {
@@ -652,31 +641,19 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     ArticleValidator.Problem problem = ArticleValidator.validate(working, new ArticleValidator.Limits(limits.richMessageTextLengthMax, limits.richMessageBlockCountMax, limits.richMessageDepthMax, limits.richMessageMediaCountMax, limits.richMessageTableColumnCountMax));
     if (problem != null) { UI.showToast(problem == ArticleValidator.Problem.EMPTY ? R.string.ArticleEmpty : R.string.ArticleLimitExceeded, Toast.LENGTH_LONG); return; }
     ArticleDocument document = new ArticleDocument(working); saveDraft();
-    java.util.Map<Integer, TdApi.File> files = new java.util.concurrent.ConcurrentHashMap<>();
-    java.util.Map<Integer, String> fileNames = new java.util.concurrent.ConcurrentHashMap<>();
-    java.util.Set<Integer> ids = new java.util.HashSet<>();
-    ArticleCodec.visit(working, (value, depth) -> { if (value instanceof TdApi.InputFileId) ids.add(((TdApi.InputFileId) value).id); });
-    Runnable show = () -> runOnUiThreadOptional(() -> {
+    ArticleFiles.resolve(tdlib, new TdApi.Object[] {working}, true, resolved -> runOnUiThreadOptional(() -> {
       try {
         TdApi.RichMessage article = new ArticlePreviewMapper(file -> {
-          if (file instanceof TdApi.InputFileId) { TdApi.File known = files.get(((TdApi.InputFileId) file).id); if (known == null) throw new IllegalArgumentException("Missing preview file"); return known; }
+          if (ArticleFiles.key(file) != null) { TdApi.File known = resolved.files.get(ArticleFiles.key(file)); if (known == null) throw new IllegalArgumentException("Missing preview file"); return known; }
           if (file instanceof TdApi.InputFileLocal || file instanceof TdApi.InputFileGenerated) {
             String path = file instanceof TdApi.InputFileLocal ? ((TdApi.InputFileLocal) file).path : ((TdApi.InputFileGenerated) file).originalPath; long size = new java.io.File(path).length();
             return new TdApi.File(-Math.max(1, path.hashCode() & 0x7fffffff), size, size, new TdApi.LocalFile(path, false, false, false, true, 0, size, size), new TdApi.RemoteFile("", "", false, false, 0));
           }
           throw new IllegalArgumentException("File is not ready for preview");
-        }, file -> file instanceof TdApi.InputFileId ? fileNames.get(((TdApi.InputFileId) file).id) : null).preview(document);
+        }, file -> ArticleFiles.key(file) != null ? resolved.names.get(ArticleFiles.key(file)) : null).preview(document);
         ArticlePreviewController controller = new ArticlePreviewController(context(), tdlib); controller.setArguments(article); navigateTo(controller);
       } catch (IllegalArgumentException e) { UI.showToast(R.string.ArticlePreviewFailed, Toast.LENGTH_LONG); }
-    });
-    if (ids.isEmpty()) show.run();
-    else {
-      java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(ids.size() * 2);
-      for (int id : ids) {
-        tdlib.send(new TdApi.GetFile(id), (file, error) -> { if (file != null) files.put(id, file); if (remaining.decrementAndGet() == 0) show.run(); });
-        tdlib.send(new TdApi.GetSuggestedFileName(id, ""), (name, error) -> { if (name != null) fileNames.put(id, name.text); if (remaining.decrementAndGet() == 0) show.run(); });
-      }
-    }
+    }));
   }
   private static TdApi.RichText emptyText () { return new TdApi.RichTextPlain(""); }
   private static TdApi.PageBlockCaption emptyCaption () { return new TdApi.PageBlockCaption(emptyText(), emptyText()); }

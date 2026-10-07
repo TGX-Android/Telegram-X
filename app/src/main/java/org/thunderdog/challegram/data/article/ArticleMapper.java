@@ -41,7 +41,9 @@ public final class ArticleMapper {
 
   private static TdApi.InputFile file (TdApi.File value) {
     if (value == null || value.id <= 0) throw new IllegalArgumentException("Missing article media");
-    return new TdApi.InputFileId(value.id);
+    // Numeric IDs belong to one TDLib session; remote IDs survive draft recovery.
+    return value.remote != null && value.remote.id != null && !value.remote.id.isEmpty() ?
+      new TdApi.InputFileRemote(value.remote.id) : new TdApi.InputFileId(value.id);
   }
 
   private static TdApi.InputThumbnail thumbnail (TdApi.Thumbnail value) {

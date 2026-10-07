@@ -10,10 +10,29 @@ import static org.junit.Assert.*;
 public class ArticleDocumentTest {
   private static TdApi.RichText text (String value) { return new TdApi.RichTextPlain(value); }
 
+  @Test public void receivedMediaUsesPersistentReferencesAcrossTdlibRestarts () throws Exception {
+    TdApi.RichMessage message = mixed();
+    TdApi.File file = ((TdApi.PageBlockPhoto) message.blocks[1]).photo.sizes[0].photo;
+    file.remote = new TdApi.RemoteFile("persistent-reference", "unique-photo", false, true, 0);
+    ArticleDocument before = ArticleDocument.received(message);
+    file.id = 930; // Numeric file IDs change when TDLib starts again.
+    ArticleDocument after = ArticleDocument.received(message);
+    assertEquals(before, after);
+    assertEquals(after, ArticleDocument.restore(before.save()));
+    TdApi.InputPhoto photo = ((TdApi.InputPageBlockPhoto) ((TdApi.RichMessageSourceBlocks) after.toInput().source).blocks[1]).photo;
+    assertEquals("persistent-reference", ((TdApi.InputFileRemote) photo.photo).id);
+    file.remote.id = "refreshed-reference";
+    ArticleDocument refreshed = ArticleDocument.received(message);
+    assertFalse(before.equals(refreshed));
+    java.util.Map<String, TdApi.File> resolved = new java.util.HashMap<>();
+    resolved.put("remote:persistent-reference", file); resolved.put("remote:refreshed-reference", file);
+    assertTrue(before.hasSameContent(refreshed, ArticleDraftFiles.identities(resolved)));
+  }
+
   @Test public void mergedTdlibFileIdsDoNotCauseDraftConflicts () {
     TdApi.File first = new TdApi.File(); first.id = 10; first.remote = new TdApi.RemoteFile("", "same-unique-file", false, true, 0);
     TdApi.File second = new TdApi.File(); second.id = 20; second.remote = new TdApi.RemoteFile("", "same-unique-file", false, true, 0);
-    java.util.Map<Integer, TdApi.File> files = new java.util.HashMap<>(); files.put(10, first); files.put(20, second);
+    java.util.Map<String, TdApi.File> files = new java.util.HashMap<>(); files.put("id:10", first); files.put("id:20", second);
     TdApi.InputDocument media = new TdApi.InputDocument(new TdApi.InputFileId(10), null, true);
     TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockDocument(media, null)}), false, false);
     ArticleDocument before = new ArticleDocument(input); media.document = new TdApi.InputFileId(20);
@@ -22,7 +41,7 @@ public class ArticleDocumentTest {
     assertTrue(before.hasSameContent(after, ArticleDraftFiles.identities(files)));
     second.remote.uniqueId = "different-file";
     assertFalse(before.hasSameContent(after, ArticleDraftFiles.identities(files)));
-    files.put(10, second); // GetFile(oldId) can itself resolve to the new ID.
+    files.put("id:10", second); // GetFile(oldId) can itself resolve to the new ID.
     assertTrue(before.hasSameContent(after, ArticleDraftFiles.identities(files)));
   }
 

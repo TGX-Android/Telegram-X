@@ -15,15 +15,15 @@ public final class ArticleDraftFiles {
   private ArticleDraftFiles () { }
 
   /** TDLib can merge IDs after uploading or deduplicating an already received file. */
-  public static Map<String, Integer> identities (Map<Integer, TdApi.File> files) {
+  public static Map<String, Integer> identities (Map<String, TdApi.File> files) {
     Map<String, Integer> result = new HashMap<>(), canonical = new HashMap<>();
-    for (Map.Entry<Integer, TdApi.File> entry : files.entrySet()) {
+    for (Map.Entry<String, TdApi.File> entry : files.entrySet()) {
       TdApi.File file = entry.getValue();
       String unique = file.remote != null && file.remote.uniqueId != null && !file.remote.uniqueId.isEmpty() ? "remote:" + file.remote.uniqueId :
         file.local != null && file.local.path != null && !file.local.path.isEmpty() ? "path:" + file.local.path : "id:" + file.id;
       Integer id = canonical.get(unique);
       if (id == null) { id = file.id; canonical.put(unique, id); }
-      result.put("id:" + entry.getKey(), id); result.put("id:" + file.id, id);
+      result.put(entry.getKey(), id); result.put("id:" + file.id, id);
       if (file.local != null && file.local.path != null && !file.local.path.isEmpty()) result.put(file.local.path, id);
     }
     return result;
