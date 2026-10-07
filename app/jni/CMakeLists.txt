@@ -68,11 +68,11 @@ add_compile_options(
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
 )
 
-# == Libraries ==
-
 if (CMAKE_SYSTEM_VERSION GREATER_EQUAL 23)
-  add_link_options("LINKER:--pack-dyn-relocs=android")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--pack-dyn-relocs=android")
 endif()
+
+# == Libraries ==
 
 # tdjni
 
