@@ -14,6 +14,8 @@ import android.widget.FrameLayout;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.data.PageBlock;
+import org.thunderdog.challegram.data.PageBlockMedia;
+import org.thunderdog.challegram.data.PageBlockRichText;
 import org.thunderdog.challegram.data.TGMessageArticle;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.Receiver;
@@ -184,6 +186,87 @@ public final class ArticleBodyViewChecks {
     require(message.getArticleBodyHeight() == sum && !message.hasExpandButton(), "A complete document was artificially truncated");
   }
 
+  public static void channelWidths (Context context) throws Exception {
+    final int width = Screen.dp(360), captionLeft = Screen.dp(60), captionRight = Screen.dp(35);
+    for (int mode = 0; mode < 4; mode++) {
+      TGMessageArticle message = message(0);
+      TdApi.Message source = message.getMessage();
+      source.isChannelPost = mode != 2;
+      ((TestManager) message.manager()).bubbles = mode == 1;
+      boolean rtl = mode == 3;
+      TdApi.PageBlockParagraph paragraph = new TdApi.PageBlockParagraph(new TdApi.RichTextPlain("Message text uses the normal caption column without an extra page margin."));
+      TdApi.PageBlockPhoto photo = new TdApi.PageBlockPhoto(null,
+        new TdApi.PageBlockCaption(new TdApi.RichTextPlain(""), new TdApi.RichTextPlain("")), "", false);
+      TdApi.RichMessage article = new TdApi.RichMessage(new TdApi.PageBlock[] {
+        photo, paragraph,
+        new TdApi.PageBlockList(new TdApi.PageBlockListItem[] {
+          new TdApi.PageBlockListItem("1.", new TdApi.PageBlock[] {paragraph}, true, false, 1, "1")
+        }),
+        new TdApi.PageBlockTable(new TdApi.RichTextPlain(""), new TdApi.PageBlockTableCell[][] {
+          {cell("First", true), cell("Second", true)}, {cell("One", false), cell("Two", false)}
+        }, true, true, false)
+      }, rtl, true);
+      set(message, "article", article);
+      set(message, "pRealContentX", captionLeft);
+      set(message, "pRealContentMaxWidth", width - captionLeft - captionRight);
+      java.lang.reflect.Method build = TGMessageArticle.class.getDeclaredMethod("buildContent", int.class);
+      build.setAccessible(true);
+      boolean fullWidth = mode == 0 || mode == 3;
+      int bodyWidth = fullWidth ? width : width - captionLeft - captionRight;
+      build.invoke(message, bodyWidth);
+      ArticleBodyView body = new ArticleBodyView(context);
+      FrameLayout host = new FrameLayout(context);
+      host.addView(body); host.layout(0, 0, bodyWidth, message.getArticleBodyHeight());
+      body.setMessage(message);
+      body.measure(View.MeasureSpec.makeMeasureSpec(bodyWidth, View.MeasureSpec.EXACTLY),
+        View.MeasureSpec.makeMeasureSpec(message.getArticleBodyHeight(), View.MeasureSpec.EXACTLY));
+      body.layout(0, 0, bodyWidth, message.getArticleBodyHeight());
+      Bitmap bitmap = Bitmap.createBitmap(bodyWidth, message.getArticleBodyHeight(), Bitmap.Config.ARGB_8888);
+      try {
+        body.draw(new Canvas(bitmap));
+        for (int i = 0; i < message.getArticleRows().size(); i++) {
+          TGMessageArticle.Row row = message.getArticleRows().get(i);
+          View child = body.getChildAt(i);
+          boolean media = row.block instanceof PageBlockMedia;
+          int left = fullWidth && !media ? captionLeft : 0;
+          int right = fullWidth && !media ? captionRight : 0;
+          require(child.getLeft() == left + (rtl ? 0 : row.indent) &&
+            child.getRight() == bodyWidth - right - (rtl ? row.indent : 0),
+            "Wrong article child bounds, mode=" + mode + ", block=" + row.block.getClass().getSimpleName());
+          if (row.block instanceof PageBlockRichText && row.indent == 0) {
+            int first = bodyWidth, last = -1;
+            for (int y = row.top; y < row.top + row.height; y++) for (int x = 0; x < bodyWidth; x++) {
+              if ((bitmap.getPixel(x, y) >>> 24) != 0) { first = Math.min(first, x); last = Math.max(last, x); }
+            }
+            require(rtl ? last >= child.getRight() - Screen.dp(4) : first <= child.getLeft() + Screen.dp(4),
+              "Instant View padding still narrows article text, mode=" + mode);
+            require(first >= child.getLeft() && last < child.getRight(), "Text escaped its message column");
+          }
+          if (row.indent > 0) {
+            java.lang.reflect.Method hit = ArticleBodyView.class.getDeclaredMethod("checkboxAt", float.class, float.class);
+            hit.setAccessible(true);
+            float labelX = rtl ? child.getRight() + row.indent / 2f : child.getLeft() - row.indent / 2f;
+            require(hit.invoke(body, labelX, (float) row.top + 1) != null, "Checkbox lost its shifted hit area");
+            if (fullWidth) require(hit.invoke(body, 1f, (float) row.top + 1) == null, "Avatar gutter toggles the checkbox");
+          }
+        }
+        // Reusing PageBlock in chats must leave standalone Instant View margins intact.
+        PageBlockRichText instantView = new PageBlockRichText(message.controller(), paragraph, 0, null);
+        int instantHeight = instantView.getHeight(null, bodyWidth);
+        PageBlockView page = new PageBlockView(context, null);
+        page.setBlock(instantView);
+        page.measure(View.MeasureSpec.makeMeasureSpec(bodyWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(instantHeight, View.MeasureSpec.EXACTLY));
+        page.layout(0, 0, bodyWidth, instantHeight);
+        Bitmap instantBitmap = Bitmap.createBitmap(bodyWidth, instantHeight, Bitmap.Config.ARGB_8888);
+        try {
+          page.draw(new Canvas(instantBitmap));
+          for (int y = 0; y < instantHeight; y++) for (int x = 0; x < Screen.dp(15); x++)
+            require(instantBitmap.getPixel(x, y) == 0, "Chat layout changed Instant View's margin");
+        } finally { instantBitmap.recycle(); page.performDestroy(); }
+      } finally { bitmap.recycle(); body.performDestroy(); }
+    }
+  }
+
   private static TdApi.PageBlockTableCell cell (String text, boolean header) {
     return new TdApi.PageBlockTableCell(new TdApi.RichTextPlain(text), header, 1, 1,
       new TdApi.PageBlockHorizontalAlignmentLeft(), new TdApi.PageBlockVerticalAlignmentTop());
@@ -249,23 +332,32 @@ public final class ArticleBodyViewChecks {
 
   private static TGMessageArticle message (int count) throws Exception {
     TGMessageArticle message = allocate(TGMessageArticle.class);
-    MessagesManager manager = allocate(MessagesManager.class);
+    MessagesManager manager = allocate(TestManager.class);
     set(manager, "controller", allocate(MessagesController.class));
     set(message, "manager", manager);
     TdApi.RichMessage article = new TdApi.RichMessage();
     article.isFull = true;
+    TdApi.Message source = new TdApi.Message();
+    source.content = new TdApi.MessageRichMessage(article);
+    set(message, "msg", source);
     set(message, "article", article);
     set(message, "bodyHeight", count * ROW_HEIGHT);
     set(message, "height", count * ROW_HEIGHT);
     Constructor<TGMessageArticle.Row> constructor = TGMessageArticle.Row.class.getDeclaredConstructor(
-      PageBlock.class, int.class, int.class, int.class);
+      PageBlock.class, int.class, int.class, int.class, int.class, int.class);
     constructor.setAccessible(true);
     List<TGMessageArticle.Row> rows = new ArrayList<>();
     for (int i = 0; i < count; i++) {
-      rows.add(constructor.newInstance(new ColorBlock(i), i * ROW_HEIGHT, ROW_HEIGHT, 0));
+      rows.add(constructor.newInstance(new ColorBlock(i), i * ROW_HEIGHT, ROW_HEIGHT, 0, 0, 0));
     }
     set(message, "rows", rows);
     return message;
+  }
+
+  private static final class TestManager extends MessagesManager {
+    boolean bubbles;
+    private TestManager () { super(null); }
+    @Override public boolean useBubbles () { return bubbles; }
   }
 
   private static int color (int index) { return 0xff000000 | ((index + 1) * 0x137f31 & 0xffffff); }

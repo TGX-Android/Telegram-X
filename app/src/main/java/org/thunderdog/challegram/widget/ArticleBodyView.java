@@ -154,7 +154,8 @@ public final class ArticleBodyView extends ViewGroup implements Destroyable {
     for (TGMessageArticle.Row row : visibleRows) {
       PageBlock.ListItemInfo[] items = row.block.getListItem();
       if (items == null || y < row.top || y > row.top + Math.min(row.height, Screen.dp(48f))) continue;
-      boolean inMargin = message.getArticle().isRtl ? x >= getWidth() - row.indent : x < row.indent;
+      int start = message.getArticle().isRtl ? getWidth() - row.right : row.left - row.indent;
+      boolean inMargin = x >= start && x < start + row.indent;
       if (!inMargin) continue;
       for (int i = items.length - 1; i >= 0; i--) if (items[i].firstBlock == row.block && items[i].list.list.items[items[i].itemIndex].hasCheckbox) return items[i];
     }
@@ -167,7 +168,7 @@ public final class ArticleBodyView extends ViewGroup implements Destroyable {
     int width = getMeasuredWidth();
     for (int i = 0; i < visibleRows.size(); i++) {
       TGMessageArticle.Row row = visibleRows.get(i);
-      getChildAt(i).measure(MeasureSpec.makeMeasureSpec(Math.max(1, width - row.indent), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(row.height, MeasureSpec.EXACTLY));
+      getChildAt(i).measure(MeasureSpec.makeMeasureSpec(Math.max(1, width - row.left - row.right), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(row.height, MeasureSpec.EXACTLY));
     }
     if (expand != null) expand.measure(widthSpec, MeasureSpec.makeMeasureSpec(Screen.dp(48f), MeasureSpec.EXACTLY));
   }
@@ -176,7 +177,7 @@ public final class ArticleBodyView extends ViewGroup implements Destroyable {
     for (int i = 0; i < visibleRows.size(); i++) {
       View child = getChildAt(i);
       TGMessageArticle.Row row = visibleRows.get(i);
-      int left = message.getArticle().isRtl ? 0 : row.indent;
+      int left = row.left;
       child.layout(left, row.top, left + child.getMeasuredWidth(), row.top + row.height);
     }
     if (expand != null) expand.layout(0, message.getArticleBodyHeight(), getMeasuredWidth(), getMeasuredHeight());
@@ -227,7 +228,7 @@ public final class ArticleBodyView extends ViewGroup implements Destroyable {
     if (anchor == null || message == null || message != expected) return false;
     for (TGMessageArticle.Row row : message.getArticleRows()) {
       if (anchor.equals(row.block.getAnchor()) || row.block.hasChildAnchor(anchor)) {
-        int top = row.top + (row.block.isAnchorOnBottom() ? row.height : row.block.getChildAnchorTop(anchor, getWidth()));
+        int top = row.top + (row.block.isAnchorOnBottom() ? row.height : row.block.getChildAnchorTop(anchor, Math.max(1, getWidth() - row.left - row.right)));
         post(() -> requestRectangleOnScreen(new Rect(0, top, getWidth(), top + Screen.dp(48f)), false));
         return true;
       }

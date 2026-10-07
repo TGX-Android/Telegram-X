@@ -26,9 +26,10 @@ import java.util.List;
 public final class TGMessageArticle extends TGMessage implements Text.ClickCallback {
   public static final class Row {
     public final PageBlock block;
-    public final int top, height, indent;
-    private Row (PageBlock block, int top, int height, int indent) {
+    public final int top, height, indent, left, right;
+    private Row (PageBlock block, int top, int height, int indent, int left, int right) {
       this.block = block; this.top = top; this.height = height; this.indent = indent;
+      this.left = left; this.right = right;
     }
   }
 
@@ -55,6 +56,9 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
   public int getExpandButtonText () { return loading ? R.string.ArticleLoading : loadFailed ? R.string.ArticleRetry : R.string.ArticleReadMore; }
 
   @Override public boolean needViewGroup () { return true; }
+  @Override protected boolean preferFullWidth () {
+    return UI.isPortrait() && !UI.isTablet() && isChannel() && !isEventLog();
+  }
   @Override protected int getContentWidth () { return width; }
   @Override protected int getContentHeight () { return height; }
   @Override protected void drawContent (MessageView view, Canvas canvas, int x, int y, int maxWidth) { }
@@ -67,22 +71,31 @@ public final class TGMessageArticle extends TGMessage implements Text.ClickCallb
       blocks = PageBlock.parseArticle(controller(), displayArticle, this);
       ArrayList<PageBlockMedia> media = new ArrayList<>();
       for (PageBlock block : blocks) {
+        block.setIsChatContent();
         if (block instanceof PageBlockMedia) ((PageBlockMedia) block).setArticleMessage(getMessage());
         if (block instanceof PageBlockFile) ((PageBlockFile) block).setArticleMessage(this);
         if (block instanceof PageBlockMedia && ((PageBlockMedia) block).bindToList(controller(), null, media)) media.add((PageBlockMedia) block);
       }
     }
     List<Row> measured = new ArrayList<>(blocks.size());
+    boolean fullWidth = useFullWidth();
     int top = 0;
     for (PageBlock block : blocks) {
+      // Like ordinary channel posts, media spans the message while text and files
+      // align with the normal caption column. Nested media retains its indentation.
+      boolean fullWidthMedia = fullWidth && block instanceof PageBlockMedia && block.isIndependent();
+      int left = fullWidth && !fullWidthMedia ? getRealContentX() : 0;
+      int right = fullWidth && !fullWidthMedia ? Math.max(0, maxWidth - left - getRealContentMaxWidth()) : 0;
+      int rowWidth = Math.max(1, maxWidth - left - right);
       int indent = 0;
       if (block.getListItem() != null) {
         indent = Screen.dp(18f);
         for (PageBlock.ListItemInfo item : block.getListItem()) indent += Math.max(Screen.dp(16f), item.list.maxLabelWidth + Screen.dp(4f));
-        indent = Math.min(indent, maxWidth / 2);
+        indent = Math.min(indent, rowWidth / 2);
       }
-      int rowHeight = block.getHeight(null, Math.max(1, maxWidth - indent));
-      measured.add(new Row(block, top, rowHeight, indent));
+      if (article.isRtl) right += indent; else left += indent;
+      int rowHeight = block.getHeight(null, Math.max(1, rowWidth - indent));
+      measured.add(new Row(block, top, rowHeight, indent, left, right));
       top += rowHeight;
     }
     rows = Collections.unmodifiableList(measured);

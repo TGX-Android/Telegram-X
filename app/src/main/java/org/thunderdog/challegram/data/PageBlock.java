@@ -58,6 +58,12 @@ public abstract class PageBlock {
   protected final int quoteLevel;
   protected MultipleViewProvider currentViews;
   protected @Nullable Text.ClickCallback textClickCallback;
+  protected boolean isChatContent;
+
+  /** The message container supplies the outer margins, unlike an Instant View page. */
+  public final void setIsChatContent () {
+    isChatContent = true;
+  }
 
   public void setTextClickCallback (@Nullable Text.ClickCallback callback) {
     textClickCallback = callback;
@@ -263,7 +269,7 @@ public abstract class PageBlock {
   }
 
   protected int getDefaultContentPadding (boolean leftEdge) {
-    return listItemInfo != null ? ((isPost || !leftEdge) ? Screen.dp(PageBlockRichText.TEXT_HORIZONTAL_OFFSET) : Screen.dp(10f)) : 0;
+    return !isChatContent && listItemInfo != null ? ((isPost || !leftEdge) ? Screen.dp(PageBlockRichText.TEXT_HORIZONTAL_OFFSET) : Screen.dp(10f)) : 0;
   }
 
   protected abstract int getContentTop ();

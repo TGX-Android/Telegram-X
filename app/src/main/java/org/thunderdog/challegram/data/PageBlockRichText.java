@@ -498,12 +498,18 @@ public class PageBlockRichText extends PageBlock {
 
   private static final float QUOTE_OFFSET = 12f;
 
+  private int getTextHorizontalPadding () {
+    // Preserve padding inside code and pull quotes; ordinary paragraphs already
+    // receive the same outer margin as TGMessageText and media captions.
+    return isChatContent && textHorizontalOffset == TEXT_HORIZONTAL_OFFSET ? 0 : Screen.dp(textHorizontalOffset);
+  }
+
   private int getTextPaddingLeft () {
-    return Math.max(getMinimumContentPadding(true), !isPost && listItemInfo != null ? 0 : Screen.dp(textHorizontalOffset)) + (needAvatar ? Screen.dp(40f) + Screen.dp(14f) : 0) + (detailsOpened != null ? Screen.dp(24f) : 0);
+    return Math.max(getMinimumContentPadding(true), !isPost && listItemInfo != null ? 0 : getTextHorizontalPadding()) + (needAvatar ? Screen.dp(40f) + Screen.dp(14f) : 0) + (detailsOpened != null ? Screen.dp(24f) : 0);
   }
 
   private int getTextPaddingRight () {
-    return Math.max(getMinimumContentPadding(false), Screen.dp(textHorizontalOffset));
+    return Math.max(getMinimumContentPadding(false), getTextHorizontalPadding());
   }
 
   @Override

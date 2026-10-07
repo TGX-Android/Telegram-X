@@ -113,7 +113,7 @@ public class PageBlockTable extends PageBlock implements Destroyable {
 
   @Override
   protected int computeHeight (View view, final int maxContentWidth) {
-    final int horizontalMargin = Screen.dp(MARGIN_HORIZONTAL);
+    final int horizontalMargin = getHorizontalMargin();
     final int topMargin = getContentTop();
     final int bottomMargin = Screen.dp(MARGIN_BOTTOM);
     final int defaultWidth = (maxContentWidth - horizontalMargin * 2);
@@ -187,7 +187,11 @@ public class PageBlockTable extends PageBlock implements Destroyable {
 
   @Override
   public int getCustomWidth () {
-    return customTableWidth + Screen.dp(MARGIN_HORIZONTAL) * 2;
+    return customTableWidth + getHorizontalMargin() * 2;
+  }
+
+  private int getHorizontalMargin () {
+    return isChatContent ? 0 : Screen.dp(MARGIN_HORIZONTAL);
   }
 
   @Override

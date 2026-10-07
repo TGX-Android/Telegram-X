@@ -368,7 +368,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     int height = 0;
 
     final int maxWidth = width - getMinimumContentPadding(false) - getMinimumContentPadding(true);
-    final float maxHeightFactor = collageContext != null ? .78f : isCover || isList ? 1.2f : 1.78f;
+    final float maxHeightFactor = collageContext != null ? .78f : isChatContent && isList ? 1.5f : isCover || isList ? 1.2f : 1.78f;
     final int maxHeight = (int) (Math.min(width * maxHeightFactor, (isCover ? Screen.widestSide() : Screen.currentHeight()) - HeaderView.getSize(true) * 2 - Screen.dp(16f) * 2));
 
     if (embedded != null) {
