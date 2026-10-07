@@ -431,10 +431,12 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
         @Override public boolean showRestriction (View view, int right) { return false; }
         @Override public void onFilesSelected (ArrayList<org.thunderdog.challegram.data.InlineResult<?>> results, boolean keyboard) {
           for (org.thunderdog.challegram.data.InlineResult<?> result : results) {
-            String path = result.getId();
+            Object tag = result instanceof org.thunderdog.challegram.data.InlineResultCommon ? ((org.thunderdog.challegram.data.InlineResultCommon) result).getTag() : null;
+            String path = tag instanceof org.thunderdog.challegram.component.attach.MediaBottomFilesController.MusicEntry ? ((org.thunderdog.challegram.component.attach.MediaBottomFilesController.MusicEntry) tag).getPath()
+              : tag instanceof org.thunderdog.challegram.component.attach.MediaBottomFilesController.FileEntry ? ((org.thunderdog.challegram.component.attach.MediaBottomFilesController.FileEntry) tag).getUri().toString() : result.getId();
             if (path != null) {
               Uri uri = path.startsWith("content:") || path.startsWith("file:") ? Uri.parse(path) : Uri.fromFile(new java.io.File(path));
-              importMedia(uri, type == 2 ? ArticleMediaFiles.Kind.AUDIO : ArticleMediaFiles.Kind.DOCUMENT, fields::insert);
+              importMedia(uri, type == 2 || result.getType() == org.thunderdog.challegram.data.InlineResult.TYPE_AUDIO ? ArticleMediaFiles.Kind.AUDIO : ArticleMediaFiles.Kind.DOCUMENT, fields::insert);
             }
           }
           picker.hide(false);

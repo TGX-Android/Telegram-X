@@ -1279,6 +1279,11 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     if (selectedItems == null || selectedItems.isEmpty()) {
       return;
     }
+    if (mediaLayout.isArticlePicker()) {
+      // Keep MediaStore metadata: result IDs are not necessarily readable file paths.
+      mediaLayout.getFilesControllerDelegate().onFilesSelected(new ArrayList<>(selectedItems), false);
+      return;
+    }
 
     ArrayList<MusicEntry> musicEntries = new ArrayList<>();
     ArrayList<String> files = new ArrayList<>();
