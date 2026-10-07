@@ -625,6 +625,20 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     return linkPreviewOptions;
   }
 
+  /**
+   * Appends site name, title and description drawn on the preview card, for accessibility services.
+   */
+  public void appendAccessibilityText (@NonNull StringBuilder b) {
+    for (Text text : new Text[] {siteName, title, description}) {
+      if (text != null && !StringUtils.isEmpty(text.getText())) {
+        if (b.length() > 0) {
+          b.append(Lang.getConcatSeparator());
+        }
+        b.append(text.getText());
+      }
+    }
+  }
+
   public boolean isPreviewOf (String url) {
     return isPreviewOf(linkPreview.url, url);
   }

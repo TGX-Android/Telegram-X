@@ -23,6 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
@@ -661,6 +662,37 @@ public class TGMessageText extends TGMessage {
 
   public TGWebPage getParsedLinkPreview () {
     return linkPreview;
+  }
+
+  @Override
+  protected void appendAccessibilityContent (@NonNull StringBuilder b, boolean includeChangingState) {
+    // Text as drawn, e.g. translated, with hidden spoilers
+    TextWrapper wrapper = effectiveWrapper;
+    appendAccessibilityPart(b, wrapper != null ? wrapper.getAccessibilityText() : Td.getText(text));
+  }
+
+  @Override
+  public boolean hasHiddenSpoilers () {
+    return hasHiddenSpoilers(effectiveWrapper);
+  }
+
+  @Override
+  public boolean revealSpoilers () {
+    return revealSpoilers(effectiveWrapper);
+  }
+
+  @Override
+  protected void appendAccessibilityTrailingContent (@NonNull StringBuilder b) {
+    if (linkPreview != null) {
+      // Like the accessibility improvements of Telegram for Android, the preview card is read
+      // at the end of the message, once everything else has been read
+      StringBuilder card = new StringBuilder();
+      linkPreview.appendAccessibilityText(card);
+      if (card.length() > 0) {
+        appendAccessibilityPart(b, Lang.getString(R.string.LinkPreview));
+        appendAccessibilityPart(b, card);
+      }
+    }
   }
 
   @Override

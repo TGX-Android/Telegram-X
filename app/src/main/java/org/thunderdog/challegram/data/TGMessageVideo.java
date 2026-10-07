@@ -23,6 +23,7 @@ import android.view.View;
 import android.view.animation.Interpolator;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
@@ -33,6 +34,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
@@ -607,6 +609,33 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   @Override
   public boolean onTouchEvent (MessageView view, MotionEvent e) {
     return super.onTouchEvent(view, e) || fileProgress.onTouchEvent(view, e);
+  }
+
+  @Override
+  protected void appendAccessibilityContent (@NonNull StringBuilder b, boolean includeChangingState) {
+    // Kind of message, e.g. a self-destructing video message
+    ContentPreview preview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, false);
+    appendAccessibilityPart(b, Lang.getString(preview.placeholderText != 0 ? preview.placeholderText : R.string.ChatContentRoundVideo));
+    appendAccessibilityPart(b, getAccessibilityDuration(sourceDuration));
+    if (includeChangingState) {
+      appendAccessibilityPart(b, Lang.getString(isContentRead() ? R.string.AccDescrMsgPlayed : R.string.AccDescrMsgNotPlayed));
+    }
+  }
+
+  @Nullable
+  @Override
+  public String getAccessibilityMediaAction () {
+    int res = fileProgress.getClickActionRes();
+    if (res == R.string.Open && Config.ROUND_VIDEOS_PLAYBACK_SUPPORTED && !TD.isSelfDestructTypeImmediately(msg)) {
+      // Round video is played in place
+      res = tdlib.context().player().getPlayState(tdlib, msg) == TGPlayerController.STATE_PLAYING ? R.string.PlayPause : R.string.PlayPlay;
+    }
+    return res != 0 ? Lang.getString(res) : null;
+  }
+
+  @Override
+  public boolean performAccessibilityMediaAction (@NonNull MessageView view) {
+    return performAccessibilityFileAction(fileProgress, view);
   }
 
   @Override

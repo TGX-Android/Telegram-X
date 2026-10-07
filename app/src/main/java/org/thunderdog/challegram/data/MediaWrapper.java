@@ -397,6 +397,13 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
   }
 
+  /**
+   * @return whether the media is drawn hidden under a spoiler, which a tap reveals, see {@link #onClick}
+   */
+  public boolean isSpoilerHidden () {
+    return revealOnTap && spoilerOverlayVisible.getValue();
+  }
+
   private void updateRevealOnTap () {
     spoilerOverlayVisible.setValue(this.revealOnTap && !(source != null && source.isNotSent()), source != null && source.needAnimateChanges());
     updateIgnoreLoaderClicks();

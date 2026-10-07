@@ -127,6 +127,7 @@ import org.thunderdog.challegram.util.text.TextPart;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
+import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SimplestCheckBox;
 
@@ -631,24 +632,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return Lang.getString(sponsoredMessage.isRecommended ? R.string.RecommendedSign : R.string.SponsoredSign);
     }
     StringBuilder b = new StringBuilder();
-    String signature;
-    if (isChannel() && !StringUtils.isEmpty(msg.authorSignature)) {
-      signature = msg.authorSignature;
-    } else if (forceForwardOrImportInfo() && msg.forwardInfo != null) {
-      switch (msg.forwardInfo.origin.getConstructor()) {
-        case TdApi.MessageOriginChannel.CONSTRUCTOR:
-          signature = ((TdApi.MessageOriginChannel) msg.forwardInfo.origin).authorSignature;
-          break;
-        case TdApi.MessageOriginChat.CONSTRUCTOR:
-          signature = ((TdApi.MessageOriginChat) msg.forwardInfo.origin).authorSignature;
-          break;
-        default:
-          signature = null;
-          break;
-      }
-    } else {
-      signature = null;
-    }
+    String signature = getTimeSignature();
     if (!StringUtils.isEmpty(signature)) {
       if (Fonts.isLtrCharSupported()) {
         b.append(Strings.LTR_CHAR);
@@ -691,6 +675,23 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     return b.toString();
+  }
+
+  /**
+   * @return author signature shown in front of the time
+   */
+  private @Nullable String getTimeSignature () {
+    if (isChannel() && !StringUtils.isEmpty(msg.authorSignature)) {
+      return msg.authorSignature;
+    } else if (forceForwardOrImportInfo() && msg.forwardInfo != null) {
+      switch (msg.forwardInfo.origin.getConstructor()) {
+        case TdApi.MessageOriginChannel.CONSTRUCTOR:
+          return ((TdApi.MessageOriginChannel) msg.forwardInfo.origin).authorSignature;
+        case TdApi.MessageOriginChat.CONSTRUCTOR:
+          return ((TdApi.MessageOriginChat) msg.forwardInfo.origin).authorSignature;
+      }
+    }
+    return null;
   }
 
   private String genForwardTime () {
@@ -9988,5 +9989,307 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   @Override
   public final void onTopicUpdated (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.UpdateForumTopic update) {
     // TODO?
+  }
+
+  // Accessibility
+
+  protected static void appendAccessibilityPart (@NonNull StringBuilder b, @Nullable CharSequence part) {
+    if (!StringUtils.isEmpty(part)) {
+      if (b.length() > 0) {
+        b.append(Lang.getConcatSeparator());
+      }
+      b.append(part);
+    }
+  }
+
+  /**
+   * @return duration in words, e.g. "1 minute 5 seconds", like Telegram for Android,
+   * as text-to-speech may read "1:05" as a time of day
+   */
+  protected static String getAccessibilityDuration (int seconds) {
+    if (seconds <= 0) {
+      return Lang.plural(R.string.xSeconds, 0);
+    }
+    StringBuilder b = new StringBuilder();
+    int hours = seconds / 3600;
+    int minutes = seconds / 60 % 60;
+    seconds %= 60;
+    if (hours > 0) {
+      b.append(Lang.plural(R.string.xHours, hours));
+    }
+    if (minutes > 0) {
+      if (b.length() > 0) {
+        b.append(' ');
+      }
+      b.append(Lang.plural(R.string.xMinutes, minutes));
+    }
+    if (seconds > 0) {
+      if (b.length() > 0) {
+        b.append(' ');
+      }
+      b.append(Lang.plural(R.string.xSeconds, seconds));
+    }
+    return b.toString();
+  }
+
+  /**
+   * Builds the text accessibility services read for this message.
+   *
+   * Follows the reading order of Telegram for Android's chat message cells: pinned state, sender,
+   * forward origin, content, then when it was sent or received and its state, then replies,
+   * reactions and views, then the link preview. The date and the "Unread messages" separators come first,
+   * as they are separate list items there, but are drawn on top of the message here.
+   *
+   * @param includeChangingState whether to include what changes while the message is being read
+   *                             or played: replies, reactions, views and whether it was played
+   */
+  @NonNull
+  public final String getAccessibilityDescription (boolean includeChangingState) {
+    if (isHiddenByMessagesFilter()) {
+      return "";
+    }
+    StringBuilder b = new StringBuilder();
+
+    if (hasDate()) {
+      appendAccessibilityPart(b, date);
+    }
+    if (hasBadge() && uBadge != null) {
+      appendAccessibilityPart(b, uBadge.text);
+    }
+    if (isPinned()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.PinnedMessage));
+    }
+
+    appendAccessibilitySender(b);
+
+    if (useForward() && forwardInfo != null) {
+      String forwardAuthor = forwardInfo.getAuthorName();
+      if (!StringUtils.isEmpty(forwardAuthor)) {
+        appendAccessibilityPart(b, Lang.getString(R.string.ForwardedFromX, forwardAuthor));
+      }
+    }
+
+    appendAccessibilityContent(b, includeChangingState);
+
+    appendAccessibilityTime(b);
+
+    if (includeChangingState) {
+      if (getCommentButtonViewMode() == TGCommentButton.VIEW_MODE_HIDDEN && !isThreadHeader() && !isChannel()) {
+        int replyCount = getReplyCount();
+        if (replyCount > 0) {
+          appendAccessibilityPart(b, Lang.plural(R.string.xReplies, replyCount));
+        }
+      }
+      appendAccessibilityReactions(b);
+      if (viewCounter != null) {
+        int viewCount = getViewCount();
+        if (viewCount > 0) {
+          appendAccessibilityPart(b, Lang.plural(R.string.xViews, viewCount));
+        }
+      }
+    }
+
+    appendAccessibilityTrailingContent(b);
+
+    return b.toString();
+  }
+
+  /**
+   * Appends what is read once everything else about the message has been read, e.g. a link preview.
+   */
+  protected void appendAccessibilityTrailingContent (@NonNull StringBuilder b) {
+    // override
+  }
+
+  /**
+   * Like Telegram for Android with its accessibility improvements, the sender is read by who sent
+   * the message, not by whether a name is drawn above it, as it is drawn once for a group of messages.
+   */
+  private boolean needAccessibilitySender () {
+    if (headerDisabled()) {
+      // Service messages name who did what in their text
+      return false;
+    }
+    if (isSponsoredMessage() || forceForwardOrImportInfo() || isEventLog()) {
+      // Sponsor, or original sender shown in place of the sender, e.g. in Saved Messages
+      return true;
+    }
+    if (isOutgoing()) {
+      return false;
+    }
+    if (msg.chatId == 0) {
+      return isDemoGroupChat();
+    }
+    // In channels every post comes from the channel, and the author is read from the signature
+    return tdlib.isMultiChat(msg.chatId);
+  }
+
+  private void appendAccessibilitySender (@NonNull StringBuilder b) {
+    if (needAccessibilitySender()) {
+      appendAccessibilityPart(b, getDisplayAuthor());
+      if (!forceForwardOrImportInfo() && sender.hasChatMark()) {
+        appendAccessibilityPart(b, Lang.getString(sender.isFake() ? R.string.FakeMark : R.string.ScamMark));
+      }
+      String administratorSign = getAdministratorSign();
+      if (administratorSign != null) {
+        appendAccessibilityPart(b, administratorSign.trim());
+      }
+    }
+    appendAccessibilityPart(b, getTimeSignature());
+    if (msg.viaBotUserId != 0) {
+      String botName = viaBotUsername;
+      if (StringUtils.isEmpty(botName)) {
+        TdApi.User viaBot = tdlib.cache().user(msg.viaBotUserId);
+        botName = viaBot != null ? TD.getUserName(viaBot) : null;
+      }
+      if (!StringUtils.isEmpty(botName)) {
+        appendAccessibilityPart(b, Lang.getString(R.string.message_viaBot, botName));
+      }
+    }
+  }
+
+  /**
+   * Appends what this message holds: its text, or the kind of media with its details and caption.
+   *
+   * @param includeChangingState see {@link #getAccessibilityDescription(boolean)}
+   */
+  protected void appendAccessibilityContent (@NonNull StringBuilder b, boolean includeChangingState) {
+    ContentPreview preview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, false);
+    if (preview.placeholderText != 0 && !Td.isEmpty(preview.formattedText)) {
+      // Drawn as an icon in front of the text in the chat list
+      appendAccessibilityPart(b, Lang.getString(preview.placeholderText));
+    }
+    appendAccessibilityPart(b, preview.buildText(true));
+  }
+
+  private void appendAccessibilityTime (@NonNull StringBuilder b) {
+    if (headerDisabled()) {
+      // Service messages are drawn without the time
+      return;
+    }
+    if (isSponsoredMessage()) {
+      // "Sponsored" or "Recommended" is drawn in place of the time
+      appendAccessibilityPart(b, time);
+      return;
+    }
+    if (isEventLog()) {
+      appendAccessibilityPart(b, Lang.getRelativeTimestamp(getComparingDate(), TimeUnit.SECONDS));
+      return;
+    }
+    if (isFailed()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.failed));
+    } else if (isSending()) {
+      appendAccessibilityPart(b, Lang.getString(R.string.AccDescrMsgSending));
+    } else if (isScheduled()) {
+      if (msg.schedulingState.getConstructor() == TdApi.MessageSchedulingStateSendAtDate.CONSTRUCTOR) {
+        int sendDate = ((TdApi.MessageSchedulingStateSendAtDate) msg.schedulingState).sendDate;
+        appendAccessibilityPart(b, Lang.getString(R.string.ScheduledDate, Lang.getRelativeTimestamp(sendDate, TimeUnit.SECONDS)));
+      } else {
+        appendAccessibilityPart(b, Lang.getString(R.string.ScheduledUntilOnline));
+      }
+    } else if (msg.date != 0) {
+      String timestamp = Lang.getRelativeTimestamp(msg.date, TimeUnit.SECONDS);
+      appendAccessibilityPart(b, Lang.getString(isOutgoing() ? R.string.AccDescrSentDate : R.string.AccDescrReceivedDate, timestamp));
+    }
+    if (shouldShowEdited() && !isScheduled()) {
+      int editDate = getEditDate();
+      if (editDate != 0) {
+        // Like the tooltip of the edited icon, but with the time instead of "N minutes ago",
+        // which would change the description every minute
+        appendAccessibilityPart(b, Lang.getRelativeDate(editDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, false, 0, R.string.message_edited, false));
+      }
+    }
+    if (isOutgoing() && !isNotSent() && !isScheduled() && !isChannel() && !tdlib.isSelfChat(msg.chatId) && !noUnread()) {
+      appendAccessibilityPart(b, Lang.getString(isUnread() ? R.string.AccDescrMsgUnread : R.string.AccDescrMsgRead));
+    }
+  }
+
+  private void appendAccessibilityReactions (@NonNull StringBuilder b) {
+    TdApi.MessageReactions reactions = messageReactions.getReactions();
+    if (reactions == null || reactions.reactions == null || reactions.reactions.length == 0) {
+      return;
+    }
+    StringBuilder list = new StringBuilder();
+    for (TdApi.MessageReaction reaction : reactions.reactions) {
+      if (reaction.totalCount <= 0) {
+        continue;
+      }
+      String emoji = getAccessibilityReactionEmoji(reaction.type);
+      if (StringUtils.isEmpty(emoji)) {
+        continue;
+      }
+      appendAccessibilityPart(list, emoji + " " + reaction.totalCount);
+    }
+    if (list.length() > 0) {
+      appendAccessibilityPart(b, Lang.getString(R.string.Reactions));
+      appendAccessibilityPart(b, list);
+    }
+  }
+
+  private @Nullable String getAccessibilityReactionEmoji (TdApi.ReactionType type) {
+    switch (type.getConstructor()) {
+      case TdApi.ReactionTypeEmoji.CONSTRUCTOR:
+        return ((TdApi.ReactionTypeEmoji) type).emoji;
+      case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR: {
+        // Custom emoji stands for the emoji its sticker carries. Only cached stickers are used,
+        // as they are already loaded to draw the reaction
+        TdlibEmojiManager.Entry entry = tdlib.emoji().find(((TdApi.ReactionTypeCustomEmoji) type).customEmojiId);
+        return entry != null && !entry.isNotFound() ? entry.value.emoji : null;
+      }
+      case TdApi.ReactionTypePaid.CONSTRUCTOR:
+        return ContentPreview.EMOJI_STARS.textRepresentation;
+    }
+    return null;
+  }
+
+  /**
+   * @return what a tap on the media of this message does, e.g. "Play" or "Download",
+   * or {@code null} when it has no media that a tap acts on
+   */
+  @Nullable
+  public String getAccessibilityMediaAction () {
+    return null;
+  }
+
+  /**
+   * Does what a tap on the media of this message does, see {@link #getAccessibilityMediaAction()}.
+   */
+  public boolean performAccessibilityMediaAction (@NonNull MessageView view) {
+    return false;
+  }
+
+  /**
+   * @return whether the text or caption of this message has spoilers that are drawn hidden,
+   * which its description reads as "Spoiler", see {@link TextWrapper#getAccessibilityText()}
+   */
+  public boolean hasHiddenSpoilers () {
+    return false;
+  }
+
+  /**
+   * Reveals the spoilers in the text or caption of this message, as a tap on each of them does.
+   *
+   * @return whether any spoiler was revealed
+   */
+  public boolean revealSpoilers () {
+    return false;
+  }
+
+  protected static boolean hasHiddenSpoilers (@Nullable TextWrapper wrapper) {
+    return wrapper != null && wrapper.hasHiddenSpoilers();
+  }
+
+  protected static boolean revealSpoilers (@Nullable TextWrapper wrapper) {
+    return wrapper != null && wrapper.revealSpoilers();
+  }
+
+  protected static @Nullable String getAccessibilityFileAction (@Nullable FileProgressComponent fileProgress) {
+    int res = fileProgress != null ? fileProgress.getClickActionRes() : 0;
+    return res != 0 ? Lang.getString(res) : null;
+  }
+
+  protected static boolean performAccessibilityFileAction (@Nullable FileProgressComponent fileProgress, @NonNull View view) {
+    // Outside of the download button of streamed videos, see FileProgressComponent.getClickActionRes()
+    return fileProgress != null && fileProgress.getClickActionRes() != 0 && fileProgress.performClick(view, -1, -1);
   }
 }

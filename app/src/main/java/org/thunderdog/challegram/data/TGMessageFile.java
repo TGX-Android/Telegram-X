@@ -25,6 +25,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
@@ -379,6 +380,61 @@ public class TGMessageFile extends TGMessage {
   public FileComponent findFileComponent (long messageId) {
     CaptionedFile file = findCaptionedFile(messageId);
     return file != null ? file.component : null;
+  }
+
+  @Override
+  protected void appendAccessibilityContent (@NonNull StringBuilder b, boolean includeChangingState) {
+    if (filesList.size() > 1) {
+      // Files sent together are drawn as one message, so read how many, as in the chat list
+      boolean allAudio = true;
+      for (CaptionedFile file : filesList) {
+        if (!file.component.isAudio()) {
+          allAudio = false;
+          break;
+        }
+      }
+      appendAccessibilityPart(b, Lang.plural(allAudio ? R.string.xAudios : R.string.xFiles, filesList.size()));
+    }
+    for (CaptionedFile file : filesList) {
+      file.component.appendAccessibilityText(b, includeChangingState);
+      // Caption as drawn, e.g. translated, with hidden spoilers
+      if (file.captionWrapper != null) {
+        appendAccessibilityPart(b, file.captionWrapper.getAccessibilityText());
+      }
+    }
+  }
+
+  @Override
+  public boolean hasHiddenSpoilers () {
+    for (CaptionedFile file : filesList) {
+      if (hasHiddenSpoilers(file.captionWrapper)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean revealSpoilers () {
+    boolean revealed = false;
+    for (CaptionedFile file : filesList) {
+      if (revealSpoilers(file.captionWrapper)) {
+        revealed = true;
+      }
+    }
+    return revealed;
+  }
+
+  @Nullable
+  @Override
+  public String getAccessibilityMediaAction () {
+    // Files sent together are reached one by one
+    return filesList.size() == 1 ? getAccessibilityFileAction(filesList.get(0).component.getFileProgress()) : null;
+  }
+
+  @Override
+  public boolean performAccessibilityMediaAction (@NonNull MessageView view) {
+    return filesList.size() == 1 && performAccessibilityFileAction(filesList.get(0).component.getFileProgress(), view);
   }
 
   private static final int FLAG_CHANGED_LAYOUT = 1;

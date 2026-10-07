@@ -70,6 +70,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.ByteUnit;
+import tgx.td.Td;
 
 public class FileComponent extends BaseComponent implements FileProgressComponent.SimpleListener, TGLegacyAudioManager.PlayListener, TGPlayerController.TrackListener {
   private @Nullable TdApi.Document doc;
@@ -342,6 +343,35 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   public FileProgressComponent getFileProgress () {
     return progress;
+  }
+
+  /**
+   * Appends what this file is for accessibility services, in the order Telegram for Android reads it:
+   * file name and size, title and performer with the duration, or the voice message duration and
+   * whether it was played.
+   *
+   * @param includePlayedState whether to include whether the voice message was played
+   */
+  public void appendAccessibilityText (@NonNull StringBuilder b, boolean includePlayedState) {
+    if (doc != null) {
+      TGMessage.appendAccessibilityPart(b, !StringUtils.isEmpty(doc.fileName) ? doc.fileName : title);
+      if (doc.document.expectedSize > 0) {
+        TGMessage.appendAccessibilityPart(b, Strings.buildSize(doc.document.expectedSize));
+      }
+    } else if (audio != null) {
+      TGMessage.appendAccessibilityPart(b, Lang.getString(R.string.ChatContentSong, TD.getTitle(audio), TD.getSubtitle(audio)));
+      if (audio.duration > 0) {
+        TGMessage.appendAccessibilityPart(b, TGMessage.getAccessibilityDuration(audio.duration));
+      }
+    } else if (voice != null) {
+      TGMessage.appendAccessibilityPart(b, Lang.getString(R.string.ChatContentVoice));
+      TGMessage.appendAccessibilityPart(b, TGMessage.getAccessibilityDuration(voice.duration));
+      if (includePlayedState) {
+        // Unread dot of the voice message
+        boolean isPlayed = message != null ? Td.isListenedOrViewed(message.content) : context.isContentRead();
+        TGMessage.appendAccessibilityPart(b, Lang.getString(isPlayed ? R.string.AccDescrMsgPlayed : R.string.AccDescrMsgNotPlayed));
+      }
+    }
   }
 
   public void rebuildLayout () {

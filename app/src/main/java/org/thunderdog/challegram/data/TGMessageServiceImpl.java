@@ -319,6 +319,15 @@ abstract class TGMessageServiceImpl extends TGMessage {
   }
 
   @Override
+  protected void appendAccessibilityContent (@NonNull StringBuilder b, boolean includeChangingState) {
+    if (displayText != null) {
+      appendAccessibilityPart(b, displayText.getText());
+    } else {
+      super.appendAccessibilityContent(b, includeChangingState);
+    }
+  }
+
+  @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth, ComplexReceiver receiver) {
     if (displayText == null) {
       return;

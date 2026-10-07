@@ -31,6 +31,7 @@ import android.view.animation.Interpolator;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -819,6 +820,40 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
     }
     return false;
+  }
+
+  /**
+   * Names what {@link #performClick(View, float, float)} does in the current state when the click
+   * is not on the download button of a streamed video, for accessibility services.
+   *
+   * @return string resource of the action, or 0 when the click does nothing
+   */
+  public @StringRes int getClickActionRes () {
+    if (ignoreLoaderClicks) {
+      return listener != null ? R.string.Open : 0;
+    }
+    if (!isTrack && file != null && playPauseFile != null && ((Config.useCloudPlayback(playPauseFile) && !noCloud) || currentState == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED)) {
+      if (!file.remote.isUploadingCompleted && file.id != -1) {
+        return 0;
+      }
+      if (ignorePlayPauseClicks) {
+        return listener != null ? R.string.Open : 0;
+      }
+      return isPlaying ? R.string.PlayPause : R.string.PlayPlay;
+    }
+    switch (currentState) {
+      case TdlibFilesManager.STATE_PAUSED:
+        return file != null ? R.string.AccActionDownload : 0;
+      case TdlibFilesManager.STATE_IN_PROGRESS:
+        if (file == null) {
+          return 0;
+        }
+        // Cancelling an upload deletes the message that is being sent
+        return file.remote.isUploadingActive || isSendingMessage ? R.string.Cancel : R.string.AccActionCancelDownload;
+      case TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED:
+        return R.string.Open;
+    }
+    return 0;
   }
 
   // Factor animation

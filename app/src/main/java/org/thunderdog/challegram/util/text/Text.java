@@ -42,6 +42,7 @@ import androidx.collection.SparseArrayCompat;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
@@ -628,6 +629,93 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
   public String getText () {
     return originalText;
+  }
+
+  /**
+   * Text for accessibility services. Spoilers are drawn hidden until they are revealed,
+   * so the text of a hidden spoiler is replaced with "Spoiler".
+   */
+  public String getAccessibilityText () {
+    return getAccessibilityText(originalText, entities, this);
+  }
+
+  /**
+   * @return Whether this text has spoilers that are drawn hidden, see {@link #revealSpoilers()}.
+   */
+  public boolean hasHiddenSpoilers () {
+    return hasHiddenSpoilers(entities, this);
+  }
+
+  /**
+   * Reveals all spoilers, as a tap on each of them does.
+   *
+   * @return Whether any spoiler was revealed.
+   */
+  public boolean revealSpoilers () {
+    boolean revealed = false;
+    if (spoilers != null) {
+      for (int i = 0; i < spoilers.size(); i++) {
+        Spoiler spoiler = spoilers.valueAt(i);
+        if (!spoiler.isRevealed.getValue()) {
+          spoiler.isRevealed.setValue(true, true);
+          revealed = true;
+        }
+      }
+    }
+    return revealed;
+  }
+
+  private static boolean isHiddenSpoiler (@NonNull TextEntity entity, @Nullable Text layout) {
+    TdApi.TextEntity spoilerEntity = entity.getSpoiler();
+    if (spoilerEntity == null) {
+      return false;
+    }
+    // Spoilers are found once the text is drawn, and stay hidden until revealed
+    Spoiler spoiler = layout != null ? layout.findSpoiler(spoilerEntity) : null;
+    return spoiler == null || !spoiler.isRevealed.getValue();
+  }
+
+  static boolean hasHiddenSpoilers (@Nullable TextEntity[] entities, @Nullable Text layout) {
+    if (entities != null) {
+      for (TextEntity entity : entities) {
+        if (isHiddenSpoiler(entity, layout)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  static String getAccessibilityText (String text, @Nullable TextEntity[] entities, @Nullable Text layout) {
+    if (StringUtils.isEmpty(text) || !hasHiddenSpoilers(entities, layout)) {
+      return text;
+    }
+    final int length = text.length();
+    boolean[] hidden = new boolean[length];
+    for (TextEntity entity : entities) {
+      if (isHiddenSpoiler(entity, layout)) {
+        for (int i = Math.max(0, entity.getStart()); i < Math.min(length, entity.getEnd()); i++) {
+          hidden[i] = true;
+        }
+      }
+    }
+    final String placeholder = Lang.getString(R.string.TextFormatSpoiler);
+    StringBuilder b = new StringBuilder(length);
+    for (int i = 0; i < length; i++) {
+      char c = text.charAt(i);
+      if (!hidden[i]) {
+        if (i > 0 && hidden[i - 1] && !Character.isWhitespace(c)) {
+          b.append(' ');
+        }
+        b.append(c);
+      } else if (i == 0 || !hidden[i - 1]) {
+        if (b.length() > 0 && !Character.isWhitespace(b.charAt(b.length() - 1))) {
+          b.append(' ');
+        }
+        b.append(placeholder);
+      }
+    }
+    return b.toString();
   }
 
   public int getEntityCount () {

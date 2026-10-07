@@ -1433,4 +1433,10 @@
   <item type="id" name="btn_playback_speed_1_2" />
   <item type="id" name="btn_playback_speed_1_5" />
   <item type="id" name="btn_playback_speed_2_0" />
+
+  <!-- ACCESSIBILITY ACTIONS -->
+
+  <item type="id" name="accessibilityAction_messageOptions" />
+  <item type="id" name="accessibilityAction_messageMedia" />
+  <item type="id" name="accessibilityAction_revealSpoilers" />
 </resources>
