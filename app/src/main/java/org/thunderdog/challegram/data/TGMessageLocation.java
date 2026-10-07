@@ -25,6 +25,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.MotionEvent;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -486,6 +487,15 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
   private boolean isAliveNow;
   private TdApi.Location compareWithLocation;
   private int compareWithHeading;
+
+  @Override
+  protected void appendAccessibilityContent (@NonNull StringBuilder b, boolean includeChangingState) {
+    super.appendAccessibilityContent(b, includeChangingState);
+    if (venue != null) {
+      appendAccessibilityPart(b, venue.title);
+      appendAccessibilityPart(b, venue.address);
+    }
+  }
 
   @Override
   protected void buildContent (int maxWidth) {

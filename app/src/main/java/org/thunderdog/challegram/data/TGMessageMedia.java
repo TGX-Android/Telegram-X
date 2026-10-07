@@ -17,6 +17,7 @@ package org.thunderdog.challegram.data;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.os.SystemClock;
+import android.util.SparseIntArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
@@ -40,6 +41,7 @@ import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
@@ -49,6 +51,7 @@ import org.thunderdog.challegram.util.text.TextWrapper;
 import java.util.ArrayList;
 
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import tgx.td.Td;
@@ -873,6 +876,64 @@ public class TGMessageMedia extends TGMessage {
     }
 
     return mosaicWrapper.onTouchEvent(view, e);
+  }
+
+  @Override
+  protected void appendAccessibilityContent (@NonNull StringBuilder b, boolean includeChangingState) {
+    if (!mosaicWrapper.isSingular()) {
+      // Album is drawn as one message, so read how many of what it holds, as in the chat list
+      SparseIntArray counters = new SparseIntArray();
+      iterate(message -> ArrayUtils.increment(counters, message.content.getConstructor()), false);
+      int count = getMessageCount();
+      int res;
+      switch (counters.size() == 1 ? counters.keyAt(0) : 0) {
+        case TdApi.MessagePhoto.CONSTRUCTOR:
+          res = R.string.xPhotos;
+          break;
+        case TdApi.MessageVideo.CONSTRUCTOR:
+          res = R.string.xVideos;
+          break;
+        default:
+          res = R.string.xMedia;
+          break;
+      }
+      appendAccessibilityPart(b, Lang.plural(res, count));
+    } else {
+      // Kind of media, e.g. a photo or a self-destructing video
+      ContentPreview preview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, false);
+      if (preview.placeholderText != 0) {
+        appendAccessibilityPart(b, Lang.getString(preview.placeholderText));
+      }
+      MediaWrapper item = mosaicWrapper.getSingularItem();
+      if (item.getVideo() != null) {
+        appendAccessibilityPart(b, getAccessibilityDuration(item.getVideo().duration));
+      }
+      TdApi.File file = item.getTargetFile();
+      if ((item.isVideo() || item.isGif()) && file != null && file.expectedSize > 0) {
+        // Like Telegram for Android, size of videos and GIFs. It is read whether or not they are downloaded,
+        // as a changed description has the focused message read again when its download starts
+        appendAccessibilityPart(b, Strings.buildSize(file.expectedSize));
+      }
+    }
+    if (wrapper != null) {
+      appendAccessibilityPart(b, wrapper.getText());
+    }
+  }
+
+  private boolean hasAccessibilityMediaAction () {
+    // Media of an album is reached one by one, and media that self-destructs is held to be viewed
+    return mosaicWrapper.isSingular() && !(isHot() && !isViewOnce() && mosaicWrapper.getSingularItem().getFileProgress().isLoaded());
+  }
+
+  @Nullable
+  @Override
+  public String getAccessibilityMediaAction () {
+    return hasAccessibilityMediaAction() ? getAccessibilityFileAction(mosaicWrapper.getSingularItem().getFileProgress()) : null;
+  }
+
+  @Override
+  public boolean performAccessibilityMediaAction (@NonNull MessageView view) {
+    return hasAccessibilityMediaAction() && performAccessibilityFileAction(mosaicWrapper.getSingularItem().getFileProgress(), view);
   }
 
   @Override

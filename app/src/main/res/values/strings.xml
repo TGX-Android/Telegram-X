@@ -5927,5 +5927,10 @@
   <string name="AccDescrMsgSending">Sending</string>
   <string name="AccDescrMsgRead">Seen</string>
   <string name="AccDescrMsgUnread">Not seen</string>
+  <string name="AccDescrMsgPlayed">Played</string>
+  <string name="AccDescrMsgNotPlayed">Not played</string>
+  <string name="AccActionMessageOptions">Message options</string>
+  <string name="AccActionDownload">Download</string>
+  <string name="AccActionCancelDownload">Cancel download</string>
 
 </resources>

@@ -17,12 +17,17 @@ package org.thunderdog.challegram.component.chat;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.SystemClock;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -175,6 +180,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   @Override
   public void performDestroy () {
+    removeCallbacks(accessibilityDescriptionUpdate);
     avatarReceiver.destroy();
     avatarsReceiver.performDestroy();
     giveawayAvatarsReceiver.performDestroy();
@@ -338,6 +344,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         invalidateOutline();
       }
     }
+
+    if (isScreenReaderEnabled()) {
+      updateAccessibilityDescription();
+    }
   }
 
   public void invalidatePreviewReceiver (long chatId, long messageId) {
@@ -426,6 +436,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   @Override
   public void onDraw (Canvas c) {
+    if (isScreenReaderEnabled()) {
+      checkAccessibilityActionState();
+      postAccessibilityDescriptionUpdate();
+    }
     msg.draw(this, c, avatarReceiver, replyReceiver, replyTextMediaReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
   }
 
@@ -1631,5 +1645,217 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
     return false;
+  }
+
+  // Accessibility
+
+  private boolean isScreenReaderEnabled () {
+    AccessibilityManager manager = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+    return manager != null && manager.isEnabled() && manager.isTouchExplorationEnabled();
+  }
+
+  private @Nullable TGMessage describedMessage;
+  private @Nullable String describedTextWithoutChangingState;
+
+  private static final long ACCESSIBILITY_DESCRIPTION_UPDATE_INTERVAL_MS = 200;
+  private long lastAccessibilityDescriptionUpdateTime;
+  private boolean accessibilityDescriptionUpdatePosted;
+  private final Runnable accessibilityDescriptionUpdate = () -> {
+    accessibilityDescriptionUpdatePosted = false;
+    updateAccessibilityDescription();
+  };
+
+  private void postAccessibilityDescriptionUpdate () {
+    // Messages are drawn on every frame of animated content, e.g. GIFs,
+    // so the description is checked at most every ACCESSIBILITY_DESCRIPTION_UPDATE_INTERVAL_MS
+    long elapsed = SystemClock.uptimeMillis() - lastAccessibilityDescriptionUpdateTime;
+    if (elapsed >= ACCESSIBILITY_DESCRIPTION_UPDATE_INTERVAL_MS) {
+      updateAccessibilityDescription();
+    } else if (!accessibilityDescriptionUpdatePosted) {
+      accessibilityDescriptionUpdatePosted = true;
+      postDelayed(accessibilityDescriptionUpdate, ACCESSIBILITY_DESCRIPTION_UPDATE_INTERVAL_MS - elapsed);
+    }
+  }
+
+  private void updateAccessibilityDescription () {
+    // Everything in the message is drawn on canvas. The description is kept on the view,
+    // so accessibility services are notified when it changes, e.g. when the message shown
+    // in a reused view changes, or when the focused message is sent, seen or edited
+    lastAccessibilityDescriptionUpdateTime = SystemClock.uptimeMillis();
+    final TGMessage msg = this.msg;
+    final String description = msg != null ? msg.getAccessibilityDescription(true) : null;
+    if (describedMessage == msg && StringUtils.equalsOrBothEmpty(description, getContentDescription())) {
+      return;
+    }
+    final String textWithoutChangingState = msg != null ? msg.getAccessibilityDescription(false) : null;
+    if (describedMessage == msg && isAccessibilityFocused() && StringUtils.equalsOrBothEmpty(textWithoutChangingState, describedTextWithoutChangingState)) {
+      // Only replies, reactions, views or the played state changed, which happens often
+      // in channels, or as the message is played. A new description has screen readers read
+      // the message again from the start, so it is updated once the message is no longer focused
+      return;
+    }
+    describedMessage = msg;
+    describedTextWithoutChangingState = textWithoutChangingState;
+    setContentDescription(description);
+  }
+
+  private boolean canPerformAccessibilityActions () {
+    // Same conditions as for touch events
+    if (msg == null || msg.isHiddenByMessagesFilter()) {
+      return false;
+    }
+    if (msg.getChatId() == 0 && !(msg instanceof TGMessageBotInfo)) {
+      return false;
+    }
+    MessagesController m = msg.messagesController();
+    if (m.isInForceTouchMode() || m.isEditingMessage()) {
+      return false;
+    }
+    if (m.inPreviewMode() && !msg.manager().isEventLog() && !msg.manager().isSearchPreview()) {
+      return false;
+    }
+    return !UI.getContext(getContext()).getRecordAudioVideoController().isOpen();
+  }
+
+  private boolean isInSelectMode () {
+    return msg != null && msg.messagesController().inSelectMode();
+  }
+
+  private static final int SELECTION_STATE_NONE = 0;
+  private static final int SELECTION_STATE_UNSELECTED = 1;
+  private static final int SELECTION_STATE_SELECTED = 2;
+  private int accessibilitySelectionState = SELECTION_STATE_NONE;
+  private @Nullable String accessibilityMediaAction;
+
+  private void checkAccessibilityActionState () {
+    // Selection and the state of the media are drawn on canvas, so let accessibility services know
+    // when messages become checkable as selection starts or ends, when this message is selected
+    // or unselected, or when its media action changes, e.g. from "Download" to "Cancel download"
+    int selectionState;
+    if (msg == null || !isInSelectMode() || !msg.canBeSelected()) {
+      selectionState = SELECTION_STATE_NONE;
+    } else {
+      selectionState = msg.isCompletelySelected() ? SELECTION_STATE_SELECTED : SELECTION_STATE_UNSELECTED;
+    }
+    String mediaAction = msg != null ? msg.getAccessibilityMediaAction() : null;
+    if (accessibilitySelectionState != selectionState || !StringUtils.equalsOrBothEmpty(accessibilityMediaAction, mediaAction)) {
+      accessibilitySelectionState = selectionState;
+      accessibilityMediaAction = mediaAction;
+      sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+    }
+  }
+
+  private boolean canLongPress () {
+    // See performLongPress()
+    return msg != null && !(msg instanceof TGMessageBotInfo) && !msg.isNotSent() && msg.canBeSelected() && ViewController.findRoot(this) instanceof MessagesController;
+  }
+
+  private boolean performAccessibilityClick () {
+    if (!isInSelectMode()) {
+      String mediaAction = msg.getAccessibilityMediaAction();
+      if (mediaAction != null) {
+        return msg.performAccessibilityMediaAction(this);
+      }
+    }
+    return performAccessibilityMessageClick();
+  }
+
+  private boolean performAccessibilityMessageClick () {
+    // A tap outside of the media, so a whole album is selected, see selectMessage()
+    touchX = touchY = -1;
+    return onMessageClick(touchX, touchY);
+  }
+
+  @Override
+  public void onInitializeAccessibilityEvent (AccessibilityEvent event) {
+    super.onInitializeAccessibilityEvent(event);
+    if (isInSelectMode() && msg.canBeSelected()) {
+      event.setChecked(msg.isCompletelySelected());
+    }
+  }
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    // Description is also updated when drawn while a screen reader is on,
+    // but other accessibility services may ask for it at any time
+    updateAccessibilityDescription();
+    super.onInitializeAccessibilityNodeInfo(info);
+    if (!canPerformAccessibilityActions()) {
+      return;
+    }
+    final String mediaAction = msg.getAccessibilityMediaAction();
+    if (isInSelectMode()) {
+      // While messages are being selected, a tap selects or unselects the message
+      if (msg.canBeSelected()) {
+        boolean isSelected = msg.isCompletelySelected();
+        info.setCheckable(true);
+        info.setChecked(isSelected);
+        String selectAction = Lang.getString(isSelected ? R.string.Unselect : R.string.Select);
+        info.setClickable(true);
+        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, selectAction));
+        info.setLongClickable(true);
+        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, selectAction));
+      }
+      if (mediaAction != null) {
+        // What a tap on the media does is still available by its name
+        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.accessibilityAction_messageMedia, mediaAction));
+      }
+    } else {
+      final String messageOptions = Lang.getString(R.string.AccActionMessageOptions);
+      info.setClickable(true);
+      if (mediaAction != null) {
+        // Like Telegram for Android, a tap on the message does what a tap on its media does,
+        // and message options, shown by a tap elsewhere on the message, are a separate action
+        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, mediaAction));
+        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.accessibilityAction_messageOptions, messageOptions));
+      } else {
+        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, messageOptions));
+      }
+      if (canLongPress()) {
+        // Long press selects the message
+        info.setLongClickable(true);
+        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, Lang.getString(R.string.Select)));
+      }
+    }
+  }
+
+  @Override
+  public boolean performAccessibilityAction (int action, @Nullable Bundle arguments) {
+    if (canPerformAccessibilityActions()) {
+      // Taps and long presses are handled in onTouchEvent(), so View's performClick()
+      // and performLongClick() don't reach them
+      if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+        if (performAccessibilityClick()) {
+          sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+          return true;
+        }
+        return false;
+      } else if (action == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
+        boolean handled;
+        if (isInSelectMode()) {
+          handled = performAccessibilityMessageClick();
+        } else {
+          // A long press outside of the media, so a whole album is selected
+          touchX = touchY = -1;
+          handled = canLongPress() && performLongPress();
+        }
+        if (handled) {
+          performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+          sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
+          return true;
+        }
+        return false;
+      } else if (action == R.id.accessibilityAction_messageOptions) {
+        return !isInSelectMode() && performAccessibilityMessageClick();
+      } else if (action == R.id.accessibilityAction_messageMedia) {
+        return msg.getAccessibilityMediaAction() != null && msg.performAccessibilityMediaAction(this);
+      }
+    }
+    boolean result = super.performAccessibilityAction(action, arguments);
+    if (action == AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS) {
+      // Description of a focused message may be left behind, see updateAccessibilityDescription()
+      updateAccessibilityDescription();
+    }
+    return result;
   }
 }

@@ -20,6 +20,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -99,6 +100,14 @@ public class TGMessageBotInfo extends TGMessage {
   @Override
   public boolean isFakeMessage () {
     return true;
+  }
+
+  @Override
+  protected void appendAccessibilityContent (@NonNull StringBuilder b, boolean includeChangingState) {
+    if (titleWrapper != null) {
+      appendAccessibilityPart(b, titleWrapper.getText());
+    }
+    appendAccessibilityPart(b, textWrapper.getText());
   }
 
   @Override
