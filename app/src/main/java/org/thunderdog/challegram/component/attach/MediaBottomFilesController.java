@@ -150,7 +150,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     };
     final Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
       .addCategory(Intent.CATEGORY_OPENABLE)
-      .setType("*/*")
+      .setType(musicOnly ? "audio/*" : "*/*")
       .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
       .putExtra("android.content.extra.SHOW_ADVANCED", true);
     context.putActivityResultHandler(Intents.ACTIVITY_RESULT_FILES, (requestCode, resultCode, data) -> {
@@ -198,7 +198,8 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private int initialItemsCount;
 
   private void buildCells () {
-    navigateToPath(null, musicOnly ? KEY_MUSIC : null, null, false, null, null, null);
+    // Async folder loads publish their result only when an onDone callback exists.
+    navigateToPath(null, musicOnly ? KEY_MUSIC : null, null, false, null, musicOnly ? () -> { } : null, null);
   }
 
   private void navigateToPath (final View view, final String currentPath, final String parentPath, boolean isUpper, final InlineResultCommon data, Runnable onDone, Runnable onError) {
@@ -785,8 +786,10 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           });
 
           ArrayList<ListItem> items = new ArrayList<>(entries.size() + 1);
-          InlineResult<?> result = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_folder_24, "..", Lang.getString(R.string.AttachFolderHome));
-          items.add(createItem(result, R.id.btn_folder_upper));
+          if (!musicOnly) {
+            InlineResult<?> result = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_folder_24, "..", Lang.getString(R.string.AttachFolderHome));
+            items.add(createItem(result, R.id.btn_folder_upper));
+          }
 
           for (MusicEntry entry : entries) {
             items.add(new ListItem(ListItem.TYPE_CUSTOM_INLINE, R.id.btn_file).setData(new InlineResultCommon(context, tdlib, entry, MediaBottomFilesController.this).setDisableProgressInteract(true)));
