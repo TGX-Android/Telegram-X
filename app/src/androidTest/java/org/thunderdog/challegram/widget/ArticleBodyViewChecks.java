@@ -112,6 +112,11 @@ public final class ArticleBodyViewChecks {
         link |= "https://example.com/article".equals(((org.thunderdog.challegram.util.text.TextEntityCustom) entity).getLinkIfUrl());
     }
     require(anchor && link, "Named paragraph lost its anchor or nested URL");
+    org.thunderdog.challegram.util.text.FormattedText diff = org.thunderdog.challegram.util.text.FormattedText.parseRichText(message.controller(), new TdApi.RichTextDiff(new TdApi.RichTextPlain("New"), new TdApi.RichTextPlain("Old")), null);
+    require(diff.text.equals("New"), "AI replacement preview duplicates old text");
+    require(((org.thunderdog.challegram.util.text.TextEntityCustom) diff.entities[0]).isDiffReplacement(), "AI replacement has no difference marker");
+    diff = org.thunderdog.challegram.util.text.FormattedText.parseRichText(message.controller(), new TdApi.RichTextDiff(new TdApi.RichTextPlain(""), new TdApi.RichTextPlain("Deleted")), null);
+    require(diff.text.equals("Deleted") && diff.entities[0].isStrikethrough(), "AI deletion preview is lost");
     TdApi.RichMessage article = new TdApi.RichMessage(new TdApi.PageBlock[] {
       new TdApi.PageBlockSectionHeading(new TdApi.RichTextPlain("Article rendering"), 2),
       new TdApi.PageBlockParagraph(reference),

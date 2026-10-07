@@ -99,6 +99,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   private LinearLayout root;
   private View emptyHeader;
   private boolean sending, sent, draftWriteFailed, recoveryPending, importing;
+  private int pendingImports;
   private boolean draftTouched;
   private final Handler handler = new Handler(Looper.getMainLooper());
   private final Runnable saveDraft = this::saveDraft;
@@ -184,14 +185,29 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     FrameLayout page = new FrameLayout(context); root.addView(page, new LinearLayout.LayoutParams(-1, 0, 1));
     scroll = new ScrollView(context); scroll.setFillViewport(true); scroll.setClipToPadding(false);
     fields = new ArticleDocumentView(context, new ArticleDocumentView.Delegate() {
+      @Override public Tdlib tdlib () { return tdlib; }
       @Override public void changed (boolean structural) { if (structural) structureChanged(); else ArticleEditorController.this.changed(); }
       @Override public void selection (ArticleTextInput input) {
         focused = input; rememberSelection();
-        boolean selected = input.getSelectionStart() != input.getSelectionEnd();
+        boolean selected = fields.hasSelection();
         if (selected != formatsVisible) { formatsVisible = selected; rebuildTools(); }
         updateToolState();
       }
       @Override public void options (ArticleEditorTree.Entry entry) { blockOptions(entry); }
+      @Override public void dragging (boolean active) {
+        if (!active) { rebuildTools(); return; }
+        bottom.removeAllViews();
+        ImageView trash = ArticleEditorPopup.icon(context, R.drawable.baseline_delete_24, R.string.Delete, () -> { });
+        bottom.addView(trash, new LinearLayout.LayoutParams(-1, Screen.dp(44)));
+        trash.setOnDragListener((view, event) -> {
+          if (!(event.getLocalState() instanceof ArticleEditorTree.Entry)) return false;
+          if (event.getAction() == android.view.DragEvent.ACTION_DRAG_ENTERED) view.setAlpha(.5f);
+          if (event.getAction() == android.view.DragEvent.ACTION_DRAG_EXITED) view.setAlpha(1f);
+          if (event.getAction() == android.view.DragEvent.ACTION_DROP) fields.deleteDragged(event.getLocalState());
+          if (event.getAction() == android.view.DragEvent.ACTION_DRAG_ENDED) rebuildTools();
+          return true;
+        });
+      }
       @Override public void media (ArticleEditorTree.Entry entry, LinearLayout parent) {
         ArticleEditorMedia media = new ArticleEditorMedia(ArticleEditorController.this, entry.block, () -> blockOptions(entry)); mediaViews.add(media); parent.addView(media, new LinearLayout.LayoutParams(-1, -2));
       }
@@ -206,6 +222,8 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
       }
     });
     scroll.addView(fields); page.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
+    org.thunderdog.challegram.widget.ArticleSelectionView selection = new org.thunderdog.challegram.widget.ArticleSelectionView(context, fields, scroll);
+    fields.setSelectionView(selection); page.addView(selection, new FrameLayout.LayoutParams(-1, -1));
     ImageView back = ArticleEditorPopup.icon(context, R.drawable.baseline_arrow_back_24, R.string.ArticleBack, this::navigateBack);
     FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(Screen.dp(44), Screen.dp(44), Gravity.TOP | Gravity.LEFT); backParams.setMargins(Screen.dp(8), Screen.dp(8), 0, 0); page.addView(back, backParams);
     LinearLayout historyBar = new LinearLayout(context); historyBar.setBackground(ArticleEditorPopup.background(ArticleEditorPopup.surfaceColor(), 24));
@@ -299,7 +317,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     boolean heading = block instanceof TdApi.InputPageBlockSectionHeading;
     for (java.util.Map.Entry<ImageView, Integer> style : formatButtons.entrySet()) {
       boolean enabled = focused != null && !(heading && (style.getValue() == TdApi.RichTextBold.CONSTRUCTOR || style.getValue() == TdApi.RichTextItalic.CONSTRUCTOR));
-      selectTool(style.getKey(), focused != null && focused.isFormatApplied(style.getValue()), enabled);
+      selectTool(style.getKey(), fields.isFormatApplied(style.getValue()), enabled);
     }
     boolean quote = block instanceof TdApi.InputPageBlockBlockQuote || block instanceof TdApi.InputPageBlockPullQuote || block instanceof TdApi.InputPageBlockExpandableBlockQuote;
     selectTool(quoteTool, quote, fields.canChangeTextStyle());
@@ -354,11 +372,72 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
   }
   private void attachmentMenu () {
     new ArticleEditorPopup(context())
-      .item(R.drawable.baseline_image_24, R.string.Gallery, () -> pickMedia(null, fields::insert))
-      .item(R.drawable.baseline_insert_drive_file_24, R.string.File, () -> pickMedia(ArticleMediaFiles.Kind.DOCUMENT, fields::insert))
-      .item(R.drawable.baseline_music_note_24, R.string.Music, () -> pickMedia(ArticleMediaFiles.Kind.AUDIO, fields::insert))
-      .item(R.drawable.baseline_location_on_24, R.string.Location, () -> prompt(R.string.ArticleCoordinates, "", value -> { TdApi.Location location = parseLocation(value); if (location != null) fields.insert(new TdApi.InputPageBlockMap(location, 15, 640, 360, emptyCaption())); }))
+      .item(R.drawable.baseline_image_24, R.string.Gallery, () -> attachmentPicker(0))
+      .item(R.drawable.baseline_insert_drive_file_24, R.string.File, () -> attachmentPicker(1))
+      .item(R.drawable.baseline_music_note_24, R.string.Music, () -> attachmentPicker(2))
+      .item(R.drawable.baseline_location_on_24, R.string.Location, () -> attachmentPicker(3))
       .show(toolAnchor);
+  }
+
+  private void attachmentPicker (int type) {
+    Keyboard.hide(focused);
+    org.thunderdog.challegram.component.attach.MediaLayout picker = new org.thunderdog.challegram.component.attach.MediaLayout(this);
+    picker.setCallback(new org.thunderdog.challegram.component.attach.MediaLayout.ArticleCallback() {
+      @Override public void onMediaSelected (org.thunderdog.challegram.loader.ImageGalleryFile file, boolean asFile, boolean spoiler) {
+        beginImport();
+        IMPORTS.execute(() -> {
+          try {
+            TdApi.InputMessageContent content = org.thunderdog.challegram.data.TD.toContent(tdlib, file, asFile, false, false, spoiler, false);
+            TdApi.InputPageBlock block;
+            TdApi.FormattedText text;
+            if (content instanceof TdApi.InputMessagePhoto) { TdApi.InputMessagePhoto photo = (TdApi.InputMessagePhoto) content; text = photo.caption; block = new TdApi.InputPageBlockPhoto(photo.photo, emptyCaption(), photo.hasSpoiler); }
+            else if (content instanceof TdApi.InputMessageVideo) { TdApi.InputMessageVideo video = (TdApi.InputMessageVideo) content; text = video.caption; block = new TdApi.InputPageBlockVideo(video.video, emptyCaption(), video.hasSpoiler); }
+            else if (content instanceof TdApi.InputMessageAnimation) { TdApi.InputMessageAnimation animation = (TdApi.InputMessageAnimation) content; text = animation.caption; block = new TdApi.InputPageBlockAnimation(animation.animation, emptyCaption(), animation.hasSpoiler); }
+            else if (content instanceof TdApi.InputMessageDocument) { TdApi.InputMessageDocument document = (TdApi.InputMessageDocument) content; text = document.caption; block = new TdApi.InputPageBlockDocument(document.document, emptyCaption()); }
+            else throw new IllegalArgumentException("Unsupported gallery result");
+            if (text != null && !text.text.isEmpty()) {
+              TdApi.InputPageBlock[] paragraphs = ((TdApi.RichMessageSourceBlocks) org.thunderdog.challegram.data.article.ArticleComposer.fromText(text, working.isRtl).toInput().source).blocks;
+              List<TdApi.RichText> caption = new ArrayList<>();
+              for (TdApi.InputPageBlock paragraph : paragraphs) { if (!caption.isEmpty()) caption.add(new TdApi.RichTextPlain("\n")); for (ArticleEditorTree.TextField field : ArticleEditorTree.fields(paragraph)) caption.add(field.value); }
+              ArticleEditorTree.caption(block).text = new TdApi.RichTexts(caption.toArray(new TdApi.RichText[0]));
+            }
+            handler.post(() -> { try { prepareMedia(block); fields.insert(block); saveDraft(); } finally { finishImport(); } });
+          } catch (RuntimeException invalid) { handler.post(() -> { finishImport(); if (!isDestroyed()) UI.showToast(R.string.ArticleMediaImportFailed, Toast.LENGTH_LONG); }); }
+        });
+      }
+      @Override public void onFileSelected (String path, boolean audio) {
+        Uri uri = path.startsWith("content:") || path.startsWith("file:") ? Uri.parse(path) : Uri.fromFile(new java.io.File(path));
+        importMedia(uri, audio ? ArticleMediaFiles.Kind.AUDIO : ArticleMediaFiles.Kind.DOCUMENT, fields::insert);
+      }
+      @Override public void onLocationSelected (TdApi.Location location, String title) {
+        TdApi.PageBlockCaption caption = emptyCaption(); caption.text = new TdApi.RichTextPlain(title);
+        fields.insert(new TdApi.InputPageBlockMap(location, 15, 640, 360, caption));
+      }
+    });
+    if (type == 0 || type == 3) picker.init(type == 0 ? org.thunderdog.challegram.component.attach.MediaLayout.MODE_GALLERY : org.thunderdog.challegram.component.attach.MediaLayout.MODE_LOCATION, null);
+    else {
+      picker.setItemsAdapter(new org.thunderdog.challegram.component.attach.MediaLayout.ItemsAdapter() {
+        @Override public org.thunderdog.challegram.component.attach.MediaBottomBar.BarItem[] getBottomBarItems () { return new org.thunderdog.challegram.component.attach.MediaBottomBar.BarItem[] {new org.thunderdog.challegram.component.attach.MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, type == 2 ? R.string.Music : R.string.File, org.thunderdog.challegram.theme.ColorId.attachFile)}; }
+        @Override public int getDefaultItemIndex () { return 0; }
+        @Override public boolean needBottomBar () { return false; }
+        @Override public org.thunderdog.challegram.component.attach.MediaBottomBaseController<?> createControllerForIndex (int index) { org.thunderdog.challegram.component.attach.MediaBottomFilesController files = new org.thunderdog.challegram.component.attach.MediaBottomFilesController(picker); files.setMusicOnly(type == 2); return files; }
+      });
+      picker.setFilesControllerDelegate(new org.thunderdog.challegram.component.attach.MediaBottomFilesController.Delegate() {
+        @Override public boolean showRestriction (View view, int right) { return false; }
+        @Override public void onFilesSelected (ArrayList<org.thunderdog.challegram.data.InlineResult<?>> results, boolean keyboard) {
+          for (org.thunderdog.challegram.data.InlineResult<?> result : results) {
+            String path = result.getId();
+            if (path != null) {
+              Uri uri = path.startsWith("content:") || path.startsWith("file:") ? Uri.parse(path) : Uri.fromFile(new java.io.File(path));
+              importMedia(uri, type == 2 ? ArticleMediaFiles.Kind.AUDIO : ArticleMediaFiles.Kind.DOCUMENT, fields::insert);
+            }
+          }
+          picker.hide(false);
+        }
+      });
+      picker.init(org.thunderdog.challegram.component.attach.MediaLayout.MODE_CUSTOM_ADAPTER, null);
+    }
+    picker.show();
   }
   private void renderFormula (TextView view, String value) {
     android.graphics.Bitmap bitmap = org.thunderdog.challegram.data.article.ArticleMath.render(context(), value, Screen.dp(18));
@@ -412,15 +491,16 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     ArticleTextInput target = focused;
     int start = target == null ? 0 : Math.max(0, Math.min(target.getSelectionStart(), target.getSelectionEnd()));
     int end = target == null ? 0 : Math.max(start, Math.max(target.getSelectionStart(), target.getSelectionEnd()));
-    boolean create = start == end;
-    TdApi.InputRichMessage selection = create ? null : new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(target.richText(start, end))}), working.isRtl, true);
+    boolean multiple = fields.hasMultipleSelection();
+    boolean create = !fields.hasSelection();
+    TdApi.InputRichMessage selection = create ? null : new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(fields.selectedBlocks()), working.isRtl, true);
     if (target != null) Keyboard.hide(target);
     ArticleDocument before = new ArticleDocument(working);
-    aiDialog = org.thunderdog.challegram.widget.ArticleAiEditor.show(context(), tdlib, selection, create, result -> {
+    aiDialog = org.thunderdog.challegram.widget.ArticleAiEditor.show(this, selection, create, result -> {
       if (isDestroyed() || !before.equals(new ArticleDocument(working))) return false;
       TdApi.InputPageBlock[] blocks = ((TdApi.RichMessageSourceBlocks) result.toInput().source).blocks;
       if (create) fields.insertBlocks(blocks);
-      else if (!fields.replaceSelection(target, start, end, blocks)) { UI.showToast(R.string.ArticleAiFailed, Toast.LENGTH_LONG); return false; }
+      else if (!(multiple ? fields.replaceSelectedBlocks(blocks) : fields.replaceSelection(target, start, end, blocks))) { UI.showToast(R.string.ArticleAiFailed, Toast.LENGTH_LONG); return false; }
       return true;
     });
   }
@@ -446,7 +526,7 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     return button;
   }
 
-  private void format (TdApi.RichText wrapper) { if (focused != null) focused.format(wrapper); }
+  private void format (TdApi.RichText wrapper) { fields.formatSelection(wrapper); }
 
   private void pickUser (Consumer<Long> callback) {
     ContactsController picker = new ContactsController(context(), tdlib);
@@ -763,25 +843,29 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     if (kind == null) intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[] {"image/*", "video/*"});
     context().putActivityResultHandler(PICK_MEDIA, (request, result, data) -> {
       if (result != Activity.RESULT_OK || data == null || data.getData() == null || isDestroyed()) return;
-      Uri uri = data.getData(); importing = true; enableTree(root, false);
+      Uri uri = data.getData();
       String mime = context().getContentResolver().getType(uri);
       ArticleMediaFiles.Kind selectedKind = kind != null ? kind : mime != null && mime.startsWith("video/") ? ArticleMediaFiles.Kind.VIDEO : "image/gif".equals(mime) ? ArticleMediaFiles.Kind.ANIMATION : ArticleMediaFiles.Kind.PHOTO;
-      IMPORTS.execute(() -> {
-        try {
-          TdApi.InputPageBlock media = ArticleMediaFiles.importFile(context().getApplicationContext(), tdlib.id(), getArgumentsStrict().userId, uri, selectedKind, (tdlib.hasPremium() ? 4L : 2L) * 1024 * 1024 * 1024);
-          handler.post(() -> {
-            importing = false;
-            // Preserve a completed import even if Android closed the editor during the picker flow.
-            prepareMedia(media); callback.accept(media); saveDraft();
-            if (!isDestroyed()) enableTree(root, !sending);
-          });
-        } catch (IOException | RuntimeException e) {
-          handler.post(() -> { importing = false; if (!isDestroyed()) { enableTree(root, !sending); UI.showToast(R.string.ArticleMediaImportFailed, Toast.LENGTH_LONG); } });
-        }
-      });
+      importMedia(uri, selectedKind, callback);
     });
     try { context().startActivityForResult(intent, PICK_MEDIA); }
     catch (RuntimeException e) { context().putActivityResultHandler(PICK_MEDIA, null); UI.showToast(R.string.ArticleMediaImportFailed, Toast.LENGTH_LONG); }
+  }
+  private void beginImport () { pendingImports++; importing = true; enableTree(root, false); }
+  private void finishImport () { pendingImports--; importing = pendingImports != 0; if (!isDestroyed()) { enableTree(root, !sending && !importing); updateToolState(); updateHistory(); } }
+  private void importMedia (Uri uri, ArticleMediaFiles.Kind selectedKind, Consumer<TdApi.InputPageBlock> callback) {
+    beginImport();
+    IMPORTS.execute(() -> {
+        try {
+          TdApi.InputPageBlock media = ArticleMediaFiles.importFile(context().getApplicationContext(), tdlib.id(), getArgumentsStrict().userId, uri, selectedKind, (tdlib.hasPremium() ? 4L : 2L) * 1024 * 1024 * 1024);
+          handler.post(() -> {
+            // Preserve a completed import even if Android closed the editor during the picker flow.
+            try { prepareMedia(media); callback.accept(media); saveDraft(); } finally { finishImport(); }
+          });
+        } catch (IOException | RuntimeException e) {
+          handler.post(() -> { finishImport(); if (!isDestroyed()) UI.showToast(R.string.ArticleMediaImportFailed, Toast.LENGTH_LONG); });
+        }
+      });
   }
   private void prepareMedia (TdApi.InputPageBlock block) {
     TdApi.InputMessageContent content = null;
@@ -925,5 +1009,5 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
     } else saveDraft();
   }
   @Override public void onBlur () { saveDraft(); super.onBlur(); }
-  @Override public void destroy () { if (aiDialog != null) aiDialog.dismiss(); if (dateDialog != null) dateDialog.dismiss(); if (formulaDialog != null) formulaDialog.dismiss(); saveDraft(); handler.removeCallbacks(saveDraft); closeEmoji(); for (ArticleEditorMedia media : mediaViews) media.performDestroy(); mediaViews.clear(); super.destroy(); }
+  @Override public void destroy () { if (aiDialog != null) aiDialog.dismiss(); if (dateDialog != null) dateDialog.dismiss(); if (formulaDialog != null) formulaDialog.dismiss(); saveDraft(); handler.removeCallbacks(saveDraft); closeEmoji(); for (ArticleEditorMedia media : mediaViews) media.performDestroy(); mediaViews.clear(); if (fields != null) fields.performDestroy(); super.destroy(); }
 }

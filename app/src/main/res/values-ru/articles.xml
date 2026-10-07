@@ -166,6 +166,10 @@
   <string name="ArticleAiPromptTab">Запрос</string>
   <string name="ArticleAiCreateStyle">Создать</string>
   <string name="ArticleAiStyleTitle">Название стиля</string>
+  <string name="ArticleAiEditStyle">Изменить стиль</string>
+  <string name="ArticleAiShowCreator">Указать меня как автора</string>
+  <string name="ArticleAiDeleteStyle">Удалить этот стиль?</string>
+  <string name="ArticleAiRemoveStyle">Убрать этот стиль из вашего списка?</string>
   <string name="ArticleAiEmojify">Добавить эмодзи</string>
   <string name="ArticleAiGenerate">Создать текст</string>
   <string name="ArticleAiWorking">Создание текста…</string>

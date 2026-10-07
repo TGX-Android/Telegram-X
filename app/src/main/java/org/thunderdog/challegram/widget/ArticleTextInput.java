@@ -17,7 +17,6 @@ import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputConnectionWrapper;
-import android.widget.EditText;
 import androidx.annotation.NonNull;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.article.ArticleCodec;
@@ -30,7 +29,11 @@ import java.util.TreeSet;
 import me.vkryl.core.lambda.RunnableData;
 
 /** Editor spans retain the complete TDLib node, including metadata not visible in its label. */
-public final class ArticleTextInput extends EditText {
+public final class ArticleTextInput extends CustomEmojiEditText {
+  private static final class EmojiNode {
+    final TdApi.RichTextCustomEmoji node;
+    EmojiNode (TdApi.RichTextCustomEmoji node) { this.node = node; }
+  }
   private static final class NodeSpan extends MetricAffectingSpan {
     final TdApi.RichText node;
     final int order;
@@ -46,6 +49,7 @@ public final class ArticleTextInput extends EditText {
         case TdApi.RichTextMarked.CONSTRUCTOR: paint.bgColor = 0x33888888; break;
         case TdApi.RichTextSubscript.CONSTRUCTOR: paint.baselineShift += (int) (paint.getTextSize() * .2f); break;
         case TdApi.RichTextSuperscript.CONSTRUCTOR: paint.baselineShift -= (int) (paint.getTextSize() * .3f); break;
+        case TdApi.RichTextReference.CONSTRUCTOR: break;
         default: paint.setColor(Theme.textLinkColor()); break;
       }
     }
@@ -88,13 +92,20 @@ public final class ArticleTextInput extends EditText {
   private Runnable selectionListener;
   public interface BoundaryListener { boolean onEnter (); boolean onBackspace (); }
   private BoundaryListener boundaryListener;
+  public interface DocumentActions { boolean replace (CharSequence text); boolean menu (int id); }
+  private DocumentActions documentActions;
+  public void setDocumentActions (DocumentActions actions) { documentActions = actions; }
   private final ArrayList<TdApi.RichText> typingFormats = new ArrayList<>();
   public void setBoundaryListener (BoundaryListener listener) { boundaryListener = listener; }
   public void setSelectionListener (Runnable listener) { selectionListener = listener; }
   @Override protected void onSelectionChanged (int start, int end) { super.onSelectionChanged(start, end); if (!settingText && selectionListener != null) selectionListener.run(); }
 
   public ArticleTextInput (Context context, TdApi.RichText value, RunnableData<TdApi.RichText> listener) {
-    super(context);
+    this(context, null, value, listener);
+  }
+
+  public ArticleTextInput (Context context, org.thunderdog.challegram.telegram.Tdlib tdlib, TdApi.RichText value, RunnableData<TdApi.RichText> listener) {
+    super(context, tdlib);
     this.listener = listener;
     setTextColor(Theme.textAccentColor());
     setTextSize(16f);
@@ -106,6 +117,10 @@ public final class ArticleTextInput extends EditText {
     setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
     setFilters(new InputFilter[] {(source, start, end, destination, dstart, dend) -> {
       for (AtomSpan span : destination.getSpans(dstart, dend, AtomSpan.class)) {
+        int a = destination.getSpanStart(span), b = destination.getSpanEnd(span);
+        if (dstart > a && dstart < b || dend > a && dend < b) return destination.subSequence(dstart, dend);
+      }
+      for (EmojiNode span : destination.getSpans(dstart, dend, EmojiNode.class)) {
         int a = destination.getSpanStart(span), b = destination.getSpanEnd(span);
         if (dstart > a && dstart < b || dend > a && dend < b) return destination.subSequence(dstart, dend);
       }
@@ -138,8 +153,14 @@ public final class ArticleTextInput extends EditText {
       out.append(((TdApi.RichTextPlain) value).text);
     } else if (value instanceof TdApi.RichTexts) {
       for (TdApi.RichText child : ((TdApi.RichTexts) value).texts) append(out, child);
+    } else if (value instanceof TdApi.RichTextCustomEmoji) {
+      TdApi.RichTextCustomEmoji emoji = (TdApi.RichTextCustomEmoji) value;
+      int start = out.length(); String label = emoji.alternativeText.isEmpty() ? "✨" : emoji.alternativeText;
+      out.append(org.thunderdog.challegram.data.TD.toCharSequence(new TdApi.FormattedText(label, new TdApi.TextEntity[] {new TdApi.TextEntity(0, label.length(), new TdApi.TextEntityTypeCustomEmoji(emoji.customEmojiId))})));
+      out.setSpan(new EmojiNode(ArticleCodec.copy(emoji, TdApi.RichTextCustomEmoji.class)), start, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     } else {
-      TdApi.RichText child = value instanceof TdApi.RichTextReference ? null : ArticleRichText.child(value);
+      TdApi.RichText child = ArticleRichText.child(value);
+      if (value instanceof TdApi.RichTextReference && ArticleRichText.plain(child).isEmpty()) child = null;
       int start = out.length(), index = order++;
       if (child == null) {
         out.append('\ufffc');
@@ -161,7 +182,7 @@ public final class ArticleTextInput extends EditText {
     TreeSet<Integer> boundaries = new TreeSet<>();
     boundaries.add(0); boundaries.add(text.length());
     for (Object span : text.getSpans(0, text.length(), Object.class)) {
-      if (span instanceof NodeSpan || span instanceof AtomSpan) {
+      if (span instanceof NodeSpan || span instanceof AtomSpan || span instanceof EmojiNode) {
         boundaries.add(text.getSpanStart(span)); boundaries.add(text.getSpanEnd(span));
       }
     }
@@ -172,6 +193,8 @@ public final class ArticleTextInput extends EditText {
       if (start == end) continue;
       AtomSpan[] atoms = text.getSpans(start, end, AtomSpan.class);
       TdApi.RichText value = atoms.length == 0 ? new TdApi.RichTextPlain(text.subSequence(start, end).toString()) : ArticleCodec.copy(atoms[0].node, TdApi.RichText.class);
+      EmojiNode[] emojis = text.getSpans(start, end, EmojiNode.class);
+      if (emojis.length > 0) value = ArticleCodec.copy(emojis[0].node, TdApi.RichText.class);
       NodeSpan[] nodes = text.getSpans(start, end, NodeSpan.class);
       Arrays.sort(nodes, Comparator.comparingInt((NodeSpan node) -> text.getSpanStart(node)).thenComparingInt(node -> -text.getSpanEnd(node)).thenComparingInt(node -> node.order));
       ArrayList<TdApi.RichText> wrappers = new ArrayList<>();
@@ -189,6 +212,8 @@ public final class ArticleTextInput extends EditText {
 
   /** Set metadata (for example a link target) without toggling off an existing wrapper. */
   public void setFormat (TdApi.RichText wrapper) { applyFormat(wrapper, true); }
+
+  public void setFormatEnabled (TdApi.RichText wrapper, boolean enabled) { applyFormat(wrapper, true, enabled); }
 
   public boolean isFormatApplied (int constructor) {
     int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
@@ -209,6 +234,10 @@ public final class ArticleTextInput extends EditText {
   }
 
   private void applyFormat (TdApi.RichText wrapper, boolean replace) {
+    applyFormat(wrapper, replace, null);
+  }
+
+  private void applyFormat (TdApi.RichText wrapper, boolean replace, Boolean enabled) {
     int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
     if (start < 0) return;
     if (start == end) {
@@ -216,7 +245,7 @@ public final class ArticleTextInput extends EditText {
       typingFormats.add(wrapper); return;
     }
     Editable text = getText();
-    boolean covered = !replace && isFormatApplied(wrapper.getConstructor());
+    boolean covered = enabled != null ? !enabled : !replace && isFormatApplied(wrapper.getConstructor());
     for (NodeSpan span : text.getSpans(start, end, NodeSpan.class)) {
       boolean conflictingLink = wrapper instanceof TdApi.RichTextDateTime && span.node instanceof TdApi.RichTextUrl || wrapper instanceof TdApi.RichTextUrl && span.node instanceof TdApi.RichTextDateTime;
       boolean conflictingIndex = wrapper instanceof TdApi.RichTextSubscript && span.node instanceof TdApi.RichTextSuperscript || wrapper instanceof TdApi.RichTextSuperscript && span.node instanceof TdApi.RichTextSubscript;
@@ -245,13 +274,15 @@ public final class ArticleTextInput extends EditText {
   /** Edits link/formula/reference metadata without replacing the styled label with plain text. */
   public TdApi.RichText selectedElement () {
     Object span = selectedSpan();
-    return span instanceof AtomSpan ? ArticleCodec.copy(((AtomSpan) span).node, TdApi.RichText.class) : span instanceof NodeSpan ? ArticleCodec.copy(((NodeSpan) span).node, TdApi.RichText.class) : null;
+    return span instanceof AtomSpan ? ArticleCodec.copy(((AtomSpan) span).node, TdApi.RichText.class) : span instanceof EmojiNode ? ArticleCodec.copy(((EmojiNode) span).node, TdApi.RichText.class) : span instanceof NodeSpan ? ArticleCodec.copy(((NodeSpan) span).node, TdApi.RichText.class) : null;
   }
   private Object selectedSpan () {
     int start = Math.max(0, Math.min(getSelectionStart(), getSelectionEnd()));
     int end = Math.max(start, Math.max(getSelectionStart(), getSelectionEnd()));
     AtomSpan[] atoms = getText().getSpans(start, end, AtomSpan.class);
     if (atoms.length > 0) return atoms[0];
+    EmojiNode[] emojis = getText().getSpans(start, end, EmojiNode.class);
+    if (emojis.length > 0) return emojis[0];
     NodeSpan[] nodes = getText().getSpans(start, end, NodeSpan.class);
     for (NodeSpan node : nodes) if (!(node.node instanceof TdApi.RichTextBold || node.node instanceof TdApi.RichTextItalic || node.node instanceof TdApi.RichTextUnderline || node.node instanceof TdApi.RichTextStrikethrough || node.node instanceof TdApi.RichTextFixed || node.node instanceof TdApi.RichTextSpoiler || node.node instanceof TdApi.RichTextMarked || node.node instanceof TdApi.RichTextSuperscript || node.node instanceof TdApi.RichTextSubscript)) return node;
     return null;
@@ -259,6 +290,7 @@ public final class ArticleTextInput extends EditText {
   public void updateSelectedElement (TdApi.RichText value) {
     Object span = selectedSpan(); if (span == null) return;
     int start = getText().getSpanStart(span), end = getText().getSpanEnd(span);
+    if (span instanceof EmojiNode) { setSelection(start, end); insert(value); return; }
     getText().removeSpan(span);
     if (span instanceof AtomSpan) getText().setSpan(new AtomSpan(getContext(), value), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     else getText().setSpan(new NodeSpan(value, ((NodeSpan) span).order), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -271,15 +303,28 @@ public final class ArticleTextInput extends EditText {
     return boundaryListener != null && getSelectionStart() == 0 && getSelectionEnd() == 0 && boundaryListener.onBackspace();
   }
   @Override public boolean onKeyDown (int keyCode, KeyEvent event) {
+    if (documentActions != null) {
+      if (event.isCtrlPressed()) {
+        int action = keyCode == KeyEvent.KEYCODE_A ? android.R.id.selectAll : keyCode == KeyEvent.KEYCODE_C ? android.R.id.copy : keyCode == KeyEvent.KEYCODE_X ? android.R.id.cut : keyCode == KeyEvent.KEYCODE_V ? android.R.id.paste : 0;
+        if (action != 0 && documentActions.menu(action)) return true;
+      }
+      if (keyCode == KeyEvent.KEYCODE_DEL && documentActions.replace("")) return true;
+      int character = event.getUnicodeChar();
+      if (!event.isCtrlPressed() && character != 0 && documentActions.replace(new String(Character.toChars(character)))) return true;
+    }
     if (keyCode == KeyEvent.KEYCODE_DEL && backspaceBoundary()) return true;
     if (keyCode == KeyEvent.KEYCODE_ENTER && !event.isShiftPressed() && boundaryListener != null && boundaryListener.onEnter()) return true;
     return super.onKeyDown(keyCode, event);
   }
-  @Override public InputConnection onCreateInputConnection (EditorInfo info) {
-    InputConnection base = super.onCreateInputConnection(info);
+  @Override public boolean onTextContextMenuItem (int id) {
+    return documentActions != null && documentActions.menu(id) || super.onTextContextMenuItem(id);
+  }
+  @Override protected InputConnection createInputConnection (EditorInfo info) {
+    InputConnection base = super.createInputConnection(info);
     if (base == null) return null;
     return new InputConnectionWrapper(base, false) {
       @Override public boolean commitText (CharSequence text, int position) {
+        if (documentActions != null && documentActions.replace(text)) return true;
         if ("\n".contentEquals(text) && boundaryListener != null) {
           super.finishComposingText();
           if (boundaryListener.onEnter()) return true;
@@ -287,9 +332,11 @@ public final class ArticleTextInput extends EditText {
         return super.commitText(text, position);
       }
       @Override public boolean deleteSurroundingText (int before, int after) {
+        if (before > 0 && documentActions != null && documentActions.replace("")) return true;
         return before == 1 && after == 0 && backspaceBoundary() || super.deleteSurroundingText(before, after);
       }
       @Override public boolean deleteSurroundingTextInCodePoints (int before, int after) {
+        if (before > 0 && documentActions != null && documentActions.replace("")) return true;
         return before == 1 && after == 0 && backspaceBoundary() || super.deleteSurroundingTextInCodePoints(before, after);
       }
     };

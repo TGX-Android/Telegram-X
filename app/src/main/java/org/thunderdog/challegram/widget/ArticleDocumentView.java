@@ -26,13 +26,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /** The editable document itself: no property cards or parallel plain-text representation. */
-public final class ArticleDocumentView extends LinearLayout {
+public final class ArticleDocumentView extends LinearLayout implements me.vkryl.core.lambda.Destroyable {
   public interface Delegate {
+    default org.thunderdog.challegram.telegram.Tdlib tdlib () { return null; }
     void changed (boolean structural);
     void selection (ArticleTextInput input);
     void options (ArticleEditorTree.Entry entry);
     void media (ArticleEditorTree.Entry entry, LinearLayout parent);
     void formula (ArticleEditorTree.Entry entry, TextView view);
+    default void dragging (boolean active) { }
   }
   private final Delegate delegate;
   private TdApi.InputRichMessage document;
@@ -43,12 +45,200 @@ public final class ArticleDocumentView extends LinearLayout {
   private TdApi.InputPageBlock focusAfter;
   private int focusOffset;
   private int focusEndOffset = -1;
+  private ArticleSelectionView selection;
+  private boolean batch;
+  private final IdentityHashMap<View, ArticleEditorTree.Entry> sections = new IdentityHashMap<>();
+  private ArticleEditorTree.Entry dropTarget;
+  private float dropLine = -1;
+  public void setSelectionView (ArticleSelectionView view) { selection = view; }
+  public boolean hasSelection () { return selection != null && selection.active() || focused != null && focused.getSelectionStart() != focused.getSelectionEnd(); }
+  public boolean hasMultipleSelection () { return selection != null && selection.multiple(); }
+  void selectionChanged (ArticleTextInput input) { focused = input; if (!batch) delegate.selection(input); }
+  private void changed (boolean structural) { if (!batch) delegate.changed(structural); }
+  public void formatSelection (TdApi.RichText wrapper) {
+    if (focused == null) return;
+    if (selection == null || !selection.active()) { focused.format(wrapper); return; }
+    boolean enabled = !isFormatApplied(wrapper.getConstructor());
+    batch = true;
+    try {
+      for (ArticleTextInput input : selection.inputs()) {
+        input.setSelection(selection.start(input), selection.end(input));
+        input.setFormatEnabled(org.thunderdog.challegram.data.article.ArticleCodec.copy(wrapper, TdApi.RichText.class), enabled);
+      }
+    } finally { batch = false; }
+    delegate.changed(false); selectionChanged(selection.first()); selection.invalidate();
+  }
+  public boolean isFormatApplied (int constructor) {
+    if (selection == null || !selection.active()) return focused != null && focused.isFormatApplied(constructor);
+    boolean any = false;
+    batch = true;
+    try {
+      for (ArticleTextInput input : selection.inputs()) {
+        if (selection.start(input) == selection.end(input)) continue;
+        input.setSelection(selection.start(input), selection.end(input)); any = true;
+        if (!input.isFormatApplied(constructor)) return false;
+      }
+      return any;
+    } finally { batch = false; }
+  }
+  public TdApi.InputPageBlock[] selectedBlocks () {
+    if (selection == null || !selection.active()) return focused == null ? new TdApi.InputPageBlock[0] : new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(focused.richText(Math.min(focused.getSelectionStart(), focused.getSelectionEnd()), Math.max(focused.getSelectionStart(), focused.getSelectionEnd())))};
+    List<TdApi.InputPageBlock> blocks = new ArrayList<>();
+    for (ArticleTextInput input : selection.inputs()) {
+      TdApi.RichText text = input.richText(selection.start(input), selection.end(input));
+      ArticleEditorTree.Entry entry = entries.get(input);
+      if (entry != null && ArticleEditorTree.fields(entry.block).size() == 1 && ArticleEditorTree.fields(entry.block).get(0).name == ArticleEditorTree.FieldName.TEXT) {
+        TdApi.InputPageBlock block = org.thunderdog.challegram.data.article.ArticleCodec.copy(entry.block, TdApi.InputPageBlock.class);
+        ArticleEditorTree.fields(block).get(0).set.accept(text); blocks.add(block);
+      } else blocks.add(new TdApi.InputPageBlockParagraph(text));
+    }
+    return blocks.toArray(new TdApi.InputPageBlock[0]);
+  }
+  public void copySelection (boolean cut) {
+    TdApi.InputRichMessage value = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(selectedBlocks()), document.isRtl, true);
+    StringBuilder text = new StringBuilder();
+    for (TdApi.InputPageBlock block : ((TdApi.RichMessageSourceBlocks) value.source).blocks) {
+      if (text.length() != 0) text.append('\n'); text.append(ArticleRichText.plain(ArticleEditorTree.fields(block).get(0).value));
+    }
+    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+    if (clipboard == null) return;
+    byte[] rich = org.thunderdog.challegram.data.article.ArticleCodec.encode(value);
+    android.content.Intent payload = rich.length < 400000 ? new android.content.Intent().putExtra("article", rich) : null;
+    clipboard.setPrimaryClip(new android.content.ClipData("", new String[] {"text/plain", "application/vnd.telegramx.article"}, new android.content.ClipData.Item(text.toString(), null, payload, null)));
+    if (cut) replaceSelectedBlocks(new TdApi.InputPageBlock[0]);
+  }
+  public void pasteSelection () {
+    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+    if (clipboard == null || !clipboard.hasPrimaryClip()) return;
+    android.content.ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
+    if (item.getIntent() != null) try {
+      byte[] bytes = item.getIntent().getByteArrayExtra("article");
+      if (bytes != null && bytes.length < 400000) {
+        TdApi.Object decoded = org.thunderdog.challegram.data.article.ArticleCodec.decode(bytes);
+        if (decoded instanceof TdApi.InputRichMessage && ((TdApi.InputRichMessage) decoded).source instanceof TdApi.RichMessageSourceBlocks) {
+          TdApi.InputPageBlock[] blocks = ((TdApi.RichMessageSourceBlocks) ((TdApi.InputRichMessage) decoded).source).blocks;
+          boolean textOnly = true; for (TdApi.InputPageBlock block : blocks) textOnly &= block instanceof TdApi.InputPageBlockParagraph || block instanceof TdApi.InputPageBlockSectionHeading || block instanceof TdApi.InputPageBlockPreformatted;
+          if (textOnly && replaceSelectedBlocks(blocks)) return;
+        }
+      }
+    } catch (java.io.IOException | RuntimeException ignored) { }
+    CharSequence text = item.coerceToText(getContext()); if (text == null) return;
+    String[] paragraphs = text.toString().split("\\n", -1); TdApi.InputPageBlock[] blocks = new TdApi.InputPageBlock[paragraphs.length];
+    for (int i = 0; i < blocks.length; i++) blocks[i] = new TdApi.InputPageBlockParagraph(new TdApi.RichTextPlain(paragraphs[i]));
+    replaceSelectedBlocks(blocks);
+  }
+  public boolean replaceSelectedBlocks (TdApi.InputPageBlock[] blocks) {
+    if (selection == null || !selection.active()) {
+      if (focused == null) { insertBlocks(blocks); return true; }
+      return replaceSelection(focused, Math.min(focused.getSelectionStart(), focused.getSelectionEnd()), Math.max(focused.getSelectionStart(), focused.getSelectionEnd()), blocks);
+    }
+    ArticleTextInput first = selection.first(), last = selection.last(); int start = selection.from(), end = selection.to();
+    if (first == last) { selection.clear(); return replaceSelection(first, start, end, blocks); }
+    ArticleEditorTree.Entry a = entries.get(first), b = entries.get(last);
+    if (a == null || b == null) return false;
+    if (a.group.blocks() != b.group.blocks() || a.index == b.index) return replaceSelectedFields(blocks);
+    // Cross-cell replacements are text operations, never table-structure deletion.
+    if (a.index >= b.index || !(a.block instanceof TdApi.InputPageBlockParagraph) || !(b.block instanceof TdApi.InputPageBlockParagraph)) return replaceSelectedFields(blocks);
+    TdApi.RichText before = first.richText(0, start), after = last.richText(end, last.length());
+    selection.clear();
+    for (int i = b.index; i >= a.index; i--) a.group.remove(i);
+    int at = a.index;
+    if (blocks.length == 0) {
+      TdApi.InputPageBlockParagraph joined = new TdApi.InputPageBlockParagraph(concat(before, after)); a.group.insert(at, joined); structural(joined, start);
+    } else {
+      TdApi.InputPageBlock[] copy = org.thunderdog.challegram.data.article.ArticleCodec.copy(new TdApi.RichMessageSourceBlocks(blocks), TdApi.RichMessageSourceBlocks.class).blocks;
+      if (copy[0] instanceof TdApi.InputPageBlockParagraph) ((TdApi.InputPageBlockParagraph) copy[0]).text = concat(before, ((TdApi.InputPageBlockParagraph) copy[0]).text);
+      else if (start > 0) a.group.insert(at++, new TdApi.InputPageBlockParagraph(before));
+      for (TdApi.InputPageBlock block : copy) a.group.insert(at++, block);
+      TdApi.InputPageBlock tail = copy[copy.length - 1]; int offset = 0;
+      if (tail instanceof TdApi.InputPageBlockParagraph) { offset = ArticleRichText.plain(((TdApi.InputPageBlockParagraph) tail).text).length(); ((TdApi.InputPageBlockParagraph) tail).text = concat(((TdApi.InputPageBlockParagraph) tail).text, after); }
+      else { tail = new TdApi.InputPageBlockParagraph(after); a.group.insert(at, tail); }
+      structural(tail, offset);
+    }
+    return true;
+  }
+  private boolean replaceSelectedFields (TdApi.InputPageBlock[] blocks) {
+    List<TdApi.RichText> parts = new ArrayList<>();
+    for (TdApi.InputPageBlock block : blocks) {
+      List<ArticleEditorTree.TextField> fields = ArticleEditorTree.fields(block);
+      if (fields.size() != 1 || !(block instanceof TdApi.InputPageBlockParagraph || block instanceof TdApi.InputPageBlockSectionHeading || block instanceof TdApi.InputPageBlockPreformatted || block instanceof TdApi.InputPageBlockFooter)) return false;
+      if (!parts.isEmpty()) parts.add(new TdApi.RichTextPlain("\n")); parts.add(fields.get(0).value);
+    }
+    List<ArticleTextInput> selected = selection.inputs(); ArticleTextInput first = selection.first(); int start = selection.from();
+    batch = true;
+    try {
+      for (int i = selected.size() - 1; i >= 0; i--) {
+        ArticleTextInput input = selected.get(i); input.setSelection(selection.start(input), selection.end(input));
+        input.insert(i == 0 ? new TdApi.RichTexts(parts.toArray(new TdApi.RichText[0])) : new TdApi.RichTextPlain(""));
+      }
+    } finally { batch = false; }
+    selection.clear(); first.requestFocus(); first.setSelection(Math.min(first.length(), start + ArticleRichText.plain(new TdApi.RichTexts(parts.toArray(new TdApi.RichText[0]))).length()));
+    delegate.changed(false); selectionChanged(first); return true;
+  }
   private static final class ListContext {
     final ArticleEditorTree.Entry parent; final TdApi.InputPageBlockList list; final int index;
     ListContext (ArticleEditorTree.Entry parent, TdApi.InputPageBlockList list, int index) { this.parent = parent; this.list = list; this.index = index; }
   }
   public ArticleDocumentView (Context context, Delegate delegate) {
     super(context); this.delegate = delegate; setOrientation(VERTICAL); setPadding(Screen.dp(16), Screen.dp(64), Screen.dp(16), Screen.dp(40));
+    setOnDragListener((view, event) -> {
+      if (!(event.getLocalState() instanceof ArticleEditorTree.Entry)) return false;
+      if (event.getAction() == android.view.DragEvent.ACTION_DRAG_LOCATION) {
+        dropTarget = null; dropLine = -1; float nearest = Float.MAX_VALUE;
+        for (java.util.Map.Entry<View, ArticleEditorTree.Entry> candidate : sections.entrySet()) {
+          if (candidate.getValue().depth != ((ArticleEditorTree.Entry) event.getLocalState()).depth) continue;
+          android.graphics.Rect bounds = new android.graphics.Rect(0, 0, candidate.getKey().getWidth(), candidate.getKey().getHeight()); offsetDescendantRectToMyCoords(candidate.getKey(), bounds);
+          float distance = Math.abs(event.getY() - bounds.centerY());
+          if (distance < nearest) { nearest = distance; dropTarget = candidate.getValue(); dropLine = event.getY() < bounds.centerY() ? bounds.top : bounds.bottom; }
+        }
+        if (getParent() instanceof android.widget.ScrollView) {
+          android.widget.ScrollView scroll = (android.widget.ScrollView) getParent(); float y = event.getY() - scroll.getScrollY();
+          if (y < Screen.dp(64)) scroll.smoothScrollBy(0, -Screen.dp(24)); else if (y > scroll.getHeight() - Screen.dp(64)) scroll.smoothScrollBy(0, Screen.dp(24));
+        }
+        invalidate();
+      } else if (event.getAction() == android.view.DragEvent.ACTION_DROP) {
+        ArticleEditorTree.Entry from = (ArticleEditorTree.Entry) event.getLocalState();
+        if (dropTarget != null && dropTarget.block != from.block) {
+          boolean after = false;
+          for (java.util.Map.Entry<View, ArticleEditorTree.Entry> candidate : sections.entrySet()) if (candidate.getValue() == dropTarget) {
+            android.graphics.Rect bounds = new android.graphics.Rect(0, 0, candidate.getKey().getWidth(), candidate.getKey().getHeight()); offsetDescendantRectToMyCoords(candidate.getKey(), bounds); after = event.getY() >= bounds.centerY(); break;
+          }
+          moveBlock(from, dropTarget, after);
+        }
+      } else if (event.getAction() == android.view.DragEvent.ACTION_DRAG_ENDED) { dropTarget = null; dropLine = -1; invalidate(); delegate.dragging(false); }
+      return true;
+    });
+  }
+  public void moveBlock (ArticleEditorTree.Entry from, ArticleEditorTree.Entry target, boolean after) {
+    if (from.block == target.block) return;
+    // Never insert a container into itself through one of its descendants.
+    if (contains(from.block, target.block)) return;
+    int at = target.index + (after ? 1 : 0); boolean same = from.group.blocks() == target.group.blocks();
+    from.group.remove(from.index); if (same && from.index < at) at--;
+    target.group.insert(at, from.block); structural(from.block, 0);
+  }
+  private static boolean contains (TdApi.InputPageBlock container, TdApi.InputPageBlock target) {
+    if (container == target) return true;
+    for (ArticleEditorTree.Group group : ArticleEditorTree.children(container)) for (TdApi.InputPageBlock child : group.blocks()) if (contains(child, target)) return true;
+    return false;
+  }
+  public void deleteDragged (Object value) {
+    if (!(value instanceof ArticleEditorTree.Entry)) return;
+    ArticleEditorTree.Entry entry = (ArticleEditorTree.Entry) value;
+    TdApi.InputPageBlock[] blocks = entry.group.blocks(); for (int i = 0; i < blocks.length; i++) if (blocks[i] == entry.block) { entry.group.remove(i); structural(null, 0); break; }
+  }
+  private boolean dragBlock (ArticleEditorTree.Entry entry) {
+    for (java.util.Map.Entry<View, ArticleEditorTree.Entry> section : sections.entrySet()) if (section.getValue().block == entry.block) {
+      if (selection != null) selection.clear(); org.thunderdog.challegram.tool.Keyboard.hide(this);
+      android.content.ClipData clip = android.content.ClipData.newPlainText("", ""); View view = section.getKey();
+      boolean started = android.os.Build.VERSION.SDK_INT >= 24 ? view.startDragAndDrop(clip, new View.DragShadowBuilder(view), entry, 0) : view.startDrag(clip, new View.DragShadowBuilder(view), entry, 0);
+      if (started) delegate.dragging(true); return started;
+    }
+    return false;
+  }
+  @Override protected void dispatchDraw (android.graphics.Canvas canvas) {
+    super.dispatchDraw(canvas);
+    if (dropLine >= 0) { android.graphics.Paint paint = new android.graphics.Paint(); paint.setColor(Theme.textLinkColor()); canvas.drawRect(getPaddingLeft(), dropLine - Screen.dp(1), getWidth() - getPaddingRight(), dropLine + Screen.dp(1), paint); }
   }
   public List<ArticleTextInput> inputs () { return inputs; }
   public ArticleEditorTree.Entry focusedEntry () { return entries.get(focused); }
@@ -103,18 +293,19 @@ public final class ArticleDocumentView extends LinearLayout {
     return false;
   }
   public void bind (TdApi.InputRichMessage value) {
+    if (selection != null) selection.clear();
     ArticleEditorTree.Entry old = focusedEntry();
     TdApi.InputPageBlock target = focusAfter != null ? focusAfter : old == null ? null : old.block;
     int offset = focusAfter != null ? focusOffset : focused == null ? 0 : focused.getSelectionStart();
     int endOffset = focusAfter != null && focusEndOffset >= 0 ? focusEndOffset : offset;
     int subfield = 0;
     if (focusAfter == null && old != null) for (ArticleTextInput input : inputs) { if (input == focused) break; if (entries.get(input).block == old.block) subfield++; }
-    removeAllViews(); inputs.clear(); entries.clear(); listContexts.clear(); focused = null; document = value;
+    destroyInputs(this); removeAllViews(); inputs.clear(); entries.clear(); listContexts.clear(); sections.clear(); focused = null; document = value;
     if (android.os.Build.VERSION.SDK_INT >= 17) setLayoutDirection(value.isRtl ? LAYOUT_DIRECTION_RTL : LAYOUT_DIRECTION_LTR);
     renderGroup(this, ArticleEditorTree.root(value), 0, null);
     if (inputs.isEmpty() || !(ArticleEditorTree.root(value).blocks()[ArticleEditorTree.root(value).blocks().length - 1] instanceof TdApi.InputPageBlockParagraph)) {
       // A trailing caret is inserted into the model only when the user types.
-      ArticleTextInput tail = new ArticleTextInput(getContext(), new TdApi.RichTextPlain(""), text -> {
+      ArticleTextInput tail = new ArticleTextInput(getContext(), delegate.tdlib(), new TdApi.RichTextPlain(""), text -> {
         TdApi.InputPageBlockParagraph paragraph = new TdApi.InputPageBlockParagraph(text);
         ArticleEditorTree.Group root = ArticleEditorTree.root(document); root.insert(root.blocks().length, paragraph);
         focusAfter = paragraph; focusOffset = ArticleRichText.plain(text).length(); delegate.changed(true);
@@ -136,10 +327,20 @@ public final class ArticleDocumentView extends LinearLayout {
     }
   }
   private LinearLayout column () { LinearLayout view = new LinearLayout(getContext()); view.setOrientation(VERTICAL); return view; }
+  private static void destroyInputs (View view) {
+    if (view instanceof ArticleTextInput) ((ArticleTextInput) view).performDestroy();
+    else if (view instanceof ViewGroup) {
+      ViewGroup group = (ViewGroup) view;
+      for (int i = 0; i < group.getChildCount(); i++) destroyInputs(group.getChildAt(i));
+    }
+  }
+  @Override public void performDestroy () { if (selection != null) selection.clear(); destroyInputs(this); }
   private void render (LinearLayout parent, ArticleEditorTree.Entry entry) {
     TdApi.InputPageBlock block = entry.block;
     LinearLayout section = column(); parent.addView(section, new LayoutParams(-1, -2));
-    section.setOnLongClickListener(v -> { delegate.options(entry); return true; });
+    sections.put(section, entry);
+    section.setOnLongClickListener(v -> dragBlock(entry));
+    if (android.os.Build.VERSION.SDK_INT >= 23) section.setOnContextClickListener(v -> { delegate.options(entry); return true; });
     if (block instanceof TdApi.InputPageBlockList) {
       TdApi.InputPageBlockList list = (TdApi.InputPageBlockList) block;
       for (int i = 0; i < list.items.length; i++) {
@@ -159,7 +360,7 @@ public final class ArticleDocumentView extends LinearLayout {
       TdApi.InputPageBlockTable table = (TdApi.InputPageBlockTable) block;
       ArticleTextInput caption = input(entry, table.caption, value -> table.caption = value, false); caption.setGravity(Gravity.CENTER); caption.setTypeface(null, Typeface.BOLD); caption.setHint(Lang.getString(R.string.ArticleTableTitle)); section.addView(caption);
       HorizontalScrollView scroll = new HorizontalScrollView(getContext()); scroll.setFillViewport(true); scroll.setClipToPadding(false);
-      scroll.addView(new ArticleTableEditor(getContext(), table, cell -> register(cell, entry), () -> delegate.changed(false), () -> delegate.changed(true)));
+      scroll.addView(new ArticleTableEditor(getContext(), delegate.tdlib(), table, cell -> register(cell, entry), () -> changed(false), () -> changed(true)));
       section.addView(scroll, new LayoutParams(-1, -2)); return;
     }
     if (block instanceof TdApi.InputPageBlockDivider) {
@@ -199,7 +400,7 @@ public final class ArticleDocumentView extends LinearLayout {
       if (field.name == ArticleEditorTree.FieldName.CREDIT && ArticleRichText.plain(field.value).isEmpty()) continue;
       ArticleTextInput input = input(entry, field.value, field.set, field.name == ArticleEditorTree.FieldName.TEXT);
       input.setHint(Lang.getString(field.name == ArticleEditorTree.FieldName.CAPTION ? R.string.ArticleCaption : R.string.ArticleWrite));
-      if (block instanceof TdApi.InputPageBlockSectionHeading) { input.setTextSize(20 - ((TdApi.InputPageBlockSectionHeading) block).size); input.setTypeface(null, Typeface.BOLD); }
+      if (block instanceof TdApi.InputPageBlockSectionHeading) { input.setTextSize(20 - ((TdApi.InputPageBlockSectionHeading) block).size); input.setTypeface(ArticleEditorFonts.heading(getContext())); input.setPadding(0, Screen.dp(11), 0, Screen.dp(7)); }
       if (block instanceof TdApi.InputPageBlockPreformatted) { input.setTypeface(Typeface.MONOSPACE); input.setTextSize(15); input.setBackground(ArticleEditorPopup.background(0x18888888, 6)); input.setPadding(Screen.dp(10), Screen.dp(8), Screen.dp(10), Screen.dp(8)); }
       if (block instanceof TdApi.InputPageBlockFooter || field.name == ArticleEditorTree.FieldName.CREDIT) { input.setTextSize(14); input.setTextColor(Theme.textDecentColor()); }
       if (block instanceof TdApi.InputPageBlockButtonRow) { input.setTextColor(Theme.textLinkColor()); input.setBackground(ArticleEditorPopup.background(0x22888888, 8)); }
@@ -207,7 +408,9 @@ public final class ArticleDocumentView extends LinearLayout {
     }
   }
   private ArticleTextInput input (ArticleEditorTree.Entry entry, TdApi.RichText value, Consumer<TdApi.RichText> setter, boolean boundaries) {
-    ArticleTextInput input = new ArticleTextInput(getContext(), value, text -> { setter.accept(text); delegate.changed(false); }); register(input, entry);
+    ArticleTextInput input = new ArticleTextInput(getContext(), delegate.tdlib(), value, text -> {
+      setter.accept(text); if (!batch && selection != null) selection.clear(); changed(false);
+    }); register(input, entry);
     if (boundaries && !(entry.block instanceof TdApi.InputPageBlockPreformatted)) input.setBoundaryListener(new ArticleTextInput.BoundaryListener() {
       @Override public boolean onEnter () { return split(input, entry, setter); }
       @Override public boolean onBackspace () { return join(input, entry); }
@@ -216,8 +419,46 @@ public final class ArticleDocumentView extends LinearLayout {
   }
   private void register (ArticleTextInput input, ArticleEditorTree.Entry entry) {
     inputs.add(input); entries.put(input, entry);
+    input.setDocumentActions(new ArticleTextInput.DocumentActions() {
+      @Override public boolean replace (CharSequence text) {
+        if (!hasMultipleSelection()) return false;
+        if (text.length() == 0) { replaceSelectedBlocks(new TdApi.InputPageBlock[0]); return true; }
+        String[] lines = text.toString().split("\\n", -1); TdApi.InputPageBlock[] blocks = new TdApi.InputPageBlock[lines.length];
+        for (int i = 0; i < lines.length; i++) blocks[i] = new TdApi.InputPageBlockParagraph(new TdApi.RichTextPlain(lines[i]));
+        replaceSelectedBlocks(blocks); return true;
+      }
+      @Override public boolean menu (int id) {
+        if (selection == null) return false;
+        if (id == android.R.id.selectAll) { selection.all(); return true; }
+        if (!selection.active()) return false;
+        if (id == android.R.id.copy || id == android.R.id.cut) { copySelection(id == android.R.id.cut); return true; }
+        if (id == android.R.id.paste) { pasteSelection(); return true; }
+        return false;
+      }
+    });
+    float[] down = new float[2];
+    input.setOnTouchListener((view, event) -> {
+      if (event.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) {
+        down[0] = event.getX(); down[1] = event.getY(); if (selection != null) selection.clear();
+      }
+      return false;
+    });
+    input.setOnLongClickListener(view -> {
+      android.text.Layout layout = input.getLayout();
+      if (layout != null) {
+        int line = layout.getLineForVertical(Math.max(0, (int) down[1] - input.getTotalPaddingTop()));
+        if (input.length() == 0 || down[0] > input.getTotalPaddingLeft() + layout.getLineRight(line) + Screen.dp(16)) return dragBlock(entry);
+      }
+      if (selection == null) return false; selection.word(input, down[0], down[1]); return true;
+    });
+    input.setCustomSelectionActionModeCallback(new android.view.ActionMode.Callback() {
+      @Override public boolean onCreateActionMode (android.view.ActionMode mode, android.view.Menu menu) { return selection == null || !selection.active(); }
+      @Override public boolean onPrepareActionMode (android.view.ActionMode mode, android.view.Menu menu) { return false; }
+      @Override public boolean onActionItemClicked (android.view.ActionMode mode, android.view.MenuItem item) { if (item.getItemId() == android.R.id.selectAll && selection != null) { mode.finish(); selection.all(); return true; } return false; }
+      @Override public void onDestroyActionMode (android.view.ActionMode mode) { }
+    });
     input.setOnFocusChangeListener((v, hasFocus) -> { if (hasFocus) { focused = input; delegate.selection(input); } });
-    input.setSelectionListener(() -> { if (input.hasFocus()) { focused = input; delegate.selection(input); } });
+    input.setSelectionListener(() -> { if (!batch && (selection == null || !selection.updating()) && input.hasFocus()) selectionChanged(input); });
   }
   private void structural (TdApi.InputPageBlock target, int offset) { focusAfter = target; focusOffset = offset; delegate.changed(true); }
   private boolean split (ArticleTextInput input, ArticleEditorTree.Entry entry, Consumer<TdApi.RichText> setter) {
@@ -315,6 +556,7 @@ public final class ArticleDocumentView extends LinearLayout {
     if (!ArticleRichText.plain(block.credit).isEmpty()) quote.group.insert(position, new TdApi.InputPageBlockFooter(block.credit));
   }
   public void toggleQuoteSelection () {
+    if (hasMultipleSelection()) { replaceSelectedBlocks(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockBlockQuote(selectedBlocks(), new TdApi.RichTextPlain(""))}); return; }
     ArticleEditorTree.Entry entry = focusedEntry(); if (entry == null || focused == null || !canChangeTextStyle()) return;
     ArticleEditorTree.Entry quote = focusedQuote();
     if (quote != null) {

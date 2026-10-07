@@ -90,6 +90,9 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     super(context, R.string.File);
   }
 
+  private boolean musicOnly;
+  public void setMusicOnly (boolean value) { musicOnly = value; }
+
   @Override
   public int getId () {
     return R.id.controller_media_files;
@@ -185,7 +188,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private int initialItemsCount;
 
   private void buildCells () {
-    navigateToPath(null, null, null, false, null, null, null);
+    navigateToPath(null, musicOnly ? KEY_MUSIC : null, null, false, null, null, null);
   }
 
   private void navigateToPath (final View view, final String currentPath, final String parentPath, boolean isUpper, final InlineResultCommon data, Runnable onDone, Runnable onError) {

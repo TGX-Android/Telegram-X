@@ -54,6 +54,43 @@ public final class ArticleEditorChecks {
     require(fixture.blocks().length == 1, "Backspace did not join paragraphs");
     require(ArticleRichText.plain(((TdApi.InputPageBlockParagraph) fixture.blocks()[0]).text).equals("link after"), "Join lost text");
   }
+  public static void namedParagraphEditing (Context context) {
+    TdApi.RichText original = new TdApi.RichTextReference("paragraph", new TdApi.RichTexts(new TdApi.RichText[] {new TdApi.RichTextBold(text("Visible")), text(" paragraph"), new TdApi.RichTextUrl(text(" link"), "https://example.org", false)}));
+    ArticleTextInput input = new ArticleTextInput(context, original, value -> { });
+    require(input.getText().toString().equals("Visible paragraph link"), "Named paragraph is an opaque editor token");
+    require(ArticleRichText.plain(input.richText()).equals("Visible paragraph link"), "Editor lost named paragraph text");
+    final boolean[] reference = {false}, link = {false};
+    org.thunderdog.challegram.data.article.ArticleCodec.visit(input.richText(), (node, depth) -> { if (node instanceof TdApi.RichTextReference) reference[0] = true; if (node instanceof TdApi.RichTextUrl) link[0] = true; });
+    require(reference[0] && link[0], "Editing stripped reference or link metadata");
+    input.setRichText(new TdApi.RichTextCustomEmoji(42, "😀"));
+    require(input.getText().toString().equals("😀"), "Custom emoji is still an opaque placeholder");
+    require(input.richText() instanceof TdApi.RichTextCustomEmoji && ((TdApi.RichTextCustomEmoji) input.richText()).customEmojiId == 42, "Emoji rendering lost its TDLib identity");
+    input.performDestroy();
+  }
+  public static void crossBlockSelection (Context context) {
+    Fixture fixture = new Fixture(context, paragraph("Alpha"), paragraph("Beta"), paragraph("Gamma"));
+    ArticleSelectionView selection = new ArticleSelectionView(context, fixture.view, new android.widget.ScrollView(context)); fixture.view.setSelectionView(selection);
+    selection.select(fixture.view.inputs().get(0), 2, fixture.view.inputs().get(2), 2);
+    fixture.view.formatSelection(new TdApi.RichTextBold(text("")));
+    require(fixture.changes == 1, "Cross-block formatting created multiple history entries");
+    require(fixture.view.isFormatApplied(TdApi.RichTextBold.CONSTRUCTOR), "Formatting missed selected blocks");
+    ArticleTextInput first = fixture.view.inputs().get(0); first.setSelection(0, 2);
+    require(!first.isFormatApplied(TdApi.RichTextBold.CONSTRUCTOR), "Formatting leaked before the selection");
+    fixture.view.formatSelection(new TdApi.RichTextBold(text("")));
+    require(!fixture.view.isFormatApplied(TdApi.RichTextBold.CONSTRUCTOR), "Second formatting action failed to clear every block");
+    require(fixture.view.replaceSelectedBlocks(new TdApi.InputPageBlock[] {paragraph("replacement")}), "Replacement rejected a cross-block range");
+    require(fixture.blocks().length == 1 && ArticleRichText.plain(((TdApi.InputPageBlockParagraph) fixture.blocks()[0]).text).equals("Alreplacementmma"), "Replacement lost text outside the selection");
+  }
+  public static void blockReordering (Context context) {
+    Fixture fixture = new Fixture(context, paragraph("First"), paragraph("Second"), paragraph("Third"));
+    ArticleEditorTree.Group group = ArticleEditorTree.root(fixture.document);
+    fixture.view.moveBlock(new ArticleEditorTree.Entry(group, 0, 0), new ArticleEditorTree.Entry(group, 2, 0), true);
+    require(ArticleRichText.plain(((TdApi.InputPageBlockParagraph) fixture.blocks()[0]).text).equals("Second"), "Move left an incorrect first block");
+    require(ArticleRichText.plain(((TdApi.InputPageBlockParagraph) fixture.blocks()[2]).text).equals("First"), "Move did not retain all intervening blocks");
+    require(fixture.changes == 1, "Reorder created more than one history entry");
+    fixture.view.deleteDragged(new ArticleEditorTree.Entry(group, 1, 0));
+    require(fixture.blocks().length == 2, "Dropping a block on Delete did not remove it");
+  }
   public static void listEditing (Context context) {
     Fixture fixture = new Fixture(context, paragraph("First")); fixture.focus(0, 5); fixture.view.listStyle(2);
     ArticleTextInput input = fixture.focus(0, 5); input.onKeyDown(KeyEvent.KEYCODE_ENTER, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));

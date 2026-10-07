@@ -463,10 +463,11 @@ public class FormattedText {
       }
       case TdApi.RichTextDiff.CONSTRUCTOR: {
         TdApi.RichTextDiff textDiff = (TdApi.RichTextDiff) in;
-        if (textDiff.oldText != null) {
-          parseRichText(context, textDiff.oldText, out, entities, offset, flags | TextEntityCustom.FLAG_STRIKETHROUGH, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters, inlineButton);
-        }
-        parseRichText(context, textDiff.text, out, entities, offset, flags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters, inlineButton);
+        boolean deleted = org.thunderdog.challegram.data.article.ArticleRichText.plain(textDiff.text).isEmpty();
+        boolean inserted = org.thunderdog.challegram.data.article.ArticleRichText.plain(textDiff.oldText).isEmpty();
+        int diffFlags = deleted ? TextEntityCustom.FLAG_DIFF_DELETED | TextEntityCustom.FLAG_STRIKETHROUGH : inserted ? TextEntityCustom.FLAG_DIFF_INSERTED : TextEntityCustom.FLAG_DIFF_REPLACED;
+        TdApi.RichText visible = deleted ? textDiff.oldText : textDiff.text;
+        if (visible != null) parseRichText(context, visible, out, entities, offset, flags | diffFlags, linkOffset, linkLength, linkType, link, linkCached, referenceAnchorName, copyLink, openParameters, inlineButton);
         break;
       }
       case TdApi.RichTextIcon.CONSTRUCTOR: {

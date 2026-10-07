@@ -6075,6 +6075,10 @@
   <string name="ArticleAiPromptTab">Prompt</string>
   <string name="ArticleAiCreateStyle">Create</string>
   <string name="ArticleAiStyleTitle">Style name</string>
+  <string name="ArticleAiEditStyle">Edit style</string>
+  <string name="ArticleAiShowCreator">Show me as the creator</string>
+  <string name="ArticleAiDeleteStyle">Delete this style?</string>
+  <string name="ArticleAiRemoveStyle">Remove this style from your list?</string>
   <string name="ArticleAiEmojify">emojify</string>
   <string name="ArticleAiGenerate">Generate</string>
   <string name="ArticleAiWorking">Generating…</string>

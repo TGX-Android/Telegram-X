@@ -46,7 +46,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 
 public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.OnGestureListener {
-  static class BarItem {
+  public static class BarItem {
     private final int iconResource;
     private final String name;
     private final int backgroundColorId;

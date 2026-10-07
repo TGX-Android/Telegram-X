@@ -33,12 +33,12 @@ public final class ArticleTableEditor extends ViewGroup {
     final ArticleTextInput input; final int row, column; final TdApi.PageBlockTableCell cell;
     CellView (ArticleTextInput input, int row, int column, TdApi.PageBlockTableCell cell) { this.input = input; this.row = row; this.column = column; this.cell = cell; }
   }
-  public ArticleTableEditor (Context context, TdApi.InputPageBlockTable table, Consumer<ArticleTextInput> register, Runnable changed, Runnable structureChanged) {
+  public ArticleTableEditor (Context context, org.thunderdog.challegram.telegram.Tdlib tdlib, TdApi.InputPageBlockTable table, Consumer<ArticleTextInput> register, Runnable changed, Runnable structureChanged) {
     super(context); this.table = table; this.grid = new ArticleTableGrid(table); this.changed = changed; this.structureChanged = structureChanged; setWillNotDraw(false);
     rowTops = new int[grid.rows() + 1]; rowHeights = new int[grid.rows()];
     for (int r = 0; r < grid.rows(); r++) for (int c = 0; c < grid.columns(); c++) if (grid.isOrigin(r, c)) {
       TdApi.PageBlockTableCell cell = grid.cell(r, c);
-      ArticleTextInput input = new ArticleTextInput(context, cell.text, value -> { cell.text = value; changed.run(); });
+      ArticleTextInput input = new ArticleTextInput(context, tdlib, cell.text, value -> { cell.text = value; changed.run(); });
       input.setPadding(Screen.dp(10), Screen.dp(8), Screen.dp(10), Screen.dp(8));
       input.setTypeface(null, cell.isHeader ? Typeface.BOLD : Typeface.NORMAL);
       input.setGravity((cell.align instanceof TdApi.PageBlockHorizontalAlignmentCenter ? Gravity.CENTER_HORIZONTAL : cell.align instanceof TdApi.PageBlockHorizontalAlignmentRight ? Gravity.RIGHT : Gravity.LEFT) |

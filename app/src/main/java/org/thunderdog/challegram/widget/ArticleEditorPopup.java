@@ -58,7 +58,7 @@ public final class ArticleEditorPopup {
     image.setPadding(Screen.dp(6), Screen.dp(10), Screen.dp(10), Screen.dp(10));
     row.addView(image, new LinearLayout.LayoutParams(Screen.dp(40), Screen.dp(48)));
     TextView text = new TextView(content.getContext()); text.setText(label); text.setTextSize(size); text.setTextColor(Theme.textAccentColor());
-    if (heading) text.setTypeface(android.graphics.Typeface.create("serif", android.graphics.Typeface.BOLD));
+    if (heading) text.setTypeface(ArticleEditorFonts.heading(content.getContext()));
     row.addView(text, new LinearLayout.LayoutParams(0, -2, 1));
     if (selected) {
       ImageView check = new ImageView(content.getContext()); check.setImageResource(org.thunderdog.challegram.R.drawable.baseline_check_24); check.setColorFilter(Theme.textAccentColor());

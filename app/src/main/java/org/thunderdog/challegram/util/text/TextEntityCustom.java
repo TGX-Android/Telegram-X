@@ -50,6 +50,9 @@ public class TextEntityCustom extends TextEntity {
   public static final int FLAG_SUPERSCRIPT = 1 << 6;
   public static final int FLAG_MARKED = 1 << 7;
   public static final int FLAG_SPOILER = 1 << 9;
+  public static final int FLAG_DIFF_INSERTED = 1 << 10;
+  public static final int FLAG_DIFF_DELETED = 1 << 11;
+  public static final int FLAG_DIFF_REPLACED = 1 << 12;
   public static final int FLAG_CLICKABLE = 1 << 20;
   public static final int FLAG_ANCHOR = 1 << 21;
   public static final int FLAG_REFERENCE = 1 << 22;
@@ -188,9 +191,21 @@ public class TextEntityCustom extends TextEntity {
   }
 
   private TextColorSetOverride cachedLinkSet;
+  private TextColorSetOverride cachedDiffSet;
+
+  public boolean isDiffReplacement () { return (flags & FLAG_DIFF_REPLACED) != 0; }
 
   @Override
   public TextColorSet getSpecialColorSet (@NonNull TextColorSet defaultColorSet) {
+    if ((flags & (FLAG_DIFF_INSERTED | FLAG_DIFF_DELETED)) != 0) {
+      if (cachedDiffSet == null || cachedDiffSet.originalColorSet() != defaultColorSet) {
+        cachedDiffSet = new TextColorSetOverride(defaultColorSet) {
+          @Override public int defaultTextColor () { return (flags & FLAG_DIFF_DELETED) != 0 ? org.thunderdog.challegram.theme.Theme.getColor(org.thunderdog.challegram.theme.ColorId.textNegative) : org.thunderdog.challegram.theme.Theme.textLinkColor(); }
+          @Override public int clickableTextColor (boolean pressed) { return defaultTextColor(); }
+        };
+      }
+      return cachedDiffSet;
+    }
     TextColorSet colorSet;
     if (customColorSet != null) {
       colorSet = customColorSet;

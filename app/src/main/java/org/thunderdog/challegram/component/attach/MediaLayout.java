@@ -109,6 +109,13 @@ public class MediaLayout extends FrameLayoutFix implements
     void onSendPhoto (ImageGalleryFile file, boolean isFirst);
   }
 
+  /** Selection for an embedded document. The picker must never send to a chat. */
+  public interface ArticleCallback extends MediaCallback {
+    void onMediaSelected (ImageGalleryFile file, boolean asFile, boolean spoiler);
+    void onFileSelected (String path, boolean audio);
+    void onLocationSelected (TdApi.Location location, String title);
+  }
+
   public static final long REVEAL_DURATION = 220l;
   public static final long REVEAL_HIDE_DURATION = 285l;
 
@@ -387,6 +394,8 @@ public class MediaLayout extends FrameLayoutFix implements
   public void setCallback (@NonNull MediaCallback callback) {
     this.callback = callback;
   }
+
+  public boolean isArticlePicker () { return callback instanceof ArticleCallback; }
 
   public boolean inSpecificMode () {
     return mode != MODE_DEFAULT;
@@ -1188,6 +1197,11 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void sendFilesMixed (View view, List<String> files, ArrayList<MediaBottomFilesController.MusicEntry> musicFiles, TdApi.MessageSendOptions options, boolean isMultiSend) {
+    if (callback instanceof ArticleCallback) {
+      if (files != null) for (String file : files) ((ArticleCallback) callback).onFileSelected(file, false);
+      if (musicFiles != null) for (MediaBottomFilesController.MusicEntry file : musicFiles) ((ArticleCallback) callback).onFileSelected(file.getPath(), true);
+      hide(isMultiSend); return;
+    }
     if ((files == null || files.isEmpty()) && (musicFiles == null || musicFiles.isEmpty()))
       return;
     if (files != null && !files.isEmpty()) {
@@ -1219,6 +1233,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void sendFile (View v, String file) {
+    if (callback instanceof ArticleCallback) { ((ArticleCallback) callback).onFileSelected(file, false); hide(false); return; }
     if (target != null && target.showRestriction(v, RightId.SEND_DOCS)) {
       return;
     }
@@ -1234,6 +1249,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void sendMusic (View view, MediaBottomFilesController.MusicEntry musicFile) {
+    if (callback instanceof ArticleCallback) { ((ArticleCallback) callback).onFileSelected(musicFile.getPath(), true); hide(false); return; }
     if (target != null && target.showRestriction(view, RightId.SEND_AUDIO)) {
       return;
     }
@@ -1331,7 +1347,9 @@ public class MediaLayout extends FrameLayoutFix implements
         if (galleryFile.getFilePath() != null) {
           galleryFiles.add(galleryFile);
         }
-        if (callback != null && callback instanceof MediaGalleryCallback) {
+        if (callback instanceof ArticleCallback) {
+          ((ArticleCallback) callback).onMediaSelected(galleryFile, asFiles, allowSpoiler && needSpoiler);
+        } else if (callback instanceof MediaGalleryCallback) {
           if (galleryFile.isVideo()) {
             ((MediaGalleryCallback) callback).onSendVideo(galleryFile, first);
           } else {
@@ -1360,6 +1378,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void sendVenue (MediaLocationData place) {
+    if (callback instanceof ArticleCallback) { ((ArticleCallback) callback).onLocationSelected(new TdApi.Location(place.getLatitude(), place.getLongitude(), 0), place.getTitle()); hide(false); return; }
     pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (target != null) {
         target.send(place.convertToInputMessage(), true, sendOptions, null);
@@ -1370,6 +1389,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void sendLocation (double latitude, double longitude, double accuracy, int heading, int livePeriod) {
+    if (callback instanceof ArticleCallback) { ((ArticleCallback) callback).onLocationSelected(new TdApi.Location(latitude, longitude, accuracy), ""); hide(false); return; }
     pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (target != null) {
         TdApi.Location location = new TdApi.Location(latitude, longitude, accuracy);
