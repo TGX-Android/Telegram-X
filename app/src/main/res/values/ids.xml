@@ -1438,4 +1438,5 @@
 
   <item type="id" name="accessibilityAction_messageOptions" />
   <item type="id" name="accessibilityAction_messageMedia" />
+  <item type="id" name="accessibilityAction_revealSpoilers" />
 </resources>

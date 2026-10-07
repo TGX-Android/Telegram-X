@@ -905,6 +905,10 @@ public class TGMessageMedia extends TGMessage {
         appendAccessibilityPart(b, Lang.getString(preview.placeholderText));
       }
       MediaWrapper item = mosaicWrapper.getSingularItem();
+      if (item.isSpoilerHidden()) {
+        // Like Telegram for Android, media hidden under a spoiler is read as such
+        appendAccessibilityPart(b, Lang.getString(R.string.TextFormatSpoiler));
+      }
       if (item.getVideo() != null) {
         appendAccessibilityPart(b, getAccessibilityDuration(item.getVideo().duration));
       }
@@ -916,8 +920,18 @@ public class TGMessageMedia extends TGMessage {
       }
     }
     if (wrapper != null) {
-      appendAccessibilityPart(b, wrapper.getText());
+      appendAccessibilityPart(b, wrapper.getAccessibilityText());
     }
+  }
+
+  @Override
+  public boolean hasHiddenSpoilers () {
+    return hasHiddenSpoilers(wrapper);
+  }
+
+  @Override
+  public boolean revealSpoilers () {
+    return revealSpoilers(wrapper);
   }
 
   private boolean hasAccessibilityMediaAction () {
@@ -928,7 +942,13 @@ public class TGMessageMedia extends TGMessage {
   @Nullable
   @Override
   public String getAccessibilityMediaAction () {
-    return hasAccessibilityMediaAction() ? getAccessibilityFileAction(mosaicWrapper.getSingularItem().getFileProgress()) : null;
+    if (!hasAccessibilityMediaAction()) {
+      return null;
+    }
+    MediaWrapper item = mosaicWrapper.getSingularItem();
+    String action = getAccessibilityFileAction(item.getFileProgress());
+    // A tap on media hidden under a spoiler reveals it first
+    return action != null && item.isSpoilerHidden() ? Lang.getString(R.string.AccActionRevealSpoiler) : action;
   }
 
   @Override

@@ -326,6 +326,24 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
     return text;
   }
 
+  /**
+   * Text for accessibility services, with spoilers that are drawn hidden replaced, see {@link Text#getAccessibilityText()}.
+   */
+  public String getAccessibilityText () {
+    final Text text = getCurrent();
+    return text != null ? text.getAccessibilityText() : Text.getAccessibilityText(this.text, entities, null);
+  }
+
+  public boolean hasHiddenSpoilers () {
+    final Text text = getCurrent();
+    return text != null ? text.hasHiddenSpoilers() : Text.hasHiddenSpoilers(entities, null);
+  }
+
+  public boolean revealSpoilers () {
+    final Text text = getCurrent();
+    return text != null && text.revealSpoilers();
+  }
+
   public TextEntity[] getEntities () {
     return entities;
   }

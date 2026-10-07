@@ -397,11 +397,32 @@ public class TGMessageFile extends TGMessage {
     }
     for (CaptionedFile file : filesList) {
       file.component.appendAccessibilityText(b, includeChangingState);
-      // Caption as drawn, e.g. translated
+      // Caption as drawn, e.g. translated, with hidden spoilers
       if (file.captionWrapper != null) {
-        appendAccessibilityPart(b, file.captionWrapper.getText());
+        appendAccessibilityPart(b, file.captionWrapper.getAccessibilityText());
       }
     }
+  }
+
+  @Override
+  public boolean hasHiddenSpoilers () {
+    for (CaptionedFile file : filesList) {
+      if (hasHiddenSpoilers(file.captionWrapper)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean revealSpoilers () {
+    boolean revealed = false;
+    for (CaptionedFile file : filesList) {
+      if (revealSpoilers(file.captionWrapper)) {
+        revealed = true;
+      }
+    }
+    return revealed;
   }
 
   @Nullable

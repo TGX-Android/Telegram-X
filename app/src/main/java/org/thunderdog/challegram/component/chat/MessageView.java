@@ -1688,7 +1688,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return;
     }
     final String textWithoutChangingState = msg != null ? msg.getAccessibilityDescription(false) : null;
-    if (describedMessage == msg && isAccessibilityFocused() && StringUtils.equalsOrBothEmpty(textWithoutChangingState, describedTextWithoutChangingState)) {
+    if (describedMessage == msg && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && isAccessibilityFocused() && StringUtils.equalsOrBothEmpty(textWithoutChangingState, describedTextWithoutChangingState)) {
       // Only replies, reactions, views or the played state changed, which happens often
       // in channels, or as the message is played. A new description has screen readers read
       // the message again from the start, so it is updated once the message is no longer focused
@@ -1726,11 +1726,13 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private static final int SELECTION_STATE_SELECTED = 2;
   private int accessibilitySelectionState = SELECTION_STATE_NONE;
   private @Nullable String accessibilityMediaAction;
+  private boolean accessibilityHasHiddenSpoilers;
 
   private void checkAccessibilityActionState () {
     // Selection and the state of the media are drawn on canvas, so let accessibility services know
     // when messages become checkable as selection starts or ends, when this message is selected
-    // or unselected, or when its media action changes, e.g. from "Download" to "Cancel download"
+    // or unselected, when its media action changes, e.g. from "Download" to "Cancel download",
+    // or when its spoilers are revealed
     int selectionState;
     if (msg == null || !isInSelectMode() || !msg.canBeSelected()) {
       selectionState = SELECTION_STATE_NONE;
@@ -1738,9 +1740,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       selectionState = msg.isCompletelySelected() ? SELECTION_STATE_SELECTED : SELECTION_STATE_UNSELECTED;
     }
     String mediaAction = msg != null ? msg.getAccessibilityMediaAction() : null;
-    if (accessibilitySelectionState != selectionState || !StringUtils.equalsOrBothEmpty(accessibilityMediaAction, mediaAction)) {
+    boolean hasHiddenSpoilers = msg != null && msg.hasHiddenSpoilers();
+    if (accessibilitySelectionState != selectionState || !StringUtils.equalsOrBothEmpty(accessibilityMediaAction, mediaAction) || accessibilityHasHiddenSpoilers != hasHiddenSpoilers) {
       accessibilitySelectionState = selectionState;
       accessibilityMediaAction = mediaAction;
+      accessibilityHasHiddenSpoilers = hasHiddenSpoilers;
       sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
     }
   }
@@ -1756,8 +1760,29 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (mediaAction != null) {
         return msg.performAccessibilityMediaAction(this);
       }
+      if (msg.hasHiddenSpoilers() && performAccessibilityRevealSpoilers()) {
+        return true;
+      }
     }
     return performAccessibilityMessageClick();
+  }
+
+  private boolean performAccessibilityRevealSpoilers () {
+    if (msg.revealSpoilers()) {
+      // Revealed text is read right away, see updateAccessibilityDescription()
+      updateAccessibilityDescription();
+      return true;
+    }
+    return false;
+  }
+
+  private static void addAccessibilityAction (AccessibilityNodeInfo info, int action, @NonNull String label) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      info.addAction(new AccessibilityNodeInfo.AccessibilityAction(action, label));
+    } else if (action == AccessibilityNodeInfo.ACTION_CLICK || action == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
+      // Labeled and custom actions need Android 5.0
+      info.addAction(action);
+    }
   }
 
   private boolean performAccessibilityMessageClick () {
@@ -1792,29 +1817,37 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         info.setChecked(isSelected);
         String selectAction = Lang.getString(isSelected ? R.string.Unselect : R.string.Select);
         info.setClickable(true);
-        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, selectAction));
+        addAccessibilityAction(info, AccessibilityNodeInfo.ACTION_CLICK, selectAction);
         info.setLongClickable(true);
-        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, selectAction));
+        addAccessibilityAction(info, AccessibilityNodeInfo.ACTION_LONG_CLICK, selectAction);
       }
       if (mediaAction != null) {
         // What a tap on the media does is still available by its name
-        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.accessibilityAction_messageMedia, mediaAction));
+        addAccessibilityAction(info, R.id.accessibilityAction_messageMedia, mediaAction);
       }
     } else {
       final String messageOptions = Lang.getString(R.string.AccActionMessageOptions);
+      final boolean hasHiddenSpoilers = msg.hasHiddenSpoilers();
       info.setClickable(true);
       if (mediaAction != null) {
         // Like Telegram for Android, a tap on the message does what a tap on its media does,
         // and message options, shown by a tap elsewhere on the message, are a separate action
-        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, mediaAction));
-        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.accessibilityAction_messageOptions, messageOptions));
+        addAccessibilityAction(info, AccessibilityNodeInfo.ACTION_CLICK, mediaAction);
+        addAccessibilityAction(info, R.id.accessibilityAction_messageOptions, messageOptions);
+        if (hasHiddenSpoilers) {
+          addAccessibilityAction(info, R.id.accessibilityAction_revealSpoilers, Lang.getString(R.string.AccActionRevealSpoiler));
+        }
+      } else if (hasHiddenSpoilers) {
+        // Spoilers are read as "Spoiler" until revealed, as a tap on them does
+        addAccessibilityAction(info, AccessibilityNodeInfo.ACTION_CLICK, Lang.getString(R.string.AccActionRevealSpoiler));
+        addAccessibilityAction(info, R.id.accessibilityAction_messageOptions, messageOptions);
       } else {
-        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, messageOptions));
+        addAccessibilityAction(info, AccessibilityNodeInfo.ACTION_CLICK, messageOptions);
       }
       if (canLongPress()) {
         // Long press selects the message
         info.setLongClickable(true);
-        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, Lang.getString(R.string.Select)));
+        addAccessibilityAction(info, AccessibilityNodeInfo.ACTION_LONG_CLICK, Lang.getString(R.string.Select));
       }
     }
   }
@@ -1849,6 +1882,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         return !isInSelectMode() && performAccessibilityMessageClick();
       } else if (action == R.id.accessibilityAction_messageMedia) {
         return msg.getAccessibilityMediaAction() != null && msg.performAccessibilityMediaAction(this);
+      } else if (action == R.id.accessibilityAction_revealSpoilers) {
+        return !isInSelectMode() && performAccessibilityRevealSpoilers();
       }
     }
     boolean result = super.performAccessibilityAction(action, arguments);

@@ -10258,6 +10258,31 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return false;
   }
 
+  /**
+   * @return whether the text or caption of this message has spoilers that are drawn hidden,
+   * which its description reads as "Spoiler", see {@link TextWrapper#getAccessibilityText()}
+   */
+  public boolean hasHiddenSpoilers () {
+    return false;
+  }
+
+  /**
+   * Reveals the spoilers in the text or caption of this message, as a tap on each of them does.
+   *
+   * @return whether any spoiler was revealed
+   */
+  public boolean revealSpoilers () {
+    return false;
+  }
+
+  protected static boolean hasHiddenSpoilers (@Nullable TextWrapper wrapper) {
+    return wrapper != null && wrapper.hasHiddenSpoilers();
+  }
+
+  protected static boolean revealSpoilers (@Nullable TextWrapper wrapper) {
+    return wrapper != null && wrapper.revealSpoilers();
+  }
+
   protected static @Nullable String getAccessibilityFileAction (@Nullable FileProgressComponent fileProgress) {
     int res = fileProgress != null ? fileProgress.getClickActionRes() : 0;
     return res != 0 ? Lang.getString(res) : null;

@@ -666,9 +666,19 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected void appendAccessibilityContent (@NonNull StringBuilder b, boolean includeChangingState) {
-    // Text as drawn, e.g. translated
+    // Text as drawn, e.g. translated, with hidden spoilers
     TextWrapper wrapper = effectiveWrapper;
-    appendAccessibilityPart(b, wrapper != null ? wrapper.getText() : Td.getText(text));
+    appendAccessibilityPart(b, wrapper != null ? wrapper.getAccessibilityText() : Td.getText(text));
+  }
+
+  @Override
+  public boolean hasHiddenSpoilers () {
+    return hasHiddenSpoilers(effectiveWrapper);
+  }
+
+  @Override
+  public boolean revealSpoilers () {
+    return revealSpoilers(effectiveWrapper);
   }
 
   @Override

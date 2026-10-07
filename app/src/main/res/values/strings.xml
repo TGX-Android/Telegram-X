@@ -5932,5 +5932,6 @@
   <string name="AccActionMessageOptions">Message options</string>
   <string name="AccActionDownload">Download</string>
   <string name="AccActionCancelDownload">Cancel download</string>
+  <string name="AccActionRevealSpoiler">Reveal spoiler</string>
 
 </resources>
