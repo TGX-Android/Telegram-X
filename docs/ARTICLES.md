@@ -57,18 +57,15 @@ layout attribution, including the bundled font license, is recorded in
 
 ## Review and validation boundaries
 
-This is a new design and is submitted for discussion, not as a claim that every
-device, role or server operation has been tested. The PR description records
-the exact tested revisions, current checks and remaining matrix. In particular:
+This is a new design submitted for discussion. Device checks cover the named
+scenarios below; they do not establish every role, device or server outcome.
+Maintainer CI, accessibility, concurrent draft recovery, premium transitions,
+permission/rejection cases, very large/partial articles and broader device/ABI
+coverage remain to be completed before merge readiness.
 
-- Rendering/editor checks with synthetic data do not prove server-side
-  send/edit permissions, premium transitions or all AI outcomes.
-- Product APK checks do not substitute for runtime testing of the standalone
-  feature branch. The product additionally contains forum integration.
-- Legacy static lint diagnostics and device/ABI coverage must be reported
-  separately from successful modern compilation and unit tests.
-- No private chat captures, account identifiers, credentials, local build
-  harnesses or APKs are part of this contribution.
+The contribution contains only cropped captures of deliberately created test
+articles. Private chat content, account identifiers, credentials, local build
+harnesses and APKs are not included.
 
 Review should focus on native message/layout integration, editor UX and
 accessibility, draft recovery/lifecycle behavior, server rejection handling,
@@ -76,45 +73,57 @@ and unchanged ordinary chat/Instant View behavior.
 
 ## Validation snapshot — 2026-10-07
 
-Tested feature source: `cf7ce04fac65e363c78a7f891add39b1f02316cc`, including
-upstream `7e3e3a3b1d658addd10514e2efd97de6e3ba1a42`.
+Tested feature source: `36c32c7f1c71568f65b981e6dde17c4074902131`, including
+upstream `92f13cbe5eeac21ae06cecb58d92d2c0a676cc53`. Device APK source:
+product integration `9ca7f45b7b0f43bf5c0c8c408f8703a463a27282`.
 
-- **53/53 JVM tests passed** in seven suites, with no failures or errors.
-- Modern ARM64 production-source Debug lint reported no new issues; 17
-  existing upstream warnings were filtered by the unchanged baseline.
-- **23/23 synthetic on-device rendering/editor checks passed**, including
-  recycled layouts, widths, list/table editing, partial and cross-block
-  selection, formatting state, block reordering and AI result presentation.
-- Regenerating the typed codec from the pinned schema produced identical
-  output. New editor vector assets were checked for 24x24 viewports and the
-  size suffix required by the contribution guide.
+- **56/56 article JVM tests passed** in seven suites. New regressions cover
+  received media without a caption, lazy caption/credit editing and preservation
+  of received/generated file names without rewriting file references.
+- **588/588 product JVM tests passed**. ARM64 Debug and R8 Release builds passed,
+  including native configuration/build with the current upstream pins.
+- Production-source Debug and Release lint reported no new issues; 17 existing
+  warnings were filtered by the unchanged baseline. Test-source UAST is excluded
+  by the local Windows harness because of an analysis stall; executable JVM
+  tests are included. The harness is not part of this contribution.
+- Both APKs were updated in place on a **Pixel 6, Android 17 (API 37)**. Existing
+  app identities/data were preserved and installed APK hashes were verified.
+- Server-backed Saved Messages retests passed in both builds: a file without a
+  caption remains visible when reopening Edit, its full name is present, and
+  native checklist markers toggle without shifting the text. Pixel comparison
+  confirmed identical text regions across both checkbox states.
+- Editing a neighboring paragraph preserved the uncaptioned attachment;
+  adding a caption to the received file survived saving and app restart.
+  Official Telegram 12.10.6 received the same file, caption and checklist state.
+- Existing formula/link/table examples and public-channel article text/media
+  rendered in Release; the seven-photo album opened and advanced. Debug also
+  reopened the channel article. No new crashes were recorded during the retest.
 
-These checks used a local Windows worktree adapter. It resolves junction paths
-for build metadata and reuses exact-pin native outputs from the product build;
-the adapter is not part of this PR. Production lint excludes test-source UAST
-because of a local analysis stall; the executable JVM tests are not excluded.
-This is not an independent Linux/native build of the feature branch.
+Earlier device scenarios covered create/edit/send, AI correction preview/apply,
+draft continuation and offline send/retry. They exposed the three defects fixed
+above. Earlier isolated widget checks at `cf7ce04f` passed 23/23 cases; those
+component results are historical, not a fresh run on this revision.
 
-The instrumentation target is an isolated, component-free application with no
-network access or account initialization. It exercises actual feature widgets
-but is not the normal Telegram X application. Fresh legacy/all-ABI coverage,
-end-to-end server send/edit/AI permissions, lifecycle recovery and accessibility
-acceptance remain separate work before marking the contribution ready to merge.
+### Device examples
 
-### Synthetic examples
+These are pixel-preserving crops of actual ADB screenshots from the Release
+build above, captured on 2026-10-07. Only purpose-made test articles are shown.
+Surrounding chats, pinned messages and system bars were cropped out; no UI was
+redrawn or composited. The installed application's Russian UI is shown as tested;
+upstream translation resources still follow the normal translation process.
 
-The following images were exported directly from the tested native widgets.
-They contain generated test text only, not real chats. Component renders do
-not include the normal application's navigation or keyboard.
+Published articles with formatted text, a link, formula, checklist, table and file:
 
-Native article blocks:
+![Article messages on Pixel 6](images/articles/article-native-blocks.png)
 
-![Native article blocks](images/articles/article-native-blocks.png)
+Selected text changes the editor's contextual formatting tools:
 
-Inline document editing:
+![Article editor selection on Pixel 6](images/articles/article-inline-editor.png)
 
-![Inline article document](images/articles/article-inline-editor.png)
+Reopening a server-received attachment with no caption:
 
-Editor layout with contextual tools and undo/redo:
+![File without caption remains visible in Edit](images/articles/article-attachment-no-caption.png)
 
-![Article editor](images/articles/article-editor-full.png)
+Editor with its ordinary block toolbar:
+
+![Article editor on Pixel 6](images/articles/article-editor-full.png)
