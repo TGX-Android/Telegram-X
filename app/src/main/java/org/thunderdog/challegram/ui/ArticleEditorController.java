@@ -381,6 +381,11 @@ public final class ArticleEditorController extends ViewController<ArticleEditorC
 
   private void attachmentPicker (int type) {
     Keyboard.hide(focused);
+    if (type == 2 && context().permissions().requestReadExternalStorage(org.thunderdog.challegram.util.Permissions.ReadType.AUDIO, grant -> {
+      if (isDestroyed()) return;
+      if (grant == org.thunderdog.challegram.util.Permissions.GrantResult.ALL) attachmentPicker(2);
+      else pickMedia(ArticleMediaFiles.Kind.AUDIO, fields::insert);
+    })) return;
     org.thunderdog.challegram.component.attach.MediaLayout picker = new org.thunderdog.challegram.component.attach.MediaLayout(this);
     picker.setCallback(new org.thunderdog.challegram.component.attach.MediaLayout.ArticleCallback() {
       @Override public void onMediaSelected (org.thunderdog.challegram.loader.ImageGalleryFile file, boolean asFile, boolean spoiler) {

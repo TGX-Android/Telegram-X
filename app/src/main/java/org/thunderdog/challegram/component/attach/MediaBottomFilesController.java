@@ -91,7 +91,17 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   }
 
   private boolean musicOnly;
-  public void setMusicOnly (boolean value) { musicOnly = value; }
+  public void setMusicOnly (boolean value) {
+    if (musicOnly == value) return;
+    musicOnly = value;
+    // The base constructor initializes the adapter while calculating its height.
+    if (adapter != null) buildCells();
+  }
+
+  @Override
+  public CharSequence getName () {
+    return musicOnly ? Lang.getString(R.string.Music) : super.getName();
+  }
 
   @Override
   public int getId () {
