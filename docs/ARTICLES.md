@@ -143,8 +143,46 @@ run of every earlier scenario on the latest APK.
   The RTL block command was exercised and undone; complete RTL-language UI
   acceptance is not claimed. Nested button combinations were not exhaustively
   exercised on the server.
-- Device coverage is Pixel 6, Android 17, ARM64. Maintainer CI and review remain
+- The readiness run covered Pixel 6, Android 17, ARM64. Maintainer CI and review remain
   separate from these local results; no upstream CI result is claimed.
+
+### Legacy regression follow-up (2026-10-08)
+
+Android 4.2.1 testing exposed a remote-file preview stuck on Loading, false draft
+and edit conflicts, and a channel avatar overlapping the first article line.
+Feature revision `322afe49` fixes these cases. The installed legacy ARMv7 Debug
+was built from product integration `8ecd8bf2`; its APK hash was verified after
+installation on a NO1 S6 (API 17), preserving the existing application data.
+
+- Media resolution now dispatches through the main handler. An unattached
+  View's pre-N `post()` queue belongs to the calling thread, so a fast TDLib
+  callback could otherwise leave the preview pending indefinitely.
+- Content comparisons flatten redundant plain-text containers and normalize
+  empty table cells. Published-message conflict checks also resolve file
+  identities, instead of treating refreshed remote tokens as content edits.
+  Links, whitespace, formatting, table attributes and distinct files remain
+  significant; document snapshots are not modified by comparison.
+- Text/file-led channel articles clear the avatar vertically and retain their
+  full width. Media-led articles keep their existing placement.
+- **65/65 feature JVM tests and 597/597 product JVM tests passed.** The legacy
+  Debug APK passed signature, native-input and embedded-source checks.
+- On API 17, the same table draft that triggered a conflict before updating
+  recovered without a dialog and retained identical saved bytes afterward.
+  A local TXT with a caption and table also survived process termination and
+  restart unchanged, then sent successfully to Saved Messages.
+- A received file immediately rendered its name and size in Edit. Updating
+  the article title saved without a false conflict and preserved its formula,
+  table, file and caption. Channel text no longer overlapped its avatar;
+  a separate media-led article still rendered from album through final links.
+- No fatal/VerifyError/NoSuchMethodError entries were found in the scoped
+  application runtime logs. The post-optimization restart took 8.875 seconds.
+
+This follow-up covers API 17 portrait/dark-theme Debug. API 16 and a new Release
+were not exercised. Genuine concurrent edits are covered by comparison tests
+in this follow-up; the earlier two-client server tests above were not repeated.
+The earlier legacy production lint run had 51 pre-existing NewApi errors and
+16 warnings; this follow-up does not claim a clean legacy lint run. Screenshots,
+draft binaries and account-related logs remain local and are not published.
 
 ### Device examples
 
