@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 project(tgx VERSION 1.0.0 LANGUAGES C CXX)
-message(STATUS "Building ${PROJECT_NAME} ndk: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION}) platform: ${ANDROID_PLATFORM} abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
+message(STATUS "Building ${PROJECT_NAME} ndk: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION}) platform: ${ANDROID_PLATFORM} (${CMAKE_SYSTEM_VERSION}) abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
 
 if(NOT ANDROID_NDK_MAJOR OR NOT ANDROID_NDK_REVISION)
   message(FATAL_ERROR "Unknown NDK: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION})")
@@ -70,28 +70,32 @@ add_compile_options(
 
 # == Libraries ==
 
+if (CMAKE_SYSTEM_VERSION GREATER_EQUAL 23)
+  add_link_options("LINKER:--pack-dyn-relocs=android")
+endif()
+
 # tdjni
 
 add_library(crypto SHARED IMPORTED)
 set_target_properties(crypto PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/lib/libcryptox.so
+  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/lib/libcryptox.so
 )
 add_library(ssl SHARED IMPORTED)
 set_target_properties(ssl PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/lib/libsslx.so
+  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/lib/libsslx.so
 )
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
   target_include_directories(crypto INTERFACE
-    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/include
+    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/include
   )
   target_include_directories(ssl INTERFACE
-    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/include
+    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/include
   )
 endif()
 
 add_library(tdjni SHARED IMPORTED)
 set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/src/main/libs/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/libtdjni.so
+  ${TDLIB_DIR}/src/main/libs/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/libtdjni.so
 )
 target_link_libraries(tdjni INTERFACE crypto ssl)
 
