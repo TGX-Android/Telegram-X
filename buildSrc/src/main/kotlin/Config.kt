@@ -151,10 +151,11 @@ class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), va
       return true
     }
 
+  val isUniversal: Boolean
+    get() = flavor == Abi.VARIANTS[Abi.UNIVERSAL]!!.flavor
+
   val isTestingLab: Boolean
-    get() {
-      return flavor == Abi.VARIANTS[Abi.LAB]!!.flavor
-    }
+    get() = flavor == Abi.VARIANTS[Abi.LAB]!!.flavor
 
   val minSdk: Int
     get() = if (is64Bit) {

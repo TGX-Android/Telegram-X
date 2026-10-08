@@ -762,6 +762,10 @@ android {
           generateEmojiSetsTask, GenerateEmojiSetsTask::kotlinOutputDir
         )
       }
+
+      if (!config.isHuaweiBuild && abiVariant.isUniversal) {
+        variant.packaging.dex.useLegacyPackaging = true
+      }
     }
 
     onVariants { variant ->
