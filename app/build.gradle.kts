@@ -565,6 +565,7 @@ android {
           }
           arguments(
             "-DANDROID_PLATFORM=android-${selectedMinSdk}",
+            "-DANDROID_MIN_SDK_VERSION=${selectedMinSdk}",
             "-DANDROID_STL=${if (appliedNdkVersion.ndkVersionMajor() >= 27) "c++_shared" else "c++_static"}",
             "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
             "-DCMAKE_SKIP_RPATH=ON",
