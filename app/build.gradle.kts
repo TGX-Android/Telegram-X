@@ -773,6 +773,7 @@ android {
 
       if (!config.isHuaweiBuild && abiVariant.isUniversal) {
         variant.packaging.dex.useLegacyPackaging = true
+        variant.packaging.jniLibs.useLegacyPackaging = true
       }
     }
 
