@@ -476,7 +476,7 @@ public class TGInlineKeyboard {
       this.needFakeBold = Text.needFakeBold(text);
       TextPaint textPaint = Paints.getBoldPaint14(needFakeBold);
       state.update(button, text);
-      this.wrapper = new EmojiString(text, Math.max(1, maxWidth - iconSlot()), textPaint);
+      this.wrapper = new EmojiString(text, Math.max(1, maxWidth - iconSlot()), textPaint, true);
       this.type = button.type;
       updateCurrency();
     }
@@ -518,7 +518,7 @@ public class TGInlineKeyboard {
       int textWidth = Math.max(1, maxWidth - iconSlot());
       if (!wrapper.getText().equals(text) || wrapper.getMaxWidth() != textWidth) {
         this.needFakeBold = Text.needFakeBold(text);
-        this.wrapper = new EmojiString(text, textWidth, Paints.getBoldPaint14(needFakeBold));
+        this.wrapper = new EmojiString(text, textWidth, Paints.getBoldPaint14(needFakeBold), true);
       }
       if (actionChanged) {
         contextId = contextId == Integer.MAX_VALUE ? 0 : contextId + 1;
