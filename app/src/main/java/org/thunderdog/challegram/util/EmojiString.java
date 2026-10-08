@@ -48,16 +48,28 @@ public class EmojiString {
   }
 
   public EmojiString (String text, int maxWidth, TextPaint textPaint) {
+    this(text, maxWidth, textPaint, false);
+  }
+
+  public EmojiString (String text, int maxWidth, TextPaint textPaint, boolean singleLine) {
     this.text = text;
     this.textPaint = textPaint;
     this.maxWidth = maxWidth;
     boolean ellipsized = false;
-    CharSequence emojiText = Emoji.instance().replaceEmoji(text);
+    CharSequence emojiText = Emoji.instance().replaceEmoji(singleLine ? text.replace('\n', ' ').replace('\r', ' ') : text);
     // CharSequence emojiText;
     if (maxWidth <= 0) {
       // emojiText = TextUtils.ellipsize(sourceEmojiText, textPaint, maxWidth * 2, TextUtils.TruncateAt.END);
       // ellipsized = emojiText.length() < sourceEmojiText.length() || !Strings.compare(emojiText, sourceEmojiText);
       maxWidth = Screen.widestSide();
+    }
+    if (singleLine) {
+      float fullWidth = U.measureEmojiText(emojiText, 0, emojiText.length(), textPaint);
+      if (fullWidth > maxWidth) {
+        // Keep the natural width so the keyboard can widen before truncating.
+        preferredMinWidth = fullWidth;
+        emojiText = TextUtils.ellipsize(emojiText, textPaint, maxWidth, TextUtils.TruncateAt.END);
+      }
     }
     BoringLayout.Metrics metrics = BoringLayout.isBoring(emojiText, textPaint);
     if (metrics != null && metrics.width <= maxWidth) {

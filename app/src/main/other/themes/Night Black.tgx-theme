@@ -72,3 +72,9 @@ avatarYellow, avatarYellow_big, nameYellow: #F9C84A
 blockQuoteText, blockQuoteLine: #A0A0A0
 bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine: #A0A0A0
 bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine: #A0A0A0
+
+botButtonPrimary: #229AF0
+botButtonDanger: #DB4646
+botButtonSuccess: #40B135
+botButtonText: #FFF
+botButtonRipple: #FFFFFF33
