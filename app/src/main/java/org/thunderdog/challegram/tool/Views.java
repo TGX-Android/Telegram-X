@@ -617,6 +617,16 @@ public class Views {
     return (e.getAction() != MotionEvent.ACTION_DOWN || (Views.isValid(view) && Views.isValid((View) view.getParent())));
   }
 
+  /**
+   * Counterpart of {@link #onTouchEvent(View, MotionEvent)} for hover events, which is how
+   * TalkBack explores the screen by touch: a view faded out to nothing still lies over what is
+   * drawn under it and would take the exploration from it. Exits still pass, so that nothing
+   * stays hovered.
+   */
+  public static boolean onHoverEvent (View view, MotionEvent e) {
+    return e.getActionMasked() == MotionEvent.ACTION_HOVER_EXIT || Views.isValid(view);
+  }
+
   @SuppressWarnings("DiscouragedApi")
   public static View tryFindAndroidView (Context context, Dialog dialog, String name) {
     if (dialog == null)

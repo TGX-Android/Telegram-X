@@ -44,6 +44,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.LinearLayout;
@@ -54,6 +55,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.core.view.inputmethod.InputConnectionCompat;
 
 import org.drinkless.tdlib.TdApi;
@@ -978,6 +980,44 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   public Paint getPlaceholderPaint () {
     return paint;
+  }
+
+  // Accessibility
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    super.onInitializeAccessibilityNodeInfo(info);
+    if (!StringUtils.isEmpty(getHint())) {
+      return;
+    }
+    // The placeholder is drawn instead of being set with setHint(), so the field was read without
+    // saying what it is for. Report it the way TextView reports its hint: as the hint text, and
+    // in place of the text while there is none.
+    CharSequence hint = getAccessibilityHint();
+    if (StringUtils.isEmpty(hint)) {
+      return;
+    }
+    AccessibilityNodeInfoCompat infoCompat = AccessibilityNodeInfoCompat.wrap(info);
+    infoCompat.setHintText(hint);
+    if (getText().length() == 0) {
+      info.setText(hint);
+      infoCompat.setShowingHintText(true);
+    }
+  }
+
+  private @Nullable CharSequence getAccessibilityHint () {
+    if (displaySuffix.length() > 0 && prefix.length() > 0 && getText().toString().equalsIgnoreCase(prefix)) {
+      // What to type for the inline bot, drawn after its username
+      return suffix;
+    }
+    if (StringUtils.isEmpty(placeholderTitleText)) {
+      return null;
+    }
+    if (StringUtils.isEmpty(placeholderSubtitleText)) {
+      return placeholderTitleText;
+    }
+    // "as Anonymous Admin" and the like, drawn under the placeholder
+    return placeholderTitleText + Lang.getConcatSeparator() + placeholderSubtitleText;
   }
 
   // Inline results

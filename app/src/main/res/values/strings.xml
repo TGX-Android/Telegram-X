@@ -5929,6 +5929,9 @@
   <string name="AccDescrMsgUnread">Not seen</string>
   <string name="AccDescrMsgPlayed">Played</string>
   <string name="AccDescrMsgNotPlayed">Not played</string>
+  <string name="AccDescrAttachButton">Attach media</string>
+  <string name="AccDescrBotCommands">Bot commands</string>
+  <string name="AccDescrBotKeyboard">Bot keyboard</string>
   <string name="AccActionMessageOptions">Message options</string>
   <string name="AccActionDownload">Download</string>
   <string name="AccActionCancelDownload">Cancel download</string>

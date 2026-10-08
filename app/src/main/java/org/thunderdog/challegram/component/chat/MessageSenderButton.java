@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -13,6 +14,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -20,6 +22,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.widget.AvatarView;
@@ -149,6 +152,15 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
   }
 
   @Override
+  public boolean dispatchHoverEvent (MotionEvent event) {
+    // Exploring by touch reaches the send button under the badge, as touches do
+    if (sendFactor != 0f && event.getActionMasked() != MotionEvent.ACTION_HOVER_EXIT) {
+      return false;
+    }
+    return super.dispatchHoverEvent(event);
+  }
+
+  @Override
   public void setOnLongClickListener (@Nullable OnLongClickListener l) {
     currentButtonView.setOnLongClickListener(l);
     oldButtonView.setOnLongClickListener(l);
@@ -182,6 +194,8 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
 
   public void setSendFactor (float factor) {
     sendFactor = factor;
+    // Shrunk into a badge on the send button, it takes no touches and is no button to TalkBack either
+    setImportantForAccessibility(factor == 0f ? IMPORTANT_FOR_ACCESSIBILITY_AUTO : IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
     checkPositionAndSize();
     checkAlpha();
   }
@@ -298,6 +312,7 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
   private static class ButtonView extends FrameLayout {
     private final AvatarView avatarView;
 
+    private Tdlib tdlib;
     private TdApi.MessageSender sender;
     private int mode = MODE_PERSON_BUTTON;
     private float sendModeFactor = 0f;
@@ -318,10 +333,47 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
     public void setDrawMode (Tdlib tdlib, TdApi.MessageSender sender, int mode) {
       this.avatarView.setMessageSender(tdlib, sender);
       this.avatarView.setVisibility(mode == MODE_CHAT_BUTTON ? View.VISIBLE : View.GONE);
+      this.tdlib = tdlib;
       this.sender = sender;
       this.mode = mode;
+      // Fires the change event that makes a focused button be read again
+      setContentDescription(getContentDescription());
 
       invalidate();
+    }
+
+    @Override
+    public boolean dispatchHoverEvent (MotionEvent event) {
+      // The button being replaced fades out on top of the new one
+      return Views.onHoverEvent(this, event) && super.dispatchHoverEvent(event);
+    }
+
+    @Override
+    public CharSequence getContentDescription () {
+      if (tdlib == null) {
+        return super.getContentDescription();
+      }
+      // The sender is only told by an icon or an avatar. Named the way the "Send as" menu names it,
+      // resolved every time, so the description follows language pack changes
+      final String senderName;
+      switch (mode) {
+        case MODE_ANONYMOUS_BUTTON:
+          senderName = Lang.getString(R.string.AnonymousAdmin);
+          break;
+        case MODE_CHAT_BUTTON:
+          senderName = tdlib.senderName(sender);
+          break;
+        case MODE_PERSON_BUTTON:
+        default:
+          senderName = Lang.getString(R.string.YourAccount);
+          break;
+      }
+      return Lang.getString(R.string.SendAs) + Lang.getConcatSeparator() + senderName;
+    }
+
+    @Override
+    public CharSequence getAccessibilityClassName () {
+      return Button.class.getName();
     }
 
     public int getDrawMode () {

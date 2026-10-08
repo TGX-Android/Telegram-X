@@ -20,11 +20,16 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Button;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import org.thunderdog.challegram.core.Lang;
@@ -221,6 +226,8 @@ public class ChatBottomBarView extends BaseView {
       return;
     }
     setId(id);
+    // The action is drawn on canvas. Setting it also makes a focused button be read again
+    setContentDescription(text);
 
     State newState = new State(text, iconRes);
     newState.layout(getMeasuredWidth());
@@ -284,5 +291,28 @@ public class ChatBottomBarView extends BaseView {
       state.draw(c, this, collapseFactor, 1f, rectF.centerX(), rectF.centerY());
       c.restore();
     }
+  }
+
+  // Accessibility
+
+  @Override
+  public CharSequence getAccessibilityClassName () {
+    return Button.class.getName();
+  }
+
+  @Override
+  public boolean performAccessibilityAction (int action, @Nullable Bundle arguments) {
+    if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+      // BaseView delivers taps through ClickHelper and its performClick() does nothing,
+      // so send accessibility clicks to the same listener a tap reaches
+      RectF rectF = buildRectF();
+      float x = rectF.centerX(), y = rectF.centerY();
+      if (needClickAt(this, x, y)) {
+        onClickAt(this, x, y);
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+        return true;
+      }
+    }
+    return super.performAccessibilityAction(action, arguments);
   }
 }

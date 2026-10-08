@@ -25,8 +25,11 @@ import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -66,12 +69,14 @@ import tgx.td.Td;
 public class SendButton extends View implements FactorAnimator.Target, TooltipOverlayView.LocationProvider {
 
   private static Paint strokePaint;
+  private final @DrawableRes int sendIconRes;
   private final Drawable sendIcon;
   private final Drawable sendIconBg;
 
-  public SendButton (Context context, int sendIconRes) {
+  public SendButton (Context context, @DrawableRes int sendIconRes) {
     super(context);
     avatarReceiver = new AvatarReceiver(this);
+    this.sendIconRes = sendIconRes;
     sendIcon = Drawables.get(getResources(), sendIconRes);
     sendIconBg = Drawables.get(getResources(), sendIconRes);
     if (strokePaint == null) {
@@ -81,6 +86,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
       ThemeManager.addThemeListener(strokePaint, ColorId.icon);
       strokePaint.setStrokeWidth(Screen.dp(2f));
     }
+    updateContentDescription();
   }
 
   @Override
@@ -98,6 +104,12 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
     return Views.onTouchEvent(this, event) && super.onTouchEvent(event);
   }
 
+  @Override
+  public boolean dispatchHoverEvent (MotionEvent event) {
+    // Faded out, not hidden, over the record button while there is nothing to send
+    return Views.onHoverEvent(this, event) && super.dispatchHoverEvent(event);
+  }
+
   private boolean inlineProgress;
 
   public boolean inInlineMode () {
@@ -106,6 +118,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
 
   private void setInInlineMode (boolean inInlineMode) {
     inInlineModeAnimator.setValue(inInlineMode, true);
+    updateContentDescription();
   }
 
   private void setInInlineProgress (boolean inlineProgress) {
@@ -347,6 +360,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
   public void forceState (boolean inEditMode, boolean isActive) {
     inEditModeAnimator.setValue(inEditMode, false);
     isActiveAnimator.setValue(isActive, false);
+    updateContentDescription();
   }
 
   // Active
@@ -359,6 +373,38 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
 
   public void setInEditMode (boolean inEditMode) {
     inEditModeAnimator.setValue(inEditMode, true);
+    updateContentDescription();
+  }
+
+  // Accessibility
+
+  private @StringRes int getContentDescriptionRes () {
+    // The icon is all that tells what a press does: it clears an inline query, saves an edit or sends
+    if (inInlineModeAnimator.getValue()) {
+      return R.string.Clear;
+    } else if (inEditModeAnimator.getValue()) {
+      return R.string.Save;
+    } else if (sendIconRes == R.drawable.dotvhs_baseline_send_schedule_24) {
+      return R.string.SendSchedule;
+    } else {
+      return R.string.Send;
+    }
+  }
+
+  private void updateContentDescription () {
+    // Fires the change event that makes a focused button be read again
+    setContentDescription(Lang.getString(getContentDescriptionRes()));
+  }
+
+  @Override
+  public CharSequence getContentDescription () {
+    // Resolve every time, so the description follows language pack changes
+    return Lang.getString(getContentDescriptionRes());
+  }
+
+  @Override
+  public CharSequence getAccessibilityClassName () {
+    return Button.class.getName();
   }
 
   public boolean inSimpleSendMode () {
