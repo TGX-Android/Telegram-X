@@ -360,6 +360,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private EmojiLayout emojiLayout;
   private TextFormattingLayout textFormattingLayout;
   private AttachLinearLayout attachButtons;
+  private ImageView articleExpandButton;
   private ImageView emojiButton;
   private VoiceVideoButtonView recordButton;
   private SendButton sendButton;
@@ -808,6 +809,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       inputView.setSelectionChangeListener(this);
       inputView.setSpanChangeListener(this::onInputSpansChanged);
+      inputView.addTextChangedListener(new android.text.TextWatcher() {
+        @Override public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
+        @Override public void onTextChanged (CharSequence s, int start, int before, int count) { }
+        @Override public void afterTextChanged (android.text.Editable s) { inputView.post(MessagesController.this::updateArticleExpandButton); }
+      });
     }
 
     if (!inPreviewMode) {
@@ -1471,6 +1477,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (previewMode == PREVIEW_MODE_NONE) {
       contentView.addView(emojiButton);
       contentView.addView(attachButtons);
+      articleExpandButton = new ImageView(context);
+      articleExpandButton.setImageResource(R.drawable.article_iv_fullscreen_24);
+      articleExpandButton.setScaleType(ImageView.ScaleType.CENTER);
+      articleExpandButton.setColorFilter(Theme.iconColor());
+      addThemeFilterListener(articleExpandButton, ColorId.icon);
+      articleExpandButton.setContentDescription(Lang.getString(R.string.ArticleExpandEditor));
+      articleExpandButton.setVisibility(View.GONE);
+      articleExpandButton.setOnClickListener(v -> openArticleEditor(null, true));
+      RippleSupport.setCircleBackground(articleExpandButton, 49f, 4f, ColorId.filling, false, this);
+      RelativeLayout.LayoutParams articleParams = new RelativeLayout.LayoutParams(Screen.dp(49), Screen.dp(49));
+      articleParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+      articleParams.addRule(Lang.rtl() ? RelativeLayout.ALIGN_PARENT_LEFT : RelativeLayout.ALIGN_PARENT_RIGHT);
+      contentView.addView(articleExpandButton, articleParams);
       contentView.addView(sendButton);
       contentView.addView(messageSenderButton);
 
@@ -4131,6 +4150,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void saveDraft () {
+    TdApi.DraftMessage savedDraft = getDraftMessage();
+    if (savedDraft != null && (savedDraft.content instanceof TdApi.DraftMessageContentRichMessage || savedDraft.content instanceof TdApi.DraftMessageContentInputRichMessage)) {
+      return; // Article drafts belong to their structured editor, including when the text input is empty.
+    }
     if (canSaveDraft()) {
       if (isEditingMessage()) {
         // TODO save local draft
@@ -7265,6 +7288,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void editMessage (@NonNull MessageWithProperties m) {
+    if (m.message.content instanceof TdApi.MessageRichMessage) {
+      if (m.properties.canBeEdited) openArticleEditor(m.message);
+      return;
+    }
     if (isEditingMessage()) {
       return;
     }
@@ -7330,7 +7357,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     switch (editContext.message.content.getConstructor()) {
       case TdApi.MessageText.CONSTRUCTOR:
-      case TdApi.MessageRichMessage.CONSTRUCTOR:
       case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
         if (Td.isEmpty(newText)) {
           return;
@@ -7621,6 +7647,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     emojiButton.setTranslationY(y);
     attachButtons.setTranslationY(y);
     messageSenderButton.setTranslationY(y);
+    updateArticleExpandButton();
 
     if (prevButtonsY != y) {
       prevButtonsY = y;
@@ -7669,6 +7696,133 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return true;
     }
     return false;
+  }
+
+  public boolean canCreateArticles () {
+    String mode = tdlib.options().richMessagePosting;
+    return !ChatId.isSecret(getChatId()) && canWriteMessages() && ("enabled".equals(mode) || "premium".equals(mode) && tdlib.hasPremium());
+  }
+
+  private void updateArticleExpandButton () {
+    if (articleExpandButton == null || inputView == null) return;
+    boolean show = getChatId() != 0 && !isEditingMessage() && !inPreviewMode() && canCreateArticles() && inputView.isEnabled() &&
+      org.thunderdog.challegram.data.article.ArticleComposer.needsExpand(inputView.getLineCount(), inputView.getText());
+    articleExpandButton.setVisibility(show ? View.VISIBLE : View.GONE);
+    if (show) articleExpandButton.setTranslationY(bottomWrap.getTop() + inputView.getTop() - getKeyboardOffset());
+  }
+
+  public boolean canOpenArticleEditor () {
+    TdApi.DraftMessage draft = getDraftMessage();
+    return canCreateArticles() || draft != null && (draft.content instanceof TdApi.DraftMessageContentRichMessage || draft.content instanceof TdApi.DraftMessageContentInputRichMessage);
+  }
+
+  private boolean matchesArticleTopic (@Nullable TdApi.MessageTopic topic) {
+    return org.thunderdog.challegram.data.article.ArticleDraftStore.topicKey(topic).equals(org.thunderdog.challegram.data.article.ArticleDraftStore.topicKey(getMessageTopicId()));
+  }
+
+  public void openArticleEditor (@Nullable TdApi.Message message) {
+    openArticleEditor(message, false);
+  }
+
+  private void openArticleEditor (@Nullable TdApi.Message message, boolean expandComposer) {
+    if (message == null && !canOpenArticleEditor()) return;
+    saveDraft();
+    if (inSelectMode()) finishSelectMode(-1);
+    if (inSearchMode()) closeSearchMode(null);
+    if (message != null) {
+      TdApi.RichMessage article = ((TdApi.MessageRichMessage) message.content).message;
+      if (!article.isFull) {
+        final TdApi.MessageTopic articleTopic = getMessageTopicId();
+        tdlib.send(new TdApi.GetFullRichMessage(message.chatId, message.id), (full, error) -> runOnUiThreadOptional(() -> {
+          if (error != null) UI.showError(error);
+          else if (message.chatId == getChatId() && matchesArticleTopic(articleTopic)) openArticleDocument(message.id, full);
+        }));
+      } else openArticleDocument(message.id, article);
+      return;
+    }
+    // The expand action promotes exactly the visible input, even if a previous
+    // server draft update has not arrived yet.
+    TdApi.DraftMessage draft = expandComposer ? null : getDraftMessage();
+    if (draft != null && draft.content instanceof TdApi.DraftMessageContentRichMessage) {
+      openArticleDocument(0, ((TdApi.DraftMessageContentRichMessage) draft.content).message);
+      return;
+    }
+    org.thunderdog.challegram.data.article.ArticleDocument document = draft != null && draft.content instanceof TdApi.DraftMessageContentInputRichMessage ?
+      new org.thunderdog.challegram.data.article.ArticleDocument(((TdApi.DraftMessageContentInputRichMessage) draft.content).message) : null;
+    boolean fromComposer = document == null && inputView != null && !inputView.getText().toString().isEmpty();
+    if (document == null) {
+      try {
+        if (fromComposer) {
+          TdApi.FormattedText text = inputView.getOutputText(true);
+          document = org.thunderdog.challegram.data.article.ArticleComposer.fromText(text, Td.findEntities(text.text), Lang.rtl());
+        } else {
+          document = org.thunderdog.challegram.data.article.ArticleDocument.empty();
+        }
+      } catch (IllegalArgumentException e) {
+        UI.showToast(R.string.ArticleReadOnly, Toast.LENGTH_LONG);
+        return;
+      }
+    }
+    ArticleEditorController editor = new ArticleEditorController(context(), tdlib);
+    ArticleEditorController.Args args = new ArticleEditorController.Args(this, 0, document);
+    args.fromComposer = fromComposer;
+    editor.setArguments(args);
+    navigateTo(editor);
+  }
+
+  private void openArticleDocument (long messageId, TdApi.RichMessage article) {
+    try {
+      org.thunderdog.challegram.data.article.ArticleDocument document = org.thunderdog.challegram.data.article.ArticleDocument.received(article);
+      ArticleEditorController editor = new ArticleEditorController(context(), tdlib);
+      ArticleEditorController.Args args = new ArticleEditorController.Args(this, messageId, document);
+      if (messageId == 0) org.thunderdog.challegram.data.article.ArticleCodec.visit(article, (value, depth) -> {
+        if (value instanceof TdApi.File) {
+          TdApi.File file = (TdApi.File) value;
+          if (file.id > 0 && file.local != null && !StringUtils.isEmpty(file.local.path)) args.localDraftFiles.put(file.local.path, file.id);
+        }
+      });
+      editor.setArguments(args);
+      navigateTo(editor);
+    } catch (IllegalArgumentException e) {
+      UI.showToast(R.string.ArticleReadOnly, Toast.LENGTH_LONG);
+    }
+  }
+
+  public void saveArticleDraft (org.thunderdog.challegram.data.article.ArticleDocument document, long chatId, TdApi.MessageTopic topic) {
+    if (getChatId() != chatId || !matchesArticleTopic(topic) || !canSaveDraft()) return;
+    ReplyInfo reply = getCurrentReplyId();
+    TdApi.InputRichMessage input = document.toInput();
+    boolean empty = input.source instanceof TdApi.RichMessageSourceBlocks;
+    if (empty) for (TdApi.InputPageBlock block : ((TdApi.RichMessageSourceBlocks) input.source).blocks) {
+      if (!(block instanceof TdApi.InputPageBlockParagraph) || !org.thunderdog.challegram.data.article.ArticleRichText.plain(((TdApi.InputPageBlockParagraph) block).text).trim().isEmpty()) { empty = false; break; }
+    }
+    TdApi.DraftMessageContent content = empty ? new TdApi.DraftMessageContentText(new TdApi.FormattedText("", new TdApi.TextEntity[0]), null) : new TdApi.DraftMessageContentInputRichMessage(input);
+    TdApi.DraftMessage draft = empty && reply == null ? null : new TdApi.DraftMessage(reply != null ? reply.toInputMessageReply() : null, (int) tdlib.currentTime(TimeUnit.SECONDS), content, 0, getInputSuggestedPostInfo(reply));
+    if (messageThread != null) messageThread.setDraft(draft);
+    tdlib.send(new TdApi.SetChatDraftMessage(getChatId(), getMessageTopicId(), draft), tdlib.typedOkHandler());
+    if (inputView != null && !isFocused()) inputView.setInput("", true, false);
+  }
+
+  public boolean sendArticle (org.thunderdog.challegram.data.article.ArticleDocument document, long chatId, TdApi.MessageTopic topic, TdApi.MessageSendOptions options, RunnableData<TdApi.Message> after) {
+    if (getChatId() != chatId || !matchesArticleTopic(topic) || !canCreateArticles()) return false;
+    TdApi.InputMessageRichMessage input = new TdApi.InputMessageRichMessage(document.toInput(), true);
+    final CharSequence[] mediaRestriction = {null};
+    org.thunderdog.challegram.data.article.ArticleCodec.visit(input.message, (value, depth) -> {
+      if (mediaRestriction[0] != null) return;
+      int right = value instanceof TdApi.InputPhoto ? RightId.SEND_PHOTOS : value instanceof TdApi.InputVideo ? RightId.SEND_VIDEOS : value instanceof TdApi.InputAudio ? RightId.SEND_AUDIO : value instanceof TdApi.InputDocument ? RightId.SEND_DOCS : value instanceof TdApi.InputVoiceNote ? RightId.SEND_VOICE_NOTES : value instanceof TdApi.InputAnimation ? RightId.SEND_OTHER_MESSAGES : 0;
+      if (right != 0) mediaRestriction[0] = tdlib.getDefaultRestrictionText(chat, right);
+    });
+    if (showRestriction(null, mediaRestriction[0])) return false;
+    if (showRestriction(null, tdlib.getRestrictionText(chat, input)) || showSlowModeRestriction(null, null)) return false;
+    ReplyInfo reply = getCurrentReplyId();
+    tdlib.sendMessage(chatId, topic, reply != null ? reply.toInputMessageReply() : null,
+      Td.newSendOptions(options, getInputSuggestedPostInfo(reply), obtainSilentMode()), input, message -> {
+        after.runWithData(message);
+        if (message != null && reply != null) runOnUiThreadOptional(() -> {
+          if (getChatId() == chatId && matchesArticleTopic(topic) && reply.equals(getCurrentReplyId())) closeReply(true, false);
+        });
+      });
+    return true;
   }
 
   @Override

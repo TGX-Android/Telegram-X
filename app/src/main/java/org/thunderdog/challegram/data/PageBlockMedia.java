@@ -66,6 +66,8 @@ import me.vkryl.core.StringUtils;
 import tgx.td.Td;
 
 public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickListener, MediaCollectorDelegate, MediaViewDelegate {
+  private TdApi.Message articleMessage;
+  public void setArticleMessage (TdApi.Message message) { articleMessage = message; }
   public static final float MEDIA_MARGIN = 16f, MEDIA_POST_MARGIN = 8f;
 
   private @Nullable MediaWrapper wrapper;
@@ -90,6 +92,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     this.urlOpenParameters = urlOpenParameters;
     if (photo.photo != null) {
       wrapper = new MediaWrapper(context.context(), context.tdlib(), photo.photo, 0, 0, null, false, false, nativeEmbed);
+      wrapper.setRevealOnTap(photo.hasSpoiler);
       initWrapper(wrapper);
       setCaption(photo.caption);
       setUrl(photo.url);
@@ -137,6 +140,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     this.useGif = true;
     if (animation.animation != null) {
       wrapper = new MediaWrapper(context.context(), context.tdlib(), animation.animation, 0, 0, null, false, true, !animation.needAutoplay, null);
+      wrapper.setRevealOnTap(animation.hasSpoiler);
       initWrapper(wrapper);
       setCaption(animation.caption);
     }
@@ -146,6 +150,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     super(context, video, quoteLevel);
     if (video.video != null) {
       wrapper = new MediaWrapper(context.context(), context.tdlib(), video.video, null, 0, 0, null, false);
+      wrapper.setRevealOnTap(video.hasSpoiler);
       initWrapper(wrapper);
       setCaption(video.caption);
     }
@@ -190,6 +195,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
           TdApi.PageBlockPhoto photo = (TdApi.PageBlockPhoto) pageBlock;
           if (photo.photo != null) {
             wrapper = new MediaWrapper(context.context(), context.tdlib(), photo.photo, 0, 0, null, false);
+            wrapper.setRevealOnTap(photo.hasSpoiler);
             initWrapper(wrapper);
             caption = photo.caption;
           }
@@ -199,6 +205,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
           TdApi.PageBlockVideo video = (TdApi.PageBlockVideo) pageBlock;
           if (video.video != null) {
             wrapper = new MediaWrapper(context.context(), context.tdlib(), video.video, null, 0, 0, null, false);
+            wrapper.setRevealOnTap(video.hasSpoiler);
             initWrapper(wrapper);
             caption = video.caption;
           }
@@ -208,6 +215,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
           TdApi.PageBlockAnimation animation = (TdApi.PageBlockAnimation) pageBlock;
           if (animation.animation != null) {
             wrapper = new MediaWrapper(context.context(), context.tdlib(), animation.animation, 0, 0, null, false, true, !animation.needAutoplay, null);
+            wrapper.setRevealOnTap(animation.hasSpoiler);
             initWrapper(wrapper);
             caption = animation.caption;
           }
@@ -360,12 +368,12 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     int height = 0;
 
     final int maxWidth = width - getMinimumContentPadding(false) - getMinimumContentPadding(true);
-    final float maxHeightFactor = collageContext != null ? .78f : isCover || isList ? 1.2f : 1.78f;
+    final float maxHeightFactor = collageContext != null ? .78f : isChatContent && isList ? 1.5f : isCover || isList ? 1.2f : 1.78f;
     final int maxHeight = (int) (Math.min(width * maxHeightFactor, (isCover ? Screen.widestSide() : Screen.currentHeight()) - HeaderView.getSize(true) * 2 - Screen.dp(16f) * 2));
 
     if (embedded != null) {
       if (isUnknownHeight()) {
-        height = ((PageBlockWrapView) view).getExactWebViewHeight();
+        height = view instanceof PageBlockWrapView ? ((PageBlockWrapView) view).getExactWebViewHeight() : Screen.dp(200f);
       } else {
         height += (int) ((float) embedded.height * ((float) maxWidth / (float) embedded.width));
       }
@@ -463,7 +471,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
   private ArrayList<PageBlockMedia> boundToList;
   private String source;
 
-  public boolean bindToList (InstantViewController context, String url, ArrayList<PageBlockMedia> blocks) {
+  public boolean bindToList (ViewController<?> context, String url, ArrayList<PageBlockMedia> blocks) {
     this.source = url;
     if (wrapper != null && !wrapper.isNativeEmbed()) {
       this.boundToList = blocks;
@@ -535,19 +543,8 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     for (MediaWrapper wrapper : wrappers) {
       MediaItem parsedItem;
 
-      // TODO properly caption
       TdApi.PageBlockCaption caption = captions.get(i);
-      String text = null;
-      if (caption != null) {
-        if (!Td.isEmpty(caption.text) && !Td.isEmpty(caption.credit)) {
-          text = TD.getText(caption.text) + "\n" + TD.getText(caption.credit);
-        } else if (!Td.isEmpty(caption.text)) {
-          text = TD.getText(caption.text);
-        } else {
-          text = TD.getText(caption.credit);
-        }
-      }
-      TdApi.FormattedText captionText = !StringUtils.isEmpty(text) ? new TdApi.FormattedText(text, null) : null;
+      TdApi.FormattedText captionText = org.thunderdog.challegram.data.article.ArticleTextExport.caption(caption);
 
       if (wrapper.getPhoto() != null) {
         parsedItem = MediaItem.valueOf(context.context(), context.tdlib(), wrapper.getPhoto(), captionText);
@@ -561,6 +558,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
       }
 
       if (parsedItem != null) {
+        if (articleMessage != null) parsedItem.setSourceMessage(articleMessage);
         if (wrapper == clickWrapper) {
           foundIndex = i;
         }

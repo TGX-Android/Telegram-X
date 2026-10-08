@@ -437,6 +437,25 @@ public class PageBlockRichText extends PageBlock {
   }
 
   private @Nullable TextWrapper text, subtitle;
+  private boolean articleRtl;
+
+  public void setArticleRtl (boolean rtl) {
+    articleRtl = rtl;
+    if (text != null) text.setTextFlagEnabled(Text.FLAG_ALIGN_RIGHT, rtl);
+    if (subtitle != null) subtitle.setTextFlagEnabled(Text.FLAG_ALIGN_RIGHT, rtl);
+  }
+
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlock original, TdApi.RichText richText, int quoteLevel, float textSize, boolean bold, @Nullable TdlibUi.UrlOpenParameters parameters) {
+    super(context, original, quoteLevel);
+    setText(bold ? new TdApi.RichTextBold(richText) : richText, Paints.robotoStyleProvider(textSize), TextColorSets.InstantView.NORMAL, Text.FLAG_ARTICLE, parameters);
+  }
+
+  @Override
+  public void setTextClickCallback (@Nullable Text.ClickCallback callback) {
+    super.setTextClickCallback(callback);
+    if (text != null) text.setClickCallback(callback);
+    if (subtitle != null) subtitle.setClickCallback(callback);
+  }
 
   private void setText (TdApi.RichText richText, TextStyleProvider textStyleProvider, TextColorSet colorSet, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     setText(richText, textStyleProvider, colorSet, 0, openParameters);
@@ -479,12 +498,18 @@ public class PageBlockRichText extends PageBlock {
 
   private static final float QUOTE_OFFSET = 12f;
 
+  private int getTextHorizontalPadding () {
+    // Preserve padding inside code and pull quotes; ordinary paragraphs already
+    // receive the same outer margin as TGMessageText and media captions.
+    return isChatContent && textHorizontalOffset == TEXT_HORIZONTAL_OFFSET ? 0 : Screen.dp(textHorizontalOffset);
+  }
+
   private int getTextPaddingLeft () {
-    return Math.max(getMinimumContentPadding(true), !isPost && listItemInfo != null ? 0 : Screen.dp(textHorizontalOffset)) + (needAvatar ? Screen.dp(40f) + Screen.dp(14f) : 0) + (detailsOpened != null ? Screen.dp(24f) : 0);
+    return Math.max(getMinimumContentPadding(true), !isPost && listItemInfo != null ? 0 : getTextHorizontalPadding()) + (needAvatar ? Screen.dp(40f) + Screen.dp(14f) : 0) + (detailsOpened != null ? Screen.dp(24f) : 0);
   }
 
   private int getTextPaddingRight () {
-    return Math.max(getMinimumContentPadding(false), Screen.dp(textHorizontalOffset));
+    return Math.max(getMinimumContentPadding(false), getTextHorizontalPadding());
   }
 
   @Override
@@ -497,7 +522,7 @@ public class PageBlockRichText extends PageBlock {
       if (subtitle != null) {
         subtitle.prepare(textMaxWidth);
       }
-      this.isFullyRtl = text.isFullyRtl();
+      this.isFullyRtl = articleRtl || text.isFullyRtl();
       return this.text.getHeight() + getContentTop() + getTextPaddingBottom();
     }
     return 0;

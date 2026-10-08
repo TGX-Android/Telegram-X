@@ -1,0 +1,308 @@
+/* This file is a part of Telegram X. SPDX-License-Identifier: GPL-3.0-or-later */
+package org.thunderdog.challegram.data.article;
+
+import org.drinkless.tdlib.TdApi;
+import org.junit.Test;
+import java.io.IOException;
+import java.util.Arrays;
+import static org.junit.Assert.*;
+
+public class ArticleDocumentTest {
+  private static TdApi.RichText text (String value) { return new TdApi.RichTextPlain(value); }
+
+  @Test public void serverTextSegmentationAndEmptyTableCellsDoNotConflict () {
+    TdApi.InputPageBlockParagraph paragraph = new TdApi.InputPageBlockParagraph(new TdApi.RichTextBold(text("Article title")));
+    TdApi.PageBlockTableCell cell = new TdApi.PageBlockTableCell(text(""), false, 1, 1,
+      new TdApi.PageBlockHorizontalAlignmentLeft(), new TdApi.PageBlockVerticalAlignmentTop());
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {
+      paragraph, new TdApi.InputPageBlockTable(text("Table"), new TdApi.PageBlockTableCell[][] {{cell}}, true, false, false)
+    }), false, true);
+    ArticleDocument local = new ArticleDocument(input);
+    byte[] original = local.save();
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text(""), new TdApi.RichTextBold(
+      new TdApi.RichTexts(new TdApi.RichText[] {text("Article"), new TdApi.RichTexts(new TdApi.RichText[] {text(""), text(" title")})}))});
+    cell.text = null;
+    input.detectAutomaticBlocks = false;
+    ArticleDocument cloud = new ArticleDocument(input);
+    assertNotEquals(local, cloud);
+    assertTrue(local.hasSameContent(cloud));
+    assertTrue(cloud.hasSameContent(local));
+    assertArrayEquals(original, local.save());
+    cell.text = text("Changed cell");
+    assertFalse(local.hasSameContent(new ArticleDocument(input)));
+    cell.text = null; cell.isHeader = true;
+    assertFalse(local.hasSameContent(new ArticleDocument(input)));
+  }
+
+  @Test public void contentComparisonKeepsWhitespaceLinksAndEmptySemanticElements () {
+    TdApi.InputPageBlockParagraph paragraph = new TdApi.InputPageBlockParagraph(text("a b"));
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {paragraph}), false, false);
+    ArticleDocument before = new ArticleDocument(input);
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text("a"), text(" "), text("b")});
+    assertTrue(before.hasSameContent(new ArticleDocument(input)));
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text("a"), text("b")});
+    assertFalse(before.hasSameContent(new ArticleDocument(input)));
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text("a b"), new TdApi.RichTextReference("anchor", text(""))});
+    assertFalse(before.hasSameContent(new ArticleDocument(input)));
+    paragraph.text = new TdApi.RichTexts(new TdApi.RichText[] {text("a b"), new TdApi.RichTextUrl(text(""), "https://example.org", false)});
+    assertFalse(before.hasSameContent(new ArticleDocument(input)));
+    paragraph.text = new TdApi.RichTextBold(text("a b"));
+    assertFalse(before.hasSameContent(new ArticleDocument(input)));
+  }
+
+  @Test public void refreshedMediaReferenceDoesNotHideConcurrentTextOrFileChanges () {
+    TdApi.RichMessage message = mixed();
+    TdApi.File file = ((TdApi.PageBlockPhoto) message.blocks[1]).photo.sizes[0].photo;
+    file.remote = new TdApi.RemoteFile("old-token", "same-file", false, true, 0);
+    ArticleDocument baseline = ArticleDocument.received(message);
+    TdApi.File refreshed = ArticleCodec.copy(file, TdApi.File.class);
+    refreshed.id = 77; refreshed.remote.id = "new-token";
+    ((TdApi.PageBlockPhoto) message.blocks[1]).photo.sizes[0].photo = refreshed;
+    java.util.Map<String, TdApi.File> files = new java.util.HashMap<>();
+    files.put("remote:old-token", file); files.put("remote:new-token", refreshed);
+    assertTrue(baseline.hasSameContent(ArticleDocument.received(message), ArticleDraftFiles.identities(files)));
+    TdApi.RichTextUrl link = (TdApi.RichTextUrl) ((TdApi.RichTexts) ((TdApi.PageBlockParagraph) message.blocks[0]).text).texts[1];
+    String originalUrl = link.url;
+    link.url = "https://example.org/concurrent-edit";
+    assertFalse(baseline.hasSameContent(ArticleDocument.received(message), ArticleDraftFiles.identities(files)));
+    link.url = originalUrl; refreshed.remote.uniqueId = "different-file";
+    assertFalse(baseline.hasSameContent(ArticleDocument.received(message), ArticleDraftFiles.identities(files)));
+  }
+
+  @Test public void receivedMediaUsesPersistentReferencesAcrossTdlibRestarts () throws Exception {
+    TdApi.RichMessage message = mixed();
+    TdApi.File file = ((TdApi.PageBlockPhoto) message.blocks[1]).photo.sizes[0].photo;
+    file.remote = new TdApi.RemoteFile("persistent-reference", "unique-photo", false, true, 0);
+    ArticleDocument before = ArticleDocument.received(message);
+    file.id = 930; // Numeric file IDs change when TDLib starts again.
+    ArticleDocument after = ArticleDocument.received(message);
+    assertEquals(before, after);
+    assertEquals(after, ArticleDocument.restore(before.save()));
+    TdApi.InputPhoto photo = ((TdApi.InputPageBlockPhoto) ((TdApi.RichMessageSourceBlocks) after.toInput().source).blocks[1]).photo;
+    assertEquals("persistent-reference", ((TdApi.InputFileRemote) photo.photo).id);
+    file.remote.id = "refreshed-reference";
+    ArticleDocument refreshed = ArticleDocument.received(message);
+    assertFalse(before.equals(refreshed));
+    java.util.Map<String, TdApi.File> resolved = new java.util.HashMap<>();
+    resolved.put("remote:persistent-reference", file); resolved.put("remote:refreshed-reference", file);
+    assertTrue(before.hasSameContent(refreshed, ArticleDraftFiles.identities(resolved)));
+  }
+
+  @Test public void mergedTdlibFileIdsDoNotCauseDraftConflicts () {
+    TdApi.File first = new TdApi.File(); first.id = 10; first.remote = new TdApi.RemoteFile("", "same-unique-file", false, true, 0);
+    TdApi.File second = new TdApi.File(); second.id = 20; second.remote = new TdApi.RemoteFile("", "same-unique-file", false, true, 0);
+    java.util.Map<String, TdApi.File> files = new java.util.HashMap<>(); files.put("id:10", first); files.put("id:20", second);
+    TdApi.InputDocument media = new TdApi.InputDocument(new TdApi.InputFileId(10), null, true);
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockDocument(media, null)}), false, false);
+    ArticleDocument before = new ArticleDocument(input); media.document = new TdApi.InputFileId(20);
+    ArticleDocument after = new ArticleDocument(input);
+    assertFalse(before.hasSameContent(after));
+    assertTrue(before.hasSameContent(after, ArticleDraftFiles.identities(files)));
+    second.remote.uniqueId = "different-file";
+    assertFalse(before.hasSameContent(after, ArticleDraftFiles.identities(files)));
+    files.put("id:10", second); // GetFile(oldId) can itself resolve to the new ID.
+    assertTrue(before.hasSameContent(after, ArticleDraftFiles.identities(files)));
+  }
+
+  @Test public void draftFileAliasesRequireIdenticalContents () throws Exception {
+    java.nio.file.Path local = java.nio.file.Files.createTempFile("article-import", ".txt");
+    java.nio.file.Path cached = java.nio.file.Files.createTempFile("article-tdlib", ".txt");
+    try {
+      java.nio.file.Files.write(local, new byte[] {1, 2, 3}); java.nio.file.Files.write(cached, new byte[] {1, 2, 3});
+      ArticleDocument document = new ArticleDocument(new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {
+        new TdApi.InputPageBlockDocument(new TdApi.InputDocument(new TdApi.InputFileLocal(local.toString()), null, true), null)}), false, true));
+      java.util.Map<String, Integer> files = java.util.Collections.singletonMap(cached.toString(), 42);
+      assertEquals(Integer.valueOf(42), ArticleDraftFiles.aliases(document, files).get(local.toString()));
+      java.nio.file.Files.write(cached, new byte[] {3, 2, 1});
+      assertFalse(ArticleDraftFiles.aliases(document, files).containsKey(local.toString()));
+      java.nio.file.Files.delete(cached);
+      assertFalse(ArticleDraftFiles.aliases(document, files).containsKey(local.toString()));
+    } finally { java.nio.file.Files.deleteIfExists(local); java.nio.file.Files.deleteIfExists(cached); }
+  }
+
+  @Test public void localMediaDraftMatchesTdlibEchoWithoutHidingRealChanges () {
+    TdApi.InputPageBlockDocument file = new TdApi.InputPageBlockDocument(new TdApi.InputDocument(new TdApi.InputFileLocal("/draft/qa.txt"), null, false), null);
+    TdApi.InputRichMessage input = new TdApi.InputRichMessage(new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {file}), false, true);
+    ArticleDocument local = new ArticleDocument(input);
+    file.document.document = new TdApi.InputFileId(42);
+    file.document.disableContentTypeDetection = true;
+    file.caption = new TdApi.PageBlockCaption(text(""), new TdApi.RichTexts(new TdApi.RichText[0]));
+    input.detectAutomaticBlocks = false;
+    ArticleDocument cloud = new ArticleDocument(input);
+    java.util.Map<String, Integer> paths = java.util.Collections.singletonMap("/draft/qa.txt", 42);
+    assertFalse(local.hasSameContent(cloud));
+    assertTrue(local.hasSameContent(cloud, paths));
+    assertTrue(((TdApi.InputPageBlockDocument) ((TdApi.RichMessageSourceBlocks) local.toInput().source).blocks[0]).document.document instanceof TdApi.InputFileLocal);
+    file.caption.text = text("Changed on another client");
+    assertFalse(local.hasSameContent(new ArticleDocument(input), paths));
+    file.caption.text = text(""); file.document.document = new TdApi.InputFileId(43);
+    assertFalse(local.hasSameContent(new ArticleDocument(input), paths));
+  }
+
+  private static TdApi.RichMessage mixed () {
+    TdApi.File file = new TdApi.File();
+    file.id = 42;
+    TdApi.Photo photo = new TdApi.Photo(false, null, new TdApi.PhotoSize[] {
+      new TdApi.PhotoSize("x", file, 800, 600, new int[0])
+    });
+    return new TdApi.RichMessage(new TdApi.PageBlock[] {
+      new TdApi.PageBlockParagraph(new TdApi.RichTexts(new TdApi.RichText[] {
+        new TdApi.RichTextBold(text("Статья 👩‍💻 ")),
+        new TdApi.RichTextUrl(text("источник"), "https://example.org/?a=1&b=2", false)
+      })),
+      new TdApi.PageBlockPhoto(photo, new TdApi.PageBlockCaption(text("Подпись"), text("Автор")), "", true),
+      new TdApi.PageBlockDetails(text("Детали"), new TdApi.PageBlock[] {
+        new TdApi.PageBlockTable(text("Таблица"), new TdApi.PageBlockTableCell[][] {
+          {new TdApi.PageBlockTableCell(new TdApi.RichTextUrl(text("ссылка"), "https://example.org/table", false), true, 2, 3, new TdApi.PageBlockHorizontalAlignmentCenter(), new TdApi.PageBlockVerticalAlignmentBottom())}
+        }, true, true, true)
+      }, false),
+      new TdApi.PageBlockList(new TdApi.PageBlockListItem[] {
+        new TdApi.PageBlockListItem("7.", new TdApi.PageBlock[] {new TdApi.PageBlockParagraph(text("Пункт"))}, true, true, 7, "a")
+      })
+    }, true, true);
+  }
+
+  @Test public void incomingSnapshotRetainsNullableMediaCaptionAndReferences () throws Exception {
+    TdApi.RichMessage original = mixed();
+    TdApi.RichMessage copy = (TdApi.RichMessage) ArticleCodec.decode(ArticleCodec.encode(original));
+    TdApi.PageBlockPhoto photo = (TdApi.PageBlockPhoto) copy.blocks[1];
+    assertEquals(42, photo.photo.sizes[0].photo.id);
+    assertEquals("Автор", ((TdApi.RichTextPlain) photo.caption.credit).text);
+    assertTrue(photo.hasSpoiler);
+    assertNotSame(original.blocks[1], photo);
+    TdApi.PageBlockTable table = (TdApi.PageBlockTable) ((TdApi.PageBlockDetails) copy.blocks[2]).blocks[0];
+    assertEquals(2, table.cells[0][0].colspan);
+    assertEquals(3, table.cells[0][0].rowspan);
+    assertTrue(table.isCompact);
+    assertTrue(table.cells[0][0].valign instanceof TdApi.PageBlockVerticalAlignmentBottom);
+  }
+
+  @Test public void editingOneLinkPreservesUnrelatedBlocks () {
+    ArticleDocument document = ArticleDocument.received(mixed());
+    TdApi.InputRichMessage edit = document.toInput();
+    TdApi.InputPageBlock[] blocks = ((TdApi.RichMessageSourceBlocks) edit.source).blocks;
+    byte[] media = ArticleCodec.encode(blocks[1]);
+    byte[] details = ArticleCodec.encode(blocks[2]);
+    byte[] list = ArticleCodec.encode(blocks[3]);
+    TdApi.RichTextUrl url = (TdApi.RichTextUrl) ((TdApi.RichTexts) ((TdApi.InputPageBlockParagraph) blocks[0]).text).texts[1];
+    url.url = "https://example.org/edited";
+    ArticleDocument changed = new ArticleDocument(edit);
+    TdApi.InputPageBlock[] result = ((TdApi.RichMessageSourceBlocks) changed.toInput().source).blocks;
+    assertArrayEquals(media, ArticleCodec.encode(result[1]));
+    assertArrayEquals(details, ArticleCodec.encode(result[2]));
+    assertArrayEquals(list, ArticleCodec.encode(result[3]));
+    assertNotEquals(document, changed);
+    TdApi.InputPageBlock[] untouched = ((TdApi.RichMessageSourceBlocks) document.toInput().source).blocks;
+    assertEquals("https://example.org/?a=1&b=2", ((TdApi.RichTextUrl) ((TdApi.RichTexts) ((TdApi.InputPageBlockParagraph) untouched[0]).text).texts[1]).url);
+  }
+
+  @Test public void draftRoundTripAndImmutability () throws Exception {
+    ArticleDocument document = ArticleDocument.received(mixed());
+    assertEquals(document, ArticleDocument.restore(document.save()));
+    byte[] bytes = document.save();
+    bytes[0] = 0;
+    assertEquals(document, ArticleDocument.restore(document.save()));
+    TdApi.InputRichMessage detached = document.toInput();
+    detached.isRtl = false;
+    assertTrue(document.toInput().isRtl);
+  }
+
+  @Test public void cloudDraftComparisonIgnoresOnlyTheConsumedDetectionOption () {
+    ArticleDocument cloud = ArticleDocument.received(mixed());
+    TdApi.InputRichMessage input = cloud.toInput();
+    input.detectAutomaticBlocks = true;
+    ArticleDocument local = new ArticleDocument(input);
+    assertNotEquals(local, cloud);
+    assertTrue(local.hasSameContent(cloud));
+    assertTrue(local.toInput().detectAutomaticBlocks);
+    input.isRtl = !input.isRtl;
+    assertFalse(new ArticleDocument(input).hasSameContent(cloud));
+    input.isRtl = !input.isRtl;
+    TdApi.InputPageBlockParagraph first = (TdApi.InputPageBlockParagraph) ((TdApi.RichMessageSourceBlocks) input.source).blocks[0];
+    ((TdApi.RichTextUrl) ((TdApi.RichTexts) first.text).texts[1]).url = "https://example.org/changed";
+    assertFalse(new ArticleDocument(input).hasSameContent(cloud));
+  }
+
+  @Test public void clearedDraftDoesNotConflictWithAnEmptyCloudDraft () {
+    ArticleDocument empty = ArticleDocument.empty();
+    TdApi.InputRichMessage input = empty.toInput();
+    input.detectAutomaticBlocks = false;
+    input.source = new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {
+      new TdApi.InputPageBlockParagraph(new TdApi.RichTexts(new TdApi.RichText[0])),
+      new TdApi.InputPageBlockParagraph(new TdApi.RichTexts(new TdApi.RichText[] {text("  "), text("\n")}))
+    });
+    assertTrue(empty.hasSameContent(new ArticleDocument(input)));
+    assertTrue(new ArticleDocument(input).hasSameContent(empty));
+    input.isRtl = true;
+    assertFalse(empty.hasSameContent(new ArticleDocument(input)));
+    input.isRtl = false;
+    input.source = new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {
+      new TdApi.InputPageBlockParagraph(new TdApi.RichTextReference("anchor", text("")))
+    });
+    assertFalse(empty.hasSameContent(new ArticleDocument(input)));
+    input.source = new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[] {new TdApi.InputPageBlockParagraph(text("kept"))});
+    assertFalse(empty.hasSameContent(new ArticleDocument(input)));
+    input.source = new TdApi.RichMessageSourceBlocks(new TdApi.InputPageBlock[0]);
+    assertTrue(empty.hasSameContent(new ArticleDocument(input)));
+  }
+
+  @Test public void nullableDateFormattingAndInlineButtonSurvive () throws Exception {
+    TdApi.RichTextDateTime date = new TdApi.RichTextDateTime(text("Дата"), 12345, new TdApi.DateTimeFormattingTypeRelative());
+    TdApi.RichTextDateTime copy = (TdApi.RichTextDateTime) ArticleCodec.decode(ArticleCodec.encode(date));
+    assertTrue(copy.formattingType instanceof TdApi.DateTimeFormattingTypeRelative);
+    TdApi.InlineButton button = new TdApi.InlineButton(text("Копировать"), new TdApi.ButtonStylePrimary(), new TdApi.InlineKeyboardButtonTypeCopyText("payload"));
+    TdApi.InlineButton restored = ArticleCodec.copy(button, TdApi.InlineButton.class);
+    assertEquals("payload", ((TdApi.InlineKeyboardButtonTypeCopyText) restored.type).text);
+    assertTrue(restored.style instanceof TdApi.ButtonStylePrimary);
+  }
+
+  @Test public void refusesPartialArticleBeforeEdit () {
+    TdApi.RichMessage message = mixed(); message.isFull = false;
+    assertThrows(IllegalArgumentException.class, () -> ArticleDocument.received(message));
+  }
+
+  @Test public void refusesUnknownBlockInsteadOfDeletingIt () {
+    TdApi.RichMessage message = mixed(); message.blocks[1] = new TdApi.PageBlockUnsupported();
+    assertThrows(ArticleMapper.Uneditable.class, () -> ArticleDocument.received(message));
+  }
+
+  @Test public void refusesBotOnlyButtonAndThinking () {
+    TdApi.RichMessage message = mixed();
+    message.blocks[0] = new TdApi.PageBlockButtonRow(new TdApi.InlineButton[] {
+      new TdApi.InlineButton(text("Action"), new TdApi.ButtonStyleDefault(), new TdApi.InlineKeyboardButtonTypeCallback(new byte[] {1, 2}))
+    }, null);
+    assertThrows(ArticleMapper.Uneditable.class, () -> ArticleDocument.received(message));
+    message.blocks[0] = new TdApi.PageBlockThinking(text("Thinking"));
+    assertThrows(ArticleMapper.Uneditable.class, () -> ArticleDocument.received(message));
+  }
+
+  @Test public void rejectsTruncatedTrailingWrongRootAndMalformedUnicode () {
+    byte[] encoded = ArticleDocument.empty().save();
+    assertThrows(IOException.class, () -> ArticleDocument.restore(Arrays.copyOf(encoded, encoded.length - 1)));
+    assertThrows(IOException.class, () -> ArticleDocument.restore(Arrays.copyOf(encoded, encoded.length + 1)));
+    assertThrows(IOException.class, () -> ArticleDocument.restore(ArticleCodec.encode(new TdApi.RichTextPlain("not a draft"))));
+    assertThrows(IllegalArgumentException.class, () -> ArticleCodec.encode(new TdApi.RichTextPlain("\uD800")));
+  }
+
+  @Test public void cyclicTreeAndExcessiveDepthFailBoundedly () {
+    TdApi.RichTextBold cycle = new TdApi.RichTextBold(); cycle.text = cycle;
+    assertThrows(IllegalArgumentException.class, () -> ArticleCodec.encode(cycle));
+    assertThrows(IllegalArgumentException.class, () -> ArticleCodec.visit(cycle, (v, depth) -> { }));
+  }
+
+  @Test public void undoRedoRestoresFullDocumentAndDropsAbandonedRedo () {
+    ArticleDocument original = ArticleDocument.received(mixed());
+    ArticleHistory history = new ArticleHistory(original);
+    assertFalse(history.push(original));
+    assertFalse(history.canUndo());
+    TdApi.InputRichMessage changed = original.toInput(); changed.isRtl = false;
+    ArticleDocument next = new ArticleDocument(changed);
+    history.push(next);
+    assertEquals(original, history.undo());
+    assertEquals(next, history.redo());
+    history.undo();
+    history.push(ArticleDocument.empty());
+    assertFalse(history.canRedo());
+    assertEquals(original, history.undo());
+  }
+}

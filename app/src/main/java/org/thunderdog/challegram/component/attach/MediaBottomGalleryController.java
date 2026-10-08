@@ -105,7 +105,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_more) {
-      if (mediaLayout.getMode() != MediaLayout.MODE_AVATAR_PICKER) {
+      if (mediaLayout.getMode() != MediaLayout.MODE_AVATAR_PICKER && !mediaLayout.isArticlePicker()) {
         header.addSearchButton(menu, this);
       }
       header.addMoreButton(menu, this);
@@ -279,7 +279,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   public boolean supportsMediaGrouping () {
-    return true;
+    return !mediaLayout.isArticlePicker();
   }
 
   private static int calculateSpanCount (int width, int height) {

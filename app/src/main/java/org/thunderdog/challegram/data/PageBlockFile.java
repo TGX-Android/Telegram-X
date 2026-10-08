@@ -20,15 +20,26 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.DoubleImageReceiver;
+import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.util.DrawableProvider;
 
-public class PageBlockFile extends PageBlock {
+public class PageBlockFile extends PageBlock implements me.vkryl.core.lambda.Destroyable {
   private final InlineResultCommon result;
   private final TGPlayerController.PlayListBuilder playListBuilder;
+  private FileComponent articleFile;
+
+  public void setArticleMessage (TGMessageArticle message) {
+    result.setMessage(message.getMessage());
+    if (block instanceof TdApi.PageBlockDocument) {
+      articleFile = new FileComponent(message, message.getMessage(), ((TdApi.PageBlockDocument) block).document);
+      articleFile.setViewProvider(currentViews);
+    }
+  }
 
   public PageBlockFile (ViewController<?> context, TdApi.PageBlock pageBlock, int quoteLevel, String url, TGPlayerController.PlayListBuilder builder) {
     super(context, pageBlock, quoteLevel);
@@ -48,7 +59,7 @@ public class PageBlockFile extends PageBlock {
 
   @Override
   public boolean onClick (View view, boolean isLongPress) {
-    if (!isLongPress) {
+    if (!isLongPress && block.getConstructor() != TdApi.PageBlockDocument.CONSTRUCTOR) {
       context.tdlib().context().player().playPauseMessage(context.tdlib(), result.getPlayPauseMessage(), playListBuilder);
       return true;
     }
@@ -61,17 +72,22 @@ public class PageBlockFile extends PageBlock {
 
   @Override
   public int getRelatedViewType () {
-    return ListItem.TYPE_CUSTOM_INLINE;
+    return articleFile != null ? ListItem.TYPE_PAGE_BLOCK_MEDIA : ListItem.TYPE_CUSTOM_INLINE;
   }
 
   @Override
   protected int computeHeight (View view, int width) {
-    return 0;
+    if (articleFile != null) {
+      articleFile.buildLayout(width);
+      return articleFile.getHeight();
+    }
+    result.layout(width, null);
+    return result.getHeight();
   }
 
   @Override
   public boolean handleTouchEvent (View view, MotionEvent e) {
-    return false;
+    return articleFile != null && articleFile.onTouchEvent(view, e);
   }
 
   @Override
@@ -86,6 +102,10 @@ public class PageBlockFile extends PageBlock {
 
   @Override
   protected <T extends View & DrawableProvider> void drawInternal (T view, Canvas c, Receiver preview, Receiver receiver, @Nullable ComplexReceiver iconReceiver) {
-
+    if (articleFile != null) articleFile.draw(view, c, 0, 0, preview, receiver, 0, 0, 1f, 0f);
   }
+
+  @Override public void requestPreview (DoubleImageReceiver receiver) { if (articleFile != null) articleFile.requestPreview(receiver); }
+  @Override public void requestImage (ImageReceiver receiver) { if (articleFile != null) articleFile.requestContent(receiver); }
+  @Override public void performDestroy () { if (articleFile != null) { articleFile.performDestroy(); articleFile = null; } }
 }

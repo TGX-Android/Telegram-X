@@ -128,6 +128,7 @@ public abstract class TextEntity {
   public abstract boolean isBold ();
   public abstract boolean isIcon ();
   public TdApi.RichTextIcon getIcon () { return null; }
+  public String getMathematicalExpression () { return null; }
   public abstract boolean isItalic ();
   public abstract boolean isUnderline ();
   public abstract boolean isStrikethrough ();

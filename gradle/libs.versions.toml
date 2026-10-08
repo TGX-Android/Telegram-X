@@ -1,4 +1,6 @@
 [versions]
+jlatexmath = "0.2.0"
+junit = "4.13.2"
 android-gradle-plugin = "9.4.1"
 
 kotlin = "2.4.20"
@@ -139,6 +141,8 @@ google-play-services-mlkit-barcode-scanning-legacy = "16.2.1" # 18.3.0+ requires
 google-mlkit-language-id-legacy = "16.1.1"
 
 [libraries]
+jlatexmath-android = { module = "ru.noties:jlatexmath-android", version.ref = "jlatexmath" }
+junit = { module = "junit:junit", version.ref = "junit" }
 desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugaring" }
 androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "androidx-multidex" }
 

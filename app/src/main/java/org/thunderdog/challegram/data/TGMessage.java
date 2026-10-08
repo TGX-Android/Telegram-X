@@ -8451,8 +8451,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageGiveaway.CONSTRUCTOR: {
           return new TGMessageGiveaway(context, msg, (TdApi.MessageGiveaway) content);
         }
+        case TdApi.MessageRichMessage.CONSTRUCTOR: {
+          return new TGMessageArticle(context, msg, (TdApi.MessageRichMessage) content);
+        }
         // unsupported
-        case TdApi.MessageRichMessage.CONSTRUCTOR:
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
         case TdApi.MessageStory.CONSTRUCTOR:
@@ -9669,6 +9671,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean canCopyText () {
+    if (this instanceof TGMessageArticle) return canBeSaved() && !Td.isEmpty(((TGMessageArticle) this).getArticleText());
     if (this instanceof TGMessageMedia) {
       long messageId = ((TGMessageMedia) this).getCaptionMessageId();
       TdApi.Message message = messageId != 0 ? getMessage(messageId) : null;
@@ -9848,6 +9851,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @Nullable
   public final TdApi.FormattedText getMessageText () {
+    if (this instanceof TGMessageArticle) return ((TGMessageArticle) this).getArticleText();
     synchronized (this) {
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
         final TdApi.FormattedText sep = new TdApi.FormattedText(" ", new TdApi.TextEntity[0]);

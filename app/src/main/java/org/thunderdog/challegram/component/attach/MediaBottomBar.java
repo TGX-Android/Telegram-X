@@ -46,7 +46,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 
 public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.OnGestureListener {
-  static class BarItem {
+  public static class BarItem {
     private final int iconResource;
     private final String name;
     private final int backgroundColorId;
@@ -182,7 +182,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
 
   private void updateBarMetrics () {
     int barWidth = getMeasuredWidth();
-    if (barWidth <= 0) {
+    if (barWidth <= 0 || items == null || items.length == 0) {
       return;
     }
     if (lastBarWidth == barWidth && lastScreenHeight == Screen.currentHeight()) {
@@ -205,8 +205,9 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
       totalWidth = barWidth;
     }
 
-    int itemActiveWidth = Math.max(itemWidth, (int) (maxTextWidth + Screen.dp(40f)));
-    int itemNormalWidth = (totalWidth - itemActiveWidth) / (items.length - 1);
+    // A dedicated attachment picker has one centered tab and no inactive tabs.
+    int itemActiveWidth = items.length == 1 ? totalWidth : Math.max(itemWidth, (int) (maxTextWidth + Screen.dp(40f)));
+    int itemNormalWidth = items.length == 1 ? totalWidth : (totalWidth - itemActiveWidth) / (items.length - 1);
 
     this.itemNormalWidth = itemNormalWidth;
     this.itemActiveDiff = itemActiveWidth - itemNormalWidth;

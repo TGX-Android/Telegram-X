@@ -32,6 +32,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGMessageArticle;
+import org.thunderdog.challegram.widget.ArticleBodyView;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -81,6 +83,7 @@ public class MessageViewGroup extends ViewGroup implements Destroyable, AttachDe
   private MessagesManager manager;
   private VideoPlayerView videoPlayerView;
   private MessageOverlayView overlayView;
+  private ArticleBodyView articleBodyView;
 
   public MessageViewGroup (Context context) {
     super(context);
@@ -106,9 +109,14 @@ public class MessageViewGroup extends ViewGroup implements Destroyable, AttachDe
     ViewSupport.setHigherElevation(videoPlayerView, messageView, true);
     addView(videoPlayerView);
 
+    articleBodyView = new ArticleBodyView(getContext());
+    articleBodyView.setVisibility(GONE);
+    ViewSupport.setHigherElevation(articleBodyView, videoPlayerView, true);
+    addView(articleBodyView);
+
     overlayView = new MessageOverlayView(getContext()).setBoundView(messageView);
     overlayView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-    ViewSupport.setHigherElevation(overlayView, videoPlayerView, true);
+    ViewSupport.setHigherElevation(overlayView, articleBodyView, true);
     addView(overlayView);
 
     if (themeProvider != null) {
@@ -137,6 +145,7 @@ public class MessageViewGroup extends ViewGroup implements Destroyable, AttachDe
   private void updateTranslation () {
     float dx = swipeTranslation + selectableTranslation;
     videoPlayerView.setTranslationX(dx);
+    articleBodyView.setTranslationX(dx);
     TGMessage msg = messageView.getMessage();
     UI.getContext(getContext()).getRoundVideoController().onMessageTranslate(msg.getChatId(), msg.getId());
   }
@@ -256,23 +265,27 @@ public class MessageViewGroup extends ViewGroup implements Destroyable, AttachDe
   public void performDestroy () {
     messageView.performDestroy();
     videoPlayerView.performDestroy();
+    articleBodyView.performDestroy();
   }
 
   @Override
   public void attach () {
     messageView.onAttachedToRecyclerView();
     videoPlayerView.attach();
+    articleBodyView.attach();
   }
 
   @Override
   public void detach () {
     messageView.onDetachedFromRecyclerView();
     videoPlayerView.detach();
+    articleBodyView.detach();
   }
 
   public void setMessage (TGMessage message) {
     messageView.setMessage(message);
     overlayView.setMessage(message);
+    articleBodyView.setMessage(message instanceof TGMessageArticle ? (TGMessageArticle) message : null);
     videoPlayerView.setVisibility(TD.isSelfDestructTypeImmediately(message.getMessage()) ? GONE:  VISIBLE);
     requestVideo(message);
 
@@ -287,6 +300,7 @@ public class MessageViewGroup extends ViewGroup implements Destroyable, AttachDe
 
   public void invalidateContent (TGMessage message) {
     requestVideo(message);
+    articleBodyView.setMessage(message instanceof TGMessageArticle ? (TGMessageArticle) message : null);
   }
 }
 

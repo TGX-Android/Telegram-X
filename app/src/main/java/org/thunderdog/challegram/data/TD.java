@@ -3751,10 +3751,8 @@ public class TD {
       case TdApi.MessageAnimation.CONSTRUCTOR:
       case TdApi.MessageVoiceNote.CONSTRUCTOR:
       case TdApi.MessageAudio.CONSTRUCTOR:
-        return true;
       case TdApi.MessageRichMessage.CONSTRUCTOR:
-        // TODO rich message
-        break;
+        return true;
       default:
         Td.assertMessageContent_af730a78();
         break;

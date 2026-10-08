@@ -90,6 +90,19 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     super(context, R.string.File);
   }
 
+  private boolean musicOnly;
+  public void setMusicOnly (boolean value) {
+    if (musicOnly == value) return;
+    musicOnly = value;
+    // The base constructor initializes the adapter while calculating its height.
+    if (adapter != null) buildCells();
+  }
+
+  @Override
+  public CharSequence getName () {
+    return musicOnly ? Lang.getString(R.string.Music) : super.getName();
+  }
+
   @Override
   public int getId () {
     return R.id.controller_media_files;
@@ -137,7 +150,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     };
     final Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
       .addCategory(Intent.CATEGORY_OPENABLE)
-      .setType("*/*")
+      .setType(musicOnly ? "audio/*" : "*/*")
       .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
       .putExtra("android.content.extra.SHOW_ADVANCED", true);
     context.putActivityResultHandler(Intents.ACTIVITY_RESULT_FILES, (requestCode, resultCode, data) -> {
@@ -185,7 +198,8 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private int initialItemsCount;
 
   private void buildCells () {
-    navigateToPath(null, null, null, false, null, null, null);
+    // Async folder loads publish their result only when an onDone callback exists.
+    navigateToPath(null, musicOnly ? KEY_MUSIC : null, null, false, null, musicOnly ? () -> { } : null, null);
   }
 
   private void navigateToPath (final View view, final String currentPath, final String parentPath, boolean isUpper, final InlineResultCommon data, Runnable onDone, Runnable onError) {
@@ -366,7 +380,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
 
   @Override
   public boolean supportsMediaGrouping () {
-    return true;
+    return !mediaLayout.isArticlePicker();
   }
 
   private void setFilesItems (final LoadOperation context, final ArrayList<ListItem> items, final boolean extend) {
@@ -772,8 +786,10 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           });
 
           ArrayList<ListItem> items = new ArrayList<>(entries.size() + 1);
-          InlineResult<?> result = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_folder_24, "..", Lang.getString(R.string.AttachFolderHome));
-          items.add(createItem(result, R.id.btn_folder_upper));
+          if (!musicOnly) {
+            InlineResult<?> result = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_folder_24, "..", Lang.getString(R.string.AttachFolderHome));
+            items.add(createItem(result, R.id.btn_folder_upper));
+          }
 
           for (MusicEntry entry : entries) {
             items.add(new ListItem(ListItem.TYPE_CUSTOM_INLINE, R.id.btn_file).setData(new InlineResultCommon(context, tdlib, entry, MediaBottomFilesController.this).setDisableProgressInteract(true)));
@@ -1261,6 +1277,11 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   @Override
   protected void onMultiSendPress (View view, @NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
     if (selectedItems == null || selectedItems.isEmpty()) {
+      return;
+    }
+    if (mediaLayout.isArticlePicker()) {
+      // Keep MediaStore metadata: result IDs are not necessarily readable file paths.
+      mediaLayout.getFilesControllerDelegate().onFilesSelected(new ArrayList<>(selectedItems), false);
       return;
     }
 

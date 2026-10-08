@@ -936,6 +936,8 @@ dependencies {
   implementation(project(":extension:${config.extension}"))
   // TDLib: https://github.com/tdlib/td/blob/master/CHANGELOG.md
   implementation(project(":tdlib"))
+  implementation(libs.jlatexmath.android)
+  testImplementation(libs.junit)
   sinceLollipopImplementation(project(":tgcalls"))
   implementation(project(":vkryl:core"))
   implementation(project(":vkryl:leveldb"))

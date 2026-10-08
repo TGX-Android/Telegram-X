@@ -22,6 +22,11 @@
 
 # == TELEGRAM X ==
 
+# Article formulas: TeX macros resolve Java methods and constants by name from XML.
+# jlatexmath-android 0.2.0 does not provide consumer shrinker rules.
+-keep class org.scilab.forge.jlatexmath.** { *; }
+-keep class ru.noties.jlatexmath.** { *; }
+
 # Keep native bridge
 -keep class org.thunderdog.challegram.N { *; }
 -keep class org.thunderdog.challegram.N$* { *; }

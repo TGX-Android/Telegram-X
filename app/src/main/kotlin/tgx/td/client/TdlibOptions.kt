@@ -236,6 +236,7 @@ data class TdlibOptions(
   @JvmField var forceInAppUpdate: Boolean = false,
   @JvmField var youtubePipDisabled: Boolean = false,
   @JvmField var richMessagePostingDisabled: Boolean = false,
+  @JvmField var richMessagePosting: String = "premium",
 
   @JvmField var qrLoginCamera: Boolean = true,
 
@@ -687,8 +688,10 @@ data class TdlibOptions(
         forceInAppUpdate = value.boolValue()
       "youtube_pip" ->
         youtubePipDisabled = value.stringValue() == "disabled"
-      "rich_message_posting" ->
+      "rich_message_posting" -> {
+        richMessagePosting = value.stringValue()
         richMessagePostingDisabled = value.stringValue() == "disabled"
+      }
 
       "qr_login_camera" ->
         qrLoginCamera = value.boolValue()

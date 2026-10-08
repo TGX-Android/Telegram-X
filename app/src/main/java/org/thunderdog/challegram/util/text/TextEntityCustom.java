@@ -50,6 +50,9 @@ public class TextEntityCustom extends TextEntity {
   public static final int FLAG_SUPERSCRIPT = 1 << 6;
   public static final int FLAG_MARKED = 1 << 7;
   public static final int FLAG_SPOILER = 1 << 9;
+  public static final int FLAG_DIFF_INSERTED = 1 << 10;
+  public static final int FLAG_DIFF_DELETED = 1 << 11;
+  public static final int FLAG_DIFF_REPLACED = 1 << 12;
   public static final int FLAG_CLICKABLE = 1 << 20;
   public static final int FLAG_ANCHOR = 1 << 21;
   public static final int FLAG_REFERENCE = 1 << 22;
@@ -89,6 +92,7 @@ public class TextEntityCustom extends TextEntity {
   private TdApi.RichTextCustomEmoji emoji;
   private TdApi.RichTextMathematicalExpression mathematicalExpression;
   private String copyLink;
+  private TdApi.TextEntity spoiler;
 
   public TextEntityCustom (@Nullable ViewController<?> context, @Nullable Tdlib tdlib, String in, int offset, int end, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     this(context, tdlib, (flags & FLAG_BOLD) != 0 && Text.needFakeBold(in), offset, end, flags, openParameters);
@@ -157,6 +161,8 @@ public class TextEntityCustom extends TextEntity {
   @Override
   public TextEntity createCopy () {
     TextEntityCustom copy = new TextEntityCustom(context, tdlib, needFakeBold, start, end, flags, openParameters);
+    copy.setLink(linkOffset, linkLength, linkType, link, linkCached);
+    copy.setButton(button);
     if (customColorSet != null) {
       copy.setCustomColorSet(customColorSet);
     }
@@ -185,32 +191,28 @@ public class TextEntityCustom extends TextEntity {
   }
 
   private TextColorSetOverride cachedLinkSet;
+  private TextColorSetOverride cachedDiffSet;
+
+  public boolean isDiffReplacement () { return (flags & FLAG_DIFF_REPLACED) != 0; }
 
   @Override
   public TextColorSet getSpecialColorSet (@NonNull TextColorSet defaultColorSet) {
+    if ((flags & (FLAG_DIFF_INSERTED | FLAG_DIFF_DELETED)) != 0) {
+      if (cachedDiffSet == null || cachedDiffSet.originalColorSet() != defaultColorSet) {
+        cachedDiffSet = new TextColorSetOverride(defaultColorSet) {
+          @Override public int defaultTextColor () { return (flags & FLAG_DIFF_DELETED) != 0 ? org.thunderdog.challegram.theme.Theme.getColor(org.thunderdog.challegram.theme.ColorId.textNegative) : org.thunderdog.challegram.theme.Theme.textLinkColor(); }
+          @Override public int clickableTextColor (boolean pressed) { return defaultTextColor(); }
+        };
+      }
+      return cachedDiffSet;
+    }
     TextColorSet colorSet;
     if (customColorSet != null) {
       colorSet = customColorSet;
     } else if (linkType == LINK_TYPE_REFERENCE) {
       colorSet = TextColorSets.InstantView.REFERENCE;
     } else if (linkType == LINK_TYPE_BUTTON) {
-      // TODO: similar to TextColorSets.InstantView.REFERENCE
-      colorSet = switch (button.style.getConstructor()) {
-        case TdApi.ButtonStyleLink.CONSTRUCTOR ->
-          null;
-        case TdApi.ButtonStyleDanger.CONSTRUCTOR ->
-          TextColorSets.InstantView.REFERENCE; // TODO: red
-        case TdApi.ButtonStyleDefault.CONSTRUCTOR ->
-          TextColorSets.InstantView.REFERENCE; // TODO: default style
-        case TdApi.ButtonStylePrimary.CONSTRUCTOR ->
-          TextColorSets.InstantView.REFERENCE; // TODO: dark blue
-        case TdApi.ButtonStyleSuccess.CONSTRUCTOR ->
-          TextColorSets.InstantView.REFERENCE; // TODO: green
-        default -> {
-          Td.assertButtonStyle_4f30e8d0();
-          throw Td.unsupported(button.type);
-        }
-      };
+      colorSet = new ArticleButtonColors(button != null ? button.style : null);
     } else if (BitwiseUtils.hasFlag(flags, FLAG_MARKED)) {
       colorSet = TextColorSets.InstantView.Marked.NORMAL;
     } else if (BitwiseUtils.hasFlag(flags, FLAG_MONOSPACE)) {
@@ -218,7 +220,7 @@ public class TextEntityCustom extends TextEntity {
     } else {
       colorSet = null;
     }
-    if (linkCached) {
+    if (linkCached && linkType != LINK_TYPE_BUTTON) {
       int backgroundColorId = (colorSet != null ? colorSet : defaultColorSet).backgroundColorId(false);
       if (backgroundColorId == 0) {
         if (cachedLinkSet == null || cachedLinkSet.originalColorSet() != defaultColorSet) {
@@ -252,12 +254,12 @@ public class TextEntityCustom extends TextEntity {
 
   @Override
   public boolean isCustomEmoji () {
-    return false;
+    return emoji != null;
   }
 
   @Override
   public long getCustomEmojiId () {
-    return 0;
+    return emoji != null ? emoji.customEmojiId : 0;
   }
 
   @Override
@@ -267,7 +269,11 @@ public class TextEntityCustom extends TextEntity {
 
   @Override
   public boolean hasMedia () {
-    return isIcon();
+    return isIcon() || isCustomEmoji() || mathematicalExpression != null;
+  }
+
+  @Override public String getMathematicalExpression () {
+    return mathematicalExpression != null ? mathematicalExpression.expression : null;
   }
 
   @Override
@@ -320,7 +326,10 @@ public class TextEntityCustom extends TextEntity {
 
   @Override
   public TdApi.TextEntity getSpoiler () {
-    return null;
+    if (!BitwiseUtils.hasFlag(flags, FLAG_SPOILER)) return null;
+    if (spoiler == null) spoiler = new TdApi.TextEntity(start, end - start, new TdApi.TextEntityTypeSpoiler());
+    spoiler.offset = start; spoiler.length = end - start;
+    return spoiler;
   }
 
   @Override
@@ -381,6 +390,41 @@ public class TextEntityCustom extends TextEntity {
   @Override
   public void performClick (View view, Text text, TextPart part, @Nullable Text.ClickCallback callback, boolean isFromLongPressMenu) {
     switch (linkType) {
+      case LINK_TYPE_MENTION: {
+        if (callback == null || !callback.onUsernameClick(link)) {
+          if (context != null) tdlib.ui().openPublicChat(context, link, openParameters(view, text, part, isFromLongPressMenu));
+        }
+        break;
+      }
+      case LINK_TYPE_MENTION_NAME: {
+        long userId = StringUtils.parseLong(link);
+        if (callback == null || !callback.onUserClick(userId)) {
+          if (context != null) tdlib.ui().openPrivateProfile(context, userId, openParameters(view, text, part, isFromLongPressMenu));
+        }
+        break;
+      }
+      case LINK_TYPE_BANK_CARD_NUMBER: {
+        if ((callback == null || !callback.onBankCardNumberClick(link)) && context != null) tdlib.ui().openCardNumber(context, link);
+        break;
+      }
+      case LINK_TYPE_BOT_COMMAND: {
+        if (callback != null) callback.onCommandClick(view, text, part, link, isFromLongPressMenu);
+        break;
+      }
+      case LINK_TYPE_DATE_TIME: {
+        int unixTime = StringUtils.parseInt(link);
+        if (callback == null || !callback.onDateClick(view, text, part, text.getText().substring(start, end), new TdApi.TextEntityTypeDateTime(unixTime, null), isFromLongPressMenu)) Intents.openDate(unixTime);
+        break;
+      }
+      case LINK_TYPE_HASHTAG:
+      case LINK_TYPE_CASHTAG: {
+        if ((callback == null || !callback.onHashtagClick(link)) && context != null) {
+          org.thunderdog.challegram.ui.HashtagController controller = new org.thunderdog.challegram.ui.HashtagController(context.context(), tdlib);
+          controller.setArguments(link);
+          context.navigateTo(controller);
+        }
+        break;
+      }
       case LINK_TYPE_EMAIL: {
         if (callback == null || !callback.onEmailClick(link)) {
           Intents.sendEmail(link);
@@ -415,8 +459,8 @@ public class TextEntityCustom extends TextEntity {
         break;
       }
       case LINK_TYPE_REFERENCE: {
-        if (callback == null || !(callback.onReferenceClick(view, link, referenceAnchorName, this.openParameters(view, text, part, isFromLongPressMenu))) || callback.onAnchorClick(view, link)) {
-          // TODO open pop-up with ${referenceText}?
+        if (callback != null && !callback.onReferenceClick(view, link, referenceAnchorName, this.openParameters(view, text, part, isFromLongPressMenu))) {
+          callback.onAnchorClick(view, referenceAnchorName);
         }
         break;
       }
@@ -431,6 +475,7 @@ public class TextEntityCustom extends TextEntity {
 
   @Override
   public boolean performLongPress (final View view, final Text text, final TextPart part, boolean allowShare, Text.ClickCallback clickCallback) {
+    if (clickCallback != null && !clickCallback.allowCopyText()) return false;
     final ViewController<?> context = findRoot(view);
     if (context == null) {
       Log.v("performLongPress ignored, because ancestor not found");
@@ -521,7 +566,8 @@ public class TextEntityCustom extends TextEntity {
     }
     if (compareMode != COMPARE_MODE_CLICK_HIGHLIGHT && !(
       this.flags == b.flags &&
-      this.customColorSet == b.customColorSet
+      this.customColorSet == b.customColorSet &&
+      Td.equalsTo(icon, b.icon) && Td.equalsTo(emoji, b.emoji) && Td.equalsTo(mathematicalExpression, b.mathematicalExpression) && Td.equalsTo(button, b.button)
     )) {
       return false;
     }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Telegram Android, GPL-2.0-or-later. See ARTICLE_EDITOR_ASSETS.md. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <group android:scaleX="0.333333333" android:scaleY="0.333333333" android:translateX="0" android:translateY="0">
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M 12.5 55 L 40.5 55 Q 43 55 43 57.5 L 43 57.5 Q 43 60 40.5 60 L 12.5 60 Q 10 60 10 57.5 L 10 57.5 Q 10 55 12.5 55 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M 12.5 42 L 59.5 42 Q 62 42 62 44.5 L 62 44.5 Q 62 47 59.5 47 L 12.5 47 Q 10 47 10 44.5 L 10 44.5 Q 10 42 12.5 42 Z" />
+  </group>
+</vector>
