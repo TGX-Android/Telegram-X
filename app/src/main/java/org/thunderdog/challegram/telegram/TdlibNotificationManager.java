@@ -2205,9 +2205,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   void onUpdateNotificationGroup (TdApi.UpdateNotificationGroup update) {
     if (Config.FOREGROUND_SERVICE_DEMO) {
       Context context = UI.getContext();
-      PushProcessor.showForegroundNotification(context, tdlib.context(), false, -1, tdlib.accountId(), true, new CountDownLatch(0));
+      @PushProcessor.ShowStatus int result = PushProcessor.showForegroundNotification(context, tdlib.context(), false, -1, tdlib.accountId(), true, new CountDownLatch(0));
       queue.post(() -> {
-        FetchNotificationService.stopForegroundTask(context, -1, tdlib.accountId());
+        if (result != PushProcessor.ShowStatus.NOT_SHOWN) {
+          FetchNotificationService.stopForegroundTask(context, -1, tdlib.accountId());
+        }
         sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
       }, 1500L);
       return;
