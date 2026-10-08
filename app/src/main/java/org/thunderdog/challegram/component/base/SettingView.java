@@ -20,6 +20,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.os.Bundle;
 import android.text.Layout;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -27,7 +29,13 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
+import android.widget.RadioButton;
+import android.widget.Switch;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -55,6 +63,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawModifier;
@@ -192,6 +201,16 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       togglerView.setLayoutParams(params);
 
       addView(togglerView);
+    }
+  }
+
+  @Override
+  public void addView (View child, int index, ViewGroup.LayoutParams params) {
+    super.addView(child, index, params);
+    if (child instanceof TogglerView || child instanceof RadioView || child instanceof CheckBoxView) {
+      // Clicking the row changes the state they draw, so the row reports it,
+      // see onInitializeAccessibilityNodeInfo
+      child.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
   }
 
@@ -370,10 +389,14 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   public void setName (CharSequence name) {
     if (this.itemName == null || !this.itemName.equals(name)) {
       boolean rebuild = lastMeasuredWidth > 0;
+      boolean changed = !StringUtils.equalsOrBothEmpty(this.itemName, name);
       this.itemName = !StringUtils.isEmpty(name) ? name : null;
       if (rebuild) {
         buildLayout();
         invalidate();
+      }
+      if (changed) {
+        notifyAccessibilityTextChanged();
       }
     }
   }
@@ -422,10 +445,14 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   public void setData (CharSequence data) {
     if (this.itemData == null || data == null || !StringUtils.equalsOrBothEmpty(this.itemData, data)) {
       boolean rebuild = lastMeasuredWidth > 0;
+      boolean changed = !StringUtils.equalsOrBothEmpty(this.itemData, data);
       this.itemData = !StringUtils.isEmpty(data) ? data : null;
       if (rebuild) {
         buildLayout();
         invalidate();
+      }
+      if (changed) {
+        notifyAccessibilityTextChanged();
       }
     }
   }
@@ -446,6 +473,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   public void setText (TextWrapper text) {
     if (this.text != null) {
       this.text.detachFromView(this);
+    }
+    if (this.text != text) {
+      notifyAccessibilityTextChanged();
     }
     this.text = text;
     if (text != null) {
@@ -656,7 +686,24 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private final BoolAnimator iconRotated = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L, false);
 
   public void setIconRotated (boolean rotated, boolean animated) {
+    boolean changed = iconRotated.getValue() != rotated;
     iconRotated.setValue(rotated, animated);
+    if (changed && isExpandable) {
+      notifyAccessibilityContentChanged();
+    }
+  }
+
+  private boolean isExpandable;
+
+  /**
+   * Marks this view as the one that shows and hides the views that follow it,
+   * with {@link #setIconRotated(boolean, boolean)} telling whether they are shown.
+   */
+  public void setExpandable (boolean isExpandable) {
+    if (this.isExpandable != isExpandable) {
+      this.isExpandable = isExpandable;
+      notifyAccessibilityContentChanged();
+    }
   }
 
   private final BoolAnimator isEnabled = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 168l, true);
@@ -694,6 +741,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       if (!isEnabled()) {
         isEnabled.setValue(ignoreEnabled, false);
       }
+      notifyAccessibilityContentChanged();
     }
   }
 
@@ -721,7 +769,11 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (!ignoreEnabled) {
       throw new IllegalStateException();
     }
+    boolean changed = isEnabled.getValue() != enabled;
     isEnabled.setValue(enabled, animated);
+    if (changed) {
+      notifyAccessibilityContentChanged();
+    }
   }
 
   public boolean isVisuallyEnabled () {
@@ -766,8 +818,13 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   }
 
   private Counter counter;
+  private int unreadCount;
 
   public void setUnreadCounter (int unreadCount, boolean muted, boolean animated) {
+    if (this.unreadCount != unreadCount) {
+      this.unreadCount = unreadCount;
+      notifyAccessibilityTextChanged();
+    }
     if (counter == null && unreadCount == 0)
       return;
     if (counter == null)
@@ -1072,5 +1129,192 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       progressAnimator = new BoolAnimator(ANIMATOR_ID_PROGRESS, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
     }
     progressAnimator.setValue(inProgress, animated);
+  }
+
+  // Accessibility
+
+  private static void appendAccessibilityPart (StringBuilder b, @Nullable CharSequence part) {
+    if (!StringUtils.isEmpty(part)) {
+      if (b.length() > 0) {
+        b.append(Lang.getConcatSeparator());
+      }
+      b.append(part);
+    }
+  }
+
+  /**
+   * @return Text that is drawn on canvas, in the order it is drawn in
+   */
+  private @Nullable String getAccessibilityText () {
+    final CharSequence displayName = swapDataAndName ? itemData : itemName;
+    final CharSequence displayData = swapDataAndName ? itemName : itemData;
+    StringBuilder b = new StringBuilder();
+    switch (type) {
+      case TYPE_INFO:
+      case TYPE_INFO_COMPACT:
+      case TYPE_INFO_SUPERCOMPACT:
+      case TYPE_INFO_MULTILINE: {
+        // Name is drawn below data, or below the text that is drawn instead of it
+        appendAccessibilityPart(b, type == TYPE_INFO_MULTILINE && text != null ? text.getAccessibilityText() : displayData);
+        appendAccessibilityPart(b, displayName);
+        break;
+      }
+      default: {
+        // Data is drawn at the end of the name line
+        appendAccessibilityPart(b, displayName);
+        appendAccessibilityPart(b, displayData);
+        break;
+      }
+    }
+    if (unreadCount == Tdlib.CHAT_FAILED) {
+      // Counter draws an exclamation mark
+      appendAccessibilityPart(b, Lang.getString(R.string.Warning));
+    } else if (unreadCount > 0) {
+      appendAccessibilityPart(b, Strings.buildCounter(unreadCount));
+    }
+    return b.length() > 0 ? b.toString() : null;
+  }
+
+  /**
+   * @return Toggler, radio or check box that draws the state clicking this view changes,
+   * see {@link #addView(View, int, ViewGroup.LayoutParams)}
+   */
+  private @Nullable View findAccessibilityCheckable () {
+    for (int i = 0; i < getChildCount(); i++) {
+      View child = getChildAt(i);
+      // A toggler shown to accessibility services, because it has a click listener of its own, is a switch of its own
+      if ((child instanceof TogglerView || child instanceof RadioView || child instanceof CheckBoxView) &&
+        child.getImportantForAccessibility() == IMPORTANT_FOR_ACCESSIBILITY_NO &&
+        child.getVisibility() == View.VISIBLE) {
+        return child;
+      }
+    }
+    return null;
+  }
+
+  private static String getAccessibilityClassName (View checkable) {
+    if (checkable instanceof TogglerView) {
+      return Switch.class.getName();
+    } else if (checkable instanceof RadioView) {
+      return RadioButton.class.getName();
+    } else {
+      return CheckBox.class.getName();
+    }
+  }
+
+  private static boolean isChecked (View checkable) {
+    if (checkable instanceof TogglerView) {
+      // TogglerView.isEnabled() reports the toggle state
+      return ((TogglerView) checkable).isEnabled();
+    } else if (checkable instanceof RadioView) {
+      return ((RadioView) checkable).isChecked();
+    } else {
+      return ((CheckBoxView) checkable).isChecked();
+    }
+  }
+
+  private boolean isAccessibilityEnabled () {
+    AccessibilityManager manager = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+    return manager != null && manager.isEnabled();
+  }
+
+  private void notifyAccessibilityContentChanged () {
+    // State is drawn on canvas, so let accessibility services know that the reported state changed
+    sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+  }
+
+  /**
+   * TalkBack reads the text of a switch as its state, like the "on" and "off" texts of {@link Switch}
+   * were before {@link View#setStateDescription}, and its content description as its name.
+   */
+  private static boolean isTextReportedAsContentDescription (@Nullable View checkable) {
+    return checkable instanceof TogglerView;
+  }
+
+  private final Runnable accessibilityTextChangeNotifier = () -> {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      AccessibilityEvent event = AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+      event.setContentChangeTypes(isTextReportedAsContentDescription(findAccessibilityCheckable()) ?
+        AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION :
+        AccessibilityEvent.CONTENT_CHANGE_TYPE_TEXT
+      );
+      sendAccessibilityEventUnchecked(event);
+    } else {
+      sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+    }
+  };
+
+  private void notifyAccessibilityTextChanged () {
+    // Text is drawn on canvas. Like TextView, report the change as a text change, so that a focused view reads
+    // its new text, and send it a bit later, so that it follows the click that caused it and covers all changes.
+    if (isAccessibilityEnabled()) {
+      removeCallbacks(accessibilityTextChangeNotifier);
+      postDelayed(accessibilityTextChangeNotifier, ACCESSIBILITY_TEXT_CHANGE_DELAY);
+    }
+  }
+
+  private static final long ACCESSIBILITY_TEXT_CHANGE_DELAY = 100L;
+
+  @Override
+  public void onPopulateAccessibilityEvent (AccessibilityEvent event) {
+    super.onPopulateAccessibilityEvent(event);
+    if (!isTextReportedAsContentDescription(findAccessibilityCheckable())) {
+      String text = getAccessibilityText();
+      if (!StringUtils.isEmpty(text)) {
+        event.getText().add(text);
+      }
+    }
+  }
+
+  @Override
+  public void onInitializeAccessibilityEvent (AccessibilityEvent event) {
+    super.onInitializeAccessibilityEvent(event);
+    View checkable = findAccessibilityCheckable();
+    if (checkable != null) {
+      event.setClassName(getAccessibilityClassName(checkable));
+      event.setChecked(isChecked(checkable));
+    }
+    if (isTextReportedAsContentDescription(checkable)) {
+      event.setContentDescription(getAccessibilityText());
+    }
+    if (ignoreEnabled) {
+      event.setEnabled(isVisuallyEnabled());
+    }
+  }
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    super.onInitializeAccessibilityNodeInfo(info);
+    View checkable = findAccessibilityCheckable();
+    String text = getAccessibilityText();
+    if (!StringUtils.isEmpty(text)) {
+      if (isTextReportedAsContentDescription(checkable)) {
+        info.setContentDescription(text);
+      } else {
+        info.setText(text);
+      }
+    }
+    if (checkable != null) {
+      info.setClassName(getAccessibilityClassName(checkable));
+      info.setCheckable(true);
+      info.setChecked(isChecked(checkable));
+    }
+    if (ignoreEnabled) {
+      // Some views stay clickable while drawn disabled, to explain on click why they are,
+      // and some are drawn enabled while they only show a value. Click action stays as it is.
+      info.setEnabled(isVisuallyEnabled());
+    }
+    if (isExpandable && isClickable() && isEnabled()) {
+      info.addAction(iconRotated.getValue() ? AccessibilityNodeInfo.ACTION_COLLAPSE : AccessibilityNodeInfo.ACTION_EXPAND);
+    }
+  }
+
+  @Override
+  public boolean performAccessibilityAction (int action, @Nullable Bundle arguments) {
+    if (isExpandable && isClickable() && isEnabled() && action == (iconRotated.getValue() ? AccessibilityNodeInfo.ACTION_COLLAPSE : AccessibilityNodeInfo.ACTION_EXPAND)) {
+      // Click shows or hides the views that follow
+      return performClick();
+    }
+    return super.performAccessibilityAction(action, arguments);
   }
 }

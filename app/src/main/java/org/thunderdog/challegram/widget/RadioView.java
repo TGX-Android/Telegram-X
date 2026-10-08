@@ -25,6 +25,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -70,7 +71,12 @@ public class RadioView extends View implements FactorAnimator.Target {
   }
 
   public void setChecked (boolean checked, boolean isAnimated) {
+    boolean changed = checkAnimator.getValue() != checked;
     checkAnimator.setValue(checked, isAnimated);
+    if (changed) {
+      // Checked state is drawn on canvas
+      Views.notifyAccessibilityContentChanged(this);
+    }
   }
 
   public void setActive (boolean active, boolean animated) {

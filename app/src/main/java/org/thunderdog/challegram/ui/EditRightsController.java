@@ -584,11 +584,16 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
               }
             });
             view.getToggler().setClickable(true);
+            // Row shows and hides the rights of the group, its toggler is a switch of its own named after the row
+            view.getToggler().setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+            view.getToggler().setContentDescription(item.getString());
           } else {
             view.getToggler().setOnClickListener(null);
             view.getToggler().setClickable(false);
+            view.getToggler().setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
           }
         }
+        view.setExpandable(viewId == R.id.btn_togglePermissionGroup);
         view.setIconRotated(needRotateIcon, isUpdate);
       }
 

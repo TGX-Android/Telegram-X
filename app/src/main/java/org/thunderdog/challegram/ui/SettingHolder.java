@@ -840,7 +840,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         SettingView settingView = new SettingView(context, tdlib);
         settingView.setType(SettingView.TYPE_SETTING);
         settingView.setOnClickListener(onClickListener);
-        settingView.setOnLongClickListener(onLongClickListener);
+        if (onLongClickListener != null) {
+          // Even a null listener makes the view long clickable, and accessibility services would offer long press
+          settingView.setOnLongClickListener(onLongClickListener);
+        }
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(settingView);
         }
@@ -976,7 +979,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         }
         settingView.setSwapDataAndName();
         settingView.setOnClickListener(onClickListener);
-        settingView.setOnLongClickListener(onLongClickListener);
+        if (onLongClickListener != null) {
+          // Even a null listener makes the view long clickable, and accessibility services would offer long press
+          settingView.setOnLongClickListener(onLongClickListener);
+        }
         switch (viewType) {
           case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
             CheckBoxView checkBox = CheckBoxView.simpleCheckBox(context);

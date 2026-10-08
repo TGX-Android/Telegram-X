@@ -34,6 +34,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -625,6 +626,19 @@ public class Views {
    */
   public static boolean onHoverEvent (View view, MotionEvent e) {
     return e.getActionMasked() == MotionEvent.ACTION_HOVER_EXIT || Views.isValid(view);
+  }
+
+  /**
+   * Lets accessibility services know that the state a view draws on canvas changed.
+   * A view hidden from them, such as a check box drawn as a part of the row that
+   * reports its state, has the closest view they see send the change instead.
+   */
+  public static void notifyAccessibilityContentChanged (View view) {
+    View source = view;
+    while (source.getImportantForAccessibility() == View.IMPORTANT_FOR_ACCESSIBILITY_NO && source.getParent() instanceof View) {
+      source = (View) source.getParent();
+    }
+    source.sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
   }
 
   @SuppressWarnings("DiscouragedApi")

@@ -56,7 +56,16 @@ public class CheckBoxView extends View {
   }
 
   public void setChecked (boolean checked, final boolean animated) {
+    boolean changed = isChecked.getValue() != checked;
     isChecked.setValue(checked, animated);
+    if (changed) {
+      // Checked state is drawn on canvas
+      Views.notifyAccessibilityContentChanged(this);
+    }
+  }
+
+  public boolean isChecked () {
+    return isChecked.getValue();
   }
 
   public void setHidden (boolean hidden, final boolean animated) {
@@ -72,7 +81,9 @@ public class CheckBoxView extends View {
   }
 
   public boolean toggle () {
-    return isChecked.toggleValue(true);
+    boolean result = isChecked.toggleValue(true);
+    Views.notifyAccessibilityContentChanged(this);
+    return result;
   }
 
   public void setDisabled (boolean disabled, boolean animated) {

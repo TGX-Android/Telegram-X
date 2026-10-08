@@ -147,7 +147,11 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
       if (this.isDisabled == null) {
         this.isDisabled = new BoolAnimator(ANIMATOR_DISABLE, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 168l);
       }
+      boolean changed = this.isDisabled.getValue() != isDisabled;
       this.isDisabled.setValue(isDisabled, animated);
+      if (changed) {
+        notifyAccessibilityContentChanged();
+      }
     }
   }
 
@@ -161,6 +165,7 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
         lockDrawable = Drawables.get(getResources(), R.drawable.baseline_lock_14);
       }
       invalidate();
+      notifyAccessibilityContentChanged();
     }
   }
 
@@ -324,7 +329,13 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
 
   private void notifyAccessibilityContentChanged () {
     // Toggle state is drawn on canvas, so let accessibility services know it changed
-    sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+    Views.notifyAccessibilityContentChanged(this);
+  }
+
+  private boolean isEnabledForAccessibility () {
+    // isEnabled() reports the toggle state, not whether the view is enabled.
+    // Drawn locked or disabled, the toggler can still be clicked to explain why.
+    return super.isEnabled() && !showLock && !isDisabled();
   }
 
   @Override
@@ -336,8 +347,7 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
   public void onInitializeAccessibilityEvent (AccessibilityEvent event) {
     super.onInitializeAccessibilityEvent(event);
     event.setChecked(isEnabled());
-    // isEnabled() reports the toggle state, not whether the view is enabled
-    event.setEnabled(super.isEnabled());
+    event.setEnabled(isEnabledForAccessibility());
   }
 
   @Override
@@ -347,7 +357,7 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
     info.setChecked(isEnabled());
     // isEnabled() reports the toggle state, not whether the view is enabled,
     // so super left out the click action while the toggler is off
-    info.setEnabled(super.isEnabled());
+    info.setEnabled(isEnabledForAccessibility());
     if (isClickable() && super.isEnabled()) {
       info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
     }
