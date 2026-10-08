@@ -170,12 +170,15 @@ public class SilentButton extends View {
   @Override
   public void onInitializeAccessibilityEvent (AccessibilityEvent event) {
     super.onInitializeAccessibilityEvent(event);
+    // View fills events from the stored description, not getContentDescription()
+    event.setContentDescription(getContentDescription());
     event.setChecked(isSilent);
   }
 
   @Override
   public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
     super.onInitializeAccessibilityNodeInfo(info);
+    info.setContentDescription(getContentDescription());
     // Whether posts go out silently is only told by the slash drawn over the bell
     info.setCheckable(true);
     info.setChecked(isSilent);
