@@ -1,14 +1,17 @@
 [versions]
-android-gradle-plugin = "9.4.0"
+android-gradle-plugin = "9.4.1"
 
+kotlin = "2.4.20"
 ksp = "2.3.4"
 desugaring = "2.1.5"
+
+jgit = "7.8.0.202609011348-r"
 
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 
 androidx-multidex = "2.0.1"
-androidx-annotation = "1.10.0"
+androidx-annotation = "1.11.0"
 androidx-biometric = "1.1.0"
 androidx-palette = "1.0.0"
 androidx-collection = "1.6.0"
@@ -30,7 +33,7 @@ sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
 
-annotations-checkerframework = "4.2.3"
+annotations-checkerframework = "4.3.0"
 annotations-errorprone = "2.50.0"
 annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
@@ -47,9 +50,9 @@ androidx-uiautomator = "2.4.0"
 
 okhttp-latest = "5.5.0"
 
-androidx-core-latest = "1.19.0"
+androidx-core-latest = "1.19.1"
 androidx-activity-latest = "1.13.0"
-androidx-work-latest = "2.11.2"
+androidx-work-latest = "2.12.0"
 androidx-room-latest = "2.8.5"
 androidx-gridlayout-latest = "1.1.0"
 androidx-recyclerview-latest = "1.4.0"
@@ -59,16 +62,16 @@ androidx-browser-latest = "1.10.0"
 androidx-exifinterface-latest = "1.4.2"
 androidx-camera-latest = "1.6.2"
 androidx-media-latest = "1.11.1"
-androidx-tracing-latest = "2.0.2"
+androidx-tracing-latest = "2.0.3"
 
 firebase-messaging-latest = "25.1.3"
 
-google-recaptcha-latest = "18.9.2" # 18.9.3 is compiled with Kotlin 2.4.0, waiting for AGP update.
+google-recaptcha-latest = "18.9.3"
 
 google-play-billing-latest = "9.1.0"
 google-play-integrity-latest = "1.6.0"
-google-play-services-base-latest = "18.10.1"
-google-play-services-basement-latest = "18.11.0"
+google-play-services-base-latest = "18.11.0"
+google-play-services-basement-latest = "18.12.0"
 google-play-services-maps-latest = "20.0.0"
 google-play-services-location-latest = "21.4.0"
 google-play-services-safetynet-latest = "18.1.0"
@@ -78,7 +81,12 @@ google-mlkit-language-id-latest = "17.0.6"
 
 # marshmallow
 
+androidx-work-marshmallow = "2.11.2" # 2.12.0+ requires minSdk 24
+
 google-recaptcha-marshmallow = "18.8.0"
+
+google-play-services-base-marshmallow = "18.10.1"
+google-play-services-basement-marshmallow = "18.11.0"
 
 # lollipop
 
@@ -135,6 +143,10 @@ desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "des
 androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "androidx-multidex" }
 
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
+jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "jgit" }
+jgit-lfs = { module = "org.eclipse.jgit:org.eclipse.jgit.lfs", version.ref = "jgit" }
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
@@ -155,6 +167,7 @@ androidx-activity-latest = { module = "androidx.activity:activity", version.ref 
 
 androidx-work-runtime-legacy = { module = "androidx.work:work-runtime", version.ref = "androidx-work-legacy" }
 androidx-work-runtime-lollipop = { module = "androidx.work:work-runtime", version.ref = "androidx-work-lollipop" }
+androidx-work-runtime-marshmallow = { module = "androidx.work:work-runtime", version.ref = "androidx-work-marshmallow" }
 androidx-work-runtime-latest = { module = "androidx.work:work-runtime", version.ref = "androidx-work-latest" }
 
 androidx-room-latest = { module = "androidx.room:room-common", version.ref = "androidx-room-latest" }
@@ -232,9 +245,12 @@ google-play-integrity-latest = { module = "com.google.android.play:integrity", v
 
 google-play-services-base-legacy = { module = "com.google.android.gms:play-services-base", version.ref = "google-play-services-base-legacy" }
 google-play-services-base-lollipop = { module = "com.google.android.gms:play-services-base", version.ref = "google-play-services-base-lollipop" }
+google-play-services-base-marshmallow = { module = "com.google.android.gms:play-services-base", version.ref = "google-play-services-base-marshmallow" }
 google-play-services-base-latest = { module = "com.google.android.gms:play-services-base", version.ref = "google-play-services-base-latest" }
+
 google-play-services-basement-legacy = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-base-legacy" }
 google-play-services-basement-lollipop = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-basement-lollipop" }
+google-play-services-basement-marshmallow = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-basement-marshmallow" }
 google-play-services-basement-latest = { module = "com.google.android.gms:play-services-basement", version.ref = "google-play-services-basement-latest" }
 
 google-play-services-maps-legacy = { module = "com.google.android.gms:play-services-maps", version.ref = "google-play-services-maps-legacy" }

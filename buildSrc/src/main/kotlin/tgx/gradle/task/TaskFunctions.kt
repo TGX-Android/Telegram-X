@@ -14,17 +14,18 @@
 
 package tgx.gradle.task
 
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.logging.Logging
 import tgx.gradle.fatal
+import tgx.gradle.requireDir
+import tgx.gradle.requireFile
 import java.io.File
-import java.io.FileOutputStream
 import java.io.Writer
-import java.nio.channels.FileChannel
-import java.nio.file.StandardOpenOption
+import java.nio.file.Files
 import java.util.*
 
-fun isWindowsHost(): Boolean {
-  return System.getProperty("os.name").startsWith("Windows")
-}
+fun isWindowsHost(): Boolean =
+  System.getProperty("os.name").startsWith("Windows")
 
 fun writeTextToFile(file: File, mkdirs: Boolean = true, block: () -> String) {
   writeToFileImpl(file, mkdirs) { outFile ->
@@ -35,16 +36,17 @@ fun writeTextToFile(file: File, mkdirs: Boolean = true, block: () -> String) {
 
 fun writeToFile(file: File, mkdirs: Boolean = true, block: (Writer) -> Unit) {
   writeToFileImpl(file, mkdirs) { outFile ->
-    FileOutputStream(outFile).use { stream ->
-      stream.bufferedWriter().use {
-        try {
-          block(it)
-        } catch (t: Throwable) {
-          outFile.delete()
-          throw t
+    try {
+      outFile.bufferedWriter().use {
+        block(it)
+      }
+    } catch (t: Throwable) {
+      if (outFile.exists() && !outFile.delete()) {
+        Logging.getLogger("TaskFunctions").apply {
+          error("Unable to delete temp file: ${outFile.absolutePath}")
         }
       }
-      stream.flush()
+      throw t
     }
   }
 }
@@ -74,15 +76,11 @@ private fun writeToFileImpl(file: File, mkdirs: Boolean = true, block: (File) ->
 
   if (file.exists()) {
     if (!areFileContentsIdentical(file, outFile)) {
-      if (isWindowsHost()) {
-        Thread.sleep(300)
-        System.gc()
-      }
       copyOrReplace(outFile, file)
     }
     if (!outFile.delete() && outFile.exists()) {
       // Give time to unlock the file and try again
-      for(i in 0..7) {
+      for (i in 0..7) {
         Thread.sleep(300)
         System.gc()
         if (outFile.delete()) return
@@ -96,27 +94,18 @@ private fun writeToFileImpl(file: File, mkdirs: Boolean = true, block: (File) ->
 }
 
 fun copyOrReplace(fromFile: File, toFile: File) {
-  FileChannel.open(fromFile.toPath(), StandardOpenOption.READ).use { inChannel ->
-    FileChannel.open(toFile.toPath(), setOf(
-      StandardOpenOption.WRITE,
-      StandardOpenOption.TRUNCATE_EXISTING)
-    ).use { outChannel ->
-      inChannel.transferTo(0, inChannel.size(), outChannel)
+  if (Files.isSameFile(fromFile.toPath(), toFile.toPath())) {
+    fatal("Trying to copy into the same file: ${fromFile.absolutePath} -> ${toFile.absolutePath}")
+  }
+  fromFile.inputStream().use { input ->
+    toFile.outputStream().use { output ->
+      input.copyTo(output)
     }
   }
 }
 
-fun areFileContentsIdentical(a: File, b: File): Boolean {
-  val areIdentical: Boolean
-  FileChannel.open(a.toPath(), StandardOpenOption.READ).use { fileChannelA ->
-    FileChannel.open(b.toPath(), StandardOpenOption.READ).use { fileChannelB ->
-      val mapA = fileChannelA.map(FileChannel.MapMode.READ_ONLY, 0, fileChannelA.size())
-      val mapB = fileChannelB.map(FileChannel.MapMode.READ_ONLY, 0, fileChannelB.size())
-      areIdentical = mapA == mapB
-    }
-  }
-  return areIdentical
-}
+fun areFileContentsIdentical(a: File, b: File): Boolean =
+  a.length() == b.length() && Files.mismatch(a.toPath(), b.toPath()) == -1L
 
 fun String.camelCaseToUpperCase(): String {
   val upperCase = StringBuilder()
@@ -214,3 +203,84 @@ fun String.unwrapDoubleQuotes(): String {
 }
 
 fun String.wrapInDoubleQuotes(): String = "\"$this\""
+
+fun String.fixNewLines(): String =
+  if (isWindowsHost()) {
+    this.replace("\r\n", "\n")
+  } else {
+    this
+  }
+
+fun validateMsys2Dir(dir: File): File =
+  requireDir(dir.resolve("usr/bin")).also { bin ->
+    requireFile(bin.resolve("msys-2.0.dll"))
+  }
+
+fun msys2Directory(dir: String): File? =
+  if (isWindowsHost()) {
+    if (dir.isEmpty()) {
+      fatal("msys2.dir is not set")
+    }
+    if (dir.any(Char::isWhitespace)) {
+      fatal("msys2.dir contains whitespace: $dir")
+    }
+    File(dir).also { msys2 ->
+      validateMsys2Dir(msys2)
+    }
+  } else {
+    null
+  }
+
+fun msys2Path(dir: DirectoryProperty): String? =
+  if (isWindowsHost()) {
+    requireDir(dir.get().asFile.resolve("usr/bin")).absolutePath
+  } else {
+    null
+  }
+
+private fun msys2Binary(name: String, msys2: DirectoryProperty): String =
+  requireFile(msys2.get().asFile.resolve("usr/bin/$name.exe")).absolutePath
+
+fun resolveBinary(name: String, msys2: DirectoryProperty): String =
+  if (isWindowsHost()) {
+    msys2Binary(name, msys2)
+  } else {
+    name
+  }
+
+fun resolveScript(file: File, msys2: DirectoryProperty): Array<String> =
+  if (isWindowsHost()) {
+    arrayOf(
+      msys2Binary("bash", msys2),
+      requireFile(file).toPosixPath()
+    )
+  } else {
+    arrayOf(requireFile(file).toPosixPath())
+  }
+
+private fun String.toPosixPath(): String =
+  if (length >= 2 && this[1] == ':') {
+    "/${this[0].lowercaseChar()}${substring(2).replace('\\', '/')}"
+  } else {
+    replace('\\', '/')
+  }
+
+fun File.toPosixPath(): String =
+  if (isWindowsHost()) {
+    absolutePath.toPosixPath()
+  } else {
+    absolutePath
+  }
+
+fun File.resolveNdkBinary(path: String): File =
+  if (isWindowsHost()) {
+    resolve("${path}.exe")
+  } else {
+    resolve(path)
+  }
+
+val PATH =
+  if (isWindowsHost())
+    "Path"
+  else
+    "PATH"

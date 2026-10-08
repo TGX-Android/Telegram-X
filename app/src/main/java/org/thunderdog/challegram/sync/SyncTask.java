@@ -32,7 +32,7 @@ import androidx.work.WorkerParameters;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -44,9 +44,9 @@ public class SyncTask extends Worker {
 
   public static void cancel (int accountId) {
     if (accountId == TdlibAccount.NO_ID) {
-      WorkManager.getInstance(UI.getAppContext()).cancelAllWorkByTag("sync");
+      WorkManager.getInstance(AppContext.get()).cancelAllWorkByTag("sync");
     } else {
-      WorkManager.getInstance(UI.getAppContext()).cancelUniqueWork("sync:" + accountId);
+      WorkManager.getInstance(AppContext.get()).cancelUniqueWork("sync:" + accountId);
     }
   }
 
@@ -65,9 +65,9 @@ public class SyncTask extends Worker {
     OneTimeWorkRequest request = b.build();
 
     if (accountId == TdlibAccount.NO_ID) {
-      WorkManager.getInstance(UI.getAppContext()).cancelAllWorkByTag("sync:specific");
+      WorkManager.getInstance(AppContext.get()).cancelAllWorkByTag("sync:specific");
     } else {
-      LiveData<List<WorkInfo>> liveData = WorkManager.getInstance(UI.getAppContext()).getWorkInfosForUniqueWorkLiveData("sync:all");
+      LiveData<List<WorkInfo>> liveData = WorkManager.getInstance(AppContext.get()).getWorkInfosForUniqueWorkLiveData("sync:all");
       List<WorkInfo> workInfos = liveData.getValue();
       if (workInfos != null) {
         for (WorkInfo work : workInfos) {
@@ -80,7 +80,7 @@ public class SyncTask extends Worker {
       }
     }
     TDLib.Tag.notifications(pushId, accountId, "Enqueueing SyncTask, because the task is still not completed");
-    WorkManager.getInstance(UI.getAppContext()).enqueueUniqueWork(uniqueWorkName, ExistingWorkPolicy.REPLACE, request);
+    WorkManager.getInstance(AppContext.get()).enqueueUniqueWork(uniqueWorkName, ExistingWorkPolicy.REPLACE, request);
   }
 
   @NonNull
