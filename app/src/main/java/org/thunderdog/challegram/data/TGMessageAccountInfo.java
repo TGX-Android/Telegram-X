@@ -51,7 +51,7 @@ import me.vkryl.core.StringUtils;
 
 import tgx.td.Td;
 
-public class TGMessageAccountInfo extends TGMessage {
+public class TGMessageAccountInfo extends TGMessageInfo {
   private TdApi.AccountInfo info;
 
   private final TextColorSet primaryColorSet = () ->

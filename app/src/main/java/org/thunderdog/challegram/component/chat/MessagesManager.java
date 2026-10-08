@@ -40,6 +40,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
+import org.thunderdog.challegram.data.TGMessageInfo;
 import org.thunderdog.challegram.data.TGMessageVideo;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
@@ -1314,8 +1315,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void setHeaderMessage (TGMessage headerMessage) {
     this.headerMessage = headerMessage;
     if (insertMessageOnLoad && shouldInsertHeaderMessage()) {
-      if (headerMessage instanceof TGMessageBotInfo) {
-        ((TGMessageBotInfo) headerMessage).setBoundAdapter(adapter);
+      if (headerMessage instanceof TGMessageInfo) {
+        ((TGMessageInfo) headerMessage).setBoundAdapter(adapter);
       }
       adapter.addMessage(this.headerMessage, true, false);
       checkBotStart();
@@ -1375,8 +1376,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         adapter.addMessage(threadHeaderMessage, true, false);
       }
     } else if (headerMessage != null && shouldInsertHeaderMessage()) {
-      if (headerMessage instanceof TGMessageBotInfo) {
-        ((TGMessageBotInfo) headerMessage).setBoundAdapter(adapter);
+      if (headerMessage instanceof TGMessageInfo) {
+        ((TGMessageInfo) headerMessage).setBoundAdapter(adapter);
       }
       adapter.addMessage(headerMessage, true, false);
     } else {
@@ -1759,11 +1760,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
 
     final TGMessage rawMsg = adapter.getTopMessage();
-    if (rawMsg == null || !(rawMsg instanceof TGMessageBotInfo)) {
+    if (!(rawMsg instanceof TGMessageInfo)) {
       return;
     }
 
-    final TGMessageBotInfo msg = (TGMessageBotInfo) rawMsg;
+    final TGMessageInfo msg = (TGMessageInfo) rawMsg;
 
     final View view = findTopView();
     if (view == null) {
@@ -1773,7 +1774,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     final int oldHeight = msg.getCachedHeight();
     view.post(() -> {
-      if (oldHeight != msg.getHeight()) {
+      if (adapter.getTopMessage() == msg && oldHeight != msg.getHeight()) {
         adapter.notifyItemChanged(adapter.getMessageCount() - 1);
       }
     });
@@ -2349,9 +2350,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         } else {
           clear();
         }
-      } else if (messageCount == 1 && adapter.getMessage(0) instanceof TGMessageBotInfo) {
+      } else if (messageCount == 1 && adapter.getMessage(0) instanceof TGMessageInfo) {
         rebuildFirstItem(false, false);
-        controller.showActionBotButton();
+        if (adapter.getMessage(0) instanceof TGMessageBotInfo) {
+          controller.showActionBotButton();
+        }
       }
     }
     if (messageThread != null) {

@@ -27,7 +27,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGMessageBotInfo;
+import org.thunderdog.challegram.data.TGMessageInfo;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessagePoll;
 import org.thunderdog.challegram.data.ThreadInfo;
@@ -712,7 +712,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
   }
 
   public boolean isEmpty () {
-    return items == null || items.size() == 0 || (items.size() == 1 && items.get(0) instanceof TGMessageBotInfo);
+    return items == null || items.size() == 0 || (items.size() == 1 && items.get(0) instanceof TGMessageInfo);
   }
 
   /*@Override
