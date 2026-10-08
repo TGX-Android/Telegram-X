@@ -70,6 +70,7 @@ import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 import org.thunderdog.challegram.util.text.quotes.QuoteBackground;
 
 import java.text.Bidi;
+import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -112,6 +113,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   public static final int FLAG_TRIM_END = 1 << 19;
   public static final int FLAG_NO_SPACING = 1 << 20;
   public static final int FLAG_ALWAYS_BREAK = 1 << 21;
+  public static final int FLAG_SELECTABLE = 1 << 22;
 
   private static final int FLAG_DESTROYED = 1 << 23;
   private static final int FLAG_IN_LONG_PRESS = 1 << 24;
@@ -511,6 +513,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       return this;
     }
 
+    public Builder selectable () {
+      return addFlags(FLAG_SELECTABLE | FLAG_CUSTOM_LONG_PRESS);
+    }
+
     public Builder textFlags (int textFlags) {
       this.textFlags = textFlags;
       return this;
@@ -689,6 +695,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   public boolean setTextFlags (int flags) {
     if (this.textFlags != flags) {
       this.textFlags = flags;
+      if ((flags & FLAG_SELECTABLE) == 0) {
+        dismissSelection();
+      }
       return true;
     }
     return false;
@@ -772,6 +781,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   // Text
 
   private void reset () {
+    dismissSelection();
+    cancelTouch();
     bidiClear();
     entityIndex = -1;
     entityStart = entityEnd = 0;
@@ -2524,6 +2535,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     lastStartY = startY;
 
     if (lastStartX != startX || lastEndX != endX || lastEndXBottomPadding != endXBottomPadding) {
+      if (selection != null) {
+        // Overlay dismisses itself on pre-draw: view tree must not be modified while drawing
+        selection.layoutChanged = true;
+        selectionHighlight = null;
+      }
       this.backgrounds = null;
       if (this.pressHighlights != null)
         this.pressHighlights.clear();
@@ -2598,6 +2614,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       }
     }
     drawPressHighlight(c, startX, endX, endXBottomPadding, startY, center, pressHighlight, alpha, defaultTheme);
+
+    if (selectionHighlight != null) {
+      c.save();
+      c.translate(startX, startY);
+      c.drawPath(selectionHighlight, Paints.fillingPaint(
+        ColorUtils.alphaColor(alpha, Theme.fillingTextSelectionColor())));
+      c.restore();
+    }
 
     if ((textFlags & FLAG_HAS_SPOILERS) != 0) {
       if (spoilers == null) {
@@ -2742,6 +2766,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return hasMedia() ? (getLineHeight(part.getLineIndex()) - getPartHeight(part)) / 2 : 0;
   }
 
+  public boolean isTextAt (float x, float y) {
+    return parts != null && !isDestroyed() && findTextPart((int) x, (int) y,
+      lastStartX, lastEndX, lastEndXBottomPadding, lastStartY, false) != -1;
+  }
+
   private int findTextPart (int touchX, int touchY, int startX, int endX, int endXBottomPadding, int startY, boolean onlyClickable) {
     int x = touchX - startX;
     int y = touchY - startY;
@@ -2822,6 +2851,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   @Nullable
   private PressHighlight pressHighlight;
   private int touchX, touchY;
+  private boolean selectionTouch;
 
   public void setViewProvider (ViewProvider viewProvider) {
     this.viewProvider = viewProvider;
@@ -2835,7 +2865,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   }
 
   public void cancelTouch () {
-    boolean canceled = false;
+    boolean canceled = selectionTouch;
+    selectionTouch = false;
     if (pressedQuote != null) {
       pressedQuote.performCancelTouch();
       pressedQuote = null;
@@ -2885,7 +2916,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   @Override
   public void run () {
     View view = longPressTarget;
-    if (view != null && pressHighlight != null && performLongPress(view)) {
+    if (view != null && (selectionTouch || pressHighlight != null) && performLongPress(view)) {
       view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
       if ((textFlags & FLAG_CUSTOM_LONG_PRESS) != 0) {
         setInLongPress(true);
@@ -2921,6 +2952,28 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   public boolean onTouchEvent (View view, MotionEvent e, @Nullable ClickCallback callback) {
     if (parts == null || isDestroyed()) {
       return false;
+    }
+
+    if (BitwiseUtils.hasAllFlags(textFlags, FLAG_SELECTABLE | FLAG_CUSTOM_LONG_PRESS)) {
+      if (e.getActionMasked() == MotionEvent.ACTION_DOWN) {
+        int partIndex = findTextPart((int) e.getX(), (int) e.getY(), lastStartX, lastEndX, lastEndXBottomPadding, lastStartY, false);
+        TextPart part = partIndex != -1 ? parts.get(partIndex) : null;
+        if (part != null && part.getClickableEntity() == null && !needRevealSpoiler(part)) {
+          cancelTouch();
+          selectionTouch = true;
+          touchX = (int) e.getX();
+          touchY = (int) e.getY();
+          scheduleLongPress(view, callback);
+          return true;
+        }
+      } else if (selectionTouch) {
+        int action = e.getActionMasked();
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL ||
+          Math.max(Math.abs(touchX - e.getX()), Math.abs(touchY - e.getY())) > Screen.getTouchSlop()) {
+          cancelTouch();
+        }
+        return true;
+      }
     }
 
     if (pressedQuote != null && e.getAction() != MotionEvent.ACTION_DOWN) {
@@ -3045,9 +3098,345 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return Screen.dp(4f);
   }
 
+  // Selection
+
+  public interface SelectionDelegate {
+    boolean canSelect ();
+    default float getOffsetX () { return 0f; }
+    default float getOffsetY () { return 0f; }
+  }
+
+  private @Nullable Selection selection;
+  private @Nullable Path selectionHighlight;
+  private @Nullable char[] selectionCharacters;
+
+  // x and y are relative to the host view, same as in onTouchEvent
+  public boolean startSelection (View view, float x, float y, @Nullable SelectionDelegate delegate) {
+    if ((textFlags & FLAG_SELECTABLE) == 0 || isDestroyed() || originalText.isEmpty() ||
+      view.getWindowToken() == null || !(view.getRootView() instanceof ViewGroup)) {
+      return false;
+    }
+    if (delegate != null && !delegate.canSelect()) {
+      return false;
+    }
+    float offsetX = delegate != null ? delegate.getOffsetX() : 0f;
+    float offsetY = delegate != null ? delegate.getOffsetY() : 0f;
+    if (!isTextAt(x - offsetX, y - offsetY)) {
+      return false;
+    }
+    int offset = getSelectionOffset(x - lastStartX - offsetX, y - lastStartY - offsetY);
+    if (offset < 0) {
+      return false;
+    }
+    dismissSelection();
+    cancelTouch();
+    // Paint's CharSequence overloads copy the entire shaping context on every call,
+    // so keep a single buffer for the whole selection session.
+    selectionCharacters = originalText.toCharArray();
+    selection = new Selection(view, delegate, offset);
+    selection.overlay.show();
+    return true;
+  }
+
+  public boolean dismissSelection () {
+    return dismissSelection(false);
+  }
+
+  public boolean dismissSelection (boolean animated) {
+    if (selection == null) {
+      return false;
+    }
+    Selection selection = this.selection;
+    this.selection = null;
+    selectionCharacters = null;
+    setSelectionHighlight(null);
+    selection.overlay.dismiss(animated);
+    return true;
+  }
+
+  private void setSelectionHighlight (@Nullable Path path) {
+    selectionHighlight = path;
+    if (viewProvider != null) {
+      viewProvider.invalidate();
+    }
+  }
+
+  final class Selection {
+    static final int HANDLE_NONE = 0;
+    static final int HANDLE_START = 1;
+    static final int HANDLE_END = 2;
+
+    final Path highlight = new Path();
+    final RectF startHandle = new RectF(), endHandle = new RectF();
+    final RectF bounds = new RectF();
+    final TextSelectionOverlay overlay;
+    int start, end, revision;
+    int draggingHandle = HANDLE_NONE;
+
+    private boolean layoutChanged;
+    private float dragOffsetX, dragOffsetY;
+    private float lastDragX = Float.NaN, lastDragY = Float.NaN;
+
+    Selection (View view, @Nullable SelectionDelegate delegate, int offset) {
+      // Long press right after a word selects that word
+      if (offset > 0 &&
+        (offset == originalText.length() || Character.isWhitespace(originalText.charAt(offset))) &&
+        !Character.isWhitespace(originalText.charAt(offset - 1))) {
+        offset = originalText.offsetByCodePoints(offset, -1);
+      }
+      offset = Math.min(offset, originalText.length() - 1);
+      BreakIterator words = BreakIterator.getWordInstance(Lang.locale());
+      words.setText(originalText);
+      int from = words.preceding(offset + 1);
+      int to = words.following(offset);
+      this.start = snapSelectionOffset(from != BreakIterator.DONE ? from : 0, false);
+      this.end = snapSelectionOffset(to != BreakIterator.DONE ? to : originalText.length(), true);
+      updateGeometry();
+      this.overlay = new TextSelectionOverlay(view, Text.this, this, delegate);
+    }
+
+    void updateGeometry () {
+      getSelectionGeometry(start, end, highlight, startHandle, endHandle);
+      highlight.computeBounds(bounds, true);
+      setSelectionHighlight(highlight);
+      revision++;
+    }
+
+    boolean isActive () {
+      return selection == this && !layoutChanged && !isDestroyed();
+    }
+
+    String getSelectedText () {
+      return originalText.substring(start, end);
+    }
+
+    boolean isAllSelected () {
+      return start == 0 && end == originalText.length();
+    }
+
+    void selectAll () {
+      if (!isAllSelected()) {
+        start = 0;
+        end = originalText.length();
+        updateGeometry();
+      }
+    }
+
+    int findHandleAt (float x, float y, RectF startBounds, RectF endBounds) {
+      float startDistance = getHandleDistance(startBounds, x, y);
+      float endDistance = getHandleDistance(endBounds, x, y);
+      float radius = Screen.dp(24f);
+      if (Math.min(startDistance, endDistance) > radius * radius) {
+        return HANDLE_NONE;
+      }
+      return startDistance <= endDistance ? HANDLE_START : HANDLE_END;
+    }
+
+    private float getHandleDistance (RectF handle, float x, float y) {
+      if (handle.isEmpty()) {
+        return Float.MAX_VALUE;
+      }
+      float dx = x - handle.centerX();
+      float dy = y - handle.centerY();
+      return dx * dx + dy * dy;
+    }
+
+    boolean onTouchEvent (MotionEvent e, float x, float y, RectF startBounds, RectF endBounds) {
+      switch (e.getActionMasked()) {
+        case MotionEvent.ACTION_DOWN: {
+          draggingHandle = findHandleAt(x, y, startBounds, endBounds);
+          if (draggingHandle == HANDLE_NONE) {
+            dismissSelection(true);
+            return true;
+          }
+          RectF handle = draggingHandle == HANDLE_START ? startHandle : endHandle;
+          lastDragX = lastDragY = Float.NaN;
+          dragOffsetX = x - handle.left;
+          dragOffsetY = y - handle.centerY();
+          break;
+        }
+        case MotionEvent.ACTION_MOVE: {
+          if (draggingHandle == HANDLE_NONE || (x == lastDragX && y == lastDragY)) {
+            break;
+          }
+          lastDragX = x;
+          lastDragY = y;
+          int offset = getSelectionOffset(x - dragOffsetX, y - dragOffsetY);
+          if (offset < 0) {
+            break;
+          }
+          offset = snapSelectionOffset(offset, draggingHandle == HANDLE_END);
+          if (draggingHandle == HANDLE_START && offset < end && offset != start) {
+            start = offset;
+            updateGeometry();
+          } else if (draggingHandle == HANDLE_END && offset > start && offset != end) {
+            end = offset;
+            updateGeometry();
+          }
+          break;
+        }
+        case MotionEvent.ACTION_UP:
+        case MotionEvent.ACTION_CANCEL: {
+          draggingHandle = HANDLE_NONE;
+          break;
+        }
+      }
+      return true;
+    }
+  }
+
+  private float getSelectionPartX (TextPart part) {
+    if ((textFlags & FLAG_ALIGN_CENTER) != 0) {
+      int width = getLineWidth(part.getLineIndex());
+      int center = lastStartX + maxWidth / 2;
+      return part.makeX(center - width / 2, center + width / 2, 0) - lastStartX;
+    }
+    return part.makeX(lastStartX, lastEndX, lastEndXBottomPadding) - lastStartX;
+  }
+
+  private float getSelectionAdvance (TextPart part, int offset) {
+    if (offset <= part.getStart()) {
+      return 0f;
+    }
+    if (offset >= part.getEnd()) {
+      return part.getWidth();
+    }
+    if (part.isStaticElement()) {
+      return 0f;
+    }
+    TextPaint paint = getTextPaint(part.getEntity());
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      boolean isRtl = BiDiUtils.isRtl(part.getBidiEntity());
+      if (selectionCharacters != null && part.getLine() == originalText) {
+        return paint.getRunAdvance(selectionCharacters, part.getStart(), part.getEnd(), 0, selectionCharacters.length, isRtl, offset);
+      }
+      return paint.getRunAdvance(part.getLine(), part.getStart(), part.getEnd(), 0, part.getLine().length(), isRtl, offset);
+    }
+    return U.measureText(part.getLine(), part.getStart(), offset, paint);
+  }
+
+  int snapSelectionOffset (int offset, boolean isEnd) {
+    offset = Math.max(0, Math.min(offset, originalText.length()));
+    if (parts != null) {
+      for (int i = 0; i < parts.size(); i++) {
+        TextPart part = parts.get(i);
+        if (part.isStaticElement() && offset > part.getStart() && offset < part.getEnd()) {
+          return isEnd ? part.getEnd() : part.getStart();
+        }
+      }
+    }
+    // Never split a surrogate pair
+    if (offset > 0 && offset < originalText.length() &&
+      Character.isLowSurrogate(originalText.charAt(offset)) &&
+      Character.isHighSurrogate(originalText.charAt(offset - 1))) {
+      offset += isEnd ? 1 : -1;
+    }
+    return offset;
+  }
+
+  int getSelectionOffset (float x, float y) {
+    if (parts == null) {
+      return -1;
+    }
+    TextPart closest = null;
+    float closestDistance = Float.MAX_VALUE;
+    for (int i = 0; i < parts.size(); i++) {
+      TextPart part = parts.get(i);
+      if (part.getLine() != originalText || part.getStart() == part.getEnd()) {
+        continue;
+      }
+      float left = getSelectionPartX(part);
+      float top = part.getY() + getPartVerticalOffset(part);
+      float dx = Math.max(left - x, Math.max(0f, x - left - part.getWidth()));
+      float dy = Math.max(top - y, Math.max(0f, y - top - getPartHeight(part)));
+      float distance = dx * dx + dy * dy;
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closest = part;
+      }
+    }
+    if (closest == null) {
+      return -1;
+    }
+    boolean isRtl = BiDiUtils.isRtl(closest.getBidiEntity());
+    float advance = x - getSelectionPartX(closest);
+    if (isRtl) {
+      advance = closest.getWidth() - advance;
+    }
+    if (closest.isStaticElement()) {
+      return advance < closest.getWidth() / 2f ? closest.getStart() : closest.getEnd();
+    }
+    TextPaint paint = getTextPaint(closest.getEntity());
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      if (selectionCharacters != null) {
+        return paint.getOffsetForAdvance(selectionCharacters, closest.getStart(), closest.getEnd(), 0, selectionCharacters.length, isRtl, advance);
+      }
+      return paint.getOffsetForAdvance(closest.getLine(), closest.getStart(), closest.getEnd(), 0, closest.getLine().length(), isRtl, advance);
+    }
+    int count = paint.breakText(closest.getLine(), closest.getStart(), closest.getEnd(), true, Math.max(0f, advance), null);
+    return snapSelectionOffset(closest.getStart() + count, false);
+  }
+
+  boolean isRtlAtOffset (int offset) {
+    if (parts != null) {
+      for (int i = 0; i < parts.size(); i++) {
+        TextPart part = parts.get(i);
+        if (part.getLine() == originalText && offset >= part.getStart() && offset < part.getEnd()) {
+          return BiDiUtils.isRtl(part.getBidiEntity());
+        }
+      }
+    }
+    return false;
+  }
+
+  void getSelectionGeometry (int start, int end, Path path, RectF startHandle, RectF endHandle) {
+    path.rewind();
+    startHandle.setEmpty();
+    endHandle.setEmpty();
+    if (parts == null) {
+      return;
+    }
+    int firstOffset = Integer.MAX_VALUE;
+    int lastOffset = -1;
+    for (int i = 0; i < parts.size(); i++) {
+      TextPart part = parts.get(i);
+      if (part.getLine() != originalText) {
+        continue;
+      }
+      int from = Math.max(start, part.getStart());
+      int to = Math.min(end, part.getEnd());
+      if (from >= to) {
+        continue;
+      }
+      float left = getSelectionPartX(part);
+      float top = part.getY() + getPartVerticalOffset(part) + getTextPaint(part.getEntity()).baselineShift;
+      float bottom = top + getPartHeight(part);
+      float fromX = getSelectionAdvance(part, from);
+      float toX = getSelectionAdvance(part, to);
+      if (BiDiUtils.isRtl(part.getBidiEntity())) {
+        fromX = part.getWidth() - fromX;
+        toX = part.getWidth() - toX;
+      }
+      fromX += left;
+      toX += left;
+      path.addRect(Math.min(fromX, toX), top, Math.max(fromX, toX), bottom, Path.Direction.CW);
+      if (from < firstOffset) {
+        firstOffset = from;
+        startHandle.set(fromX, top, fromX + 1f, bottom);
+      }
+      if (to > lastOffset) {
+        lastOffset = to;
+        endHandle.set(toX, top, toX + 1f, bottom);
+      }
+    }
+  }
+
   // Sharing
 
   public boolean performLongPress (final View view) {
+    if (selectionTouch) {
+      return startSelection(view, touchX, touchY, null);
+    }
     final ClickCallback callback = longPressTargetCallback;
 
     if (pressedQuote != null) {
