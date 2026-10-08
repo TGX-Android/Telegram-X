@@ -144,6 +144,9 @@ val fetchLocalizedStrings = tasks.register<FetchLocalizedStringsTask>("fetchLoca
   resOutputDir.set(layout.buildDirectory.dir(
     "generated/tgx/locales/res"
   ))
+  localeFiltersOutputFile.set(layout.buildDirectory.file(
+    "generated/tgx/locales/filter.txt"
+  ))
 }
 
 val patchJetpackMediaTasks = Sdk.VARIANTS.values.associateBy({ it.jetpackMediaFlavor }) { variant ->
@@ -683,6 +686,11 @@ android {
       }
       variant.sources.res?.addGeneratedSourceDirectory(
         fetchLocalizedStrings, FetchLocalizedStringsTask::resOutputDir
+      )
+      variant.androidResources.localeFilters.addAll(
+        fetchLocalizedStrings.flatMap { it.localeFiltersOutputFile }.map { file ->
+          file.asFile.readLines().filter { it.isNotBlank() }
+        }
       )
     }
 
