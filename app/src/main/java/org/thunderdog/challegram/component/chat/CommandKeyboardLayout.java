@@ -27,16 +27,12 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.EditText;
-import org.thunderdog.challegram.widget.EmojiTextView;
-import org.thunderdog.challegram.widget.TextView;
 
-import me.vkryl.android.ViewUtils;
 
 public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver.OnPreDrawListener, View.OnClickListener {
   private boolean oneTime;
@@ -94,16 +90,15 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
     for (TdApi.KeyboardButton[] columns : rows) {
       columnCount[column++] = columns.length;
       for (TdApi.KeyboardButton c : columns) {
-        TextView text;
+        BotKeyboardButton text;
         if (j >= count) {
           text = genButton();
           addView(text);
         } else {
-          text = (TextView) getChildAt(j);
+          text = (BotKeyboardButton) getChildAt(j);
           text.setVisibility(View.VISIBLE);
         }
-        text.setTag(c);
-        text.setText(c.text != null ? c.text : "");
+        text.bind(c, themeProvider != null ? themeProvider.tdlib() : null);
 
         j++;
       }
@@ -114,7 +109,9 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
         if (view == null) {
           continue;
         }
+        ((BotKeyboardButton) view).clearIcon();
         if (i > 10) {
+          ((BotKeyboardButton) view).performDestroy();
           if (themeProvider != null) {
             themeProvider.removeThemeListenerByTarget(view);
           }
@@ -134,18 +131,14 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
 
   private @Nullable ViewController<?> themeProvider;
 
-  private TextView genButton () {
-    TextView text = new EmojiTextView(getContext());
+  private BotKeyboardButton genButton () {
+    BotKeyboardButton text = new BotKeyboardButton(getContext());
     text.setScrollDisabled(true);
-    ViewUtils.setBackground(text, Theme.rectSelector(4f, 0f, ColorId.chatKeyboardButton));
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(text);
     }
     text.setGravity(Gravity.CENTER);
     text.setTextColor(Theme.textAccentColor());
-    if (themeProvider != null) {
-      themeProvider.addThemeTextAccentColorListener(text);
-    }
     text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
     text.setOnClickListener(this);
     //noinspection ResourceType

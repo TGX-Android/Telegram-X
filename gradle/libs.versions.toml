@@ -39,6 +39,8 @@ annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
 annotations-kotlin = "2.1.20"
 
+junit = "4.13.2"
+
 androidx-baselineprofile = "1.5.0"
 androidx-profileinstaller = "1.4.1"
 androidx-benchmark = "1.5.0"
@@ -139,6 +141,8 @@ google-play-services-mlkit-barcode-scanning-legacy = "16.2.1" # 18.3.0+ requires
 google-mlkit-language-id-legacy = "16.1.1"
 
 [libraries]
+
+junit = { module = "junit:junit", version.ref = "junit" }
 desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugaring" }
 androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "androidx-multidex" }
 
