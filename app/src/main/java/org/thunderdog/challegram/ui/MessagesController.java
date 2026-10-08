@@ -360,7 +360,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private EmojiLayout emojiLayout;
   private TextFormattingLayout textFormattingLayout;
   private AttachLinearLayout attachButtons;
-  private ImageView emojiButton;
+  private InvisibleImageView emojiButton;
   private VoiceVideoButtonView recordButton;
   private SendButton sendButton;
   private HapticMenuHelper sendMenu;
@@ -1108,10 +1108,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
     }
 
-    emojiButton = new ImageView(context);
+    emojiButton = new InvisibleImageView(context);
     emojiButton.setId(R.id.msg_emoji);
     emojiButton.setScaleType(ImageView.ScaleType.CENTER);
-    emojiButton.setImageResource(EmojiLayout.getTargetIcon(true));
+    setEmojiButtonIcon(EmojiLayout.getTargetIcon(true));
     emojiButton.setColorFilter(Theme.iconColor());
     addThemeFilterListener(emojiButton, ColorId.icon);
     emojiButton.setOnClickListener(this);
@@ -1166,6 +1166,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mediaButton.setId(R.id.msg_attach);
     mediaButton.setScaleType(ImageView.ScaleType.CENTER);
     mediaButton.setImageResource(R.drawable.deproko_baseline_attach_26);
+    mediaButton.setContentDescriptionRes(R.string.AccDescrAttachButton);
     mediaButton.setColorFilter(Theme.iconColor());
     addThemeFilterListener(mediaButton, ColorId.icon);
     mediaButton.setOnClickListener(this);
@@ -1177,6 +1178,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     cameraButton.setId(R.id.btn_camera);
     cameraButton.setScaleType(ImageView.ScaleType.CENTER);
     cameraButton.setImageResource(R.drawable.deproko_baseline_camera_26);
+    cameraButton.setContentDescriptionRes(R.string.ChatCamera);
     cameraButton.setColorFilter(Theme.iconColor());
     addThemeFilterListener(cameraButton, ColorId.icon);
     cameraButton.setOnClickListener(this);
@@ -1188,6 +1190,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       scheduleButton.setId(R.id.btn_viewScheduled);
       scheduleButton.setScaleType(ImageView.ScaleType.CENTER);
       scheduleButton.setImageResource(R.drawable.baseline_date_range_24);
+      scheduleButton.setContentDescriptionRes(R.string.ScheduledMessages);
       scheduleButton.setColorFilter(Theme.iconColor());
       addThemeFilterListener(scheduleButton, ColorId.icon);
       scheduleButton.setOnClickListener(this);
@@ -7465,6 +7468,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (lastCmdResource != resource) {
       lastCmdResource = resource;
       commandButton.setImageResource(resource);
+      commandButton.setContentDescriptionRes(getInputPanelButtonDescription(resource));
     }
   }
 
@@ -8913,10 +8917,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       setEmojiShown(true, true);
       if (emojiState) {
-        emojiButton.setImageResource(R.drawable.baseline_keyboard_24);
+        setEmojiButtonIcon(R.drawable.baseline_keyboard_24);
         emojiKeyboardFrameLayout.hideKeyboard(inputView);
       } else {
-        emojiButton.setImageResource(R.drawable.baseline_direction_arrow_down_24);
+        setEmojiButtonIcon(R.drawable.baseline_direction_arrow_down_24);
       }
     }
   }
@@ -8958,7 +8962,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         emojiKeyboardFrameLayout.setVisible(false);
       }
       setEmojiShown(false, false);
-      emojiButton.setImageResource(getTargetIcon(true));
+      setEmojiButtonIcon(getTargetIcon(true));
     }
   }
 
@@ -8975,7 +8979,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         emojiKeyboardFrameLayout.showKeyboard(inputView);
       }
       setEmojiShown(false, true);
-      emojiButton.setImageResource(getTargetIcon(true));
+      setEmojiButtonIcon(getTargetIcon(true));
     }
   }
 
@@ -12405,7 +12409,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onInputSelectionExistChanged (InputView v, boolean hasSelection) {
     textInputHasSelection = hasSelection;
     if (!emojiShown) {
-      emojiButton.setImageResource(getTargetIcon(true));
+      setEmojiButtonIcon(getTargetIcon(true));
     }
   }
 
@@ -12427,6 +12431,38 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public @DrawableRes int getTargetIcon (boolean isMessage) {
     return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24 : EmojiLayout.getTargetIcon(isMessage);
+  }
+
+  private void setEmojiButtonIcon (@DrawableRes int iconRes) {
+    emojiButton.setImageResource(iconRes);
+    emojiButton.setContentDescriptionRes(getInputPanelButtonDescription(iconRes));
+  }
+
+  /**
+   * What the emoji and bot command buttons do is only told by their icons, which change with
+   * the panel that is open, so the description follows the icon.
+   */
+  private static @StringRes int getInputPanelButtonDescription (@DrawableRes int iconRes) {
+    if (iconRes == R.drawable.deproko_baseline_insert_emoticon_26) {
+      return R.string.EmojiHeader;
+    } else if (iconRes == R.drawable.deproko_baseline_insert_sticker_26) {
+      return R.string.Stickers;
+    } else if (iconRes == R.drawable.deproko_baseline_gif_24) {
+      return R.string.GIFs;
+    } else if (iconRes == R.drawable.baseline_format_text_24) {
+      return R.string.TextFormatting;
+    } else if (iconRes == R.drawable.deproko_baseline_bots_command_26) {
+      return R.string.AccDescrBotCommands;
+    } else if (iconRes == R.drawable.deproko_baseline_bots_keyboard_26) {
+      return R.string.AccDescrBotKeyboard;
+    } else if (iconRes == R.drawable.baseline_keyboard_24) {
+      // The panel is replaced with the system keyboard
+      return R.string.AccDescrKeyboard;
+    } else if (iconRes == R.drawable.baseline_direction_arrow_down_24) {
+      // The panel is closed without bringing up the system keyboard
+      return R.string.AccDescrClose;
+    }
+    return 0;
   }
 
   @Override

@@ -43,6 +43,12 @@ public class AttachLinearLayout extends LinearLayout {
     return (ev.getAction() == MotionEvent.ACTION_DOWN && !Views.isValid(this)) || super.onInterceptTouchEvent(ev);
   }
 
+  @Override
+  public boolean dispatchHoverEvent (MotionEvent event) {
+    // Faded out, not hidden, while the send button is shown
+    return Views.onHoverEvent(this, event) && super.dispatchHoverEvent(event);
+  }
+
   public void updatePivot () {
     int totalWidth = 0;
     int width = 0;

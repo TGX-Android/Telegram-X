@@ -21,8 +21,12 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.ToggleButton;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -148,5 +152,35 @@ public class SilentButton extends View {
     c.drawRect(x + lineWidth, lineTop, x + lineWidth + silentWidth, lineTop + lineHeight, Paints.fillingPaint(/*alpha == 255 ? Theme.fillingColor() : */ColorUtils.color((int) (255f * factor), Theme.fillingColor())));
 
     c.restore();
+  }
+
+  // Accessibility
+
+  @Override
+  public CharSequence getContentDescription () {
+    // Resolve every time, so the description follows language pack changes
+    return Lang.getString(R.string.ChannelSilentBroadcast);
+  }
+
+  @Override
+  public CharSequence getAccessibilityClassName () {
+    return ToggleButton.class.getName();
+  }
+
+  @Override
+  public void onInitializeAccessibilityEvent (AccessibilityEvent event) {
+    super.onInitializeAccessibilityEvent(event);
+    // View fills events from the stored description, not getContentDescription()
+    event.setContentDescription(getContentDescription());
+    event.setChecked(isSilent);
+  }
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    super.onInitializeAccessibilityNodeInfo(info);
+    info.setContentDescription(getContentDescription());
+    // Whether posts go out silently is only told by the slash drawn over the bell
+    info.setCheckable(true);
+    info.setChecked(isSilent);
   }
 }

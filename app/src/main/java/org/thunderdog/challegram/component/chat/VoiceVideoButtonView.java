@@ -21,9 +21,15 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Button;
+
+import androidx.annotation.StringRes;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -68,6 +74,9 @@ public class VoiceVideoButtonView extends View implements FactorAnimator.Target,
       } else {
         Settings.instance().removeVideoPreferenceChangeListener(this);
       }
+      // Only the button in the input bar is pressed, the one in the recording overlay just draws
+      setClickable(hasTouchControls);
+      updateContentDescription();
       invalidate();
     }
   }
@@ -83,6 +92,7 @@ public class VoiceVideoButtonView extends View implements FactorAnimator.Target,
 
   public void setInVideoMode (boolean inVideoMode, boolean animated) {
     this.inVideoMode.setValue(inVideoMode, animated);
+    updateContentDescription();
   }
 
   public void setInSearchMode (boolean inSearchMode, boolean animated) {
@@ -321,5 +331,52 @@ public class VoiceVideoButtonView extends View implements FactorAnimator.Target,
     }
 
     return true;
+  }
+
+  // Accessibility
+
+  private void updateContentDescription () {
+    // Fires the change event that makes a focused button be read again after a switch
+    setContentDescription(hasTouchControls ? Lang.getString(getContentDescriptionRes()) : null);
+  }
+
+  private @StringRes int getContentDescriptionRes () {
+    return inVideoMode.getValue() ? R.string.ChatContentRoundVideo : R.string.ChatContentVoice;
+  }
+
+  @Override
+  public CharSequence getContentDescription () {
+    if (hasTouchControls) {
+      // Resolve every time, so the description follows language pack changes
+      return Lang.getString(getContentDescriptionRes());
+    }
+    return super.getContentDescription();
+  }
+
+  @Override
+  public boolean performClick () {
+    // Taps are recognized in onTouchEvent and never come here, but a double tap
+    // with TalkBack does: switch between voice and video the same way a tap does
+    boolean handled = super.performClick();
+    if (hasTouchControls) {
+      performTap();
+      return true;
+    }
+    return handled;
+  }
+
+  @Override
+  public CharSequence getAccessibilityClassName () {
+    return Button.class.getName();
+  }
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    super.onInitializeAccessibilityNodeInfo(info);
+    if (hasTouchControls) {
+      // Recording takes holding the button, which only the hint shown after a switch tells.
+      // TalkBack's double tap and hold presses and holds the button the same way a finger does
+      AccessibilityNodeInfoCompat.wrap(info).setTooltipText(Lang.getString(inVideoMode.getValue() ? R.string.HoldToVideo : R.string.HoldToAudio));
+    }
   }
 }

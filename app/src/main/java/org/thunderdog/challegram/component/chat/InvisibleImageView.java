@@ -18,8 +18,12 @@ import android.content.Context;
 import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 
+import androidx.annotation.StringRes;
+
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -50,5 +54,30 @@ public class InvisibleImageView extends ImageView implements TooltipOverlayView.
   public void getTargetBounds (View targetView, Rect outRect) {
     outRect.top += Screen.dp(8f);
     outRect.bottom -= Screen.dp(8f);
+  }
+
+  // Accessibility
+
+  private @StringRes int contentDescriptionRes;
+
+  public void setContentDescriptionRes (@StringRes int contentDescriptionRes) {
+    if (this.contentDescriptionRes != contentDescriptionRes) {
+      this.contentDescriptionRes = contentDescriptionRes;
+      setContentDescription(contentDescriptionRes != 0 ? Lang.getString(contentDescriptionRes) : null);
+    }
+  }
+
+  @Override
+  public CharSequence getContentDescription () {
+    if (contentDescriptionRes != 0) {
+      // Resolve every time, so the description follows language pack changes
+      return Lang.getString(contentDescriptionRes);
+    }
+    return super.getContentDescription();
+  }
+
+  @Override
+  public CharSequence getAccessibilityClassName () {
+    return Button.class.getName();
   }
 }
