@@ -200,6 +200,8 @@
   <item type="id" name="controller_media_simple" />
   <item type="id" name="controller_encryptionKey" />
   <item type="id" name="controller_webkit" />
+  <item type="id" name="controller_miniApp" />
+  <item type="id" name="btn_miniApp" />
   <item type="id" name="controller_blocked" />
   <item type="id" name="controller_passcode" />
   <item type="id" name="controller_passcodeSetup" />

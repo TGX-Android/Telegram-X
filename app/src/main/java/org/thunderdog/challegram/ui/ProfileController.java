@@ -2442,7 +2442,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
 
     int addedCount = 0;
+    if (mode == Mode.USER && user.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) user.type).hasMainWebApp) {
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_miniApp, R.drawable.baseline_launch_24, R.string.MiniAppOpen));
+      addedCount++;
+    }
     if (Settings.instance().showPeerIds()) {
+      if (addedCount > 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       items.add(newPeerIdItem());
       addedCount++;
     }
@@ -4748,6 +4753,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onClick (View v) {
     final int viewId = v.getId();
+    if (viewId == R.id.btn_miniApp && user != null && mode == Mode.USER) {
+      tdlib.miniApps().open(this, new org.thunderdog.challegram.miniapps.MiniAppLaunchRequest(
+        org.thunderdog.challegram.miniapps.MiniAppLaunchRequest.Source.MAIN_APP, user.id, getChatId(),
+        "", "", "", "", null, null, null, false));
+      return;
+    }
     if (viewId == R.id.avatar) {
       changeProfilePhoto();
     } else if (viewId == R.id.btn_done) {

@@ -2100,7 +2100,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       manager.scrollToNextUnreadReaction();
     } else if (viewId == R.id.msg_command) {
       // FIXME: rely on some state, not on icon id
-      if (lastCmdResource == R.drawable.deproko_baseline_bots_command_26) {
+      if (lastCmdResource == R.drawable.deproko_baseline_bots_command_26 || lastCmdResource == R.drawable.baseline_launch_24) {
         onCommandClick();
       } else if (lastCmdResource == R.drawable.deproko_baseline_bots_keyboard_26 ||
         lastCmdResource == R.drawable.baseline_direction_arrow_down_24 ||
@@ -2664,6 +2664,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void shareItem (Object item) {
     if (item instanceof InlineResultButton) {
+      InlineResultButton button = (InlineResultButton) item;
+      if (button.webAppUrl() != null) {
+        openMiniApp(org.thunderdog.challegram.miniapps.MiniAppLaunchRequest.Source.INLINE_RESULTS, button.getUserId(), button.webAppUrl(), button.getText());
+        return;
+      }
       if (!hasSendBasicMessagePermission()) {
         return;
       }
@@ -7438,6 +7443,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void updateCommandButton (boolean isVisible) {
+    if (botHelper != null && botHelper.getMenuButton() != null) {
+      isVisible = true;
+      if (lastCmdResource == R.drawable.deproko_baseline_bots_command_26 || lastCmdResource == R.drawable.baseline_launch_24) {
+        updateCommandButton(R.drawable.deproko_baseline_bots_command_26);
+      }
+      commandButton.setContentDescription(botHelper.getMenuButton().text);
+    } else if (lastCmdResource == R.drawable.baseline_launch_24) {
+      updateCommandButton(R.drawable.deproko_baseline_bots_command_26);
+      commandButton.setContentDescription(null);
+    }
     boolean ok = setCameraVisible(!isVisible || !ChatId.isUserChat(getChatId()));
     if (commandButton.setVisible(isVisible) || ok) {
       attachButtons.updatePivot();
@@ -7445,6 +7460,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateCommandButton (int resource) {
+    if (resource == R.drawable.deproko_baseline_bots_command_26 && botHelper != null && botHelper.getMenuButton() != null) resource = R.drawable.baseline_launch_24;
     if (resource == 0) {
       if (commandButton.setVisible(false)) {
         attachButtons.updatePivot();
@@ -7461,6 +7477,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void onCommandClick () {
+    if (botHelper != null && botHelper.getMenuButton() != null) {
+      TdApi.BotMenuButton menu = botHelper.getMenuButton();
+      tdlib.miniApps().openBotMenu(this, menu);
+      return;
+    }
     inputView.setInput("/", true, true);
     Keyboard.show(inputView);
   }
@@ -7701,6 +7722,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
       builder.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> dialog.dismiss());
       showAlert(builder);
     }
+  }
+
+  public void openMiniApp (org.thunderdog.challegram.miniapps.MiniAppLaunchRequest.Source source, long botUserId, String url, String buttonText) {
+    if (botUserId == 0 || areScheduledOnly()) return;
+    hideAllKeyboards();
+    tdlib.miniApps().open(this, org.thunderdog.challegram.miniapps.MiniAppLaunchRequest.fromChat(this, source, botUserId, url, buttonText));
+  }
+
+  @Override
+  public void onOpenWebApp (String buttonText, String url, boolean oneTime) {
+    long botId = tdlib.chatUserId(getChatId());
+    if (botId == 0 || areScheduledOnly()) return;
+    final long keyboardMessageId = commandsMessageId;
+    final long launchChatId = getChatId();
+    hideAllKeyboards();
+    tdlib.miniApps().open(this, org.thunderdog.challegram.miniapps.MiniAppLaunchRequest.fromChat(this,
+      org.thunderdog.challegram.miniapps.MiniAppLaunchRequest.Source.REPLY_KEYBOARD, botId, url, buttonText),
+      oneTime ? () -> { if (!isDestroyed() && getChatId() == launchChatId && commandsMessageId == keyboardMessageId) onDestroyCommandKeyboard(); } : null);
   }
 
   @Override

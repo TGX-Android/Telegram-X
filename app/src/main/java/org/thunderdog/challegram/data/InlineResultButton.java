@@ -54,6 +54,10 @@ public class InlineResultButton extends InlineResult<TdApi.InlineQueryResultsBut
     }
   }
 
+  public String webAppUrl () {
+    return data.type instanceof TdApi.InlineQueryResultsButtonTypeWebApp ? ((TdApi.InlineQueryResultsButtonTypeWebApp) data.type).url : null;
+  }
+
   @Override
   protected int getContentHeight () {
     return Screen.dp(36f) + Screen.dp(1f);

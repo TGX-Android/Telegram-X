@@ -168,11 +168,19 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
 
   // Private utils
 
+  private TdApi.BotMenuButton menuButton;
+
+  public TdApi.BotMenuButton getMenuButton () {
+    return menuButton != null && menuButton.url != null && !menuButton.url.isEmpty() ? menuButton : null;
+  }
+
   private void processUserFull (TdApi.UserFullInfo full) {
     if (full == null) {
       return;
     }
 
+    menuButton = full.botInfo != null ? full.botInfo.menuButton : null;
+    context.tdlib().uiExecute(this);
     if (full.botInfo != null) {
       if (!StringUtils.isEmpty(full.botInfo.description) && !context.areScheduledOnly()) {
         this.botInfoMessage = new TGMessageBotInfo(context.getManager(), chatId, full.botInfo.description);

@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
+  <string name="MiniAppTitle">Mini App</string>
+  <string name="MiniAppMore">More options</string>
+  <string name="MiniAppPopupClose">Close</string>
+  <string name="MiniAppOpen">Open App</string>
+  <string name="MiniAppDisclaimer">This Mini App is provided by a third party. Your basic profile information will be shared with it. Only continue if you trust this bot.</string>
+  <string name="MiniAppAllowMessages">Allow this bot to send me messages</string>
+  <string name="MiniAppWebViewUnavailable">Mini Apps require Android 5.0 or later and an up-to-date Android System WebView.</string>
+  <string name="MiniAppSecretChat">Mini Apps are not available in secret chats.</string>
+  <string name="MiniAppClose">Close App</string>
+  <string name="MiniAppCloseConfirm">Changes you made may not be saved. Close this Mini App?</string>
+  <string name="MiniAppMinimize">Minimize</string>
+  <string name="MiniAppReload">Reload Page</string>
+  <string name="MiniAppLoadError">Could not load this Mini App. Check your connection and try again.</string>
+  <string name="MiniAppTerms">Terms of Service</string>
+  <string name="MiniAppSharePhone">Share your phone number with %1$s?</string>
+  <string name="MiniAppWriteAccess">Allow %1$s to send you messages?</string>
   <string name="language_continueInLanguage">Continue in English</string>
 
   <string name="Page1Title">Telegram X</string>

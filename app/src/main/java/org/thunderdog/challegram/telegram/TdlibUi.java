@@ -4084,13 +4084,17 @@ public class TdlibUi extends Handler {
         break;
       }
 
+      case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMainWebApp.CONSTRUCTOR: {
+        tdlib.miniApps().openLink(context, linkType, openParameters);
+        break;
+      }
+
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeLiveStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStoryAlbum.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMainWebApp.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
 
