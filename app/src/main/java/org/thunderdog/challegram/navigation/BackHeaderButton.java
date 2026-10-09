@@ -104,13 +104,12 @@ public class BackHeaderButton extends HeaderButton implements View.OnClickListen
   }
 
   private void updateContentDescription () {
-    // Describe the action onClick performs: 0f = menu, 1f = back, 2f = close.
-    // Any factor other than exactly 0f performs back press, even mid-animation.
+    // Updated only on final states, intermediate animation values are ignored
     if (factor == 0f) {
       setContentDescriptionRes(R.string.AccDescrOpenMenu);
-    } else if (factor < 1.5f) {
+    } else if (factor == 1f) {
       setContentDescriptionRes(R.string.AccDescrGoBack);
-    } else {
+    } else if (factor == 2f) {
       setContentDescriptionRes(R.string.AccDescrClose);
     }
   }

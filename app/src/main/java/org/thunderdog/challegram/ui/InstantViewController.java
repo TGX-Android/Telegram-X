@@ -104,7 +104,7 @@ public class InstantViewController extends ViewController<InstantViewController.
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_iv) {
-      menu.addView(header.genButton(R.id.menu_btn_forward, R.drawable.baseline_share_arrow_24, getHeaderIconColorId(), this, Screen.dp(52f), ThemeDeprecated.headerSelector(), header).setContentDescriptionRes(R.string.Share), Lang.rtl() ? 0 : -1);
+      menu.addView(header.genButton(R.id.menu_btn_forward, R.drawable.baseline_share_arrow_24, R.string.Share, getHeaderIconColorId(), this, Screen.dp(52f), ThemeDeprecated.headerSelector(), header), Lang.rtl() ? 0 : -1);
     }
   }
 

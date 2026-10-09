@@ -482,8 +482,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     if (id == R.id.menu_search) {
       header.addSearchButton(menu, this, getHeaderIconColorId());
     } else if (id == R.id.menu_contacts) {
-      header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, getHeaderIconColorId(), this, Screen.dp(49f))
-        .setContentDescriptionRes(R.string.AddContact);
+      header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, R.string.AddContact, getHeaderIconColorId(), this, Screen.dp(49f));
     }
   }
 
