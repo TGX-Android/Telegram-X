@@ -3571,15 +3571,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (id == R.id.menu_more) {
       header.addMoreButton(menu, this);
     } else if (id == R.id.menu_gallery) {
-      header.addButton(menu, R.id.menu_btn_gallery, R.drawable.baseline_image_24, getHeaderIconColorId(), this, Screen.dp(52f));
+      header.addButton(menu, R.id.menu_btn_gallery, R.drawable.baseline_image_24, R.string.Gallery, getHeaderIconColorId(), this, Screen.dp(52f));
     } else if (id == R.id.menu_share) {
-      header.addButton(menu, R.id.menu_btn_share, R.drawable.baseline_share_arrow_24, getHeaderIconColorId(), this, Screen.dp(52f));
+      header.addButton(menu, R.id.menu_btn_share, R.drawable.baseline_share_arrow_24, R.string.Share, getHeaderIconColorId(), this, Screen.dp(52f));
     } else if (id == R.id.menu_clear) {
       header.addClearButton(menu, this).setColorId(ColorId.headerLightIcon);
     } else if (id == R.id.menu_search) {
       header.addSearchButton(menu, this);
     } else if (id == R.id.menu_chat) {
-      HeaderButton btn = header.addButton(menu, R.id.menu_btn_viewScheduled, R.drawable.baseline_date_range_24, getHeaderIconColorId(), this, Screen.dp(52f));
+      HeaderButton btn = header.addButton(menu, R.id.menu_btn_viewScheduled, R.drawable.baseline_date_range_24, R.string.ScheduledMessages, getHeaderIconColorId(), this, Screen.dp(52f));
       btn.setVisibility(tdlib.chatHasScheduled(getChatId()) ? View.VISIBLE : View.GONE);
       header.addMoreButton(menu, this);
     } else if (id == R.id.menu_secretChat) {
@@ -3588,13 +3588,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       header.addMoreButton(menu, this);
     } else if (id == R.id.menu_messageActions) {
       int iconColorId = getSelectHeaderIconColorId();
-      HeaderButton selectInBetweenBtn = header.addButton(menu, R.id.menu_btn_selectInBetween, R.drawable.baseline_toc_24, iconColorId, this, Screen.dp(49f));
+      HeaderButton selectInBetweenBtn = header.addButton(menu, R.id.menu_btn_selectInBetween, R.drawable.baseline_toc_24, R.string.SelectMessagesInBetween, iconColorId, this, Screen.dp(49f));
       selectInBetweenBtn.setThemeColorId(getSelectHeaderIconColorId());
       selectInBetweenBtn.setTag(Lang.getString(R.string.SelectMessagesInBetween));
       selectInBetweenBtn.setVisibility(View.GONE);
       int totalButtonsCount = 0;
       boolean value;
-      header.addButton(menu, R.id.menu_btn_send, R.drawable.baseline_send_24, iconColorId, this, Screen.dp(52f))
+      header.addButton(menu, R.id.menu_btn_send, R.drawable.baseline_send_24, R.string.SendNow, iconColorId, this, Screen.dp(52f))
         .setVisibility((value = canSendSelectedMessages()) ? View.VISIBLE : View.GONE);
       if (value) totalButtonsCount++;
       header.addViewButton(menu, this, iconColorId)
@@ -3606,10 +3606,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       header.addEditButton(menu, this, iconColorId)
         .setVisibility((value = canEditSelectedMessages()) ? View.VISIBLE : View.GONE);
       if (value) totalButtonsCount++;
-      header.addButton(menu, R.id.menu_btn_clearCache, R.drawable.templarian_baseline_broom_24, iconColorId, this, Screen.dp(52f))
+      header.addButton(menu, R.id.menu_btn_clearCache, R.drawable.templarian_baseline_broom_24, R.string.DeleteFromCache, iconColorId, this, Screen.dp(52f))
         .setVisibility((value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE);
       if (value) totalButtonsCount++;
-      header.addButton(menu, R.id.menu_btn_unpinAll, R.drawable.deproko_baseline_pin_undo_24, iconColorId, this, Screen.dp(52f))
+      header.addButton(menu, R.id.menu_btn_unpinAll, R.drawable.deproko_baseline_pin_undo_24, R.string.Unpin, iconColorId, this, Screen.dp(52f))
         .setVisibility((value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE);
       if (value) totalButtonsCount++;
       header.addRetryButton(menu, this, iconColorId)
@@ -3619,7 +3619,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         .setVisibility((value = canDeleteSelectedMessages()) ? View.VISIBLE : View.GONE);
       if (value) totalButtonsCount++;
 
-      HeaderButton reportButton = header.addButton(menu, R.id.menu_btn_report, R.drawable.baseline_report_24, iconColorId, this, Screen.dp(52f));
+      HeaderButton reportButton = header.addButton(menu, R.id.menu_btn_report, R.drawable.baseline_report_24, R.string.Report, iconColorId, this, Screen.dp(52f));
 
       header.addCopyButton(menu, this, iconColorId)
         .setVisibility((value = canCopySelectedMessages()) ? View.VISIBLE : View.GONE);
