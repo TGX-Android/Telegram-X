@@ -199,7 +199,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     header.addView(back);
     title = new TextView(context);
     title.setText(tdlib.cache().userName(request.botUserId));
-    title.setTextSize(20);
+    title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 20);
     title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
     title.setSingleLine();
     title.setEllipsize(TextUtils.TruncateAt.END);

@@ -133,7 +133,7 @@ public final class MiniAppTabs extends FrameLayout implements RootFrameLayout.In
 
   private TextView title () {
     TextView text = new TextView(activity);
-    text.setTextSize(17);
+    text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 17);
     text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
     text.setSingleLine();
     text.setEllipsize(TextUtils.TruncateAt.END);
@@ -197,7 +197,7 @@ public final class MiniAppTabs extends FrameLayout implements RootFrameLayout.In
     overlay.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
     TextView closeAll = title();
     closeAll.setText(Lang.getString(R.string.MiniAppCloseAllTabs));
-    closeAll.setTextSize(14);
+    closeAll.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
     closeAll.setGravity(Gravity.CENTER);
     closeAll.setPadding(Screen.dp(12), 0, Screen.dp(12), 0);
     org.thunderdog.challegram.support.RippleSupport.setSimpleWhiteBackground(closeAll, ColorId.filling, 16f, null);

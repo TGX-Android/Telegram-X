@@ -1718,7 +1718,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         TextView button = new TextView(context);
         button.setId(R.id.btn_miniApp);
         button.setText(Lang.getString(R.string.MiniAppOpen));
-        button.setTextSize(14);
+        button.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
         button.setTypeface(Fonts.getRobotoBold());
         button.setGravity(Gravity.CENTER);
         button.setOnClickListener(ProfileController.this);
