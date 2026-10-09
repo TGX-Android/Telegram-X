@@ -1173,8 +1173,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
       header.addSearchButton(menu, this);
     } else if (id == R.id.menu_archive) {
-      header.addButton(menu, R.id.menu_btn_settings, R.drawable.baseline_settings_24, 49f, this, getHeaderIconColorId())
-        .setContentDescriptionRes(R.string.ArchiveSettings);
+      header.addButton(menu, R.id.menu_btn_settings, R.drawable.baseline_settings_24, R.string.ArchiveSettings, 49f, this, getHeaderIconColorId());
       header.addSearchButton(menu, this);
     } else if (id == R.id.menu_search) {
       header.addSearchButton(menu, this);
@@ -1192,14 +1191,12 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       int iconColorId = getSelectHeaderIconColorId();
 
       mode = canPinUnpinSelectedChats();
-      header.addButton(menu, R.id.menu_btn_pinUnpin, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, iconColorId, this, Screen.dp(52f))
-        .setContentDescriptionRes(mode == ACTION_MODE_ALL_ENABLED ? R.string.UnpinFromTop : R.string.PinToTop)
+      header.addButton(menu, R.id.menu_btn_pinUnpin, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, mode == ACTION_MODE_ALL_ENABLED ? R.string.UnpinFromTop : R.string.PinToTop, iconColorId, this, Screen.dp(52f))
         .setVisibility((value = shouldShowPin(mode)) ? View.VISIBLE : View.GONE);
       if (value) totalButtonsCount++;
 
       mode = canMuteUnmuteSelectedChats();
-      header.addButton(menu, R.id.menu_btn_muteUnmute, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24, iconColorId, this, Screen.dp(52f))
-        .setContentDescriptionRes(mode == ACTION_MODE_ALL_ENABLED ? R.string.Mute : R.string.Unmute)
+      header.addButton(menu, R.id.menu_btn_muteUnmute, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24, mode == ACTION_MODE_ALL_ENABLED ? R.string.Mute : R.string.Unmute, iconColorId, this, Screen.dp(52f))
         .setVisibility((value = mode != ACTION_MODE_NONE) ? View.VISIBLE : View.GONE);
       if (value) totalButtonsCount++;
 
