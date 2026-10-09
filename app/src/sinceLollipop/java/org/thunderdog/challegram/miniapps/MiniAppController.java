@@ -367,6 +367,16 @@ public final class MiniAppController extends ViewController<Void> implements Min
         if (expanded && !fullscreen && root.getY() <= top + 1 && header.getBackground() instanceof ColorDrawable) {
           canvas.drawRect(0, 0, getWidth(), top, Paints.fillingPaint(((ColorDrawable) header.getBackground()).getColor()));
         }
+        // The WebView consumes navigation insets; cover them so the underlying chat/profile cannot show through.
+        if (!fullscreen && buttons.getBackground() instanceof ColorDrawable) {
+          Rect systemInsets = context().getRootView().getSystemInsetsWithoutIme();
+          int color = ((ColorDrawable) buttons.getBackground()).getColor();
+          if (systemInsets.bottom > 0 && getSystemInsets().bottom <= systemInsets.bottom) {
+            canvas.drawRect(0, getHeight() - systemInsets.bottom, getWidth(), getHeight(), Paints.fillingPaint(color));
+          }
+          if (systemInsets.left > 0) canvas.drawRect(0, 0, systemInsets.left, getHeight(), Paints.fillingPaint(color));
+          if (systemInsets.right > 0) canvas.drawRect(getWidth() - systemInsets.right, 0, getWidth(), getHeight(), Paints.fillingPaint(color));
+        }
       }
     };
     popup.init(false);
