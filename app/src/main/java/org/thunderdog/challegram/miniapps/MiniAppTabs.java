@@ -8,6 +8,7 @@ import android.graphics.Typeface;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Rect;
 import android.os.Build;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
@@ -26,13 +27,15 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /** One bottom tab strip per account/activity. Its height is reserved in the underlying navigation. */
-public final class MiniAppTabs extends FrameLayout {
+public final class MiniAppTabs extends FrameLayout implements RootFrameLayout.InsetsChangeListener {
   private final BaseActivity activity;
+  private final Runnable onInsetsChanged;
   private final int originalPadding;
   private final LinearLayout bar;
   private final View stack;
@@ -42,9 +45,10 @@ public final class MiniAppTabs extends FrameLayout {
   private PopupLayout overview;
   private boolean attached;
 
-  public MiniAppTabs (BaseActivity activity) {
+  public MiniAppTabs (BaseActivity activity, Runnable onInsetsChanged) {
     super(activity);
     this.activity = activity;
+    this.onInsetsChanged = onInsetsChanged;
     originalPadding = activity.getContentView().getPaddingBottom();
     setLayoutParams(new FrameLayout.LayoutParams(-1, Screen.dp(60), Gravity.BOTTOM));
     stack = new View(activity);
@@ -79,19 +83,29 @@ public final class MiniAppTabs extends FrameLayout {
     getLayoutParams().height = height;
     requestLayout();
     View content = activity.getContentView();
-    content.setPadding(content.getPaddingLeft(), content.getPaddingTop(), content.getPaddingRight(), originalPadding + (visible ? height : 0));
+    content.setPadding(content.getPaddingLeft(), content.getPaddingTop(), content.getPaddingRight(), originalPadding + (visible && !activity.isKeyboardVisible() ? height : 0));
     if (visible) {
       String name = sessions.get(sessions.size() - 1).botName();
       title.setText(name);
       title.setContentDescription(sessions.size() > 1 ? Lang.getString(R.string.MiniAppTabsTitle, name, sessions.size()) : name);
       stack.setVisibility(sessions.size() > 1 ? VISIBLE : GONE);
       refreshTheme();
-      if (!attached) { activity.addToRoot(this, true); attached = true; }
+      if (!attached) {
+        activity.getRootView().addInsetsChangeListener(this);
+        activity.addToRoot(this, true);
+        attached = true;
+      }
     } else if (attached) {
+      activity.getRootView().removeInsetsChangeListener(this);
       activity.removeFromRoot(this);
       attached = false;
     }
     if (overview != null) overview.hideWindow(false);
+  }
+
+  @Override
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
+    onInsetsChanged.run();
   }
 
   public void raiseAboveSheet () {

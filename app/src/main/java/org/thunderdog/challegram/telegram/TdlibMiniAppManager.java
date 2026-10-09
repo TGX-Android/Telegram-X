@@ -133,7 +133,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
     MiniAppTabs strip = tabs.get(activity);
     if (strip == null) {
       if (sessions.stream().noneMatch(controller -> controller.context() == activity && controller.isMinimized())) return;
-      tabs.put(activity, strip = new MiniAppTabs(activity));
+      tabs.put(activity, strip = new MiniAppTabs(activity, () -> updateTabs(activity)));
     }
     strip.update(sessions);
     if (sessions.stream().noneMatch(controller -> controller.context() == activity && controller.isMinimized())) tabs.remove(activity);
@@ -143,10 +143,11 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
 
   public void updateTabsVisibility (org.thunderdog.challegram.BaseActivity activity) {
     MiniAppTabs strip = tabs.get(activity);
-    if (strip != null) strip.setVisibility(sessions.stream().anyMatch(controller -> controller.context() == activity && controller.isShowingFullscreen()) ? android.view.View.GONE : android.view.View.VISIBLE);
+    if (strip != null) strip.setVisibility(activity.isKeyboardVisible() || sessions.stream().anyMatch(controller -> controller.context() == activity && controller.isShowingFullscreen()) ? android.view.View.GONE : android.view.View.VISIBLE);
   }
 
   public int tabsHeight (org.thunderdog.challegram.BaseActivity activity) {
+    if (activity.isKeyboardVisible()) return 0;
     long count = sessions.stream().filter(controller -> controller.context() == activity && controller.isMinimized()).count();
     return count == 0 ? 0 : Screen.dp(count > 1 ? 68 : 60);
   }
