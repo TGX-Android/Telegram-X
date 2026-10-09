@@ -463,7 +463,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     emit("deactivated", object());
     if (browserArea.getWidth() > 0 && browserArea.getHeight() > 0) {
       if (preview != null) preview.recycle();
-      float scale = Math.min(1f, 360f / browserArea.getWidth());
+      float scale = Math.min(1f, 1080f / browserArea.getWidth());
       preview = Bitmap.createBitmap(Math.max(1, Math.round(browserArea.getWidth() * scale)), Math.max(1, Math.round(browserArea.getHeight() * scale)), Bitmap.Config.RGB_565);
       Canvas canvas = new Canvas(preview);
       canvas.scale(scale, scale);

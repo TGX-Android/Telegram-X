@@ -229,6 +229,7 @@ public final class MiniAppTabs extends FrameLayout implements RootFrameLayout.In
       cardParams.bottomMargin = i + 1 < sessions.size() ? -Math.round(cardHeight * .64f) : 0;
       card.setCameraDistance(Screen.dp(1280));
       card.setPivotY(0);
+      card.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> v.setPivotX((r - l) / 2f));
       card.setRotationX(-5f);
       cards.addView(card, cardParams);
       LinearLayout row = new LinearLayout(activity);
