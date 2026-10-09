@@ -374,6 +374,11 @@ public final class MiniAppController extends ViewController<Void> implements Min
     popup.setOverlayStatusBar(true);
     popup.setPadding(0, 0, 0, fullscreen ? 0 : tdlib.miniApps().tabsHeight(context()));
     popup.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    popup.setShowListener(window -> {
+      // A restored page may not emit a new header color; repaint after the slide animation.
+      window.invalidate();
+      sendViewport();
+    });
     popup.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
       if (b - t != ob - ot || r - l != or - ol) resize();
     });
