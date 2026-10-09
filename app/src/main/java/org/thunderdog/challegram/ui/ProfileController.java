@@ -427,8 +427,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       int buttonColorId = getHeaderIconColorId();
 
       if (mode == Mode.SECRET || mode == Mode.USER) {
-        callButton = header.addButton(realMenu, R.id.menu_btn_call, R.drawable.baseline_phone_24, buttonColorId, this, Screen.dp(48f));
-        callButton.setContentDescriptionRes(R.string.Call);
+        callButton = header.addButton(realMenu, R.id.menu_btn_call, R.drawable.baseline_phone_24, R.string.Call, buttonColorId, this, Screen.dp(48f));
         callButton.setAlpha(userFull != null && (userFull.canBeCalled || userFull.hasPrivateCalls) ? 1f : 0f);
       }
 
@@ -440,13 +439,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       }
       if (id == R.id.menu_profile || id == R.id.menu_profile_bot) {
-        HeaderButton button = header.addButton(realMenu, R.id.menu_btn_manage, R.drawable.baseline_edit_24, buttonColorId, this, Screen.dp(49f));
-        button.setContentDescriptionRes(R.string.edit);
+        HeaderButton button = header.addButton(realMenu, R.id.menu_btn_manage, R.drawable.baseline_edit_24, R.string.edit, buttonColorId, this, Screen.dp(49f));
         button.setVisibility(canManageChat() ? View.VISIBLE : View.GONE);
       }
       if (id == R.id.menu_profile) {
-        HeaderButton button = header.addButton(realMenu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, buttonColorId, this, Screen.dp(49f));
-        button.setContentDescriptionRes(R.string.AddMember);
+        HeaderButton button = header.addButton(realMenu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, R.string.AddMember, buttonColorId, this, Screen.dp(49f));
         button.setVisibility(canAddAnyKindOfMembers() ? View.VISIBLE : View.GONE);
       }
       HeaderButton moreButton = header.addMoreButton(realMenu, this, buttonColorId);

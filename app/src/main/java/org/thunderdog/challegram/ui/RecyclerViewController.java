@@ -321,8 +321,7 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
     if (id == R.id.menu_search) {
       header.addSearchButton(menu, this);
     } else if (id == R.id.menu_help) {
-      header.addButton(menu, R.id.menu_btn_help, R.drawable.baseline_help_outline_24, getHeaderIconColorId(), this, Screen.dp(49f))
-        .setContentDescriptionRes(R.string.Help);
+      header.addButton(menu, R.id.menu_btn_help, R.drawable.baseline_help_outline_24, R.string.Help, getHeaderIconColorId(), this, Screen.dp(49f));
     } else if (id == R.id.menu_clear) {
       header.addClearButton(menu, this);
     } else if (id == R.id.menu_more) {
