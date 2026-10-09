@@ -27,9 +27,15 @@ public final class MiniAppController extends ViewController<Void> {
 
   public long launchId () { return 0; }
   public boolean isMinimized () { return false; }
+  public boolean isShowing () { return false; }
+  public boolean isShowingFullscreen () { return false; }
+  public void onTabsChanged () { }
+  public void minimize () { }
   public boolean canRestore (MiniAppLaunchRequest request) { return false; }
   public String botName () { return ""; }
   public android.graphics.Bitmap preview () { return null; }
+  public int previewColor () { return 0; }
+  public boolean needsCloseConfirmation () { return false; }
   public void restore () { }
   public void requestClose () { close(); }
 

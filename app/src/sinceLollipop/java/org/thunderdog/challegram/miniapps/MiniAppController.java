@@ -130,8 +130,15 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   public long launchId () { return session.launchId(); }
   public boolean isMinimized () { return minimized && !isDestroyed(); }
+  public boolean isShowing () { return popup != null && !minimized && !isDestroyed(); }
+  public boolean isShowingFullscreen () { return isShowing() && fullscreen; }
+  public void onTabsChanged () {
+    if (isShowing()) resize();
+  }
   public String botName () { return tdlib.cache().userName(request.botUserId); }
   public Bitmap preview () { return preview; }
+  public int previewColor () { return header.getBackground() instanceof ColorDrawable ? ((ColorDrawable) header.getBackground()).getColor() : Theme.fillingColor(); }
+  public boolean needsCloseConfirmation () { return needsCloseConfirmation; }
   public boolean canRestore (MiniAppLaunchRequest request) { return isMinimized() && this.request.sameLaunch(request); }
   public void restore () {
     if (!isMinimized()) return;
@@ -348,6 +355,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void showSheet () {
     if (isDestroyed()) return;
     getValue();
+    tdlib.miniApps().activate(this);
     minimized = false;
     tdlib.miniApps().updateTabs(context());
     popup = new PopupLayout(context()) {
@@ -364,6 +372,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     popup.init(false);
     popup.setNeedRootInsets();
     popup.setOverlayStatusBar(true);
+    popup.setPadding(0, 0, 0, fullscreen ? 0 : tdlib.miniApps().tabsHeight(context()));
     popup.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     popup.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
       if (b - t != ob - ot || r - l != or - ol) resize();
@@ -382,6 +391,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     });
     resize();
     popup.showSimplePopupView(root, root.getLayoutParams().height);
+    if (!fullscreen) tdlib.miniApps().raiseTabs(context());
     if (webView != null) webView.onResume();
     if (orientationRequested) setOrientationLocked(true);
     sendTheme();
@@ -396,8 +406,10 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void resize (boolean animate) {
     if (root == null) return;
+    if (popup != null) popup.setPadding(0, 0, 0, fullscreen ? 0 : tdlib.miniApps().tabsHeight(context()));
     int available = popup != null && popup.getHeight() > 0 ? popup.getHeight() : context().getRootView().getHeight();
     if (available <= 0) available = context().getResources().getDisplayMetrics().heightPixels;
+    if (!fullscreen) available -= tdlib.miniApps().tabsHeight(context());
     Rect insets = popup != null && popup.getHeight() > 0 ? popup.getSystemInsets() : context().getRootView().getSystemInsets();
     int top = Math.max(insets.top, Screen.getStatusBarHeight());
     int bottom = fullscreen ? Math.max(0, insets.bottom - context().getRootView().getSystemInsetsWithoutIme().bottom) : insets.bottom;
@@ -449,13 +461,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
   public void minimize () {
     if (isDestroyed() || minimized) return;
     emit("deactivated", object());
-    if (root.getWidth() > 0 && root.getHeight() > 0) {
+    if (browserArea.getWidth() > 0 && browserArea.getHeight() > 0) {
       if (preview != null) preview.recycle();
-      float scale = Math.min(1f, 360f / root.getWidth());
-      preview = Bitmap.createBitmap(Math.max(1, Math.round(root.getWidth() * scale)), Math.max(1, Math.round(root.getHeight() * scale)), Bitmap.Config.RGB_565);
+      float scale = Math.min(1f, 360f / browserArea.getWidth());
+      preview = Bitmap.createBitmap(Math.max(1, Math.round(browserArea.getWidth() * scale)), Math.max(1, Math.round(browserArea.getHeight() * scale)), Bitmap.Config.RGB_565);
       Canvas canvas = new Canvas(preview);
       canvas.scale(scale, scale);
-      root.draw(canvas);
+      browserArea.draw(canvas);
     }
     minimized = true;
     updateFullscreen();
@@ -464,7 +476,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     unlockOrientation();
     cancelDocumentRequests();
     if (popup != null) popup.hideWindow(true);
-    tdlib.miniApps().updateTabs(context());
+    tdlib.miniApps().onMinimized(this);
   }
 
   public void close () { destroy(); }
@@ -784,6 +796,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void updateFullscreen () {
     if (fullscreen && !minimized && !isDestroyed()) context().addFullScreenView(this, true);
     else context().removeFullScreenView(this, true);
+    tdlib.miniApps().updateTabsVisibility(context());
   }
 
   private void applyTheme () {

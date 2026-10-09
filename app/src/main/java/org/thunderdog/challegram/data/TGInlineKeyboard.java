@@ -653,9 +653,9 @@ public class TGInlineKeyboard {
             break;
           }
           case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR: {
-            Drawable icon = getSparseDrawable(R.drawable.baseline_mini_app_14, ColorId.NONE);
-            int color = useBubbleMode ? textColor : ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor);
-            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - Screen.dp(3), dirtyRect.top + Screen.dp(3), Paints.getPorterDuffPaint(color));
+            // Telegram Android's bot_webview asset (DrKLO/Telegram, f2908b14), 12dp.
+            Drawable icon = getSparseDrawable(R.drawable.telegram_mini_app_12, ColorId.NONE);
+            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - Screen.dp(3), dirtyRect.top + Screen.dp(3), Paints.getPorterDuffPaint(textColor));
             break;
           }
           case TdApi.InlineKeyboardButtonTypeLoginUrl.CONSTRUCTOR: {

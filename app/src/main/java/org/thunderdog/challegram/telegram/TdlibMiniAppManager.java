@@ -137,6 +137,36 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
     }
     strip.update(sessions);
     if (sessions.stream().noneMatch(controller -> controller.context() == activity && controller.isMinimized())) tabs.remove(activity);
+    updateTabsVisibility(activity);
+    for (MiniAppController controller : sessions) if (controller.context() == activity) controller.onTabsChanged();
+  }
+
+  public void updateTabsVisibility (org.thunderdog.challegram.BaseActivity activity) {
+    MiniAppTabs strip = tabs.get(activity);
+    if (strip != null) strip.setVisibility(sessions.stream().anyMatch(controller -> controller.context() == activity && controller.isShowingFullscreen()) ? android.view.View.GONE : android.view.View.VISIBLE);
+  }
+
+  public int tabsHeight (org.thunderdog.challegram.BaseActivity activity) {
+    long count = sessions.stream().filter(controller -> controller.context() == activity && controller.isMinimized()).count();
+    return count == 0 ? 0 : Screen.dp(count > 1 ? 68 : 60);
+  }
+
+  public void onMinimized (MiniAppController controller) {
+    // The most recently minimized app is the front card, including restored older sessions.
+    sessions.remove(controller);
+    sessions.add(controller);
+    updateTabs(controller.context());
+  }
+
+  public void activate (MiniAppController selected) {
+    for (MiniAppController controller : new ArrayList<>(sessions)) {
+      if (controller != selected && controller.context() == selected.context() && controller.isShowing()) controller.minimize();
+    }
+  }
+
+  public void raiseTabs (org.thunderdog.challegram.BaseActivity activity) {
+    MiniAppTabs strip = tabs.get(activity);
+    if (strip != null) strip.raiseAboveSheet();
   }
 
   public void openMainApp (TdlibDelegate context, long botUserId, long chatId) {

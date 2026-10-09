@@ -7540,6 +7540,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void setCommandsShown (boolean commandsShown) {
     if (this.commandsShown != commandsShown) {
       this.commandsShown = commandsShown;
+      updateMiniAppMenuButton(true);
       updateBottomWrapOffset();
     }
   }
@@ -8997,6 +8998,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void setEmojiShown (boolean emojiShown, boolean animated) {
     if (this.emojiShown != emojiShown) {
       this.emojiShown = emojiShown;
+      updateMiniAppMenuButton(true);
       if (emojiShown) {
         hideSoftwareKeyboard();
       }
