@@ -311,6 +311,13 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     }
   }
 
+  protected void drawAvatar (Canvas c) {
+    if (receiver.needPlaceholder()) {
+      receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), Theme.headerPlaceholderColor());
+    }
+    receiver.draw(c);
+  }
+
   // Public utils
 
   private boolean hasTrimmedText () {
@@ -872,10 +879,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
       final float textScaleFactor = MathUtils.fromTo(1f + scaleFactor * .1f, avatarTextScale, avatarExpandFactor);
 
       layoutReceiver();
-      if (receiver.needPlaceholder()) {
-        receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), Theme.headerPlaceholderColor());
-      }
-      receiver.draw(c);
+      drawAvatar(c);
       if (avatarExpandFactor > 0f && receiver.getRequestedPlaceholder() == null) {
         getTopShadow().setAlpha((int) (255f * .8f * avatarExpandFactor));
         getTopShadow().draw(c);

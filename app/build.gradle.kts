@@ -19,6 +19,8 @@ plugins {
 }
 
 val config = tgxConfig.config.get()
+// Opt-in, account-isolated target for the forum UI regression suite only.
+val stage8Synthetic = providers.gradleProperty("stage8.synthetic").map { it.toBoolean() }.getOrElse(false)
 val generateBaselineProfile = tgxConfig.generateBaselineProfile.get()
 val useLegacyNdk = tgxConfig.useLegacyNdk.get()
 val appliedNdkVersion = if (useLegacyNdk) {
@@ -349,6 +351,7 @@ android {
 
   defaultConfig {
     applicationId = config.applicationId
+    testInstrumentationRunner = "org.thunderdog.challegram.stage8.Stage8SyntheticInstrumentation"
     targetSdk = config.build.targetSdkVersion
     multiDexEnabled = true
 
@@ -500,7 +503,12 @@ android {
     versionName = "${config.majorVersion}.${minorVersion}"
   }
 
+  if (stage8Synthetic) {
+    buildTypes.getByName("debug").applicationIdSuffix = ".stage8synthetic"
+  }
+
   sourceSets.getByName("main") {
+    if (stage8Synthetic) manifest.srcFile("src/stage8Synthetic/AndroidManifest.xml")
     // TODO: Exclude in FOSS variant
     kotlin.directories += "src/google/main/java"
     java.directories += "src/google/main/java"
@@ -680,6 +688,11 @@ android {
   }
 
   androidComponents {
+    beforeVariants { variant ->
+      if (stage8Synthetic && variant.buildType != "debug") {
+        variant.enable = false
+      }
+    }
     onVariants(selector().withBuildType("release")) { variant ->
       if (!config.isExperimentalBuild) {
         variant.lifecycleTasks.registerPreBuild(validateApiTokens)
@@ -939,6 +952,7 @@ afterEvaluate {
 }
 
 dependencies {
+  testImplementation(libs.junit)
   sinceNougatImplementation(libs.androidx.profileinstaller)
   flavorImplementation(
     libs.androidx.tracing.legacy,
@@ -1146,7 +1160,7 @@ dependencies {
   compileOnly(libs.annotations.kotlin)
 }
 
-if (!config.isExperimentalBuild) {
+if (!config.isExperimentalBuild && !stage8Synthetic) {
   apply(plugin = libs.plugins.google.services.get().pluginId)
   if (config.isHuaweiBuild) {
     apply(plugin = libs.huawei.agconnect.get().group)

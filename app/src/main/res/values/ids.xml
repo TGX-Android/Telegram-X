@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <item type="id" name="controller_forumTopicEdit" />
+  <item type="id" name="menu_forumTopicEdit" />
+  <item type="id" name="btn_forumTopicSave" />
+  <item type="id" name="controller_forumTopicProfile" />
+  <item type="id" name="controller_forumTopicNotifications" />
+  <item type="id" name="menu_forumTopicProfile" />
+  <item type="id" name="forum_profile_edit" />
+  <item type="id" name="forum_profile_more" />
+  <item type="id" name="forum_profile_retry" />
+  <item name="menu_forumSelection" type="id" />
+  <item name="forum_tabs_panel" type="id" />
   <item type="id" name="app_root" />
   <item type="id" name="app_container" />
 
@@ -181,6 +192,11 @@
   <item type="id" name="controller_archiveSettings" />
   <item type="id" name="controller_storageSettings" />
   <item type="id" name="controller_messages" />
+  <item type="id" name="controller_forumTopics" />
+  <item type="id" name="menu_forumTopics" />
+  <item type="id" name="menu_forumActions" />
+  <item type="id" name="btn_openForumTopic" />
+  <item type="id" name="btn_cancelForumReply" />
   <item type="id" name="controller_wallpaper" />
   <item type="id" name="controller_wallpaper_preview" />
   <item type="id" name="controller_eventLog" />
