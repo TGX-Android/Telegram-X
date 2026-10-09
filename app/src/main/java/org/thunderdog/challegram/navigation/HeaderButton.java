@@ -20,6 +20,8 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 
 import androidx.annotation.DrawableRes;
@@ -250,8 +252,16 @@ public class HeaderButton extends View {
     return super.getContentDescription();
   }
 
+  // getAccessibilityClassName() is available only since API 23, so the role is set here instead
   @Override
-  public CharSequence getAccessibilityClassName () {
-    return Button.class.getName();
+  public void onInitializeAccessibilityEvent (AccessibilityEvent event) {
+    super.onInitializeAccessibilityEvent(event);
+    event.setClassName(Button.class.getName());
+  }
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    super.onInitializeAccessibilityNodeInfo(info);
+    info.setClassName(Button.class.getName());
   }
 }

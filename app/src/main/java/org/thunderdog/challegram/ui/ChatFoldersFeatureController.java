@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -17,7 +18,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.res.ResourcesCompat;
-import androidx.core.view.ViewCompat;
 import androidx.core.widget.TextViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -318,7 +318,9 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       headerView.addView(searchButton, FrameLayoutFix.newParams(Screen.dp(56f), LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
       // Decorative preview: its buttons do nothing, so they must not be announced
-      ViewCompat.setImportantForAccessibility(headerView, ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        headerView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+      }
 
       return headerView;
     }

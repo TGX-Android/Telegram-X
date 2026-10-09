@@ -432,9 +432,8 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (headerView == null) return;
 
-    translationHeaderButton =  headerView.addButton(menu, R.id.menu_done, getHeaderIconColorId(), this, 0, Screen.dp(60), R.drawable.bg_btn_header);
+    translationHeaderButton =  headerView.addButton(menu, R.id.menu_done, getHeaderIconColorId(), this, 0, mTranslationsManager.getCurrentTranslatedLanguage() != null ? R.string.TranslateOff : R.string.Translate, Screen.dp(60), R.drawable.bg_btn_header);
     translationHeaderButton.setCustomDrawable(translationCounterDrawable);
-    translationHeaderButton.setContentDescriptionRes(mTranslationsManager.getCurrentTranslatedLanguage() != null ? R.string.TranslateOff : R.string.Translate);
     headerView.getBackButton().setTranslationY(Screen.dp(7.5f));
     translationHeaderButton.setTranslationY(Screen.dp(7.5f));
   }
