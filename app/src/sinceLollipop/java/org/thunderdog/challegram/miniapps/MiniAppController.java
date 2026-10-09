@@ -89,6 +89,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private MiniAppButtons buttons;
   private TextView title, errorView;
   private Bitmap preview;
+  private long pageLoadGeneration;
+  private boolean pageReady, pageRevealRequested, pageLoadFailed;
   private ValueAnimator sizeAnimator;
   private ProgressBar progress;
   private ImageView back, collapse, more;
@@ -242,6 +244,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void createWebView () {
     try {
       webView = new WebView(context());
+      // Like BotWebViewContainer, keep initial HTML hidden until ready() or page completion.
+      webView.setAlpha(0f);
       WebSettings settings = webView.getSettings();
       settings.setJavaScriptEnabled(true);
       settings.setDomStorageEnabled(true);
@@ -260,6 +264,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       webView.setWebViewClient(new WebViewClient() {
         @Override
         public void onPageStarted (WebView view, String url, Bitmap favicon) {
+          beginPageLoad();
           if (document != null) document.navigate();
           cancelDocumentRequests();
           deferredReplies.clear();
@@ -273,8 +278,6 @@ public final class MiniAppController extends ViewController<Void> implements Min
           back.setImageResource(R.drawable.baseline_close_24);
           back.setContentDescription(Lang.getString(R.string.MiniAppClose));
           buttons.reset();
-          progress.setVisibility(View.VISIBLE);
-          errorView.setVisibility(View.GONE);
           platform.onPageStarted(view);
         }
 
@@ -284,6 +287,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
           platform.onPageStarted(view);
           sendTheme();
           sendViewport();
+          // Apps without ready() must still become visible after their page has loaded.
+          revealPageWhenReady();
         }
 
         @Override
@@ -413,6 +418,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     emit("activated", object());
     for (Runnable reply : new ArrayList<>(deferredReplies)) reply.run();
     deferredReplies.clear();
+    if (pageReady) revealPageWhenReady();
   }
 
   private void resize () {
@@ -455,7 +461,41 @@ public final class MiniAppController extends ViewController<Void> implements Min
     root.post(this::sendViewport);
   }
 
+  private void beginPageLoad () {
+    pageLoadGeneration++;
+    pageReady = pageRevealRequested = pageLoadFailed = false;
+    webView.animate().cancel();
+    webView.setAlpha(0f);
+    progress.animate().cancel();
+    progress.setAlpha(1f);
+    progress.setVisibility(View.VISIBLE);
+    errorView.setVisibility(View.GONE);
+  }
+
+  private void revealPageWhenReady () {
+    if (isDestroyed() || pageLoadFailed || webView == null) return;
+    pageReady = true;
+    if (minimized || popup == null || pageRevealRequested) return;
+    pageRevealRequested = true;
+    final long generation = pageLoadGeneration;
+    final WebView page = webView;
+    // DOM theme updates and the renderer's next frame are asynchronous to the JS ready event.
+    platform.whenVisualStateReady(page, generation, () -> {
+      if (isDestroyed() || page != webView || generation != pageLoadGeneration || pageLoadFailed) return;
+      if (minimized) { pageRevealRequested = false; return; }
+      page.animate().alpha(1f).setDuration(300).start();
+      progress.animate().alpha(0f).setDuration(300).withEndAction(() -> {
+        if (!isDestroyed() && generation == pageLoadGeneration) progress.setVisibility(View.GONE);
+      }).start();
+    });
+  }
+
   private void showLoadError () {
+    pageLoadGeneration++;
+    pageLoadFailed = true;
+    pageReady = pageRevealRequested = false;
+    if (webView != null) { webView.animate().cancel(); webView.setAlpha(0f); }
+    if (progress != null) progress.animate().cancel();
     if (progress != null) progress.setVisibility(View.GONE);
     if (errorView != null) errorView.setVisibility(View.VISIBLE);
   }
@@ -499,6 +539,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
   @Override
   public void destroy () {
     if (isDestroyed()) return;
+    pageLoadGeneration++;
+    if (webView != null) webView.animate().cancel();
+    if (progress != null) progress.animate().cancel();
     session.close();
     context().removeFullScreenView(this, true);
     if (document != null) document.close();
@@ -590,7 +633,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void dispatch (MiniAppDocument.Request origin, String event, JSONObject data) throws JSONException {
     switch (event) {
-      case "web_app_ready": progress.setVisibility(View.GONE); break;
+      case "web_app_ready": revealPageWhenReady(); break;
       case "web_app_request_theme": sendTheme(); break;
       case "web_app_request_viewport": sendViewport(); break;
       case "web_app_expand": if (!expanded) { expanded = true; resize(true); } break;

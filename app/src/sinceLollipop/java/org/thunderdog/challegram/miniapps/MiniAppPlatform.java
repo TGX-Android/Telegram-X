@@ -46,6 +46,16 @@ public final class MiniAppPlatform {
     if (installed && script == null) webView.evaluateJavascript(MiniAppBridgeTransport.SCRIPT, null);
   }
 
+  public void whenVisualStateReady (WebView webView, long requestId, Runnable ready) {
+    if (WebViewFeature.isFeatureSupported(WebViewFeature.VISUAL_STATE_CALLBACK)) {
+      WebViewCompat.postVisualStateCallback(webView, requestId, new WebViewCompat.VisualStateCallback() {
+        @Override public void onComplete (long id) { ready.run(); }
+      });
+    } else {
+      webView.postOnAnimation(ready);
+    }
+  }
+
   public void destroy (WebView webView) {
     if (script != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) script.remove();
     script = null;
