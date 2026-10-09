@@ -21,6 +21,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
@@ -183,6 +184,26 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   private final ComplexReceiver reactionsReceiver;
 
   private final BoolAnimator isSelected = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+  private final RectF openAppBounds = new RectF();
+
+  public static int getOpenAppButtonWidth () {
+    return Screen.dp(26) + Math.round(Paints.getBoldTextPaint(14, Theme.textAccentColor()).measureText(Lang.getString(R.string.Open)));
+  }
+
+  @Override
+  public void onClickAt (View view, float x, float y) {
+    ViewController<?> controller = ViewController.findAncestor(this);
+    if (chat != null && chat.hasMainWebApp() && !isSelected.getValue() && openAppBounds.contains(x, y) && controller instanceof ChatsController && !controller.inSelectMode()) {
+      tdlib.miniApps().openMainApp(controller, chat.getChatUserId(), chat.getChatId());
+      return;
+    }
+    super.onClickAt(view, x, y);
+  }
+
+  @Override
+  public boolean needLongPress (float x, float y) {
+    return !openAppBounds.contains(x, y) && super.needLongPress(x, y);
+  }
   private final RefreshRateLimiter refreshRateLimiter;
 
   public ChatView (Context context, Tdlib tdlib) {
@@ -649,6 +670,19 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     float counterRight = viewWidth - getRightPadding();
     float counterRadius = getCounterRadius();
     float counterCenterY = getCounterTop(chatListMode);
+    openAppBounds.setEmpty();
+    if (chat.hasMainWebApp()) {
+      float width = getOpenAppButtonWidth();
+      float left = rtl ? getRightPadding() : counterRight - width;
+      openAppBounds.set(left, counterCenterY - Screen.dp(14), left + width, counterCenterY + Screen.dp(14));
+      ViewController<?> controller = ViewController.findAncestor(this);
+      if (!isSelected.getValue() && controller instanceof ChatsController && !controller.inSelectMode()) {
+        c.drawRoundRect(openAppBounds, Screen.dp(14), Screen.dp(14), Paints.fillingPaint(Theme.getColor(ColorId.fillingPositive)));
+        Paint label = Paints.getBoldTextPaint(14, Theme.getColor(ColorId.fillingPositiveContent));
+        c.drawText(Lang.getString(R.string.Open), openAppBounds.left + Screen.dp(13), openAppBounds.centerY() - (label.ascent() + label.descent()) / 2f, label);
+      } else openAppBounds.setEmpty();
+      counterRight -= width + Screen.dp(7);
+    }
     counter.draw(c, counterRight - counterRadius, counterCenterY, Gravity.RIGHT, 1f);
     counterRight -= counter.getScaledWidth(getTimePaddingLeft());
 

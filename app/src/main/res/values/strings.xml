@@ -9,6 +9,8 @@
   <string name="MiniAppWebViewUnavailable">Mini Apps require Android 5.0 or later and an up-to-date Android System WebView.</string>
   <string name="MiniAppSecretChat">Mini Apps are not available in secret chats.</string>
   <string name="MiniAppClose">Close App</string>
+  <string name="MiniAppBack">Back</string>
+  <string name="MiniAppTabsTitle">%1$s · %2$d</string>
   <string name="MiniAppCloseConfirm">Changes you made may not be saved. Close this Mini App?</string>
   <string name="MiniAppMinimize">Minimize</string>
   <string name="MiniAppReload">Reload Page</string>

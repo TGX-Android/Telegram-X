@@ -6,6 +6,31 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class MiniAppLaunchRequestTest {
+  @Test public void onlyIdenticalLaunchesCanReuseAMinimizedTab () {
+    MiniAppLaunchRequest catalog = new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.INLINE_KEYBOARD, 123, 456, "https://bot.example/app", "", "", "", null, null, null, false);
+    MiniAppLaunchRequest notifications = new MiniAppLaunchRequest(catalog.source, 123, 456, "https://bot.example/app/notifications", "", "", "", null, null, null, false);
+    assertTrue(catalog.sameLaunch(catalog));
+    assertFalse(catalog.sameLaunch(notifications));
+    assertFalse(catalog.sameLaunch(new MiniAppLaunchRequest(catalog.source, 123, 456, catalog.url, "", "", "different-start", null, null, null, false)));
+    assertFalse(catalog.sameLaunch(new MiniAppLaunchRequest(catalog.source, 123, 999, catalog.url, "", "", "", null, null, null, false)));
+  }
+
+  @Test public void defaultModeDoesNotForceAnInitialCompactSheet () {
+    for (MiniAppLaunchRequest.Source source : MiniAppLaunchRequest.Source.values()) {
+      MiniAppLaunchRequest request = new MiniAppLaunchRequest(source, 123, 456, "https://bot.example/app/notifications", "", "", "", null, null, null, false);
+      assertTrue(request.mode instanceof TdApi.WebAppOpenModeFullSize);
+    }
+  }
+
+  @Test public void urlModesAreExplicitAndDoNotChangeButtonDestination () {
+    String url = "https://bot.example/app/notifications?mode=compact&filter=dance";
+    MiniAppLaunchRequest request = new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.INLINE_KEYBOARD, 123, 456, url, "", "", "", null, null, null, false);
+    assertTrue(request.mode instanceof TdApi.WebAppOpenModeCompact);
+    assertEquals(url, ((TdApi.OpenWebApp) request.function(null, false)).url);
+    assertTrue(new MiniAppLaunchRequest(request.source, 123, 456, "https://bot.example?mode=fullscreen", "", "", "", null, null, null, false).mode instanceof TdApi.WebAppOpenModeFullScreen);
+    assertTrue(new MiniAppLaunchRequest(request.source, 123, 456, url, "", "", "", null, null, new TdApi.WebAppOpenModeFullSize(), false).mode instanceof TdApi.WebAppOpenModeFullSize);
+  }
+
   private MiniAppLaunchRequest request (MiniAppLaunchRequest.Source source) {
     return new MiniAppLaunchRequest(source, 123, 456, "https://bot.example", "Buy", "shop", "start",
       new TdApi.MessageTopicForum(789), new TdApi.InputMessageReplyToMessage(), new TdApi.WebAppOpenModeFullSize(), false);

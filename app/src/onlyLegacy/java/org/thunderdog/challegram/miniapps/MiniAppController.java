@@ -26,7 +26,12 @@ public final class MiniAppController extends ViewController<Void> {
   protected View onCreateView (Context context) { return new View(context); }
 
   public long launchId () { return 0; }
-  public boolean updateTabPosition (int position) { return false; }
+  public boolean isMinimized () { return false; }
+  public boolean canRestore (MiniAppLaunchRequest request) { return false; }
+  public String botName () { return ""; }
+  public android.graphics.Bitmap preview () { return null; }
+  public void restore () { }
+  public void requestClose () { close(); }
 
   public void open (boolean allowWriteAccess) {
     UI.showToast(R.string.MiniAppWebViewUnavailable, Toast.LENGTH_LONG);

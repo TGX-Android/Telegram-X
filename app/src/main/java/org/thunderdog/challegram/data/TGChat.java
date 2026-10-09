@@ -373,6 +373,12 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     return TD.getUserId(this.chat);
   }
 
+  public boolean hasMainWebApp () {
+    if (chat == null || !(chat.type instanceof TdApi.ChatTypePrivate)) return false;
+    TdApi.User user = tdlib.cache().user(((TdApi.ChatTypePrivate) chat.type).userId);
+    return user != null && user.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) user.type).hasMainWebApp;
+  }
+
   public long getChatId () {
     return chat != null ? chat.id : 0;
   }
@@ -663,6 +669,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         if (getPrivateId() == user.id) {
           setTitle();
           setAvatar();
+          layoutContent();
           return true;
         }
         break;
@@ -1136,6 +1143,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
   private int getCounterAddWidth () {
     return Math.round(
+      (hasMainWebApp() ? ChatView.getOpenAppButtonWidth() + Screen.dp(7) : 0) +
       counter.getScaledWidth(ChatView.getTimePaddingLeft()) +
       mentionCounter.getScaledWidth(ChatView.getTimePaddingLeft()) +
       reactionsCounter.getScaledWidth(ChatView.getTimePaddingLeft())

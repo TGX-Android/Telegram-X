@@ -37,6 +37,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.IdRes;
@@ -87,6 +88,7 @@ import org.thunderdog.challegram.navigation.ViewPagerHeaderViewCompact;
 import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
@@ -1709,6 +1711,28 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     // Base adapter
     baseAdapter = new SettingsAdapter(this) {
       @Override
+      protected SettingHolder initCustom (ViewGroup parent, int customViewType) {
+        if (customViewType != 1) return super.initCustom(parent, customViewType);
+        FrameLayout row = new FrameLayout(context);
+        row.setLayoutParams(new RecyclerView.LayoutParams(-1, Screen.dp(76)));
+        TextView button = new TextView(context);
+        button.setId(R.id.btn_miniApp);
+        button.setText(Lang.getString(R.string.MiniAppOpen));
+        button.setTextSize(14);
+        button.setTypeface(Fonts.getRobotoBold());
+        button.setGravity(Gravity.CENTER);
+        button.setOnClickListener(ProfileController.this);
+        button.setTextColor(Theme.getColor(ColorId.fillingPositiveContent));
+        addThemeTextColorListener(button, ColorId.fillingPositiveContent);
+        ViewSupport.setThemedBackground(row, ColorId.filling, ProfileController.this);
+        org.thunderdog.challegram.support.RippleSupport.setSimpleWhiteBackground(button, ColorId.fillingPositive, 24f, ProfileController.this);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-1, Screen.dp(48), Gravity.CENTER);
+        params.leftMargin = params.rightMargin = Screen.dp(18);
+        row.addView(button, params);
+        return new SettingHolder(row);
+      }
+
+      @Override
       protected void setChatData (ListItem item, int position, BetterChatView chatView) {
         chatView.setEnabled(false);
         chatView.setChat((TGFoundChat) item.getData());
@@ -2442,10 +2466,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
 
     int addedCount = 0;
-    if (mode == Mode.USER && user.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) user.type).hasMainWebApp) {
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_miniApp, R.drawable.baseline_launch_24, R.string.MiniAppOpen));
-      addedCount++;
-    }
     if (Settings.instance().showPeerIds()) {
       if (addedCount > 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       items.add(newPeerIdItem());
@@ -2497,6 +2517,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     }
 
+    if (hasMainWebApp()) {
+      if (addedCount > 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+      items.add(new ListItem(ListItem.TYPE_CUSTOM - 1, R.id.btn_miniApp));
+      addedCount++;
+    }
     this.baseHeaderItemCount = addedCount;
     boolean isMe = tdlib.isSelfUserId(user.id);
 
@@ -2538,6 +2563,18 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }*/
 
     checkUserButtons();
+    checkMiniAppButton();
+  }
+
+  private boolean hasMainWebApp () {
+    return mode == Mode.USER && user != null && user.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) user.type).hasMainWebApp;
+  }
+
+  private void checkMiniAppButton () {
+    if (baseAdapter == null || mode != Mode.USER) return;
+    int position = baseAdapter.indexOfViewById(R.id.btn_miniApp);
+    if (hasMainWebApp() && position < 0) addTopItem(new ListItem(ListItem.TYPE_CUSTOM - 1, R.id.btn_miniApp), baseHeaderItemCount);
+    else if (!hasMainWebApp() && position >= 0) removeTopItem(position);
   }
 
   private void checkUserButtons () {
@@ -5444,6 +5481,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private CharSequence lastUsernames;
 
   private int calculateHeight (int position, int width, ListItem item) {
+    if (item.getId() == R.id.btn_miniApp) return Screen.dp(76);
     final int itemId = item.getId();
     switch (item.getViewType()) {
       case ListItem.TYPE_INFO_MULTILINE: {
@@ -6246,6 +6284,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (isUserMode() && this.user != null && this.user.id == user.id) {
       runOnUiThreadOptional(() -> {
         ProfileController.this.user = user;
+        checkMiniAppButton();
         updateHeader(true);
         if (mode != Mode.EDIT_BOT_USER) {
           checkUsername();

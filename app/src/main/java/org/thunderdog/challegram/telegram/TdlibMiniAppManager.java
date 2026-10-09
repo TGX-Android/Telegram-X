@@ -16,6 +16,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.miniapps.MiniAppController;
 import org.thunderdog.challegram.miniapps.MiniAppLaunchRequest;
 import org.thunderdog.challegram.miniapps.MiniAppPlatform;
+import org.thunderdog.challegram.miniapps.MiniAppTabs;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -36,6 +37,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   private long nextRequest;
   private int epoch;
   private SharedPreferences consent;
+  private final WeakHashMap<org.thunderdog.challegram.BaseActivity, MiniAppTabs> tabs = new WeakHashMap<>();
 
   public TdlibMiniAppManager (Tdlib tdlib) {
     this.tdlib = tdlib;
@@ -55,6 +57,15 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
     if (ChatId.isSecret(request.chatId)) {
       UI.showToast(R.string.MiniAppSecretChat, Toast.LENGTH_LONG);
       return;
+    }
+    if (!request.forceConfirmation) {
+      for (MiniAppController session : sessions) {
+        if (session.context() == context.context() && session.canRestore(request)) {
+          session.restore();
+          if (onOpened != null) onOpened.run();
+          return;
+        }
+      }
     }
     final long token = ++nextRequest;
     final int generation = epoch;
@@ -115,13 +126,21 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
 
   public void onClosed (MiniAppController controller) {
     sessions.remove(controller);
+    updateTabs(controller.context());
   }
 
   public void updateTabs (org.thunderdog.challegram.BaseActivity activity) {
-    int position = 0;
-    for (MiniAppController controller : sessions) {
-      if (controller.context() == activity && controller.updateTabPosition(position)) position++;
+    MiniAppTabs strip = tabs.get(activity);
+    if (strip == null) {
+      if (sessions.stream().noneMatch(controller -> controller.context() == activity && controller.isMinimized())) return;
+      tabs.put(activity, strip = new MiniAppTabs(activity));
     }
+    strip.update(sessions);
+    if (sessions.stream().noneMatch(controller -> controller.context() == activity && controller.isMinimized())) tabs.remove(activity);
+  }
+
+  public void openMainApp (TdlibDelegate context, long botUserId, long chatId) {
+    open(context, new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.MAIN_APP, botUserId, chatId, "", "", "", "", null, null, null, false));
   }
 
   public void onWebAppMessageSent (long launchId) {

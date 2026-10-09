@@ -5,6 +5,9 @@
 package org.thunderdog.challegram.miniapps;
 
 import android.annotation.SuppressLint;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -12,11 +15,15 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -56,6 +63,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -79,7 +87,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private FrameLayout root, browserArea;
   private LinearLayout column, header;
   private MiniAppButtons buttons;
-  private TextView title, errorView, tab;
+  private TextView title, errorView;
+  private Bitmap preview;
+  private ValueAnimator sizeAnimator;
   private ProgressBar progress;
   private ImageView back, collapse, more;
   private PopupLayout popup;
@@ -91,6 +101,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private MiniAppMessageSender phoneSender;
   private final List<Runnable> deferredReplies = new ArrayList<>();
   private boolean minimized, expanded, fullscreen, backVisible, settingsVisible, needsCloseConfirmation;
+  private boolean restoreWhenHidden;
   private boolean bridgeInstalled;
   private boolean swipeEnabled = true, pageAllowsVerticalSwipe = true, dataSending;
   private int previousOrientation;
@@ -118,9 +129,17 @@ public final class MiniAppController extends ViewController<Void> implements Min
   public int getId () { return R.id.controller_miniApp; }
 
   public long launchId () { return session.launchId(); }
+  public boolean isMinimized () { return minimized && !isDestroyed(); }
+  public String botName () { return tdlib.cache().userName(request.botUserId); }
+  public Bitmap preview () { return preview; }
+  public boolean canRestore (MiniAppLaunchRequest request) { return isMinimized() && this.request.sameLaunch(request); }
+  public void restore () {
+    if (!isMinimized()) return;
+    if (popup == null) showSheet(); else restoreWhenHidden = true;
+  }
 
   public void open (boolean allowWriteAccess) {
-    showSheet();
+    getValue();
     if (!bridgeInstalled) { close(); UI.showToast(R.string.MiniAppWebViewUnavailable, Toast.LENGTH_LONG); return; }
     tdlib.client().send(request.function(MiniAppTheme.parameters(), allowWriteAccess), result -> tdlib.ui().post(() -> {
       long launchId = result instanceof TdApi.WebAppInfo ? ((TdApi.WebAppInfo) result).launchId : 0;
@@ -133,14 +152,16 @@ public final class MiniAppController extends ViewController<Void> implements Min
         url = main.url;
         fullscreen = main.mode instanceof TdApi.WebAppOpenModeFullScreen;
         expanded = !(main.mode instanceof TdApi.WebAppOpenModeCompact);
-        resize();
       } else {
         if (result instanceof TdApi.Error) UI.showError(result);
+        showSheet();
         showLoadError();
         return;
       }
-      if (MiniAppOrigin.of(url.url) == null) { showLoadError(); return; }
+      if (MiniAppOrigin.of(url.url) == null) { showSheet(); showLoadError(); return; }
       document = new MiniAppDocument(url.url, url.requireSameOrigin);
+      // Resolve the server's launch mode before the sheet's first visible frame.
+      showSheet();
       webView.loadUrl(url.url);
       if (onOpened != null) { onOpened.run(); onOpened = null; }
     }));
@@ -171,9 +192,11 @@ public final class MiniAppController extends ViewController<Void> implements Min
     header.addView(back);
     title = new TextView(context);
     title.setText(tdlib.cache().userName(request.botUserId));
-    title.setTextSize(18);
+    title.setTextSize(20);
     title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
     title.setSingleLine();
+    title.setEllipsize(TextUtils.TruncateAt.END);
+    title.setPadding(Screen.dp(16), 0, Screen.dp(8), 0);
     header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
     collapse = icon(R.drawable.baseline_direction_arrow_down_24, R.string.MiniAppMinimize, v -> minimize());
     header.addView(collapse);
@@ -184,7 +207,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       if (event.getAction() == MotionEvent.ACTION_DOWN) { dragStartY = event.getRawY(); return true; }
       if (event.getAction() == MotionEvent.ACTION_UP) {
         float distance = event.getRawY() - dragStartY;
-        if (distance < -Screen.dp(48)) { expanded = true; resize(); }
+        if (distance < -Screen.dp(48)) { expanded = true; resize(true); }
         else if (swipeEnabled && distance > Screen.dp(80)) minimize();
         v.performClick();
         return true;
@@ -241,6 +264,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
           swipeEnabled = pageAllowsVerticalSwipe = true;
           applyTheme();
           back.setImageResource(R.drawable.baseline_close_24);
+          back.setContentDescription(Lang.getString(R.string.MiniAppClose));
           buttons.reset();
           progress.setVisibility(View.VISIBLE);
           errorView.setVisibility(View.GONE);
@@ -324,11 +348,22 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void showSheet () {
     if (isDestroyed()) return;
     getValue();
-    removeTab();
     minimized = false;
-    popup = new PopupLayout(context());
-    popup.init(true);
+    tdlib.miniApps().updateTabs(context());
+    popup = new PopupLayout(context()) {
+      @Override
+      protected void dispatchDraw (Canvas canvas) {
+        super.dispatchDraw(canvas);
+        // The expanded sheet colors the status area, but its controls stay below the cutout.
+        int top = Math.max(getTopInset(), Screen.getStatusBarHeight());
+        if (expanded && !fullscreen && root.getY() <= top + 1 && header.getBackground() instanceof ColorDrawable) {
+          canvas.drawRect(0, 0, getWidth(), top, Paints.fillingPaint(((ColorDrawable) header.getBackground()).getColor()));
+        }
+      }
+    };
+    popup.init(false);
     popup.setNeedRootInsets();
+    popup.setOverlayStatusBar(true);
     popup.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     popup.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
       if (b - t != ob - ot || r - l != or - ol) resize();
@@ -343,26 +378,54 @@ public final class MiniAppController extends ViewController<Void> implements Min
       if (root.getParent() == window) window.removeView(root);
       if (popup == window) popup = null;
       if (!minimized && !isDestroyed()) destroy();
+      else if (restoreWhenHidden && !isDestroyed()) { restoreWhenHidden = false; root.post(this::restore); }
     });
     resize();
     popup.showSimplePopupView(root, root.getLayoutParams().height);
     if (webView != null) webView.onResume();
     if (orientationRequested) setOrientationLocked(true);
     sendTheme();
+    emit("activated", object());
     for (Runnable reply : new ArrayList<>(deferredReplies)) reply.run();
     deferredReplies.clear();
   }
 
   private void resize () {
+    resize(false);
+  }
+
+  private void resize (boolean animate) {
     if (root == null) return;
     int available = popup != null && popup.getHeight() > 0 ? popup.getHeight() : context().getRootView().getHeight();
     if (available <= 0) available = context().getResources().getDisplayMetrics().heightPixels;
-    int height = fullscreen ? available : expanded ? available - Screen.dp(24) : Math.round(available * .6f);
-    root.setLayoutParams(new FrameLayout.LayoutParams(-1, Math.max(Screen.dp(180), height), Gravity.BOTTOM));
+    Rect insets = popup != null && popup.getHeight() > 0 ? popup.getSystemInsets() : context().getRootView().getSystemInsets();
+    int top = Math.max(insets.top, Screen.getStatusBarHeight());
+    int bottom = fullscreen ? Math.max(0, insets.bottom - context().getRootView().getSystemInsetsWithoutIme().bottom) : insets.bottom;
+    int height = MiniAppViewport.sheetHeight(available, top, bottom, expanded, fullscreen);
+    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-1, height, Gravity.BOTTOM);
+    params.bottomMargin = bottom;
+    if (!fullscreen) { params.leftMargin = insets.left; params.rightMargin = insets.right; }
+    FrameLayout.LayoutParams headerParams = (FrameLayout.LayoutParams) header.getLayoutParams();
+    headerParams.topMargin = fullscreen ? top : 0;
+    header.setLayoutParams(headerParams);
     column.setPadding(0, fullscreen ? 0 : Screen.dp(56), 0, 0);
+    if (sizeAnimator != null) { sizeAnimator.cancel(); sizeAnimator = null; }
+    if (animate && root.getHeight() > 0 && root.getHeight() != height && !minimized) {
+      sizeAnimator = ValueAnimator.ofInt(root.getHeight(), height);
+      sizeAnimator.setDuration(250);
+      sizeAnimator.setInterpolator(new android.view.animation.DecelerateInterpolator());
+      sizeAnimator.addUpdateListener(a -> { params.height = (int) a.getAnimatedValue(); root.setLayoutParams(params); });
+      sizeAnimator.addListener(new AnimatorListenerAdapter() {
+        @Override public void onAnimationEnd (Animator animation) { sizeAnimator = null; sendViewport(); }
+      });
+      sizeAnimator.start();
+    } else root.setLayoutParams(params);
     updateFullscreen();
-    if (popup != null) popup.setNeedFullScreen(fullscreen);
-    sendViewport();
+    if (popup != null) {
+      popup.setNeedFullScreen(fullscreen);
+      popup.setIgnoreAllInsets(fullscreen);
+    }
+    root.post(this::sendViewport);
   }
 
   private void showLoadError () {
@@ -374,7 +437,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (backVisible) pressed("back_button_pressed"); else requestClose();
   }
 
-  private void requestClose () {
+  public void requestClose () {
     if (isDestroyed()) return;
     if (!needsCloseConfirmation) { close(); return; }
     showAlert(new AlertDialog.Builder(context()).setTitle(Lang.getString(R.string.MiniAppClose))
@@ -385,6 +448,15 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   public void minimize () {
     if (isDestroyed() || minimized) return;
+    emit("deactivated", object());
+    if (root.getWidth() > 0 && root.getHeight() > 0) {
+      if (preview != null) preview.recycle();
+      float scale = Math.min(1f, 360f / root.getWidth());
+      preview = Bitmap.createBitmap(Math.max(1, Math.round(root.getWidth() * scale)), Math.max(1, Math.round(root.getHeight() * scale)), Bitmap.Config.RGB_565);
+      Canvas canvas = new Canvas(preview);
+      canvas.scale(scale, scale);
+      root.draw(canvas);
+    }
     minimized = true;
     updateFullscreen();
     if (webView != null) Keyboard.hide(webView);
@@ -392,29 +464,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     unlockOrientation();
     cancelDocumentRequests();
     if (popup != null) popup.hideWindow(true);
-    tab = new TextView(context());
-    tab.setText(tdlib.cache().userName(request.botUserId));
-    tab.setTextSize(16);
-    tab.setGravity(Gravity.CENTER_VERTICAL);
-    tab.setPadding(Screen.dp(20), 0, Screen.dp(20), 0);
-    tab.setTextColor(Theme.textAccentColor());
-    tab.setBackgroundColor(Theme.getColor(ColorId.filling));
-    tab.setOnClickListener(v -> { if (popup == null) showSheet(); });
-    tab.setOnLongClickListener(v -> { requestClose(); return true; });
-    context().addToRoot(tab, false);
     tdlib.miniApps().updateTabs(context());
-  }
-
-  public boolean updateTabPosition (int position) {
-    if (tab == null) return false;
-    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-1, Screen.dp(48), Gravity.BOTTOM);
-    params.bottomMargin = Screen.dp(48 * position);
-    tab.setLayoutParams(params);
-    return true;
-  }
-
-  private void removeTab () {
-    if (tab != null) { context().removeFromRoot(tab); tab = null; tdlib.miniApps().updateTabs(context()); }
   }
 
   public void close () { destroy(); }
@@ -429,10 +479,11 @@ public final class MiniAppController extends ViewController<Void> implements Min
     deferredReplies.clear();
     if (phoneSender != null) { phoneSender.cancel(); phoneSender = null; }
     unlockOrientation();
-    removeTab();
+    if (sizeAnimator != null) { sizeAnimator.cancel(); sizeAnimator = null; }
     context().removeActivityListener(this);
     tdlib.context().global().removeAccountListener(this);
     tdlib.miniApps().onClosed(this);
+    if (preview != null) { preview.recycle(); preview = null; }
     super.destroy();
     if (popup != null) { popup.hideWindow(false); popup = null; }
     if (webView != null) {
@@ -515,7 +566,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_ready": progress.setVisibility(View.GONE); break;
       case "web_app_request_theme": sendTheme(); break;
       case "web_app_request_viewport": sendViewport(); break;
-      case "web_app_expand": expanded = true; resize(); break;
+      case "web_app_expand": if (!expanded) { expanded = true; resize(true); } break;
       case "web_app_close": close(); break;
       case "web_app_setup_closing_behavior": needsCloseConfirmation = data.optBoolean("need_confirmation"); break;
       case "web_app_setup_swipe_behavior": swipeEnabled = data.optBoolean("allow_vertical_swipe", true); break;
@@ -523,6 +574,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_setup_back_button":
         backVisible = data.optBoolean("is_visible");
         back.setImageResource(backVisible ? R.drawable.baseline_arrow_back_24 : R.drawable.baseline_close_24);
+        back.setContentDescription(Lang.getString(backVisible ? R.string.MiniAppBack : R.string.MiniAppClose));
         break;
       case "web_app_setup_settings_button": settingsVisible = data.optBoolean("is_visible"); break;
       case "web_app_setup_main_button": buttons.configure(false, data); break;
@@ -741,7 +793,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
     int bar = headerColor != null ? headerColor : "secondary_bg_color".equals(headerColorKey) ? theme.secondaryBackgroundColor : theme.backgroundColor;
     GradientDrawable shape = new GradientDrawable();
     shape.setColor(background);
-    shape.setCornerRadii(new float[] { Screen.dp(16), Screen.dp(16), Screen.dp(16), Screen.dp(16), 0, 0, 0, 0 });
+    float radius = expanded || fullscreen ? 0 : Screen.dp(16);
+    shape.setCornerRadii(new float[] { radius, radius, radius, radius, 0, 0, 0, 0 });
     root.setBackground(shape);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) root.setClipToOutline(true);
     header.setBackgroundColor(bar);
@@ -754,6 +807,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (webView != null) webView.setBackgroundColor(background);
     buttons.setBackgroundColor(bottomColor != null ? bottomColor : theme.bottomBarBackgroundColor);
     buttons.refreshTheme();
+    if (popup != null) popup.invalidate();
   }
 
   @Override
@@ -761,6 +815,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     super.onThemeColorsChanged(temporary, state);
     applyTheme();
     sendTheme();
+    tdlib.miniApps().updateTabs(context());
   }
 
   private void sendTheme () { emit("theme_changed", object("theme_params", MiniAppTheme.json())); }
@@ -768,13 +823,17 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void sendViewport () {
     if (webView == null || root == null) return;
     emit("viewport_changed", object("height", webView.getHeight() / context().getResources().getDisplayMetrics().density,
-      "is_expanded", expanded, "is_state_stable", true));
+      "is_expanded", expanded, "is_state_stable", sizeAnimator == null));
     sendSafeAreas();
   }
 
   private void sendSafeAreas () {
-    // Root insets are consumed by PopupLayout. Only the overlaid fullscreen controls cover web content.
-    emit("safe_area_changed", object("top", 0, "bottom", 0, "left", 0, "right", 0));
+    Rect insets = context().getRootView().getSystemInsetsWithoutIme();
+    float density = context().getResources().getDisplayMetrics().density;
+    // Normal sheets consume system insets. Fullscreen web content receives the real safe area.
+    emit("safe_area_changed", object("top", fullscreen ? insets.top / density : 0,
+      "bottom", fullscreen && buttons.getHeight() == 0 ? insets.bottom / density : 0,
+      "left", fullscreen ? insets.left / density : 0, "right", fullscreen ? insets.right / density : 0));
     emit("content_safe_area_changed", object("top", fullscreen ? 56 : 0, "bottom", 0, "left", 0, "right", 0));
   }
 
