@@ -37,29 +37,23 @@ and leaving the group for the captured permissions and state.
 
 <img src="images/forum/07-topic-profile-actions.png" width="320" alt="Topic profile overflow menu">
 
-## Synthetic component examples
+## Horizontal selector
 
-These PNGs were rendered on Android by `ForumUpstreamDemo` using the production `ForumTopicView` and `ForumTopicsTabsView`. All names, messages, times and counters are invented in-memory fixtures. The test target has no account, application components or network permission.
+The compact horizontal panel includes All, topic icons and names, unread
+counters, mute indicators, the active topic, New Topic and the placement
+control. The upper example shows the panel above message history; the lower
+example shows it below history. The topic list scrolls horizontally when it
+does not fit the available width.
 
-These are **component crops**, not full-screen application screenshots, before/after comparisons, server tests or frame-time measurements. Topic rows use the isolated presentation-field fixture rather than account-dependent binding. Topic selectors use the real `setTopics` and RecyclerView layout paths. Default topic icons are shown; custom emoji are not downloaded.
+![Horizontal topic selector in top and bottom positions](images/forum/02-selector-horizontal-dark.png)
 
-### Topic rows (light theme)
+## Side selector
 
-Two-line rows reserve the right-hand area for time, pin/mute/closed/delivery indicators and counters. Drafts replace the message preview. The title line includes the topic icon.
+The narrow vertical panel places each topic icon above its name and preserves
+unread, mute and selection indicators. All and New Topic remain available;
+the placement control sits at the bottom.
 
-![Synthetic topic rows in the light theme](images/forum/01-topic-rows-light.png)
-
-### Horizontal selector (dark theme)
-
-The compact selector includes All, ordered topic tabs, unread indicators, selection and a fixed placement control. The crop uses a wide viewport to show several tabs at once; narrower viewports scroll.
-
-![Synthetic horizontal topic selector in the dark theme](images/forum/02-selector-horizontal-dark.png)
-
-### Side selector (dark theme, RTL, 180% font scale)
-
-This deliberately narrow, tall crop shows every synthetic item. Labels ellipsize at the larger font scale; the complete localized text remains in the accessibility description. The viewport normally scrolls independently of the fixed placement control.
-
-![Synthetic side topic selector with RTL and enlarged text](images/forum/03-selector-side-dark-rtl-font180.png)
+<img src="images/forum/03-selector-side-dark.png" width="168" alt="Vertical topic selector with topic icons, unread and mute indicators">
 
 See `FORUM_ACCEPTANCE.md` for the broader, separately recorded device/server acceptance matrix and the account-isolated test target.
 
@@ -67,4 +61,4 @@ See `FORUM_ACCEPTANCE.md` for the broader, separately recorded device/server acc
 
 On API 16–17, forum navigation uses the same-progress fade instead of avatar morphing because view clip bounds require API 18. API 18+ keeps the morph transition. Relative layout and live-region APIs are guarded; API 16 uses the platform's left-to-right layout with physical padding/margins. Labeled accessibility actions are registered on API 21+, while older versions retain node descriptions and standard click behavior.
 
-These compatibility paths need separate old-device verification; the component images above were not captured on legacy Android.
+These compatibility paths need separate old-device verification; the images above were not captured on legacy Android.
