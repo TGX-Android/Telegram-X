@@ -18,14 +18,12 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewParent;
 
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
-import org.thunderdog.challegram.component.chat.MessagesAdapter;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.tool.Drawables;
@@ -37,7 +35,7 @@ import org.thunderdog.challegram.util.text.TextWrapper;
 
 import tgx.td.ChatId;
 
-public class TGMessageBotInfo extends TGMessage {
+public class TGMessageBotInfo extends TGMessageInfo {
   private TextWrapper titleWrapper;
   private TextWrapper textWrapper;
   private TdApi.FormattedText description;
@@ -110,12 +108,6 @@ public class TGMessageBotInfo extends TGMessage {
     textWrapper.prepare(maxTextWidth);
   }
 
-  private MessagesAdapter boundAdapter;
-
-  public void setBoundAdapter (MessagesAdapter adapter) {
-    this.boundAdapter = adapter;
-  }
-
   @Override
   protected int getContentHeight () {
     return textWrapper.getHeight() + (titleWrapper != null ? titleWrapper.getHeight() + Screen.dp(3f) : 0);
@@ -129,52 +121,6 @@ public class TGMessageBotInfo extends TGMessage {
   @Override
   protected boolean centerBubble () {
     return true;
-  }
-
-  private int cachedHeight;
-
-  public int getCachedHeight () {
-    return cachedHeight;
-  }
-
-  @Override
-  public int getHeight () {
-    int totalHeight = getContentHeight() + Screen.dp(6f) + xAvatarRadius * 2 + xPaddingBottom - xContentOffset - xPaddingTop + xHeaderPadding;
-
-    final View view = findCurrentView();
-
-    if (view == null) {
-      return cachedHeight = totalHeight;
-    }
-
-    ViewParent parent = view.getParent();
-
-    if (parent == null) {
-      return cachedHeight = totalHeight;
-    }
-
-    int height = ((View) parent).getMeasuredHeight();
-
-    if (height == 0 || totalHeight >= height) {
-      return cachedHeight = totalHeight;
-    }
-
-    int padding = (int) ((float) (height - totalHeight - xPaddingBottom - xHeaderPadding - Screen.dp(6f)) * .5f);
-
-    if (boundAdapter != null) {
-      int messageCount = boundAdapter.getMessageCount();
-      for (int i = 0; i < messageCount; i++) {
-        TGMessage msg = boundAdapter.getMessage(i);
-        if (msg != null && msg.getMessage().id != 0) {
-          padding -= msg.getHeight();
-          if (padding <= 0) {
-            return cachedHeight = totalHeight;
-          }
-        }
-      }
-    }
-
-    return cachedHeight = totalHeight + padding;
   }
 
   @Override
