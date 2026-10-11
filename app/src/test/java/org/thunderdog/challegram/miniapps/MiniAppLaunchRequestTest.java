@@ -6,6 +6,14 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class MiniAppLaunchRequestTest {
+  @Test public void guardApprovalIsBoundToTheExactJoinQuery () {
+    MiniAppLaunchRequest request = MiniAppLaunchRequest.guard(123, 999);
+    TdApi.GetGuardBotWebAppUrl function = (TdApi.GetGuardBotWebAppUrl) request.function(null, false);
+    assertEquals(999, function.queryId);
+    assertFalse(request.sameLaunch(MiniAppLaunchRequest.guard(123, 998)));
+    assertFalse(request.sameLaunch(MiniAppLaunchRequest.guard(124, 999)));
+  }
+
   @Test public void onlyIdenticalLaunchesCanReuseAMinimizedTab () {
     MiniAppLaunchRequest catalog = new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.INLINE_KEYBOARD, 123, 456, "https://bot.example/app", "", "", "", null, null, null, false);
     MiniAppLaunchRequest notifications = new MiniAppLaunchRequest(catalog.source, 123, 456, "https://bot.example/app/notifications", "", "", "", null, null, null, false);

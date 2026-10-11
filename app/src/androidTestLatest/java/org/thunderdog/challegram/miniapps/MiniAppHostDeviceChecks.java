@@ -113,6 +113,13 @@ final class MiniAppHostDeviceChecks {
       send("web_app_hide_keyboard", "{}"); Thread.sleep(400);
       main(() -> activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)); Thread.sleep(1200);
       test.check(root.getWidth() > root.getHeight(), "fullscreen host follows landscape rotation");
+      main(() -> {
+        int[] point = new int[2]; buttons.getLocationOnScreen(point);
+        androidx.core.graphics.Insets insets = androidx.core.view.ViewCompat.getRootWindowInsets(root).getInsetsIgnoringVisibility(
+          androidx.core.view.WindowInsetsCompat.Type.systemBars() | androidx.core.view.WindowInsetsCompat.Type.displayCutout());
+        test.check(point[0] >= insets.left && point[0] + buttons.getWidth() <= activity.getRootView().getWidth() - insets.right,
+          "landscape native buttons avoid both side cutouts");
+      });
       capture("host-fullscreen-landscape");
       main(() -> activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)); Thread.sleep(1000);
       send("web_app_device_storage_save_key", "{\"req_id\":\"save\",\"key\":\"fixture\",\"value\":\"ok\"}");
@@ -121,16 +128,87 @@ final class MiniAppHostDeviceChecks {
       waitEvent("device_storage_key_received");
       test.check(test.evaluate(web, "JSON.stringify(events.filter(e=>e.event==='device_storage_key_received').slice(-1)[0].data)").contains("ok"), "Device Storage replies pass through the real bridge");
       send("web_app_device_storage_clear", "{\"req_id\":\"clear\"}"); waitEvent("device_storage_cleared");
+      checkSecureRestoreConsent();
+      checkLaunchConsent();
+      for (String sensor : new String[] {"accelerometer", "gyroscope", "device_orientation"}) {
+        send("web_app_start_" + sensor, "{\"refresh_rate\":20}");
+        waitEvent(sensor + "_started"); waitEvent(sensor + "_changed");
+        test.check(true, sensor + " emits real hardware data through bridge");
+      }
+      send("web_app_start_device_orientation", "{\"refresh_rate\":20,\"need_absolute\":true}");
+      Thread.sleep(400);
+      test.check(test.evaluate(web, "events.filter(e=>e.event==='device_orientation_changed').slice(-1)[0].data.absolute").equals("true"),
+        "absolute orientation combines real accelerometer and magnetometer");
+      main(host::onActivityPause); Thread.sleep(100);
+      String paused = sensorCount(); Thread.sleep(250);
+      test.check(paused.equals(sensorCount()), "activity pause unregisters sensors and queued samples");
+      main(host::onActivityResume); Thread.sleep(300);
+      test.check(!paused.equals(sensorCount()), "activity resume restores sensor subscriptions");
       send("web_app_exit_fullscreen", "{}"); Thread.sleep(300);
       main(host::minimize); Thread.sleep(500);
       test.check(host.isMinimized(), "minimize retains the session");
+      String minimized = sensorCount(); Thread.sleep(250);
+      test.check(minimized.equals(sensorCount()), "minimized Mini App receives no motion samples");
       main(host::restore); Thread.sleep(700);
       test.check(host.isShowing() && web == field(host, "webView"), "restore retains the same renderer");
       test.check("\"ok\"".equals(test.evaluate(web, "'ok'")), "restored renderer responds");
+      test.check(!minimized.equals(sensorCount()), "restoring Mini App resumes sensors without a new start");
+      for (String sensor : new String[] {"accelerometer", "gyroscope", "device_orientation"}) {
+        send("web_app_stop_" + sensor, "{}"); waitEvent(sensor + "_stopped");
+      }
+      String stopped = sensorCount(); Thread.sleep(250);
+      test.check(stopped.equals(sensorCount()), "stop cancels all sensor listeners and delayed samples");
       capture("host-restored");
     } finally {
       main(() -> { if (host != null) host.close(); activity.setRequestedOrientation(previousOrientation); });
     }
+  }
+
+  private String sensorCount () throws Exception {
+    return test.evaluate(web, "events.filter(e=>['accelerometer_changed','gyroscope_changed','device_orientation_changed'].includes(e.event)).length");
+  }
+
+  private void checkLaunchConsent () throws Exception {
+    final android.app.AlertDialog[] consent = new android.app.AlertDialog[1];
+    final java.util.concurrent.atomic.AtomicInteger accepted = new java.util.concurrent.atomic.AtomicInteger();
+    final java.util.concurrent.atomic.AtomicInteger cancelled = new java.util.concurrent.atomic.AtomicInteger();
+    main(() -> consent[0] = MiniAppLaunchDialog.show(host, Long.MAX_VALUE - 104, false,
+      org.thunderdog.challegram.R.string.BotStart, write -> accepted.incrementAndGet(), cancelled::incrementAndGet));
+    Thread.sleep(200);
+    main(() -> consent[0].getButton(android.app.AlertDialog.BUTTON_NEGATIVE).performClick());
+    Thread.sleep(200);
+    test.check(accepted.get() == 0 && cancelled.get() == 1, "launch consent cancel does not authorize a launch");
+  }
+
+  private void checkSecureRestoreConsent () throws Exception {
+    long bot = Long.MAX_VALUE - 104, previous = Long.MAX_VALUE - 105;
+    boolean server = activity.currentTdlib().account().isDebug();
+    MiniAppStorage old = new MiniAppStorage(activity, previous, bot, true, server);
+    MiniAppStorage target = new MiniAppStorage(activity, activity.currentTdlib().myUserId(), bot, true, server);
+    try {
+      old.clear(); target.clear(); old.setOwnerName("Synthetic signed-out account"); old.set("fixture", "synthetic-restore-value");
+      send("web_app_secure_storage_restore_key", "{\"req_id\":\"restore_cancel\",\"key\":\"fixture\"}");
+      android.app.AlertDialog dialog = waitDialog();
+      test.check(target.get("fixture") == null, "secure restore waits for native user consent");
+      main(() -> dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE).performClick());
+      waitEvent("secure_storage_failed");
+      test.check(target.get("fixture") == null && old.get("fixture") != null, "cancelling restore preserves both storage owners");
+      send("web_app_secure_storage_restore_key", "{\"req_id\":\"restore_accept\",\"key\":\"fixture\"}");
+      android.app.AlertDialog confirmed = waitDialog();
+      main(() -> confirmed.getListView().performItemClick(confirmed.getListView().getChildAt(0), 0, 0));
+      waitEvent("secure_storage_key_restored");
+      test.check("synthetic-restore-value".equals(target.get("fixture")) && old.get("fixture") == null,
+        "native restore confirmation transfers only selected synthetic storage");
+    } finally { old.clear(); target.clear(); }
+  }
+
+  private android.app.AlertDialog waitDialog () throws Exception {
+    for (int i = 0; i < 40; i++) {
+      android.app.AlertDialog dialog = field(host, "activeDialog");
+      if (dialog != null && dialog.isShowing()) return dialog;
+      Thread.sleep(100);
+    }
+    throw new AssertionError("Native consent did not open");
   }
 
   private void waitPage () throws Exception {

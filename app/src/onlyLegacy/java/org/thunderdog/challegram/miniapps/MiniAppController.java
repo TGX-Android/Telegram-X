@@ -26,6 +26,7 @@ public final class MiniAppController extends ViewController<Void> {
   protected View onCreateView (Context context) { return new View(context); }
 
   public long launchId () { return 0; }
+  public long guardQueryId () { return 0; }
   public boolean isMinimized () { return false; }
   public boolean isShowing () { return false; }
   public boolean isShowingFullscreen () { return false; }

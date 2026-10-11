@@ -13,10 +13,11 @@ import tgx.td.Td;
 
 /** Keep the launch source, peer and reply context together throughout asynchronous work. */
 public final class MiniAppLaunchRequest {
-  public enum Source { REPLY_KEYBOARD, INLINE_KEYBOARD, BOT_MENU, INLINE_RESULTS, MAIN_APP, DIRECT_LINK, ATTACHMENT_MENU, SIDE_MENU }
+  public enum Source { REPLY_KEYBOARD, INLINE_KEYBOARD, BOT_MENU, INLINE_RESULTS, MAIN_APP, DIRECT_LINK, ATTACHMENT_MENU, SIDE_MENU, GUARD_BOT }
 
   public final Source source;
   public final long botUserId, chatId;
+  public final long guardQueryId;
   public final String url, buttonText, shortName, startParameter;
   public final TdApi.MessageTopic topicId;
   public final TdApi.InputMessageReplyTo replyTo;
@@ -26,9 +27,16 @@ public final class MiniAppLaunchRequest {
   public MiniAppLaunchRequest (Source source, long botUserId, long chatId, String url, String buttonText,
                               String shortName, String startParameter, TdApi.MessageTopic topicId,
                               TdApi.InputMessageReplyTo replyTo, TdApi.WebAppOpenMode mode, boolean forceConfirmation) {
+    this(source, botUserId, chatId, url, buttonText, shortName, startParameter, topicId, replyTo, mode, forceConfirmation, 0);
+  }
+
+  private MiniAppLaunchRequest (Source source, long botUserId, long chatId, String url, String buttonText,
+                               String shortName, String startParameter, TdApi.MessageTopic topicId,
+                               TdApi.InputMessageReplyTo replyTo, TdApi.WebAppOpenMode mode, boolean forceConfirmation, long guardQueryId) {
     if (botUserId == 0) throw new IllegalArgumentException("Missing Mini App bot");
     this.source = source;
     this.botUserId = botUserId;
+    this.guardQueryId = guardQueryId;
     this.chatId = chatId;
     this.url = url != null ? url : "";
     this.buttonText = buttonText != null ? buttonText : "";
@@ -54,6 +62,11 @@ public final class MiniAppLaunchRequest {
     return new TdApi.WebAppOpenModeFullSize();
   }
 
+  public static MiniAppLaunchRequest guard (long botId, long queryId) {
+    if (queryId == 0) throw new IllegalArgumentException("Missing guard query");
+    return new MiniAppLaunchRequest(Source.GUARD_BOT, botId, 0, "", "", "", "", null, null, new TdApi.WebAppOpenModeFullSize(), false, queryId);
+  }
+
   public static MiniAppLaunchRequest fromChat (MessagesController controller, Source source, long botUserId, String url, String buttonText) {
     MessagesController.ReplyInfo reply = controller.getCurrentReplyId();
     return new MiniAppLaunchRequest(source, botUserId, controller.getChatId(), url, buttonText, "", "",
@@ -63,12 +76,14 @@ public final class MiniAppLaunchRequest {
   public boolean sameLaunch (MiniAppLaunchRequest other) {
     return other != null && source == other.source && botUserId == other.botUserId && chatId == other.chatId &&
       url.equals(other.url) && buttonText.equals(other.buttonText) && shortName.equals(other.shortName) && startParameter.equals(other.startParameter) &&
-      mode.getConstructor() == other.mode.getConstructor() && Td.equalsTo(topicId, other.topicId) && Td.equalsTo(replyTo, other.replyTo);
+      mode.getConstructor() == other.mode.getConstructor() && guardQueryId == other.guardQueryId && Td.equalsTo(topicId, other.topicId) && Td.equalsTo(replyTo, other.replyTo);
   }
 
   public TdApi.Function<?> function (TdApi.ThemeParameters theme, boolean allowWriteAccess) {
     TdApi.WebAppOpenParameters parameters = new TdApi.WebAppOpenParameters(theme, "android", mode);
     switch (source) {
+      case GUARD_BOT:
+        return new TdApi.GetGuardBotWebAppUrl(guardQueryId, parameters);
       case REPLY_KEYBOARD:
       case INLINE_RESULTS:
       case SIDE_MENU:

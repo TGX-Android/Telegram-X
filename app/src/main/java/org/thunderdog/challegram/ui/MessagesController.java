@@ -1973,8 +1973,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void joinChat () {
     if (referrer != null) {
       tdlib.send(new TdApi.JoinChatByInviteLink(referrer.inviteLink), (chatJoinResult, error) -> {
-        if (error != null || chatJoinResult.getConstructor() == TdApi.ChatJoinResultDeclined.CONSTRUCTOR) {
+        if (error != null) {
           tdlib.send(new TdApi.AddChatMember(chat.id, tdlib.myUserId(), 0), tdlib.errorHandler());
+        } else if (chatJoinResult instanceof TdApi.ChatJoinResultGuardBotApprovalRequired) {
+          tdlib.ui().post(() -> tdlib.miniApps().openGuardBot(this, (TdApi.ChatJoinResultGuardBotApprovalRequired) chatJoinResult, null, null));
+        } else if (chatJoinResult instanceof TdApi.ChatJoinResultDeclined) {
+          UI.showToast(R.string.MiniAppJoinDeclined, Toast.LENGTH_LONG);
         }
       });
     } else {

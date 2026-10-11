@@ -9422,7 +9422,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateChatJoinResult (TdApi.UpdateChatJoinResult update) {
-    // TODO
+    miniApps().onChatJoinResult(update);
   }
 
   private <T extends TdApi.Update> void updateChat (T update, long chatId, RunnableData<TdApi.Chat> chatModifier, RunnableData<T> updateDispatcher) {

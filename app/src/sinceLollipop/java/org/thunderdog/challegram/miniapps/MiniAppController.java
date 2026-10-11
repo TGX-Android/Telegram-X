@@ -102,6 +102,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private int fileRequestCode;
   private static int nextFileRequestCode = 0x5a00;
   private MiniAppMessageSender phoneSender;
+  private MiniAppSensors sensors;
   private final List<Runnable> deferredReplies = new ArrayList<>();
   private boolean minimized, expanded, fullscreen, backVisible, settingsVisible, needsCloseConfirmation;
   private boolean restoreWhenHidden;
@@ -143,6 +144,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   public int getId () { return R.id.controller_miniApp; }
 
   public long launchId () { return session.launchId(); }
+  public long guardQueryId () { return request.guardQueryId; }
   public boolean isMinimized () { return minimized && !isDestroyed(); }
   public boolean isShowing () { return popup != null && !minimized && !isDestroyed(); }
   public boolean isShowingFullscreen () { return isShowing() && fullscreen; }
@@ -423,8 +425,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
           if (systemInsets.bottom > 0 && getSystemInsets().bottom <= systemInsets.bottom) {
             canvas.drawRect(0, getHeight() - systemInsets.bottom, getWidth(), getHeight(), Paints.fillingPaint(color));
           }
-          if (systemInsets.left > 0) canvas.drawRect(0, 0, systemInsets.left, getHeight(), Paints.fillingPaint(color));
-          if (systemInsets.right > 0) canvas.drawRect(getWidth() - systemInsets.right, 0, getWidth(), getHeight(), Paints.fillingPaint(color));
+          if (!fullscreen && systemInsets.left > 0) canvas.drawRect(0, 0, systemInsets.left, getHeight(), Paints.fillingPaint(color));
+          if (!fullscreen && systemInsets.right > 0) canvas.drawRect(getWidth() - systemInsets.right, 0, getWidth(), getHeight(), Paints.fillingPaint(color));
         }
       }
     };
@@ -458,6 +460,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     popup.showSimplePopupView(root, root.getLayoutParams().height);
     if (!fullscreen) tdlib.miniApps().raiseTabs(context());
     if (webView != null) webView.onResume();
+    if (sensors != null && context().getActivityState() == UI.State.RESUMED) sensors.resume();
     if (orientationRequested) setOrientationLocked(true);
     sendTheme();
     emit("activated", object());
@@ -494,6 +497,10 @@ public final class MiniAppController extends ViewController<Void> implements Min
     controls.leftMargin = stableInsets.left; controls.rightMargin = stableInsets.right;
     fullscreenControls.setLayoutParams(controls);
     fullscreenControls.setVisibility(fullscreen ? View.VISIBLE : View.GONE);
+    LinearLayout.LayoutParams buttonParams = (LinearLayout.LayoutParams) buttons.getLayoutParams();
+    buttonParams.leftMargin = fullscreen ? stableInsets.left : 0;
+    buttonParams.rightMargin = fullscreen ? stableInsets.right : 0;
+    buttons.setLayoutParams(buttonParams);
     column.setPadding(0, fullscreen ? 0 : Screen.dp(56), 0, 0);
     if (sizeAnimator != null) { sizeAnimator.cancel(); sizeAnimator = null; }
     if (animate && root.getHeight() > 0 && root.getHeight() != height && !minimized) {
@@ -516,6 +523,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void beginPageLoad () {
+    if (sensors != null) sensors.stopAll();
     pageLoadGeneration++;
     pageReady = pageRevealRequested = pageLoadFailed = false;
     webView.animate().cancel();
@@ -579,6 +587,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       browserArea.draw(canvas);
     }
     minimized = true;
+    if (sensors != null) sensors.pause();
     updateFullscreen();
     if (webView != null) Keyboard.hide(webView);
     if (webView != null) webView.onPause();
@@ -597,6 +606,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (webView != null) webView.animate().cancel();
     if (progress != null) progress.animate().cancel();
     session.close();
+    if (sensors != null) { sensors.stopAll(); sensors = null; }
     if (buttons != null) buttons.performDestroy();
     context().removeFullScreenView(this, true);
     if (document != null) document.close();
@@ -625,12 +635,14 @@ public final class MiniAppController extends ViewController<Void> implements Min
   @Override
   public void onActivityPause () {
     super.onActivityPause();
+    if (sensors != null) sensors.pause();
     if (webView != null) webView.onPause();
   }
 
   @Override
   public void onActivityResume () {
     super.onActivityResume();
+    if (sensors != null && !minimized) sensors.resume();
     if (webView != null && !minimized) webView.onResume();
   }
 
@@ -740,6 +752,22 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_invoke_custom_method": customMethod(origin, data); break;
       case "web_app_request_write_access": requestWriteAccess(origin); break;
       case "web_app_request_phone": requestPhone(origin); break;
+      case "web_app_start_accelerometer":
+      case "web_app_stop_accelerometer":
+      case "web_app_start_gyroscope":
+      case "web_app_stop_gyroscope":
+      case "web_app_start_device_orientation":
+      case "web_app_stop_device_orientation": {
+        if (sensors == null) sensors = new MiniAppSensors(context());
+        if (context().getActivityState() != UI.State.RESUMED) sensors.pause();
+        boolean start = event.startsWith("web_app_start_");
+        String type = event.substring(start ? 14 : 13);
+        int kind = "accelerometer".equals(type) ? 0 : "gyroscope".equals(type) ? 1 : 2;
+        boolean ok = start ? sensors.start(kind, data.optLong("refresh_rate", 1000), data.optBoolean("need_absolute"),
+          (name, payload) -> reply(origin, name, payload)) : sensors.stop(kind);
+        reply(origin, type + (ok ? start ? "_started" : "_stopped" : "_failed"), ok ? object() : object("error", "UNSUPPORTED"));
+        break;
+      }
       case "web_app_switch_inline_query": switchInline(data); break;
       case "web_app_read_text_from_clipboard": {
         JSONObject response = object("req_id", data.getString("req_id"));

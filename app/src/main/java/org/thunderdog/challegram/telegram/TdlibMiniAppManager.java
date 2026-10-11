@@ -42,6 +42,8 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   private SharedPreferences consent;
   private TdApi.AttachmentMenuBot[] menuBots = new TdApi.AttachmentMenuBot[0];
   private final List<Runnable> menuListeners = new ArrayList<>();
+  private final java.util.Map<Long, Runnable> guardCompletions = new java.util.HashMap<>();
+  private final java.util.Map<Long, me.vkryl.core.lambda.RunnableLong> guardTargets = new java.util.HashMap<>();
   private final WeakHashMap<org.thunderdog.challegram.BaseActivity, MiniAppTabs> tabs = new WeakHashMap<>();
 
   public TdlibMiniAppManager (Tdlib tdlib) {
@@ -104,22 +106,11 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
       launch(context, request, token, generation, false, onOpened);
       return;
     }
-    CheckBox writeAccess = new CheckBox(context.context());
-    writeAccess.setText(Lang.getString(R.string.MiniAppAllowMessages));
-    writeAccess.setPadding(Screen.dp(24), Screen.dp(8), Screen.dp(24), Screen.dp(8));
-    writeAccess.setChecked(false);
-    AlertDialog.Builder builder = new AlertDialog.Builder(context.context())
-      .setTitle(tdlib.cache().userName(request.botUserId))
-      .setMessage(Lang.getString(R.string.MiniAppDisclaimer))
-      .setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> { if (current(context, token, generation)) pending.remove(context); })
-      .setPositiveButton(Lang.getString(R.string.Open), (dialog, which) -> {
+    org.thunderdog.challegram.miniapps.MiniAppLaunchDialog.show(context, request.botUserId, requestWriteAccess, R.string.BotStart, allowWrite -> {
         if (!current(context, token, generation)) return;
         consent.edit().putBoolean(Long.toString(request.botUserId), true).apply();
-        launch(context, request, token, generation, requestWriteAccess && writeAccess.isChecked(), onOpened);
-      });
-    if (requestWriteAccess) builder.setView(writeAccess);
-    ViewController<?> parent = context instanceof ViewController ? (ViewController<?>) context : context.context().navigation().getCurrentStackItem();
-    if (parent != null) parent.showAlert(builder); else builder.show();
+        launch(context, request, token, generation, allowWrite, onOpened);
+      }, () -> { if (current(context, token, generation)) pending.remove(context); });
   }
 
   private void launch (TdlibDelegate context, MiniAppLaunchRequest request, long token, int generation, boolean allowWriteAccess, Runnable onOpened) {
@@ -131,6 +122,8 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   }
 
   public void onClosed (MiniAppController controller) {
+    guardCompletions.remove(controller.guardQueryId());
+    guardTargets.remove(controller.guardQueryId());
     sessions.remove(controller);
     updateTabs(controller.context());
   }
@@ -178,6 +171,30 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
 
   public void openMainApp (TdlibDelegate context, long botUserId, long chatId) {
     open(context, new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.MAIN_APP, botUserId, chatId, "", "", "", "", null, null, null, false));
+  }
+
+  public void openGuardBot (TdlibDelegate context, TdApi.ChatJoinResultGuardBotApprovalRequired result, me.vkryl.core.lambda.RunnableLong onJoined, Runnable onDone) {
+    if (!alive(context)) return;
+    final int generation = epoch;
+    open(context, MiniAppLaunchRequest.guard(result.botUserId, result.queryId), () -> {
+      // Register only after the URL was obtained. Cancelled consent/network errors must not retain the caller.
+      guardTargets.put(result.queryId, chatId -> { if (generation == epoch && alive(context) && onJoined != null) onJoined.runWithLong(chatId); });
+      guardCompletions.put(result.queryId, () -> { if (generation == epoch && alive(context) && onDone != null) onDone.run(); });
+    });
+  }
+
+  public void onChatJoinResult (TdApi.UpdateChatJoinResult result) {
+    tdlib.ui().post(() -> {
+      me.vkryl.core.lambda.RunnableLong target = guardTargets.remove(result.queryId);
+      Runnable done = guardCompletions.remove(result.queryId);
+      for (MiniAppController app : new ArrayList<>(sessions)) if (app.guardQueryId() == result.queryId) app.close();
+      if (target != null && result.chatId != 0 && result.result instanceof TdApi.ChatJoinRequestResultApproved) target.runWithLong(result.chatId);
+      else if (done != null) {
+        if (result.result instanceof TdApi.ChatJoinRequestResultDeclined) UI.showToast(R.string.MiniAppJoinDeclined, Toast.LENGTH_LONG);
+        else if (result.result instanceof TdApi.ChatJoinRequestResultQueued) UI.showToast(R.string.MiniAppJoinPending, Toast.LENGTH_LONG);
+        done.run();
+      }
+    });
   }
 
   public void onAttachmentMenuBots (TdApi.AttachmentMenuBot[] bots) {
@@ -386,6 +403,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   public void onPerformRestart () { tdlib.ui().post(this::reset); }
 
   private void reset () {
+    guardTargets.clear(); guardCompletions.clear();
     epoch++;
     pending.clear();
     for (MiniAppController session : new ArrayList<>(sessions)) session.close();
