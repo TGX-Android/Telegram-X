@@ -47,7 +47,7 @@ final class MiniAppStage45Checks {
     }
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "stage 4/5 uses an initialized account");
     tdlib = activity.currentTdlib();
-    boolean realBot = server || "actions".equals(capability) || "emoji".equals(capability);
+    boolean realBot = server || "actions".equals(capability) || "emoji".equals(capability) || capability.startsWith("requested_chat");
     if (realBot) {
       TdApi.Chat chat = (TdApi.Chat) call(new TdApi.SearchPublicChat("nskdancebot"));
       bot = tdlib.chatUserId(chat);
@@ -62,6 +62,8 @@ final class MiniAppStage45Checks {
       else if ("optical_qr".equals(capability)) opticalQrChecks();
       else if ("capture".equals(capability)) fileSuccessChecks(true);
       else if ("file_selection".equals(capability)) fileSuccessChecks(false);
+      else if ("requested_chat".equals(capability)) requestedChatChecks();
+      else if ("requested_chat_server".equals(capability)) requestedChatServerChecks();
       else if ("actions".equals(capability)) actionChecks();
       else if ("emoji".equals(capability)) authorizedEmojiChecks();
       else localChecks();
@@ -345,7 +347,120 @@ final class MiniAppStage45Checks {
     Object scanner = field(host, "qrScanner");
     send("web_app_close_scan_qr_popup", "{}"); result("scan_qr_popup_closed");
     test.check(field(scanner, "camera") == null, "successful optical scan releases the camera when the page closes the scanner");
-    test.check(web.getUrl().equals("https://miniapp.test/stage45"), "decoded QR text is returned to JavaScript without navigation");
+    test.check("\"https://miniapp.test/stage45\"".equals(test.evaluate(web, "location.href")), "decoded QR text is returned to JavaScript without navigation");
+  }
+
+  private void requestedChatServerChecks () throws Exception {
+    send("web_app_request_chat", "{\"req_id\":\"miniapps-expired-fixture\"}");
+    JSONObject failed = result("requested_chat_failed");
+    test.check("miniapps-expired-fixture".equals(failed.getString("req_id")), "real Telegram rejects an unknown prepared button and preserves req_id");
+    test.check("1".equals(test.evaluate(web, "events.filter(e=>e.event==='requested_chat_failed').length")), "real server error completes once");
+    test.check(!has("requested_chat_sent"), "real server rejection never reports success");
+  }
+
+  /** Native UI and protocol tests, with a controlled transport that cannot share real peers. */
+  private void requestedChatChecks () throws Exception {
+    TdApi.Chat self = (TdApi.Chat) call(new TdApi.CreatePrivateChat(tdlib.myUserId(), false));
+    AtomicReference<org.drinkless.tdlib.Client.ResultHandler> pending = new AtomicReference<>(), fetch = new AtomicReference<>();
+    AtomicReference<TdApi.ShareUsersWithBot> share = new AtomicReference<>();
+    java.util.concurrent.atomic.AtomicInteger sent = new java.util.concurrent.atomic.AtomicInteger(), checked = new java.util.concurrent.atomic.AtomicInteger();
+    java.util.concurrent.atomic.AtomicInteger created = new java.util.concurrent.atomic.AtomicInteger(), usernameUpdates = new java.util.concurrent.atomic.AtomicInteger(), chatsShared = new java.util.concurrent.atomic.AtomicInteger();
+    AtomicReference<TdApi.CreateNewSupergroupChat> creation = new AtomicReference<>();
+    main(() -> set(host, "requestedChat", new MiniAppRequestedChat(host, (function, callback) -> {
+      if (function instanceof TdApi.GetPreparedKeyboardButton) {
+        String id = ((TdApi.GetPreparedKeyboardButton) function).preparedButtonId;
+        if ("late".equals(id)) { fetch.set(callback); return; }
+        if ("expired".equals(id)) { callback.onResult(new TdApi.Error(400, "BUTTON_ID_INVALID")); return; }
+        TdApi.KeyboardButton button = new TdApi.KeyboardButton(); button.text = "Test";
+        if ("group".equals(id) || "group_public".equals(id)) {
+          TdApi.KeyboardButtonTypeRequestChat type = new TdApi.KeyboardButtonTypeRequestChat(); type.id = 88;
+          if ("group_public".equals(id)) { type.restrictChatHasUsername = type.chatHasUsername = type.restrictChatIsForum = type.chatIsForum = true; }
+          button.type = type;
+        }
+        else if ("managed".equals(id)) button.type = new TdApi.KeyboardButtonTypeRequestManagedBot(77, "Test Bot", "test_bot");
+        else button.type = new TdApi.KeyboardButtonTypeRequestUsers(77, true, false, false, false, 2, true, true, false);
+        callback.onResult(button);
+      } else if (function instanceof TdApi.GetChats || function instanceof TdApi.SearchChats) callback.onResult(new TdApi.Chats(1, new long[] {self.id}));
+      else if (function instanceof TdApi.SearchContacts) callback.onResult(new TdApi.Users(0, new long[0]));
+      else if (function instanceof TdApi.LoadChats) callback.onResult(new TdApi.Ok());
+      else if (function instanceof TdApi.ShareUsersWithBot) {
+        TdApi.ShareUsersWithBot request = (TdApi.ShareUsersWithBot) function;
+        if (request.onlyCheck) { checked.incrementAndGet(); callback.onResult(new TdApi.Ok()); }
+        else { sent.incrementAndGet(); share.set(request); pending.set(callback); }
+      } else if (function instanceof TdApi.CheckChatUsername) callback.onResult(new TdApi.CheckChatUsernameResultOk());
+      else if (function instanceof TdApi.CreateNewSupergroupChat) {
+        created.incrementAndGet(); creation.set((TdApi.CreateNewSupergroupChat) function);
+        TdApi.Chat chat = new TdApi.Chat(); chat.id = -1000000777L; chat.type = new TdApi.ChatTypeSupergroup(777, false); chat.title = "Synthetic requested group"; callback.onResult(chat);
+      } else if (function instanceof TdApi.SetSupergroupUsername) {
+        callback.onResult(usernameUpdates.incrementAndGet() == 1 ? new TdApi.Error(400, "USERNAME_OCCUPIED") : new TdApi.Ok());
+      } else if (function instanceof TdApi.ShareChatWithBot) {
+        if (((TdApi.ShareChatWithBot) function).onlyCheck) callback.onResult(new TdApi.Ok());
+        else { chatsShared.incrementAndGet(); pending.set(callback); }
+      } else throw new AssertionError("Unexpected fixture request: " + function.getClass().getSimpleName());
+    })));
+    send("web_app_request_chat", "{\"req_id\":\"users\"}"); Object operation = requestedOperation();
+    android.widget.LinearLayout rows = field(operation, "rows");
+    for (int i = 0; i < 100 && rows.getChildCount() == 0; i++) Thread.sleep(100);
+    test.check(rows.getChildCount() == 1, "requested users picker applies the bot and premium filters to cached chats");
+    capture("stage6-requested-users");
+    main(() -> rows.getChildAt(0).performClick()); main(() -> ((android.view.View) field(operation, "submit")).performClick()); Thread.sleep(300);
+    test.check(checked.get() == 1 && sent.get() == 0, "selection is validated by onlyCheck before native confirmation");
+    capture("stage6-requested-users-confirm");
+    main(() -> ((android.view.View) field(operation, "submit")).performClick());
+    main(() -> ((android.view.View) field(operation, "submit")).performClick());
+    test.check(sent.get() == 1 && !has("requested_chat_sent"), "double tap does not resend and queued request is not reported as success");
+    TdApi.ShareUsersWithBot outgoing = share.get();
+    test.check(outgoing.buttonId == 77 && outgoing.sharedUserIds.length == 1 && outgoing.sharedUserIds[0] == tdlib.myUserId() && outgoing.source instanceof TdApi.KeyboardButtonSourceWebApp && ((TdApi.KeyboardButtonSourceWebApp) outgoing.source).preparedButtonId.equals("users"), "prepared source, button id and exact selected users reach the transport");
+    pending.get().onResult(new TdApi.Ok());
+    test.check("users".equals(result("requested_chat_sent").getString("req_id")), "success emitted after acknowledged sharing with original req_id");
+    pending.get().onResult(new TdApi.Ok()); Thread.sleep(100);
+    test.check("1".equals(test.evaluate(web, "events.filter(e=>e.event==='requested_chat_sent').length")), "late duplicate transport completion cannot emit twice");
+    clear(); send("web_app_request_chat", "{\"req_id\":\"cancel\"}"); Object cancelled = requestedOperation();
+    main(() -> ((android.app.Dialog) field(cancelled, "dialog")).cancel());
+    test.check("cancel".equals(result("requested_chat_failed").getString("req_id")), "picker Back or outside cancellation keeps original req_id");
+    clear(); send("web_app_request_chat", "{\"req_id\":\"late\"}");
+    for (int i = 0; i < 100 && fetch.get() == null; i++) Thread.sleep(50);
+    main(host::minimize); Thread.sleep(350); main(host::restore); Thread.sleep(350);
+    test.check("late".equals(result("requested_chat_failed").getString("req_id")), "minimization cancels pending request and returns failure on restore");
+    fetch.get().onResult(new TdApi.KeyboardButton("Test", 0, null, new TdApi.KeyboardButtonTypeRequestUsers())); Thread.sleep(150);
+    test.check(field(field(host, "requestedChat"), "operation") == null, "late prepared button cannot reopen a dismissed selection sheet");
+    clear(); send("web_app_request_chat", "{\"req_id\":\"group\"}"); Object group = requestedOperation();
+    test.check(((android.widget.LinearLayout) field(group, "rows")).getChildCount() == 0, "requested group picker excludes private chats");
+    main(() -> invoke(group, "createChat")); capture("stage6-create-requested-group");
+    main(() -> ((android.app.Dialog) field(group, "dialog")).cancel());
+    test.check("group".equals(result("requested_chat_failed").getString("req_id")), "new group form cancellation does not create a chat");
+    test.check(created.get() == 0, "opening and cancelling creation never dispatches CreateNewSupergroupChat");
+    clear(); send("web_app_request_chat", "{\"req_id\":\"group_public\"}"); Object publicGroup = requestedOperation();
+    main(() -> {
+      invoke(publicGroup, "createChat");
+      android.widget.LinearLayout content = field(publicGroup, "content"); int input = 0;
+      for (int i = 0; i < content.getChildCount(); i++) if (content.getChildAt(i) instanceof android.widget.EditText) {
+        ((android.widget.EditText) content.getChildAt(i)).setText(input++ == 0 ? "Synthetic requested group" : "miniapps_synthetic_group");
+      }
+      ((android.view.View) field(publicGroup, "submit")).performClick();
+    });
+    for (int i = 0; i < 100 && usernameUpdates.get() == 0; i++) Thread.sleep(50);
+    Thread.sleep(200);
+    test.check(created.get() == 1 && chatsShared.get() == 0 && creation.get().isForum && !creation.get().isChannel, "create-and-share carries requested forum type and does not share before username setup");
+    main(() -> ((android.view.View) field(publicGroup, "submit")).performClick());
+    for (int i = 0; i < 100 && chatsShared.get() == 0; i++) Thread.sleep(50);
+    test.check(created.get() == 1 && usernameUpdates.get() == 2 && chatsShared.get() == 1, "retry after username failure reuses the created chat without duplicate creation");
+    test.check(!has("requested_chat_sent"), "new chat is not reported as shared before server acknowledgement");
+    pending.get().onResult(new TdApi.Ok());
+    test.check("group_public".equals(result("requested_chat_sent").getString("req_id")), "controlled new-group share completes with original req_id");
+    clear(); send("web_app_request_chat", "{\"req_id\":\"send_error\"}"); Object rejected = requestedOperation();
+    main(() -> ((android.widget.LinearLayout) field(rejected, "rows")).getChildAt(0).performClick());
+    main(() -> ((android.view.View) field(rejected, "submit")).performClick()); Thread.sleep(200);
+    main(() -> ((android.view.View) field(rejected, "submit")).performClick());
+    pending.get().onResult(new TdApi.Error(400, "BUTTON_ID_INVALID"));
+    test.check("send_error".equals(result("requested_chat_failed").getString("req_id")) && !has("requested_chat_sent"), "server rejection after confirmation returns failure rather than optimistic success");
+    clear(); send("web_app_request_chat", "{\"req_id\":\"managed\"}");
+    test.check("managed".equals(result("requested_chat_failed").getString("req_id")), "managed bot dependency fails explicitly before creating any real bot");
+    test.check(sent.get() == 2 && chatsShared.get() == 1, "all cancellation paths performed zero extra sends");
+  }
+  private Object requestedOperation () throws Exception {
+    for (int i = 0; i < 100; i++) { Object request = field(host, "requestedChat"), operation = request != null ? field(request, "operation") : null; if (operation != null && field(operation, "dialog") != null && field(operation, "rows") != null) { Thread.sleep(200); return operation; } Thread.sleep(100); }
+    throw new AssertionError("Requested chat picker missing");
   }
 
   private void fileSuccessChecks (boolean camera) throws Exception {
