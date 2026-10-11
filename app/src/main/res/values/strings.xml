@@ -24,7 +24,10 @@
   <string name="MiniAppLoadError">Could not load this Mini App. Check your connection and try again.</string>
   <string name="MiniAppTerms">Terms of Service</string>
   <string name="MiniAppSharePhone">Share your phone number with %1$s?</string>
+  <string name="MiniAppSharePhoneTitle">Share your phone number?</string>
+  <string name="MiniAppSharePhoneUnblock">This will also unblock the bot.</string>
   <string name="MiniAppWriteAccess">Allow %1$s to send you messages?</string>
+  <string name="MiniAppWriteAccessTitle">Allow messaging</string>
   <string name="MiniAppBiometryTitle">Biometric Authentication</string>
   <string name="MiniAppBiometryRequest">Allow %1$s to use biometric authentication?</string>
   <string name="MiniAppLocationRequest">Allow %1$s to access your location? You can change this permission in the bot profile.</string>

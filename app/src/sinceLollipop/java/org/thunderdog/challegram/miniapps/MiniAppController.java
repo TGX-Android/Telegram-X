@@ -453,6 +453,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     popup.showSimplePopupView(root, root.getLayoutParams().height);
     if (!fullscreen) tdlib.miniApps().raiseTabs(context());
     if (webView != null) webView.onResume();
+    platform.setMediaPaused(false);
     if (sensors != null && context().getActivityState() == UI.State.RESUMED) sensors.resume();
     if (orientationRequested) setOrientationLocked(true);
     sendTheme();
@@ -571,6 +572,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   public void minimize () {
     if (isDestroyed() || minimized) return;
     emit("deactivated", object());
+    platform.setMediaPaused(true);
     if (browserArea.getWidth() > 0 && browserArea.getHeight() > 0) {
       if (preview != null) preview.recycle();
       float scale = Math.min(1f, 1080f / browserArea.getWidth());
@@ -634,6 +636,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     super.onActivityPause();
     if (sensors != null) sensors.pause();
     if (webView != null) webView.onPause();
+    platform.stopMedia();
     if (location != null) location.pause();
     if (biometry != null) biometry.cancel();
     if (qrScanner != null) qrScanner.pause();
@@ -644,6 +647,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     super.onActivityResume();
     if (sensors != null && !minimized) sensors.resume();
     if (webView != null && !minimized) webView.onResume();
+    if (!minimized) platform.setMediaPaused(false);
     if (location != null) emit("location_checked", location.info());
     if (biometry != null) emit("biometry_info_received", biometry.info());
   }
@@ -701,6 +705,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
     });
     AlertDialog dialog = showAlert(builder); activeDialog = dialog;
     if (dialog == null) { cancelled.run(); return; }
+    if (dialog.getWindow() != null) {
+      android.graphics.drawable.Drawable previous = dialog.getWindow().getDecorView().getBackground();
+      Rect padding = new Rect(); if (previous != null) previous.getPadding(padding);
+      GradientDrawable shape = new GradientDrawable(); shape.setColor(Theme.fillingColor()); shape.setCornerRadius(Screen.dp(10));
+      dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.InsetDrawable(shape, padding.left, padding.top, padding.right, padding.bottom));
+      dialog.getWindow().getDecorView().setClipToOutline(true);
+    }
     dialog.setOnDismissListener(ignored -> {
       if (activeDialog == dialog) activeDialog = null;
       if (illustration instanceof org.thunderdog.challegram.widget.CustomEmojiTextView) ((org.thunderdog.challegram.widget.CustomEmojiTextView) illustration).performDestroy();
@@ -990,12 +1001,14 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void requestWriteAccess (MiniAppDocument.Request origin) {
     if (writeRequest != null) return;
+    if (ignoreBotDialog(3)) { reply(origin, "write_access_requested", object("status", "cancelled")); return; }
     writeRequest = origin;
     tdlib.send(new TdApi.CanBotSendMessages(request.botUserId), (ok, error) -> tdlib.ui().post(() -> {
       if (!current(origin) || writeRequest != origin) return;
       if (error == null) { finishWrite(origin, true); return; }
       if (error.code != 404) { UI.showError(error); finishWrite(origin, false); return; }
-      nativePrompt(origin, botName(), Lang.getString(R.string.MiniAppWriteAccess, botName()), R.string.Allow, null, () ->
+      recordBotDialog(3);
+      nativePrompt(origin, Lang.getString(R.string.MiniAppWriteAccessTitle), Lang.getString(R.string.MiniAppWriteAccess, botName()), R.string.Allow, null, () ->
         tdlib.send(new TdApi.AllowBotToSendMessages(request.botUserId), (result, allowError) -> tdlib.ui().post(() -> {
           if (!current(origin) || writeRequest != origin) return;
           if (allowError != null) UI.showError(allowError);
@@ -1010,8 +1023,23 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void requestPhone (MiniAppDocument.Request origin) {
     if (phoneSender != null || phoneRequest != null) return;
+    if (ignoreBotDialog(4)) { reply(origin, "phone_requested", object("status", "cancelled")); return; }
     phoneRequest = origin;
-    nativePrompt(origin, botName(), Lang.getString(R.string.MiniAppSharePhone, botName()), R.string.Share, null, () -> {
+    TdApi.UserFullInfo bot = tdlib.cache().userFull(request.botUserId);
+    boolean blocked = tdlib.chatFullyBlocked(tgx.td.ChatId.fromUserId(request.botUserId)) || bot != null && bot.blockList instanceof TdApi.BlockListMain;
+    String message = Lang.getString(R.string.MiniAppSharePhone, botName());
+    if (blocked) message += "\n\n" + Lang.getString(R.string.MiniAppSharePhoneUnblock);
+    recordBotDialog(4);
+    nativePrompt(origin, Lang.getString(R.string.MiniAppSharePhoneTitle), message, R.string.ShareContact, null, () -> {
+      if (blocked) {
+        tdlib.send(new TdApi.SetMessageSenderBlockList(new TdApi.MessageSenderUser(request.botUserId), null), (ok, error) -> tdlib.ui().post(() -> {
+          if (!current(origin) || phoneRequest != origin) return;
+          if (error != null) { UI.showError(error); finishPhone(origin, false); } else sendContact(origin);
+        }));
+      } else sendContact(origin);
+    }, () -> finishPhone(origin, false));
+  }
+  private void sendContact (MiniAppDocument.Request origin) {
       TdApi.User me = tdlib.myUser();
       if (me == null || me.phoneNumber.isEmpty()) { finishPhone(origin, false); return; }
       tdlib.send(new TdApi.CreatePrivateChat(request.botUserId, false), (chat, error) -> tdlib.ui().post(() -> {
@@ -1026,8 +1054,17 @@ public final class MiniAppController extends ViewController<Void> implements Min
         });
         phoneSender.send();
       }));
-    }, () -> finishPhone(origin, false));
   }
+  private int lastBotDialog = -1, shownBotDialogs;
+  private long blockedBotDialogsUntil;
+  private boolean ignoreBotDialog (int type) {
+    if (activeDialog != null || SystemClock.uptimeMillis() < blockedBotDialogsUntil) return true;
+    if (lastBotDialog == type && shownBotDialogs > 3) {
+      blockedBotDialogsUntil = SystemClock.uptimeMillis() + 3000; shownBotDialogs = 0; return true;
+    }
+    return false;
+  }
+  private void recordBotDialog (int type) { if (lastBotDialog != type) { lastBotDialog = type; shownBotDialogs = 0; blockedBotDialogsUntil = 0; } shownBotDialogs++; }
   private void finishPhone (MiniAppDocument.Request origin, boolean sent) {
     if (phoneRequest != origin) return;
     phoneRequest = null; reply(origin, "phone_requested", object("status", sent ? "sent" : "cancelled"));

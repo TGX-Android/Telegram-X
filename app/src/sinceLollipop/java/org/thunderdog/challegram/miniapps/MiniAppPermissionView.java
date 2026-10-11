@@ -18,7 +18,7 @@ final class MiniAppPermissionView extends FrameLayout {
   private final AvatarView user, bot;
   private MiniAppPermissionView (MiniAppController host, int badge) {
     super(host.context());
-    setMinimumHeight(Screen.dp(100));
+    setMinimumHeight(Screen.dp(132));
     setBackgroundColor(Theme.getColor(ColorId.fillingPositive));
     user = new AvatarView(host.context()); user.setUser(host.tdlib(), host.tdlib().myUserId(), false);
     bot = new AvatarView(host.context()); bot.setUser(host.tdlib(), host.botId(), false);
@@ -26,8 +26,11 @@ final class MiniAppPermissionView extends FrameLayout {
     LayoutParams b = new LayoutParams(Screen.dp(50), Screen.dp(50), Gravity.CENTER); b.leftMargin = Screen.dp(86); addView(bot, b);
     ImageView arrow = new ImageView(host.context()); arrow.setImageResource(R.drawable.round_keyboard_arrow_right_24); arrow.setColorFilter(android.graphics.Color.WHITE);
     addView(arrow, new LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.CENTER));
-    ImageView symbol = new ImageView(host.context()); symbol.setImageResource(badge); symbol.setColorFilter(android.graphics.Color.WHITE);
-    LayoutParams s = new LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.CENTER); s.rightMargin = Screen.dp(48); s.topMargin = Screen.dp(36); addView(symbol, s);
+    ImageView symbol = new ImageView(host.context()); symbol.setImageResource(badge); symbol.setColorFilter(Theme.getColor(ColorId.fillingPositive));
+    android.graphics.drawable.GradientDrawable circle = new android.graphics.drawable.GradientDrawable(); circle.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+    circle.setColor(android.graphics.Color.WHITE); circle.setStroke(Screen.dp(2), Theme.getColor(ColorId.fillingPositive)); symbol.setBackground(circle);
+    symbol.setPadding(Screen.dp(5), Screen.dp(5), Screen.dp(5), Screen.dp(5));
+    LayoutParams s = new LayoutParams(Screen.dp(28), Screen.dp(28), Gravity.CENTER); s.rightMargin = Screen.dp(54); s.topMargin = Screen.dp(32); addView(symbol, s);
   }
   static MiniAppPermissionView location (MiniAppController host) { return new MiniAppPermissionView(host, R.drawable.baseline_location_on_24); }
   @Override protected void onDetachedFromWindow () { super.onDetachedFromWindow(); user.performDestroy(); bot.performDestroy(); }

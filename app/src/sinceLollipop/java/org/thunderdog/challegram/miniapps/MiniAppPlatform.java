@@ -24,6 +24,19 @@ import java.util.Set;
 public final class MiniAppPlatform {
   private ScriptHandler script;
   private boolean installed;
+  private final Set<androidx.webkit.JavaScriptReplyProxy> mediaFrames = new HashSet<>();
+  private boolean mediaPaused;
+  private static final String MEDIA_BRIDGE = "TelegramWebviewMediaLifecycle";
+  // Each frame tracks only locally captured streams. Pausing one host must not use
+  // WebView.pauseTimers(), which would also freeze other Mini Apps and browsers.
+  private static final String MEDIA_SCRIPT = "(function(){const b=window." + MEDIA_BRIDGE + ";if(!b||b.installed)return;b.installed=true;"
+    + "const tracks=new Set();let paused=false;const stop=()=>{tracks.forEach(t=>t.stop());tracks.clear()};"
+    + "const track=s=>{if(paused){s.getTracks().forEach(t=>t.stop());throw new DOMException('Mini App is paused','AbortError')}s.getTracks().forEach(t=>tracks.add(t));return s};"
+    + "b.onmessage=e=>{if(e.data==='resume'){paused=false}else{if(e.data==='pause')paused=true;stop()}};"
+    + "const m=navigator.mediaDevices;if(m&&m.getUserMedia){const get=m.getUserMedia.bind(m);m.getUserMedia=(...a)=>get(...a).then(track)};"
+    + "['getUserMedia','webkitGetUserMedia'].forEach(k=>{if(typeof navigator[k]==='function'){const get=navigator[k].bind(navigator);navigator[k]=(c,ok,fail)=>get(c,s=>{try{ok(track(s))}catch(e){if(fail)fail(e)}},fail)}});"
+    + "if(window.MediaStreamTrack){const clone=MediaStreamTrack.prototype.clone;MediaStreamTrack.prototype.clone=function(){const t=clone.call(this);if(tracks.has(this))tracks.add(t);return t}};"
+    + "addEventListener('pagehide',stop);b.postMessage('ready')})();";
 
   public static boolean isSupported () {
     try {
@@ -119,14 +132,29 @@ public final class MiniAppPlatform {
         }
       });
     installed = true;
+    WebViewCompat.addWebMessageListener(webView, MEDIA_BRIDGE, Collections.singleton("*"), (view, message, sourceOrigin, isMainFrame, replyProxy) -> {
+      if (message.getType() == WebMessageCompat.TYPE_STRING && "ready".equals(message.getData())) {
+        if (mediaFrames.size() < 256) mediaFrames.add(replyProxy);
+        if (mediaPaused) replyProxy.postMessage("pause");
+      }
+    });
     if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-      script = WebViewCompat.addDocumentStartJavaScript(webView, MiniAppBridgeTransport.SCRIPT, Collections.singleton("*"));
+      script = WebViewCompat.addDocumentStartJavaScript(webView, MiniAppBridgeTransport.SCRIPT + MEDIA_SCRIPT, Collections.singleton("*"));
     }
     return true;
   }
 
   public void onPageStarted (WebView webView) {
-    if (installed && script == null) webView.evaluateJavascript(MiniAppBridgeTransport.SCRIPT, null);
+    mediaFrames.clear();
+    if (installed && script == null) webView.evaluateJavascript(MiniAppBridgeTransport.SCRIPT + MEDIA_SCRIPT, null);
+  }
+
+  public void setMediaPaused (boolean paused) { mediaPaused = paused; mediaCommand(paused ? "pause" : "resume"); }
+  public void stopMedia () { mediaCommand("stop"); }
+  private void mediaCommand (String command) {
+    for (androidx.webkit.JavaScriptReplyProxy frame : new HashSet<>(mediaFrames)) {
+      try { frame.postMessage(command); } catch (RuntimeException stale) { mediaFrames.remove(frame); }
+    }
   }
 
   public void whenVisualStateReady (WebView webView, long requestId, Runnable ready) {
@@ -140,9 +168,13 @@ public final class MiniAppPlatform {
   }
 
   public void destroy (WebView webView) {
+    stopMedia(); mediaFrames.clear();
     if (script != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) script.remove();
     script = null;
-    if (installed && WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) WebViewCompat.removeWebMessageListener(webView, MiniAppBridgeTransport.OBJECT_NAME);
+    if (installed && WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+      WebViewCompat.removeWebMessageListener(webView, MiniAppBridgeTransport.OBJECT_NAME);
+      WebViewCompat.removeWebMessageListener(webView, MEDIA_BRIDGE);
+    }
     installed = false;
   }
 }

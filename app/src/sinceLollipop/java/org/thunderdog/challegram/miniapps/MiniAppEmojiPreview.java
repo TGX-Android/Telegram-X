@@ -36,7 +36,8 @@ final class MiniAppEmojiPreview extends FrameLayout {
 
   MiniAppEmojiPreview (MiniAppController host, long emojiId) {
     super(host.context()); this.host = host; highlight = emojiId != 0;
-    setMinimumHeight(Screen.dp(100)); setBackgroundColor(Theme.getColor(ColorId.fillingPositive));
+    setClipChildren(false); setClipToPadding(false);
+    setMinimumHeight(Screen.dp(132)); setBackgroundColor(Theme.getColor(ColorId.fillingPositive));
     LinearLayout pill = new LinearLayout(host.context()); pill.setGravity(Gravity.CENTER_VERTICAL);
     pill.setBackground(background(16));
     addView(pill, new LayoutParams(-2, Screen.dp(32), Gravity.CENTER));

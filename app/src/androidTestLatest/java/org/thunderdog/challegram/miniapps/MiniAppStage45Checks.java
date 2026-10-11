@@ -47,7 +47,7 @@ final class MiniAppStage45Checks {
     }
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "stage 4/5 uses an initialized account");
     tdlib = activity.currentTdlib();
-    boolean realBot = server || "actions".equals(capability);
+    boolean realBot = server || "actions".equals(capability) || "emoji".equals(capability);
     if (realBot) {
       TdApi.Chat chat = (TdApi.Chat) call(new TdApi.SearchPublicChat("nskdancebot"));
       bot = tdlib.chatUserId(chat);
@@ -57,8 +57,10 @@ final class MiniAppStage45Checks {
     try {
       if (server) serverChecks();
       else if ("biometry".equals(capability)) biometricChecks();
+      else if ("biometry_cancel".equals(capability)) biometricCancelChecks();
       else if ("hardware".equals(capability)) grantedHardwareChecks();
       else if ("actions".equals(capability)) actionChecks();
+      else if ("emoji".equals(capability)) authorizedEmojiChecks();
       else localChecks();
     } finally {
       main(() -> { if (host != null) host.close(); });
@@ -84,8 +86,14 @@ final class MiniAppStage45Checks {
     test.check("authorized".equals(auth.getString("status")) && "synthetic-biometric-token".equals(auth.getString("token")), "authenticated cipher decrypts exact token through real bridge");
     clear(); send("web_app_biometry_update_token", "{\"token\":\"\",\"reason\":\"Mini Apps test: remove test token\"}");
     test.check("removed".equals(biometricResult("biometry_token_updated").getString("status")), "biometric token removal acknowledged after authentication");
-    clear(); send("web_app_biometry_request_auth", "{\"reason\":\"Mini Apps cancellation test\"}"); Thread.sleep(400);
-    main(host::minimize); main(host::restore);
+    Thread.sleep(1000); biometricCancelChecks();
+  }
+  private void biometricCancelChecks () throws Exception {
+    main(() -> { invoke(host, "biometry"); MiniAppBiometry bio = field(host, "biometry"); bio.setGranted(true); });
+    clear(); send("web_app_biometry_request_auth", "{\"reason\":\"Mini Apps cancellation test\"}");
+    for (int i = 0; i < 100 && field(field(host, "biometry"), "pending") == null; i++) Thread.sleep(100);
+    test.check(field(field(host, "biometry"), "pending") != null, "actual biometric prompt is pending before lifecycle cancellation");
+    main(host::minimize); Thread.sleep(400); main(host::restore); Thread.sleep(400);
     test.check("failed".equals(result("biometry_auth_requested").getString("status")), "minimization cancels authentication without a token");
   }
   private JSONObject biometricResult (String event) throws Exception {
@@ -114,11 +122,42 @@ final class MiniAppStage45Checks {
     for (int i = 0; i < 150; i++) { allowAndroidPermission(); if (!"\"waiting\"".equals(test.evaluate(web, "captureResult"))) break; Thread.sleep(100); }
     test.check("\"live\"".equals(test.evaluate(web, "captureResult")), "real WebRTC camera and microphone open only after native and Android consent");
     test.check("true".equals(test.evaluate(web, "captureStream.getTracks().length===2&&captureStream.getTracks().every(t=>t.readyState==='live')")), "both requested tracks are live");
+    test.evaluate(web, "window.captureClone=captureStream.getVideoTracks()[0].clone()");
     main(host::minimize); Thread.sleep(500); main(host::restore); Thread.sleep(300);
-    test.check("true".equals(test.evaluate(web, "captureStream.getTracks().every(t=>t.readyState==='ended')")), "minimization stops active camera and microphone tracks");
+    test.check("true".equals(test.evaluate(web, "captureStream.getTracks().every(t=>t.readyState==='ended')&&captureClone.readyState==='ended'")), "minimization stops active camera/microphone and cloned tracks");
     android.net.Uri first = android.net.Uri.parse("content://picker.test/one"), second = android.net.Uri.parse("content://picker.test/two");
     Intent files = new Intent(); android.content.ClipData clip = android.content.ClipData.newRawUri("one", first); clip.addItem(new android.content.ClipData.Item(second)); files.setClipData(clip);
     test.check(MiniAppMedia.pickerUris(files, true).length == 2 && MiniAppMedia.pickerUris(files, false) == null, "picker result preserves multiple URIs and rejects multiple files in single mode");
+  }
+
+  /** Run only after the human authorizes a temporary visible status and permission change. */
+  private void authorizedEmojiChecks () throws Exception {
+    TdApi.User me = (TdApi.User) call(new TdApi.GetMe());
+    test.check(me.isPremium, "account supports successful emoji status changes");
+    TdApi.EmojiStatus original = me.emojiStatus;
+    TdApi.UserFullInfo full = (TdApi.UserFullInfo) call(new TdApi.GetUserFullInfo(bot));
+    boolean originalPermission = full.botInfo.canManageEmojiStatus;
+    long emoji = ((TdApi.EmojiStatusCustomEmojis) call(new TdApi.GetDefaultEmojiStatuses())).customEmojiIds[0];
+    try {
+      clear(); main(host::recordGesture); send("web_app_set_emoji_status", "{\"custom_emoji_id\":\"" + emoji + "\",\"duration\":60}");
+      AlertDialog status = dialog(); capture("stage45-authorized-status-consent"); click(status, true);
+      result("emoji_status_set");
+      TdApi.User changed = (TdApi.User) call(new TdApi.GetMe());
+      test.check(changed.emojiStatus != null && changed.emojiStatus.type instanceof TdApi.EmojiStatusTypeCustomEmoji && ((TdApi.EmojiStatusTypeCustomEmoji) changed.emojiStatus.type).customEmojiId == emoji,
+        "temporary emoji status is confirmed by Telegram and read back");
+      clear(); main(host::recordGesture); send("web_app_request_emoji_status_access", "{}");
+      for (int i = 0; i < 100 && !has("emoji_status_access_requested"); i++) {
+        AlertDialog access = field(host, "activeDialog"); if (access != null) { capture("stage45-authorized-emoji-permission"); click(access, true); break; } Thread.sleep(100);
+      }
+      test.check("allowed".equals(result("emoji_status_access_requested").getString("status")), "emoji management grant receives successful server result");
+      test.check(((TdApi.UserFullInfo) call(new TdApi.GetUserFullInfo(bot))).botInfo.canManageEmojiStatus, "nskdancebot emoji permission read back as enabled");
+    } finally {
+      call(new TdApi.SetEmojiStatus(original));
+      call(new TdApi.ToggleBotCanManageEmojiStatus(bot, originalPermission));
+      TdApi.User restored = (TdApi.User) call(new TdApi.GetMe());
+      test.check(tgx.td.Td.equalsTo(restored.emojiStatus, original), "original public emoji status restored and read back");
+      test.check(((TdApi.UserFullInfo) call(new TdApi.GetUserFullInfo(bot))).botInfo.canManageEmojiStatus == originalPermission, "original bot emoji permission restored and read back");
+    }
   }
 
   private void actionChecks () throws Exception {
@@ -133,8 +172,8 @@ final class MiniAppStage45Checks {
     }
     String access = result("emoji_status_access_requested").getString("status");
     test.check("cancelled".equals(access) || "allowed".equals(access), "emoji permission reports native refusal or existing server permission");
-    String filename = "mini-apps-contract-" + Long.toHexString(System.nanoTime()) + ".ico";
-    clear(); main(host::recordGesture); send("web_app_request_file_download", new JSONObject().put("file_name", filename).put("url", "https://nskdance.danceworldtv.ru/favicon.ico").toString());
+    String filename = "mini-apps-contract-" + Long.toHexString(System.nanoTime()) + ".svg";
+    clear(); main(host::recordGesture); send("web_app_request_file_download", new JSONObject().put("file_name", filename).put("url", "https://nskdance.danceworldtv.ru/favicon.svg").toString());
     AlertDialog download = dialog(); Thread.sleep(1000); capture("stage45-real-download"); click(download, true);
     test.check("downloading".equals(result("file_download_requested").getString("status")), "nskdancebot download passes CheckWebAppFileDownload and real enqueue");
     MiniAppActions actions = field(host, "actions"); android.content.SharedPreferences prefs = field(actions, "downloads");

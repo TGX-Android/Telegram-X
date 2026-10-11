@@ -34,6 +34,7 @@ final class MiniAppBiometry {
   private final String alias;
   private BiometricPrompt prompt;
   private Result pending;
+  private int authenticationGeneration;
   private interface Result { void done (boolean success, String token); }
 
   MiniAppBiometry (MiniAppController host) {
@@ -99,6 +100,7 @@ final class MiniAppBiometry {
     if (result != null) result.done(success, token);
   }
   void cancel () {
+    authenticationGeneration++;
     BiometricPrompt current = prompt;
     complete(false, null);
     if (current != null) current.cancelAuthentication();
@@ -107,13 +109,14 @@ final class MiniAppBiometry {
   private void authenticate (String reason, boolean write, String value, Result result) {
     if (!available() || Build.VERSION.SDK_INT < Build.VERSION_CODES.M) { result.done(false, null); return; }
     pending = result;
+    final int attempt = ++authenticationGeneration;
     try {
       final boolean decrypt = !write && preferences.contains("token");
       Cipher cipher = cipher(decrypt);
       prompt = new BiometricPrompt(host.context(), androidx.core.content.ContextCompat.getMainExecutor(host.context()), new BiometricPrompt.AuthenticationCallback() {
-        @Override public void onAuthenticationError (int error, @NonNull CharSequence message) { complete(false, null); }
+        @Override public void onAuthenticationError (int error, @NonNull CharSequence message) { if (attempt == authenticationGeneration) complete(false, null); }
         @Override public void onAuthenticationSucceeded (@NonNull BiometricPrompt.AuthenticationResult result) {
-          if (pending == null) return;
+          if (pending == null || attempt != authenticationGeneration) return;
           try {
             Cipher authenticated = result.getCryptoObject() != null ? result.getCryptoObject().getCipher() : null;
             if (authenticated == null) { complete(false, null); return; }

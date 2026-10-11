@@ -85,8 +85,12 @@ final class MiniAppQrScanner implements TextureView.SurfaceTextureListener {
     TextView subtitle = new TextView(host.context()); subtitle.setText(text.substring(0, Math.min(256, text.length()))); subtitle.setTextSize(16); subtitle.setTextColor(0xffcccccc); subtitle.setGravity(Gravity.CENTER);
     overlay.addView(title, new FrameLayout.LayoutParams(-1, -2)); overlay.addView(subtitle, new FrameLayout.LayoutParams(-1, -2));
     ImageView back = new ImageView(host.context()); back.setImageResource(R.drawable.baseline_close_24); back.setColorFilter(Color.WHITE); back.setContentDescription(Lang.getString(R.string.MiniAppPopupClose));
+    back.setScaleType(ImageView.ScaleType.CENTER);
     overlay.addView(back, new FrameLayout.LayoutParams(Screen.dp(56), Screen.dp(56), Gravity.TOP | Gravity.START)); back.setOnClickListener(v -> close());
     ImageView flash = new ImageView(host.context()); flash.setImageResource(R.drawable.baseline_flash_on_24); flash.setColorFilter(Color.WHITE); flash.setContentDescription(Lang.getString(R.string.MiniAppFlash));
+    flash.setScaleType(ImageView.ScaleType.CENTER);
+    android.graphics.drawable.GradientDrawable flashBackground = new android.graphics.drawable.GradientDrawable();
+    flashBackground.setShape(android.graphics.drawable.GradientDrawable.OVAL); flashBackground.setColor(0x40ffffff); flash.setBackground(flashBackground);
     overlay.addView(flash, new FrameLayout.LayoutParams(Screen.dp(60), Screen.dp(60), Gravity.TOP | Gravity.CENTER_HORIZONTAL));
     flash.setOnClickListener(v -> {
       if (camera == null) return;
@@ -155,7 +159,10 @@ final class MiniAppQrScanner implements TextureView.SurfaceTextureListener {
     MiniAppDocument.Request origin = pending; pending = null;
     lastText = null; lastScan = 0;
     main.removeCallbacksAndMessages(null);
-    if (camera != null) { try { camera.setPreviewCallback(null); camera.stopPreview(); camera.release(); } catch (RuntimeException ignored) { } camera = null; }
+    if (camera != null) {
+      try { camera.setPreviewCallback(null); camera.stopPreview(); } catch (RuntimeException ignored) { }
+      try { camera.release(); } catch (RuntimeException ignored) { } camera = null;
+    }
     if (dialog != null) { Dialog current = dialog; dialog = null; current.dismiss(); }
     if (origin != null) host.reply(origin, "scan_qr_popup_closed", object());
   }

@@ -104,7 +104,8 @@ final class MiniAppActions {
         String mime = connection.getContentType();
         if (mime != null) mime = mime.split(";")[0].trim();
         String ext = mime != null ? android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) : null;
-        long size = Long.parseLong(connection.getHeaderField("Content-Length"));
+        String length = connection.getHeaderField("Content-Length");
+        long size = length != null ? Long.parseLong(length) : -1;
         detail = (size > 0 ? "~" + org.thunderdog.challegram.tool.Strings.buildSize(size) : "") + (ext != null ? " " + ext.toUpperCase(java.util.Locale.US) : "");
         if (detail.trim().isEmpty()) detail = Lang.getString(R.string.File);
       } catch (Exception ignored) { } finally { if (connection != null) connection.disconnect(); }
