@@ -153,6 +153,7 @@ public final class MiniAppPlatform {
   public void setMediaPaused (boolean paused) { mediaPaused = paused; mediaCommand(paused ? "pause" : "resume"); }
   public void stopMedia () { mediaCommand("stop"); }
   private void mediaCommand (String command) {
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return;
     for (androidx.webkit.JavaScriptReplyProxy frame : new HashSet<>(mediaFrames)) {
       try { frame.postMessage(command); } catch (RuntimeException stale) { mediaFrames.remove(frame); }
     }
