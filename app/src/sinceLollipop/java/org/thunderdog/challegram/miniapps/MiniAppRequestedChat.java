@@ -49,7 +49,12 @@ final class MiniAppRequestedChat {
   MiniAppRequestedChat (MiniAppController host) { this(host, (function, handler) -> host.tdlib().client().send(function, handler)); }
   MiniAppRequestedChat (MiniAppController host, Gateway gateway) { this.host = host; this.tdlib = host.tdlib(); this.gateway = gateway; }
   boolean active () { return operation != null; }
-  void cancel () { if (operation != null) operation.finish(false); }
+  void cancel () {
+    if (operation == null) return;
+    // Minimizing cannot undo an already submitted share. Keep its result for the same document.
+    if (operation.sharing && operation.current()) operation.dismiss();
+    else operation.finish(false);
+  }
 
   void request (MiniAppDocument.Request origin, JSONObject data) {
     Object value = data.opt("req_id");
@@ -82,7 +87,7 @@ final class MiniAppRequestedChat {
     final List<AvatarView> avatars = new ArrayList<>();
     int searchGeneration, limit = 100;
     Runnable searchTask;
-    boolean working, loading, listComplete;
+    boolean working, loading, listComplete, sharing;
     TdApi.Chat createdChat;
 
     Operation (MiniAppDocument.Request origin, String id) { this.origin = origin; this.id = id; source = new TdApi.KeyboardButtonSourceWebApp(host.botId(), id); }
@@ -90,8 +95,8 @@ final class MiniAppRequestedChat {
     boolean interactive () { return current() && host.isShowing() && host.context().getActivityState() == UI.State.RESUMED; }
     void send (TdApi.Function<?> function, Client.ResultHandler result) {
       gateway.send(function, response -> tdlib.ui().post(() -> {
-        if (!current()) return;
-        if (!interactive()) { finish(false); return; }
+        if (!current()) { if (operation == this) finish(false); return; }
+        if (!sharing && !interactive()) { finish(false); return; }
         result.onResult(response);
       }));
     }
@@ -134,6 +139,11 @@ final class MiniAppRequestedChat {
     void shared (TdApi.Object result) {
       if (result instanceof TdApi.Error) UI.showError(result);
       finish(result instanceof TdApi.Ok);
+    }
+    void submitShare () {
+      working = sharing = true; submit.setEnabled(false);
+      if (dialog != null) { dialog.setCancelable(false); dialog.setCanceledOnTouchOutside(false); }
+      send(share(false), this::shared);
     }
     TextView button (String text, Runnable action) {
       TextView view = label(text, 16); view.setGravity(Gravity.CENTER); view.setTypeface(Typeface.DEFAULT, Typeface.BOLD); view.setTextColor(Color.WHITE);
@@ -282,10 +292,7 @@ final class MiniAppRequestedChat {
         if (requested.botIsMember || requested.botAdministratorRights != null) info(Lang.getString(R.string.MiniAppSharePeerAddBot, host.botName()));
         if (requested.botAdministratorRights != null) { info(Lang.getString(R.string.MiniAppGrantBotRights, host.botName())); rightsInfo(requested.botAdministratorRights); }
       }
-      submit = button(Lang.getString(R.string.Share), () -> {
-        working = true; submit.setEnabled(false);
-        send(share(false), this::shared);
-      }); show();
+      submit = button(Lang.getString(R.string.Share), this::submitShare); show();
     }
     void createChat () {
       TdApi.KeyboardButtonTypeRequestChat requested = (TdApi.KeyboardButtonTypeRequestChat) button;
@@ -314,7 +321,7 @@ final class MiniAppRequestedChat {
     void finishCreatedChat (String username) {
       Runnable share = () -> {
         selected.clear(); selected.put(createdChat.id, createdChat);
-        send(share(true), checked -> { if (!(checked instanceof TdApi.Ok)) { error(checked); return; } send(share(false), this::shared); });
+        send(share(true), checked -> { if (!(checked instanceof TdApi.Ok)) { error(checked); return; } submitShare(); });
       };
       if (!username.isEmpty() && createdChat.type instanceof TdApi.ChatTypeSupergroup) send(new TdApi.SetSupergroupUsername(((TdApi.ChatTypeSupergroup) createdChat.type).supergroupId, username), result -> { if (result instanceof TdApi.Ok) share.run(); else error(result); });
       else share.run();

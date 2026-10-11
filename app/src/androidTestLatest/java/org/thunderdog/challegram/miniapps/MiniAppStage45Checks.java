@@ -411,8 +411,11 @@ final class MiniAppStage45Checks {
     test.check(sent.get() == 1 && !has("requested_chat_sent"), "double tap does not resend and queued request is not reported as success");
     TdApi.ShareUsersWithBot outgoing = share.get();
     test.check(outgoing.buttonId == 77 && outgoing.sharedUserIds.length == 1 && outgoing.sharedUserIds[0] == tdlib.myUserId() && outgoing.source instanceof TdApi.KeyboardButtonSourceWebApp && ((TdApi.KeyboardButtonSourceWebApp) outgoing.source).preparedButtonId.equals("users"), "prepared source, button id and exact selected users reach the transport");
-    pending.get().onResult(new TdApi.Ok());
+    main(host::minimize); Thread.sleep(300);
+    test.check(field(field(host, "requestedChat"), "operation") != null, "minimizing an already submitted share does not invent a cancellation");
+    pending.get().onResult(new TdApi.Ok()); Thread.sleep(200); main(host::restore); Thread.sleep(300);
     test.check("users".equals(result("requested_chat_sent").getString("req_id")), "success emitted after acknowledged sharing with original req_id");
+    test.check(!has("requested_chat_failed"), "acknowledgement while minimized is delivered as success after restore");
     pending.get().onResult(new TdApi.Ok()); Thread.sleep(100);
     test.check("1".equals(test.evaluate(web, "events.filter(e=>e.event==='requested_chat_sent').length")), "late duplicate transport completion cannot emit twice");
     clear(); send("web_app_request_chat", "{\"req_id\":\"cancel\"}"); Object cancelled = requestedOperation();
