@@ -42,7 +42,7 @@ public final class MiniAppLaunchDialog {
     AvatarView avatar = new AvatarView(owner.context());
     avatar.setUser(owner.tdlib(), botId, false);
     FrameLayout.LayoutParams a = new FrameLayout.LayoutParams(Screen.dp(40), Screen.dp(40), Gravity.START | Gravity.TOP);
-    a.setMarginStart(Screen.dp(22)); a.topMargin = Screen.dp(5);
+    horizontalMargins(a, 22, 22); a.topMargin = Screen.dp(5);
     identity.addView(avatar, a);
     TextView title = text(owner, 20, Theme.textAccentColor());
     title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
@@ -51,12 +51,12 @@ public final class MiniAppLaunchDialog {
     title.setHorizontalFadingEdgeEnabled(true);
     title.setFadingEdgeLength(Screen.dp(16));
     FrameLayout.LayoutParams t = new FrameLayout.LayoutParams(-1, -2);
-    t.setMarginStart(Screen.dp(76)); t.setMarginEnd(Screen.dp(21));
+    horizontalMargins(t, 76, 21);
     identity.addView(title, t);
     TextView profile = text(owner, 14, Theme.getColor(ColorId.textLink));
     profile.setText(Lang.getString(R.string.MiniAppMoreAboutBot));
     FrameLayout.LayoutParams p = new FrameLayout.LayoutParams(-1, Screen.dp(24));
-    p.setMarginStart(Screen.dp(76)); p.setMarginEnd(Screen.dp(21)); p.topMargin = Screen.dp(24);
+    horizontalMargins(p, 76, 21); p.topMargin = Screen.dp(24);
     identity.addView(profile, p);
     profile.setOnClickListener(v -> {
       if (dialog[0] != null) dialog[0].dismiss();
@@ -102,6 +102,11 @@ public final class MiniAppLaunchDialog {
     });
     else avatar.performDestroy();
     return dialog[0];
+  }
+
+  private static void horizontalMargins (FrameLayout.LayoutParams params, int start, int end) {
+    params.leftMargin = Screen.dp(Lang.rtl() ? end : start);
+    params.rightMargin = Screen.dp(Lang.rtl() ? start : end);
   }
 
   private static TextView text (TdlibDelegate owner, int size, int color) {

@@ -35,7 +35,9 @@ final class MiniAppHostDeviceChecks {
   private BaseActivity activity;
   MiniAppHostDeviceChecks (MiniAppWebViewInstrumentation test) { this.test = test; }
 
-  void run () throws Exception {
+  void run () throws Exception { run(false); }
+
+  void run (boolean rendererLoss) throws Exception {
     Intent intent = new Intent(test.getTargetContext(), MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     test.startActivitySync(intent);
     for (int i = 0; i < 100; i++) {
@@ -46,30 +48,7 @@ final class MiniAppHostDeviceChecks {
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "host has an initialized account");
     final int previousOrientation = activity.getRequestedOrientation();
     try {
-      main(() -> {
-        Tdlib tdlib = activity.currentTdlib();
-        MiniAppLaunchRequest request = new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.MAIN_APP, Long.MAX_VALUE - 104, 0,
-          "https://miniapp.test/host", "", "", "", null, null, new TdApi.WebAppOpenModeCompact(), false);
-        host = new MiniAppController(activity, tdlib, request, null);
-        host.getValue();
-        web = field(host, "webView");
-        set(host, "document", new MiniAppDocument("https://miniapp.test/host", true));
-        WebViewClient original = web.getWebViewClient();
-        web.setWebViewClient(new WebViewClient() {
-          @Override public WebResourceResponse shouldInterceptRequest (WebView view, WebResourceRequest request) {
-            String html = "<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><meta charset='utf-8'>" +
-              "<style>body{background:#17212b;color:white;font:16px sans-serif;margin:0;padding:70px 20px}input{font-size:20px}</style>" +
-              "<h1>Mini App device fixture</h1><input id='entry' placeholder='Keyboard check'><p>Native shell / viewport / storage</p>" +
-              "<script>window.events=[];window.Telegram={WebView:{receiveEvent:function(n,d){events.push({event:n,data:d})}}};" +
-              "function send(n,d){TelegramWebviewProxy.postEvent(n,JSON.stringify(d||{}))}send('web_app_ready');</script>";
-            return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
-          }
-          @Override public void onPageStarted (WebView view, String url, Bitmap icon) { original.onPageStarted(view, url, icon); }
-          @Override public void onPageFinished (WebView view, String url) { original.onPageFinished(view, url); }
-        });
-        invoke(host, "showSheet");
-        web.loadUrl("https://miniapp.test/host");
-      });
+      createFixture();
       waitPage();
       Thread.sleep(700);
       View root = field(host, "root");
@@ -190,8 +169,63 @@ final class MiniAppHostDeviceChecks {
       String stopped = sensorCount(); Thread.sleep(250);
       test.check(stopped.equals(sensorCount()), "stop cancels all sensor listeners and delayed samples");
       capture("host-restored");
+      checkThemeChange();
+      if (rendererLoss) {
+        main(() -> test.check(web.getWebViewRenderProcess() != null && web.getWebViewRenderProcess().terminate(), "fixture renderer termination requested"));
+        for (int i = 0; i < 40 && !host.isDestroyed(); i++) Thread.sleep(100);
+        test.check(host.isDestroyed(), "renderer loss closes the broken controller without crashing the app");
+        createFixture(); waitPage(); Thread.sleep(400);
+        test.check(!host.isDestroyed() && "\"alive\"".equals(test.evaluate(web, "'alive'")), "Mini App can reopen after renderer loss");
+        capture("host-renderer-recovered");
+      }
     } finally {
       main(() -> { if (host != null) host.close(); activity.setRequestedOrientation(previousOrientation); });
+    }
+  }
+
+  private void createFixture () {
+    main(() -> {
+      Tdlib tdlib = activity.currentTdlib();
+      MiniAppLaunchRequest request = new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.MAIN_APP, Long.MAX_VALUE - 104, 0,
+        "https://miniapp.test/host", "", "", "", null, null, new TdApi.WebAppOpenModeCompact(), false);
+      host = new MiniAppController(activity, tdlib, request, null);
+      host.getValue(); web = field(host, "webView");
+      set(host, "document", new MiniAppDocument("https://miniapp.test/host", true));
+      WebViewClient original = web.getWebViewClient();
+      web.setWebViewClient(new WebViewClient() {
+        @Override public WebResourceResponse shouldInterceptRequest (WebView view, WebResourceRequest request) {
+          String html = "<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><meta charset='utf-8'>" +
+            "<style>body{background:#17212b;color:white;font:16px sans-serif;margin:0;padding:70px 20px}input{font-size:20px}</style>" +
+            "<h1>Mini App device fixture</h1><input id='entry' placeholder='Keyboard check'><p>Native shell / viewport / storage</p>" +
+            "<script>window.events=[];window.Telegram={WebView:{receiveEvent:function(n,d){events.push({event:n,data:d});" +
+            "if(n==='theme_changed'){document.body.style.background=d.theme_params.bg_color;document.body.style.color=d.theme_params.text_color}}}};" +
+            "function send(n,d){TelegramWebviewProxy.postEvent(n,JSON.stringify(d||{}))}send('web_app_ready');</script>";
+          return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
+        }
+        @Override public void onPageStarted (WebView view, String url, Bitmap icon) { original.onPageStarted(view, url, icon); }
+        @Override public void onPageFinished (WebView view, String url) { original.onPageFinished(view, url); }
+        @Override public boolean onRenderProcessGone (WebView view, android.webkit.RenderProcessGoneDetail detail) { return original.onRenderProcessGone(view, detail); }
+      });
+      invoke(host, "showSheet"); web.loadUrl("https://miniapp.test/host");
+    });
+  }
+
+  private void checkThemeChange () throws Exception {
+    org.thunderdog.challegram.theme.ThemeManager manager = org.thunderdog.challegram.theme.ThemeManager.instance();
+    org.thunderdog.challegram.theme.ThemeDelegate original = manager.currentTheme(false);
+    org.thunderdog.challegram.unsorted.Settings settings = org.thunderdog.challegram.unsorted.Settings.instance();
+    int autoMode = settings.getNightMode();
+    try {
+      main(() -> manager.changeGlobalTheme(activity.currentTdlib(), manager.getTheme(activity.currentTdlib().settings().globalDaylightTheme()), true, null));
+      Thread.sleep(450);
+      test.check(!manager.currentTheme(false).isDark(), "native shell changes to saved daylight theme");
+      String color = test.evaluate(web, "events.filter(e=>e.event==='theme_changed').slice(-1)[0].data.theme_params.bg_color");
+      test.check(color.equals("\"" + MiniAppTheme.hex(org.thunderdog.challegram.theme.Theme.fillingColor()) + "\""), "new theme reaches existing page through bridge");
+      capture("host-light-theme");
+    } finally {
+      main(() -> manager.changeGlobalTheme(activity.currentTdlib(), original, true, null));
+      Thread.sleep(450);
+      test.check(manager.currentThemeId() == original.getId() && settings.getNightMode() == autoMode, "original theme and automatic night mode are preserved");
     }
   }
 

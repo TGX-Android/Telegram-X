@@ -122,8 +122,9 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   }
 
   public void onClosed (MiniAppController controller) {
-    guardCompletions.remove(controller.guardQueryId());
+    Runnable guardDone = guardCompletions.remove(controller.guardQueryId());
     guardTargets.remove(controller.guardQueryId());
+    if (guardDone != null) guardDone.run();
     sessions.remove(controller);
     updateTabs(controller.context());
   }
