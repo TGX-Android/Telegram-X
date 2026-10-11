@@ -274,7 +274,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void createWebView () {
     try {
       webView = new WebView(context());
-      if (!MiniAppPlatform.isolate(webView, tdlib.myUserId(), request.botUserId, tdlib.isDebug())) {
+      if (!MiniAppPlatform.isolate(webView, tdlib.myUserId(), request.botUserId, tdlib.account().isDebug())) {
         showLoadError();
         return;
       }
@@ -741,7 +741,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private java.util.Set<Long> activeStorageAccounts () {
     java.util.Set<Long> active = new java.util.HashSet<>();
     for (TdlibAccount account : tdlib.context()) {
-      if (!account.isUnauthorized() && account.isDebug() == tdlib.isDebug()) active.add(account.getKnownUserId());
+      if (!account.isUnauthorized() && account.isDebug() == tdlib.account().isDebug()) active.add(account.getKnownUserId());
     }
     return active;
   }
@@ -759,7 +759,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     }
     String key = data.optString("key", "");
     String value = data.isNull("value") ? null : data.optString("value", null);
-    MiniAppStorage store = new MiniAppStorage(context(), tdlib.myUserId(), request.botUserId, secure, tdlib.isDebug());
+    MiniAppStorage store = new MiniAppStorage(context(), tdlib.myUserId(), request.botUserId, secure, tdlib.account().isDebug());
     String userName = tdlib.cache().userName(tdlib.myUserId());
     java.util.Set<Long> active = activeStorageAccounts();
     MiniAppStorage.IO.execute(() -> {
