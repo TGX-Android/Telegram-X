@@ -1,0 +1,4 @@
+Mini App options icons: miniapp_msg_bot, miniapp_msg_retry, miniapp_msg_home,
+miniapp_menu_intro, miniapp_msg_report.
+Original Telegram Android assets (GPL-2.0-or-later), copyright Telegram contributors.
+https://github.com/DrKLO/Telegram/tree/f2908b14133bbffbf7ab04f641ecb5bfaf533242/TMessagesProj/src/main/res/drawable-xxhdpi

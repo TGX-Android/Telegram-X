@@ -22,7 +22,9 @@
   <string name="MiniAppMinimize">Minimize</string>
   <string name="MiniAppReload">Reload Page</string>
   <string name="MiniAppLoadError">Could not load this Mini App. Check your connection and try again.</string>
-  <string name="MiniAppTerms">Terms of Service</string>
+  <string name="MiniAppTerms">Terms of Use</string>
+  <string name="MiniAppOpenBot">Open Bot</string>
+  <string name="MiniAppRemoveBot">Remove Bot</string>
   <string name="MiniAppSharePhone">Share your phone number with %1$s?</string>
   <string name="MiniAppSharePhoneTitle">Share your phone number?</string>
   <string name="MiniAppSharePhoneUnblock">This will also unblock the bot.</string>

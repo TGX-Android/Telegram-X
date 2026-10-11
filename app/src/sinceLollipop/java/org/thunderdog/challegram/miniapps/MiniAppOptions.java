@@ -29,6 +29,7 @@ final class MiniAppOptions {
   private final PopupWindow window;
   private final int textColor;
   private final int iconColor;
+  private int preferredWidth = Screen.dp(196);
   private Runnable update;
 
   MiniAppOptions (MiniAppController host) {
@@ -37,10 +38,9 @@ final class MiniAppOptions {
     textColor = light ? Color.BLACK : Color.WHITE;
     iconColor = (textColor & 0xffffff) | 0xd9000000;
     content = new LinearLayout(host.context()); content.setOrientation(LinearLayout.VERTICAL);
-    content.setPadding(0, Screen.dp(8), 0, Screen.dp(8));
     scroll = new ScrollView(host.context()); scroll.setFillViewport(true); scroll.addView(content);
     window = new PopupWindow(scroll, Screen.dp(264), -2, true);
-    GradientDrawable background = new GradientDrawable(); background.setColor(light ? Color.WHITE : 0xff181819); background.setCornerRadius(Screen.dp(8));
+    GradientDrawable background = new GradientDrawable(); background.setColor(light ? Color.WHITE : 0xff181819); background.setCornerRadius(Screen.dp(12));
     window.setBackgroundDrawable(background); window.setElevation(Screen.dp(8));
     window.setOutsideTouchable(true); window.setInputMethodMode(PopupWindow.INPUT_METHOD_NOT_NEEDED);
     window.setOnDismissListener(() -> { if (update != null) { content.removeCallbacks(update); update = null; } });
@@ -50,7 +50,8 @@ final class MiniAppOptions {
     LinearLayout row = row(48);
     ImageView image = image(icon); row.addView(image, new LinearLayout.LayoutParams(Screen.dp(24), -1));
     TextView text = text(16); text.setText(label); text.setSingleLine(true); text.setEllipsize(TextUtils.TruncateAt.END);
-    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1); params.leftMargin = Screen.dp(16); row.addView(text, params);
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1); params.setMarginStart(Screen.dp(19)); row.addView(text, params);
+    preferredWidth = Math.max(preferredWidth, (int) Math.ceil(text.getPaint().measureText(label)) + Screen.dp(79));
     row.setOnClickListener(view -> { dismiss(); action.run(); });
   }
 
@@ -60,6 +61,7 @@ final class MiniAppOptions {
   }
 
   void downloads (MiniAppActions actions, Runnable back) {
+    preferredWidth = Screen.dp(264);
     add(R.drawable.baseline_arrow_back_24, Lang.getString(R.string.MiniAppBack), back); gap();
     java.util.ArrayList<Runnable> refresh = new java.util.ArrayList<>();
     for (MiniAppActions.Download file : actions.downloads()) {
@@ -90,7 +92,7 @@ final class MiniAppOptions {
   }
 
   private LinearLayout row (int height) {
-    LinearLayout row = new LinearLayout(host.context()); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(Screen.dp(16), 0, Screen.dp(12), 0);
+    LinearLayout row = new LinearLayout(host.context()); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(Screen.dp(18), 0, Screen.dp(18), 0);
     row.setBackground(new RippleDrawable(ColorStateList.valueOf((textColor & 0xffffff) | 0x19000000), null, new android.graphics.drawable.ColorDrawable(Color.WHITE)));
     row.setFocusable(true); content.addView(row, new LinearLayout.LayoutParams(-1, Screen.dp(height))); return row;
   }
@@ -98,12 +100,12 @@ final class MiniAppOptions {
     ImageView view = new ImageView(host.context()); view.setImageResource(resource); view.setScaleType(ImageView.ScaleType.CENTER); view.setColorFilter(iconColor); return view;
   }
   private TextView text (int size) {
-    TextView view = new TextView(host.context()); view.setTextSize(size); view.setTextColor(textColor); view.setGravity(Gravity.CENTER_VERTICAL); return view;
+    TextView view = new TextView(host.context()); view.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, size); view.setTextColor(textColor); view.setGravity(Gravity.CENTER_VERTICAL); return view;
   }
   void show (View anchor) {
     int[] position = new int[2]; anchor.getLocationOnScreen(position);
     Rect screen = new Rect(); anchor.getWindowVisibleDisplayFrame(screen);
-    int width = Math.min(Screen.dp(264), screen.width() - Screen.dp(16)); window.setWidth(width);
+    int width = Math.min(preferredWidth, screen.width() - Screen.dp(16)); window.setWidth(width);
     content.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
     int y = Math.max(screen.top + Screen.dp(8), position[1]);
     int height = Math.min(content.getMeasuredHeight(), screen.bottom - y - Screen.dp(8)); window.setHeight(height);

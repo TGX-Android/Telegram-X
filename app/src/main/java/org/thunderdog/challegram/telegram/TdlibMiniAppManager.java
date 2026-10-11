@@ -233,6 +233,10 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
     for (TdApi.AttachmentMenuBot bot : menuBots) if (bot.botUserId == botId && bot.isAdded) return true;
     return false;
   }
+  public TdApi.AttachmentMenuBot addedMenuBot (long botId) {
+    for (TdApi.AttachmentMenuBot bot : menuBots) if (bot.botUserId == botId && bot.isAdded) return bot;
+    return null;
+  }
   public void removeMenuListener (Runnable listener) { menuListeners.remove(listener); }
 
   public List<TdApi.AttachmentMenuBot> menuBots (boolean sideMenu, long chatId) {

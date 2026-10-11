@@ -59,6 +59,9 @@ final class MiniAppStage45Checks {
       else if ("biometry".equals(capability)) biometricChecks();
       else if ("biometry_cancel".equals(capability)) biometricCancelChecks();
       else if ("hardware".equals(capability)) grantedHardwareChecks();
+      else if ("optical_qr".equals(capability)) opticalQrChecks();
+      else if ("capture".equals(capability)) fileSuccessChecks(true);
+      else if ("file_selection".equals(capability)) fileSuccessChecks(false);
       else if ("actions".equals(capability)) actionChecks();
       else if ("emoji".equals(capability)) authorizedEmojiChecks();
       else localChecks();
@@ -332,6 +335,54 @@ final class MiniAppStage45Checks {
     try (android.os.ParcelFileDescriptor ignored = test.getUiAutomation().executeShellCommand("input keyevent 4")) { Thread.sleep(400); }
     for (int i = 0; i < 30 && replies.get() == 0; i++) Thread.sleep(100);
     test.check(replies.get() == 1, "real Android multiple-file picker cancellation completes once");
+  }
+
+  private void opticalQrChecks () throws Exception {
+    send("web_app_open_scan_qr_popup", "{\"text\":\"Scan the Mini Apps test QR on the computer screen\"}");
+    System.out.println("WAIT optical QR: point the rear camera at the test QR on the computer screen");
+    for (int i = 0; i < 1800 && !has("qr_text_received"); i++) { allowAndroidPermission(); Thread.sleep(100); }
+    test.check("Mini Apps optical QR acceptance".equals(result("qr_text_received").getString("data")), "actual camera optically decodes the test QR from a separate screen");
+    Object scanner = field(host, "qrScanner");
+    send("web_app_close_scan_qr_popup", "{}"); result("scan_qr_popup_closed");
+    test.check(field(scanner, "camera") == null, "successful optical scan releases the camera when the page closes the scanner");
+    test.check(web.getUrl().equals("https://miniapp.test/stage45"), "decoded QR text is returned to JavaScript without navigation");
+  }
+
+  private void fileSuccessChecks (boolean camera) throws Exception {
+    AtomicReference<android.net.Uri[]> selected = new AtomicReference<>();
+    java.util.concurrent.atomic.AtomicInteger replies = new java.util.concurrent.atomic.AtomicInteger();
+    main(() -> web.getWebChromeClient().onShowFileChooser(web, files -> { selected.set(files); replies.incrementAndGet(); }, new android.webkit.WebChromeClient.FileChooserParams() {
+      @Override public int getMode () { return camera ? MODE_OPEN : MODE_OPEN_MULTIPLE; }
+      @Override public String[] getAcceptTypes () { return new String[] {camera ? "image/jpeg" : "text/plain"}; }
+      @Override public boolean isCaptureEnabled () { return camera; }
+      @Override public CharSequence getTitle () { return null; }
+      @Override public String getFilenameHint () { return null; }
+      @Override public Intent createIntent () { return new Intent(Intent.ACTION_GET_CONTENT); }
+    }));
+    System.out.println(camera ? "WAIT external camera: capture test target and accept photo" : "WAIT file picker: select the two miniapps-stage45 synthetic text files");
+    for (int i = 0; i < 1800 && replies.get() == 0; i++) { allowAndroidPermission(); Thread.sleep(100); }
+    test.check(replies.get() == 1, "actual external activity delivers its result exactly once");
+    android.net.Uri[] files = selected.get();
+    test.check(files != null && files.length == (camera ? 1 : 2), "successful external activity preserves the requested file count");
+    for (android.net.Uri file : files) {
+      test.check("content".equals(file.getScheme()), "file is delivered through a content URI");
+      try (java.io.InputStream input = activity.getContentResolver().openInputStream(file)) {
+        if (camera) {
+          android.graphics.BitmapFactory.Options dimensions = new android.graphics.BitmapFactory.Options(); dimensions.inJustDecodeBounds = true;
+          android.graphics.BitmapFactory.decodeStream(input, null, dimensions);
+          test.check(dimensions.outWidth > 0 && dimensions.outHeight > 0, "external camera wrote a decodable photo to the private capture URI");
+        } else {
+          byte[] buffer = new byte[64]; int count = input.read(buffer);
+          test.check(count > 0 && new String(buffer, 0, count, StandardCharsets.UTF_8).startsWith("Mini Apps synthetic picker file"), "picker returned the synthetic fixture content without uploading it");
+        }
+      }
+    }
+    if (camera) {
+      main(host::close);
+      boolean removed = false;
+      try (java.io.InputStream ignored = activity.getContentResolver().openInputStream(files[0])) { } catch (java.io.FileNotFoundException expected) { removed = true; }
+      test.check(removed, "closing the Mini App deletes the temporary camera capture");
+    }
   }
 
   private void htmlMediaChecks () throws Exception {

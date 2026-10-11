@@ -216,15 +216,14 @@ public final class MiniAppController extends ViewController<Void> implements Min
     header = new LinearLayout(context);
     header.setGravity(Gravity.CENTER_VERTICAL);
     back = icon(R.drawable.baseline_close_24, R.string.MiniAppClose, v -> headerBack());
+    back.getLayoutParams().width = Screen.dp(56);
     header.addView(back);
     title = new TextView(context);
     title.setText(tdlib.cache().userName(request.botUserId));
     title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 20);
     title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
     title.setSingleLine();
-    title.setEllipsize(null);
-    title.setHorizontalFadingEdgeEnabled(true);
-    title.setFadingEdgeLength(Screen.dp(16));
+    title.setEllipsize(android.text.TextUtils.TruncateAt.END);
     title.setPadding(Screen.dp(16), 0, Screen.dp(8), 0);
     header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
     collapse = icon(R.drawable.baseline_direction_arrow_down_24, R.string.MiniAppMinimize, v -> minimize());
@@ -1175,16 +1174,24 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (!actions().downloads().isEmpty()) {
       options.add(R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), () -> actions().showDownloads()); options.gap();
     }
-    options.add(R.drawable.deproko_baseline_bots_24, Lang.getString(R.string.OpenBot), () -> { minimize(); tdlib.ui().openPrivateChat(this, request.botUserId, null); });
+    options.add(R.drawable.miniapp_msg_bot, Lang.getString(R.string.MiniAppOpenBot), () -> { minimize(); tdlib.ui().openPrivateChat(this, request.botUserId, null); });
     if (settingsVisible) options.add(R.drawable.baseline_settings_24, Lang.getString(R.string.Settings), () -> pressed("settings_button_pressed"));
-    options.add(R.drawable.baseline_replay_24, Lang.getString(R.string.MiniAppReload), () -> { if (webView != null && document != null) { document.navigate(); webView.reload(); } });
+    options.add(R.drawable.miniapp_msg_retry, Lang.getString(R.string.MiniAppReload), () -> { if (webView != null && document != null) { document.navigate(); webView.reload(); } });
     TdApi.User bot = tdlib.cache().user(request.botUserId);
     if (bot != null && bot.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) bot.type).hasMainWebApp) {
-      options.add(R.drawable.baseline_home_24, Lang.getString(R.string.MiniAppAddShortcut), () -> {
+      options.add(R.drawable.miniapp_msg_home, Lang.getString(R.string.MiniAppAddShortcut), () -> {
         recordGesture(); if (webView != null) { MiniAppDocument.Request origin = webRequest(webView.getUrl()); if (origin != null) actions().addShortcut(origin); }
       });
     }
-    options.add(R.drawable.baseline_info_24, Lang.getString(R.string.MiniAppTerms), () -> tdlib.ui().openUrl(this, "https://telegram.org/tos/mini-apps", null));
+    options.add(R.drawable.miniapp_menu_intro, Lang.getString(R.string.MiniAppTerms), () -> tdlib.ui().openUrl(this, "https://telegram.org/tos/mini-apps", null));
+    options.add(R.drawable.miniapp_msg_report, Lang.getString(R.string.Report), () ->
+      tdlib.send(new TdApi.CreatePrivateChat(request.botUserId, false), (chat, error) -> tdlib.ui().post(() -> {
+        if (!isShowing()) return;
+        if (error != null) UI.showError(error);
+        else org.thunderdog.challegram.telegram.TdlibUi.reportChat(this, chat.id, null, null, null, false);
+      })));
+    TdApi.AttachmentMenuBot menuBot = tdlib.miniApps().addedMenuBot(request.botUserId);
+    if (menuBot != null) options.add(R.drawable.baseline_delete_24, Lang.getString(R.string.MiniAppRemoveBot), () -> tdlib.miniApps().removeMenuBot(this, menuBot));
     options.show(fullscreen ? fullscreenControls : more);
   }
 
