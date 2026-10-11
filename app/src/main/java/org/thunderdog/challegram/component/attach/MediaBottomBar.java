@@ -257,8 +257,8 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
     }
 
     boolean hasBots = items.length > standardItems.length;
-    int itemActiveWidth = Math.max(itemWidth, (int) (Math.min(maxTextWidth, Screen.dp(120)) + Screen.dp(40f)));
-    int itemNormalWidth = (totalWidth - itemActiveWidth) / (items.length - 1);
+    int itemActiveWidth = items.length == 1 ? totalWidth : Math.max(itemWidth, (int) ((hasBots ? Math.min(maxTextWidth, Screen.dp(120)) : maxTextWidth) + Screen.dp(40f)));
+    int itemNormalWidth = items.length == 1 ? totalWidth : (totalWidth - itemActiveWidth) / (items.length - 1);
     if (hasBots) itemNormalWidth = Math.max(Screen.dp(72), itemNormalWidth);
 
     this.itemNormalWidth = itemNormalWidth;

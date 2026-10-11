@@ -40,8 +40,8 @@ public class MiniAppChatPolicyTest {
   @Test public void channelPermissionDoesNotGrantGroups () {
     TdApi.AttachmentMenuBot bot = new TdApi.AttachmentMenuBot();
     bot.supportsChannelChats = true;
-    assertTrue(MiniAppChatPolicy.allows(bot, chat(new TdApi.ChatTypeSupergroup(1, true, false)), false));
-    assertFalse(MiniAppChatPolicy.allows(bot, chat(new TdApi.ChatTypeSupergroup(1, false, false)), false));
+    assertTrue(MiniAppChatPolicy.allows(bot, chat(new TdApi.ChatTypeSupergroup(1, true)), false));
+    assertFalse(MiniAppChatPolicy.allows(bot, chat(new TdApi.ChatTypeSupergroup(1, false)), false));
     assertFalse(MiniAppChatPolicy.allows(bot, chat(new TdApi.ChatTypeBasicGroup(1)), false));
   }
 
