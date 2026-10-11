@@ -41,7 +41,7 @@
   <string name="MiniAppManagedBotUnsupported">%1$s doesn’t support Bot Management mode.</string>
   <string name="MiniAppCreateBot">Create Bot</string>
   <string name="MiniAppCreateBotButton">Create</string>
-  <string name="MiniAppCreateBotText">**%1$s** would like you to create\nand manage a chatbot on your behalf.</string>
+  <string name="MiniAppCreateBotText">%1$s would like you to create\nand manage a chatbot on your behalf.</string>
   <string name="MiniAppBotName">Bot Name</string>
   <string name="MiniAppBotNameHint">Tap to edit bot name.</string>
   <string name="MiniAppBotUsernameAvailable">%1$s is available.</string>

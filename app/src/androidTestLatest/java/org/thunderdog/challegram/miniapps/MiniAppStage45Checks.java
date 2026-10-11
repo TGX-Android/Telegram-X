@@ -501,6 +501,11 @@ final class MiniAppStage45Checks {
     clear(); send("web_app_request_chat", "{\"req_id\":\"managed-cancel\"}"); Object cancelled = managedOperation();
     java.util.ArrayList<android.widget.EditText> inputs = new java.util.ArrayList<>(); main(() -> collectInputs((android.view.View) field(cancelled, "content"), inputs));
     test.check(inputs.size() == 2 && "Synthetic Bot".contentEquals(inputs.get(0).getText()) && "synthetic_".contentEquals(inputs.get(1).getText()), "official creation sheet keeps suggested name and separates the fixed bot suffix");
+    main(() -> {
+      android.widget.LinearLayout content = field(cancelled, "content");
+      CharSequence subtitle = ((android.widget.TextView) content.getChildAt(2)).getText();
+      test.check(subtitle instanceof android.text.Spanned && !subtitle.toString().contains("**") && android.graphics.Typeface.DEFAULT.equals(inputs.get(1).getTypeface()), "managed sheet uses formatted bot attribution and the regular username typeface");
+    });
     capture("stage6-managed-bot-create");
     int orientation = activity.getRequestedOrientation();
     try {
@@ -518,6 +523,14 @@ final class MiniAppStage45Checks {
       main(() -> {
         android.view.View decor = ((android.app.Dialog) field(cancelled, "dialog")).getWindow().getDecorView();
         test.check(decor.getWidth() > decor.getHeight() && decor.getHeight() <= activity.getRootView().getHeight(), "managed creation sheet fits landscape height and remains scrollable");
+        ((android.widget.ScrollView) ((android.view.View) field(cancelled, "content")).getParent()).fullScroll(android.view.View.FOCUS_DOWN);
+      });
+      Thread.sleep(300);
+      main(() -> {
+        android.graphics.Rect visible = new android.graphics.Rect(), bounds = new android.graphics.Rect();
+        ((android.app.Dialog) field(cancelled, "dialog")).getWindow().getDecorView().getWindowVisibleDisplayFrame(visible);
+        android.view.View submit = field(cancelled, "submit"); submit.getGlobalVisibleRect(bounds);
+        test.check(bounds.height() == submit.getHeight() && bounds.bottom <= visible.bottom, "landscape scrolling exposes the entire create button above navigation insets");
       });
       capture("stage6-managed-bot-landscape");
     } finally {
@@ -558,7 +571,7 @@ final class MiniAppStage45Checks {
     main(host::restore); Thread.sleep(350);
     test.check("managed-background".equals(result("requested_chat_sent").getString("req_id")) && !has("requested_chat_failed"), "confirmed managed share is delivered once after restore without a false cancellation");
     TdApi.User actualManager = (TdApi.User) call(new TdApi.GetUser(bot));
-    System.out.println("INFO nskdancebot Bot Management mode: " + (actualManager.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) actualManager.type).canManageBots));
+    android.os.Bundle info = new android.os.Bundle(); info.putString("stream", "INFO nskdancebot Bot Management mode: " + (actualManager.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) actualManager.type).canManageBots) + "\n"); test.sendStatus(0, info);
   }
   private Object managedOperation () throws Exception {
     for (int i = 0; i < 100; i++) { Object service = field(host, "requestedChat"), operation = service != null ? field(service, "operation") : null; if (operation != null && field(operation, "dialog") != null) { Thread.sleep(250); return operation; } Thread.sleep(100); }

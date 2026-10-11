@@ -334,6 +334,7 @@ final class MiniAppRequestedChat {
       EditText username = botInput(R.string.Username, prefix, 29); search = username;
       username.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
       username.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+      username.setTypeface(Typeface.DEFAULT);
       username.setPadding(0, Screen.dp(15), 0, Screen.dp(15));
       LinearLayout usernameRow = new LinearLayout(host.context()); usernameRow.setGravity(Gravity.CENTER_VERTICAL);
       TextView at = label("@", 17); at.setPadding(Screen.dp(21), 0, 0, 0); usernameRow.addView(at);
@@ -356,7 +357,7 @@ final class MiniAppRequestedChat {
           boolean available = result instanceof TdApi.CheckChatUsernameResultOk;
           checkedBotUsername = available ? handle : null;
           status.setText(available ? Lang.getString(R.string.MiniAppBotUsernameAvailable, "@" + handle) : Lang.getString(R.string.UsernameInUse));
-          status.setTextColor(Theme.getColor(available ? ColorId.fillingPositive : ColorId.textNegative)); updateEnabled.run();
+          status.setTextColor(Theme.getColor(available ? ColorId.textGreen : ColorId.textNegative)); updateEnabled.run();
         }); username.postDelayed(searchTask, 250);
       };
       TextWatcher usernameWatcher = new TextWatcher() {
