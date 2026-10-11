@@ -757,6 +757,7 @@ final class MiniAppStage45Checks {
     org.thunderdog.challegram.component.chat.MessageView messageView = field(messagePreview, "messageView");
     test.check(messageView.getMessage().getMessage().content == preview.get().content, "preview uses MessageContent rather than the inline discovery title");
     test.check(messageView.getMessage().getMessage().replyMarkup == markup, "preview preserves real inline keyboard markup");
+    test.check(messageView.getMessage().hasHeader(), "standalone preview displays its via-bot attribution header");
     main(() -> ((android.app.Dialog) field(first, "dialog")).cancel());
     test.check("USER_DECLINED".equals(result("prepared_message_failed").getString("error")), "dismissing the preview reports cancellation once");
     test.check(sends.get() == 0, "preview cancellation never submits a message");
@@ -807,8 +808,27 @@ final class MiniAppStage45Checks {
       TdApi.File file = new TdApi.File(2147483600, image.length(), image.length(), new TdApi.LocalFile(image.getPath(), false, false, false, true, 0, image.length(), image.length()), new TdApi.RemoteFile("", "", false, false, 0));
       TdApi.Photo photo = new TdApi.Photo(false, null, new TdApi.PhotoSize[] {new TdApi.PhotoSize("x", file, 360, 240, null)});
       preview.set(new MiniAppInlinePreview(new TdApi.MessagePhoto(photo, null, new TdApi.FormattedText("Synthetic photo caption", null), false, false, false), markup));
-      clear(); preparedSend("photo"); Object photoOperation = preparedOperation(true); capture("stage6-prepared-photo");
-      test.check(field(photoOperation, "previewView") != null, "photo and caption use the message renderer with a local synthetic image");
+      clear(); preparedSend("photo"); Object photoOperation = preparedOperation(true);
+      MiniAppMessagePreview photoPreview = field(photoOperation, "previewView");
+      // Check rendered pixels, not merely that a view exists: receivers must load the actual photo.
+      boolean photoVisible = false;
+      for (int i = 0; i < 100 && !photoVisible; i++) {
+        AtomicReference<Boolean> visiblePhoto = new AtomicReference<>(false);
+        main(() -> {
+          Bitmap rendered = Bitmap.createBitmap(photoPreview.getWidth(), photoPreview.getHeight(), Bitmap.Config.ARGB_8888);
+          try {
+            photoPreview.draw(new android.graphics.Canvas(rendered));
+            int bluePixels = 0;
+            for (int y = 0; y < rendered.getHeight(); y += 8) for (int x = 0; x < rendered.getWidth(); x += 8) {
+              if ((rendered.getPixel(x, y) & 0xffffff) == 0x3685d5) bluePixels++;
+            }
+            visiblePhoto.set(bluePixels > 100);
+          } finally { rendered.recycle(); }
+        });
+        photoVisible = visiblePhoto.get(); if (!photoVisible) Thread.sleep(100);
+      }
+      test.check(photoVisible, "native preview renders the actual synthetic photo pixels and caption");
+      capture("stage6-prepared-photo");
       int orientation = activity.getRequestedOrientation();
       try {
         main(() -> activity.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)); Thread.sleep(900);

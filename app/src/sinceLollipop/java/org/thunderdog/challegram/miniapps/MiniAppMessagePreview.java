@@ -51,9 +51,26 @@ final class MiniAppMessagePreview extends FrameLayout {
     message.date = (int) (System.currentTimeMillis() / 1000L);
     message.viaBotUserId = host.botId(); message.replyMarkup = preview.replyMarkup;
     TGMessage parsed = TGMessage.valueOf(renderer.getManager(), message, self, null, (TdApi.ChatAdministrator) null);
-    messageView = new MessageView(getContext()); messageView.setManager(renderer.getManager());
+    parsed.prepareForPreview();
+    messageView = new MessageView(getContext()) {
+      private int layoutWidth;
+      @Override protected void onMeasure (int widthSpec, int heightSpec) {
+        int width = MeasureSpec.getSize(widthSpec);
+        if (layoutWidth != width) {
+          layoutWidth = width;
+          // Media receivers depend on the mosaic produced by buildLayout, just as in the chat adapter.
+          getMessage().buildLayout(width);
+          setMessage(getMessage());
+        }
+        super.onMeasure(widthSpec, heightSpec);
+      }
+      @Override protected void onAttachedToWindow () { super.onAttachedToWindow(); onAttachedToRecyclerView(); }
+      @Override protected void onDetachedFromWindow () { onDetachedFromRecyclerView(); super.onDetachedFromWindow(); }
+    };
+    messageView.setManager(renderer.getManager());
     messageView.setParentOnMeasureDisabled(true); messageView.setUseReceivers(); messageView.setUseComplexReceiver();
     messageView.setMessage(parsed);
+    parsed.autoDownloadContent(self.type);
     chat.addView(messageView, new LinearLayout.LayoutParams(-1, -2));
     addView(chat, new FrameLayout.LayoutParams(-1, -2));
   }

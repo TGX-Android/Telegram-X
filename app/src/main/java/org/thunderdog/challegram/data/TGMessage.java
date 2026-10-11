@@ -834,6 +834,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return false;
   }
 
+  /** Initializes an isolated preview with its author/bot header and without a chat date separator. */
+  public final void prepareForPreview () {
+    mergeWith(null, false);
+    flags &= ~FLAG_SHOW_DATE;
+  }
+
   private static boolean showUnreadAlways (TGMessage msg) {
     return msg instanceof TGMessageMedia || msg instanceof TGMessageSticker;
   }
