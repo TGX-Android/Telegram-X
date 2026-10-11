@@ -31,12 +31,13 @@ public final class MiniAppPlatform {
   // WebView.pauseTimers(), which would also freeze other Mini Apps and browsers.
   private static final String MEDIA_SCRIPT = "(function(){const b=window." + MEDIA_BRIDGE + ";if(!b||b.installed)return;b.installed=true;"
     + "const tracks=new Set();let paused=false;const stop=()=>{tracks.forEach(t=>t.stop());tracks.clear()};"
-    + "const track=s=>{if(paused){s.getTracks().forEach(t=>t.stop());throw new DOMException('Mini App is paused','AbortError')}s.getTracks().forEach(t=>tracks.add(t));return s};"
+    + "const track=s=>{if(paused){s.getTracks().forEach(t=>t.stop());throw new DOMException('Mini App is paused','AbortError')}s.getTracks().forEach(t=>tracks.add(t));b.postMessage('ready');return s};"
     + "b.onmessage=e=>{if(e.data==='resume'){paused=false}else{if(e.data==='pause')paused=true;stop()}};"
     + "const m=navigator.mediaDevices;if(m&&m.getUserMedia){const get=m.getUserMedia.bind(m);m.getUserMedia=(...a)=>get(...a).then(track)};"
     + "['getUserMedia','webkitGetUserMedia'].forEach(k=>{if(typeof navigator[k]==='function'){const get=navigator[k].bind(navigator);navigator[k]=(c,ok,fail)=>get(c,s=>{try{ok(track(s))}catch(e){if(fail)fail(e)}},fail)}});"
     + "if(window.MediaStreamTrack){const clone=MediaStreamTrack.prototype.clone;MediaStreamTrack.prototype.clone=function(){const t=clone.call(this);if(tracks.has(this))tracks.add(t);return t}};"
-    + "addEventListener('pagehide',stop);b.postMessage('ready')})();";
+    + "if(window.MediaStream){const clone=MediaStream.prototype.clone;MediaStream.prototype.clone=function(){const s=clone.call(this);return this.getTracks().some(t=>tracks.has(t))?track(s):s}};"
+    + "addEventListener('pagehide',stop);addEventListener('DOMContentLoaded',()=>b.postMessage('ready'));b.postMessage('ready')})();";
 
   public static boolean isSupported () {
     try {

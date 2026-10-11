@@ -122,9 +122,11 @@ final class MiniAppStage45Checks {
     for (int i = 0; i < 150; i++) { allowAndroidPermission(); if (!"\"waiting\"".equals(test.evaluate(web, "captureResult"))) break; Thread.sleep(100); }
     test.check("\"live\"".equals(test.evaluate(web, "captureResult")), "real WebRTC camera and microphone open only after native and Android consent");
     test.check("true".equals(test.evaluate(web, "captureStream.getTracks().length===2&&captureStream.getTracks().every(t=>t.readyState==='live')")), "both requested tracks are live");
-    test.evaluate(web, "window.captureClone=captureStream.getVideoTracks()[0].clone()");
+    test.check("true".equals(test.evaluate(web, "!!TelegramWebviewMediaLifecycle.installed&&navigator.mediaDevices.getUserMedia.toString().includes('track')")), "document-start media lifecycle hook owns getUserMedia");
+    test.check(!((java.util.Set<?>) field(field(host, "platform"), "mediaFrames")).isEmpty(), "capturing frame registered after navigation callbacks");
+    test.evaluate(web, "window.captureClone=captureStream.getVideoTracks()[0].clone();window.streamClone=captureStream.clone()");
     main(host::minimize); Thread.sleep(500); main(host::restore); Thread.sleep(300);
-    test.check("true".equals(test.evaluate(web, "captureStream.getTracks().every(t=>t.readyState==='ended')&&captureClone.readyState==='ended'")), "minimization stops active camera/microphone and cloned tracks");
+    test.check("true".equals(test.evaluate(web, "captureStream.getTracks().every(t=>t.readyState==='ended')&&captureClone.readyState==='ended'&&streamClone.getTracks().every(t=>t.readyState==='ended')")), "minimization stops active camera/microphone, cloned tracks and cloned streams");
     android.net.Uri first = android.net.Uri.parse("content://picker.test/one"), second = android.net.Uri.parse("content://picker.test/two");
     Intent files = new Intent(); android.content.ClipData clip = android.content.ClipData.newRawUri("one", first); clip.addItem(new android.content.ClipData.Item(second)); files.setClipData(clip);
     test.check(MiniAppMedia.pickerUris(files, true).length == 2 && MiniAppMedia.pickerUris(files, false) == null, "picker result preserves multiple URIs and rejects multiple files in single mode");

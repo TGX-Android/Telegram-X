@@ -41,6 +41,8 @@
   <string name="MiniAppDownloadRequest">%1$s wants to save this file on your device.</string>
   <string name="MiniAppDownload">Download</string>
   <string name="MiniAppDownloadFailed">Failed</string>
+  <string name="MiniAppAddShortcut">Add to Home Screen</string>
+  <string name="MiniAppDownloadSaved">Saved to Downloads</string>
   <string name="MiniAppEmojiRequest">%1$s wants to set this emoji as your status.</string>
   <string name="MiniAppEmojiDuration">For %1$s</string>
   <string name="MiniAppEmojiConfirm">Set Status</string>

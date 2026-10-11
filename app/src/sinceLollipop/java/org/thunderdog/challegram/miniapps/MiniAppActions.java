@@ -74,6 +74,7 @@ final class MiniAppActions {
               .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name);
             long id = downloadManager.enqueue(request);
             downloads.edit().putString(Long.toString(id), name).apply();
+            host.showDownloadBulletin(this, id, name);
             downloadReply(origin, true);
           } catch (RuntimeException failure) { downloadReply(origin, false); }
         };
@@ -115,23 +116,49 @@ final class MiniAppActions {
     return row;
   }
   void showDownloads () {
-    ArrayList<String> names = new ArrayList<>(); ArrayList<Long> ids = new ArrayList<>();
+    host.showDownloadsMenu(this);
+  }
+  static final class Download {
+    final long id, total, loaded;
+    final String name;
+    final int status;
+    Download (long id, String name, int status, long total, long loaded) { this.id = id; this.name = name; this.status = status; this.total = total; this.loaded = loaded; }
+    boolean running () { return status == DownloadManager.STATUS_PENDING || status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PAUSED; }
+    String description () {
+      if (status == DownloadManager.STATUS_FAILED) return Lang.getString(R.string.MiniAppDownloadFailed);
+      if (!running()) return org.thunderdog.challegram.tool.Strings.buildSize(Math.max(0, total));
+      String result = org.thunderdog.challegram.tool.Strings.buildSize(Math.max(0, loaded));
+      return total > 0 ? result + " / " + org.thunderdog.challegram.tool.Strings.buildSize(total) : result;
+    }
+  }
+  Download download (long id, String name) {
+    if (downloadManager == null) return null;
+    try (Cursor cursor = downloadManager.query(new DownloadManager.Query().setFilterById(id))) {
+      if (cursor == null || !cursor.moveToFirst()) { downloads.edit().remove(Long.toString(id)).apply(); return null; }
+      return new Download(id, name, cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)), cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)), cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)));
+    } catch (RuntimeException ignored) { return null; }
+  }
+  ArrayList<Download> downloads () {
+    ArrayList<Download> files = new ArrayList<>();
     for (java.util.Map.Entry<String, ?> entry : downloads.getAll().entrySet()) {
       try {
-        long id = Long.parseLong(entry.getKey());
-        try (Cursor cursor = downloadManager.query(new DownloadManager.Query().setFilterById(id))) {
-          if (cursor == null || !cursor.moveToFirst()) continue;
-          int status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
-          long total = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)), loaded = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
-          names.add(entry.getValue() + (status == DownloadManager.STATUS_SUCCESSFUL ? " ✓" : status == DownloadManager.STATUS_FAILED ? " · " + Lang.getString(R.string.MiniAppDownloadFailed) : total > 0 ? " · " + (100 * loaded / total) + "%" : " …")); ids.add(id);
-        }
+        Download file = download(Long.parseLong(entry.getKey()), String.valueOf(entry.getValue()));
+        if (file != null) files.add(file);
       } catch (RuntimeException ignored) { }
     }
-    host.showAlert(new android.app.AlertDialog.Builder(host.context()).setTitle(Lang.getString(R.string.Downloads)).setItems(names.toArray(new String[0]), (d, which) -> {
-      Uri uri = downloadManager.getUriForDownloadedFile(ids.get(which));
-      if (uri == null) return;
-      try { host.context().startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(uri, downloadManager.getMimeTypeForDownloadedFile(ids.get(which))).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)); } catch (RuntimeException ignored) { }
-    }).setNegativeButton(Lang.getString(R.string.Cancel), null));
+    java.util.Collections.sort(files, (a, b) -> Long.compare(b.id, a.id));
+    return files;
+  }
+  void cancelDownload (long id) {
+    if (downloadManager != null && downloads.contains(Long.toString(id))) { downloadManager.remove(id); downloads.edit().remove(Long.toString(id)).apply(); }
+  }
+  void openDownload (long id) {
+    if (downloadManager == null || !downloads.contains(Long.toString(id))) return;
+    Uri uri = downloadManager.getUriForDownloadedFile(id);
+    if (uri == null) return;
+    String type = downloadManager.getMimeTypeForDownloadedFile(id);
+    try { host.context().startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(uri, type != null ? type : "*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)); }
+    catch (android.content.ActivityNotFoundException ignored) { UI.showToast(R.string.NoAppToOpen, android.widget.Toast.LENGTH_SHORT); }
   }
 
   String shortcutStatus () {

@@ -105,6 +105,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private MiniAppMedia media;
   private MiniAppQrScanner qrScanner;
   private MiniAppActions actions;
+  private MiniAppOptions options;
+  private MiniAppDownloadBulletin downloadBulletin;
   private final List<Runnable> deferredReplies = new ArrayList<>();
   private boolean minimized, expanded, fullscreen, backVisible, settingsVisible, needsCloseConfirmation;
   private boolean restoreWhenHidden;
@@ -634,6 +636,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   @Override
   public void onActivityPause () {
     super.onActivityPause();
+    dismissOptions();
     if (sensors != null) sensors.pause();
     if (webView != null) webView.onPause();
     platform.stopMedia();
@@ -665,6 +668,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void cancelDocumentRequests () {
+    dismissOptions();
+    hideDownloadBulletin();
     if (media != null) media.cancel();
     if (biometry != null) biometry.cancel();
     if (location != null) location.cancel();
@@ -1166,19 +1171,38 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void showMenu () {
-    List<String> labels = new ArrayList<>();
-    List<Runnable> actions = new ArrayList<>();
-    labels.add(Lang.getString(R.string.OpenBot));
-    actions.add(() -> { minimize(); tdlib.ui().openPrivateProfile(this, request.botUserId, null); });
-    labels.add(Lang.getString(R.string.Downloads)); actions.add(() -> actions().showDownloads());
-    if (settingsVisible) { labels.add(Lang.getString(R.string.Settings)); actions.add(() -> pressed("settings_button_pressed")); }
-    labels.add(Lang.getString(R.string.MiniAppReload));
-    actions.add(() -> { if (webView != null && document != null) { document.navigate(); webView.reload(); } });
-    labels.add(Lang.getString(R.string.MiniAppTerms));
-    actions.add(() -> tdlib.ui().openUrl(this, "https://telegram.org/tos/mini-apps", null));
-    labels.add(Lang.getString(R.string.MiniAppClose));
-    actions.add(this::requestClose);
-    showAlert(new AlertDialog.Builder(context()).setItems(labels.toArray(new String[0]), (dialog, index) -> actions.get(index).run()));
+    dismissOptions(); options = new MiniAppOptions(this);
+    if (!actions().downloads().isEmpty()) {
+      options.add(R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), () -> actions().showDownloads()); options.gap();
+    }
+    options.add(R.drawable.deproko_baseline_bots_24, Lang.getString(R.string.OpenBot), () -> { minimize(); tdlib.ui().openPrivateChat(this, request.botUserId, null); });
+    if (settingsVisible) options.add(R.drawable.baseline_settings_24, Lang.getString(R.string.Settings), () -> pressed("settings_button_pressed"));
+    options.add(R.drawable.baseline_replay_24, Lang.getString(R.string.MiniAppReload), () -> { if (webView != null && document != null) { document.navigate(); webView.reload(); } });
+    TdApi.User bot = tdlib.cache().user(request.botUserId);
+    if (bot != null && bot.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) bot.type).hasMainWebApp) {
+      options.add(R.drawable.baseline_home_24, Lang.getString(R.string.MiniAppAddShortcut), () -> {
+        recordGesture(); if (webView != null) { MiniAppDocument.Request origin = webRequest(webView.getUrl()); if (origin != null) actions().addShortcut(origin); }
+      });
+    }
+    options.add(R.drawable.baseline_info_24, Lang.getString(R.string.MiniAppTerms), () -> tdlib.ui().openUrl(this, "https://telegram.org/tos/mini-apps", null));
+    options.show(fullscreen ? fullscreenControls : more);
+  }
+
+  private void dismissOptions () { if (options != null) { options.dismiss(); options = null; } }
+  void showDownloadsMenu (MiniAppActions actions) {
+    dismissOptions(); options = new MiniAppOptions(this); options.downloads(actions, this::showMenu);
+    options.show(fullscreen ? fullscreenControls : more);
+  }
+  void showDownloadBulletin (MiniAppActions actions, long id, String name) {
+    hideDownloadBulletin();
+    downloadBulletin = new MiniAppDownloadBulletin(this, actions, id, name, this::hideDownloadBulletin);
+    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-1, Screen.dp(64), Gravity.TOP);
+    params.leftMargin = params.rightMargin = Screen.dp(8);
+    params.topMargin = (fullscreen ? fullscreenControls.getBottom() : column.getTop() + header.getBottom()) + Screen.dp(8);
+    root.addView(downloadBulletin, params);
+  }
+  private void hideDownloadBulletin () {
+    if (downloadBulletin != null) { downloadBulletin.stop(); root.removeView(downloadBulletin); downloadBulletin = null; }
   }
 
   private void setOrientationLocked (boolean locked) {
