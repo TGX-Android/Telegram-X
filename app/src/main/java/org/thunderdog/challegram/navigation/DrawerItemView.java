@@ -326,10 +326,11 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (isDragging) {
       c.drawColor(ColorUtils.alphaColor(.85f, Theme.fillingColor()));
     }
-    if (icon != null && (miniAppIcon == null || miniAppIcon.needPlaceholder())) {
+    if (icon != null && (miniAppIcon == null || miniAppIcon.isEmpty() || miniAppIcon.needPlaceholder())) {
       Drawables.draw(c, icon, rtl ? viewWidth - iconLeft - icon.getMinimumWidth() : iconLeft, iconTop, Paints.getIconGrayPorterDuffPaint());
     }
     if (miniAppIcon != null) {
+      miniAppIcon.setThemedPorterDuffColorId(ColorId.icon);
       int size = Screen.dp(24);
       int left = rtl ? viewWidth - iconLeft - size : iconLeft;
       miniAppIcon.setBounds(left, iconTop, left + size, iconTop + size);

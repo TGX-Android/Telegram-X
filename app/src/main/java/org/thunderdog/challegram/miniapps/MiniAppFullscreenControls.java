@@ -25,13 +25,14 @@ public final class MiniAppFullscreenControls extends FrameLayout {
   private final LinearLayout left, right;
   private final Symbol close;
   private final TextView label;
-  private boolean back;
 
   public MiniAppFullscreenControls (Context context, Runnable onBack, Runnable onMinimize, Runnable onMenu) {
     super(context);
     setClipChildren(false);
     left = capsule(context);
     close = new Symbol(context, 0);
+    close.setFocusable(false);
+    close.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
     left.addView(close, new LinearLayout.LayoutParams(Screen.dp(30), -1));
     label = new TextView(context);
     label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -72,10 +73,9 @@ public final class MiniAppFullscreenControls extends FrameLayout {
   }
 
   public void setBack (boolean back) {
-    this.back = back;
     close.kind = back ? 1 : 0;
     close.invalidate();
-    label.setText(Lang.getString(back ? R.string.MiniAppBack : R.string.MiniAppClose));
+    label.setText(Lang.getString(back ? R.string.MiniAppBack : R.string.MiniAppFullscreenClose));
     left.setContentDescription(label.getText());
   }
 

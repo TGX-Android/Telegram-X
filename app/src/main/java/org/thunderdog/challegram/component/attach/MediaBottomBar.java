@@ -62,7 +62,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
     private Drawable icon;
     private float factor;
     private Runnable action, longAction;
-    private ImageReceiver receiver;
+    private org.thunderdog.challegram.loader.Receiver receiver;
 
     public BarItem (MediaBottomBar view, Tdlib tdlib, TdApi.AttachmentMenuBot bot, Runnable action, Runnable longAction) {
       this.iconResource = 0;
@@ -71,13 +71,19 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
       this.paddingTop = 0;
       this.action = action;
       this.longAction = longAction;
-      TdApi.File icon = bot.androidIcon != null ? bot.androidIcon : bot.defaultIcon;
-      if (icon != null) {
-        ImageFile file = new ImageFile(tdlib, icon);
+      if (bot.androidIcon != null) {
+        org.thunderdog.challegram.loader.gif.GifFile file = new org.thunderdog.challegram.loader.gif.GifFile(tdlib, bot.androidIcon, org.thunderdog.challegram.loader.gif.GifFile.TYPE_TG_LOTTIE);
+        file.setPlayOnce(true);
+        org.thunderdog.challegram.loader.gif.GifReceiver animation = new org.thunderdog.challegram.loader.gif.GifReceiver(view);
+        animation.requestFile(file);
+        receiver = animation;
+      } else if (bot.defaultIcon != null) {
+        ImageFile file = new ImageFile(tdlib, bot.defaultIcon);
         file.setIsVector();
         file.setSize(Screen.dp(32));
-        receiver = new ImageReceiver(view, 0);
-        receiver.requestFile(file);
+        ImageReceiver image = new ImageReceiver(view, 0);
+        image.requestFile(file);
+        receiver = image;
       }
     }
 
@@ -537,6 +543,8 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
             int half = Screen.dp(14);
             if (item.receiver != null) {
               item.receiver.setBounds(itemCenterX - half, Screen.dp(3), itemCenterX + half, Screen.dp(31));
+              item.receiver.setPorterDuffColorFilter(color);
+              if (item.receiver.needPlaceholder()) c.drawCircle(itemCenterX, Screen.dp(17), Screen.dp(5), Paints.fillingPaint(color));
               item.receiver.draw(c);
             } else {
               c.drawCircle(itemCenterX, Screen.dp(17), half, Paints.fillingPaint(color));

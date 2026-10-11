@@ -118,6 +118,15 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private int dragStartHeight;
   private boolean dragging;
   private float webTouchX, webTouchY;
+  private final org.thunderdog.challegram.widget.RootFrameLayout.InsetsChangeListener sheetInsetsListener =
+    (view, effective, effectiveWithoutIme, system, systemWithoutIme, update) -> resize();
+
+  private static final class SheetLayout extends FrameLayout implements org.thunderdog.challegram.widget.RootFrameLayout.MarginModifier {
+    SheetLayout (Context context) { super(context); }
+    @Override public void onApplyMarginInsets (View child, FrameLayout.LayoutParams params, Rect legacy, Rect effective, Rect withoutIme) {
+      // resize() already accounts for raw IME/cutout insets. Do not replace its margins with ignored fullscreen insets.
+    }
+  }
 
   public MiniAppController (Context context, Tdlib tdlib, MiniAppLaunchRequest request, Runnable onOpened) {
     super(context, tdlib);
@@ -181,7 +190,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   @Override
   protected View onCreateView (Context context) {
-    root = new FrameLayout(context);
+    root = new SheetLayout(context);
     column = new LinearLayout(context);
     column.setOrientation(LinearLayout.VERTICAL);
     root.addView(column, new FrameLayout.LayoutParams(-1, -1));
@@ -408,7 +417,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
           canvas.drawRect(0, 0, getWidth(), top, Paints.fillingPaint(((ColorDrawable) header.getBackground()).getColor()));
         }
         // The WebView consumes navigation insets; cover them so the underlying chat/profile cannot show through.
-        if (!fullscreen && buttons.getBackground() instanceof ColorDrawable) {
+        if ((!fullscreen || buttons.getVisibility() == View.VISIBLE) && buttons.getBackground() instanceof ColorDrawable) {
           Rect systemInsets = context().getRootView().getSystemInsetsWithoutIme();
           int color = ((ColorDrawable) buttons.getBackground()).getColor();
           if (systemInsets.bottom > 0 && getSystemInsets().bottom <= systemInsets.bottom) {
@@ -420,6 +429,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       }
     };
     popup.init(false);
+    popup.addInsetsChangeListener(sheetInsetsListener);
     popup.setNeedRootInsets();
     popup.setOverlayStatusBar(true);
     popup.setPadding(0, 0, 0, fullscreen ? 0 : tdlib.miniApps().tabsHeight(context()));
@@ -467,8 +477,10 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (available <= 0) available = context().getResources().getDisplayMetrics().heightPixels;
     if (!fullscreen) available -= tdlib.miniApps().tabsHeight(context());
     Rect insets = popup != null && popup.getHeight() > 0 ? popup.getSystemInsets() : context().getRootView().getSystemInsets();
-    int top = Math.max(insets.top, Screen.getStatusBarHeight());
-    int bottom = fullscreen ? Math.max(0, insets.bottom - context().getRootView().getSystemInsetsWithoutIme().bottom) : insets.bottom;
+    Rect stableInsets = stableSystemInsets();
+    int top = fullscreen ? stableInsets.top : Math.max(insets.top, Screen.getStatusBarHeight());
+    boolean keyboard = insets.bottom > stableInsets.bottom;
+    int bottom = !fullscreen || keyboard ? insets.bottom : buttons.getVisibility() == View.VISIBLE ? stableInsets.bottom : 0;
     int height = MiniAppViewport.sheetHeight(available, top, bottom, expanded, fullscreen);
     FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-1, height, Gravity.BOTTOM);
     params.bottomMargin = bottom;
@@ -479,7 +491,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     header.setVisibility(fullscreen ? View.GONE : View.VISIBLE);
     FrameLayout.LayoutParams controls = (FrameLayout.LayoutParams) fullscreenControls.getLayoutParams();
     controls.topMargin = top;
-    controls.leftMargin = insets.left; controls.rightMargin = insets.right;
+    controls.leftMargin = stableInsets.left; controls.rightMargin = stableInsets.right;
     fullscreenControls.setLayoutParams(controls);
     fullscreenControls.setVisibility(fullscreen ? View.VISIBLE : View.GONE);
     column.setPadding(0, fullscreen ? 0 : Screen.dp(56), 0, 0);
@@ -690,8 +702,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
         fullscreenControls.setBack(backVisible);
         break;
       case "web_app_setup_settings_button": settingsVisible = data.optBoolean("is_visible"); break;
-      case "web_app_setup_main_button": buttons.configure(false, data); break;
-      case "web_app_setup_secondary_button": buttons.configure(true, data); break;
+      case "web_app_setup_main_button": buttons.configure(false, data); resize(); break;
+      case "web_app_setup_secondary_button": buttons.configure(true, data); resize(); break;
       case "web_app_set_header_color":
         if (data.has("color")) { headerColor = MiniAppButtons.parseColor(data.optString("color")); headerColorKey = null; }
         else if ("bg_color".equals(data.optString("color_key")) || "secondary_bg_color".equals(data.optString("color_key"))) {
@@ -704,7 +716,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_set_bottom_bar_color": bottomColor = MiniAppButtons.parseColor(data.optString("color")); applyTheme(); break;
       case "web_app_open_popup": openPopup(origin, data); break;
       case "web_app_trigger_haptic_feedback":
-        webView.performHapticFeedback("selection_change".equals(data.optString("type")) ? HapticFeedbackConstants.CLOCK_TICK : HapticFeedbackConstants.LONG_PRESS);
+        MiniAppHaptics.perform(context(), data);
         break;
       case "web_app_request_fullscreen": fullscreen = expanded = true; resize(); emit("fullscreen_changed", object("is_fullscreen", true)); sendSafeAreas(); break;
       case "web_app_exit_fullscreen": fullscreen = false; resize(); emit("fullscreen_changed", object("is_fullscreen", false)); sendSafeAreas(); break;
@@ -713,7 +725,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_toggle_orientation_lock": setOrientationLocked(data.optBoolean("locked")); break;
       case "web_app_open_link":
         if (recentGesture() && MiniAppOrigin.of(data.optString("url")) != null) {
-          tdlib.ui().openUrl(this, data.getString("url"), new TdlibUi.UrlOpenParameters().disableInstantView());
+          TdlibUi.UrlOpenParameters options = new TdlibUi.UrlOpenParameters();
+          if (data.optBoolean("try_instant_view")) options.forceInstantView(); else options.disableInstantView();
+          tdlib.ui().openUrl(this, data.getString("url"), options);
           lastInteraction = 0;
         }
         break;
@@ -725,6 +739,18 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_invoke_custom_method": customMethod(origin, data); break;
       case "web_app_request_write_access": requestWriteAccess(origin); break;
       case "web_app_request_phone": requestPhone(origin); break;
+      case "web_app_switch_inline_query": switchInline(data); break;
+      case "web_app_read_text_from_clipboard": {
+        JSONObject response = object("req_id", data.getString("req_id"));
+        if (recentGesture() && tdlib.miniApps().isAddedToMenu(request.botUserId)) {
+          android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context().getSystemService(Context.CLIPBOARD_SERVICE);
+          android.content.ClipData clip = clipboard != null ? clipboard.getPrimaryClip() : null;
+          CharSequence text = clip != null && clip.getItemCount() > 0 ? clip.getItemAt(0).getText() : null;
+          response.put("data", text != null ? text.toString() : "");
+        }
+        reply(origin, "clipboard_text_received", response);
+        break;
+      }
       case "web_app_device_storage_save_key":
       case "web_app_device_storage_get_key":
       case "web_app_device_storage_clear":
@@ -736,6 +762,40 @@ public final class MiniAppController extends ViewController<Void> implements Min
         // Further native capabilities are added as separate services; never invent successful replies.
         break;
     }
+  }
+
+  private void switchInline (JSONObject data) {
+    String username = tdlib.cache().userUsername(request.botUserId);
+    TdApi.User bot = tdlib.cache().user(request.botUserId);
+    if (username == null || username.isEmpty() || bot == null || !(bot.type instanceof TdApi.UserTypeBot) || !((TdApi.UserTypeBot) bot.type).supportsInlineQueries) return;
+    String query = data.optString("query");
+    if (query.length() > 256) return;
+    JSONArray chatTypes = data.optJSONArray("chat_types");
+    ViewController<?> parent = context().navigation().getCurrentStackItem();
+    if (chatTypes == null || chatTypes.length() == 0) {
+      if (parent instanceof org.thunderdog.challegram.ui.MessagesController) {
+        ((org.thunderdog.challegram.ui.MessagesController) parent).switchInline(request.botUserId,
+          new TdApi.InlineKeyboardButtonTypeSwitchInline(query, new TdApi.TargetChatCurrent()));
+        close();
+      }
+      return;
+    }
+    TdApi.TargetChatTypes types = new TdApi.TargetChatTypes();
+    for (int i = 0; i < chatTypes.length(); i++) {
+      switch (chatTypes.optString(i)) {
+        case "users": types.allowUserChats = true; break;
+        case "bots": types.allowBotChats = true; break;
+        case "groups": types.allowGroupChats = true; break;
+        case "channels": types.allowChannelChats = true; break;
+      }
+    }
+    org.thunderdog.challegram.telegram.ChatFilter filter = chat -> MiniAppChatPolicy.allows(types, chat, tdlib.isBotChat(chat)) && tdlib.canSendBasicMessage(chat);
+    org.thunderdog.challegram.ui.ChatsController picker = new org.thunderdog.challegram.ui.ChatsController(context(), tdlib);
+    picker.setArguments(new org.thunderdog.challegram.ui.ChatsController.Arguments(filter, new org.thunderdog.challegram.ui.ChatsController.PickerDelegate() {
+      @Override public boolean onChatPicked (TdApi.Chat chat, Runnable done) { return filter.accept(chat); }
+      @Override public Object getShareItem () { return new org.thunderdog.challegram.data.TGSwitchInline(username, query); }
+    }));
+    minimize(); context().navigation().navigateTo(picker);
   }
 
   private java.util.Set<Long> activeStorageAccounts () {
@@ -1029,13 +1089,23 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void sendSafeAreas () {
-    Rect insets = context().getRootView().getSystemInsetsWithoutIme();
+    Rect insets = stableSystemInsets();
     float density = context().getResources().getDisplayMetrics().density;
     // Normal sheets consume system insets. Fullscreen web content receives the real safe area.
     emit("safe_area_changed", object("top", fullscreen ? insets.top / density : 0,
-      "bottom", fullscreen && buttons.getHeight() == 0 ? insets.bottom / density : 0,
+      "bottom", fullscreen && buttons.getVisibility() != View.VISIBLE && (popup == null || popup.getSystemInsets().bottom <= popup.getSystemInsetsWithoutIme().bottom) ? insets.bottom / density : 0,
       "left", fullscreen ? insets.left / density : 0, "right", fullscreen ? insets.right / density : 0));
     emit("content_safe_area_changed", object("top", fullscreen ? MiniAppFullscreenControls.CONTENT_INSET_DP : 0, "bottom", 0, "left", 0, "right", 0));
+  }
+
+  private Rect stableSystemInsets () {
+    View view = popup != null ? popup : context().getRootView();
+    androidx.core.view.WindowInsetsCompat window = androidx.core.view.ViewCompat.getRootWindowInsets(view);
+    if (window != null) {
+      androidx.core.graphics.Insets insets = window.getInsetsIgnoringVisibility(androidx.core.view.WindowInsetsCompat.Type.systemBars() | androidx.core.view.WindowInsetsCompat.Type.displayCutout());
+      return new Rect(insets.left, insets.top, insets.right, insets.bottom);
+    }
+    return new Rect(context().getRootView().getSystemInsetsWithoutIme());
   }
 
   private void reply (MiniAppDocument.Request origin, String event, JSONObject data) {

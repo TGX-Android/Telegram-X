@@ -91,6 +91,11 @@ final class MiniAppHostDeviceChecks {
       send("web_app_request_fullscreen", "{}"); Thread.sleep(500);
       View header = field(host, "header"), controls = field(host, "fullscreenControls");
       test.check(header.getVisibility() == View.GONE && controls.getVisibility() == View.VISIBLE, "fullscreen replaces header with floating capsules");
+      main(() -> {
+        int[] point = new int[2]; buttons.getLocationOnScreen(point);
+        int nav = activity.getRootView().getSystemInsetsWithoutIme().bottom;
+        test.check(point[1] + buttons.getHeight() <= activity.getRootView().getHeight() - nav, "native fullscreen buttons stay above navigation area");
+      });
       test.check(test.evaluate(web, "JSON.stringify(events.filter(e=>e.event==='content_safe_area_changed').slice(-1)[0].data)").contains("46"), "fullscreen content inset follows 46dp capsules");
       send("web_app_setup_back_button", "{\"is_visible\":true}");
       capture("host-fullscreen-portrait");
@@ -98,8 +103,12 @@ final class MiniAppHostDeviceChecks {
       main(() -> { web.requestFocus(); ((android.view.inputmethod.InputMethodManager) activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).showSoftInput(web, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT); });
       test.evaluate(web, "document.getElementById('entry').focus()");
       Thread.sleep(800);
-      // IME visibility depends on device keyboard policy; record actual resizing without inventing a pass.
-      test.check(web.getHeight() <= beforeKeyboard, "IME cannot enlarge the web viewport");
+      test.check(web.getHeight() < beforeKeyboard - Screen.dp(100), "visible IME reduces the actual web viewport");
+      main(() -> {
+        int[] point = new int[2]; buttons.getLocationOnScreen(point);
+        org.thunderdog.challegram.widget.PopupLayout sheet = field(host, "popup");
+        test.check(point[1] + buttons.getHeight() <= sheet.getHeight() - sheet.getSystemInsets().bottom, "native buttons stay above the IME");
+      });
       capture("host-keyboard");
       send("web_app_hide_keyboard", "{}"); Thread.sleep(400);
       main(() -> activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)); Thread.sleep(1200);

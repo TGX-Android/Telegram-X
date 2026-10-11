@@ -188,6 +188,10 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   }
 
   public void addMenuListener (Runnable listener) { if (!menuListeners.contains(listener)) menuListeners.add(listener); }
+  public boolean isAddedToMenu (long botId) {
+    for (TdApi.AttachmentMenuBot bot : menuBots) if (bot.botUserId == botId && bot.isAdded) return true;
+    return false;
+  }
   public void removeMenuListener (Runnable listener) { menuListeners.remove(listener); }
 
   public List<TdApi.AttachmentMenuBot> menuBots (boolean sideMenu, long chatId) {
@@ -257,6 +261,18 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   }
 
   public void openAttachmentLink (TdlibDelegate context, TdApi.InternalLinkTypeAttachmentMenuBot link, TdlibUi.UrlOpenParameters options) {
+    if (!alive(context)) return;
+    if (options != null && options.requireOpenPrompt) {
+      ViewController<?> parent = context.context().navigation().getCurrentStackItem();
+      if (parent == null) return;
+      parent.showAlert(new AlertDialog.Builder(context.context()).setTitle("@" + link.botUsername)
+        .setMessage(Lang.getString(R.string.MiniAppDisclaimer))
+        .setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> {
+          if (options.openPromptCancellationCallback != null) options.openPromptCancellationCallback.run();
+        }).setPositiveButton(Lang.getString(R.string.Open), (dialog, which) ->
+          openAttachmentLink(context, link, new TdlibUi.UrlOpenParameters(options).disableOpenPrompt())));
+      return;
+    }
     final int generation = epoch;
     tdlib.send(new TdApi.SearchPublicChat(link.botUsername), (chat, error) -> tdlib.ui().post(() -> {
       if (generation != epoch || !alive(context)) return;

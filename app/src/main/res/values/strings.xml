@@ -5934,4 +5934,5 @@
 
   <string name="MiniAppRestoreStorage">Restore app data from a signed-out account</string>
   <string name="MiniAppStorageAccount">Saved account %1$s</string>
+  <string name="MiniAppFullscreenClose">Close</string>
 </resources>

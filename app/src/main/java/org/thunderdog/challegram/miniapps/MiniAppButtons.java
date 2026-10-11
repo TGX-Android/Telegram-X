@@ -101,7 +101,7 @@ public final class MiniAppButtons extends LinearLayout {
       super(context);
       label = new TextView(context);
       label.setGravity(Gravity.CENTER);
-      label.setTextSize(14);
+      label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
       label.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
       label.setSingleLine();
       label.setPadding(Screen.dp(12), 0, Screen.dp(12), 0);

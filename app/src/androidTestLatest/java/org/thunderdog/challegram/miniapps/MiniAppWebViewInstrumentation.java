@@ -48,7 +48,8 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
       check(MiniAppPlatform.isSupported(), "provider supports isolated secure bridge");
       runOnMainSync(() -> {
         for (String name : ProfileStore.getInstance().getAllProfileNames()) {
-          if (name.startsWith("miniapp-contract-")) ProfileStore.getInstance().deleteProfile(name);
+          if (name.startsWith("miniapp-contract-") || name.startsWith("tg-miniapp-" + (Long.MAX_VALUE - 110) + "-") ||
+            name.startsWith("tg-miniapp-" + (Long.MAX_VALUE - 111) + "-") || name.contains("-" + (Long.MAX_VALUE - 104) + "-")) ProfileStore.getInstance().deleteProfile(name);
         }
       });
       if (!cleanupOnly) {
@@ -56,6 +57,7 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
         checkFrames(false);
         checkStorage();
         checkNativeStorage();
+        checkLogoutIsolation();
         if (hostChecks) new MiniAppHostDeviceChecks(this).run();
       }
       result.putString("stream", "Mini Apps WebView: " + passed + " checks passed\n");
@@ -78,14 +80,16 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
   }
 
   private void checkFrames (boolean requireSameOrigin) throws Exception {
-    CountDownLatch messages = new CountDownLatch(3);
+    CountDownLatch messages = new CountDownLatch(4);
     AtomicReference<Throwable> failure = new AtomicReference<>();
     MiniAppDocument document = new MiniAppDocument(ORIGIN, requireSameOrigin);
     List<MiniAppDocument.Request> accepted = new ArrayList<>();
     WebView page = create("frames-" + requireSameOrigin, (data, origin) -> {
       try {
         MiniAppDocument.Request request = document.receive(origin, ORIGIN, data.length());
-        if (data.contains("foreign")) {
+        if (data.contains("opaque")) {
+          check(request == null, "opaque sandboxed iframe rejected");
+        } else if (data.contains("foreign")) {
           check((request != null) == !requireSameOrigin, "cross-origin policy " + requireSameOrigin);
         } else {
           check(request != null, "same-origin main/iframe accepted");
@@ -95,7 +99,7 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
       messages.countDown();
     });
     runOnMainSync(() -> page.loadUrl(ORIGIN + "/frames"));
-    await(messages, "messages from three real frames");
+    await(messages, "messages from four real frames");
     if (failure.get() != null) throw new AssertionError(failure.get());
     runOnMainSync(() -> {
       for (MiniAppDocument.Request request : accepted) check(document.isCurrent(request, ORIGIN), "current reply accepted");
@@ -151,9 +155,12 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
         String html = "<!doctype html><meta charset='utf-8'>";
         if ("/frames".equals(path)) {
           html += "<script>TelegramWebviewProxy.postEvent('main','{}')</script>" +
-            "<iframe src='https://miniapp.test/frame'></iframe><iframe src='https://foreign.test/frame'></iframe>";
+            "<iframe src='https://miniapp.test/frame'></iframe><iframe src='https://foreign.test/frame'></iframe>" +
+            "<iframe sandbox='allow-scripts' src='https://miniapp.test/opaque'></iframe>";
         } else if ("/frame".equals(path)) {
           html += "<script>TelegramWebviewProxy.postEvent('" + ("foreign.test".equals(host) ? "foreign" : "same") + "','{}')</script>";
+        } else if ("/opaque".equals(path)) {
+          html += "<script>TelegramWebviewProxy.postEvent('opaque','{}')</script>";
         }
         return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
       }
@@ -210,6 +217,32 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
         }
       } finally { one.clear(); other.clear(); otherBot.clear(); testServer.clear(); }
     }
+  }
+
+  private void checkLogoutIsolation () throws Exception {
+    long owner = Long.MAX_VALUE - 110, other = Long.MAX_VALUE - 111;
+    WebView a = isolated(owner), b = isolated(other);
+    load(a, ORIGIN + "/storage"); load(b, ORIGIN + "/storage");
+    evaluate(a, "localStorage.setItem('logout','retired');document.cookie='logout=retired;path=/;Secure';'ok'");
+    evaluate(b, "localStorage.setItem('logout','other');'ok'");
+    runOnMainSync(() -> MiniAppPlatform.clearAccount(getTargetContext(), owner, false));
+    WebView next = isolated(owner); load(next, ORIGIN + "/storage");
+    check("null".equals(evaluate(next, "localStorage.getItem('logout')")), "logout rotates the production profile before reuse");
+    check(!evaluate(next, "document.cookie").contains("retired"), "logged-out cookies never leak into a fresh profile");
+    check("\"other\"".equals(evaluate(b, "localStorage.getItem('logout')")), "logout preserves other accounts");
+  }
+
+  private WebView isolated (long owner) {
+    AtomicReference<WebView> result = new AtomicReference<>();
+    runOnMainSync(() -> {
+      WebView view = new WebView(getTargetContext());
+      check(MiniAppPlatform.isolate(view, owner, 1), "production profile selected before settings");
+      view.getSettings().setJavaScriptEnabled(true); view.getSettings().setDomStorageEnabled(true);
+      MiniAppPlatform bridge = new MiniAppPlatform();
+      bridge.install(view, (data, origin) -> { });
+      views.add(view); bridges.add(bridge); result.set(view);
+    });
+    return result.get();
   }
 
   private static void await (CountDownLatch latch, String operation) throws InterruptedException {
