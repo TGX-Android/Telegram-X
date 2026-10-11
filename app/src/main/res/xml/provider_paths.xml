@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+  <cache-path name="miniapps_capture" path="miniapps-capture/" />
   <files-path name="logs" path="logs/" />
   <files-path name="vcf" path="vcf/" />
   <files-path name="media" path="media/" />

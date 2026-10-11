@@ -101,7 +101,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   private void confirm (TdlibDelegate context, MiniAppLaunchRequest request, long token, int generation, boolean requestWriteAccess, boolean skipConfirmation, Runnable onOpened) {
     if (!current(context, token, generation)) return;
     if (consent == null) consent = context.context().getSharedPreferences("miniapp_consent_" + tdlib.myUserId(), Context.MODE_PRIVATE);
-    boolean trusted = consent.getBoolean(Long.toString(request.botUserId), false);
+    boolean trusted = tdlib.isTrustedMiniAppBot(request.botUserId) || consent.getBoolean(Long.toString(request.botUserId), false);
     if (!request.forceConfirmation && !requestWriteAccess && (trusted || skipConfirmation)) {
       launch(context, request, token, generation, false, onOpened);
       return;
@@ -374,7 +374,9 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
       long botId = tdlib.chatUserId(chat);
       if (botId == 0) return;
       open(context, new MiniAppLaunchRequest(main ? MiniAppLaunchRequest.Source.MAIN_APP : MiniAppLaunchRequest.Source.DIRECT_LINK,
-        botId, chatId, "", "", shortName, startParameter, null, null, mode, options != null && options.requireOpenPrompt));
+        botId, chatId, "", "", shortName, startParameter, null, null, mode, options != null && options.requireOpenPrompt)
+        .returnTo(options != null && options.miniAppReturnToCaller != null ? options.miniAppReturnToCaller :
+          context instanceof MiniAppController ? ((MiniAppController) context)::restore : null));
     }));
   }
 

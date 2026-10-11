@@ -66,7 +66,24 @@ public final class MiniAppPlatform {
   }
 
   public static void clearAccount (Context context, long accountUserId, boolean testServer) {
-    if (accountUserId > 0) MiniAppStorage.clearAccount(context, accountUserId, testServer);
+    if (accountUserId > 0) {
+      MiniAppStorage.clearAccount(context, accountUserId, testServer);
+      String owner = (testServer ? "test-" : "production-") + accountUserId + "-";
+      java.io.File directory = new java.io.File(context.getApplicationInfo().dataDir, "shared_prefs");
+      java.io.File[] preferences = directory.listFiles();
+      if (preferences != null) for (java.io.File file : preferences) {
+        String name = file.getName();
+        if ((name.startsWith("miniapp-biometry-" + owner) || name.startsWith("miniapp-location-" + owner)) && name.endsWith(".xml"))
+          context.getSharedPreferences(name.substring(0, name.length() - 4), Context.MODE_PRIVATE).edit().clear().apply();
+      }
+      MiniAppStorage.IO.execute(() -> {
+        try {
+          java.security.KeyStore keys = java.security.KeyStore.getInstance("AndroidKeyStore"); keys.load(null);
+          java.util.Enumeration<String> aliases = keys.aliases();
+          while (aliases.hasMoreElements()) { String name = aliases.nextElement(); if (name.startsWith("miniapp-biometry-" + owner)) keys.deleteEntry(name); }
+        } catch (Exception ignored) { }
+      });
+    }
     if (accountUserId <= 0 || !WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return;
     SharedPreferences state = profileState(context);
     Set<String> pending = new HashSet<>(state.getStringSet("retired", Collections.emptySet()));

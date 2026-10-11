@@ -97,12 +97,14 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private ImageView back, collapse, more;
   private PopupLayout popup;
   private AlertDialog activeDialog;
-  private ValueCallback<Uri[]> fileCallback;
-  private MiniAppDocument.Request fileRequest;
-  private int fileRequestCode;
-  private static int nextFileRequestCode = 0x5a00;
   private MiniAppMessageSender phoneSender;
+  private MiniAppDocument.Request phoneRequest, writeRequest;
   private MiniAppSensors sensors;
+  private MiniAppBiometry biometry;
+  private MiniAppLocation location;
+  private MiniAppMedia media;
+  private MiniAppQrScanner qrScanner;
+  private MiniAppActions actions;
   private final List<Runnable> deferredReplies = new ArrayList<>();
   private boolean minimized, expanded, fullscreen, backVisible, settingsVisible, needsCloseConfirmation;
   private boolean restoreWhenHidden;
@@ -113,7 +115,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private boolean orientationRequested;
   private Integer headerColor, backgroundColor, bottomColor;
   private String headerColorKey;
-  private long lastInteraction, lastPopupClosed;
+  private long lastInteraction, lastPopupClosed, popupCooldownUntil;
   private int sequentialPopups;
   private float dragStartY;
   private int dragStartHeight;
@@ -312,8 +314,10 @@ public final class MiniAppController extends ViewController<Void> implements Min
           beginPageLoad();
           if (document != null) document.navigate();
           cancelDocumentRequests();
+          if (sensors != null) sensors.stopAll();
           deferredReplies.clear();
           if (phoneSender != null) { phoneSender.cancel(); phoneSender = null; }
+          phoneRequest = writeRequest = null;
           dataSending = false;
           backVisible = settingsVisible = needsCloseConfirmation = false;
           fullscreenControls.setBack(false);
@@ -363,25 +367,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
         }
       });
       webView.setWebChromeClient(new WebChromeClient() {
+        @Override public void onPermissionRequest (android.webkit.PermissionRequest request) { media().permission(request); }
+        @Override public void onPermissionRequestCanceled (android.webkit.PermissionRequest request) { media().cancelled(request); }
+        @Override public void onGeolocationPermissionsShowPrompt (String origin, android.webkit.GeolocationPermissions.Callback callback) { media().geolocation(origin, callback); }
+        @Override public void onGeolocationPermissionsHidePrompt () { media().hideGeolocation(); }
         @Override
         public boolean onShowFileChooser (WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
-          cancelFileChooser();
-          if (document == null || !document.canSend(view.getUrl()) || minimized) { callback.onReceiveValue(null); return true; }
-          fileRequest = document.receive(view.getUrl(), view.getUrl(), 0);
-          fileCallback = callback;
-          fileRequestCode = ++nextFileRequestCode;
-          try {
-            Intent intent = params.createIntent();
-            context().putActivityResultHandler(fileRequestCode, (code, result, data) -> {
-              ValueCallback<Uri[]> target = fileCallback;
-              MiniAppDocument.Request origin = fileRequest;
-              fileCallback = null;
-              fileRequest = null;
-              if (target != null) target.onReceiveValue(current(origin) ? FileChooserParams.parseResult(result, data) : null);
-            });
-            context().startActivityForResult(intent, fileRequestCode);
-          } catch (RuntimeException e) { cancelFileChooser(); }
-          return true;
+          return media().choose(view.getUrl(), callback, params);
         }
       });
       webView.setOnTouchListener((v, event) -> {
@@ -615,6 +607,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (document != null) document.close();
     cancelDocumentRequests();
     deferredReplies.clear();
+    if (media != null) media.destroy();
+    if (qrScanner != null) qrScanner.destroy();
     if (phoneSender != null) { phoneSender.cancel(); phoneSender = null; }
     unlockOrientation();
     if (sizeAnimator != null) { sizeAnimator.cancel(); sizeAnimator = null; }
@@ -640,6 +634,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
     super.onActivityPause();
     if (sensors != null) sensors.pause();
     if (webView != null) webView.onPause();
+    if (location != null) location.pause();
+    if (biometry != null) biometry.cancel();
+    if (qrScanner != null) qrScanner.pause();
   }
 
   @Override
@@ -647,6 +644,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
     super.onActivityResume();
     if (sensors != null && !minimized) sensors.resume();
     if (webView != null && !minimized) webView.onResume();
+    if (location != null) emit("location_checked", location.info());
+    if (biometry != null) emit("biometry_info_received", biometry.info());
   }
 
   @Override
@@ -661,22 +660,57 @@ public final class MiniAppController extends ViewController<Void> implements Min
     resize();
   }
 
-  private void cancelFileChooser () {
-    if (fileCallback != null) {
-      context().putActivityResultHandler(fileRequestCode, null);
-      fileCallback.onReceiveValue(null);
-      fileCallback = null;
-      fileRequest = null;
-    }
-  }
-
   private void cancelDocumentRequests () {
-    cancelFileChooser();
+    if (media != null) media.cancel();
+    if (biometry != null) biometry.cancel();
+    if (location != null) location.cancel();
+    if (qrScanner != null) qrScanner.close();
+    if (actions != null) actions.cancel();
     if (activeDialog != null) { activeDialog.dismiss(); activeDialog = null; }
   }
 
-  private boolean current (MiniAppDocument.Request origin) {
+  boolean current (MiniAppDocument.Request origin) {
     return !isDestroyed() && tdlib.isCurrent() && webView != null && document != null && document.isCurrent(origin, webView.getUrl());
+  }
+
+  long botId () { return request.botUserId; }
+  String storageScope () { return MiniAppBotPermissions.scope(tdlib, request.botUserId); }
+  MiniAppDocument.Request webRequest (String source) {
+    return document != null && webView != null && !minimized && tdlib.isCurrent() ? document.receive(source, webView.getUrl(), 0) : null;
+  }
+  private MiniAppMedia media () { if (media == null) media = new MiniAppMedia(this); return media; }
+  private MiniAppBiometry biometry () { if (biometry == null) biometry = new MiniAppBiometry(this); return biometry; }
+  MiniAppLocation location () { if (location == null) location = new MiniAppLocation(this); return location; }
+  private MiniAppActions actions () { if (actions == null) actions = new MiniAppActions(this); return actions; }
+
+  void nativePrompt (MiniAppDocument.Request origin, String title, String message, int positive, @Nullable View illustration, Runnable accepted, Runnable cancelled) {
+    if (!current(origin) || minimized || activeDialog != null || context().getActivityState() != UI.State.RESUMED) { cancelled.run(); return; }
+    boolean[] answered = {false};
+    AlertDialog.Builder builder = new AlertDialog.Builder(context(), Theme.dialogTheme());
+    if (!title.isEmpty()) builder.setTitle(title);
+    if (illustration instanceof MiniAppPermissionView || illustration instanceof org.thunderdog.challegram.widget.CustomEmojiTextView) {
+      LinearLayout content = new LinearLayout(context()); content.setOrientation(LinearLayout.VERTICAL);
+      content.addView(illustration, new LinearLayout.LayoutParams(-1, -2));
+      TextView text = new TextView(context()); text.setText(message); text.setTextSize(16); text.setTextColor(Theme.textAccentColor());
+      text.setPadding(Screen.dp(24), Screen.dp(16), Screen.dp(24), Screen.dp(8)); content.addView(text, new LinearLayout.LayoutParams(-1, -2));
+      builder.setView(content);
+    } else { builder.setMessage(message); if (illustration != null) builder.setView(illustration); }
+    builder.setNegativeButton(Lang.getString(R.string.Cancel), null).setPositiveButton(Lang.getString(positive), (dialog, which) -> {
+      answered[0] = true; dialog.dismiss(); recordGesture();
+      if (current(origin) && !minimized) accepted.run(); else cancelled.run();
+    });
+    AlertDialog dialog = showAlert(builder); activeDialog = dialog;
+    if (dialog == null) { cancelled.run(); return; }
+    dialog.setOnDismissListener(ignored -> {
+      if (activeDialog == dialog) activeDialog = null;
+      if (illustration instanceof org.thunderdog.challegram.widget.CustomEmojiTextView) ((org.thunderdog.challegram.widget.CustomEmojiTextView) illustration).performDestroy();
+      if (!answered[0]) { answered[0] = true; cancelled.run(); }
+    });
+  }
+
+  private void showPermissions (MiniAppDocument.Request origin, boolean biometric) {
+    minimize();
+    tdlib.ui().openPrivateProfile(this, request.botUserId, null);
   }
 
   @Override
@@ -689,6 +723,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       String event = envelope.getString("eventType");
       if (event.isEmpty() || event.length() > 128) return;
       Object data = envelope.opt("eventData");
+      if (message.length() > MiniAppDocument.MAX_ACTION_LENGTH && !"web_app_device_storage_save_key".equals(event) && !"web_app_secure_storage_save_key".equals(event)) return;
       if (data instanceof String && !((String) data).isEmpty()) data = new JSONTokener((String) data).nextValue();
       if ("web_app_allow_scroll".equals(event)) {
         pageAllowsVerticalSwipe = !(data instanceof JSONArray) || ((JSONArray) data).optBoolean(1, true);
@@ -707,7 +742,10 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_request_theme": sendTheme(); break;
       case "web_app_request_viewport": sendViewport(); break;
       case "web_app_expand": if (!expanded) { expanded = true; resize(true); } break;
-      case "web_app_close": close(); break;
+      case "web_app_close":
+        close();
+        if (data.optBoolean("return_back") && request.returnToCaller != null) request.returnToCaller.run();
+        break;
       case "web_app_setup_closing_behavior": needsCloseConfirmation = data.optBoolean("need_confirmation"); break;
       case "web_app_setup_swipe_behavior": swipeEnabled = data.optBoolean("allow_vertical_swipe", true); break;
       case "web_app_hide_keyboard": Keyboard.hide(webView); break;
@@ -740,12 +778,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_request_content_safe_area": sendSafeAreas(); break;
       case "web_app_toggle_orientation_lock": setOrientationLocked(data.optBoolean("locked")); break;
       case "web_app_open_link":
-        if (recentGesture() && MiniAppOrigin.of(data.optString("url")) != null) {
-          TdlibUi.UrlOpenParameters options = new TdlibUi.UrlOpenParameters();
-          if (data.optBoolean("try_instant_view")) options.forceInstantView(); else options.disableInstantView();
-          tdlib.ui().openUrl(this, data.getString("url"), options);
-          lastInteraction = 0;
-        }
+        openLink(origin, data);
         break;
       case "web_app_open_tg_link":
         String path = data.optString("path_full");
@@ -755,6 +788,23 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_invoke_custom_method": customMethod(origin, data); break;
       case "web_app_request_write_access": requestWriteAccess(origin); break;
       case "web_app_request_phone": requestPhone(origin); break;
+      case "web_app_biometry_get_info": biometry().notifyInfo(origin); break;
+      case "web_app_biometry_request_access": biometry().requestAccess(origin, data.optString("reason", "")); break;
+      case "web_app_biometry_request_auth": biometry().requestAuth(origin, data.optString("reason", "")); break;
+      case "web_app_biometry_update_token": biometry().updateToken(origin, data.getString("token"), data.optString("reason", "")); break;
+      case "web_app_biometry_open_settings": if (recentGesture()) { lastInteraction = 0; showPermissions(origin, true); } break;
+      case "web_app_check_location": reply(origin, "location_checked", location().info()); break;
+      case "web_app_request_location": location().request(origin); break;
+      case "web_app_open_location_settings": if (recentGesture()) { lastInteraction = 0; showPermissions(origin, false); } break;
+      case "web_app_open_scan_qr_popup":
+        if (qrScanner == null) qrScanner = new MiniAppQrScanner(this);
+        qrScanner.open(origin, data.optString("text", "")); break;
+      case "web_app_close_scan_qr_popup": if (qrScanner != null) qrScanner.close(); break;
+      case "web_app_request_file_download": actions().download(origin, data); break;
+      case "web_app_check_home_screen": reply(origin, "home_screen_checked", object("status", actions().shortcutStatus())); break;
+      case "web_app_add_to_home_screen": actions().addShortcut(origin); break;
+      case "web_app_set_emoji_status": actions().emojiStatus(origin, data); break;
+      case "web_app_request_emoji_status_access": actions().emojiAccess(origin); break;
       case "web_app_start_accelerometer":
       case "web_app_stop_accelerometer":
       case "web_app_start_gyroscope":
@@ -774,7 +824,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_switch_inline_query": switchInline(data); break;
       case "web_app_read_text_from_clipboard": {
         JSONObject response = object("req_id", data.getString("req_id"));
-        if (recentGesture() && tdlib.miniApps().isAddedToMenu(request.botUserId)) {
+        if (recentGesture() && (tdlib.isTrustedMiniAppBot(request.botUserId) || tdlib.miniApps().isAddedToMenu(request.botUserId))) {
           android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context().getSystemService(Context.CLIPBOARD_SERVICE);
           android.content.ClipData clip = clipboard != null ? clipboard.getPrimaryClip() : null;
           CharSequence text = clip != null && clip.getItemCount() > 0 ? clip.getItemAt(0).getText() : null;
@@ -840,6 +890,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void storage (MiniAppDocument.Request origin, String event, JSONObject data) throws JSONException {
     final String id = data.getString("req_id");
+    if (id.length() > 128) return;
     boolean secure = event.startsWith("web_app_secure_");
     String prefix = secure ? "secure_storage_" : "device_storage_";
     String operation = event.substring(("web_app_" + prefix).length());
@@ -924,7 +975,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
     String id = data.getString("req_id");
     String method = data.getString("method");
     Object parameters = data.get("params");
-    tdlib.send(new TdApi.SendWebAppCustomRequest(request.botUserId, method, parameters.toString()), (result, error) -> tdlib.ui().post(() -> {
+    if (id.length() > 128 || method.isEmpty() || method.length() > 256) return;
+    String json = parameters instanceof String ? JSONObject.quote((String) parameters) : parameters.toString();
+    tdlib.send(new TdApi.SendWebAppCustomRequest(request.botUserId, method, json), (result, error) -> tdlib.ui().post(() -> {
       if (!current(origin)) return;
       JSONObject response = object("req_id", id);
       try {
@@ -936,37 +989,48 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void requestWriteAccess (MiniAppDocument.Request origin) {
+    if (writeRequest != null) return;
+    writeRequest = origin;
     tdlib.send(new TdApi.CanBotSendMessages(request.botUserId), (ok, error) -> tdlib.ui().post(() -> {
-      if (!current(origin)) return;
-      if (error == null) { reply(origin, "write_access_requested", object("status", "allowed")); return; }
-      if (error.code != 404) { UI.showError(error); return; }
-      confirmAction(origin, Lang.getString(R.string.MiniAppWriteAccess, tdlib.cache().userName(request.botUserId)), "write_access_requested", () ->
+      if (!current(origin) || writeRequest != origin) return;
+      if (error == null) { finishWrite(origin, true); return; }
+      if (error.code != 404) { UI.showError(error); finishWrite(origin, false); return; }
+      nativePrompt(origin, botName(), Lang.getString(R.string.MiniAppWriteAccess, botName()), R.string.Allow, null, () ->
         tdlib.send(new TdApi.AllowBotToSendMessages(request.botUserId), (result, allowError) -> tdlib.ui().post(() -> {
-          if (!current(origin)) return;
+          if (!current(origin) || writeRequest != origin) return;
           if (allowError != null) UI.showError(allowError);
-          reply(origin, "write_access_requested", object("status", allowError == null ? "allowed" : "cancelled"));
-        })));
+          finishWrite(origin, allowError == null);
+        })), () -> finishWrite(origin, false));
     }));
+  }
+  private void finishWrite (MiniAppDocument.Request origin, boolean allowed) {
+    if (writeRequest != origin) return;
+    writeRequest = null; reply(origin, "write_access_requested", object("status", allowed ? "allowed" : "cancelled"));
   }
 
   private void requestPhone (MiniAppDocument.Request origin) {
-    if (phoneSender != null) return;
-    confirmAction(origin, Lang.getString(R.string.MiniAppSharePhone, tdlib.cache().userName(request.botUserId)), "phone_requested", () -> {
+    if (phoneSender != null || phoneRequest != null) return;
+    phoneRequest = origin;
+    nativePrompt(origin, botName(), Lang.getString(R.string.MiniAppSharePhone, botName()), R.string.Share, null, () -> {
       TdApi.User me = tdlib.myUser();
-      if (me == null || me.phoneNumber.isEmpty()) { reply(origin, "phone_requested", object("status", "cancelled")); return; }
+      if (me == null || me.phoneNumber.isEmpty()) { finishPhone(origin, false); return; }
       tdlib.send(new TdApi.CreatePrivateChat(request.botUserId, false), (chat, error) -> tdlib.ui().post(() -> {
-        if (!current(origin)) return;
-        if (error != null) { UI.showError(error); reply(origin, "phone_requested", object("status", "cancelled")); return; }
+        if (!current(origin) || phoneRequest != origin) return;
+        if (error != null) { UI.showError(error); finishPhone(origin, false); return; }
         TdApi.Contact contact = new TdApi.Contact(me.phoneNumber, me.firstName, me.lastName, "", me.id);
         phoneSender = new MiniAppMessageSender(tdlib, new TdApi.SendMessage(chat.id, null, null, Td.newSendOptions(), null, new TdApi.InputMessageContact(contact)), sendError -> {
           phoneSender = null;
           if (!current(origin)) return;
           if (sendError != null) UI.showError(sendError);
-          reply(origin, "phone_requested", object("status", sendError == null ? "sent" : "cancelled"));
+          finishPhone(origin, sendError == null);
         });
         phoneSender.send();
       }));
-    });
+    }, () -> finishPhone(origin, false));
+  }
+  private void finishPhone (MiniAppDocument.Request origin, boolean sent) {
+    if (phoneRequest != origin) return;
+    phoneRequest = null; reply(origin, "phone_requested", object("status", sent ? "sent" : "cancelled"));
   }
 
   private void confirmAction (MiniAppDocument.Request origin, String message, String response, Runnable accepted) {
@@ -986,14 +1050,15 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void openPopup (MiniAppDocument.Request origin, JSONObject data) throws JSONException {
     if (activeDialog != null) return;
-    long elapsed = SystemClock.uptimeMillis() - lastPopupClosed;
-    if (elapsed < 150) sequentialPopups++;
-    else if (elapsed > 3000) sequentialPopups = 0;
-    if (sequentialPopups >= 3 && elapsed < 3000) return;
+    long now = SystemClock.uptimeMillis();
+    if (now < popupCooldownUntil) return;
+    if (now - lastPopupClosed <= 150 && ++sequentialPopups >= 3) {
+      sequentialPopups = 0; popupCooldownUntil = now + 3000; return;
+    }
     String heading = data.optString("title", ""), message = data.getString("message");
     JSONArray options = data.getJSONArray("buttons");
     if (heading.length() > 64 || message.length() > 256 || options.length() < 1 || options.length() > 3) return;
-    AlertDialog.Builder builder = new AlertDialog.Builder(context()).setTitle(heading).setMessage(message);
+    AlertDialog.Builder builder = new AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(heading.isEmpty() ? null : heading).setMessage(message);
     boolean[] answered = { false };
     int[] whichButtons = { AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE, AlertDialog.BUTTON_NEUTRAL };
     boolean[] destructive = new boolean[options.length()];
@@ -1025,6 +1090,25 @@ public final class MiniAppController extends ViewController<Void> implements Min
     });
   }
 
+  private void openLink (MiniAppDocument.Request origin, JSONObject data) {
+    if (!recentGesture()) return;
+    lastInteraction = 0;
+    String url = data.optString("url"), browser = MiniAppActionPolicy.browserPackage(data.optString("try_browser"));
+    boolean instantView = data.optBoolean("try_instant_view");
+    tdlib.send(new TdApi.GetOption("web_app_allowed_protocols"), (value, error) -> tdlib.ui().post(() -> {
+      if (!current(origin) || minimized) return;
+      String protocols = value instanceof TdApi.OptionValueString ? ((TdApi.OptionValueString) value).value : "http https";
+      if (!MiniAppActionPolicy.externalUrl(url, protocols)) return;
+      if (browser != null) {
+        try { context().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE).setPackage(browser)); return; }
+        catch (android.content.ActivityNotFoundException ignored) { }
+      }
+      TdlibUi.UrlOpenParameters options = new TdlibUi.UrlOpenParameters();
+      if (instantView) options.forceInstantView(); else options.disableInstantView();
+      tdlib.ui().openUrl(this, url, options);
+    }));
+  }
+
   private boolean routeNavigation (String url, boolean mainFrame) {
     Uri uri = Uri.parse(url);
     String scheme = uri.getScheme(), host = uri.getHost();
@@ -1036,7 +1120,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
     return MiniAppOrigin.of(url) == null;
   }
 
-  private boolean recentGesture () { return lastInteraction != 0 && SystemClock.uptimeMillis() - lastInteraction < 10000; }
+  boolean recentGesture () { return lastInteraction != 0 && SystemClock.uptimeMillis() - lastInteraction < 10000; }
+  void recordGesture () { lastInteraction = SystemClock.uptimeMillis(); }
 
   private void pressed (String event) {
     lastInteraction = SystemClock.uptimeMillis();
@@ -1048,6 +1133,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     List<Runnable> actions = new ArrayList<>();
     labels.add(Lang.getString(R.string.OpenBot));
     actions.add(() -> { minimize(); tdlib.ui().openPrivateProfile(this, request.botUserId, null); });
+    labels.add(Lang.getString(R.string.Downloads)); actions.add(() -> actions().showDownloads());
     if (settingsVisible) { labels.add(Lang.getString(R.string.Settings)); actions.add(() -> pressed("settings_button_pressed")); }
     labels.add(Lang.getString(R.string.MiniAppReload));
     actions.add(() -> { if (webView != null && document != null) { document.navigate(); webView.reload(); } });
@@ -1147,7 +1233,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     return new Rect(context().getRootView().getSystemInsetsWithoutIme());
   }
 
-  private void reply (MiniAppDocument.Request origin, String event, JSONObject data) {
+  void reply (MiniAppDocument.Request origin, String event, JSONObject data) {
     if (!current(origin)) return;
     if (minimized) deferredReplies.add(() -> { if (current(origin)) emit(event, data); });
     else emit(event, data);

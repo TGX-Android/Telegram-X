@@ -43,7 +43,39 @@ public final class MiniAppStorage {
     this.owner = owner; this.bot = bot; this.secure = secure;
   }
 
-  private File file (long account) { return new File(directory, (secure ? "secure_" : "device_") + account + "_" + bot + ".json"); }
+  private File file (long account) { return rawFile(secure ? identity(account) : account); }
+  private File rawFile (long identity) { return new File(directory, (secure ? "secure_" : "device_") + identity + "_" + bot + ".json"); }
+
+  // One secure identity owns ALL bots, as in Telegram Android's BotStorage. The
+  // atomic index transfers ownership without copying/decrypting unrelated bots.
+  private JSONObject identities () {
+    File index = new File(directory, "secure_owners.json");
+    if (index.exists() || new File(index + ".bak").exists()) return read(index, false);
+    JSONObject result = new JSONObject();
+    File[] files = directory.listFiles();
+    if (files != null) for (File f : files) {
+      java.util.regex.Matcher match = java.util.regex.Pattern.compile("secure_([0-9]+)_[0-9]+\\.json").matcher(f.getName());
+      if (match.matches()) try { result.put(match.group(1), Long.parseLong(match.group(1))); } catch (Exception ignored) { }
+    }
+    return result;
+  }
+  private long identity (long account) {
+    JSONObject index = identities();
+    String key = Long.toString(account);
+    if (index.has(key)) return index.optLong(key);
+    long id;
+    java.security.SecureRandom random = new java.security.SecureRandom();
+    do { id = random.nextLong() & Long.MAX_VALUE; } while (id == 0 || identityExists(id, index));
+    try { index.put(key, id); } catch (org.json.JSONException e) { throw new IllegalStateException("UNKNOWN_ERROR"); }
+    write(new File(directory, "secure_owners.json"), index, false);
+    return id;
+  }
+  private boolean identityExists (long id, JSONObject index) {
+    java.util.Iterator<String> keys = index.keys();
+    while (keys.hasNext()) if (index.optLong(keys.next()) == id) return true;
+    File[] files = directory.listFiles((dir, name) -> name.startsWith("secure_" + id + "_"));
+    return files != null && files.length != 0;
+  }
   public void setOwnerName (String name) { names.edit().putString(Long.toString(owner), name).apply(); }
   public String ownerName (long account) { return names.getString(Long.toString(account), ""); }
   private void supported () {
@@ -71,15 +103,15 @@ public final class MiniAppStorage {
       supported();
       if (!secure || read(file(owner)).length() != 0) return new ArrayList<>();
       List<Long> result = new ArrayList<>();
-      File[] files = directory.listFiles();
-      if (files != null) for (File candidate : files) {
-        String name = candidate.getName();
-        if (!name.matches("secure_[0-9]+_" + bot + "\\.json")) continue;
+      JSONObject index = identities();
+      java.util.Iterator<String> accounts = index.keys();
+      while (accounts.hasNext()) {
+        String name = accounts.next();
         long account;
-        try { account = Long.parseLong(name.substring(7, name.indexOf('_', 7))); }
+        try { account = Long.parseLong(name); }
         catch (NumberFormatException malformed) { continue; }
         if (account == owner || activeAccounts.contains(account)) continue;
-        if (read(candidate).has(key)) result.add(account);
+        if (read(rawFile(index.optLong(name))).has(key)) result.add(account);
       }
       return result;
     }
@@ -92,14 +124,19 @@ public final class MiniAppStorage {
       if (read(file(owner)).length() != 0) throw new IllegalStateException("STORAGE_NOT_EMPTY");
       if (!restorable(key, activeAccounts).contains(from)) throw new IllegalStateException("RESTORE_UNAVAILABLE");
       JSONObject data = read(file(from));
-      write(file(owner), data);
-      // Ownership is transferred only after the destination was durably written.
-      new AtomicFile(file(from)).delete();
+      JSONObject index = identities();
+      try { index.put(Long.toString(owner), index.getLong(Long.toString(from))); }
+      catch (org.json.JSONException e) { throw new IllegalStateException("RESTORE_UNAVAILABLE"); }
+      index.remove(Long.toString(from));
+      write(new File(directory, "secure_owners.json"), index, false);
       return data.optString(key, null);
     }
   }
 
   private JSONObject read (File file) {
+    return read(file, secure);
+  }
+  private JSONObject read (File file, boolean encrypted) {
     AtomicFile atomic = new AtomicFile(file);
     if (!file.exists() && !new File(file.getPath() + ".bak").exists()) return new JSONObject();
     try (FileInputStream stream = atomic.openRead()) {
@@ -109,20 +146,23 @@ public final class MiniAppStorage {
       int offset = 0, read;
       while (offset < bytes.length && (read = stream.read(bytes, offset, bytes.length - offset)) != -1) offset += read;
       if (offset != bytes.length) throw new java.io.IOException("Incomplete storage");
-      if (secure && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) bytes = Crypto.decrypt(bytes, file.getName());
+      if (encrypted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) bytes = Crypto.decrypt(bytes, file.getName());
       return new JSONObject(new String(bytes, StandardCharsets.UTF_8));
     } catch (IllegalStateException error) { throw error; }
     catch (Exception error) { throw new IllegalStateException("UNKNOWN_ERROR"); }
   }
 
   private void write (File file, JSONObject data) {
+    write(file, data, secure);
+  }
+  private void write (File file, JSONObject data, boolean encrypted) {
     byte[] bytes = data.toString().getBytes(StandardCharsets.UTF_8);
     if (bytes.length > QUOTA) throw new IllegalStateException("QUOTA_EXCEEDED");
     AtomicFile atomic = new AtomicFile(file);
     FileOutputStream stream = null;
     try {
       if (!directory.isDirectory() && !directory.mkdirs()) throw new java.io.IOException("Storage unavailable");
-      if (secure && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) bytes = Crypto.encrypt(bytes, file.getName());
+      if (encrypted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) bytes = Crypto.encrypt(bytes, file.getName());
       stream = atomic.startWrite();
       stream.write(bytes);
       atomic.finishWrite(stream);

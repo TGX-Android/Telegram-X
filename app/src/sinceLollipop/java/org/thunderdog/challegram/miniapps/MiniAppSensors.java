@@ -30,7 +30,7 @@ final class MiniAppSensors {
   boolean start (int type, long interval, boolean absolute, Callback callback) {
     if (manager == null) return false;
     Stream existing = streams[type];
-    if (existing != null && (type != 2 || existing.absolute == absolute)) return true;
+    if (existing != null && existing.interval == Math.max(20, Math.min(1000, interval)) && (type != 2 || existing.absolute == absolute)) return true;
     stop(type);
     Stream stream = new Stream(type, Math.max(20, Math.min(1000, interval)), absolute, callback);
     if (!stream.available() || (!paused && !stream.register())) { stream.unregister(); return false; }

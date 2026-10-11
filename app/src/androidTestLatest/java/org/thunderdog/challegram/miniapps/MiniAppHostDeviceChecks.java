@@ -276,16 +276,16 @@ final class MiniAppHostDeviceChecks {
     long bot = Long.MAX_VALUE - 104, previous = Long.MAX_VALUE - 105;
     boolean server = activity.currentTdlib().account().isDebug();
     MiniAppStorage old = new MiniAppStorage(activity, previous, bot, true, server);
-    MiniAppStorage target = new MiniAppStorage(activity, activity.currentTdlib().myUserId(), bot, true, server);
+    MiniAppStorage target = new MiniAppStorage(activity, Long.MAX_VALUE - 106, bot, true, server);
     try {
       old.clear(); target.clear(); old.setOwnerName("Synthetic signed-out account"); old.set("fixture", "synthetic-restore-value");
-      send("web_app_secure_storage_restore_key", "{\"req_id\":\"restore_cancel\",\"key\":\"fixture\"}");
+      restoreFixture(target, previous, "restore_cancel");
       android.app.AlertDialog dialog = waitDialog();
       test.check(target.get("fixture") == null, "secure restore waits for native user consent");
       main(() -> dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE).performClick());
       waitEvent("secure_storage_failed");
       test.check(target.get("fixture") == null && old.get("fixture") != null, "cancelling restore preserves both storage owners");
-      send("web_app_secure_storage_restore_key", "{\"req_id\":\"restore_accept\",\"key\":\"fixture\"}");
+      restoreFixture(target, previous, "restore_accept");
       android.app.AlertDialog confirmed = waitDialog();
       main(() -> confirmed.getListView().performItemClick(confirmed.getListView().getChildAt(0), 0, 0));
       waitEvent("secure_storage_key_restored");
@@ -301,6 +301,17 @@ final class MiniAppHostDeviceChecks {
       Thread.sleep(100);
     }
     throw new AssertionError("Native consent did not open");
+  }
+
+  private void restoreFixture (MiniAppStorage store, long previous, String id) {
+    main(() -> {
+      try {
+        // Account-wide restore must NEVER reassign the real signed-in user's identity.
+        Method method = MiniAppController.class.getDeclaredMethod("restoreStorage", MiniAppDocument.Request.class, String.class, String.class, MiniAppStorage.class, java.util.List.class, String[].class);
+        method.setAccessible(true);
+        method.invoke(host, host.webRequest(web.getUrl()), id, "fixture", store, java.util.Collections.singletonList(previous), new String[] {"Synthetic signed-out account"});
+      } catch (Exception error) { throw new AssertionError(error); }
+    });
   }
 
   private void waitPage () throws Exception {

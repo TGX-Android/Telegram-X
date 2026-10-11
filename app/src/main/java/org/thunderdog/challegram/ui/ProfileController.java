@@ -1784,7 +1784,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           view.setAllowMultiLineName(item.getId() == R.id.btn_username);
         }
         final int itemId = item.getId();
-        if (itemId == R.id.btn_useExplicitDice) {
+        if (itemId == R.id.btn_miniAppBiometry || itemId == R.id.btn_miniAppLocation) {
+          view.getToggler().setRadioEnabled(org.thunderdog.challegram.miniapps.MiniAppBotPermissions.granted(context(), tdlib, user.id, itemId == R.id.btn_miniAppBiometry), isUpdate);
+        } else if (itemId == R.id.btn_miniAppEmojiPermission) {
+          view.getToggler().setRadioEnabled(userFull != null && userFull.botInfo != null && userFull.botInfo.canManageEmojiStatus, isUpdate);
+        } else if (itemId == R.id.btn_useExplicitDice) {
           view.getToggler().setRadioEnabled(Settings.instance().getNewSetting(item.getLongId()), isUpdate);
         } else if (itemId == R.id.btn_username) {
           view.setName(getUsernameName());
@@ -2521,6 +2525,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (addedCount > 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       items.add(new ListItem(ListItem.TYPE_CUSTOM - 1, R.id.btn_miniApp));
       addedCount++;
+    }
+    if (mode == Mode.USER && TD.isBot(user)) {
+      for (boolean biometric : new boolean[] {false, true}) {
+        if (org.thunderdog.challegram.miniapps.MiniAppBotPermissions.requested(context(), tdlib, user.id, biometric)) {
+          if (addedCount > 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, biometric ? R.id.btn_miniAppBiometry : R.id.btn_miniAppLocation, 0,
+            biometric ? R.string.MiniAppBiometryTitle : R.string.Location));
+          addedCount++;
+        }
+      }
+      if (userFull != null && userFull.botInfo != null && userFull.botInfo.canManageEmojiStatus) {
+        if (addedCount > 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_miniAppEmojiPermission, 0, R.string.MiniAppEmojiAccess)); addedCount++;
+      }
     }
     this.baseHeaderItemCount = addedCount;
     boolean isMe = tdlib.isSelfUserId(user.id);
@@ -4790,6 +4808,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onClick (View v) {
     final int viewId = v.getId();
+    if ((viewId == R.id.btn_miniAppBiometry || viewId == R.id.btn_miniAppLocation) && user != null) {
+      org.thunderdog.challegram.miniapps.MiniAppBotPermissions.toggle(context(), tdlib, user.id, viewId == R.id.btn_miniAppBiometry,
+        () -> baseAdapter.updateValuedSettingById(viewId));
+      return;
+    }
+    if (viewId == R.id.btn_miniAppEmojiPermission && userFull != null && userFull.botInfo != null) {
+      boolean allow = !userFull.botInfo.canManageEmojiStatus;
+      tdlib.send(new TdApi.ToggleBotCanManageEmojiStatus(user.id, allow), (ok, error) -> tdlib.ui().post(() -> {
+        if (isDestroyed()) return;
+        if (error != null) UI.showError(error);
+        else { userFull.botInfo.canManageEmojiStatus = allow; baseAdapter.updateValuedSettingById(viewId); }
+      }));
+      return;
+    }
     if (viewId == R.id.btn_miniApp && user != null && mode == Mode.USER) {
       tdlib.miniApps().open(this, new org.thunderdog.challegram.miniapps.MiniAppLaunchRequest(
         org.thunderdog.challegram.miniapps.MiniAppLaunchRequest.Source.MAIN_APP, user.id, getChatId(),

@@ -9751,6 +9751,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     listeners.updateTrendingStickerSets(update, unreadCount);
   }
 
+  public boolean isTrustedMiniAppBot (long botUserId) {
+    synchronized (dataLock) {
+      if (trustedMiniAppBotUserIds != null) for (long id : trustedMiniAppBotUserIds) if (id == botUserId) return true;
+      return false;
+    }
+  }
+
   private void updateTrustedMiniAppBots (TdApi.UpdateTrustedMiniAppBots update) {
     synchronized (dataLock) {
       this.trustedMiniAppBotUserIds = update.botUserIds;

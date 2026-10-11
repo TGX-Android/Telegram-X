@@ -25,6 +25,24 @@
   <string name="MiniAppTerms">Terms of Service</string>
   <string name="MiniAppSharePhone">Share your phone number with %1$s?</string>
   <string name="MiniAppWriteAccess">Allow %1$s to send you messages?</string>
+  <string name="MiniAppBiometryTitle">Biometric Authentication</string>
+  <string name="MiniAppBiometryRequest">Allow %1$s to use biometric authentication?</string>
+  <string name="MiniAppLocationRequest">Allow %1$s to access your location? You can change this permission in the bot profile.</string>
+  <string name="MiniAppCameraMicrophone">Allow %1$s to use your camera and microphone?\n%2$s</string>
+  <string name="MiniAppCamera">Allow %1$s to use your camera?\n%2$s</string>
+  <string name="MiniAppMicrophone">Allow %1$s to use your microphone?\n%2$s</string>
+  <string name="MiniAppRevoke">Revoke Access</string>
+  <string name="MiniAppScanQr">Scan QR Code</string>
+  <string name="MiniAppFlash">Flashlight</string>
+  <string name="MiniAppDownloadTitle">Download File</string>
+  <string name="MiniAppDownloadRequest">%1$s wants to save this file on your device.</string>
+  <string name="MiniAppDownload">Download</string>
+  <string name="MiniAppDownloadFailed">Failed</string>
+  <string name="MiniAppEmojiRequest">%1$s wants to set this emoji as your status.</string>
+  <string name="MiniAppEmojiDuration">For %1$s minutes</string>
+  <string name="MiniAppEmojiConfirm">Set Status</string>
+  <string name="MiniAppEmojiPermission">Allow %1$s to manage your emoji status? You can change this permission in the bot profile.</string>
+  <string name="MiniAppEmojiAccess">Emoji Status</string>
   <string name="language_continueInLanguage">Continue in English</string>
 
   <string name="Page1Title">Telegram X</string>

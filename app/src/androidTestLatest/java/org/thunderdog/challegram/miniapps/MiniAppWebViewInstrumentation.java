@@ -34,12 +34,15 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
   private boolean cleanupOnly;
   private boolean hostChecks;
   private boolean rendererChecks;
+  private boolean stage45Checks, serverChecks;
 
   @Override public void onCreate (Bundle arguments) {
     super.onCreate(arguments);
     cleanupOnly = arguments != null && "true".equals(arguments.getString("cleanup"));
     hostChecks = arguments != null && "true".equals(arguments.getString("host"));
     rendererChecks = arguments != null && "true".equals(arguments.getString("renderer"));
+    stage45Checks = arguments != null && "true".equals(arguments.getString("stage45"));
+    serverChecks = arguments != null && "true".equals(arguments.getString("server"));
     start();
   }
 
@@ -54,7 +57,9 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
             name.startsWith("tg-miniapp-" + (Long.MAX_VALUE - 111) + "-") || name.contains("-" + (Long.MAX_VALUE - 104) + "-")) ProfileStore.getInstance().deleteProfile(name);
         }
       });
-      if (rendererChecks) {
+      if (stage45Checks || serverChecks) {
+        new MiniAppStage45Checks(this).run(serverChecks);
+      } else if (rendererChecks) {
         // A separate process avoids terminating the renderer of unrelated WebView fixtures.
         new MiniAppHostDeviceChecks(this).run(true);
       } else if (!cleanupOnly) {

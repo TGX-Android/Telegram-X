@@ -23,6 +23,9 @@ public final class MiniAppLaunchRequest {
   public final TdApi.InputMessageReplyTo replyTo;
   public final TdApi.WebAppOpenMode mode;
   public final boolean forceConfirmation;
+  public Runnable returnToCaller;
+
+  public MiniAppLaunchRequest returnTo (Runnable action) { returnToCaller = action; return this; }
 
   public MiniAppLaunchRequest (Source source, long botUserId, long chatId, String url, String buttonText,
                               String shortName, String startParameter, TdApi.MessageTopic topicId,

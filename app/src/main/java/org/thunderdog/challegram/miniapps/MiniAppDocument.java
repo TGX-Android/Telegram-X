@@ -6,7 +6,10 @@ package org.thunderdog.challegram.miniapps;
 
 /** UI-thread document lifetime. Each callback belongs to this owner and one navigation. */
 public final class MiniAppDocument {
-  public static final int MAX_MESSAGE_LENGTH = 1024 * 1024;
+  // DeviceStorage permits 5 MiB. postEvent JSON-encodes its JSON payload again,
+  // so escaped values require up to twice that size plus the envelope.
+  public static final int MAX_MESSAGE_LENGTH = 11 * 1024 * 1024;
+  public static final int MAX_ACTION_LENGTH = 1024 * 1024;
 
   public static final class Request {
     private final MiniAppDocument owner;

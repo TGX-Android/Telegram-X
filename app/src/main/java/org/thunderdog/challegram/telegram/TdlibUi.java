@@ -2733,6 +2733,7 @@ public class TdlibUi extends Handler {
     public TooltipOverlayView.TooltipBuilder tooltip;
     public boolean requireOpenPrompt, ignoreExplicitUserInteraction, forceDirectMessagesChat;
     public Runnable openPromptCancellationCallback;
+    public Runnable miniAppReturnToCaller;
     public RunnableLong afterChatOpened;
     public String displayUrl;
 
@@ -2756,6 +2757,7 @@ public class TdlibUi extends Handler {
         this.originalUrl = options.originalUrl;
         this.sourceLinkPreview = options.sourceLinkPreview;
         this.afterChatOpened = options.afterChatOpened;
+        this.miniAppReturnToCaller = options.miniAppReturnToCaller;
         if (options.sourceMessage != null) {
           sourceMessage(options.sourceMessage);
         }
