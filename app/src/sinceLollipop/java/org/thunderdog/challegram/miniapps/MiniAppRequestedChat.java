@@ -357,7 +357,7 @@ final class MiniAppRequestedChat {
           boolean available = result instanceof TdApi.CheckChatUsernameResultOk;
           checkedBotUsername = available ? handle : null;
           status.setText(available ? Lang.getString(R.string.MiniAppBotUsernameAvailable, "@" + handle) : Lang.getString(R.string.UsernameInUse));
-          status.setTextColor(Theme.getColor(available ? ColorId.textGreen : ColorId.textNegative)); updateEnabled.run();
+          status.setTextColor(Theme.getColor(available ? ColorId.textSecure : ColorId.textNegative)); updateEnabled.run();
         }); username.postDelayed(searchTask, 250);
       };
       TextWatcher usernameWatcher = new TextWatcher() {
