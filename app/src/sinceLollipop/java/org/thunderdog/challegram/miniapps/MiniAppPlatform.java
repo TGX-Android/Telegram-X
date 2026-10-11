@@ -5,14 +5,20 @@
 package org.thunderdog.challegram.miniapps;
 
 import android.webkit.WebView;
+import android.content.Context;
+import android.content.SharedPreferences;
 
 import androidx.webkit.ScriptHandler;
 import androidx.webkit.ProfileStore;
+import androidx.webkit.Profile;
+import androidx.webkit.WebStorageCompat;
 import androidx.webkit.WebMessageCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /** Loaded only by API 21+ variants. Feature support belongs to the installed WebView provider. */
 public final class MiniAppPlatform {
@@ -36,17 +42,49 @@ public final class MiniAppPlatform {
   /** Set this before accessing settings, cookies, or loading any document. */
   public static boolean isolate (WebView webView, long accountUserId, long botUserId) {
     if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return false;
-    WebViewCompat.setProfile(webView, profileName(accountUserId, botUserId));
+    SharedPreferences state = profileState(webView.getContext());
+    pruneProfiles(state);
+    WebViewCompat.setProfile(webView, profileName(accountUserId, botUserId) + "-" + state.getLong("epoch_" + accountUserId, 0));
     return true;
   }
 
-  public static void clearAccount (long accountUserId) {
+  private static SharedPreferences profileState (Context context) {
+    return context.getApplicationContext().getSharedPreferences("miniapp_profiles", Context.MODE_PRIVATE);
+  }
+
+  private static void pruneProfiles (SharedPreferences state) {
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return;
+    Set<String> pending = new HashSet<>(state.getStringSet("retired", Collections.emptySet()));
+    for (String name : new HashSet<>(pending)) {
+      try { ProfileStore.getInstance().deleteProfile(name); pending.remove(name); }
+      catch (IllegalStateException inUse) { /* Chromium can retain a profile until process exit. */ }
+    }
+    state.edit().putStringSet("retired", pending).apply();
+  }
+
+  public static void clearAccount (Context context, long accountUserId) {
     if (accountUserId <= 0 || !WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return;
+    SharedPreferences state = profileState(context);
+    Set<String> pending = new HashSet<>(state.getStringSet("retired", Collections.emptySet()));
     ProfileStore store = ProfileStore.getInstance();
     String prefix = "tg-miniapp-" + accountUserId + "-";
     for (String name : store.getAllProfileNames()) {
-      if (name.startsWith(prefix)) store.deleteProfile(name);
+      if (!name.startsWith(prefix)) continue;
+      pending.add(name);
+      Profile profile = store.getProfile(name);
+      if (profile != null) {
+        profile.getCookieManager().removeAllCookies(null);
+        profile.getWebStorage().deleteAllData();
+        profile.getGeolocationPermissions().clearAll();
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DELETE_BROWSING_DATA)) {
+          WebStorageCompat.deleteBrowsingData(profile.getWebStorage(), () -> { });
+        }
+      }
     }
+    // Never reuse a retired profile after logout, even while Chromium still owns it.
+    state.edit().putLong("epoch_" + accountUserId, state.getLong("epoch_" + accountUserId, 0) + 1)
+      .putStringSet("retired", pending).apply();
+    pruneProfiles(state);
   }
 
   public boolean install (WebView webView, MiniAppBridgeTransport receiver) {

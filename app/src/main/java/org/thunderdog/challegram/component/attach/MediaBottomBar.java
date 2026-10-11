@@ -27,11 +27,16 @@ import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
+import android.text.TextUtils;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.U;
+import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -56,6 +61,25 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
     private float measuredWidth;
     private Drawable icon;
     private float factor;
+    private Runnable action, longAction;
+    private ImageReceiver receiver;
+
+    public BarItem (MediaBottomBar view, Tdlib tdlib, TdApi.AttachmentMenuBot bot, Runnable action, Runnable longAction) {
+      this.iconResource = 0;
+      this.name = bot.name;
+      this.backgroundColorId = ColorId.attachInlineBot;
+      this.paddingTop = 0;
+      this.action = action;
+      this.longAction = longAction;
+      TdApi.File icon = bot.androidIcon != null ? bot.androidIcon : bot.defaultIcon;
+      if (icon != null) {
+        ImageFile file = new ImageFile(tdlib, icon);
+        file.setIsVector();
+        file.setSize(Screen.dp(32));
+        receiver = new ImageReceiver(view, 0);
+        receiver.requestFile(file);
+      }
+    }
 
     public BarItem (@DrawableRes int icon, int name, int backgroundColorId) {
       this.iconResource = icon;
@@ -82,6 +106,8 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
 
   // Data
   private BarItem[] items;
+  private BarItem[] standardItems;
+  private int scrollOffset, maxScroll;
   private int index;
   private Callback callback;
 
@@ -146,6 +172,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
   // Setters
 
   public void setItems (BarItem[] items, int currentIndex) {
+    if (standardItems == null) standardItems = items;
     float maxTextWidth = 0;
     int index = 0;
     for (BarItem item : items) {
@@ -166,6 +193,30 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
     this.maxTextWidth = maxTextWidth;
     this.items = items;
     this.lastBarWidth = 0; // Resetting all related metrics
+    requestLayout();
+    invalidate();
+  }
+
+  public void setBotItems (java.util.List<BarItem> bots) {
+    if (isAnimating) { postDelayed(() -> setBotItems(bots), 250); return; }
+    if (items != null) for (BarItem item : items) if (item.receiver != null) item.receiver.destroy();
+    BarItem[] combined = java.util.Arrays.copyOf(standardItems, standardItems.length + bots.size());
+    for (int i = 0; i < bots.size(); i++) combined[standardItems.length + i] = bots.get(i);
+    setItems(combined, Math.min(index, standardItems.length - 1));
+  }
+
+  @Override protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    if (items != null) for (BarItem item : items) if (item.receiver != null) item.receiver.attach();
+  }
+
+  @Override protected void onDetachedFromWindow () {
+    if (items != null) for (BarItem item : items) if (item.receiver != null) item.receiver.detach();
+    super.onDetachedFromWindow();
+  }
+
+  public void destroy () {
+    if (items != null) for (BarItem item : items) if (item.receiver != null) item.receiver.destroy();
   }
 
   public void setCallback (Callback callback) {
@@ -205,11 +256,15 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
       totalWidth = barWidth;
     }
 
-    int itemActiveWidth = Math.max(itemWidth, (int) (maxTextWidth + Screen.dp(40f)));
+    boolean hasBots = items.length > standardItems.length;
+    int itemActiveWidth = Math.max(itemWidth, (int) (Math.min(maxTextWidth, Screen.dp(120)) + Screen.dp(40f)));
     int itemNormalWidth = (totalWidth - itemActiveWidth) / (items.length - 1);
+    if (hasBots) itemNormalWidth = Math.max(Screen.dp(72), itemNormalWidth);
 
     this.itemNormalWidth = itemNormalWidth;
     this.itemActiveDiff = itemActiveWidth - itemNormalWidth;
+    maxScroll = Math.max(0, itemNormalWidth * items.length + itemActiveDiff - barWidth);
+    scrollOffset = Math.min(scrollOffset, maxScroll);
 
     this.circleRadius = (float) Math.sqrt((barWidth * barWidth) + (barHeight * barHeight)) * .5f;
   }
@@ -223,7 +278,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
     if (items == null || items.length == 0) {
       return -1;
     }
-    int cx = itemStartX;
+    int cx = itemStartX - scrollOffset;
     int index = 0;
     for (BarItem item : items) {
       int itemWidth = itemNormalWidth + (int) ((float) itemActiveDiff * item.factor);
@@ -240,7 +295,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
     if (items == null || items.length == 0) {
       return -1;
     }
-    int cx = itemStartX;
+    int cx = itemStartX - scrollOffset;
     int index = 0;
     for (BarItem item : items) {
       int itemWidth = itemNormalWidth + (int) ((float) itemActiveDiff * item.factor);
@@ -271,7 +326,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
         touchStartX = x;
         touchStartY = y;
 
-        int cx = itemStartX;
+        int cx = itemStartX - scrollOffset;
         int index = 0;
         for (BarItem item : items) {
           int itemWidth = itemNormalWidth + (int) ((float) itemActiveDiff * item.factor);
@@ -336,6 +391,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
       return false;
     }
     ViewUtils.onClick(this);
+    if (items[index].action != null) { items[index].action.run(); return false; }
     if (callback != null) {
       if (this.index == index) {
         callback.onBottomTopRequested(index);
@@ -451,7 +507,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
           c.drawCircle(x, y, circleRadius * factor, Paints.fillingPaint(toColor));
         }
 
-        int cx = itemStartX;
+        int cx = itemStartX - scrollOffset;
         for (BarItem item : items) {
           int itemWidth = itemNormalWidth + Math.round((float) itemActiveDiff * item.factor);
           int itemCenterX = cx + itemWidth / 2;
@@ -459,6 +515,20 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
           int iconCenterY = item.factor == 0f ? centerY : centerY - (int) ((float) (iconActivePadding - item.paddingTop) * item.factor);
           int iconAlpha = item.factor == 1f ? 255 : 255 - (int) ((255f * .25f) * (1f - item.factor));
           int color = Theme.getColor(ColorId.attachText);
+          if (item.action != null) {
+            int half = Screen.dp(14);
+            if (item.receiver != null) {
+              item.receiver.setBounds(itemCenterX - half, Screen.dp(3), itemCenterX + half, Screen.dp(31));
+              item.receiver.draw(c);
+            } else {
+              c.drawCircle(itemCenterX, Screen.dp(17), half, Paints.fillingPaint(color));
+            }
+            CharSequence label = TextUtils.ellipsize(item.name, Paints.getRegularTextPaint(12), itemWidth - Screen.dp(6), TextUtils.TruncateAt.END);
+            float width = Paints.getRegularTextPaint(12).measureText(label.toString());
+            c.drawText(label.toString(), itemCenterX - width / 2, textY, Paints.getRegularTextPaint(12, color));
+            cx += itemWidth;
+            continue;
+          }
           Paint bitmapPaint = iconPaint != null && iconColor == color ? iconPaint : (iconPaint = Paints.createPorterDuffPaint(iconPaint, iconColor = color));
           bitmapPaint.setAlpha(iconAlpha);
           if (item.icon != null) {
@@ -545,12 +615,20 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
 
   @Override
   public boolean onScroll (MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-    return false;
+    if (maxScroll == 0) return false;
+    scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset + Math.round(distanceX)));
+    touchIndex = -1;
+    invalidate();
+    return true;
   }
 
   @Override
   public void onLongPress (MotionEvent e) {
-
+    int pressed = findTouchIndex(e.getX());
+    if (pressed >= 0 && items[pressed].longAction != null) {
+      touchIndex = -1;
+      items[pressed].longAction.run();
+    }
   }
 
   private boolean handleFling (boolean left) {
@@ -563,6 +641,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
 
   @Override
   public boolean onFling (MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+    if (maxScroll > 0) return true;
     return Math.abs(velocityX) > Screen.dp(250, 1f) && handleFling(velocityX >= 0);
   }
 }

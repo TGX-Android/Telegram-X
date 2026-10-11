@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
   <string name="MiniAppTitle">Mini App</string>
+  <string name="MiniAppUnsupportedChat">This Mini App cannot be used in this chat.</string>
+  <string name="MiniAppAddDisclaimer">Add this bot to your attachment and side menus? Mini Apps are provided by third parties. By continuing, you accept the Terms of Service for Mini Apps.</string>
+  <string name="MiniAppRemoveFromMenu">Remove this bot from the attachment and side menus?</string>
   <string name="MiniAppMore">More options</string>
   <string name="MiniAppPopupClose">Close</string>
   <string name="MiniAppOpen">Open App</string>

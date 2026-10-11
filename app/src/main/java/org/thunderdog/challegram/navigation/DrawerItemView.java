@@ -62,6 +62,20 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   private float checkFactor;
   private BoolAnimator checkAnimator;
   private AvatarReceiver receiver;
+  private org.thunderdog.challegram.loader.ImageReceiver miniAppIcon;
+
+  public void setMiniAppIcon (Tdlib tdlib, org.drinkless.tdlib.TdApi.AttachmentMenuBot bot) {
+    org.drinkless.tdlib.TdApi.File icon = bot != null ? (bot.androidSideMenuIcon != null ? bot.androidSideMenuIcon : bot.defaultIcon) : null;
+    if (icon == null) {
+      if (miniAppIcon != null) miniAppIcon.requestFile(null);
+      return;
+    }
+    if (miniAppIcon == null) miniAppIcon = new org.thunderdog.challegram.loader.ImageReceiver(this, 0);
+    org.thunderdog.challegram.loader.ImageFile file = new org.thunderdog.challegram.loader.ImageFile(tdlib, icon);
+    file.setIsVector();
+    file.setSize(Screen.dp(24));
+    miniAppIcon.requestFile(file);
+  }
   private final EmojiStatusHelper emojiStatusHelper;
   private Counter counter;
 
@@ -262,6 +276,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
 
   @Override
   public void attach () {
+    if (miniAppIcon != null) miniAppIcon.attach();
     if (receiver != null) {
       receiver.attach();
     }
@@ -270,6 +285,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
 
   @Override
   public void detach () {
+    if (miniAppIcon != null) miniAppIcon.detach();
     if (receiver != null) {
       receiver.detach();
     }
@@ -278,6 +294,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
 
   @Override
   public void performDestroy () {
+    if (miniAppIcon != null) miniAppIcon.destroy();
     if (receiver != null) {
       receiver.destroy();
     }
@@ -309,8 +326,14 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (isDragging) {
       c.drawColor(ColorUtils.alphaColor(.85f, Theme.fillingColor()));
     }
-    if (icon != null) {
+    if (icon != null && (miniAppIcon == null || miniAppIcon.needPlaceholder())) {
       Drawables.draw(c, icon, rtl ? viewWidth - iconLeft - icon.getMinimumWidth() : iconLeft, iconTop, Paints.getIconGrayPorterDuffPaint());
+    }
+    if (miniAppIcon != null) {
+      int size = Screen.dp(24);
+      int left = rtl ? viewWidth - iconLeft - size : iconLeft;
+      miniAppIcon.setBounds(left, iconTop, left + size, iconTop + size);
+      miniAppIcon.draw(c);
     }
     if (trimmedText != null) {
       trimmedText.draw(c, textLeft, textLeft + trimmedText.getWidth(), 0, Screen.dp(17f));

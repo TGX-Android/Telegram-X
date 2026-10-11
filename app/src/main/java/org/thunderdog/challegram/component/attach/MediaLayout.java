@@ -130,6 +130,18 @@ public class MediaLayout extends FrameLayoutFix implements
   // Children
   private MediaBottomBaseController<?>[] controllers;
   private @Nullable MediaBottomBar bottomBar;
+  private final Runnable miniAppMenuListener = this::updateMiniAppMenu;
+
+  private void updateMiniAppMenu () {
+    if (isDestroyed || bottomBar == null || target == null || mode != MODE_DEFAULT || itemsAdapter != null) return;
+    java.util.List<MediaBottomBar.BarItem> bots = new java.util.ArrayList<>();
+    for (TdApi.AttachmentMenuBot bot : tdlib().miniApps().menuBots(false, getTargetChatId())) {
+      bots.add(new MediaBottomBar.BarItem(bottomBar, tdlib(), bot,
+        () -> { hide(false); tdlib().miniApps().openMenuBot(target, bot, false, ""); },
+        () -> tdlib().miniApps().removeMenuBot(target, bot)));
+    }
+    bottomBar.setBotItems(bots);
+  }
   private @Nullable ShadowView shadowView;
   private MediaBottomBaseController<?> currentController;
 
@@ -324,6 +336,10 @@ public class MediaLayout extends FrameLayoutFix implements
 
     ThemeManager.instance().addThemeListener(this);
     Lang.addLanguageListener(this);
+    if (mode == MODE_DEFAULT && target != null && itemsAdapter == null) {
+      tdlib().miniApps().addMenuListener(miniAppMenuListener);
+      updateMiniAppMenu();
+    }
   }
 
   public void initCustom () {
@@ -1095,6 +1111,8 @@ public class MediaLayout extends FrameLayoutFix implements
 
   @Override
   public void performDestroy () {
+    tdlib().miniApps().removeMenuListener(miniAppMenuListener);
+    if (bottomBar != null) bottomBar.destroy();
     setContentVisible(true);
     isDestroyed = true;
     onCurrentColorChanged();

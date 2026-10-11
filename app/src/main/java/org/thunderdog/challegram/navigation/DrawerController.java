@@ -103,6 +103,27 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   private FrameLayoutFix contentView;
   private DrawerHeaderView headerView;
   private SettingsAdapter adapter;
+  private Tdlib miniAppMenuTdlib;
+  private final Runnable miniAppMenuListener = this::updateMiniAppMenu;
+
+  private void updateMiniAppMenu () {
+    if (adapter == null || isDestroyed()) return;
+    Tdlib current = context.currentTdlib();
+    if (miniAppMenuTdlib != current) {
+      if (miniAppMenuTdlib != null) miniAppMenuTdlib.miniApps().removeMenuListener(miniAppMenuListener);
+      miniAppMenuTdlib = current;
+      current.miniApps().addMenuListener(miniAppMenuListener);
+    }
+    for (int i = adapter.getItems().size() - 1; i >= 0; i--) {
+      if (adapter.getItems().get(i).getId() == R.id.btn_miniAppMenuBot) adapter.removeItem(i);
+    }
+    int at = adapter.indexOfViewById(R.id.btn_invite);
+    if (at < 0) return;
+    for (TdApi.AttachmentMenuBot bot : current.miniApps().menuBots(true, 0)) {
+      adapter.addItem(++at, new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_miniAppMenuBot,
+        R.drawable.deproko_baseline_bots_24, bot.name, false).setLongId(bot.botUserId).setData(bot));
+    }
+  }
 
   public DrawerController (Context context) {
     super(context, null);
@@ -320,6 +341,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       protected void setDrawerItem (ListItem item, DrawerItemView view, TimerView timerView, boolean isUpdate) {
         isUpdate = isUpdate && factor > 0f;
         final int itemId = item.getId();
+        view.setMiniAppIcon(context.currentTdlib(), itemId == R.id.btn_miniAppMenuBot ? (TdApi.AttachmentMenuBot) item.getData() : null);
         if (itemId == R.id.account) {
           TdlibAccount account = (TdlibAccount) item.getData();
           TdlibBadgeCounter badge = account.getUnreadBadge();
@@ -541,6 +563,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
   @Override
   public void destroy () {
+    if (miniAppMenuTdlib != null) miniAppMenuTdlib.miniApps().removeMenuListener(miniAppMenuListener);
     super.destroy();
     Settings.instance().removeProxyListener(this);
     TdlibManager.instance().global().removeAccountListener(this);
@@ -706,6 +729,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
   @Override
   public void onAccountSwitched (TdlibAccount newAccount, TdApi.User profile, int reason, TdlibAccount oldAccount) {
+    updateMiniAppMenu();
     if (oldAccount != null) {
       adapter.updateValuedSettingByData(oldAccount);
     }
@@ -812,6 +836,11 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     }
     final int itemId = item.getId();
     if (itemId != R.id.account) {
+      if (itemId == R.id.btn_miniAppMenuBot) {
+        ViewController<?> parent = context.navigation().getCurrentStackItem();
+        if (parent != null) context.currentTdlib().miniApps().removeMenuBot(parent, (TdApi.AttachmentMenuBot) item.getData());
+        return true;
+      }
       if (itemId == R.id.btn_addAccount) {
         context.currentTdlib().getTesterLevel(level -> {
           if (Config.ALLOW_DEBUG_DC || level >= Tdlib.TesterLevel.MIN_LEVEL_FOR_DEBUG_DC) {
@@ -832,7 +861,14 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   @Override
   public void onClick (View v) {
     int viewId = v.getId();
-    if (viewId == R.id.btn_tdlib_clearLogs) {
+    if (viewId == R.id.btn_miniAppMenuBot) {
+      TdApi.AttachmentMenuBot bot = (TdApi.AttachmentMenuBot) ((ListItem) v.getTag()).getData();
+      Tdlib owner = context.currentTdlib();
+      close(0f, () -> {
+        ViewController<?> parent = context.navigation().getCurrentStackItem();
+        if (parent != null && parent.tdlib() == owner) owner.miniApps().openMenuBot(parent, bot, true, "");
+      });
+    } else if (viewId == R.id.btn_tdlib_clearLogs) {
       TdlibUi.clearLogs(true, size -> TdlibUi.clearLogs(false, size2 -> UI.showToast("Logs Cleared", Toast.LENGTH_SHORT)));
     } else if (viewId == R.id.btn_tdlib_shareLogs) {
       TdlibUi.sendTdlibLogs(context.navigation().getCurrentStackItem(), false, false);
@@ -1236,6 +1272,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     }
 
     showView();
+    updateMiniAppMenu();
 
     /*View view = UI.getCurrentStackItem().getWrap();
     if (view instanceof ContentFrameLayout) {

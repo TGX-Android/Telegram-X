@@ -1814,6 +1814,7 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters urlOpenParameters (UrlOpenParameters urlOpenParameters) {
       this.urlOpenParameters = urlOpenParameters;
+      if (urlOpenParameters != null && urlOpenParameters.afterChatOpened != null) this.after = urlOpenParameters.afterChatOpened;
       return this;
     }
 
@@ -2718,6 +2719,7 @@ public class TdlibUi extends Handler {
     public TooltipOverlayView.TooltipBuilder tooltip;
     public boolean requireOpenPrompt, ignoreExplicitUserInteraction, forceDirectMessagesChat;
     public Runnable openPromptCancellationCallback;
+    public RunnableLong afterChatOpened;
     public String displayUrl;
 
     private ViewController<?> parentController;
@@ -2739,6 +2741,7 @@ public class TdlibUi extends Handler {
         this.parentController = options.parentController;
         this.originalUrl = options.originalUrl;
         this.sourceLinkPreview = options.sourceLinkPreview;
+        this.afterChatOpened = options.afterChatOpened;
         if (options.sourceMessage != null) {
           sourceMessage(options.sourceMessage);
         }
@@ -4090,11 +4093,14 @@ public class TdlibUi extends Handler {
         break;
       }
 
+      case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR: {
+        tdlib.miniApps().openAttachmentLink(context, (TdApi.InternalLinkTypeAttachmentMenuBot) linkType, openParameters);
+        break;
+      }
+
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeLiveStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStoryAlbum.CONSTRUCTOR:
-
-      case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
 

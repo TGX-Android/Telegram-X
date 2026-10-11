@@ -31,17 +31,29 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
   private final List<String> profiles = new ArrayList<>();
   private int passed;
   private final String runId = Long.toHexString(System.nanoTime());
+  private boolean cleanupOnly;
 
-  @Override public void onCreate (Bundle arguments) { super.onCreate(arguments); start(); }
+  @Override public void onCreate (Bundle arguments) {
+    super.onCreate(arguments);
+    cleanupOnly = arguments != null && "true".equals(arguments.getString("cleanup"));
+    start();
+  }
 
   @Override public void onStart () {
     Bundle result = new Bundle();
     int resultCode = Activity.RESULT_OK;
     try {
       check(MiniAppPlatform.isSupported(), "provider supports isolated secure bridge");
-      checkFrames(true);
-      checkFrames(false);
-      checkStorage();
+      runOnMainSync(() -> {
+        for (String name : ProfileStore.getInstance().getAllProfileNames()) {
+          if (name.startsWith("miniapp-contract-")) ProfileStore.getInstance().deleteProfile(name);
+        }
+      });
+      if (!cleanupOnly) {
+        checkFrames(true);
+        checkFrames(false);
+        checkStorage();
+      }
       result.putString("stream", "Mini Apps WebView: " + passed + " checks passed\n");
       result.putInt("passed", passed);
     } catch (Throwable error) {
@@ -54,7 +66,8 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
           bridges.get(i).destroy(views.get(i));
           views.get(i).destroy();
         }
-        for (String profile : profiles) ProfileStore.getInstance().deleteProfile(profile);
+        // Profiles loaded by Chromium may only be deleted in a fresh process.
+        // Run with -e cleanup true afterwards to remove these synthetic fixtures.
       });
     }
     finish(resultCode, result);

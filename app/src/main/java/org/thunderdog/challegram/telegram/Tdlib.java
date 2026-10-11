@@ -8826,7 +8826,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateAttachmentMenuBots (TdApi.UpdateAttachmentMenuBots update) {
-    // TODO
+    miniApps().onAttachmentMenuBots(update.bots);
   }
 
   @TdlibThread
