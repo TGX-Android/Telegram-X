@@ -18,6 +18,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.MessagesController;
 
@@ -30,10 +31,15 @@ final class MiniAppMessagePreview extends FrameLayout {
   MiniAppMessagePreview (MiniAppController host, TdApi.Chat self, MiniAppInlinePreview preview) {
     super(host.context());
     renderer = new MessagesController(host.context(), host.tdlib());
-    renderer.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, self));
+    MessagesController.Arguments arguments = new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, self);
+    // Wallpaper preview mode forces chat bubbles without changing the user's chat style or wallpaper settings.
+    arguments.wallpaperObject = new TdApi.Background(0, false, Theme.getDarkFactor() > .5f, "", null,
+      new TdApi.BackgroundTypeFill(new TdApi.BackgroundFillSolid(Theme.getColor(ColorId.background) & 0xffffff)));
+    renderer.setArguments(arguments);
     // Initialize the ordinary renderer's metrics, wallpaper and receivers in its existing preview mode.
     renderer.getValue();
     WallpaperView wallpaper = renderer.wallpaper();
+    wallpaper.initWithCustomWallpaper(host.tdlib().settings().getWallpaper(Theme.getWallpaperIdentifier()));
     if (wallpaper.getParent() instanceof ViewGroup) ((ViewGroup) wallpaper.getParent()).removeView(wallpaper);
     addView(wallpaper, new FrameLayout.LayoutParams(-1, -1));
     LinearLayout chat = new LinearLayout(getContext()); chat.setOrientation(LinearLayout.VERTICAL);
