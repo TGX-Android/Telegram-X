@@ -36,6 +36,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   private final WeakHashMap<TdlibDelegate, Long> pending = new WeakHashMap<>();
   private long nextRequest;
   private int epoch;
+  private long ownerUserId;
   private SharedPreferences consent;
   private final WeakHashMap<org.thunderdog.challegram.BaseActivity, MiniAppTabs> tabs = new WeakHashMap<>();
 
@@ -50,6 +51,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
 
   public void open (TdlibDelegate context, MiniAppLaunchRequest request, Runnable onOpened) {
     if (context == null || context.tdlib() != tdlib || !alive(context)) return;
+    ownerUserId = tdlib.myUserId();
     if (!MiniAppPlatform.isSupported()) {
       UI.showToast(R.string.MiniAppWebViewUnavailable, Toast.LENGTH_LONG);
       return;
@@ -224,9 +226,12 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
 
   @Override
   public void onPerformUserCleanup () {
+    final long userId = ownerUserId != 0 ? ownerUserId : tdlib.myUserId();
     tdlib.ui().post(() -> {
       if (consent != null) { consent.edit().clear().apply(); consent = null; }
       reset();
+      MiniAppPlatform.clearAccount(userId);
+      ownerUserId = 0;
     });
   }
 

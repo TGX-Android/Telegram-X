@@ -244,6 +244,10 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void createWebView () {
     try {
       webView = new WebView(context());
+      if (!MiniAppPlatform.isolate(webView, tdlib.myUserId(), request.botUserId)) {
+        showLoadError();
+        return;
+      }
       // Like BotWebViewContainer, keep initial HTML hidden until ready() or page completion.
       webView.setAlpha(0f);
       WebSettings settings = webView.getSettings();

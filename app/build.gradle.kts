@@ -526,6 +526,9 @@ android {
       create(variant.flavor) {
         dimension = "SDK"
         isDefault = sdkIndex == Sdk.LATEST
+        if (variant.isLatest) {
+          testInstrumentationRunner = "org.thunderdog.challegram.miniapps.MiniAppWebViewInstrumentation"
+        }
 
         if (generateBaselineProfile && !variant.isLatest) {
           matchingFallbacks += Sdk.VARIANTS[Sdk.LATEST]!!.flavor

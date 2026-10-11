@@ -7,6 +7,7 @@ package org.thunderdog.challegram.miniapps;
 import android.webkit.WebView;
 
 import androidx.webkit.ScriptHandler;
+import androidx.webkit.ProfileStore;
 import androidx.webkit.WebMessageCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
@@ -20,9 +21,31 @@ public final class MiniAppPlatform {
 
   public static boolean isSupported () {
     try {
-      return WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER);
+      return WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER) &&
+        WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE);
     } catch (RuntimeException e) {
       return false;
+    }
+  }
+
+  public static String profileName (long accountUserId, long botUserId) {
+    if (accountUserId <= 0 || botUserId <= 0) throw new IllegalArgumentException("Missing Mini App owner");
+    return "tg-miniapp-" + accountUserId + "-" + botUserId;
+  }
+
+  /** Set this before accessing settings, cookies, or loading any document. */
+  public static boolean isolate (WebView webView, long accountUserId, long botUserId) {
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return false;
+    WebViewCompat.setProfile(webView, profileName(accountUserId, botUserId));
+    return true;
+  }
+
+  public static void clearAccount (long accountUserId) {
+    if (accountUserId <= 0 || !WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return;
+    ProfileStore store = ProfileStore.getInstance();
+    String prefix = "tg-miniapp-" + accountUserId + "-";
+    for (String name : store.getAllProfileNames()) {
+      if (name.startsWith(prefix)) store.deleteProfile(name);
     }
   }
 
