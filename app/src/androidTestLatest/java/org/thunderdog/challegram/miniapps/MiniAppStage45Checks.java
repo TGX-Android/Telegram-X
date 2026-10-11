@@ -47,7 +47,7 @@ final class MiniAppStage45Checks {
     }
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "stage 4/5 uses an initialized account");
     tdlib = activity.currentTdlib();
-    boolean realBot = server || "actions".equals(capability) || "emoji".equals(capability) || capability.startsWith("requested_chat");
+    boolean realBot = server || "actions".equals(capability) || "emoji".equals(capability) || capability.startsWith("requested_chat") || "managed_bot".equals(capability);
     if (realBot) {
       TdApi.Chat chat = (TdApi.Chat) call(new TdApi.SearchPublicChat("nskdancebot"));
       bot = tdlib.chatUserId(chat);
@@ -64,6 +64,7 @@ final class MiniAppStage45Checks {
       else if ("file_selection".equals(capability)) fileSuccessChecks(false);
       else if ("requested_chat".equals(capability)) requestedChatChecks();
       else if ("requested_chat_server".equals(capability)) requestedChatServerChecks();
+      else if ("managed_bot".equals(capability)) managedBotChecks();
       else if ("actions".equals(capability)) actionChecks();
       else if ("emoji".equals(capability)) authorizedEmojiChecks();
       else localChecks();
@@ -384,6 +385,7 @@ final class MiniAppStage45Checks {
         else button.type = new TdApi.KeyboardButtonTypeRequestUsers(77, true, false, false, false, 2, true, true, false);
         callback.onResult(button);
       } else if (function instanceof TdApi.GetChats || function instanceof TdApi.SearchChats) callback.onResult(new TdApi.Chats(1, new long[] {self.id}));
+      else if (function instanceof TdApi.GetOption) callback.onResult(new TdApi.OptionValueBoolean(false));
       else if (function instanceof TdApi.SearchContacts) callback.onResult(new TdApi.Users(0, new long[0]));
       else if (function instanceof TdApi.LoadChats) callback.onResult(new TdApi.Ok());
       else if (function instanceof TdApi.ShareUsersWithBot) {
@@ -467,6 +469,104 @@ final class MiniAppStage45Checks {
   private Object requestedOperation () throws Exception {
     for (int i = 0; i < 100; i++) { Object request = field(host, "requestedChat"), operation = request != null ? field(request, "operation") : null; if (operation != null && field(operation, "dialog") != null && field(operation, "rows") != null) { Thread.sleep(200); return operation; } Thread.sleep(100); }
     throw new AssertionError("Requested chat picker missing");
+  }
+
+  /** All create/share requests are intercepted; only native capability reads use the live client. */
+  private void managedBotChecks () throws Exception {
+    TdApi.Object nativeManaged = call(new TdApi.GetOption("can_share_managed_bot"));
+    test.check(nativeManaged instanceof TdApi.OptionValueBoolean && ((TdApi.OptionValueBoolean) nativeManaged).value, "installed native TDLib supports managed bot sharing");
+    TdApi.Object nativePreview = call(new TdApi.GetOption("can_get_inline_query_result_message"));
+    test.check(nativePreview instanceof TdApi.OptionValueBoolean && ((TdApi.OptionValueBoolean) nativePreview).value, "installed native TDLib exposes actual inline message previews");
+    // The independent client branch still builds with the upstream bundle. This opt-in suite
+    // requires the separately built TDLib extension and verifies its generated JNI bindings.
+    TdApi.Function<?> previewRequest = (TdApi.Function<?>) Class.forName("org.drinkless.tdlib.TdApi$GetInlineQueryResultMessage").getConstructor(long.class, String.class).newInstance(-1L, "missing-synthetic-result");
+    TdApi.Object missingPreview = callRaw(previewRequest);
+    test.check(missingPreview instanceof TdApi.Error && ((TdApi.Error) missingPreview).code == 400, "new generated Java request reaches native API and rejects an uncached preview");
+    java.util.concurrent.atomic.AtomicBoolean supported = new java.util.concurrent.atomic.AtomicBoolean(true), managerEnabled = new java.util.concurrent.atomic.AtomicBoolean(true);
+    java.util.concurrent.atomic.AtomicInteger creates = new java.util.concurrent.atomic.AtomicInteger(), shares = new java.util.concurrent.atomic.AtomicInteger();
+    java.util.concurrent.atomic.AtomicLong opened = new java.util.concurrent.atomic.AtomicLong();
+    AtomicReference<TdApi.CreateBot> creation = new AtomicReference<>(); AtomicReference<TdApi.ShareUsersWithBot> sharing = new AtomicReference<>();
+    AtomicReference<org.drinkless.tdlib.Client.ResultHandler> createReply = new AtomicReference<>(), shareReply = new AtomicReference<>();
+    main(() -> set(host, "requestedChat", new MiniAppRequestedChat(host, (function, callback) -> {
+      if (function instanceof TdApi.GetPreparedKeyboardButton) callback.onResult(new TdApi.KeyboardButton("Test", 0, null, new TdApi.KeyboardButtonTypeRequestManagedBot(79, "Synthetic Bot", "synthetic_BOT")));
+      else if (function instanceof TdApi.GetOption) callback.onResult(new TdApi.OptionValueBoolean(supported.get()));
+      else if (function instanceof TdApi.GetUser) {
+        TdApi.User manager = new TdApi.User(); manager.id = bot; manager.firstName = "NskDanceBot"; manager.lastName = "";
+        TdApi.UserTypeBot type = new TdApi.UserTypeBot(); type.canManageBots = managerEnabled.get(); manager.type = type; callback.onResult(manager);
+      } else if (function instanceof TdApi.CheckBotUsername) callback.onResult(new TdApi.CheckChatUsernameResultOk());
+      else if (function instanceof TdApi.CreateBot) { creates.incrementAndGet(); creation.set((TdApi.CreateBot) function); createReply.set(callback); }
+      else if (function instanceof TdApi.ShareUsersWithBot) { shares.incrementAndGet(); sharing.set((TdApi.ShareUsersWithBot) function); shareReply.set(callback); }
+      else throw new AssertionError("Unexpected managed-bot fixture call: " + function.getClass().getSimpleName());
+    }, opened::set)));
+    clear(); send("web_app_request_chat", "{\"req_id\":\"managed-cancel\"}"); Object cancelled = managedOperation();
+    java.util.ArrayList<android.widget.EditText> inputs = new java.util.ArrayList<>(); main(() -> collectInputs((android.view.View) field(cancelled, "content"), inputs));
+    test.check(inputs.size() == 2 && "Synthetic Bot".contentEquals(inputs.get(0).getText()) && "synthetic_".contentEquals(inputs.get(1).getText()), "official creation sheet keeps suggested name and separates the fixed bot suffix");
+    capture("stage6-managed-bot-create");
+    int orientation = activity.getRequestedOrientation();
+    try {
+      main(() -> { inputs.get(1).requestFocus(); ((android.view.inputmethod.InputMethodManager) activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).showSoftInput(inputs.get(1), android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT); });
+      Thread.sleep(800);
+      main(() -> {
+        android.graphics.Rect visible = new android.graphics.Rect(), fieldBounds = new android.graphics.Rect();
+        ((android.app.Dialog) field(cancelled, "dialog")).getWindow().getDecorView().getWindowVisibleDisplayFrame(visible);
+        inputs.get(1).getGlobalVisibleRect(fieldBounds);
+        test.check(fieldBounds.height() > 0 && fieldBounds.bottom <= visible.bottom, "managed username field remains visible above the real IME");
+      });
+      capture("stage6-managed-bot-keyboard");
+      main(() -> ((android.view.inputmethod.InputMethodManager) activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(inputs.get(1).getWindowToken(), 0));
+      main(() -> activity.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)); Thread.sleep(1200);
+      main(() -> {
+        android.view.View decor = ((android.app.Dialog) field(cancelled, "dialog")).getWindow().getDecorView();
+        test.check(decor.getWidth() > decor.getHeight() && decor.getHeight() <= activity.getRootView().getHeight(), "managed creation sheet fits landscape height and remains scrollable");
+      });
+      capture("stage6-managed-bot-landscape");
+    } finally {
+      main(() -> activity.setRequestedOrientation(orientation)); Thread.sleep(900);
+    }
+    main(() -> ((android.app.Dialog) field(cancelled, "dialog")).cancel());
+    test.check("managed-cancel".equals(result("requested_chat_failed").getString("req_id")) && creates.get() == 0 && shares.get() == 0, "cancelling creation does not create or share a bot");
+    clear(); send("web_app_request_chat", "{\"req_id\":\"managed-success\"}"); Object operation = managedOperation();
+    for (int i = 0; i < 100 && field(operation, "checkedBotUsername") == null; i++) Thread.sleep(50);
+    main(() -> { ((android.view.View) field(operation, "submit")).performClick(); ((android.view.View) field(operation, "submit")).performClick(); });
+    test.check(creates.get() == 1 && shares.get() == 0, "double tap creates only once and cannot share before the create response");
+    test.check(creation.get().managerBotUserId == bot && !creation.get().viaLink && "synthetic_bot".equals(creation.get().username) && "Synthetic Bot".equals(creation.get().name), "creation carries the actual manager, name, normalized suffix and Mini App source");
+    createReply.get().onResult(new TdApi.Error(400, "USERNAME_OCCUPIED")); Thread.sleep(200);
+    test.check(!has("requested_chat_sent") && !has("requested_chat_failed"), "recoverable creation error keeps the form available without a success event");
+    main(() -> ((android.view.View) field(operation, "submit")).performClick());
+    test.check(creates.get() == 2, "an explicit retry is allowed after a definitive create failure");
+    TdApi.User created = new TdApi.User(); created.id = Long.MAX_VALUE - 120; created.firstName = "Synthetic Bot"; created.lastName = ""; created.type = new TdApi.UserTypeBot();
+    createReply.get().onResult(created); Thread.sleep(200);
+    test.check(shares.get() == 1 && !has("requested_chat_sent"), "created bot is shared only once and waits for server acknowledgement");
+    TdApi.ShareUsersWithBot share = sharing.get();
+    test.check(share.buttonId == 79 && !share.onlyCheck && share.sharedUserIds.length == 1 && share.sharedUserIds[0] == created.id && share.source instanceof TdApi.KeyboardButtonSourceWebApp && "managed-success".equals(((TdApi.KeyboardButtonSourceWebApp) share.source).preparedButtonId), "managed bot share preserves prepared button and exact newly created user");
+    shareReply.get().onResult(new TdApi.Ok());
+    test.check("managed-success".equals(result("requested_chat_sent").getString("req_id")), "managed flow completes after acknowledged share");
+    Thread.sleep(150); test.check(opened.get() == created.id, "successful foreground share opens the created bot through the navigation delegate");
+    shareReply.get().onResult(new TdApi.Ok()); Thread.sleep(100);
+    test.check("1".equals(test.evaluate(web, "events.filter(e=>e.event==='requested_chat_sent').length")), "duplicate acknowledgement cannot complete twice");
+    clear(); supported.set(false); send("web_app_request_chat", "{\"req_id\":\"managed-old-native\"}");
+    test.check("managed-old-native".equals(result("requested_chat_failed").getString("req_id")) && creates.get() == 2, "older native library is rejected before creating an orphaned bot");
+    clear(); supported.set(true); managerEnabled.set(false); send("web_app_request_chat", "{\"req_id\":\"managed-unsupported\"}");
+    test.check("managed-unsupported".equals(result("requested_chat_failed").getString("req_id")) && creates.get() == 2, "bot without Bot Management mode is rejected before creation");
+    clear(); managerEnabled.set(true); opened.set(0); send("web_app_request_chat", "{\"req_id\":\"managed-background\"}"); Object background = managedOperation();
+    for (int i = 0; i < 100 && field(background, "checkedBotUsername") == null; i++) Thread.sleep(50);
+    main(() -> ((android.view.View) field(background, "submit")).performClick());
+    main(host::minimize); Thread.sleep(350); createReply.get().onResult(created); Thread.sleep(200);
+    test.check(creates.get() == 3 && shares.get() == 2, "minimization preserves confirmed creation and shares the returned bot once");
+    shareReply.get().onResult(new TdApi.Ok()); Thread.sleep(200);
+    test.check(opened.get() == 0, "background acknowledgement does not navigate over the user's current screen");
+    main(host::restore); Thread.sleep(350);
+    test.check("managed-background".equals(result("requested_chat_sent").getString("req_id")) && !has("requested_chat_failed"), "confirmed managed share is delivered once after restore without a false cancellation");
+    TdApi.User actualManager = (TdApi.User) call(new TdApi.GetUser(bot));
+    System.out.println("INFO nskdancebot Bot Management mode: " + (actualManager.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) actualManager.type).canManageBots));
+  }
+  private Object managedOperation () throws Exception {
+    for (int i = 0; i < 100; i++) { Object service = field(host, "requestedChat"), operation = service != null ? field(service, "operation") : null; if (operation != null && field(operation, "dialog") != null) { Thread.sleep(250); return operation; } Thread.sleep(100); }
+    throw new AssertionError("Managed bot form missing");
+  }
+  private static void collectInputs (android.view.View view, java.util.List<android.widget.EditText> output) {
+    if (view instanceof android.widget.EditText) output.add((android.widget.EditText) view);
+    if (view instanceof android.view.ViewGroup) for (int i = 0; i < ((android.view.ViewGroup) view).getChildCount(); i++) collectInputs(((android.view.ViewGroup) view).getChildAt(i), output);
   }
 
   private void fileSuccessChecks (boolean camera) throws Exception {
@@ -586,10 +686,14 @@ final class MiniAppStage45Checks {
   }
   private void custom (String id, String method, JSONObject params) throws Exception { send("web_app_invoke_custom_method", new JSONObject().put("req_id", id).put("method", method).put("params", params).toString()); }
   private TdApi.Object call (TdApi.Function<?> function) throws Exception {
+    TdApi.Object result = callRaw(function);
+    if (result instanceof TdApi.Error) throw new AssertionError("TDLib error " + ((TdApi.Error) result).code);
+    return result;
+  }
+  private TdApi.Object callRaw (TdApi.Function<?> function) throws Exception {
     CountDownLatch latch = new CountDownLatch(1); AtomicReference<TdApi.Object> result = new AtomicReference<>();
     tdlib.client().send(function, value -> { result.set(value); latch.countDown(); });
     if (!latch.await(30, TimeUnit.SECONDS)) throw new AssertionError("TDLib timeout");
-    if (result.get() instanceof TdApi.Error) throw new AssertionError("TDLib error " + ((TdApi.Error) result.get()).code);
     return result.get();
   }
 

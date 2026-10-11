@@ -38,6 +38,15 @@
   <string name="MiniAppCreateAndShare">Create and Share</string>
   <string name="MiniAppCreateAndShareInfo">Create this chat and share it with %1$s.</string>
   <string name="MiniAppManagedBotUnavailable">Creating managed bots is not available in this version yet.</string>
+  <string name="MiniAppManagedBotUnsupported">%1$s doesn’t support Bot Management mode.</string>
+  <string name="MiniAppCreateBot">Create Bot</string>
+  <string name="MiniAppCreateBotButton">Create</string>
+  <string name="MiniAppCreateBotText">**%1$s** would like you to create\nand manage a chatbot on your behalf.</string>
+  <string name="MiniAppBotName">Bot Name</string>
+  <string name="MiniAppBotNameHint">Tap to edit bot name.</string>
+  <string name="MiniAppBotUsernameAvailable">%1$s is available.</string>
+  <string name="MiniAppCreatingBot">Creating…</string>
+  <string name="MiniAppBotCreated">%1$s created! %2$s will manage this bot for you.</string>
   <string name="MiniAppRightManage">Manage chat</string>
   <string name="MiniAppRightInfo">Change chat info</string>
   <string name="MiniAppRightPost">Post messages</string>

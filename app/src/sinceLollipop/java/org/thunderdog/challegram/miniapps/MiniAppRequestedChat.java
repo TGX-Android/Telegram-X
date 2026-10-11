@@ -41,13 +41,20 @@ import static org.thunderdog.challegram.miniapps.MiniAppTheme.object;
 /** Prepared keyboard buttons are resolved by Telegram, never interpreted from untrusted JS fields. */
 final class MiniAppRequestedChat {
   interface Gateway { void send (TdApi.Function<?> function, Client.ResultHandler handler); }
+  interface CreatedBotHandler { void open (long userId); }
   private final MiniAppController host;
   private final Tdlib tdlib;
   private final Gateway gateway;
+  private final CreatedBotHandler createdBotHandler;
   private Operation operation;
 
   MiniAppRequestedChat (MiniAppController host) { this(host, (function, handler) -> host.tdlib().client().send(function, handler)); }
-  MiniAppRequestedChat (MiniAppController host, Gateway gateway) { this.host = host; this.tdlib = host.tdlib(); this.gateway = gateway; }
+  MiniAppRequestedChat (MiniAppController host, Gateway gateway) {
+    this(host, gateway, userId -> { host.minimize(); host.tdlib().ui().openPrivateChat(host, userId, null); });
+  }
+  MiniAppRequestedChat (MiniAppController host, Gateway gateway, CreatedBotHandler createdBotHandler) {
+    this.host = host; this.tdlib = host.tdlib(); this.gateway = gateway; this.createdBotHandler = createdBotHandler;
+  }
   boolean active () { return operation != null; }
   void cancel () {
     if (operation == null) return;
@@ -66,9 +73,17 @@ final class MiniAppRequestedChat {
       next.button = ((TdApi.KeyboardButton) result).type;
       if (next.button instanceof TdApi.KeyboardButtonTypeRequestUsers || next.button instanceof TdApi.KeyboardButtonTypeRequestChat) next.picker();
       else if (next.button instanceof TdApi.KeyboardButtonTypeRequestManagedBot) {
-        // TDLib 42e6a525: RequestedDialogType::check_shared_dialog rejects Type::CreateBot.
-        // Do not create a real bot that this TDLib cannot subsequently share to complete the request.
-        UI.showToast(R.string.MiniAppManagedBotUnavailable, android.widget.Toast.LENGTH_LONG); next.finish(false);
+        next.send(new TdApi.GetOption("can_share_managed_bot"), capability -> {
+          if (!(capability instanceof TdApi.OptionValueBoolean) || !((TdApi.OptionValueBoolean) capability).value) {
+            UI.showToast(R.string.MiniAppManagedBotUnavailable, android.widget.Toast.LENGTH_LONG); next.finish(false); return;
+          }
+          next.send(new TdApi.GetUser(host.botId()), user -> {
+            if (!(user instanceof TdApi.User) || !(((TdApi.User) user).type instanceof TdApi.UserTypeBot) || !((TdApi.UserTypeBot) ((TdApi.User) user).type).canManageBots) {
+              UI.showToast(Lang.getString(R.string.MiniAppManagedBotUnsupported, host.botName()), android.widget.Toast.LENGTH_LONG); next.finish(false); return;
+            }
+            next.createManagedBot((TdApi.User) user);
+          });
+        });
       }
       else next.finish(false);
     });
@@ -89,6 +104,9 @@ final class MiniAppRequestedChat {
     Runnable searchTask;
     boolean working, loading, listComplete, sharing;
     TdApi.Chat createdChat;
+    TdApi.User createdBot;
+    String checkedBotUsername;
+    int botUsernameGeneration;
 
     Operation (MiniAppDocument.Request origin, String id) { this.origin = origin; this.id = id; source = new TdApi.KeyboardButtonSourceWebApp(host.botId(), id); }
     boolean current () { return operation == this && host.current(origin); }
@@ -107,6 +125,7 @@ final class MiniAppRequestedChat {
     }
     void dismiss () {
       searchGeneration++;
+      botUsernameGeneration++;
       if (searchTask != null && search != null) { search.removeCallbacks(searchTask); searchTask = null; }
       if (dialog != null) { dialog.setOnDismissListener(null); dialog.dismiss(); dialog = null; }
       releaseAvatars();
@@ -134,7 +153,7 @@ final class MiniAppRequestedChat {
     }
     void error (TdApi.Object result) {
       working = false; if (submit != null) submit.setEnabled(true);
-      errorView.setText(result instanceof TdApi.Error ? ((TdApi.Error) result).message : Lang.getString(R.string.MiniAppUnsupportedChat)); errorView.setVisibility(View.VISIBLE);
+      errorView.setText(result instanceof TdApi.Error ? TD.toErrorString(result) : Lang.getString(R.string.MiniAppUnsupportedChat)); errorView.setVisibility(View.VISIBLE);
     }
     void shared (TdApi.Object result) {
       if (result instanceof TdApi.Error) UI.showError(result);
@@ -254,6 +273,9 @@ final class MiniAppRequestedChat {
       }
     }
     TdApi.Function<?> share (boolean onlyCheck) {
+      if (button instanceof TdApi.KeyboardButtonTypeRequestManagedBot) {
+        return new TdApi.ShareUsersWithBot(source, ((TdApi.KeyboardButtonTypeRequestManagedBot) button).id, new long[] {createdBot.id}, onlyCheck);
+      }
       if (button instanceof TdApi.KeyboardButtonTypeRequestUsers) {
         long[] users = new long[selected.size()]; int i = 0;
         for (TdApi.Chat chat : selected.values()) users[i++] = ((TdApi.ChatTypePrivate) chat.type).userId;
@@ -293,6 +315,106 @@ final class MiniAppRequestedChat {
         if (requested.botAdministratorRights != null) { info(Lang.getString(R.string.MiniAppGrantBotRights, host.botName())); rightsInfo(requested.botAdministratorRights); }
       }
       submit = button(Lang.getString(R.string.Share), this::submitShare); show();
+    }
+    void createManagedBot (TdApi.User manager) {
+      TdApi.KeyboardButtonTypeRequestManagedBot requested = (TdApi.KeyboardButtonTypeRequestManagedBot) button;
+      sheet(Lang.getString(R.string.MiniAppCreateBot));
+      content.removeAllViews(); content.setPadding(0, 0, 0, 0);
+      GradientDrawable background = new GradientDrawable(); background.setColor(Theme.getColor(ColorId.background));
+      background.setCornerRadii(new float[] {Screen.dp(16),Screen.dp(16),Screen.dp(16),Screen.dp(16),0,0,0,0}); content.setBackground(background);
+      AvatarView avatar = new AvatarView(host.context()); avatar.setUser(tdlib, manager, false); avatars.add(avatar);
+      LinearLayout.LayoutParams avatarParams = new LinearLayout.LayoutParams(Screen.dp(80), Screen.dp(80)); avatarParams.gravity = Gravity.CENTER_HORIZONTAL; avatarParams.setMargins(0, Screen.dp(22), 0, Screen.dp(16)); content.addView(avatar, avatarParams);
+      TextView heading = label(Lang.getString(R.string.MiniAppCreateBot), 20); heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD); heading.setGravity(Gravity.CENTER); heading.setPadding(Screen.dp(16), 0, Screen.dp(16), Screen.dp(8)); content.addView(heading);
+      TextView description = label("", 14); description.setText(Lang.getStringBold(R.string.MiniAppCreateBotText, host.botName())); description.setGravity(Gravity.CENTER); description.setPadding(Screen.dp(16), 0, Screen.dp(16), Screen.dp(22)); content.addView(description);
+      EditText name = botInput(R.string.MiniAppBotName, requested.suggestedName, 64);
+      name.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_NEXT);
+      addBotField(name); botHint(Lang.getString(R.string.MiniAppBotNameHint));
+      String prefix = requested.suggestedUsername == null ? "" : requested.suggestedUsername.trim();
+      if (prefix.toLowerCase(java.util.Locale.ROOT).endsWith("bot")) prefix = prefix.substring(0, prefix.length() - 3);
+      EditText username = botInput(R.string.Username, prefix, 29); search = username;
+      username.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+      username.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+      username.setPadding(0, Screen.dp(15), 0, Screen.dp(15));
+      LinearLayout usernameRow = new LinearLayout(host.context()); usernameRow.setGravity(Gravity.CENTER_VERTICAL);
+      TextView at = label("@", 17); at.setPadding(Screen.dp(21), 0, 0, 0); usernameRow.addView(at);
+      usernameRow.addView(username, new LinearLayout.LayoutParams(0, -2, 1));
+      TextView suffix = label("bot", 17); suffix.setTextColor(Theme.textDecentColor()); suffix.setPadding(Screen.dp(8), 0, Screen.dp(21), 0); usernameRow.addView(suffix); addBotField(usernameRow);
+      TextView status = botHint(Lang.getString(R.string.MiniAppBotNameHint));
+      LinearLayout buttons = new LinearLayout(host.context()); buttons.setPadding(Screen.dp(12), Screen.dp(12), Screen.dp(12), Screen.dp(12)); content.addView(buttons);
+      TextView cancel = botButton(Lang.getString(R.string.Cancel), false), create = botButton(Lang.getString(R.string.MiniAppCreateBotButton), true); submit = create;
+      LinearLayout.LayoutParams left = new LinearLayout.LayoutParams(0, Screen.dp(48), 1); left.setMarginEnd(Screen.dp(5)); buttons.addView(cancel, left);
+      LinearLayout.LayoutParams right = new LinearLayout.LayoutParams(0, Screen.dp(48), 1); right.setMarginStart(Screen.dp(5)); buttons.addView(create, right);
+      Runnable updateEnabled = () -> { boolean enabled = !working && checkedBotUsername != null && !name.getText().toString().trim().isEmpty(); create.setEnabled(enabled); create.setAlpha(enabled ? 1f : .5f); };
+      Runnable checkUsername = () -> {
+        int generation = ++botUsernameGeneration; checkedBotUsername = null; updateEnabled.run();
+        if (searchTask != null) username.removeCallbacks(searchTask);
+        String handle = username.getText().toString() + "bot";
+        if (handle.length() < 4 || handle.length() > 32) { status.setText(Lang.getString(R.string.UsernameInvalid)); status.setTextColor(Theme.getColor(ColorId.textNegative)); return; }
+        status.setText(Lang.getString(R.string.UsernameChecking)); status.setTextColor(Theme.textDecentColor());
+        searchTask = () -> send(new TdApi.CheckBotUsername(handle), result -> {
+          if (generation != botUsernameGeneration) return;
+          boolean available = result instanceof TdApi.CheckChatUsernameResultOk;
+          checkedBotUsername = available ? handle : null;
+          status.setText(available ? Lang.getString(R.string.MiniAppBotUsernameAvailable, "@" + handle) : Lang.getString(R.string.UsernameInUse));
+          status.setTextColor(Theme.getColor(available ? ColorId.fillingPositive : ColorId.textNegative)); updateEnabled.run();
+        }); username.postDelayed(searchTask, 250);
+      };
+      TextWatcher usernameWatcher = new TextWatcher() {
+        @Override public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
+        @Override public void onTextChanged (CharSequence s, int start, int before, int count) { if (!working) checkUsername.run(); }
+        @Override public void afterTextChanged (Editable s) { }
+      }; username.addTextChangedListener(usernameWatcher);
+      name.addTextChangedListener(new TextWatcher() {
+        @Override public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
+        @Override public void onTextChanged (CharSequence s, int start, int before, int count) { updateEnabled.run(); }
+        @Override public void afterTextChanged (Editable s) { }
+      });
+      cancel.setOnClickListener(v -> { if (!working) finish(false); });
+      create.setOnClickListener(v -> {
+        if (!interactive() || working || checkedBotUsername == null || name.getText().toString().trim().isEmpty()) return;
+        working = sharing = true; updateEnabled.run(); name.setEnabled(false); username.setEnabled(false); cancel.setEnabled(false);
+        create.setText(Lang.getString(R.string.MiniAppCreatingBot));
+        dialog.setCancelable(false); dialog.setCanceledOnTouchOutside(false);
+        send(new TdApi.CreateBot(host.botId(), name.getText().toString().trim(), checkedBotUsername, false), result -> {
+          if (!(result instanceof TdApi.User) || !(((TdApi.User) result).type instanceof TdApi.UserTypeBot)) {
+            sharing = false;
+            if (!interactive()) { finish(false); return; }
+            working = false; name.setEnabled(true); username.setEnabled(true); cancel.setEnabled(true); create.setText(Lang.getString(R.string.MiniAppCreateBotButton));
+            dialog.setCancelable(true); dialog.setCanceledOnTouchOutside(true); error(result); updateEnabled.run(); return;
+          }
+          createdBot = (TdApi.User) result;
+          send(share(false), shared -> {
+            boolean sent = shared instanceof TdApi.Ok; if (!sent && shared instanceof TdApi.Error) UI.showError(shared);
+            long userId = createdBot.id; boolean open = sent && interactive(); finish(sent);
+            if (open) { UI.showToast(Lang.getString(R.string.MiniAppBotCreated, createdBot.firstName, host.botName()), android.widget.Toast.LENGTH_LONG); createdBotHandler.open(userId); }
+          });
+        });
+      });
+      name.setOnEditorActionListener((v, action, event) -> { if (action == android.view.inputmethod.EditorInfo.IME_ACTION_NEXT) { username.requestFocus(); username.setSelection(username.length()); return true; } return false; });
+      username.setOnEditorActionListener((v, action, event) -> { if (action == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) { create.performClick(); return true; } return false; });
+      ScrollView scroll = new ScrollView(host.context()) {
+        @Override protected void onMeasure (int width, int height) {
+          int available = Math.min(View.MeasureSpec.getSize(height), host.context().getRootView().getHeight() - Screen.dp(24));
+          super.onMeasure(width, View.MeasureSpec.makeMeasureSpec(Math.max(Screen.dp(120), available), View.MeasureSpec.AT_MOST));
+        }
+      };
+      scroll.setFillViewport(false);
+      if (content.getParent() instanceof ViewGroup) ((ViewGroup) content.getParent()).removeView(content);
+      scroll.addView(content); dialog.setContentView(scroll);
+      show(); updateEnabled.run(); if (!prefix.isEmpty()) checkUsername.run();
+    }
+    EditText botInput (int hint, String value, int max) {
+      EditText view = new EditText(host.context()); view.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 17); view.setTextColor(Theme.textAccentColor()); view.setHintTextColor(Theme.textDecentColor()); view.setSingleLine(); view.setBackgroundColor(Color.TRANSPARENT);
+      view.setPadding(Screen.dp(21), Screen.dp(15), Screen.dp(21), Screen.dp(15)); view.setFilters(new android.text.InputFilter[] {new android.text.InputFilter.LengthFilter(max)}); view.setHint(Lang.getString(hint)); view.setText(value); return view;
+    }
+    void addBotField (View view) {
+      GradientDrawable bg = new GradientDrawable(); bg.setColor(Theme.fillingColor()); bg.setCornerRadius(Screen.dp(16)); view.setBackground(bg);
+      LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2); p.setMargins(Screen.dp(12), 0, Screen.dp(12), 0); content.addView(view, p);
+    }
+    TextView botHint (String text) { TextView view = label(text, 13); view.setTextColor(Theme.textDecentColor()); view.setPadding(Screen.dp(24), Screen.dp(8), Screen.dp(24), Screen.dp(16)); content.addView(view); return view; }
+    TextView botButton (String text, boolean positive) {
+      TextView view = label(text, 14); view.setGravity(Gravity.CENTER); view.setTypeface(Typeface.DEFAULT, Typeface.BOLD); view.setTextColor(positive ? Color.WHITE : Theme.textAccentColor());
+      GradientDrawable bg = new GradientDrawable(); bg.setColor(positive ? Theme.getColor(ColorId.fillingPositive) : Theme.fillingColor()); bg.setCornerRadius(Screen.dp(24)); view.setBackground(bg); return view;
     }
     void createChat () {
       TdApi.KeyboardButtonTypeRequestChat requested = (TdApi.KeyboardButtonTypeRequestChat) button;
