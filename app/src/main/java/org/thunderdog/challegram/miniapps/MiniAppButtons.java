@@ -113,6 +113,7 @@ public final class MiniAppButtons extends LinearLayout implements me.vkryl.core.
     private final android.graphics.Paint shinePaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     private final android.graphics.Paint shineFrame = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     private final android.graphics.Matrix shineMatrix = new android.graphics.Matrix();
+    private final android.graphics.RectF shineBounds = new android.graphics.RectF();
     Integer customColor, customTextColor;
 
     Action (Context context, Runnable callback) {
@@ -160,9 +161,9 @@ public final class MiniAppButtons extends LinearLayout implements me.vkryl.core.
       float progress = (android.os.SystemClock.uptimeMillis() - shineStart) % 2400 / 1200f;
       shineMatrix.setTranslate((getWidth() + Screen.dp(320)) * progress - Screen.dp(160), 0);
       shinePaint.getShader().setLocalMatrix(shineMatrix); shineFrame.getShader().setLocalMatrix(shineMatrix);
-      android.graphics.RectF rect = new android.graphics.RectF(0, 0, getWidth(), getHeight());
-      canvas.drawRoundRect(rect, Screen.dp(9), Screen.dp(9), shinePaint);
-      rect.inset(Screen.dp(1), Screen.dp(1)); canvas.drawRoundRect(rect, Screen.dp(8), Screen.dp(8), shineFrame);
+      shineBounds.set(0, 0, getWidth(), getHeight());
+      canvas.drawRoundRect(shineBounds, Screen.dp(9), Screen.dp(9), shinePaint);
+      shineBounds.inset(Screen.dp(1), Screen.dp(1)); canvas.drawRoundRect(shineBounds, Screen.dp(8), Screen.dp(8), shineFrame);
       postInvalidateOnAnimation();
     }
   }

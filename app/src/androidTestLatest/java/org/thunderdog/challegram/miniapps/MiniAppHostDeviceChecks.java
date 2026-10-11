@@ -87,6 +87,28 @@ final class MiniAppHostDeviceChecks {
       Thread.sleep(300);
       View buttons = field(host, "buttons");
       test.check(buttons.getHeight() >= Screen.dp(98), "vertical native buttons reserve viewport height");
+      for (String position : new String[] {"left", "right", "top", "bottom"}) {
+        send("web_app_setup_secondary_button", "{\"is_visible\":true,\"is_active\":true,\"text\":\"Previous\",\"position\":\"" + position + "\"}");
+        Thread.sleep(120);
+        View primary = field(buttons, "main"), secondary = field(buttons, "secondary");
+        boolean vertical = "top".equals(position) || "bottom".equals(position);
+        boolean before = "top".equals(position) || "left".equals(position);
+        boolean actualBefore = vertical ? secondary.getTop() < primary.getTop() : secondary.getLeft() < primary.getLeft();
+        test.check(actualBefore == before && (vertical ? primary.getWidth() == secondary.getWidth() : primary.getWidth() > 0 && secondary.getWidth() > 0),
+          "secondary button position " + position);
+      }
+      send("web_app_setup_main_button", "{\"is_visible\":true,\"is_active\":false,\"text\":\"Disabled\"}");
+      Thread.sleep(100);
+      main(() -> ((View) field(buttons, "main")).performClick());
+      test.check("false".equals(test.evaluate(web, "events.some(e=>e.event==='main_button_pressed')")), "inactive native button cannot invoke the app");
+      send("web_app_setup_main_button", "{\"is_visible\":true,\"is_active\":true,\"text\":\"Continue\",\"has_shine_effect\":true,\"is_progress_visible\":true}");
+      Thread.sleep(100);
+      main(() -> ((View) field(buttons, "main")).performClick()); waitEvent("main_button_pressed");
+      test.check(((View) field(field(buttons, "main"), "progress")).getVisibility() == View.VISIBLE, "native progress indicator is shown");
+      capture("host-shine-progress");
+      send("web_app_setup_main_button", "{\"is_visible\":true,\"is_active\":true,\"text\":\"Continue\"}");
+      send("web_app_setup_secondary_button", "{\"is_visible\":true,\"is_active\":true,\"text\":\"Previous\",\"position\":\"top\"}");
+      Thread.sleep(120);
       capture("host-expanded-buttons");
       send("web_app_request_fullscreen", "{}"); Thread.sleep(500);
       View header = field(host, "header"), controls = field(host, "fullscreenControls");
@@ -98,6 +120,15 @@ final class MiniAppHostDeviceChecks {
       });
       test.check(test.evaluate(web, "JSON.stringify(events.filter(e=>e.event==='content_safe_area_changed').slice(-1)[0].data)").contains("46"), "fullscreen content inset follows 46dp capsules");
       send("web_app_setup_back_button", "{\"is_visible\":true}");
+      Thread.sleep(100);
+      main(() -> {
+        long time = android.os.SystemClock.uptimeMillis();
+        android.view.MotionEvent down = android.view.MotionEvent.obtain(time, time, android.view.MotionEvent.ACTION_DOWN, Screen.dp(20), Screen.dp(3), 0);
+        android.view.MotionEvent up = android.view.MotionEvent.obtain(time, time + 50, android.view.MotionEvent.ACTION_UP, Screen.dp(20), Screen.dp(3), 0);
+        controls.dispatchTouchEvent(down); controls.dispatchTouchEvent(up); down.recycle(); up.recycle();
+      });
+      waitEvent("back_button_pressed");
+      test.check(true, "fullscreen capsule hit target extends beyond visible 30dp pill");
       capture("host-fullscreen-portrait");
       int beforeKeyboard = web.getHeight();
       main(() -> { web.requestFocus(); ((android.view.inputmethod.InputMethodManager) activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).showSoftInput(web, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT); });

@@ -7,9 +7,11 @@ package org.thunderdog.challegram.miniapps;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -25,6 +27,9 @@ public final class MiniAppFullscreenControls extends FrameLayout {
   private final LinearLayout left, right;
   private final Symbol close;
   private final TextView label;
+  private final View[] targets;
+  private final Rect expandedBounds = new Rect();
+  private View expandedTarget;
 
   public MiniAppFullscreenControls (Context context, Runnable onBack, Runnable onMinimize, Runnable onMenu) {
     super(context);
@@ -59,7 +64,34 @@ public final class MiniAppFullscreenControls extends FrameLayout {
     FrameLayout.LayoutParams r = new FrameLayout.LayoutParams(-2, Screen.dp(30), Gravity.RIGHT | Gravity.TOP);
     r.rightMargin = r.topMargin = Screen.dp(8);
     addView(right, r);
+    targets = new View[] {left, collapse, menu};
     setBack(false);
+  }
+
+  @Override public boolean onTouchEvent (MotionEvent event) {
+    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+      expandedTarget = null;
+      for (View target : targets) {
+        target.getDrawingRect(expandedBounds);
+        offsetDescendantRectToMyCoords(target, expandedBounds);
+        expandedBounds.inset(-Screen.dp(8), -Screen.dp(8));
+        if (target == targets[1]) expandedBounds.right -= Screen.dp(8);
+        if (target == targets[2]) expandedBounds.left += Screen.dp(8);
+        if (expandedBounds.contains((int) event.getX(), (int) event.getY())) {
+          expandedTarget = target; target.setPressed(true); target.invalidate(); break;
+        }
+      }
+    }
+    if (expandedTarget == null) return super.onTouchEvent(event);
+    boolean inside = expandedBounds.contains((int) event.getX(), (int) event.getY());
+    expandedTarget.setPressed(inside);
+    expandedTarget.invalidate();
+    if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+      View target = expandedTarget;
+      expandedTarget = null; target.setPressed(false);
+      if (inside && event.getActionMasked() == MotionEvent.ACTION_UP) target.performClick();
+    }
+    return true;
   }
 
   private static LinearLayout capsule (Context context) {

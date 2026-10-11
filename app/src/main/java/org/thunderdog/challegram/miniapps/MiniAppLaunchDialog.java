@@ -54,7 +54,7 @@ public final class MiniAppLaunchDialog {
     t.setMarginStart(Screen.dp(76)); t.setMarginEnd(Screen.dp(21));
     identity.addView(title, t);
     TextView profile = text(owner, 14, Theme.getColor(ColorId.textLink));
-    profile.setText(Lang.getString(R.string.MiniAppMoreAboutBot) + "  ›");
+    profile.setText(Lang.getString(R.string.MiniAppMoreAboutBot));
     FrameLayout.LayoutParams p = new FrameLayout.LayoutParams(-1, Screen.dp(24));
     p.setMarginStart(Screen.dp(76)); p.setMarginEnd(Screen.dp(21)); p.topMargin = Screen.dp(24);
     identity.addView(profile, p);
