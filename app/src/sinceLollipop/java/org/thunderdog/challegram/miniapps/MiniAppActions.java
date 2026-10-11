@@ -64,7 +64,7 @@ final class MiniAppActions {
       if (captured != generation || !host.current(origin)) return;
       checkingDownload = false;
       if (error != null) { downloadReply(origin, false); return; }
-      View file = fileRow(name);
+      View file = fileRow(name, url);
       host.nativePrompt(origin, Lang.getString(R.string.MiniAppDownloadTitle), Lang.getString(R.string.MiniAppDownloadRequest, host.botName()), R.string.MiniAppDownload, file, () -> {
         Runnable enqueue = () -> {
           if (!host.current(origin) || captured != generation) return;
@@ -83,13 +83,35 @@ final class MiniAppActions {
       }, () -> downloadReply(origin, false));
     }));
   }
-  private View fileRow (String name) {
+  private View fileRow (String name, String url) {
     LinearLayout row = new LinearLayout(host.context()); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(Screen.dp(22), 0, Screen.dp(22), Screen.dp(12));
     ImageView icon = new ImageView(host.context()); icon.setImageResource(R.drawable.baseline_insert_drive_file_24); icon.setColorFilter(android.graphics.Color.WHITE); icon.setScaleType(ImageView.ScaleType.CENTER);
     android.graphics.drawable.GradientDrawable circle = new android.graphics.drawable.GradientDrawable(); circle.setShape(android.graphics.drawable.GradientDrawable.OVAL); circle.setColor(Theme.getColor(ColorId.fillingPositive)); icon.setBackground(circle);
     row.addView(icon, new LinearLayout.LayoutParams(Screen.dp(44), Screen.dp(44)));
-    TextView title = new TextView(host.context()); title.setText(name); title.setTextSize(15); title.setTypeface(Typeface.DEFAULT, Typeface.BOLD); title.setTextColor(Theme.getColor(ColorId.textLink)); title.setPadding(Screen.dp(10), 0, 0, 0);
-    row.addView(title, new LinearLayout.LayoutParams(0, -2, 1)); return row;
+    LinearLayout labels = new LinearLayout(host.context()); labels.setOrientation(LinearLayout.VERTICAL); labels.setPadding(Screen.dp(10), 0, 0, 0);
+    TextView title = new TextView(host.context()); title.setText(name); title.setTextSize(15); title.setTypeface(Typeface.DEFAULT, Typeface.BOLD); title.setTextColor(Theme.getColor(ColorId.textLink));
+    labels.addView(title, new LinearLayout.LayoutParams(-1, -2));
+    TextView subtitle = new TextView(host.context()); subtitle.setText("…"); subtitle.setTextSize(12); subtitle.setTextColor(Theme.getColor(ColorId.textLight));
+    labels.addView(subtitle, new LinearLayout.LayoutParams(-1, -2)); row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+    final int captured = generation;
+    new Thread(() -> {
+      String detail = Lang.getString(R.string.File);
+      java.net.HttpURLConnection connection = null;
+      try {
+        connection = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        connection.setConnectTimeout(5000); connection.setReadTimeout(5000); connection.setRequestMethod("HEAD");
+        connection.connect();
+        String mime = connection.getContentType();
+        if (mime != null) mime = mime.split(";")[0].trim();
+        String ext = mime != null ? android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) : null;
+        long size = Long.parseLong(connection.getHeaderField("Content-Length"));
+        detail = (size > 0 ? "~" + org.thunderdog.challegram.tool.Strings.buildSize(size) : "") + (ext != null ? " " + ext.toUpperCase(java.util.Locale.US) : "");
+        if (detail.trim().isEmpty()) detail = Lang.getString(R.string.File);
+      } catch (Exception ignored) { } finally { if (connection != null) connection.disconnect(); }
+      final String label = detail.trim();
+      host.tdlib().ui().post(() -> { if (captured == generation && row.isAttachedToWindow()) subtitle.setText(label); });
+    }, "MiniAppFileMetadata").start();
+    return row;
   }
   void showDownloads () {
     ArrayList<String> names = new ArrayList<>(); ArrayList<Long> ids = new ArrayList<>();
@@ -134,18 +156,38 @@ final class MiniAppActions {
     shortcutReceiver = new BroadcastReceiver() {
       @Override public void onReceive (Context context, Intent intent) {
         unregisterShortcut();
-        if ("added".equals(shortcutStatus())) host.reply(origin, "home_screen_added", object());
+        // The launcher sends this PendingIntent only after accepting the pin.
+        host.reply(origin, "home_screen_added", object());
       }
     };
     androidx.core.content.ContextCompat.registerReceiver(host.context(), shortcutReceiver, new IntentFilter(action), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
     PendingIntent callback = PendingIntent.getBroadcast(host.context(), 0, new Intent(action).setPackage(host.context().getPackageName()), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
     ShortcutInfo info = new ShortcutInfo.Builder(host.context(), shortcutId()).setShortLabel(host.botName())
-      .setIcon(Icon.createWithResource(host.context(), R.drawable.baseline_launch_24)).setIntent(intent).build();
+      .setIcon(shortcutIcon()).setIntent(intent).build();
     try {
       if (!manager.requestPinShortcut(info, callback.getIntentSender())) { unregisterShortcut(); host.reply(origin, "home_screen_failed", object("error", "UNSUPPORTED")); }
     } catch (RuntimeException error) { unregisterShortcut(); host.reply(origin, "home_screen_failed", object("error", "UNSUPPORTED")); }
   }
   private void unregisterShortcut () { if (shortcutReceiver != null) { host.context().unregisterReceiver(shortcutReceiver); shortcutReceiver = null; } }
+
+  private Icon shortcutIcon () {
+    int size = Screen.dp(58);
+    android.graphics.Bitmap result = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
+    android.graphics.Canvas canvas = new android.graphics.Canvas(result);
+    TdApi.User bot = host.tdlib().cache().user(host.botId());
+    android.graphics.Bitmap photo = bot != null && bot.profilePhoto != null && bot.profilePhoto.small.local.isDownloadingCompleted ?
+      android.graphics.BitmapFactory.decodeFile(bot.profilePhoto.small.local.path) : null;
+    if (photo != null) {
+      android.graphics.BitmapShader shader = new android.graphics.BitmapShader(photo, android.graphics.Shader.TileMode.CLAMP, android.graphics.Shader.TileMode.CLAMP);
+      android.graphics.Matrix matrix = new android.graphics.Matrix(); float scale = (float) size / Math.min(photo.getWidth(), photo.getHeight());
+      matrix.setScale(scale, scale); matrix.postTranslate((size - photo.getWidth() * scale) / 2, (size - photo.getHeight() * scale) / 2); shader.setLocalMatrix(matrix);
+      android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG); paint.setShader(shader); canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint); photo.recycle();
+    } else {
+      org.thunderdog.challegram.widget.AvatarView avatar = new org.thunderdog.challegram.widget.AvatarView(host.context());
+      avatar.setUser(host.tdlib(), host.botId(), false); avatar.layout(0, 0, size, size); avatar.draw(canvas); avatar.performDestroy();
+    }
+    return Icon.createWithBitmap(result);
+  }
 
   void emojiStatus (MiniAppDocument.Request origin, JSONObject data) {
     if (!host.recentGesture() || emojiPending) return;
@@ -159,12 +201,9 @@ final class MiniAppActions {
       if (captured != generation || !host.current(origin)) return;
       emojiPending = false;
       if (error != null || stickers.stickers.length == 0) { emojiError(origin, "SUGGESTED_EMOJI_INVALID"); return; }
-      org.thunderdog.challegram.widget.CustomEmojiTextView preview = new org.thunderdog.challegram.widget.CustomEmojiTextView(host.context(), host.tdlib());
-      preview.setTextSize(64); preview.setGravity(Gravity.CENTER); preview.setPadding(0, Screen.dp(16), 0, Screen.dp(16));
-      android.text.SpannableString text = new android.text.SpannableString("*");
-      text.setSpan(new org.thunderdog.challegram.emoji.CustomEmojiSpanImpl(null, preview, host.tdlib(), id), 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE); preview.setText(text);
+      MiniAppEmojiPreview preview = new MiniAppEmojiPreview(host, id);
       String message = Lang.getString(R.string.MiniAppEmojiRequest, host.botName());
-      if (duration > 0) message += "\n" + Lang.getString(R.string.MiniAppEmojiDuration, Long.toString(duration / 60));
+      if (duration > 0) message += "\n" + Lang.getString(R.string.MiniAppEmojiDuration, emojiDuration((int) duration));
       host.nativePrompt(origin, "", message, R.string.MiniAppEmojiConfirm, preview, () -> {
         if (!host.tdlib().hasPremium()) { premium(); emojiError(origin, "USER_DECLINED"); return; }
         emojiPending = true;
@@ -177,6 +216,14 @@ final class MiniAppActions {
     }));
   }
   private void emojiError (MiniAppDocument.Request origin, String error) { host.reply(origin, "emoji_status_failed", object("error", error)); }
+  private String emojiDuration (int seconds) {
+    ArrayList<String> parts = new ArrayList<>();
+    int days = seconds / 86400, hours = seconds % 86400 / 3600, minutes = Math.round(seconds % 3600 / 60f);
+    if (days > 0) parts.add(Lang.plural(R.string.xDays, days));
+    if (hours > 0) parts.add(Lang.plural(R.string.xHours, hours));
+    if (minutes > 0) parts.add(Lang.plural(R.string.xMinutes, minutes));
+    return android.text.TextUtils.join(" ", parts);
+  }
   private void premium () { host.tdlib().ui().openUrl(host, "tg://premium_offer?ref=emoji_status", null); }
   void emojiAccess (MiniAppDocument.Request origin) {
     if (!host.recentGesture() || emojiPending) return;
@@ -186,7 +233,8 @@ final class MiniAppActions {
       emojiPending = false;
       if (error != null) { emojiAccessReply(origin, false); return; }
       if (full.botInfo != null && full.botInfo.canManageEmojiStatus) { emojiAccessReply(origin, true); return; }
-      host.nativePrompt(origin, "", Lang.getString(R.string.MiniAppEmojiPermission, host.botName()), R.string.Allow, null, () -> {
+      MiniAppBotPermissions.markEmojiRequested(host.context(), host.tdlib(), host.botId());
+      host.nativePrompt(origin, "", Lang.getString(R.string.MiniAppEmojiPermission, host.botName()), R.string.Allow, new MiniAppEmojiPreview(host, 0), () -> {
         if (!host.tdlib().hasPremium()) { premium(); emojiAccessReply(origin, false); return; }
         emojiPending = true;
         host.tdlib().send(new TdApi.ToggleBotCanManageEmojiStatus(host.botId(), true), (ok, allowError) -> host.tdlib().ui().post(() -> {

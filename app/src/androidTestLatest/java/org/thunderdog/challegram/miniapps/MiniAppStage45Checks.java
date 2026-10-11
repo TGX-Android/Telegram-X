@@ -38,7 +38,7 @@ final class MiniAppStage45Checks {
   private long bot = Long.MAX_VALUE - 104;
   MiniAppStage45Checks (MiniAppWebViewInstrumentation test) { this.test = test; }
 
-  void run (boolean server) throws Exception {
+  void run (boolean server, String capability) throws Exception {
     test.startActivitySync(new Intent(test.getTargetContext(), MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
     for (int i = 0; i < 100; i++) {
       main(() -> activity = UI.getUiContext());
@@ -47,23 +47,118 @@ final class MiniAppStage45Checks {
     }
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "stage 4/5 uses an initialized account");
     tdlib = activity.currentTdlib();
-    if (server) {
+    boolean realBot = server || "actions".equals(capability);
+    if (realBot) {
       TdApi.Chat chat = (TdApi.Chat) call(new TdApi.SearchPublicChat("nskdancebot"));
       bot = tdlib.chatUserId(chat);
       test.check(bot != 0, "explicitly authorized nskdancebot resolved");
     }
     create(MiniAppLaunchRequest.Source.MAIN_APP);
     try {
-      if (server) serverChecks(); else localChecks();
+      if (server) serverChecks();
+      else if ("biometry".equals(capability)) biometricChecks();
+      else if ("hardware".equals(capability)) grantedHardwareChecks();
+      else if ("actions".equals(capability)) actionChecks();
+      else localChecks();
     } finally {
       main(() -> { if (host != null) host.close(); });
-      if (!server) {
+      if (!realBot) {
         new MiniAppStorage(activity, tdlib.myUserId(), bot, false, tdlib.account().isDebug()).clear();
         new MiniAppStorage(activity, tdlib.myUserId(), bot, true, tdlib.account().isDebug()).clear();
         String scope = MiniAppBotPermissions.scope(tdlib, bot);
         for (String type : new String[] {"location", "biometry"}) activity.getSharedPreferences("miniapp-" + type + "-" + scope, 0).edit().clear().commit();
+        java.security.KeyStore keys = java.security.KeyStore.getInstance("AndroidKeyStore"); keys.load(null); keys.deleteEntry("miniapp-biometry-" + scope);
       }
     }
+  }
+
+  private void biometricChecks () throws Exception {
+    send("web_app_biometry_get_info", "{}");
+    test.check(result("biometry_info_received").getBoolean("available"), "strong enrolled biometrics available on this phone");
+    clear(); send("web_app_biometry_request_access", "{\"reason\":\"Mini Apps test: grant access\"}"); click(dialog(), true);
+    test.check(biometricResult("biometry_info_received").getBoolean("access_granted"), "real biometric authentication grants the synthetic bot access");
+    clear(); send("web_app_biometry_update_token", "{\"token\":\"synthetic-biometric-token\",\"reason\":\"Mini Apps test: protect test token\"}");
+    test.check("updated".equals(biometricResult("biometry_token_updated").getString("status")), "Android Keystore encrypts token with authenticated cipher");
+    clear(); send("web_app_biometry_request_auth", "{\"reason\":\"Mini Apps test: read test token\"}");
+    JSONObject auth = biometricResult("biometry_auth_requested");
+    test.check("authorized".equals(auth.getString("status")) && "synthetic-biometric-token".equals(auth.getString("token")), "authenticated cipher decrypts exact token through real bridge");
+    clear(); send("web_app_biometry_update_token", "{\"token\":\"\",\"reason\":\"Mini Apps test: remove test token\"}");
+    test.check("removed".equals(biometricResult("biometry_token_updated").getString("status")), "biometric token removal acknowledged after authentication");
+    clear(); send("web_app_biometry_request_auth", "{\"reason\":\"Mini Apps cancellation test\"}"); Thread.sleep(400);
+    main(host::minimize); main(host::restore);
+    test.check("failed".equals(result("biometry_auth_requested").getString("status")), "minimization cancels authentication without a token");
+  }
+  private JSONObject biometricResult (String event) throws Exception {
+    System.out.println("WAIT fingerprint on phone for " + event);
+    for (int i = 0; i < 1800; i++) {
+      if (has(event)) return result(event);
+      Thread.sleep(100);
+    }
+    throw new AssertionError("Fingerprint not provided within three minutes");
+  }
+
+  private void grantedHardwareChecks () throws Exception {
+    clear(); send("web_app_request_location", "{}"); click(dialog(), true);
+    for (int i = 0; i < 200 && !has("location_requested"); i++) { allowAndroidPermission(); Thread.sleep(100); }
+    JSONObject location = result("location_requested");
+    test.check(location.getBoolean("available") && location.has("horizontal_accuracy"), "real LocationManager returns coordinates locally, never logged or transmitted");
+    test.check(field(host.location(), "listener") == null && field(host.location(), "pending") == null, "location callback releases all listeners");
+    main(() -> MiniAppBotPermissions.toggle(activity, tdlib, bot, false, () -> { }));
+    clear(); send("web_app_request_location", "{}");
+    test.check(!result("location_requested").getBoolean("available"), "revoking permission in bot profile blocks subsequent coordinates");
+    android.location.Location noAccuracy = new android.location.Location("test");
+    JSONObject empty = MiniAppLocation.locationObject(noAccuracy);
+    test.check(empty.isNull("altitude") && empty.isNull("speed_accuracy"), "missing location accuracy fields remain null");
+    test.evaluate(web, "window.captureResult='waiting';navigator.mediaDevices.getUserMedia({audio:true,video:true}).then(s=>{window.captureStream=s;captureResult='live'},e=>captureResult=e.name)");
+    click(dialog(), true);
+    for (int i = 0; i < 150; i++) { allowAndroidPermission(); if (!"\"waiting\"".equals(test.evaluate(web, "captureResult"))) break; Thread.sleep(100); }
+    test.check("\"live\"".equals(test.evaluate(web, "captureResult")), "real WebRTC camera and microphone open only after native and Android consent");
+    test.check("true".equals(test.evaluate(web, "captureStream.getTracks().length===2&&captureStream.getTracks().every(t=>t.readyState==='live')")), "both requested tracks are live");
+    main(host::minimize); Thread.sleep(500); main(host::restore); Thread.sleep(300);
+    test.check("true".equals(test.evaluate(web, "captureStream.getTracks().every(t=>t.readyState==='ended')")), "minimization stops active camera and microphone tracks");
+    android.net.Uri first = android.net.Uri.parse("content://picker.test/one"), second = android.net.Uri.parse("content://picker.test/two");
+    Intent files = new Intent(); android.content.ClipData clip = android.content.ClipData.newRawUri("one", first); clip.addItem(new android.content.ClipData.Item(second)); files.setClipData(clip);
+    test.check(MiniAppMedia.pickerUris(files, true).length == 2 && MiniAppMedia.pickerUris(files, false) == null, "picker result preserves multiple URIs and rejects multiple files in single mode");
+  }
+
+  private void actionChecks () throws Exception {
+    TdApi.EmojiStatusCustomEmojis statuses = (TdApi.EmojiStatusCustomEmojis) call(new TdApi.GetDefaultEmojiStatuses());
+    test.check(statuses.customEmojiIds.length > 0, "Telegram supplied a real emoji for native preview");
+    clear(); main(host::recordGesture); send("web_app_set_emoji_status", "{\"custom_emoji_id\":\"" + statuses.customEmojiIds[0] + "\",\"duration\":90060}");
+    AlertDialog status = dialog(); Thread.sleep(1000); capture("stage45-real-emoji-preview"); click(status, false);
+    test.check("USER_DECLINED".equals(result("emoji_status_failed").getString("error")), "emoji status preview cancellation leaves public status unchanged");
+    clear(); main(host::recordGesture); send("web_app_request_emoji_status_access", "{}");
+    for (int i = 0; i < 100 && !has("emoji_status_access_requested"); i++) {
+      AlertDialog access = field(host, "activeDialog"); if (access != null) { Thread.sleep(700); capture("stage45-real-emoji-access"); click(access, false); break; } Thread.sleep(100);
+    }
+    String access = result("emoji_status_access_requested").getString("status");
+    test.check("cancelled".equals(access) || "allowed".equals(access), "emoji permission reports native refusal or existing server permission");
+    String filename = "mini-apps-contract-" + Long.toHexString(System.nanoTime()) + ".ico";
+    clear(); main(host::recordGesture); send("web_app_request_file_download", new JSONObject().put("file_name", filename).put("url", "https://nskdance.danceworldtv.ru/favicon.ico").toString());
+    AlertDialog download = dialog(); Thread.sleep(1000); capture("stage45-real-download"); click(download, true);
+    test.check("downloading".equals(result("file_download_requested").getString("status")), "nskdancebot download passes CheckWebAppFileDownload and real enqueue");
+    MiniAppActions actions = field(host, "actions"); android.content.SharedPreferences prefs = field(actions, "downloads");
+    long id = 0; for (java.util.Map.Entry<String, ?> entry : prefs.getAll().entrySet()) if (filename.equals(entry.getValue())) id = Long.parseLong(entry.getKey());
+    android.app.DownloadManager manager = field(actions, "downloadManager");
+    try {
+      int state = 0;
+      for (int i = 0; i < 300; i++) {
+        try (android.database.Cursor cursor = manager.query(new android.app.DownloadManager.Query().setFilterById(id))) {
+          if (cursor != null && cursor.moveToFirst()) state = cursor.getInt(cursor.getColumnIndexOrThrow(android.app.DownloadManager.COLUMN_STATUS));
+        }
+        if (state == android.app.DownloadManager.STATUS_SUCCESSFUL || state == android.app.DownloadManager.STATUS_FAILED) break;
+        Thread.sleep(100);
+      }
+      test.check(state == android.app.DownloadManager.STATUS_SUCCESSFUL && manager.getUriForDownloadedFile(id) != null, "DownloadManager saved the actual file and exposes a content URI");
+      main(actions::showDownloads); Thread.sleep(500); capture("stage45-downloads-list");
+      try (android.os.ParcelFileDescriptor ignored = test.getUiAutomation().executeShellCommand("input keyevent 4")) { Thread.sleep(300); }
+    } finally { if (id != 0) { manager.remove(id); prefs.edit().remove(Long.toString(id)).commit(); } }
+    clear(); main(host::recordGesture); send("web_app_add_to_home_screen", "{}"); Thread.sleep(1200); capture("stage45-shortcut-preview");
+    System.out.println("WAIT launcher pin confirmation on phone");
+    for (int i = 0; i < 600 && !has("home_screen_added"); i++) Thread.sleep(100);
+    test.check(has("home_screen_added"), "launcher confirms actual bot shortcut pin");
+    clear(); send("web_app_check_home_screen", "{}");
+    test.check("added".equals(result("home_screen_checked").getString("status")), "subsequent shortcut query reads launcher pinned state");
   }
 
   private void localChecks () throws Exception {
@@ -164,9 +259,11 @@ final class MiniAppStage45Checks {
   private void allowAndroidPermission () {
     android.view.accessibility.AccessibilityNodeInfo root = test.getUiAutomation().getRootInActiveWindow();
     if (root == null || root.getPackageName() == null || !root.getPackageName().toString().contains("permissioncontroller")) return;
-    for (String id : new String[] {"permission_allow_foreground_only_button", "permission_allow_one_time_button", "permission_allow_button"}) {
-      java.util.List<android.view.accessibility.AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByViewId(root.getPackageName() + ":id/" + id);
-      if (!nodes.isEmpty()) { nodes.get(0).performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK); return; }
+    for (String id : new String[] {"permission_allow_one_time_button", "permission_allow_foreground_only_button", "permission_allow_button"}) {
+      for (String namespace : new String[] {"com.android.permissioncontroller", root.getPackageName().toString()}) {
+        java.util.List<android.view.accessibility.AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByViewId(namespace + ":id/" + id);
+        if (!nodes.isEmpty()) { nodes.get(0).performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK); return; }
+      }
     }
   }
 
@@ -306,6 +403,7 @@ final class MiniAppStage45Checks {
   private AlertDialog dialog () throws Exception { for (int i = 0; i < 100; i++) { AlertDialog dialog = field(host, "activeDialog"); if (dialog != null && dialog.isShowing()) return dialog; Thread.sleep(100); } throw new AssertionError("Native dialog missing"); }
   private void click (AlertDialog dialog, boolean positive) { main(() -> dialog.getButton(positive ? AlertDialog.BUTTON_POSITIVE : AlertDialog.BUTTON_NEGATIVE).performClick()); }
   private void capture (String name) throws Exception {
+    test.waitForIdleSync(); Thread.sleep(350);
     Bitmap image = test.getUiAutomation().takeScreenshot(); File dir = new File(test.getTargetContext().getExternalFilesDir(null), "miniapp-contracts"); dir.mkdirs();
     try (FileOutputStream output = new FileOutputStream(new File(dir, name + ".png"))) { image.compress(Bitmap.CompressFormat.PNG, 100, output); } finally { image.recycle(); }
   }

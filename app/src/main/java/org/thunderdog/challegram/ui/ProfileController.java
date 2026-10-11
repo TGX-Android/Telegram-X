@@ -2535,7 +2535,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           addedCount++;
         }
       }
-      if (userFull != null && userFull.botInfo != null && userFull.botInfo.canManageEmojiStatus) {
+      if (userFull != null && userFull.botInfo != null && (userFull.botInfo.canManageEmojiStatus ||
+        org.thunderdog.challegram.miniapps.MiniAppBotPermissions.emojiRequested(context(), tdlib, user.id))) {
         if (addedCount > 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR));
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_miniAppEmojiPermission, 0, R.string.MiniAppEmojiAccess)); addedCount++;
       }

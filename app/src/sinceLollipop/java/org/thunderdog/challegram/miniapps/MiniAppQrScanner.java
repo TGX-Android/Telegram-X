@@ -43,6 +43,7 @@ final class MiniAppQrScanner implements TextureView.SurfaceTextureListener {
   private TextureView preview;
   private String lastText;
   private long lastScan;
+  private int previewWidth, previewHeight;
 
   MiniAppQrScanner (MiniAppController host) { this.host = host; }
   void open (MiniAppDocument.Request origin, String text) {
@@ -67,8 +68,15 @@ final class MiniAppQrScanner implements TextureView.SurfaceTextureListener {
         paint.setColor(0x99000000); paint.setStyle(Paint.Style.FILL);
         canvas.drawRect(0, 0, getWidth(), top, paint); canvas.drawRect(0, top + size, getWidth(), getHeight(), paint);
         canvas.drawRect(0, top, left, top + size, paint); canvas.drawRect(left + size, top, getWidth(), top + size, paint);
-        paint.setColor(Color.WHITE); paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(Screen.dp(3));
-        canvas.drawRoundRect(new RectF(left, top, left + size, top + size), Screen.dp(12), Screen.dp(12), paint);
+        paint.setColor(Color.WHITE); paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(Screen.dp(3)); paint.setStrokeCap(Paint.Cap.ROUND);
+        // Four rounded corner brackets, as in CameraScanActivity's QR overlay.
+        for (int i = 0; i < 4; i++) {
+          canvas.save(); canvas.rotate(i * 90, getWidth() / 2f, getHeight() / 2f);
+          float radius = Screen.dp(6), length = Screen.dp(20);
+          android.graphics.Path corner = new android.graphics.Path(); corner.moveTo(left, top + length);
+          corner.lineTo(left, top + radius); corner.quadTo(left, top, left + radius, top); corner.lineTo(left + length, top);
+          canvas.drawPath(corner, paint); canvas.restore();
+        }
         super.dispatchDraw(canvas);
       }
     };
@@ -114,7 +122,12 @@ final class MiniAppQrScanner implements TextureView.SurfaceTextureListener {
       camera.setParameters(params);
       Camera.CameraInfo info = new Camera.CameraInfo(); Camera.getCameraInfo(0, info);
       int rotation = host.context().getWindowManager().getDefaultDisplay().getRotation() * 90;
-      camera.setDisplayOrientation((info.orientation - rotation + 360) % 360);
+      int orientation = (info.orientation - rotation + 360) % 360;
+      camera.setDisplayOrientation(orientation);
+      Camera.Size actual = camera.getParameters().getPreviewSize();
+      previewWidth = orientation % 180 == 0 ? actual.width : actual.height;
+      previewHeight = orientation % 180 == 0 ? actual.height : actual.width;
+      transformPreview(width, height);
       camera.setPreviewTexture(surface); camera.startPreview(); nextFrame();
     } catch (Exception error) { close(); }
   }
@@ -140,6 +153,7 @@ final class MiniAppQrScanner implements TextureView.SurfaceTextureListener {
   }
   void close () {
     MiniAppDocument.Request origin = pending; pending = null;
+    lastText = null; lastScan = 0;
     main.removeCallbacksAndMessages(null);
     if (camera != null) { try { camera.setPreviewCallback(null); camera.stopPreview(); camera.release(); } catch (RuntimeException ignored) { } camera = null; }
     if (dialog != null) { Dialog current = dialog; dialog = null; current.dismiss(); }
@@ -150,7 +164,14 @@ final class MiniAppQrScanner implements TextureView.SurfaceTextureListener {
   }
   void pause () { if (camera != null) close(); }
   void destroy () { close(); decoder.shutdownNow(); }
-  @Override public void onSurfaceTextureSizeChanged (SurfaceTexture surface, int width, int height) { }
+  private void transformPreview (int width, int height) {
+    if (previewWidth <= 0 || previewHeight <= 0 || width <= 0 || height <= 0) return;
+    float scale = Math.max((float) width / previewWidth, (float) height / previewHeight);
+    android.graphics.Matrix transform = new android.graphics.Matrix();
+    transform.setScale(previewWidth * scale / width, previewHeight * scale / height, width / 2f, height / 2f);
+    preview.setTransform(transform);
+  }
+  @Override public void onSurfaceTextureSizeChanged (SurfaceTexture surface, int width, int height) { transformPreview(width, height); }
   @Override public boolean onSurfaceTextureDestroyed (SurfaceTexture surface) { close(); return true; }
   @Override public void onSurfaceTextureUpdated (SurfaceTexture surface) { }
 }

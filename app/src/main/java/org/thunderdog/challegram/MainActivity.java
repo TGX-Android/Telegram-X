@@ -755,8 +755,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       target.awaitInitialization(() -> handler.post(() -> {
         if (target.myUserId() != owner || target.account().isDebug() != intent.getBooleanExtra("miniapp_test", false)) return;
         openMainController(target.id());
-        target.miniApps().open(new TdlibContext(this, target), new org.thunderdog.challegram.miniapps.MiniAppLaunchRequest(
-          org.thunderdog.challegram.miniapps.MiniAppLaunchRequest.Source.MAIN_APP, botId, 0, "", "", "", "", null, null, null, false));
+        target.miniApps().openShortcut(new TdlibContext(this, target), botId);
       }));
       return true;
     }

@@ -39,7 +39,7 @@
   <string name="MiniAppDownload">Download</string>
   <string name="MiniAppDownloadFailed">Failed</string>
   <string name="MiniAppEmojiRequest">%1$s wants to set this emoji as your status.</string>
-  <string name="MiniAppEmojiDuration">For %1$s minutes</string>
+  <string name="MiniAppEmojiDuration">For %1$s</string>
   <string name="MiniAppEmojiConfirm">Set Status</string>
   <string name="MiniAppEmojiPermission">Allow %1$s to manage your emoji status? You can change this permission in the bot profile.</string>
   <string name="MiniAppEmojiAccess">Emoji Status</string>

@@ -115,9 +115,10 @@ final class MiniAppMedia {
           files = null;
           host.context().putActivityResultHandler(activityCode, null);
           Uri[] chosen = result == Activity.RESULT_OK && host.current(origin) ?
-            captured != null ? new Uri[] { captured } : WebChromeClient.FileChooserParams.parseResult(result, data) : null;
+            captured != null ? new Uri[] { captured } : pickerUris(data, multiple) : null;
           // Only picker-issued content URIs. Never let a forged result upload private file:// paths.
-          if (chosen != null) for (Uri uri : chosen) if (uri == null || !"content".equals(uri.getScheme())) { chosen = null; break; }
+          if (chosen != null) for (Uri uri : chosen) if (uri == null || !"content".equals(uri.getScheme()) ||
+            host.context().getPackageName().concat(".provider").equals(uri.getAuthority()) && !uri.equals(captured)) { chosen = null; break; }
           if (chosen != null && (chosen.length > 100 || !multiple && chosen.length > 1)) chosen = null;
           callback.onReceiveValue(chosen);
         });
@@ -128,6 +129,17 @@ final class MiniAppMedia {
       if (!host.context().permissions().requestAccessCameraPermission(allowed -> { if (allowed) launch.run(); else cancelFiles(); })) launch.run();
     } else launch.run();
     return true;
+  }
+  static Uri[] pickerUris (Intent data, boolean multiple) {
+    if (data == null) return null;
+    ClipData clip = data.getClipData();
+    if (clip != null) {
+      if (clip.getItemCount() == 0 || clip.getItemCount() > 100 || !multiple && clip.getItemCount() > 1) return null;
+      Uri[] result = new Uri[clip.getItemCount()];
+      for (int i = 0; i < result.length; i++) result[i] = clip.getItemAt(i).getUri();
+      return result;
+    }
+    return data.getData() != null ? new Uri[] {data.getData()} : null;
   }
   private void cancelFiles () {
     if (files != null) { ValueCallback<Uri[]> callback = files; files = null; host.context().putActivityResultHandler(activityCode, null); callback.onReceiveValue(null); }

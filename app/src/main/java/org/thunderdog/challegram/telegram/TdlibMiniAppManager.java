@@ -174,6 +174,29 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
     open(context, new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.MAIN_APP, botUserId, chatId, "", "", "", "", null, null, null, false));
   }
 
+  /** A pinned bot shortcut obtains a fresh launch URL; it never persists authorization data. */
+  public void openShortcut (TdlibDelegate context, long botId) {
+    final int generation = epoch;
+    final long owner = tdlib.myUserId();
+    tdlib.send(new TdApi.GetUser(botId), (user, error) -> tdlib.ui().post(() -> {
+      if (generation != epoch || owner != tdlib.myUserId() || !tdlib.isCurrent() || !alive(context)) return;
+      if (error != null) { UI.showError(error); return; }
+      if (!(user.type instanceof TdApi.UserTypeBot)) return;
+      if (((TdApi.UserTypeBot) user.type).hasMainWebApp) { openMainApp(context, botId, 0); return; }
+      tdlib.send(new TdApi.GetUserFullInfo(botId), (info, infoError) -> tdlib.ui().post(() -> {
+        if (generation != epoch || owner != tdlib.myUserId() || !tdlib.isCurrent() || !alive(context)) return;
+        if (infoError != null) { UI.showError(infoError); return; }
+        if (info.botInfo == null || info.botInfo.menuButton == null || info.botInfo.menuButton.url.isEmpty()) return;
+        TdApi.BotMenuButton menu = info.botInfo.menuButton;
+        tdlib.send(new TdApi.CreatePrivateChat(botId, false), (chat, chatError) -> tdlib.ui().post(() -> {
+          if (generation != epoch || owner != tdlib.myUserId() || !tdlib.isCurrent() || !alive(context)) return;
+          if (chatError != null) { UI.showError(chatError); return; }
+          open(context, new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.BOT_MENU, botId, chat.id, menu.url, menu.text, "", "", null, null, null, false));
+        }));
+      }));
+    }));
+  }
+
   public void openGuardBot (TdlibDelegate context, TdApi.ChatJoinResultGuardBotApprovalRequired result, me.vkryl.core.lambda.RunnableLong onJoined, Runnable onDone) {
     if (!alive(context)) return;
     final int generation = epoch;

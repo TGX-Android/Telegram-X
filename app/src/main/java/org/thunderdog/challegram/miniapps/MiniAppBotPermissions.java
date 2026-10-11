@@ -20,6 +20,8 @@ public final class MiniAppBotPermissions {
     return context.getSharedPreferences("miniapp-" + (biometric ? "biometry-" : "location-") + scope(tdlib, bot), Context.MODE_PRIVATE);
   }
   public static boolean requested (Context context, Tdlib tdlib, long bot, boolean biometric) { return preferences(context, tdlib, bot, biometric).getBoolean("requested", false); }
+  public static void markEmojiRequested (Context context, Tdlib tdlib, long bot) { preferences(context, tdlib, bot, false).edit().putBoolean("emoji_requested", true).apply(); }
+  public static boolean emojiRequested (Context context, Tdlib tdlib, long bot) { return preferences(context, tdlib, bot, false).getBoolean("emoji_requested", false); }
   public static boolean granted (Context context, Tdlib tdlib, long bot, boolean biometric) {
     return preferences(context, tdlib, bot, biometric).getBoolean("granted", false) && (biometric || hasLocation(context));
   }

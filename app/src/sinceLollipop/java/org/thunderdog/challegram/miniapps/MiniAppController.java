@@ -688,7 +688,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     boolean[] answered = {false};
     AlertDialog.Builder builder = new AlertDialog.Builder(context(), Theme.dialogTheme());
     if (!title.isEmpty()) builder.setTitle(title);
-    if (illustration instanceof MiniAppPermissionView || illustration instanceof org.thunderdog.challegram.widget.CustomEmojiTextView) {
+    if (illustration instanceof MiniAppPermissionView || illustration instanceof MiniAppEmojiPreview) {
       LinearLayout content = new LinearLayout(context()); content.setOrientation(LinearLayout.VERTICAL);
       content.addView(illustration, new LinearLayout.LayoutParams(-1, -2));
       TextView text = new TextView(context()); text.setText(message); text.setTextSize(16); text.setTextColor(Theme.textAccentColor());
