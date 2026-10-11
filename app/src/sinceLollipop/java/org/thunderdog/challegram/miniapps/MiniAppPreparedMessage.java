@@ -142,7 +142,11 @@ final class MiniAppPreparedMessage {
     boolean current () { return operation == this && host.current(origin); }
     boolean interactive () { return current() && !sending && host.context().getActivityState() == UI.State.RESUMED; }
     void send (TdApi.Function<?> function, Client.ResultHandler handler) {
-      gateway.send(function, result -> tdlib.ui().post(() -> { if (current()) handler.onResult(result); }));
+      gateway.send(function, result -> tdlib.ui().post(() -> {
+        if (!current()) return;
+        if (!selecting && (!host.isShowing() || host.context().getActivityState() != UI.State.RESUMED)) { finish("USER_DECLINED"); return; }
+        handler.onResult(result);
+      }));
     }
     void finish (String error) {
       if (operation != this) return;
@@ -215,7 +219,8 @@ final class MiniAppPreparedMessage {
       }); show(false);
     }
     boolean accepts (TdApi.Chat chat) {
-      return MiniAppChatPolicy.allows(prepared.chatTypes, chat, chat != null && tdlib.isBotChat(chat)) && tdlib.canSendBasicMessage(chat);
+      return MiniAppChatPolicy.allows(prepared.chatTypes, chat, chat != null && tdlib.isBotChat(chat)) &&
+        (tdlib.canSendBasicMessage(chat) || tdlib.canSendSendSomeMedia(chat));
     }
     CharSequence restriction (TdApi.Chat chat) {
       if (!accepts(chat)) return Lang.getString(R.string.MiniAppUnsupportedChat);

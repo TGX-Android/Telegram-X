@@ -22,6 +22,7 @@ public final class MiniAppMessageSender implements MessageListener {
   private final Gateway gateway;
   private final Callback callback;
   private final AtomicBoolean finished = new AtomicBoolean();
+  private boolean started;
   private long messageId;
   private boolean receivedMessage;
   private final Map<Long, TdApi.Error> earlyResults = new HashMap<>();
@@ -38,20 +39,22 @@ public final class MiniAppMessageSender implements MessageListener {
     this.callback = callback;
   }
 
-  public void send () {
+  public synchronized void send () {
+    if (started || finished.get()) return;
+    started = true;
     tdlib.listeners().subscribeToMessageUpdates(chatId, this);
     gateway.send(function, result -> {
       synchronized (this) {
-      if (finished.get()) return;
-      if (result instanceof TdApi.Error) { complete((TdApi.Error) result); return; }
-      if (!(result instanceof TdApi.Message)) { complete(new TdApi.Error(500, "Unexpected send result")); return; }
-      TdApi.Message message = (TdApi.Message) result;
-      messageId = message.id;
-      receivedMessage = true;
-      if (message.sendingState == null) complete(null);
-      else if (message.sendingState instanceof TdApi.MessageSendingStateFailed) complete(((TdApi.MessageSendingStateFailed) message.sendingState).error);
-      else if (earlyResults.containsKey(messageId)) complete(earlyResults.get(messageId));
-      earlyResults.clear();
+        if (finished.get() || receivedMessage) return;
+        if (result instanceof TdApi.Error) { complete((TdApi.Error) result); return; }
+        if (!(result instanceof TdApi.Message)) { complete(new TdApi.Error(500, "Unexpected send result")); return; }
+        TdApi.Message message = (TdApi.Message) result;
+        messageId = message.id;
+        receivedMessage = true;
+        if (message.sendingState == null) complete(null);
+        else if (message.sendingState instanceof TdApi.MessageSendingStateFailed) complete(((TdApi.MessageSendingStateFailed) message.sendingState).error);
+        else if (earlyResults.containsKey(messageId)) complete(earlyResults.get(messageId));
+        earlyResults.clear();
       }
     });
   }
