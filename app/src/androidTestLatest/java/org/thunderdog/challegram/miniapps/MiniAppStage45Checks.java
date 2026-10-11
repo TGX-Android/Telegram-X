@@ -127,6 +127,16 @@ final class MiniAppStage45Checks {
     test.evaluate(web, "window.captureClone=captureStream.getVideoTracks()[0].clone();window.streamClone=captureStream.clone()");
     main(host::minimize); Thread.sleep(500); main(host::restore); Thread.sleep(300);
     test.check("true".equals(test.evaluate(web, "captureStream.getTracks().every(t=>t.readyState==='ended')&&captureClone.readyState==='ended'&&streamClone.getTracks().every(t=>t.readyState==='ended')")), "minimization stops active camera/microphone, cloned tracks and cloned streams");
+    main(host::onActivityPause);
+    test.evaluate(web, "window.backgroundCapture='waiting';navigator.mediaDevices.getUserMedia({audio:true,video:true}).then(s=>{s.getTracks().forEach(t=>t.stop());backgroundCapture='unexpected'},e=>backgroundCapture=e.name)");
+    for (int i = 0; i < 100; i++) {
+      AlertDialog consent = field(host, "activeDialog"); if (consent != null) click(consent, true);
+      allowAndroidPermission();
+      if (!"\"waiting\"".equals(test.evaluate(web, "backgroundCapture"))) break;
+      Thread.sleep(100);
+    }
+    test.check("\"AbortError\"".equals(test.evaluate(web, "backgroundCapture")), "a stream resolving after activity pause is stopped before delivery to JavaScript");
+    main(host::onActivityResume);
     android.net.Uri first = android.net.Uri.parse("content://picker.test/one"), second = android.net.Uri.parse("content://picker.test/two");
     Intent files = new Intent(); android.content.ClipData clip = android.content.ClipData.newRawUri("one", first); clip.addItem(new android.content.ClipData.Item(second)); files.setClipData(clip);
     test.check(MiniAppMedia.pickerUris(files, true).length == 2 && MiniAppMedia.pickerUris(files, false) == null, "picker result preserves multiple URIs and rejects multiple files in single mode");

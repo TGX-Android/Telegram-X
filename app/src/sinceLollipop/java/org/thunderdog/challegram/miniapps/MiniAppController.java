@@ -639,7 +639,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     dismissOptions();
     if (sensors != null) sensors.pause();
     if (webView != null) webView.onPause();
-    platform.stopMedia();
+    platform.setMediaPaused(true);
     if (location != null) location.pause();
     if (biometry != null) biometry.cancel();
     if (qrScanner != null) qrScanner.pause();
