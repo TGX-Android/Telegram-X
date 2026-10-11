@@ -15,6 +15,8 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -26,14 +28,16 @@ import org.json.JSONObject;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.AvatarView;
-import org.thunderdog.challegram.widget.CheckBoxView;
+import org.thunderdog.challegram.widget.SimplestCheckBox;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -173,8 +177,17 @@ final class MiniAppPreparedMessage {
       dialog = new Dialog(host.context(), Theme.dialogTheme()); dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
       content = new LinearLayout(host.context()); content.setOrientation(LinearLayout.VERTICAL); content.setFitsSystemWindows(true);
       GradientDrawable bg = new GradientDrawable(); bg.setColor(Theme.fillingColor()); bg.setCornerRadii(new float[] {Screen.dp(16),Screen.dp(16),Screen.dp(16),Screen.dp(16),0,0,0,0}); content.setBackground(bg);
-      TextView heading = label(title, 20); heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD); heading.setPadding(Screen.dp(22), Screen.dp(20), Screen.dp(22), Screen.dp(16)); content.addView(heading);
-      if (full) heading.setOnClickListener(v -> { if (interactive() && topicChat != null) { topicChat = null; showPicker(); } });
+      TextView heading = label(title, 20); heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+      if (full) {
+        LinearLayout toolbar = new LinearLayout(host.context()); toolbar.setGravity(Gravity.CENTER_VERTICAL);
+        ImageButton back = new ImageButton(host.context()); back.setImageResource(R.drawable.baseline_arrow_back_24);
+        back.setColorFilter(Theme.textAccentColor()); back.setBackgroundColor(Color.TRANSPARENT); back.setContentDescription(Lang.getString(R.string.MiniAppBack));
+        toolbar.addView(back, new LinearLayout.LayoutParams(Screen.dp(56), Screen.dp(56)));
+        toolbar.addView(heading, new LinearLayout.LayoutParams(0, -2, 1)); content.addView(toolbar);
+        back.setOnClickListener(v -> { if (interactive()) { if (topicChat != null) { topicChat = null; showPicker(); } else finish("USER_DECLINED"); } });
+      } else {
+        heading.setPadding(Screen.dp(22), Screen.dp(20), Screen.dp(22), Screen.dp(16)); content.addView(heading);
+      }
       errorView = label("", 14); errorView.setTextColor(Theme.getColor(ColorId.textNegative)); errorView.setPadding(Screen.dp(22), Screen.dp(8), Screen.dp(22), Screen.dp(8)); errorView.setVisibility(View.GONE);
       dialog.setContentView(content); dialog.setCanceledOnTouchOutside(!full);
       dialog.setOnDismissListener(ignored -> { if (!sending) finish("USER_DECLINED"); });
@@ -366,10 +379,27 @@ final class MiniAppPreparedMessage {
     }
     void row (Target target, boolean checked, Runnable action) {
       LinearLayout row = new LinearLayout(host.context()); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(Screen.dp(16), 0, Screen.dp(16), 0);
-      AvatarView avatar = new AvatarView(host.context()); avatar.setChat(tdlib, target.chat); avatars.add(avatar); row.addView(avatar, new LinearLayout.LayoutParams(Screen.dp(48), Screen.dp(48)));
+      FrameLayout avatarContainer = new FrameLayout(host.context());
+      if (tdlib.isSelfChat(target.chat.id)) {
+        AvatarPlaceholder saved = new AvatarPlaceholder(24, tdlib.cache().selfPlaceholderMetadata(), null);
+        View avatar = new View(host.context()) { @Override protected void onDraw (android.graphics.Canvas canvas) { saved.draw(canvas, getWidth() / 2f, getHeight() / 2f); } };
+        avatarContainer.addView(avatar, new FrameLayout.LayoutParams(-1, -1));
+      } else {
+        AvatarView avatar = new AvatarView(host.context()); avatar.setChat(tdlib, target.chat); avatars.add(avatar);
+        avatarContainer.addView(avatar, new FrameLayout.LayoutParams(-1, -1));
+      }
+      if (checked) {
+        View check = new View(host.context()) { @Override protected void onDraw (android.graphics.Canvas canvas) {
+          int x = getWidth() / 2, y = getHeight() / 2;
+          canvas.drawCircle(x, y, Screen.dp(12), Paints.fillingPaint(Theme.fillingColor()));
+          SimplestCheckBox.draw(canvas, x, y, 1, null);
+        } };
+        avatarContainer.addView(check, new FrameLayout.LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.BOTTOM | Gravity.RIGHT));
+      }
+      row.addView(avatarContainer, new LinearLayout.LayoutParams(Screen.dp(48), Screen.dp(48)));
       TextView title = label(target.title, 16); title.setSingleLine(); title.setEllipsize(android.text.TextUtils.TruncateAt.END);
       LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -2, 1); p.setMarginStart(Screen.dp(12)); row.addView(title, p);
-      CheckBoxView check = new CheckBoxView(host.context()); check.setCircular(true, false); check.setChecked(checked, false); row.addView(check, new LinearLayout.LayoutParams(Screen.dp(24), Screen.dp(24)));
+      row.setSelected(checked);
       row.setContentDescription(target.title); row.setOnClickListener(v -> { if (interactive()) action.run(); }); rows.addView(row, new LinearLayout.LayoutParams(-1, Screen.dp(64)));
     }
     void empty () { TextView empty = label(Lang.getString(R.string.NoChats), 16); empty.setGravity(Gravity.CENTER); rows.addView(empty, new LinearLayout.LayoutParams(-1, Screen.dp(80))); }
