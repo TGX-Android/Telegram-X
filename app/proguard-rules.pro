@@ -90,3 +90,7 @@
 -dontwarn org.openjsse.net.ssl.OpenJSSE
 
 -dontwarn com.google.firebase.analytics.connector.AnalyticsConnector
+
+# Optional TDLib API accessed only by the Mini App preview compatibility adapter.
+-keep class org.drinkless.tdlib.TdApi$GetInlineQueryResultMessage { public <init>(long, java.lang.String); }
+-keep class org.drinkless.tdlib.TdApi$InlineQueryResultMessage { public <fields>; }

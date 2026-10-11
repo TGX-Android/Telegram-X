@@ -29,6 +29,13 @@
   <string name="MiniAppChooseGroup">Choose Group</string>
   <string name="MiniAppChooseChannel">Choose Channel</string>
   <string name="MiniAppRequestedBy">Requested by %1$s</string>
+  <string name="MiniAppShareMessage">Share Message</string>
+  <string name="MiniAppMessagePreview">Message preview</string>
+  <string name="MiniAppShareMessageInfo">%1$s mini app suggests you to send this message to a chat you select.</string>
+  <string name="MiniAppShareMessageChoose">Share with…</string>
+  <string name="MiniAppSendingMessage">Sending…</string>
+  <string name="MiniAppSelectTopic">Select Topic</string>
+  <string name="MiniAppMessageUnsupported">This version of TDLib does not support message previews.</string>
   <string name="MiniAppSharePeerTitle">Share with Bot</string>
   <string name="MiniAppShareCount">Share (%1$d)</string>
   <string name="MiniAppLoadMore">Load More</string>

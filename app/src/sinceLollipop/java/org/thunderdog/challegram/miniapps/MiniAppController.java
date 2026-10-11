@@ -106,6 +106,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private MiniAppQrScanner qrScanner;
   private MiniAppActions actions;
   private MiniAppRequestedChat requestedChat;
+  private MiniAppPreparedMessage preparedMessage;
   private MiniAppOptions options;
   private MiniAppDownloadBulletin downloadBulletin;
   private final List<Runnable> deferredReplies = new ArrayList<>();
@@ -669,6 +670,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void cancelDocumentRequests () {
     if (requestedChat != null) requestedChat.cancel();
+    if (preparedMessage != null) preparedMessage.cancel();
     dismissOptions();
     hideDownloadBulletin();
     if (media != null) media.cancel();
@@ -684,6 +686,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   long botId () { return request.botUserId; }
+  TdApi.InputMessageReplyTo preparedReplyTo (long chatId, TdApi.MessageTopic topic) {
+    return MiniAppPreparedMessagePolicy.replyTo(request.chatId, request.topicId, request.replyTo, chatId, topic);
+  }
   boolean canShowNativeUi () { return isShowing() && activeDialog == null && context().getActivityState() == UI.State.RESUMED; }
   String storageScope () { return MiniAppBotPermissions.scope(tdlib, request.botUserId); }
   MiniAppDocument.Request webRequest (String source) {
@@ -695,7 +700,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private MiniAppActions actions () { if (actions == null) actions = new MiniAppActions(this); return actions; }
 
   void nativePrompt (MiniAppDocument.Request origin, String title, String message, int positive, @Nullable View illustration, Runnable accepted, Runnable cancelled) {
-    if (!current(origin) || !canShowNativeUi() || requestedChat != null && requestedChat.active()) { cancelled.run(); return; }
+    if (!current(origin) || !canShowNativeUi() || requestedChat != null && requestedChat.active() || preparedMessage != null && preparedMessage.active()) { cancelled.run(); return; }
     boolean[] answered = {false};
     AlertDialog.Builder builder = new AlertDialog.Builder(context(), Theme.dialogTheme());
     if (!title.isEmpty()) builder.setTitle(title);
@@ -840,7 +845,12 @@ public final class MiniAppController extends ViewController<Void> implements Min
         break;
       }
       case "web_app_switch_inline_query": switchInline(data); break;
+      case "web_app_send_prepared_message":
+        if (!recentGesture() || requestedChat != null && requestedChat.active()) break;
+        if (preparedMessage == null) preparedMessage = new MiniAppPreparedMessage(this);
+        preparedMessage.request(origin, data); break;
       case "web_app_request_chat":
+        if (preparedMessage != null && preparedMessage.active()) break;
         if (requestedChat == null) requestedChat = new MiniAppRequestedChat(this);
         requestedChat.request(origin, data); break;
       case "web_app_read_text_from_clipboard": {
@@ -1096,7 +1106,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void openPopup (MiniAppDocument.Request origin, JSONObject data) throws JSONException {
-    if (activeDialog != null || requestedChat != null && requestedChat.active()) return;
+    if (activeDialog != null || requestedChat != null && requestedChat.active() || preparedMessage != null && preparedMessage.active()) return;
     long now = SystemClock.uptimeMillis();
     if (now < popupCooldownUntil) return;
     if (now - lastPopupClosed <= 150 && ++sequentialPopups >= 3) {

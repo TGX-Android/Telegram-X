@@ -12,6 +12,7 @@ import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import org.drinkless.tdlib.TdApi;
+import tgx.td.Td;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.thunderdog.challegram.BaseActivity;
@@ -47,7 +48,7 @@ final class MiniAppStage45Checks {
     }
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "stage 4/5 uses an initialized account");
     tdlib = activity.currentTdlib();
-    boolean realBot = server || "actions".equals(capability) || "emoji".equals(capability) || capability.startsWith("requested_chat") || "managed_bot".equals(capability);
+    boolean realBot = server || "actions".equals(capability) || "emoji".equals(capability) || capability.startsWith("requested_chat") || capability.startsWith("prepared") || "managed_bot".equals(capability);
     if (realBot) {
       TdApi.Chat chat = (TdApi.Chat) call(new TdApi.SearchPublicChat("nskdancebot"));
       bot = tdlib.chatUserId(chat);
@@ -65,6 +66,8 @@ final class MiniAppStage45Checks {
       else if ("requested_chat".equals(capability)) requestedChatChecks();
       else if ("requested_chat_server".equals(capability)) requestedChatServerChecks();
       else if ("managed_bot".equals(capability)) managedBotChecks();
+      else if ("prepared".equals(capability)) preparedMessageChecks();
+      else if ("prepared_server".equals(capability)) preparedMessageServerChecks();
       else if ("actions".equals(capability)) actionChecks();
       else if ("emoji".equals(capability)) authorizedEmojiChecks();
       else localChecks();
@@ -708,6 +711,142 @@ final class MiniAppStage45Checks {
     tdlib.client().send(function, value -> { result.set(value); latch.countDown(); });
     if (!latch.await(30, TimeUnit.SECONDS)) throw new AssertionError("TDLib timeout");
     return result.get();
+  }
+
+  private void preparedMessageServerChecks () throws Exception {
+    TdApi.Object missing = callRaw(new TdApi.GetPreparedInlineMessage(bot, "miniapps-missing-prepared-fixture"));
+    test.check(missing instanceof TdApi.Error, "nskdancebot rejects an unknown prepared message without sending anything");
+    main(() -> set(host, "lastInteraction", android.os.SystemClock.uptimeMillis()));
+    send("web_app_send_prepared_message", "{\"id\":\"miniapps-missing-prepared-fixture\"}");
+    test.check("MESSAGE_EXPIRED".equals(result("prepared_message_failed").getString("error")), "real Telegram error returns the official MESSAGE_EXPIRED event");
+    test.check(!has("prepared_message_sent"), "server rejection cannot report message sent");
+    TdApi.Function<?> request = MiniAppInlinePreview.request(-1, "missing-synthetic-result");
+    test.check(request != null && callRaw(request) instanceof TdApi.Error, "rebuilt JNI accepts the preview API and rejects an absent cache entry");
+  }
+
+  /** Only the transport is synthetic: preview, picker, message updates and WebView callbacks run on the phone. */
+  private void preparedMessageChecks () throws Exception {
+    TdApi.Chat self = (TdApi.Chat) call(new TdApi.CreatePrivateChat(tdlib.myUserId(), false));
+    AtomicReference<org.drinkless.tdlib.Client.ResultHandler> fetch = new AtomicReference<>(), pending = new AtomicReference<>();
+    AtomicReference<TdApi.SendInlineQueryResultMessage> outgoing = new AtomicReference<>();
+    java.util.concurrent.atomic.AtomicInteger sends = new java.util.concurrent.atomic.AtomicInteger();
+    AtomicReference<MiniAppInlinePreview> preview = new AtomicReference<>();
+    TdApi.FormattedText text = new TdApi.FormattedText("Mini Apps message preview\nBold text and /command", new TdApi.TextEntity[] {
+      new TdApi.TextEntity(26, 9, new TdApi.TextEntityTypeBold()), new TdApi.TextEntity(40, 8, new TdApi.TextEntityTypeBotCommand())
+    });
+    TdApi.ReplyMarkup markup = new TdApi.ReplyMarkupInlineKeyboard(new TdApi.InlineKeyboardButton[][] {{new TdApi.InlineKeyboardButton("Open test link", 0, null, new TdApi.InlineKeyboardButtonTypeUrl("https://example.org/"))}}, false);
+    preview.set(new MiniAppInlinePreview(new TdApi.MessageText(text, null, null), markup));
+    main(() -> set(host, "preparedMessage", new MiniAppPreparedMessage(host, (function, callback) -> {
+      if (function instanceof TdApi.GetPreparedInlineMessage) {
+        String id = ((TdApi.GetPreparedInlineMessage) function).preparedMessageId;
+        if ("late".equals(id)) { fetch.set(callback); return; }
+        if ("expired".equals(id)) { callback.onResult(new TdApi.Error(400, "MESSAGE_ID_INVALID")); return; }
+        TdApi.InlineQueryResultArticle article = new TdApi.InlineQueryResultArticle(); article.id = "cached-result"; article.title = "Discovery title, never the message preview";
+        callback.onResult(new TdApi.PreparedInlineMessage(99112233L, article, new TdApi.TargetChatTypes(true, false, false, false)));
+      } else if (function instanceof TdApi.CreatePrivateChat) callback.onResult(self);
+      else if (function instanceof TdApi.GetChats || function instanceof TdApi.SearchChats) callback.onResult(new TdApi.Chats(1, new long[] {self.id}));
+      else if (function instanceof TdApi.LoadChats) callback.onResult(new TdApi.Error(404, "Not Found"));
+      else if (function instanceof TdApi.SendInlineQueryResultMessage) { sends.incrementAndGet(); outgoing.set((TdApi.SendInlineQueryResultMessage) function); pending.set(callback); }
+      else throw new AssertionError("Unexpected prepared-message fixture request: " + function.getClass().getSimpleName());
+    }, (query, id, callback) -> callback.loaded(preview.get(), null))));
+
+    preparedSend("preview"); Object first = preparedOperation(true);
+    test.check(field(first, "previewView") != null, "native sheet renders the actual cached message and inline markup");
+    capture("stage6-prepared-text");
+    MiniAppMessagePreview messagePreview = field(first, "previewView");
+    org.thunderdog.challegram.component.chat.MessageView messageView = field(messagePreview, "messageView");
+    test.check(messageView.getMessage().getMessage().content == preview.get().content, "preview uses MessageContent rather than the inline discovery title");
+    test.check(messageView.getMessage().getMessage().replyMarkup == markup, "preview preserves real inline keyboard markup");
+    main(() -> ((android.app.Dialog) field(first, "dialog")).cancel());
+    test.check("USER_DECLINED".equals(result("prepared_message_failed").getString("error")), "dismissing the preview reports cancellation once");
+    test.check(sends.get() == 0, "preview cancellation never submits a message");
+
+    clear(); preparedSend("share"); Object share = preparedOperation(true);
+    main(() -> ((android.view.View) field(share, "submit")).performClick()); Thread.sleep(500);
+    android.widget.LinearLayout rows = field(share, "rows");
+    for (int i = 0; i < 100 && rows.getChildCount() == 0; i++) Thread.sleep(50);
+    test.check(host.isMinimized() && rows.getChildCount() == 1, "target picker minimizes Mini App and honors user-only chat types");
+    main(() -> rows.getChildAt(0).performClick()); capture("stage6-prepared-targets");
+    main(() -> { ((android.view.View) field(share, "submit")).performClick(); ((android.view.View) field(share, "submit")).performClick(); });
+    test.check(sends.get() == 1 && !has("prepared_message_sent"), "double click submits once and does not report a queued request as sent");
+    test.check(outgoing.get().queryId == 99112233L && "cached-result".equals(outgoing.get().resultId) && outgoing.get().chatId == self.id && outgoing.get().topicId == null && outgoing.get().replyTo == null && !outgoing.get().hideViaBot, "outgoing inline query, result, recipient and attribution are preserved");
+    TdApi.Message queued = new TdApi.Message(); queued.id = -765; queued.chatId = self.id; queued.sendingState = new TdApi.MessageSendingStatePending(0);
+    pending.get().onResult(queued); Thread.sleep(150);
+    test.check(!has("prepared_message_sent"), "MessageSendingStatePending is not a delivery acknowledgement");
+    java.util.List<MiniAppMessageSender> senders = field(share, "senders");
+    TdApi.Message delivered = new TdApi.Message(); delivered.id = 1001; delivered.chatId = self.id;
+    senders.get(0).onMessageSendSucceeded(delivered, -765); Thread.sleep(600);
+    test.check(has("prepared_message_sent") && !host.isMinimized(), "server success restores Mini App and delivers prepared_message_sent");
+    pending.get().onResult(delivered); Thread.sleep(100);
+    test.check("1".equals(test.evaluate(web, "events.filter(e=>e.event==='prepared_message_sent').length")), "duplicate transport response cannot emit a second completion");
+
+    clear(); preparedSend("error"); Object rejected = preparedOperation(true);
+    main(() -> ((android.view.View) field(rejected, "submit")).performClick()); Thread.sleep(350);
+    android.widget.LinearLayout rejectedRows = field(rejected, "rows");
+    for (int i = 0; i < 100 && rejectedRows.getChildCount() == 0; i++) Thread.sleep(50);
+    main(() -> { rejectedRows.getChildAt(0).performClick(); ((android.view.View) field(rejected, "submit")).performClick(); });
+    pending.get().onResult(new TdApi.Error(400, "Synthetic send rejection")); Thread.sleep(200); main(host::restore); Thread.sleep(400);
+    test.check("MESSAGE_SEND_FAILED".equals(result("prepared_message_failed").getString("error")) && !has("prepared_message_sent"), "failed sending reports MESSAGE_SEND_FAILED without false success");
+
+    clear(); preparedSend("late"); main(host::minimize); Thread.sleep(300); main(host::restore); Thread.sleep(400);
+    fetch.get().onResult(new TdApi.Error(400, "Late result")); Thread.sleep(100);
+    test.check("USER_DECLINED".equals(result("prepared_message_failed").getString("error")), "closing during fetch cancels the operation");
+    test.check("1".equals(test.evaluate(web, "events.filter(e=>e.event==='prepared_message_failed').length")), "late fetch callback is ignored after cancellation");
+    clear(); preparedSend("expired");
+    test.check("MESSAGE_EXPIRED".equals(result("prepared_message_failed").getString("error")), "expired prepared messages never open a preview");
+
+    // Exercise rich content through the same ordinary renderer, without reading or sending personal media.
+    preview.set(new MiniAppInlinePreview(new TdApi.MessageContact(new TdApi.Contact("+10000000000", "Synthetic", "Contact", "", 0)), markup));
+    clear(); preparedSend("contact"); Object contact = preparedOperation(true); capture("stage6-prepared-contact");
+    test.check(field(contact, "previewView") != null, "contact preview uses a native contact bubble");
+    main(() -> ((android.app.Dialog) field(contact, "dialog")).cancel());
+    File image = new File(test.getTargetContext().getCacheDir(), "miniapp-prepared-fixture.png");
+    Bitmap bitmap = Bitmap.createBitmap(360, 240, Bitmap.Config.ARGB_8888); bitmap.eraseColor(android.graphics.Color.rgb(54, 133, 213));
+    try (FileOutputStream output = new FileOutputStream(image)) { bitmap.compress(Bitmap.CompressFormat.PNG, 100, output); } finally { bitmap.recycle(); }
+    try {
+      TdApi.File file = new TdApi.File(2147483600, image.length(), image.length(), new TdApi.LocalFile(image.getPath(), false, false, false, true, 0, image.length(), image.length()), new TdApi.RemoteFile("", "", false, false, 0));
+      TdApi.Photo photo = new TdApi.Photo(false, null, new TdApi.PhotoSize[] {new TdApi.PhotoSize("x", file, 360, 240, null)});
+      preview.set(new MiniAppInlinePreview(new TdApi.MessagePhoto(photo, null, new TdApi.FormattedText("Synthetic photo caption", null), false, false, false), markup));
+      clear(); preparedSend("photo"); Object photoOperation = preparedOperation(true); capture("stage6-prepared-photo");
+      test.check(field(photoOperation, "previewView") != null, "photo and caption use the message renderer with a local synthetic image");
+      int orientation = activity.getRequestedOrientation();
+      try {
+        main(() -> activity.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)); Thread.sleep(900);
+        capture("stage6-prepared-landscape");
+        main(() -> {
+          android.graphics.Rect visible = new android.graphics.Rect(), button = new android.graphics.Rect();
+          ((android.app.Dialog) field(photoOperation, "dialog")).getWindow().getDecorView().getWindowVisibleDisplayFrame(visible);
+          ((android.view.View) field(photoOperation, "submit")).getGlobalVisibleRect(button);
+          test.check(!button.isEmpty() && button.bottom <= visible.bottom, "preview share button remains visible in landscape");
+        });
+      } finally { main(() -> activity.setRequestedOrientation(orientation)); Thread.sleep(700); }
+      main(() -> ((android.app.Dialog) field(photoOperation, "dialog")).cancel());
+    } finally { image.delete(); }
+    preparedSenderRaceCheck(self.id);
+  }
+
+  private void preparedSenderRaceCheck (long chatId) throws Exception {
+    AtomicReference<org.drinkless.tdlib.Client.ResultHandler> response = new AtomicReference<>();
+    java.util.concurrent.atomic.AtomicInteger callbacks = new java.util.concurrent.atomic.AtomicInteger();
+    MiniAppMessageSender sender = new MiniAppMessageSender(tdlib, chatId, new TdApi.SendInlineQueryResultMessage(chatId, null, null, Td.newSendOptions(), 1, "synthetic", false), (request, result) -> response.set(result), error -> callbacks.incrementAndGet());
+    sender.send(); TdApi.Message delivered = new TdApi.Message(); delivered.chatId = chatId; delivered.id = 19;
+    sender.onMessageSendSucceeded(delivered, -19);
+    TdApi.Message queued = new TdApi.Message(); queued.chatId = chatId; queued.id = -19; queued.sendingState = new TdApi.MessageSendingStatePending();
+    response.get().onResult(queued); Thread.sleep(100);
+    test.check(callbacks.get() == 1, "delivery update arriving before send response is retained"); sender.cancel();
+  }
+
+  private void preparedSend (String id) throws Exception {
+    main(() -> set(host, "lastInteraction", android.os.SystemClock.uptimeMillis()));
+    send("web_app_send_prepared_message", "{\"id\":" + JSONObject.quote(id) + "}");
+  }
+  private Object preparedOperation (boolean withPreview) throws Exception {
+    for (int i = 0; i < 100; i++) {
+      Object service = field(host, "preparedMessage"), operation = service != null ? field(service, "operation") : null;
+      if (operation != null && field(operation, withPreview ? "previewView" : "dialog") != null) { Thread.sleep(300); return operation; }
+      Thread.sleep(100);
+    }
+    throw new AssertionError("Prepared message UI missing");
   }
 
   private void create (MiniAppLaunchRequest.Source source) throws Exception {
