@@ -152,10 +152,10 @@ final class MiniAppStage45Checks {
       test.check("allowed".equals(result("emoji_status_access_requested").getString("status")), "emoji management grant receives successful server result");
       test.check(((TdApi.UserFullInfo) call(new TdApi.GetUserFullInfo(bot))).botInfo.canManageEmojiStatus, "nskdancebot emoji permission read back as enabled");
     } finally {
-      call(new TdApi.SetEmojiStatus(original));
-      call(new TdApi.ToggleBotCanManageEmojiStatus(bot, originalPermission));
+      try { call(new TdApi.SetEmojiStatus(original)); }
+      finally { call(new TdApi.ToggleBotCanManageEmojiStatus(bot, originalPermission)); }
       TdApi.User restored = (TdApi.User) call(new TdApi.GetMe());
-      test.check(tgx.td.Td.equalsTo(restored.emojiStatus, original), "original public emoji status restored and read back");
+      test.check(java.util.Objects.equals(String.valueOf(restored.emojiStatus), String.valueOf(original)), "original public emoji status restored and read back");
       test.check(((TdApi.UserFullInfo) call(new TdApi.GetUserFullInfo(bot))).botInfo.canManageEmojiStatus == originalPermission, "original bot emoji permission restored and read back");
     }
   }
