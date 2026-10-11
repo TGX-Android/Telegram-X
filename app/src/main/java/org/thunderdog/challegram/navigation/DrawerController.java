@@ -341,7 +341,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       protected void setDrawerItem (ListItem item, DrawerItemView view, TimerView timerView, boolean isUpdate) {
         isUpdate = isUpdate && factor > 0f;
         final int itemId = item.getId();
-        view.setMiniAppIcon(context.currentTdlib(), itemId == R.id.btn_miniAppMenuBot ? (TdApi.AttachmentMenuBot) item.getData() : null);
+        view.setMiniAppIcon(DrawerController.this.context.currentTdlib(), itemId == R.id.btn_miniAppMenuBot ? (TdApi.AttachmentMenuBot) item.getData() : null);
         if (itemId == R.id.account) {
           TdlibAccount account = (TdlibAccount) item.getData();
           TdlibBadgeCounter badge = account.getUnreadBadge();

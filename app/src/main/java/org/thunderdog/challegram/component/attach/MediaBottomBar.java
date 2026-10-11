@@ -108,6 +108,13 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
   private BarItem[] items;
   private BarItem[] standardItems;
   private int scrollOffset, maxScroll;
+  private boolean destroyed;
+  private java.util.List<BarItem> pendingBots;
+  private final Runnable updateBots = () -> {
+    java.util.List<BarItem> pending = pendingBots;
+    pendingBots = null;
+    if (pending != null) setBotItems(pending);
+  };
   private int index;
   private Callback callback;
 
@@ -198,7 +205,14 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
   }
 
   public void setBotItems (java.util.List<BarItem> bots) {
-    if (isAnimating) { postDelayed(() -> setBotItems(bots), 250); return; }
+    removeCallbacks(updateBots);
+    if (pendingBots != null) for (BarItem item : pendingBots) if (item.receiver != null) item.receiver.destroy();
+    pendingBots = null;
+    if (destroyed) {
+      for (BarItem item : bots) if (item.receiver != null) item.receiver.destroy();
+      return;
+    }
+    if (isAnimating) { pendingBots = bots; postDelayed(updateBots, 250); return; }
     if (items != null) for (BarItem item : items) if (item.receiver != null) item.receiver.destroy();
     BarItem[] combined = java.util.Arrays.copyOf(standardItems, standardItems.length + bots.size());
     for (int i = 0; i < bots.size(); i++) combined[standardItems.length + i] = bots.get(i);
@@ -216,6 +230,10 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
   }
 
   public void destroy () {
+    destroyed = true;
+    removeCallbacks(updateBots);
+    if (pendingBots != null) for (BarItem item : pendingBots) if (item.receiver != null) item.receiver.destroy();
+    pendingBots = null;
     if (items != null) for (BarItem item : items) if (item.receiver != null) item.receiver.destroy();
   }
 
