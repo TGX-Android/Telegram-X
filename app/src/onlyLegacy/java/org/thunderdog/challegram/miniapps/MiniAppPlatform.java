@@ -9,7 +9,7 @@ import android.webkit.WebView;
 /** Old providers cannot identify the calling frame. Never fall back to addJavascriptInterface. */
 public final class MiniAppPlatform {
   public static boolean isSupported () { return false; }
-  public static void clearAccount (android.content.Context context, long accountUserId) { }
+  public static void clearAccount (android.content.Context context, long accountUserId, boolean testServer) { }
   public boolean install (WebView webView, MiniAppBridgeTransport receiver) { return false; }
   public void onPageStarted (WebView webView) { }
   public void destroy (WebView webView) { }

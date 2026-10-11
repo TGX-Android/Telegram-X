@@ -359,7 +359,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
     tdlib.ui().post(() -> {
       if (consent != null) { consent.edit().clear().apply(); consent = null; }
       reset();
-      MiniAppPlatform.clearAccount(org.thunderdog.challegram.unsorted.AppContext.get(), userId);
+      MiniAppPlatform.clearAccount(org.thunderdog.challegram.unsorted.AppContext.get(), userId, tdlib.isDebug());
       menuBots = new TdApi.AttachmentMenuBot[0];
       for (Runnable listener : new ArrayList<>(menuListeners)) listener.run();
       ownerUserId = 0;

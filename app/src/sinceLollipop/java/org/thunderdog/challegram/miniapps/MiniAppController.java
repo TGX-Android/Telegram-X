@@ -86,6 +86,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private WebView webView;
   private FrameLayout root, browserArea;
   private LinearLayout column, header;
+  private MiniAppFullscreenControls fullscreenControls;
   private MiniAppButtons buttons;
   private TextView title, errorView;
   private Bitmap preview;
@@ -114,6 +115,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private long lastInteraction, lastPopupClosed;
   private int sequentialPopups;
   private float dragStartY;
+  private int dragStartHeight;
+  private boolean dragging;
   private float webTouchX, webTouchY;
 
   public MiniAppController (Context context, Tdlib tdlib, MiniAppLaunchRequest request, Runnable onOpened) {
@@ -204,7 +207,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
     title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 20);
     title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
     title.setSingleLine();
-    title.setEllipsize(TextUtils.TruncateAt.END);
+    title.setEllipsize(null);
+    title.setHorizontalFadingEdgeEnabled(true);
+    title.setFadingEdgeLength(Screen.dp(16));
     title.setPadding(Screen.dp(16), 0, Screen.dp(8), 0);
     header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
     collapse = icon(R.drawable.baseline_direction_arrow_down_24, R.string.MiniAppMinimize, v -> minimize());
@@ -212,12 +217,37 @@ public final class MiniAppController extends ViewController<Void> implements Min
     more = icon(R.drawable.baseline_more_vert_24, R.string.MiniAppMore, v -> showMenu());
     header.addView(more);
     root.addView(header, new FrameLayout.LayoutParams(-1, Screen.dp(56), Gravity.TOP));
+    fullscreenControls = new MiniAppFullscreenControls(context, this::headerBack, this::minimize, this::showMenu);
+    root.addView(fullscreenControls, new FrameLayout.LayoutParams(-1, Screen.dp(MiniAppFullscreenControls.CONTENT_INSET_DP), Gravity.TOP));
+    fullscreenControls.setVisibility(View.GONE);
     header.setOnTouchListener((v, event) -> {
-      if (event.getAction() == MotionEvent.ACTION_DOWN) { dragStartY = event.getRawY(); return true; }
-      if (event.getAction() == MotionEvent.ACTION_UP) {
-        float distance = event.getRawY() - dragStartY;
-        if (distance < -Screen.dp(48)) { expanded = true; resize(true); }
-        else if (swipeEnabled && distance > Screen.dp(80)) minimize();
+      float distance = event.getRawY() - dragStartY;
+      if (event.getAction() == MotionEvent.ACTION_DOWN) {
+        if (sizeAnimator != null) { sizeAnimator.cancel(); sizeAnimator = null; }
+        dragStartY = event.getRawY(); dragStartHeight = root.getHeight(); dragging = false;
+        return true;
+      }
+      if (event.getAction() == MotionEvent.ACTION_MOVE && !fullscreen) {
+        if (!dragging && Math.abs(distance) < Screen.dp(8)) return true;
+        dragging = true;
+        if (distance < 0 && !expanded) {
+          FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) root.getLayoutParams();
+          int maximum = popup.getHeight() - Math.max(popup.getSystemInsets().top, Screen.getStatusBarHeight()) - p.bottomMargin - tdlib.miniApps().tabsHeight(context());
+          p.height = Math.min(maximum, dragStartHeight - Math.round(distance));
+          root.setLayoutParams(p);
+        } else if (distance > 0 && swipeEnabled) root.setTranslationY(distance);
+        sendViewport();
+        return true;
+      }
+      if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+        boolean committed = event.getAction() == MotionEvent.ACTION_UP;
+        dragging = false;
+        if (committed && distance < -Screen.dp(48)) expanded = true;
+        if (committed && swipeEnabled && distance > Screen.dp(80)) {
+          root.setTranslationY(0); minimize();
+        } else {
+          root.animate().translationY(0).setDuration(200).start(); resize(true);
+        }
         v.performClick();
         return true;
       }
@@ -244,7 +274,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void createWebView () {
     try {
       webView = new WebView(context());
-      if (!MiniAppPlatform.isolate(webView, tdlib.myUserId(), request.botUserId)) {
+      if (!MiniAppPlatform.isolate(webView, tdlib.myUserId(), request.botUserId, tdlib.isDebug())) {
         showLoadError();
         return;
       }
@@ -275,6 +305,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
           if (phoneSender != null) { phoneSender.cancel(); phoneSender = null; }
           dataSending = false;
           backVisible = settingsVisible = needsCloseConfirmation = false;
+          fullscreenControls.setBack(false);
           headerColor = backgroundColor = bottomColor = null;
           headerColorKey = null;
           swipeEnabled = pageAllowsVerticalSwipe = true;
@@ -445,6 +476,12 @@ public final class MiniAppController extends ViewController<Void> implements Min
     FrameLayout.LayoutParams headerParams = (FrameLayout.LayoutParams) header.getLayoutParams();
     headerParams.topMargin = fullscreen ? top : 0;
     header.setLayoutParams(headerParams);
+    header.setVisibility(fullscreen ? View.GONE : View.VISIBLE);
+    FrameLayout.LayoutParams controls = (FrameLayout.LayoutParams) fullscreenControls.getLayoutParams();
+    controls.topMargin = top;
+    controls.leftMargin = insets.left; controls.rightMargin = insets.right;
+    fullscreenControls.setLayoutParams(controls);
+    fullscreenControls.setVisibility(fullscreen ? View.VISIBLE : View.GONE);
     column.setPadding(0, fullscreen ? 0 : Screen.dp(56), 0, 0);
     if (sizeAnimator != null) { sizeAnimator.cancel(); sizeAnimator = null; }
     if (animate && root.getHeight() > 0 && root.getHeight() != height && !minimized) {
@@ -458,6 +495,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       sizeAnimator.start();
     } else root.setLayoutParams(params);
     updateFullscreen();
+    applyTheme();
     if (popup != null) {
       popup.setNeedFullScreen(fullscreen);
       popup.setIgnoreAllInsets(fullscreen);
@@ -649,6 +687,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
         backVisible = data.optBoolean("is_visible");
         back.setImageResource(backVisible ? R.drawable.baseline_arrow_back_24 : R.drawable.baseline_close_24);
         back.setContentDescription(Lang.getString(backVisible ? R.string.MiniAppBack : R.string.MiniAppClose));
+        fullscreenControls.setBack(backVisible);
         break;
       case "web_app_setup_settings_button": settingsVisible = data.optBoolean("is_visible"); break;
       case "web_app_setup_main_button": buttons.configure(false, data); break;
@@ -686,10 +725,97 @@ public final class MiniAppController extends ViewController<Void> implements Min
       case "web_app_invoke_custom_method": customMethod(origin, data); break;
       case "web_app_request_write_access": requestWriteAccess(origin); break;
       case "web_app_request_phone": requestPhone(origin); break;
+      case "web_app_device_storage_save_key":
+      case "web_app_device_storage_get_key":
+      case "web_app_device_storage_clear":
+      case "web_app_secure_storage_save_key":
+      case "web_app_secure_storage_get_key":
+      case "web_app_secure_storage_clear":
+      case "web_app_secure_storage_restore_key": storage(origin, event, data); break;
       default:
         // Further native capabilities are added as separate services; never invent successful replies.
         break;
     }
+  }
+
+  private java.util.Set<Long> activeStorageAccounts () {
+    java.util.Set<Long> active = new java.util.HashSet<>();
+    for (TdlibAccount account : tdlib.context()) {
+      if (!account.isUnauthorized() && account.isDebug() == tdlib.isDebug()) active.add(account.getKnownUserId());
+    }
+    return active;
+  }
+
+  private void storage (MiniAppDocument.Request origin, String event, JSONObject data) throws JSONException {
+    final String id = data.getString("req_id");
+    boolean secure = event.startsWith("web_app_secure_");
+    String prefix = secure ? "secure_storage_" : "device_storage_";
+    String operation = event.substring(("web_app_" + prefix).length());
+    if (!operation.equals("clear") && !(data.opt("key") instanceof String)) {
+      reply(origin, prefix + "failed", object("req_id", id, "error", "KEY_INVALID")); return;
+    }
+    if (operation.equals("save_key") && !data.isNull("value") && !(data.opt("value") instanceof String)) {
+      reply(origin, prefix + "failed", object("req_id", id, "error", "VALUE_INVALID")); return;
+    }
+    String key = data.optString("key", "");
+    String value = data.isNull("value") ? null : data.optString("value", null);
+    MiniAppStorage store = new MiniAppStorage(context(), tdlib.myUserId(), request.botUserId, secure, tdlib.isDebug());
+    String userName = tdlib.cache().userName(tdlib.myUserId());
+    java.util.Set<Long> active = activeStorageAccounts();
+    MiniAppStorage.IO.execute(() -> {
+      try {
+        store.setOwnerName(userName);
+        if (operation.equals("restore_key")) {
+          List<Long> candidates = store.restorable(key, active);
+          String[] labels = new String[candidates.size()];
+          for (int i = 0; i < labels.length; i++) labels[i] = store.ownerName(candidates.get(i));
+          tdlib.ui().post(() -> restoreStorage(origin, id, key, store, candidates, labels));
+          return;
+        }
+        JSONObject response = object("req_id", id);
+        String result;
+        if (operation.equals("save_key")) { store.set(key, value); result = "key_saved"; }
+        else if (operation.equals("clear")) { store.clear(); result = "cleared"; }
+        else {
+          String stored = store.get(key);
+          response.put("value", stored != null ? stored : JSONObject.NULL);
+          if (secure && stored == null) response.put("can_restore", !store.restorable(key, active).isEmpty());
+          result = "key_received";
+        }
+        tdlib.ui().post(() -> reply(origin, prefix + result, response));
+      } catch (Exception error) {
+        String reason = storageError(error);
+        tdlib.ui().post(() -> reply(origin, prefix + "failed", object("req_id", id, "error", reason)));
+      }
+    });
+  }
+
+  private static String storageError (Exception error) {
+    String message = error.getMessage();
+    return "QUOTA_EXCEEDED".equals(message) || "UNSUPPORTED".equals(message) || "STORAGE_NOT_EMPTY".equals(message) ||
+      "RESTORE_UNAVAILABLE".equals(message) ? message : "UNKNOWN_ERROR";
+  }
+
+  private void restoreStorage (MiniAppDocument.Request origin, String id, String key, MiniAppStorage store, List<Long> candidates, String[] labels) {
+    if (!current(origin)) return;
+    if (candidates.isEmpty()) { reply(origin, "secure_storage_failed", object("req_id", id, "error", "RESTORE_UNAVAILABLE")); return; }
+    if (minimized || activeDialog != null) { reply(origin, "secure_storage_failed", object("req_id", id, "error", "RESTORE_CANCELLED")); return; }
+    for (int i = 0; i < labels.length; i++) if (labels[i].isEmpty()) labels[i] = Lang.getString(R.string.MiniAppStorageAccount, Integer.toString(i + 1));
+    activeDialog = showAlert(new AlertDialog.Builder(context()).setTitle(Lang.getString(R.string.MiniAppRestoreStorage))
+      .setItems(labels, (dialog, which) -> {
+        if (!current(origin)) return;
+        java.util.Set<Long> active = activeStorageAccounts();
+        MiniAppStorage.IO.execute(() -> {
+          try {
+            String value = store.restore(candidates.get(which), key, active);
+            tdlib.ui().post(() -> reply(origin, "secure_storage_key_restored", object("req_id", id, "value", value != null ? value : JSONObject.NULL)));
+          } catch (Exception error) {
+            tdlib.ui().post(() -> reply(origin, "secure_storage_failed", object("req_id", id, "error", storageError(error))));
+          }
+        });
+      }).setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> reply(origin, "secure_storage_failed", object("req_id", id, "error", "RESTORE_CANCELLED")))
+      .setOnCancelListener(dialog -> reply(origin, "secure_storage_failed", object("req_id", id, "error", "RESTORE_CANCELLED"))));
+    if (activeDialog != null) activeDialog.setOnDismissListener(dialog -> activeDialog = null);
   }
 
   private void sendData (MiniAppDocument.Request origin, String data) {
@@ -898,7 +1024,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void sendViewport () {
     if (webView == null || root == null) return;
     emit("viewport_changed", object("height", webView.getHeight() / context().getResources().getDisplayMetrics().density,
-      "is_expanded", expanded, "is_state_stable", sizeAnimator == null));
+      "is_expanded", expanded, "is_state_stable", sizeAnimator == null && !dragging));
     sendSafeAreas();
   }
 
@@ -909,7 +1035,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     emit("safe_area_changed", object("top", fullscreen ? insets.top / density : 0,
       "bottom", fullscreen && buttons.getHeight() == 0 ? insets.bottom / density : 0,
       "left", fullscreen ? insets.left / density : 0, "right", fullscreen ? insets.right / density : 0));
-    emit("content_safe_area_changed", object("top", fullscreen ? 56 : 0, "bottom", 0, "left", 0, "right", 0));
+    emit("content_safe_area_changed", object("top", fullscreen ? MiniAppFullscreenControls.CONTENT_INSET_DP : 0, "bottom", 0, "left", 0, "right", 0));
   }
 
   private void reply (MiniAppDocument.Request origin, String event, JSONObject data) {

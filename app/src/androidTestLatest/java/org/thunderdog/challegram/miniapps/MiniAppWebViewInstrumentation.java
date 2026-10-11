@@ -32,10 +32,12 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
   private int passed;
   private final String runId = Long.toHexString(System.nanoTime());
   private boolean cleanupOnly;
+  private boolean hostChecks;
 
   @Override public void onCreate (Bundle arguments) {
     super.onCreate(arguments);
     cleanupOnly = arguments != null && "true".equals(arguments.getString("cleanup"));
+    hostChecks = arguments != null && "true".equals(arguments.getString("host"));
     start();
   }
 
@@ -53,6 +55,8 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
         checkFrames(true);
         checkFrames(false);
         checkStorage();
+        checkNativeStorage();
+        if (hostChecks) new MiniAppHostDeviceChecks(this).run();
       }
       result.putString("stream", "Mini Apps WebView: " + passed + " checks passed\n");
       result.putInt("passed", passed);
@@ -163,7 +167,7 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
     await(loaded, "fixture load");
   }
 
-  private String evaluate (WebView view, String script) throws Exception {
+  String evaluate (WebView view, String script) throws Exception {
     CountDownLatch done = new CountDownLatch(1);
     AtomicReference<String> value = new AtomicReference<>();
     runOnMainSync(() -> view.evaluateJavascript(script, result -> { value.set(result); done.countDown(); }));
@@ -171,9 +175,41 @@ public final class MiniAppWebViewInstrumentation extends Instrumentation {
     return value.get();
   }
 
-  private void check (boolean valid, String message) {
+  void check (boolean valid, String message) {
     if (!valid) throw new AssertionError(message);
     passed++;
+    Bundle progress = new Bundle(); progress.putString("stream", "PASS " + message + "\n"); sendStatus(0, progress);
+  }
+
+  private void checkNativeStorage () {
+    long a = Long.MAX_VALUE - 101, b = Long.MAX_VALUE - 102, bot = Long.MAX_VALUE - 103;
+    for (boolean secure : new boolean[] {false, true}) {
+      MiniAppStorage one = new MiniAppStorage(getTargetContext(), a, bot, secure);
+      MiniAppStorage other = new MiniAppStorage(getTargetContext(), b, bot, secure);
+      MiniAppStorage otherBot = new MiniAppStorage(getTargetContext(), a, bot - 1, secure);
+      MiniAppStorage testServer = new MiniAppStorage(getTargetContext(), a, bot, secure, true);
+      try {
+        one.clear(); other.clear(); otherBot.clear(); testServer.clear();
+        one.set("probe", "fixture-secret-value");
+        check("fixture-secret-value".equals(new MiniAppStorage(getTargetContext(), a, bot, secure).get("probe")), "native storage persists " + secure);
+        check(other.get("probe") == null && otherBot.get("probe") == null && testServer.get("probe") == null, "native storage owner/bot/server isolation " + secure);
+        one.set("probe", null); check(one.get("probe") == null, "null removes storage key " + secure);
+        one.set("probe", "fixture-secret-value");
+        if (secure) {
+          java.util.Set<Long> active = new java.util.HashSet<>(); active.add(a);
+          check(other.restorable("probe", active).isEmpty(), "active account secure storage cannot be restored");
+          active.clear();
+          check(other.restorable("probe", active).contains(a), "signed-out data is eligible for consent");
+          check("fixture-secret-value".equals(other.restore(a, "probe", active)), "confirmed restore transfers encrypted data");
+          check(one.get("probe") == null, "restore revokes prior owner");
+          other.clear();
+          for (int i = 0; i < 10; i++) other.set("key" + i, "value");
+          boolean rejected = false;
+          try { other.set("eleventh", "value"); } catch (IllegalStateException e) { rejected = "QUOTA_EXCEEDED".equals(e.getMessage()); }
+          check(rejected && other.get("eleventh") == null, "secure ten-key quota is atomic");
+        }
+      } finally { one.clear(); other.clear(); otherBot.clear(); testServer.clear(); }
+    }
   }
 
   private static void await (CountDownLatch latch, String operation) throws InterruptedException {

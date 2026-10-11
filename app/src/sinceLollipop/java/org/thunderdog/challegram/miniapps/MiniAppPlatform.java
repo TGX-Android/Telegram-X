@@ -41,10 +41,13 @@ public final class MiniAppPlatform {
 
   /** Set this before accessing settings, cookies, or loading any document. */
   public static boolean isolate (WebView webView, long accountUserId, long botUserId) {
+    return isolate(webView, accountUserId, botUserId, false);
+  }
+  public static boolean isolate (WebView webView, long accountUserId, long botUserId, boolean testServer) {
     if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return false;
     SharedPreferences state = profileState(webView.getContext());
     pruneProfiles(state);
-    WebViewCompat.setProfile(webView, profileName(accountUserId, botUserId) + "-" + state.getLong("epoch_" + accountUserId, 0));
+    WebViewCompat.setProfile(webView, (testServer ? "test-" : "") + profileName(accountUserId, botUserId) + "-" + state.getLong("epoch_" + testServer + "_" + accountUserId, 0));
     return true;
   }
 
@@ -62,12 +65,13 @@ public final class MiniAppPlatform {
     state.edit().putStringSet("retired", pending).apply();
   }
 
-  public static void clearAccount (Context context, long accountUserId) {
+  public static void clearAccount (Context context, long accountUserId, boolean testServer) {
+    if (accountUserId > 0) MiniAppStorage.clearAccount(context, accountUserId, testServer);
     if (accountUserId <= 0 || !WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return;
     SharedPreferences state = profileState(context);
     Set<String> pending = new HashSet<>(state.getStringSet("retired", Collections.emptySet()));
     ProfileStore store = ProfileStore.getInstance();
-    String prefix = "tg-miniapp-" + accountUserId + "-";
+    String prefix = (testServer ? "test-" : "") + "tg-miniapp-" + accountUserId + "-";
     for (String name : store.getAllProfileNames()) {
       if (!name.startsWith(prefix)) continue;
       pending.add(name);
@@ -82,7 +86,8 @@ public final class MiniAppPlatform {
       }
     }
     // Never reuse a retired profile after logout, even while Chromium still owns it.
-    state.edit().putLong("epoch_" + accountUserId, state.getLong("epoch_" + accountUserId, 0) + 1)
+    String epoch = "epoch_" + testServer + "_" + accountUserId;
+    state.edit().putLong(epoch, state.getLong(epoch, 0) + 1)
       .putStringSet("retired", pending).apply();
     pruneProfiles(state);
   }
