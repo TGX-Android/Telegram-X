@@ -738,7 +738,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   @Override
   public void onMessage (String message, String sourceOrigin) {
-    if (isDestroyed() || minimized || !tdlib.isCurrent() || document == null || webView == null) return;
+    if (isDestroyed() || !tdlib.isCurrent() || document == null || webView == null) return;
     MiniAppDocument.Request origin = document.receive(sourceOrigin, webView.getUrl(), message.length());
     if (origin == null) return;
     try {
@@ -748,6 +748,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
       Object data = envelope.opt("eventData");
       if (message.length() > MiniAppDocument.MAX_ACTION_LENGTH && !"web_app_device_storage_save_key".equals(event) && !"web_app_secure_storage_save_key".equals(event)) return;
       if (data instanceof String && !((String) data).isEmpty()) data = new JSONTokener((String) data).nextValue();
+      // A page may open a Telegram link and then close itself. The link minimizes
+      // its host first; still accept the authenticated close, without enabling
+      // other actions or return-to-caller navigation from a background app.
+      if (minimized) {
+        if ("web_app_close".equals(event)) close();
+        return;
+      }
       if ("web_app_allow_scroll".equals(event)) {
         pageAllowsVerticalSwipe = !(data instanceof JSONArray) || ((JSONArray) data).optBoolean(1, true);
         return;

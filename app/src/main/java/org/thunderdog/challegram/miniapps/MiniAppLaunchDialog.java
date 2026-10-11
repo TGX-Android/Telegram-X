@@ -36,7 +36,9 @@ public final class MiniAppLaunchDialog {
     final boolean[] confirmed = {false};
     LinearLayout content = new LinearLayout(owner.context());
     content.setOrientation(LinearLayout.VERTICAL);
-    content.setPadding(0, Screen.dp(6), 0, 0);
+    // Telegram's titleless AlertDialog gives custom content a 16dp top inset.
+    // Its customViewOffset(6) separates an optional message, not the dialog edge.
+    content.setPadding(0, Screen.dp(16), 0, 0);
     FrameLayout identity = new FrameLayout(owner.context());
     content.addView(identity, new LinearLayout.LayoutParams(-1, Screen.dp(48)));
     AvatarView avatar = new AvatarView(owner.context());

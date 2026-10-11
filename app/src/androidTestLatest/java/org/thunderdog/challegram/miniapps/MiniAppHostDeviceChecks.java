@@ -178,6 +178,7 @@ final class MiniAppHostDeviceChecks {
         test.check(!host.isDestroyed() && "\"alive\"".equals(test.evaluate(web, "'alive'")), "Mini App can reopen after renderer loss");
         capture("host-renderer-recovered");
       }
+      checkMinimizedClose();
     } finally {
       main(() -> { if (host != null) host.close(); activity.setRequestedOrientation(previousOrientation); });
       test.check(lightStatusBar() == org.thunderdog.challegram.theme.Theme.needLightStatusBar(), "closing a Mini App restores native status icon contrast");
@@ -209,6 +210,18 @@ final class MiniAppHostDeviceChecks {
       });
       invoke(host, "showSheet"); web.loadUrl("https://miniapp.test/host");
     });
+  }
+
+  private void checkMinimizedClose () throws Exception {
+    main(host::minimize); Thread.sleep(400);
+    main(() -> host.onMessage("{\"eventType\":\"web_app_close\"}", "https://foreign.test"));
+    test.check(!host.isDestroyed(), "a foreign origin cannot close a minimized Mini App");
+    boolean backVisible = field(host, "backVisible");
+    send("web_app_setup_back_button", "{\"is_visible\":" + !backVisible + "}"); Thread.sleep(150);
+    test.check(backVisible == (boolean) field(host, "backVisible"), "minimized Mini App still rejects other bridge actions");
+    test.evaluate(web, "setTimeout(()=>send('web_app_close'),150); 'close scheduled'");
+    for (int i = 0; i < 40 && !host.isDestroyed(); i++) Thread.sleep(100);
+    test.check(host.isDestroyed(), "delayed close through the real bridge destroys a minimized Mini App");
   }
 
   private void checkThemeChange () throws Exception {
