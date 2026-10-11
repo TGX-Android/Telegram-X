@@ -334,7 +334,10 @@ final class MiniAppStage45Checks {
       @Override public Intent createIntent () { return new Intent(Intent.ACTION_GET_CONTENT); }
     }));
     Thread.sleep(900); capture("stage45-file-picker");
-    try (android.os.ParcelFileDescriptor ignored = test.getUiAutomation().executeShellCommand("input keyevent 4")) { Thread.sleep(400); }
+    // DocumentsUI remembers its last folder. Back may navigate parents before cancelling the picker.
+    for (int attempt = 0; attempt < 6 && replies.get() == 0; attempt++) {
+      try (android.os.ParcelFileDescriptor ignored = test.getUiAutomation().executeShellCommand("input keyevent 4")) { Thread.sleep(500); }
+    }
     for (int i = 0; i < 30 && replies.get() == 0; i++) Thread.sleep(100);
     test.check(replies.get() == 1, "real Android multiple-file picker cancellation completes once");
   }
