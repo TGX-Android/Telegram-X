@@ -857,6 +857,30 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
 
   private int lastWindowVisibility = View.SYSTEM_UI_FLAG_VISIBLE;
   private boolean isWindowLight;
+  private @Nullable ViewController<?> systemBarAppearanceOwner;
+  private @Nullable Boolean systemBarLightStatus, systemBarLightNavigation;
+
+  /** A sheet that paints over system bars also owns their icon contrast until it is hidden. */
+  public void setSystemBarAppearance (ViewController<?> owner, @Nullable Boolean lightStatus, @Nullable Boolean lightNavigation) {
+    if (systemBarAppearanceOwner != owner || systemBarLightStatus != lightStatus || systemBarLightNavigation != lightNavigation) {
+      systemBarAppearanceOwner = owner;
+      systemBarLightStatus = lightStatus;
+      systemBarLightNavigation = lightNavigation;
+      updateWindowDecorSystemUiVisibility();
+    }
+  }
+
+  public void clearSystemBarAppearance (ViewController<?> owner) {
+    if (systemBarAppearanceOwner == owner) {
+      systemBarAppearanceOwner = null;
+      systemBarLightStatus = systemBarLightNavigation = null;
+      updateWindowDecorSystemUiVisibility();
+    }
+  }
+
+  private boolean needLightStatusBar () {
+    return !isPasscodeShowing && systemBarLightStatus != null ? systemBarLightStatus : Theme.needLightStatusBar();
+  }
 
   private float photoRevealFactor;
 
@@ -878,8 +902,8 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   }
 
   public void setWindowDecorSystemUiVisibility (int visibility, boolean remember) {
-    boolean lightNavigationBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Config.USE_CUSTOM_NAVIGATION_COLOR && !Theme.isDark() && (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0;
-    boolean lightStatusBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Theme.needLightStatusBar();
+    boolean lightNavigationBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && (!isPasscodeShowing && systemBarLightNavigation != null ? systemBarLightNavigation : Config.USE_CUSTOM_NAVIGATION_COLOR && !Theme.isDark() && (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0);
+    boolean lightStatusBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && needLightStatusBar();
     UI.setLightSystemBars(getWindow(), lightNavigationBar, lightStatusBar, visibility, true);
     if (this.isWindowLight != lightNavigationBar) {
       this.isWindowLight = lightNavigationBar;
@@ -3479,6 +3503,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
         color = ColorUtils.fromToArgb(color, ColorUtils.compositeColor(desiredColor != null ? desiredColor.getIntValue() : 0, 0x1E000000), desiredIntensityFactor);
         isLight = isLight && desiredAllowLight;
       }
+      if (systemBarLightNavigation != null) {
+        isLight = systemBarLightNavigation;
+      }
       if (photoRevealFactor != 0f) {
         color = ColorUtils.fromToArgb(color, UI.NAVIGATION_BAR_COLOR, photoRevealFactor);
         isLight = false;
@@ -3491,7 +3518,7 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
       UI.setNavigationBarColor(getWindow(), color, isGestureNavigationEnabled);
       if (this.isWindowLight != isLight) {
         this.isWindowLight = isLight;
-        UI.setLightSystemBars(getWindow(), isLight, Theme.needLightStatusBar(), lastWindowVisibility, true);
+        UI.setLightSystemBars(getWindow(), isLight, needLightStatusBar(), lastWindowVisibility, true);
       }
     }
   }

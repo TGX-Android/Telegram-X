@@ -180,6 +180,7 @@ final class MiniAppHostDeviceChecks {
       }
     } finally {
       main(() -> { if (host != null) host.close(); activity.setRequestedOrientation(previousOrientation); });
+      test.check(lightStatusBar() == org.thunderdog.challegram.theme.Theme.needLightStatusBar(), "closing a Mini App restores native status icon contrast");
     }
   }
 
@@ -215,18 +216,44 @@ final class MiniAppHostDeviceChecks {
     org.thunderdog.challegram.theme.ThemeDelegate original = manager.currentTheme(false);
     org.thunderdog.challegram.unsorted.Settings settings = org.thunderdog.challegram.unsorted.Settings.instance();
     int autoMode = settings.getNightMode();
+    Integer oldHeader = field(host, "headerColor"), oldBottom = field(host, "bottomColor");
     try {
       main(() -> manager.changeGlobalTheme(activity.currentTdlib(), manager.getTheme(activity.currentTdlib().settings().globalDaylightTheme()), true, null));
       Thread.sleep(450);
       test.check(!manager.currentTheme(false).isDark(), "native shell changes to saved daylight theme");
       String color = test.evaluate(web, "events.filter(e=>e.event==='theme_changed').slice(-1)[0].data.theme_params.bg_color");
       test.check(color.equals("\"" + MiniAppTheme.hex(org.thunderdog.challegram.theme.Theme.fillingColor()) + "\""), "new theme reaches existing page through bridge");
+      test.check(lightStatusBar(), "light Mini App header uses dark status icons");
       capture("host-light-theme");
+      send("web_app_set_header_color", "{\"color\":\"#101010\"}");
+      send("web_app_set_bottom_bar_color", "{\"color\":\"#101010\"}"); Thread.sleep(200);
+      test.check(!lightStatusBar() && !lightNavigationBar(), "dark app overrides use light system icons in a daylight chat theme");
+      capture("host-custom-dark-bars");
+      send("web_app_set_header_color", "{\"color\":\"#ffffff\"}");
+      send("web_app_set_bottom_bar_color", "{\"color\":\"#ffffff\"}"); Thread.sleep(200);
+      test.check(lightStatusBar() && lightNavigationBar(), "light app overrides use dark system icons");
+      capture("host-custom-light-bars");
+      main(host::minimize); Thread.sleep(500);
+      test.check(lightStatusBar() == org.thunderdog.challegram.theme.Theme.needLightStatusBar(), "minimizing restores the underlying chat status icons");
+      main(host::restore); Thread.sleep(700);
+      test.check(lightStatusBar() && lightNavigationBar(), "restoring reapplies Mini App system icon contrast");
     } finally {
-      main(() -> manager.changeGlobalTheme(activity.currentTdlib(), original, true, null));
+      main(() -> {
+        set(host, "headerColor", oldHeader); set(host, "bottomColor", oldBottom);
+        manager.changeGlobalTheme(activity.currentTdlib(), original, true, null);
+        invoke(host, "applyTheme");
+      });
       Thread.sleep(450);
       test.check(manager.currentThemeId() == original.getId() && settings.getNightMode() == autoMode, "original theme and automatic night mode are preserved");
     }
+  }
+
+  private boolean lightStatusBar () {
+    return (activity.getWindow().getInsetsController().getSystemBarsAppearance() & android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS) != 0;
+  }
+
+  private boolean lightNavigationBar () {
+    return (activity.getWindow().getInsetsController().getSystemBarsAppearance() & android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS) != 0;
   }
 
   private String sensorCount () throws Exception {

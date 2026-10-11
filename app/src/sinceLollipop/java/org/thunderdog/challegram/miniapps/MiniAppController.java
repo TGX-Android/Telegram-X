@@ -439,6 +439,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     popup.setShowListener(window -> {
       // A restored page may not emit a new header color; repaint after the slide animation.
       window.invalidate();
+      applyTheme();
       sendViewport();
     });
     popup.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
@@ -587,6 +588,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       browserArea.draw(canvas);
     }
     minimized = true;
+    context().clearSystemBarAppearance(this);
     if (sensors != null) sensors.pause();
     updateFullscreen();
     if (webView != null) Keyboard.hide(webView);
@@ -609,6 +611,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (sensors != null) { sensors.stopAll(); sensors = null; }
     if (buttons != null) buttons.performDestroy();
     context().removeFullScreenView(this, true);
+    context().clearSystemBarAppearance(this);
     if (document != null) document.close();
     cancelDocumentRequests();
     deferredReplies.clear();
@@ -1097,6 +1100,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (webView != null) webView.setBackgroundColor(background);
     buttons.setBackgroundColor(bottomColor != null ? bottomColor : theme.bottomBarBackgroundColor);
     buttons.refreshTheme();
+    if (popup != null && !minimized && !isDestroyed()) {
+      // Match the official sheet's luminance threshold, independent of the chat theme.
+      Boolean lightStatus = expanded && !fullscreen ? androidx.core.graphics.ColorUtils.calculateLuminance(bar) >= .721 : null;
+      Boolean lightNavigation = !fullscreen || buttons.getVisibility() == View.VISIBLE
+        ? androidx.core.graphics.ColorUtils.calculateLuminance(bottomColor != null ? bottomColor : theme.bottomBarBackgroundColor) >= .721 : null;
+      context().setSystemBarAppearance(this, lightStatus, lightNavigation);
+    }
     if (popup != null) popup.invalidate();
   }
 
