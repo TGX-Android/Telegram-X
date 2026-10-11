@@ -729,7 +729,9 @@ final class MiniAppStage45Checks {
     TdApi.Chat self = (TdApi.Chat) call(new TdApi.CreatePrivateChat(tdlib.myUserId(), false));
     AtomicReference<org.drinkless.tdlib.Client.ResultHandler> fetch = new AtomicReference<>(), pending = new AtomicReference<>();
     AtomicReference<TdApi.SendInlineQueryResultMessage> outgoing = new AtomicReference<>();
+    AtomicReference<TdApi.SendMessage> outgoingComment = new AtomicReference<>();
     java.util.concurrent.atomic.AtomicInteger sends = new java.util.concurrent.atomic.AtomicInteger();
+    java.util.concurrent.atomic.AtomicInteger linkRequests = new java.util.concurrent.atomic.AtomicInteger();
     AtomicReference<MiniAppInlinePreview> preview = new AtomicReference<>();
     TdApi.FormattedText text = new TdApi.FormattedText("Mini Apps message preview\nBold text and /command", new TdApi.TextEntity[] {
       new TdApi.TextEntity(26, 9, new TdApi.TextEntityTypeBold()), new TdApi.TextEntity(40, 8, new TdApi.TextEntityTypeBotCommand())
@@ -747,6 +749,13 @@ final class MiniAppStage45Checks {
       else if (function instanceof TdApi.GetChats || function instanceof TdApi.SearchChats) callback.onResult(new TdApi.Chats(1, new long[] {self.id}));
       else if (function instanceof TdApi.LoadChats) callback.onResult(new TdApi.Error(404, "Not Found"));
       else if (function instanceof TdApi.SendInlineQueryResultMessage) { sends.incrementAndGet(); outgoing.set((TdApi.SendInlineQueryResultMessage) function); pending.set(callback); }
+      else if (function instanceof TdApi.SendMessage) {
+        outgoingComment.set((TdApi.SendMessage) function);
+        TdApi.Message delivered = new TdApi.Message(); delivered.chatId = self.id; delivered.id = 1002; callback.onResult(delivered);
+      } else if (function instanceof TdApi.GetLinkPreview) {
+        linkRequests.incrementAndGet();
+        callback.onResult(new TdApi.LinkPreview("https://example.org/", "example.org", "Example", "Synthetic link card", new TdApi.FormattedText("Link preview content", null), "", new TdApi.LinkPreviewTypeArticle(null), false, false, false, true, false, 0));
+      }
       else throw new AssertionError("Unexpected prepared-message fixture request: " + function.getClass().getSimpleName());
     }, (query, id, callback) -> callback.loaded(preview.get(), null))));
 
@@ -781,6 +790,27 @@ final class MiniAppStage45Checks {
     pending.get().onResult(delivered); Thread.sleep(100);
     test.check("1".equals(test.evaluate(web, "events.filter(e=>e.event==='prepared_message_sent').length")), "duplicate transport response cannot emit a second completion");
 
+    clear(); preparedSend("silent-comment"); Object silent = preparedOperation(true);
+    main(() -> ((android.view.View) field(silent, "submit")).performClick()); Thread.sleep(400);
+    android.widget.LinearLayout silentRows = field(silent, "rows");
+    for (int i = 0; i < 100 && silentRows.getChildCount() == 0; i++) Thread.sleep(50);
+    main(() -> {
+      silentRows.getChildAt(0).performClick();
+      ((android.widget.EditText) field(silent, "comment")).setText("Synthetic comment");
+      ((android.view.View) field(silent, "submit")).performLongClick();
+    });
+    Thread.sleep(400);
+    org.thunderdog.challegram.widget.PopupLayout options = field(silent, "optionsPopup");
+    test.check(options != null && options.getBoundView().findViewById(org.thunderdog.challegram.R.id.btn_sendScheduledCustom) != null, "long press exposes native silent and schedule actions");
+    capture("stage6-prepared-send-options");
+    main(() -> options.getBoundView().findViewById(org.thunderdog.challegram.R.id.btn_sendNoSound).performClick());
+    Thread.sleep(300);
+    test.check(outgoing.get().options.disableNotification && outgoingComment.get() == null, "silent option reaches the transport while comment waits for acknowledgement");
+    pending.get().onResult(delivered); Thread.sleep(500);
+    test.check(outgoingComment.get() != null && outgoingComment.get().chatId == self.id && outgoingComment.get().options.disableNotification &&
+      "Synthetic comment".equals(((TdApi.InputMessageText) outgoingComment.get().inputMessageContent).text.text), "acknowledged share sends the comment with the same recipient and options");
+    test.check(has("prepared_message_sent") && !host.isMinimized(), "comment completion restores Mini App once");
+
     clear(); preparedSend("error"); Object rejected = preparedOperation(true);
     main(() -> ((android.view.View) field(rejected, "submit")).performClick()); Thread.sleep(350);
     android.widget.LinearLayout rejectedRows = field(rejected, "rows");
@@ -795,6 +825,12 @@ final class MiniAppStage45Checks {
     test.check("1".equals(test.evaluate(web, "events.filter(e=>e.event==='prepared_message_failed').length")), "late fetch callback is ignored after cancellation");
     clear(); preparedSend("expired");
     test.check("MESSAGE_EXPIRED".equals(result("prepared_message_failed").getString("error")), "expired prepared messages never open a preview");
+
+    TdApi.MessageText linkedText = new TdApi.MessageText(new TdApi.FormattedText("Synthetic link message", null), null, new TdApi.LinkPreviewOptions(false, "https://example.org/", false, false, true));
+    preview.set(new MiniAppInlinePreview(linkedText, markup));
+    clear(); preparedSend("link"); Object link = preparedOperation(true); capture("stage6-prepared-link");
+    test.check(linkRequests.get() == 1 && linkedText.linkPreview != null && "Synthetic link card".equals(linkedText.linkPreview.title), "uncached inline webpage content is resolved before displaying the preview");
+    main(() -> ((android.app.Dialog) field(link, "dialog")).cancel());
 
     // Exercise rich content through the same ordinary renderer, without reading or sending personal media.
     preview.set(new MiniAppInlinePreview(new TdApi.MessageContact(new TdApi.Contact("+10000000000", "Synthetic", "Contact", "", 0)), markup));

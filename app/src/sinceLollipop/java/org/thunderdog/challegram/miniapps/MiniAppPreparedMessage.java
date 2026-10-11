@@ -80,7 +80,7 @@ final class MiniAppPreparedMessage {
     }
     Operation next = new Operation(origin, (String) data.opt("id")); operation = next;
     if (!host.canShowNativeUi()) { next.finish("USER_DECLINED"); return; }
-    host.getValue().postDelayed(() -> { if (next.current() && next.prepared == null && host.isShowing()) next.loading(); }, 500);
+    host.getValue().postDelayed(() -> { if (next.current() && next.previewView == null && !next.selecting && host.isShowing()) next.loading(); }, 500);
     next.send(new TdApi.GetPreparedInlineMessage(host.botId(), next.id), response -> {
       if (!(response instanceof TdApi.PreparedInlineMessage)) { next.finish("MESSAGE_EXPIRED"); return; }
       next.prepared = (TdApi.PreparedInlineMessage) response;
@@ -95,11 +95,11 @@ final class MiniAppPreparedMessage {
           next.finish(unsupported ? "UNSUPPORTED" : "MESSAGE_EXPIRED"); return;
         }
         next.preview = preview;
-        next.send(new TdApi.CreatePrivateChat(tdlib.myUserId(), false), self -> {
+        next.resolveLinkPreview(() -> next.send(new TdApi.CreatePrivateChat(tdlib.myUserId(), false), self -> {
           if (!(self instanceof TdApi.Chat)) { next.finish("UNKNOWN_ERROR"); return; }
           next.selfChat = (TdApi.Chat) self;
           next.showPreview();
-        });
+        }));
       }));
     });
   }
@@ -202,6 +202,21 @@ final class MiniAppPreparedMessage {
     void loading () {
       sheet(Lang.getString(R.string.MiniAppShareMessage), false);
       ProgressBar progress = new ProgressBar(host.context()); LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(Screen.dp(40), Screen.dp(40)); p.gravity = Gravity.CENTER; p.bottomMargin = Screen.dp(24); content.addView(progress, p); show(false);
+    }
+    void resolveLinkPreview (Runnable ready) {
+      if (preview.content instanceof TdApi.MessageText) {
+        TdApi.MessageText text = (TdApi.MessageText) preview.content;
+        // Inline webpage messages may carry a URL whose preview has not entered TDLib's cache yet.
+        if (text.linkPreview == null && text.linkPreviewOptions != null && !text.linkPreviewOptions.isDisabled &&
+            text.linkPreviewOptions.url != null && !text.linkPreviewOptions.url.isEmpty()) {
+          send(new TdApi.GetLinkPreview(text.text, text.linkPreviewOptions), result -> {
+            if (result instanceof TdApi.LinkPreview) text.linkPreview = (TdApi.LinkPreview) result;
+            ready.run();
+          });
+          return;
+        }
+      }
+      ready.run();
     }
     void showPreview () {
       sheet(Lang.getString(R.string.MiniAppShareMessage), false);
