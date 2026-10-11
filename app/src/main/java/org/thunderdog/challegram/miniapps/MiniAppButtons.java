@@ -19,13 +19,15 @@ import org.json.JSONObject;
 import org.thunderdog.challegram.tool.Screen;
 
 /** Official bottom-button geometry: 44dp height, 9dp corners, 8dp sides and 10dp gap. */
-public final class MiniAppButtons extends LinearLayout {
+public final class MiniAppButtons extends LinearLayout implements me.vkryl.core.lambda.Destroyable {
   private final Action main, secondary;
+  private final org.thunderdog.challegram.telegram.Tdlib tdlib;
   private String position = "left";
   private int buttonColor, textColor;
 
-  public MiniAppButtons (Context context, Runnable onMain, Runnable onSecondary) {
+  public MiniAppButtons (Context context, org.thunderdog.challegram.telegram.Tdlib tdlib, Runnable onMain, Runnable onSecondary) {
     super(context);
+    this.tdlib = tdlib;
     main = new Action(context, onMain);
     secondary = new Action(context, onSecondary);
     refreshTheme();
@@ -43,7 +45,15 @@ public final class MiniAppButtons extends LinearLayout {
     Action action = isSecondary ? secondary : main;
     action.visible = data.optBoolean("is_visible", false);
     action.active = data.optBoolean("is_active", true);
-    action.label.setText(data.optString("text", ""));
+    String text = data.optString("text", "");
+    long emojiId = data.optLong("icon_custom_emoji_id", 0);
+    if (emojiId != 0) {
+      android.text.SpannableString value = new android.text.SpannableString("* " + text);
+      value.setSpan(new org.thunderdog.challegram.emoji.CustomEmojiSpanImpl(null, action.label, tdlib, emojiId), 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      action.label.setText(value);
+    } else action.label.setText(text);
+    action.label.setContentDescription(text);
+    action.shine = data.optBoolean("has_shine_effect") && action.visible;
     action.customColor = parseColor(data.optString("color", ""));
     action.customTextColor = parseColor(data.optString("text_color", ""));
     action.progress.setVisibility(data.optBoolean("is_progress_visible", false) ? VISIBLE : GONE);
@@ -59,8 +69,11 @@ public final class MiniAppButtons extends LinearLayout {
 
   public void reset () {
     main.visible = secondary.visible = false;
+    main.shine = secondary.shine = false;
     arrange();
   }
+
+  @Override public void performDestroy () { main.label.performDestroy(); secondary.label.performDestroy(); }
 
   private void arrange () {
     removeAllViews();
@@ -92,18 +105,25 @@ public final class MiniAppButtons extends LinearLayout {
   }
 
   private final class Action extends FrameLayout {
-    final TextView label;
+    final org.thunderdog.challegram.widget.CustomEmojiTextView label;
     final ProgressBar progress;
     boolean visible, active = true;
+    boolean shine;
+    long shineStart;
+    private final android.graphics.Paint shinePaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    private final android.graphics.Paint shineFrame = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    private final android.graphics.Matrix shineMatrix = new android.graphics.Matrix();
     Integer customColor, customTextColor;
 
     Action (Context context, Runnable callback) {
       super(context);
-      label = new TextView(context);
+      setWillNotDraw(false);
+      label = new org.thunderdog.challegram.widget.CustomEmojiTextView(context, tdlib);
       label.setGravity(Gravity.CENTER);
       label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
       label.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
       label.setSingleLine();
+      label.setEllipsize(android.text.TextUtils.TruncateAt.END);
       label.setPadding(Screen.dp(12), 0, Screen.dp(12), 0);
       addView(label, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
       progress = new ProgressBar(context, null, android.R.attr.progressBarStyleSmall);
@@ -120,6 +140,30 @@ public final class MiniAppButtons extends LinearLayout {
       background.setColor(customColor != null ? customColor : buttonColor);
       setBackground(background);
       label.setTextColor(customTextColor != null ? customTextColor : textColor);
+      int color = label.getCurrentTextColor() & 0xffffff;
+      shinePaint.setShader(new android.graphics.LinearGradient(0, 0, Screen.dp(160), 0, new int[]{0, color | 0x40000000, 0}, null, android.graphics.Shader.TileMode.CLAMP));
+      shineFrame.setShader(new android.graphics.LinearGradient(0, 0, Screen.dp(160), 0, new int[]{0, color | 0xcc000000, 0}, null, android.graphics.Shader.TileMode.CLAMP));
+      shineFrame.setStyle(android.graphics.Paint.Style.STROKE);
+      shineFrame.setStrokeWidth(Screen.dp(2));
+      invalidate();
+    }
+
+    @Override protected void onAttachedToWindow () {
+      super.onAttachedToWindow(); label.provideComplexReceiverForSpan(null).attach(); shineStart = android.os.SystemClock.uptimeMillis();
+    }
+    @Override protected void onDetachedFromWindow () {
+      label.provideComplexReceiverForSpan(null).detach(); super.onDetachedFromWindow();
+    }
+    @Override protected void onDraw (android.graphics.Canvas canvas) {
+      super.onDraw(canvas);
+      if (!shine || !isShown()) return;
+      float progress = (android.os.SystemClock.uptimeMillis() - shineStart) % 2400 / 1200f;
+      shineMatrix.setTranslate((getWidth() + Screen.dp(320)) * progress - Screen.dp(160), 0);
+      shinePaint.getShader().setLocalMatrix(shineMatrix); shineFrame.getShader().setLocalMatrix(shineMatrix);
+      android.graphics.RectF rect = new android.graphics.RectF(0, 0, getWidth(), getHeight());
+      canvas.drawRoundRect(rect, Screen.dp(9), Screen.dp(9), shinePaint);
+      rect.inset(Screen.dp(1), Screen.dp(1)); canvas.drawRoundRect(rect, Screen.dp(8), Screen.dp(8), shineFrame);
+      postInvalidateOnAnimation();
     }
   }
 }

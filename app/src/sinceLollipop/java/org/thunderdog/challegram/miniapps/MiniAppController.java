@@ -205,7 +205,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     errorView.setPadding(Screen.dp(32), Screen.dp(24), Screen.dp(32), Screen.dp(24));
     errorView.setVisibility(View.GONE);
     browserArea.addView(errorView, new FrameLayout.LayoutParams(-1, -1));
-    buttons = new MiniAppButtons(context, () -> pressed("main_button_pressed"), () -> pressed("secondary_button_pressed"));
+    buttons = new MiniAppButtons(context, tdlib, () -> pressed("main_button_pressed"), () -> pressed("secondary_button_pressed"));
     column.addView(buttons, new LinearLayout.LayoutParams(-1, -2));
     header = new LinearLayout(context);
     header.setGravity(Gravity.CENTER_VERTICAL);
@@ -597,6 +597,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (webView != null) webView.animate().cancel();
     if (progress != null) progress.animate().cancel();
     session.close();
+    if (buttons != null) buttons.performDestroy();
     context().removeFullScreenView(this, true);
     if (document != null) document.close();
     cancelDocumentRequests();
@@ -767,7 +768,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void switchInline (JSONObject data) {
     String username = tdlib.cache().userUsername(request.botUserId);
     TdApi.User bot = tdlib.cache().user(request.botUserId);
-    if (username == null || username.isEmpty() || bot == null || !(bot.type instanceof TdApi.UserTypeBot) || !((TdApi.UserTypeBot) bot.type).supportsInlineQueries) return;
+    if (username == null || username.isEmpty() || bot == null || !(bot.type instanceof TdApi.UserTypeBot) || !((TdApi.UserTypeBot) bot.type).isInline) return;
     String query = data.optString("query");
     if (query.length() > 256) return;
     JSONArray chatTypes = data.optJSONArray("chat_types");
