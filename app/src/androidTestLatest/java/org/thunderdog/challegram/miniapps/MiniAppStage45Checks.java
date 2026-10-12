@@ -1008,6 +1008,7 @@ final class MiniAppStage45Checks {
       TdApi.FormattedText caption = new TdApi.FormattedText("Synthetic caption", new TdApi.TextEntity[] {new TdApi.TextEntity(0, 9, new TdApi.TextEntityTypeBold())});
       TdApi.Location location = new TdApi.Location(0, 0, 0);
       String[] names = {"document", "audio", "voice", "video", "sticker", "location", "venue", "live-location"};
+      String[] renderers = {"TGMessageFile", "TGMessageFile", "TGMessageFile", "TGMessageMedia", "TGMessageSticker", "TGMessageLocation", "TGMessageLocation", "TGMessageLocation"};
       TdApi.MessageContent[] contents = {
         new TdApi.MessageDocument(new TdApi.Document("preview.txt", "text/plain", null, null, previewFile(2147483593, document)), caption),
         new TdApi.MessageAudio(new TdApi.Audio(1, "Synthetic tone", "Mini Apps test", "preview.ogg", "audio/ogg", null, thumbnail, new TdApi.Thumbnail[0], sound), caption),
@@ -1024,7 +1025,7 @@ final class MiniAppStage45Checks {
         clear(); preparedSend("content-" + name); Object operation = preparedOperation(true);
         MiniAppMessagePreview view = field(operation, "previewView");
         org.thunderdog.challegram.component.chat.MessageView cell = field(view, "messageView");
-        test.check(cell.getMessage().getMessage().content == content && !(cell.getMessage() instanceof org.thunderdog.challegram.data.TGMessageUnsupported), name + " preview uses its native content renderer");
+        test.check(cell.getMessage().getMessage().content == content && renderers[i].equals(cell.getMessage().getClass().getSimpleName()), name + " preview uses its native content renderer");
         capture("prepared-content-" + name);
         main(() -> {
           android.graphics.Rect visible = new android.graphics.Rect(), button = new android.graphics.Rect();
