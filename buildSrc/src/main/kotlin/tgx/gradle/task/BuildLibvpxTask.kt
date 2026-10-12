@@ -218,14 +218,25 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
     val configHeader = requireFile(
       build.resolve("vpx_config.h")
     )
-    val contents = configHeader.readText().replace(
+    val newHeaderContent = configHeader.readText().replace(
       Regex("(?<=^#define CONFIG_LIBYUV )(\\d+)", RegexOption.MULTILINE)
     ) {
       require(it.groupValues[1] == "0")
       "1"
     }
     writeToFile(configHeader) { h ->
-      h.append(contents)
+      h.append(newHeaderContent)
+    }
+
+    // Remove NDK path
+    val configSource = requireFile(
+      build.resolve("vpx_config.c")
+    )
+    val newSourceContent = configSource.readText()
+      .replace(sysroot.toPosixPath(), "\$SYSROOT")
+      .replace(output.toPosixPath(), "${output.parentFile.name}/${output.name}")
+    writeToFile(configSource) { c ->
+      c.append(newSourceContent)
     }
 
     runCommands(
