@@ -39,7 +39,7 @@ abstract class GenerateExceptionsTask : DefaultTask() {
       kotlin.resolve("org/drinkmore/ClientException.kt")
     ) { kt ->
       kt.append("""
-        @file:MadeByGenerator("${this.className()}")
+        @file:MadeByGenerator("${className()}")
         
         package org.drinkmore
         

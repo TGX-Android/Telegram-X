@@ -424,7 +424,7 @@ abstract class GenerateEmojiSetsTask : DefaultTask() {
       kotlin.resolve("org/thunderdog/challegram/tool/Emojis.kt")
     ) { kt ->
       kt.append("""
-        @file:MadeByGenerator("${this.className()}")
+        @file:MadeByGenerator("${className()}")
         @file:JvmName("Emojis")
 
         package org.thunderdog.challegram.tool
@@ -579,7 +579,7 @@ abstract class GenerateEmojiSetsTask : DefaultTask() {
         kotlin.resolve("org/thunderdog/challegram/tool/EmojiBidi${legacySuffix}.kt")
       ) { kt ->
         kt.append("""
-        @file:MadeByGenerator("${this.className()}")
+        @file:MadeByGenerator("${className()}")
         @file:JvmName("EmojiBidUtil${legacySuffix}")
 
         package org.thunderdog.challegram.tool

@@ -211,7 +211,7 @@ abstract class GenerateLangFunctions : DefaultTask() {
     writeToFile(
       kotlin.resolve("org/thunderdog/challegram/core/LangUtils.kt")
     ) { kt ->
-      kt.append("@file:MadeByGenerator(\"${this.className()}\")\n")
+      kt.append("@file:MadeByGenerator(\"${className()}\")\n")
         .append("@file:JvmName(\"LangUtils\")\n\n")
         .append("package org.thunderdog.challegram.core\n\n")
         .append("import androidx.annotation.StringRes\n")

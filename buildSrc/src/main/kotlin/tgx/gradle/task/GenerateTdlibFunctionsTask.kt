@@ -82,7 +82,7 @@ abstract class GenerateTdlibFunctionsTask : DefaultTask() {
          * limitations under the License.
          */
 
-        @file:MadeByGenerator("${this.className()}")
+        @file:MadeByGenerator("${className()}")
         @file:JvmName("Td")
         @file:JvmMultifileClass
 
@@ -121,7 +121,7 @@ abstract class GenerateTdlibFunctionsTask : DefaultTask() {
          * limitations under the License.
          */
 
-        @file:MadeByGenerator("${this.className()}")
+        @file:MadeByGenerator("${className()}")
         @file:JvmName("Td")
         @file:JvmMultifileClass
 
@@ -260,7 +260,7 @@ abstract class GenerateTdlibFunctionsTask : DefaultTask() {
          * limitations under the License.
          */
 
-        @file:MadeByGenerator("${this.className()}")
+        @file:MadeByGenerator("${className()}")
         @file:JvmName("Td")
         @file:JvmMultifileClass
 
