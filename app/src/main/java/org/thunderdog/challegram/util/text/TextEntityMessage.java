@@ -255,39 +255,37 @@ public class TextEntityMessage extends TextEntity {
   }
 
   public static boolean isClickable (TdApi.TextEntityType type) {
-    switch (type.getConstructor()) {
-      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
-      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
-      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
-      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
-      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
-      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
-      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
-      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-
-      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypePre.CONSTRUCTOR: {
-        return true;
-      }
-      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
-      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
-      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
-      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
-      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
-      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
-      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
-      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR: {
-        return false;
-      }
-      default:
-        Td.assertTextEntityType_aefd8e69();
+    return switch (type.getConstructor()) {
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR,
+           TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR,
+           TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR,
+           TdApi.TextEntityTypeTonAddress.CONSTRUCTOR,
+           TdApi.TextEntityTypeUrl.CONSTRUCTOR,
+           TdApi.TextEntityTypeTextUrl.CONSTRUCTOR,
+           TdApi.TextEntityTypeDateTime.CONSTRUCTOR,
+           TdApi.TextEntityTypeBotCommand.CONSTRUCTOR,
+           TdApi.TextEntityTypeHashtag.CONSTRUCTOR,
+           TdApi.TextEntityTypeCashtag.CONSTRUCTOR,
+           TdApi.TextEntityTypeMention.CONSTRUCTOR,
+           TdApi.TextEntityTypeMentionName.CONSTRUCTOR,
+           TdApi.TextEntityTypeCode.CONSTRUCTOR,
+           TdApi.TextEntityTypePreCode.CONSTRUCTOR,
+           TdApi.TextEntityTypePre.CONSTRUCTOR ->
+        true;
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR, // TODO
+           TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR,
+           TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR,
+           TdApi.TextEntityTypeBold.CONSTRUCTOR,
+           TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR,
+           TdApi.TextEntityTypeItalic.CONSTRUCTOR,
+           TdApi.TextEntityTypeSpoiler.CONSTRUCTOR,
+           TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR,
+           TdApi.TextEntityTypeUnderline.CONSTRUCTOR -> false;
+      default -> {
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
-    }
+      }
+    };
   }
 
   private static boolean isEssential (TdApi.TextEntityType type) {
@@ -520,6 +518,15 @@ public class TextEntityMessage extends TextEntity {
         }
         break;
       }
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR: {
+        String tonAddress = Td.substring(text.getText(), clickableEntity);
+        if (callback == null || !callback.onTonAddressClick(tonAddress)) {
+          if (tdlib != null) {
+            tdlib.ui().openTonAddress(context, tonAddress);
+          }
+        }
+        break;
+      }
       case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR: {
         if (tdlib == null)
@@ -568,7 +575,7 @@ public class TextEntityMessage extends TextEntity {
         // Non-clickable
         break;
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(clickableEntity.type);
     }
   }
@@ -628,12 +635,17 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
 
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeDateTime.CONSTRUCTOR:
 
       case TdApi.TextEntityTypeMention.CONSTRUCTOR:
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR: {
         ids.append(R.id.btn_openLink);
-        strings.append(Td.isBankCardNumber(clickableEntity.type) ? R.string.OpenInExternalApp : R.string.Open);
+        strings.append(
+          Td.isBankCardNumber(clickableEntity.type) || Td.isTonAddress(clickableEntity.type) ?
+            R.string.OpenInExternalApp :
+            R.string.Open
+        );
         icons.append(R.drawable.baseline_open_in_browser_24);
         break;
       }
@@ -660,7 +672,7 @@ public class TextEntityMessage extends TextEntity {
       }
 
       default: {
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(clickableEntity.type);
       }
     }
@@ -707,6 +719,7 @@ public class TextEntityMessage extends TextEntity {
             message = R.string.CopiedCashtag;
             break;
           case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+          case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
           case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
           case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
           case TdApi.TextEntityTypeCode.CONSTRUCTOR:
@@ -716,7 +729,7 @@ public class TextEntityMessage extends TextEntity {
             break;
           }
           default: {
-            Td.assertTextEntityType_aefd8e69();
+            Td.assertTextEntityType_b8214790();
             message = R.string.CopiedLink;
             break;
           }

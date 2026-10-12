@@ -15,6 +15,7 @@
 package tgx.gradle.task
 
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.internal.GeneratedSubclasses
 import org.gradle.api.logging.Logging
 import tgx.gradle.fatal
 import tgx.gradle.requireDir
@@ -284,3 +285,6 @@ val PATH =
     "Path"
   else
     "PATH"
+
+fun Any.className(): String =
+  GeneratedSubclasses.unpackType(this).simpleName

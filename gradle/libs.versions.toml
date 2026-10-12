@@ -1,7 +1,7 @@
 [versions]
 android-gradle-plugin = "9.4.1"
 
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 ksp = "2.3.4"
 desugaring = "2.1.5"
 

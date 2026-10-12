@@ -113,10 +113,10 @@ fun findExtraFolders(variant: SdkVariant): Set<String> =
     if (variant.minSdk < 23) {
       this += "preMarshmallow"
     }
-    if (variant.minSdk >= 23 || variant.isLatest) {
+    if (variant.minSdk >= 23) {
       this += "sinceMarshmallow"
     }
-    if (variant.minSdk >= 26 || variant.isLatest) {
+    if (variant.minSdk >= 26) {
       this += "sinceOreo"
     }
     this += "only${variant.flavor.uppercaseFirstChar()}"
@@ -133,6 +133,8 @@ fun <T> selectApiFlavor(
     "legacy" -> legacy
     "lollipop" -> lollipop
     "marshmallow" -> marshmallow
+    "tens",
+    "qrs",
     "latest" -> latest
     else -> error(variant.flavor)
   }
