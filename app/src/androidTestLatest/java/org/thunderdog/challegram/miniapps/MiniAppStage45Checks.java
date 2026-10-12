@@ -985,7 +985,69 @@ final class MiniAppStage45Checks {
       } finally { main(() -> activity.setRequestedOrientation(orientation)); Thread.sleep(700); }
       main(() -> ((android.app.Dialog) field(photoOperation, "dialog")).cancel());
     } finally { image.delete(); }
+    preparedContentChecks(preview, markup);
     preparedSenderRaceCheck(self.id);
+  }
+
+  private void preparedContentChecks (AtomicReference<MiniAppInlinePreview> preview, TdApi.ReplyMarkup markup) throws Exception {
+    File directory = new File(test.getTargetContext().getCacheDir(), "miniapp-preview-content");
+    if (!directory.isDirectory() && !directory.mkdirs()) throw new AssertionError("Cannot create preview fixtures");
+    File document = new File(directory, "preview.txt"), sticker = new File(directory, "preview.webp");
+    File audio = new File(directory, "preview.ogg"), video = new File(directory, "preview.mp4");
+    try {
+      try (FileOutputStream output = new FileOutputStream(document)) { output.write("Synthetic Mini Apps document\n".getBytes(StandardCharsets.UTF_8)); }
+      copyPreviewAsset("preview-audio.ogg", audio); copyPreviewAsset("preview-video.mp4", video);
+      Bitmap bitmap = Bitmap.createBitmap(160, 120, Bitmap.Config.ARGB_8888); bitmap.eraseColor(0xff3685d5);
+      try (FileOutputStream output = new FileOutputStream(sticker)) { bitmap.compress(Bitmap.CompressFormat.WEBP, 100, output); }
+      finally { bitmap.recycle(); }
+      TdApi.File image = previewFile(2147483590, sticker), sound = previewFile(2147483591, audio), movie = previewFile(2147483592, video);
+      TdApi.Thumbnail thumbnail = new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), 160, 120, image);
+      TdApi.FormattedText caption = new TdApi.FormattedText("Synthetic caption", new TdApi.TextEntity[] {new TdApi.TextEntity(0, 9, new TdApi.TextEntityTypeBold())});
+      TdApi.Location location = new TdApi.Location(0, 0, 0);
+      String[] names = {"document", "audio", "voice", "video", "sticker", "location", "venue", "live-location"};
+      TdApi.MessageContent[] contents = {
+        new TdApi.MessageDocument(new TdApi.Document("preview.txt", "text/plain", null, null, previewFile(2147483593, document)), caption),
+        new TdApi.MessageAudio(new TdApi.Audio(1, "Synthetic tone", "Mini Apps test", "preview.ogg", "audio/ogg", null, thumbnail, new TdApi.Thumbnail[0], sound), caption),
+        new TdApi.MessageVoiceNote(new TdApi.VoiceNote(1, new byte[63], "audio/ogg", null, sound), caption, false),
+        new TdApi.MessageVideo(new TdApi.Video(1, 160, 120, "preview.mp4", "video/mp4", false, true, null, thumbnail, movie), new TdApi.AlternativeVideo[0], new TdApi.VideoStoryboard[0], null, 0, caption, true, false, false),
+        new TdApi.MessageSticker(new TdApi.Sticker(0, 0, 160, 120, "", new TdApi.StickerFormatWebp(), new TdApi.StickerFullTypeRegular(null), thumbnail, image), false),
+        new TdApi.MessageLocation(location),
+        new TdApi.MessageVenue(new TdApi.Venue(location, "Synthetic venue", "Test address", "", "", "")),
+        new TdApi.MessageLiveLocation(new TdApi.LiveLocation(location, 900, 0, 0), 900)
+      };
+      for (int i = 0; i < contents.length; i++) {
+        String name = names[i]; TdApi.MessageContent content = contents[i];
+        preview.set(new MiniAppInlinePreview(content, markup));
+        clear(); preparedSend("content-" + name); Object operation = preparedOperation(true);
+        MiniAppMessagePreview view = field(operation, "previewView");
+        org.thunderdog.challegram.component.chat.MessageView cell = field(view, "messageView");
+        test.check(cell.getMessage().getMessage().content == content && !(cell.getMessage() instanceof org.thunderdog.challegram.data.TGMessageUnsupported), name + " preview uses its native content renderer");
+        capture("prepared-content-" + name);
+        main(() -> {
+          android.graphics.Rect visible = new android.graphics.Rect(), button = new android.graphics.Rect();
+          ((android.app.Dialog) field(operation, "dialog")).getWindow().getDecorView().getWindowVisibleDisplayFrame(visible);
+          ((android.view.View) field(operation, "submit")).getGlobalVisibleRect(button);
+          test.check(view.getWidth() > 0 && view.getHeight() > 0 && !button.isEmpty() && button.bottom <= visible.bottom,
+            name + " preview keeps its content and Share button visible");
+        });
+        main(() -> ((android.app.Dialog) field(operation, "dialog")).cancel());
+        test.check("USER_DECLINED".equals(result("prepared_message_failed").getString("error")) && !has("prepared_message_sent"), name + " cancellation never reports a sent message");
+      }
+    } finally {
+      for (File file : new File[] {document, sticker, audio, video}) if (file.exists() && !file.delete()) throw new AssertionError("Cannot remove synthetic preview file");
+      if (directory.exists() && !directory.delete()) throw new AssertionError("Cannot remove synthetic preview directory");
+    }
+  }
+
+  private void copyPreviewAsset (String name, File destination) throws Exception {
+    try (java.io.InputStream input = test.getContext().getAssets().open("miniapps/" + name); FileOutputStream output = new FileOutputStream(destination)) {
+      byte[] buffer = new byte[8192]; int count;
+      while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+    }
+  }
+
+  private static TdApi.File previewFile (int id, File file) {
+    return new TdApi.File(id, file.length(), file.length(), new TdApi.LocalFile(file.getPath(), false, false, false, true, 0, file.length(), file.length()), new TdApi.RemoteFile("", "", false, false, 0));
   }
 
   private void preparedSenderRaceCheck (long chatId) throws Exception {
