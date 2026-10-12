@@ -70,8 +70,6 @@ add_compile_options(
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fvisibility=hidden>"
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fvisibility-inlines-hidden>"
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
-  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fno-unwind-tables>"
-  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fno-asynchronous-unwind-tables>"
 )
 
 if (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 23)
