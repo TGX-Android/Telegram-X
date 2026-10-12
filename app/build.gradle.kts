@@ -1056,6 +1056,7 @@ dependencies {
   flavorImplementation(
     libs.google.firebase.messaging.legacy,
     libs.google.firebase.messaging.lollipop,
+    libs.google.firebase.messaging.marshmallow,
     libs.google.firebase.messaging.latest
   ) {
     exclude(group = "com.google.firebase", module = "firebase-core")
