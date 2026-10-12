@@ -778,6 +778,17 @@ final class MiniAppStage45Checks {
         clear(); preparedSend("real-inline-preview"); Object operation = preparedOperation(true);
         MiniAppInlinePreview rendered = field(operation, "preview");
         test.check(rendered.content.getConstructor() == message.content.getConstructor(), "production preview sheet receives the real cached message through only_preview");
+        if (!textResult) {
+          MiniAppMessagePreview view = field(operation, "previewView");
+          org.thunderdog.challegram.component.chat.MessageView cell = field(view, "messageView");
+          org.thunderdog.challegram.data.MosaicWrapper mosaic = field(cell.getMessage(), "mosaicWrapper");
+          java.util.concurrent.atomic.AtomicBoolean visible = new java.util.concurrent.atomic.AtomicBoolean();
+          for (int i = 0; i < 400 && !visible.get(); i++) {
+            main(() -> visible.set(!cell.getComplexReceiver().getGifReceiver(mosaic.getSingularItem().getReceiverKey()).needPlaceholder()));
+            if (!visible.get()) Thread.sleep(100);
+          }
+          test.check(visible.get(), "real animation preview decodes an actual frame without a download tap");
+        }
         capture(textResult ? "only-preview-real-text" : "only-preview-real-animation");
         main(() -> ((android.app.Dialog) field(operation, "dialog")).cancel());
         test.check("USER_DECLINED".equals(result("prepared_message_failed").getString("error")) && !has("prepared_message_sent"), "cancelling the real preview never reports a sent message");

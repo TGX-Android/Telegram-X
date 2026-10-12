@@ -61,6 +61,8 @@ final class MiniAppMessagePreview extends FrameLayout {
           // Media receivers depend on the mosaic produced by buildLayout, just as in the chat adapter.
           getMessage().buildLayout(width);
           setMessage(getMessage());
+          // The media mosaic does not exist until layout; start downloads after its receivers are bound.
+          getMessage().autoDownloadContent(self.type);
         }
         super.onMeasure(widthSpec, heightSpec);
       }
@@ -70,7 +72,6 @@ final class MiniAppMessagePreview extends FrameLayout {
     messageView.setManager(renderer.getManager());
     messageView.setParentOnMeasureDisabled(true); messageView.setUseReceivers(); messageView.setUseComplexReceiver();
     messageView.setMessage(parsed);
-    parsed.autoDownloadContent(self.type);
     chat.addView(messageView, new LinearLayout.LayoutParams(-1, -2));
     addView(chat, new FrameLayout.LayoutParams(-1, -2));
   }
