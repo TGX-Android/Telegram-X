@@ -352,7 +352,7 @@ final class MiniAppRequestedChat {
         String handle = username.getText().toString() + "bot";
         if (handle.length() < 4 || handle.length() > 32) { status.setText(Lang.getString(R.string.UsernameInvalid)); status.setTextColor(Theme.getColor(ColorId.textNegative)); return; }
         status.setText(Lang.getString(R.string.UsernameChecking)); status.setTextColor(Theme.textDecentColor());
-        searchTask = () -> send(new TdApi.CheckBotUsername(handle), result -> {
+        searchTask = () -> send(new TdApi.CheckBotUsername(handle, false), result -> {
           if (generation != botUsernameGeneration) return;
           boolean available = result instanceof TdApi.CheckChatUsernameResultOk;
           checkedBotUsername = available ? handle : null;

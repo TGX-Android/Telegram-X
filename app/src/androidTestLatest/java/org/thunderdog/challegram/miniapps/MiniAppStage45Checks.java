@@ -490,7 +490,10 @@ final class MiniAppStage45Checks {
       else if (function instanceof TdApi.GetUser) {
         TdApi.User manager = new TdApi.User(); manager.id = bot; manager.firstName = "NskDanceBot"; manager.lastName = "";
         TdApi.UserTypeBot type = new TdApi.UserTypeBot(); type.canManageBots = managerEnabled.get(); manager.type = type; callback.onResult(manager);
-      } else if (function instanceof TdApi.CheckBotUsername) callback.onResult(new TdApi.CheckChatUsernameResultOk());
+      } else if (function instanceof TdApi.CheckBotUsername) {
+        test.check(!((TdApi.CheckBotUsername) function).isSecondary, "managed bot username is checked for creation, not a secondary alias");
+        callback.onResult(new TdApi.CheckChatUsernameResultOk());
+      }
       else if (function instanceof TdApi.CreateBot) { creates.incrementAndGet(); creation.set((TdApi.CreateBot) function); createReply.set(callback); }
       else if (function instanceof TdApi.ShareUsersWithBot) { shares.incrementAndGet(); sharing.set((TdApi.ShareUsersWithBot) function); shareReply.set(callback); }
       else throw new AssertionError("Unexpected managed-bot fixture call: " + function.getClass().getSimpleName());
