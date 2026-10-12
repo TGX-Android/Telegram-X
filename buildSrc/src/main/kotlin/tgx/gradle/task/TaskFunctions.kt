@@ -15,13 +15,16 @@
 package tgx.gradle.task
 
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.internal.GeneratedSubclasses
 import org.gradle.api.logging.Logging
 import tgx.gradle.fatal
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
 import java.io.File
 import java.io.Writer
+import java.nio.file.CopyOption
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.*
 
 fun isWindowsHost(): Boolean =
@@ -102,6 +105,10 @@ fun copyOrReplace(fromFile: File, toFile: File) {
       input.copyTo(output)
     }
   }
+}
+
+fun moveFile(fromFile: File, toFile: File, vararg copyOption: CopyOption = arrayOf(StandardCopyOption.REPLACE_EXISTING)) {
+  Files.move(fromFile.toPath(), toFile.toPath(), *copyOption)
 }
 
 fun areFileContentsIdentical(a: File, b: File): Boolean =
@@ -284,3 +291,6 @@ val PATH =
     "Path"
   else
     "PATH"
+
+fun Any.className(): String =
+  GeneratedSubclasses.unpackType(this).simpleName

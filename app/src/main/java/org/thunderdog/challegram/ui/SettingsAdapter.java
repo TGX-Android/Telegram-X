@@ -46,6 +46,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
+import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
 import org.thunderdog.challegram.component.user.UserView;
@@ -140,6 +141,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
   private @Nullable SliderWrapView.RealTimeChangeListener sliderChangeListener;
 
+  private @Nullable MessagesManager messagesManager;
+
   public interface TextChangeListener {
     void onTextChanged (int id, ListItem item, MaterialEditTextGroup v);
   }
@@ -157,6 +160,18 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     this.onClickListener = onClickListener;
     this.items = new ArrayList<>(5);
     this.themeProvider = themeProvider;
+  }
+
+  public void setMessagesManager (@NonNull MessagesManager manager) {
+    this.messagesManager = manager;
+  }
+
+  @NonNull
+  public MessagesManager getMessagesManager () {
+    if (messagesManager == null) {
+      throw new IllegalStateException();
+    }
+    return messagesManager;
   }
 
   public void addBoundShadow (RecyclerView recyclerView, final View shadowView, final int height) {
