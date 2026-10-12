@@ -47,25 +47,17 @@ import static org.thunderdog.challegram.miniapps.MiniAppTheme.object;
 /** Official shareMessage flow: cached message preview, peer/topic selection, then acknowledged sending. */
 final class MiniAppPreparedMessage {
   interface Gateway { void send (TdApi.Function<?> function, Client.ResultHandler handler); }
-  interface PreviewLoader { void load (long queryId, String resultId, PreviewCallback callback); }
-  interface PreviewCallback { void loaded (MiniAppInlinePreview preview, TdApi.Error error); }
   private final MiniAppController host;
   private final Tdlib tdlib;
   private final Gateway gateway;
-  private final PreviewLoader previews;
   private Operation operation;
 
   MiniAppPreparedMessage (MiniAppController host) {
-    this(host, (function, handler) -> host.tdlib().client().send(function, handler), null);
+    this(host, (function, handler) -> host.tdlib().client().send(function, handler));
   }
 
-  MiniAppPreparedMessage (MiniAppController host, Gateway gateway, PreviewLoader previews) {
+  MiniAppPreparedMessage (MiniAppController host, Gateway gateway) {
     this.host = host; tdlib = host.tdlib(); this.gateway = gateway;
-    this.previews = previews != null ? previews : (queryId, resultId, callback) -> {
-      TdApi.Function<?> function = MiniAppInlinePreview.request(queryId, resultId);
-      if (function == null) { callback.loaded(null, new TdApi.Error(501, "UNSUPPORTED")); return; }
-      gateway.send(function, result -> callback.loaded(MiniAppInlinePreview.parse(result), result instanceof TdApi.Error ? (TdApi.Error) result : null));
-    };
   }
 
   boolean active () { return operation != null; }
@@ -90,21 +82,18 @@ final class MiniAppPreparedMessage {
       next.prepared = (TdApi.PreparedInlineMessage) response;
       next.resultId = MiniAppPreparedMessagePolicy.resultId(next.prepared.result);
       if (next.resultId == null || next.resultId.isEmpty()) { next.finish("MESSAGE_EXPIRED"); return; }
-      previews.load(next.prepared.inlineQueryId, next.resultId, (preview, error) -> tdlib.ui().post(() -> {
-        if (!next.current()) return;
-        if (!host.isShowing()) { next.finish("USER_DECLINED"); return; }
-        if (preview == null || preview.content == null) {
-          boolean unsupported = error != null && error.code == 501;
-          if (unsupported) UI.showToast(R.string.MiniAppMessageUnsupported, Toast.LENGTH_LONG);
-          next.finish(unsupported ? "UNSUPPORTED" : "MESSAGE_EXPIRED"); return;
-        }
-        next.preview = preview;
-        next.resolveLinkPreview(() -> next.send(new TdApi.CreatePrivateChat(tdlib.myUserId(), false), self -> {
-          if (!(self instanceof TdApi.Chat)) { next.finish("UNKNOWN_ERROR"); return; }
-          next.selfChat = (TdApi.Chat) self;
-          next.showPreview();
-        }));
-      }));
+      // Preview requires a writable chat even before the user chooses recipients.
+      // Saved Messages supplies that context; onlyPreview prevents any actual send.
+      next.send(new TdApi.CreatePrivateChat(tdlib.myUserId(), false), self -> {
+        if (!(self instanceof TdApi.Chat)) { next.finish("UNKNOWN_ERROR"); return; }
+        next.selfChat = (TdApi.Chat) self;
+        next.send(MiniAppInlinePreview.request(next.selfChat.id, next.prepared.inlineQueryId, next.resultId), result -> {
+          MiniAppInlinePreview preview = MiniAppInlinePreview.parse(result);
+          if (preview == null || preview.content == null) { next.finish("MESSAGE_EXPIRED"); return; }
+          next.preview = preview;
+          next.resolveLinkPreview(next::showPreview);
+        });
+      });
     });
   }
 

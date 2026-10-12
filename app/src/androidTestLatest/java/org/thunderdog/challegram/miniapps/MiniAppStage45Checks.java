@@ -48,7 +48,7 @@ final class MiniAppStage45Checks {
     }
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "stage 4/5 uses an initialized account");
     tdlib = activity.currentTdlib();
-    boolean realBot = server || "actions".equals(capability) || "emoji".equals(capability) || capability.startsWith("requested_chat") || capability.startsWith("prepared") || "managed_bot".equals(capability);
+    boolean realBot = server || "actions".equals(capability) || "emoji".equals(capability) || capability.startsWith("requested_chat") || capability.startsWith("prepared") || "managed_bot".equals(capability) || "inline_preview".equals(capability);
     if (realBot) {
       TdApi.Chat chat = (TdApi.Chat) call(new TdApi.SearchPublicChat("nskdancebot"));
       bot = tdlib.chatUserId(chat);
@@ -68,6 +68,7 @@ final class MiniAppStage45Checks {
       else if ("managed_bot".equals(capability)) managedBotChecks();
       else if ("prepared".equals(capability)) preparedMessageChecks();
       else if ("prepared_server".equals(capability)) preparedMessageServerChecks();
+      else if ("inline_preview".equals(capability)) inlinePreviewServerChecks();
       else if ("actions".equals(capability)) actionChecks();
       else if ("emoji".equals(capability)) authorizedEmojiChecks();
       else localChecks();
@@ -478,13 +479,6 @@ final class MiniAppStage45Checks {
   private void managedBotChecks () throws Exception {
     TdApi.Object nativeManaged = call(new TdApi.GetOption("can_share_managed_bot"));
     test.check(nativeManaged instanceof TdApi.OptionValueBoolean && ((TdApi.OptionValueBoolean) nativeManaged).value, "installed native TDLib supports managed bot sharing");
-    TdApi.Object nativePreview = call(new TdApi.GetOption("can_get_inline_query_result_message"));
-    test.check(nativePreview instanceof TdApi.OptionValueBoolean && ((TdApi.OptionValueBoolean) nativePreview).value, "installed native TDLib exposes actual inline message previews");
-    // The independent client branch still builds with the upstream bundle. This opt-in suite
-    // requires the separately built TDLib extension and verifies its generated JNI bindings.
-    TdApi.Function<?> previewRequest = (TdApi.Function<?>) Class.forName("org.drinkless.tdlib.TdApi$GetInlineQueryResultMessage").getConstructor(long.class, String.class).newInstance(-1L, "missing-synthetic-result");
-    TdApi.Object missingPreview = callRaw(previewRequest);
-    test.check(missingPreview instanceof TdApi.Error && ((TdApi.Error) missingPreview).code == 400, "new generated Java request reaches native API and rejects an uncached preview");
     java.util.concurrent.atomic.AtomicBoolean supported = new java.util.concurrent.atomic.AtomicBoolean(true), managerEnabled = new java.util.concurrent.atomic.AtomicBoolean(true);
     java.util.concurrent.atomic.AtomicInteger creates = new java.util.concurrent.atomic.AtomicInteger(), shares = new java.util.concurrent.atomic.AtomicInteger();
     java.util.concurrent.atomic.AtomicLong opened = new java.util.concurrent.atomic.AtomicLong();
@@ -720,8 +714,82 @@ final class MiniAppStage45Checks {
     send("web_app_send_prepared_message", "{\"id\":\"miniapps-missing-prepared-fixture\"}");
     test.check("MESSAGE_EXPIRED".equals(result("prepared_message_failed").getString("error")), "real Telegram error returns the official MESSAGE_EXPIRED event");
     test.check(!has("prepared_message_sent"), "server rejection cannot report message sent");
-    TdApi.Function<?> request = MiniAppInlinePreview.request(-1, "missing-synthetic-result");
-    test.check(request != null && callRaw(request) instanceof TdApi.Error, "rebuilt JNI accepts the preview API and rejects an absent cache entry");
+    TdApi.Chat self = (TdApi.Chat) call(new TdApi.CreatePrivateChat(tdlib.myUserId(), false));
+    TdApi.SendInlineQueryResultMessage request = MiniAppInlinePreview.request(self.id, -1, "missing-synthetic-result");
+    test.check(request.options.onlyPreview && callRaw(request) instanceof TdApi.Error, "standard only_preview rejects an absent cache entry without submitting a message");
+  }
+
+  /** Real cached inline results and JNI preview. No sends, draft writes or recents restoration. */
+  private void inlinePreviewServerChecks () throws Exception {
+    TdApi.Chat self = (TdApi.Chat) call(new TdApi.CreatePrivateChat(tdlib.myUserId(), false));
+    long lastMessage = self.lastMessage != null ? self.lastMessage.id : 0;
+    String draft = String.valueOf(self.draftMessage);
+    long[] recents = ((TdApi.Users) call(new TdApi.GetRecentInlineBots())).userIds.clone();
+    TdApi.Object animationBot = call(new TdApi.GetOption("animation_search_bot_username"));
+    test.check(animationBot instanceof TdApi.OptionValueString && !((TdApi.OptionValueString) animationBot).value.isEmpty(), "server provides the animation inline bot");
+    test.check(call(new TdApi.GetOption("can_get_inline_query_result_message")) instanceof TdApi.OptionValueEmpty, "installed native library has no custom inline preview capability");
+    boolean oldApiAbsent;
+    try { Class.forName("org.drinkless.tdlib.TdApi$GetInlineQueryResultMessage"); oldApiAbsent = false; }
+    catch (ClassNotFoundException expected) { oldApiAbsent = true; }
+    test.check(oldApiAbsent, "installed Java bindings no longer contain the custom preview request");
+    java.util.concurrent.atomic.AtomicInteger newMessages = new java.util.concurrent.atomic.AtomicInteger();
+    org.thunderdog.challegram.telegram.MessageListener listener = new org.thunderdog.challegram.telegram.MessageListener() {
+      @Override public void onNewMessage (TdApi.Message message) { newMessages.incrementAndGet(); }
+    };
+    tdlib.listeners().subscribeToMessageUpdates(self.id, listener);
+    boolean exercisedNonFirstBot = false;
+    try {
+      String[] usernames = {"bold", ((TdApi.OptionValueString) animationBot).value};
+      for (int index = 0; index < usernames.length; index++) {
+        final boolean textResult = index == 0;
+        TdApi.Chat inlineChat = (TdApi.Chat) call(new TdApi.SearchPublicChat(usernames[index]));
+        long inlineBot = tdlib.chatUserId(inlineChat);
+        exercisedNonFirstBot |= recents.length == 0 || recents[0] != inlineBot;
+        TdApi.InlineQueryResults results = (TdApi.InlineQueryResults) call(new TdApi.GetInlineQueryResults(inlineBot, self.id, null, textResult ? "Mini Apps preview test" : "telegram", ""));
+        TdApi.InlineQueryResult selected = null;
+        for (TdApi.InlineQueryResult candidate : results.results) {
+          if (textResult ? candidate instanceof TdApi.InlineQueryResultArticle : candidate instanceof TdApi.InlineQueryResultAnimation) { selected = candidate; break; }
+        }
+        test.check(selected != null, "Telegram returned a real cached " + (textResult ? "text" : "animation") + " result");
+        final TdApi.InlineQueryResult selectedResult = selected;
+        String resultId = MiniAppPreparedMessagePolicy.resultId(selected);
+        TdApi.SendInlineQueryResultMessage request = MiniAppInlinePreview.request(self.id, results.inlineQueryId, resultId);
+        TdApi.Message message = (TdApi.Message) call(request);
+        test.check(message.chatId == self.id && message.viaBotUserId == inlineBot, "real JNI preview preserves its chat context and inline bot");
+        test.check(textResult ? message.content instanceof TdApi.MessageText : message.content instanceof TdApi.MessageAnimation, "real JNI preview returns actual " + (textResult ? "text" : "animation") + " MessageContent");
+        if (textResult) {
+          TdApi.FormattedText text = ((TdApi.MessageText) message.content).text;
+          test.check(text.text.contains("Mini Apps preview test") && text.entities.length > 0, "real text preview contains its formatting entities");
+        }
+        test.check(java.util.Arrays.equals(recents, ((TdApi.Users) call(new TdApi.GetRecentInlineBots())).userIds), "query and only_preview preserve the exact recent inline bot order");
+        // nskdancebot has no prepared-ID fixture. Supply only that lookup result;
+        // the production preview request, returned content and native UI stay real.
+        main(() -> set(host, "preparedMessage", new MiniAppPreparedMessage(host, (function, callback) -> {
+          if (function instanceof TdApi.GetPreparedInlineMessage) {
+            callback.onResult(new TdApi.PreparedInlineMessage(results.inlineQueryId, selectedResult, new TdApi.TargetChatTypes(true, false, false, false)));
+          } else {
+            if (function instanceof TdApi.SendMessage || function instanceof TdApi.SendInlineQueryResultMessage &&
+                (((TdApi.SendInlineQueryResultMessage) function).options == null || !((TdApi.SendInlineQueryResultMessage) function).options.onlyPreview)) {
+              throw new AssertionError("Live preview fixture must never submit a message");
+            }
+            tdlib.client().send(function, callback);
+          }
+        })));
+        clear(); preparedSend("real-inline-preview"); Object operation = preparedOperation(true);
+        MiniAppInlinePreview rendered = field(operation, "preview");
+        test.check(rendered.content.getConstructor() == message.content.getConstructor(), "production preview sheet receives the real cached message through only_preview");
+        capture(textResult ? "only-preview-real-text" : "only-preview-real-animation");
+        main(() -> ((android.app.Dialog) field(operation, "dialog")).cancel());
+        test.check("USER_DECLINED".equals(result("prepared_message_failed").getString("error")) && !has("prepared_message_sent"), "cancelling the real preview never reports a sent message");
+      }
+      test.check(exercisedNonFirstBot, "recents regression exercised a bot that was not already first");
+      test.check(java.util.Arrays.equals(recents, ((TdApi.Users) call(new TdApi.GetRecentInlineBots())).userIds), "repeated native and UI previews leave recent bots unchanged");
+      TdApi.Chat after = (TdApi.Chat) call(new TdApi.GetChat(self.id));
+      test.check(lastMessage == (after.lastMessage != null ? after.lastMessage.id : 0) && newMessages.get() == 0, "previews neither add a history entry nor emit a new-message update");
+      test.check(draft.equals(String.valueOf(after.draftMessage)), "previews preserve the existing Saved Messages draft");
+    } finally {
+      tdlib.listeners().unsubscribeFromMessageUpdates(self.id, listener);
+    }
   }
 
   /** Only the transport is synthetic: preview, picker, message updates and WebView callbacks run on the phone. */
@@ -729,6 +797,9 @@ final class MiniAppStage45Checks {
     TdApi.Chat self = (TdApi.Chat) call(new TdApi.CreatePrivateChat(tdlib.myUserId(), false));
     AtomicReference<org.drinkless.tdlib.Client.ResultHandler> fetch = new AtomicReference<>(), pending = new AtomicReference<>();
     AtomicReference<TdApi.SendInlineQueryResultMessage> outgoing = new AtomicReference<>();
+    AtomicReference<TdApi.SendInlineQueryResultMessage> previewRequest = new AtomicReference<>();
+    AtomicReference<org.drinkless.tdlib.Client.ResultHandler> pendingPreview = new AtomicReference<>();
+    AtomicReference<String> previewMode = new AtomicReference<>();
     AtomicReference<TdApi.SendMessage> outgoingComment = new AtomicReference<>();
     java.util.concurrent.atomic.AtomicInteger sends = new java.util.concurrent.atomic.AtomicInteger();
     java.util.concurrent.atomic.AtomicInteger linkRequests = new java.util.concurrent.atomic.AtomicInteger();
@@ -741,6 +812,7 @@ final class MiniAppStage45Checks {
     main(() -> set(host, "preparedMessage", new MiniAppPreparedMessage(host, (function, callback) -> {
       if (function instanceof TdApi.GetPreparedInlineMessage) {
         String id = ((TdApi.GetPreparedInlineMessage) function).preparedMessageId;
+        previewMode.set(id);
         if ("late".equals(id)) { fetch.set(callback); return; }
         if ("expired".equals(id)) { callback.onResult(new TdApi.Error(400, "MESSAGE_ID_INVALID")); return; }
         TdApi.InlineQueryResultArticle article = new TdApi.InlineQueryResultArticle(); article.id = "cached-result"; article.title = "Discovery title, never the message preview";
@@ -748,7 +820,19 @@ final class MiniAppStage45Checks {
       } else if (function instanceof TdApi.CreatePrivateChat) callback.onResult(self);
       else if (function instanceof TdApi.GetChats || function instanceof TdApi.SearchChats) callback.onResult(new TdApi.Chats(1, new long[] {self.id}));
       else if (function instanceof TdApi.LoadChats) callback.onResult(new TdApi.Error(404, "Not Found"));
-      else if (function instanceof TdApi.SendInlineQueryResultMessage) { sends.incrementAndGet(); outgoing.set((TdApi.SendInlineQueryResultMessage) function); pending.set(callback); }
+      else if (function instanceof TdApi.SendInlineQueryResultMessage) {
+        TdApi.SendInlineQueryResultMessage request = (TdApi.SendInlineQueryResultMessage) function;
+        if (request.options != null && request.options.onlyPreview) {
+          previewRequest.set(request);
+          if ("preview_error".equals(previewMode.get())) { callback.onResult(new TdApi.Error(400, "Inline query result not found")); return; }
+          if ("late_preview".equals(previewMode.get())) { pendingPreview.set(callback); return; }
+          TdApi.Message message = new TdApi.Message(); message.chatId = self.id;
+          message.content = preview.get().content; message.replyMarkup = preview.get().replyMarkup;
+          callback.onResult(message);
+        } else {
+          sends.incrementAndGet(); outgoing.set(request); pending.set(callback);
+        }
+      }
       else if (function instanceof TdApi.SendMessage) {
         outgoingComment.set((TdApi.SendMessage) function);
         TdApi.Message delivered = new TdApi.Message(); delivered.chatId = self.id; delivered.id = 1002; callback.onResult(delivered);
@@ -757,9 +841,11 @@ final class MiniAppStage45Checks {
         callback.onResult(new TdApi.LinkPreview("https://example.org/", "example.org", "Example", "Synthetic link card", new TdApi.FormattedText("Link preview content", null), "", new TdApi.LinkPreviewTypeArticle(null), false, false, false, true, false, 0));
       }
       else throw new AssertionError("Unexpected prepared-message fixture request: " + function.getClass().getSimpleName());
-    }, (query, id, callback) -> callback.loaded(preview.get(), null))));
+    })));
 
     preparedSend("preview"); Object first = preparedOperation(true);
+    TdApi.SendInlineQueryResultMessage request = previewRequest.get();
+    test.check(request != null && request.options.onlyPreview && request.chatId == self.id && request.queryId == 99112233L && "cached-result".equals(request.resultId) && request.topicId == null && request.replyTo == null && !request.hideViaBot, "production preview uses the standard sending API with onlyPreview and a Saved Messages context");
     test.check(field(first, "previewView") != null, "native sheet renders the actual cached message and inline markup");
     capture("stage6-prepared-text");
     MiniAppMessagePreview messagePreview = field(first, "previewView");
@@ -771,6 +857,16 @@ final class MiniAppStage45Checks {
     test.check("USER_DECLINED".equals(result("prepared_message_failed").getString("error")), "dismissing the preview reports cancellation once");
     test.check(sends.get() == 0, "preview cancellation never submits a message");
 
+    clear(); preparedSend("preview_error");
+    test.check("MESSAGE_EXPIRED".equals(result("prepared_message_failed").getString("error")) && sends.get() == 0, "only_preview errors complete the bridge request without a send");
+    clear(); preparedSend("late_preview");
+    for (int i = 0; i < 100 && pendingPreview.get() == null; i++) Thread.sleep(50);
+    test.check(pendingPreview.get() != null, "only_preview is pending before lifecycle cancellation");
+    main(host::minimize); Thread.sleep(300); main(host::restore); Thread.sleep(400);
+    TdApi.Message late = new TdApi.Message(); late.content = preview.get().content;
+    pendingPreview.get().onResult(late); Thread.sleep(100);
+    test.check("USER_DECLINED".equals(result("prepared_message_failed").getString("error")) && field(field(host, "preparedMessage"), "operation") == null && sends.get() == 0, "late preview cannot reopen a cancelled operation or submit a message");
+
     clear(); preparedSend("share"); Object share = preparedOperation(true);
     main(() -> ((android.view.View) field(share, "submit")).performClick()); Thread.sleep(500);
     android.widget.LinearLayout rows = field(share, "rows");
@@ -779,7 +875,7 @@ final class MiniAppStage45Checks {
     main(() -> rows.getChildAt(0).performClick()); capture("stage6-prepared-targets");
     main(() -> { ((android.view.View) field(share, "submit")).performClick(); ((android.view.View) field(share, "submit")).performClick(); });
     test.check(sends.get() == 1 && !has("prepared_message_sent"), "double click submits once and does not report a queued request as sent");
-    test.check(outgoing.get().queryId == 99112233L && "cached-result".equals(outgoing.get().resultId) && outgoing.get().chatId == self.id && outgoing.get().topicId == null && outgoing.get().replyTo == null && !outgoing.get().hideViaBot, "outgoing inline query, result, recipient and attribution are preserved");
+    test.check(outgoing.get().queryId == 99112233L && "cached-result".equals(outgoing.get().resultId) && outgoing.get().chatId == self.id && outgoing.get().topicId == null && outgoing.get().replyTo == null && !outgoing.get().hideViaBot && !outgoing.get().options.onlyPreview, "confirmed sending preserves recipient and attribution and does not reuse preview options");
     TdApi.Message queued = new TdApi.Message(); queued.id = -765; queued.chatId = self.id; queued.sendingState = new TdApi.MessageSendingStatePending(0);
     pending.get().onResult(queued); Thread.sleep(150);
     test.check(!has("prepared_message_sent"), "MessageSendingStatePending is not a delivery acknowledgement");
