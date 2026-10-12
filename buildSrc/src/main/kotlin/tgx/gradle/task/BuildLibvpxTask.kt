@@ -1,8 +1,10 @@
 package tgx.gradle.task
 
+import Sdk
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.TaskAction
 import tgx.gradle.createEmptyDir
+import tgx.gradle.fatal
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
 import java.io.File
@@ -29,13 +31,9 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
     val sysroot = requireDir(prebuilt.resolve(
       "sysroot"
     ))
-    val androidApiLevel = when (flavor) {
-      "legacy" -> 16
-      "lollipop" -> 21
-      "marshmallow" -> 23
-      "latest" -> 24
-      else -> error("Unknown flavor: $flavor")
-    }
+    val androidApiLevel = (Sdk.VARIANTS.values.firstOrNull() {
+      it.flavor == flavor
+    } ?: fatal("Unknown flavor: $flavor")).minSdk
 
     val extraParams = mutableListOf<String>()
     val cFlags = mutableListOf(
@@ -96,7 +94,7 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
         ))
       }
       else -> {
-        error("Unsupported abi: $abi")
+        fatal("Unsupported abi: $abi")
       }
     }
     val cc = "${requireFile(prebuilt.resolveNdkBinary(
@@ -171,7 +169,7 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
       "x86" ->
         "x86-android-gcc"
       else ->
-        error("Unreachable")
+        fatal("Unreachable")
     }
     extraParams +=
       if (abi != "armeabi-v7a" || flavor != "legacy") {
