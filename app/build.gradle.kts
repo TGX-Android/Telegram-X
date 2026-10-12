@@ -71,9 +71,6 @@ val generateThemes = tasks.register<GenerateThemesTask>("generateThemes") {
   resOutputDir.set(layout.buildDirectory.dir(
     "generated/tgx/themes/res"
   ))
-  javaOutputDir.set(layout.buildDirectory.dir(
-    "generated/tgx/themes/java"
-  ))
   kotlinOutputDir.set(layout.buildDirectory.dir(
     "generated/tgx/themes/kotlin"
   ))
@@ -86,13 +83,13 @@ val generateLangFunctions = tasks.register<GenerateLangFunctions>("generateLangF
     "src/main/res/values/strings.xml"
   ))
   colorIdJava.set(generateThemes.flatMap {
-    it.javaOutputDir.file(
-      "org/thunderdog/challegram/theme/ColorId.java"
+    it.kotlinOutputDir.file(
+      "org/thunderdog/challegram/theme/ColorId.kt"
     )
   })
   propertyIdJava.set(generateThemes.flatMap {
-    it.javaOutputDir.file(
-      "org/thunderdog/challegram/theme/PropertyId.java"
+    it.kotlinOutputDir.file(
+      "org/thunderdog/challegram/theme/PropertyId.kt"
     )
   })
   // Output
@@ -749,11 +746,6 @@ android {
         )
         addGeneratedSourceDirectory(
           generateLangFunctions, GenerateLangFunctions::resOutputDir
-        )
-      }
-      variant.sources.java?.apply {
-        addGeneratedSourceDirectory(
-          generateThemes, GenerateThemesTask::javaOutputDir
         )
       }
       variant.sources.kotlin?.apply {
