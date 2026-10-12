@@ -29,6 +29,7 @@ abstract class OptimizeWithAapt2Task @Inject constructor(
       val result = exec.exec {
         executable = aapt2.get()
         args("optimize", "--enable-sparse-encoding")
+        args("-o", tempFile.absolutePath, inputFile.absolutePath)
         if (minSdk.get() >= 34) {
           args("--enable-compact-entries")
         }
