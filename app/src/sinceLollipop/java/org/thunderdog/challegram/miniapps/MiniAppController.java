@@ -126,6 +126,18 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private int dragStartHeight;
   private boolean dragging;
   private float webTouchX, webTouchY;
+  private int legacyKeyboardInset;
+  private android.view.ViewTreeObserver legacyKeyboardObserver;
+  private final android.view.ViewTreeObserver.OnGlobalLayoutListener legacyKeyboardListener = () -> {
+    if (popup == null || minimized || isDestroyed()) return;
+    Rect visible = new Rect();
+    popup.getWindowVisibleDisplayFrame(visible);
+    int[] location = new int[2];
+    popup.getLocationOnScreen(location);
+    int covered = Math.max(0, location[1] + popup.getHeight() - visible.bottom);
+    int inset = covered > Screen.dp(100) ? covered : 0;
+    if (legacyKeyboardInset != inset) { legacyKeyboardInset = inset; resize(); }
+  };
   private final org.thunderdog.challegram.widget.RootFrameLayout.InsetsChangeListener sheetInsetsListener =
     (view, effective, effectiveWithoutIme, system, systemWithoutIme, update) -> resize();
 
@@ -437,6 +449,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
     popup.setPadding(0, 0, 0, fullscreen ? 0 : tdlib.miniApps().tabsHeight(context()));
     popup.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     popup.setShowListener(window -> {
+      // Before API30, FLAG_FULLSCREEN suppresses IME window insets/adjustResize.
+      // Measure only the part covered by the IME, so resized windows are not charged twice.
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+        legacyKeyboardObserver = window.getViewTreeObserver();
+        legacyKeyboardObserver.addOnGlobalLayoutListener(legacyKeyboardListener);
+        legacyKeyboardListener.onGlobalLayout();
+      }
       // A restored page may not emit a new header color; repaint after the slide animation.
       window.invalidate();
       applyTheme();
@@ -451,6 +470,11 @@ public final class MiniAppController extends ViewController<Void> implements Min
     });
     popup.setTouchDownInterceptor((window, event) -> { minimize(); return true; });
     popup.setDismissListener(window -> {
+      if (legacyKeyboardObserver != null) {
+        if (legacyKeyboardObserver.isAlive()) legacyKeyboardObserver.removeOnGlobalLayoutListener(legacyKeyboardListener);
+        legacyKeyboardObserver = null;
+      }
+      legacyKeyboardInset = 0;
       // PopupLayout destroys its remaining children. A minimized session retains this entire tree.
       if (root.getParent() == window) window.removeView(root);
       if (popup == window) popup = null;
@@ -481,7 +505,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     int available = popup != null && popup.getHeight() > 0 ? popup.getHeight() : context().getRootView().getHeight();
     if (available <= 0) available = context().getResources().getDisplayMetrics().heightPixels;
     if (!fullscreen) available -= tdlib.miniApps().tabsHeight(context());
-    Rect insets = popup != null && popup.getHeight() > 0 ? popup.getSystemInsets() : context().getRootView().getSystemInsets();
+    Rect insets = sheetSystemInsets();
     Rect stableInsets = stableSystemInsets();
     int top = fullscreen ? stableInsets.top : Math.max(insets.top, Screen.getStatusBarHeight());
     boolean keyboard = insets.bottom > stableInsets.bottom;
@@ -1340,7 +1364,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     float density = context().getResources().getDisplayMetrics().density;
     // Normal sheets consume system insets. Fullscreen web content receives the real safe area.
     emit("safe_area_changed", object("top", fullscreen ? insets.top / density : 0,
-      "bottom", fullscreen && buttons.getVisibility() != View.VISIBLE && (popup == null || popup.getSystemInsets().bottom <= popup.getSystemInsetsWithoutIme().bottom) ? insets.bottom / density : 0,
+      "bottom", fullscreen && buttons.getVisibility() != View.VISIBLE && sheetSystemInsets().bottom <= insets.bottom ? insets.bottom / density : 0,
       "left", fullscreen ? insets.left / density : 0, "right", fullscreen ? insets.right / density : 0));
     emit("content_safe_area_changed", object("top", fullscreen ? MiniAppFullscreenControls.CONTENT_INSET_DP : 0, "bottom", 0, "left", 0, "right", 0));
   }
@@ -1353,6 +1377,12 @@ public final class MiniAppController extends ViewController<Void> implements Min
       return new Rect(insets.left, insets.top, insets.right, insets.bottom);
     }
     return new Rect(context().getRootView().getSystemInsetsWithoutIme());
+  }
+
+  private Rect sheetSystemInsets () {
+    Rect insets = new Rect(popup != null && popup.getHeight() > 0 ? popup.getSystemInsets() : context().getRootView().getSystemInsets());
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) insets.bottom = Math.max(insets.bottom, legacyKeyboardInset);
+    return insets;
   }
 
   void reply (MiniAppDocument.Request origin, String event, JSONObject data) {

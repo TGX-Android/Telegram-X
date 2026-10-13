@@ -198,6 +198,7 @@ final class MiniAppActions {
   }
   private void unregisterShortcut () { if (shortcutReceiver != null) { host.context().unregisterReceiver(shortcutReceiver); shortcutReceiver = null; } }
 
+  @androidx.annotation.RequiresApi(Build.VERSION_CODES.M)
   private Icon shortcutIcon () {
     int size = Screen.dp(58);
     android.graphics.Bitmap result = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);

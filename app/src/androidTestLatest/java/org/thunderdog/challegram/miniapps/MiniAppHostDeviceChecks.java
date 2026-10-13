@@ -112,17 +112,29 @@ final class MiniAppHostDeviceChecks {
       test.check(true, "fullscreen capsule hit target extends beyond visible 30dp pill");
       capture("host-fullscreen-portrait");
       int beforeKeyboard = web.getHeight();
-      main(() -> { web.requestFocus(); ((android.view.inputmethod.InputMethodManager) activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).showSoftInput(web, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT); });
-      test.evaluate(web, "document.getElementById('entry').focus()");
-      Thread.sleep(800);
-      test.check(web.getHeight() < beforeKeyboard - Screen.dp(100), "visible IME reduces the actual web viewport");
+      // A real input gesture establishes the WebView input connection on older Android.
+      // Calling showSoftInput before the DOM input is focused can silently do nothing.
+      org.json.JSONArray input = new org.json.JSONArray(test.evaluate(web,
+        "(()=>{const r=document.getElementById('entry').getBoundingClientRect();return [(r.left+r.width/2)*devicePixelRatio,(r.top+r.height/2)*devicePixelRatio]})()"));
+      int[] webPosition = new int[2];
+      main(() -> web.getLocationOnScreen(webPosition));
+      long touchTime = android.os.SystemClock.uptimeMillis();
+      android.view.MotionEvent down = android.view.MotionEvent.obtain(touchTime, touchTime, android.view.MotionEvent.ACTION_DOWN,
+        webPosition[0] + (float) input.getDouble(0), webPosition[1] + (float) input.getDouble(1), 0);
+      android.view.MotionEvent up = android.view.MotionEvent.obtain(touchTime, touchTime + 60, android.view.MotionEvent.ACTION_UP, down.getX(), down.getY(), 0);
+      try { test.sendPointerSync(down); test.sendPointerSync(up); } finally { down.recycle(); up.recycle(); }
+      for (int i = 0; i < 40 && web.getHeight() >= beforeKeyboard - Screen.dp(100); i++) Thread.sleep(100);
+      capture("host-keyboard");
+      test.check(web.getHeight() < beforeKeyboard - Screen.dp(100), "visible IME reduces the actual web viewport (" + beforeKeyboard + " -> " + web.getHeight() + ")");
       main(() -> {
         int[] point = new int[2]; buttons.getLocationOnScreen(point);
         org.thunderdog.challegram.widget.PopupLayout sheet = field(host, "popup");
-        test.check(point[1] + buttons.getHeight() <= sheet.getHeight() - sheet.getSystemInsets().bottom, "native buttons stay above the IME");
+        Rect visible = new Rect(); sheet.getWindowVisibleDisplayFrame(visible);
+        test.check(point[1] + buttons.getHeight() <= visible.bottom, "native buttons stay above the IME");
       });
-      capture("host-keyboard");
-      send("web_app_hide_keyboard", "{}"); Thread.sleep(400);
+      send("web_app_hide_keyboard", "{}");
+      for (int i = 0; i < 40 && web.getHeight() < beforeKeyboard; i++) Thread.sleep(100);
+      test.check(web.getHeight() == beforeKeyboard, "hide keyboard restores the full web viewport");
       main(() -> activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)); Thread.sleep(1200);
       test.check(root.getWidth() > root.getHeight(), "fullscreen host follows landscape rotation");
       main(() -> {
