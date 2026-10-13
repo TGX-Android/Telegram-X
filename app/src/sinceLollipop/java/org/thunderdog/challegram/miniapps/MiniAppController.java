@@ -1304,7 +1304,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     collapse.setColorFilter(foreground);
     more.setColorFilter(foreground);
     browserArea.setBackgroundColor(background);
-    progress.refreshColors(background, backgroundColor != null);
+    progress.refreshColors(background);
     if (webView != null) webView.setBackgroundColor(background);
     buttons.setBackgroundColor(bottomColor != null ? bottomColor : theme.bottomBarBackgroundColor);
     buttons.refreshTheme();

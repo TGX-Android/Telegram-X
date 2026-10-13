@@ -52,17 +52,14 @@ final class MiniAppLoadingView extends View {
     invalidate();
   }
 
-  void refreshColors (int background, boolean customBackground) {
-    iconColor = Theme.getColor(ColorId.miniAppLoadingIcon);
-    if (customBackground) {
-      float[] hsv = new float[3];
-      Color.colorToHSV(background, hsv);
-      double brightness = Math.sqrt(.241 * Color.red(background) * Color.red(background)
-        + .691 * Color.green(background) * Color.green(background) + .068 * Color.blue(background) * Color.blue(background)) / 255;
-      if (brightness > .7) hsv[2] = Math.max(0f, hsv[2] - .15f);
-      else { hsv[1] = Math.min(1f, hsv[1] + .025f); hsv[2] = Math.min(1f, hsv[2] + .15f); }
-      iconColor = Color.HSVToColor(hsv);
-    }
+  void refreshColors (int background) {
+    // BotWebViewSheet derives the placeholder from its actual background, including the initial theme.
+    float[] hsv = new float[3];
+    Color.colorToHSV(background, hsv);
+    float brightness = (.2126f * Color.red(background) + .7152f * Color.green(background) + .0722f * Color.blue(background)) / 255f;
+    if (brightness > .7f) hsv[2] = Math.max(0f, hsv[2] - .15f);
+    else { hsv[1] = Math.min(1f, hsv[1] + .025f); hsv[2] = Math.min(1f, hsv[2] + .15f); }
+    iconColor = Color.HSVToColor(hsv);
     fill.setColor(iconColor);
     fill.setAlpha(127);
     line.setColor(Theme.getColor(ColorId.fillingPositive));
