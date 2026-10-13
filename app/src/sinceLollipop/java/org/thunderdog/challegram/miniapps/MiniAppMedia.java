@@ -43,6 +43,14 @@ final class MiniAppMedia {
       else if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) { resources.add(resource); permissions.add(Manifest.permission.RECORD_AUDIO); }
     }
     if (resources.isEmpty()) { request.deny(); return; }
+    // The native verification introduction already obtained camera consent, as in Telegram Android.
+    // Keep this exception limited to the current verification document and the camera permission.
+    if (host.isVerifyingAge() && request.getResources().length == 1 && resources.size() == 1 &&
+        PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resources.get(0)) &&
+        androidx.core.content.ContextCompat.checkSelfPermission(host.context(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+      request.grant(new String[] {PermissionRequest.RESOURCE_VIDEO_CAPTURE});
+      return;
+    }
     media = request;
     String description = Lang.getString(resources.size() == 2 ? R.string.MiniAppCameraMicrophone :
       resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE) ? R.string.MiniAppCamera : R.string.MiniAppMicrophone,

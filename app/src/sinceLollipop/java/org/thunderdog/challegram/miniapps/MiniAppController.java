@@ -173,6 +173,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
   public long launchId () { return session.launchId(); }
   public long guardQueryId () { return request.guardQueryId; }
   public boolean isAgeVerification (MiniAppAgeVerification verification) { return ageVerification == verification; }
+  boolean isVerifyingAge () {
+    return ageVerification != null && isShowing() && tdlib.isCurrent() && ageVerification.isCurrent(tdlib.ageVerificationParameters(), tdlib.myUserId());
+  }
   public boolean isMinimized () { return minimized && !isDestroyed(); }
   public boolean isShowing () { return popup != null && !minimized && !isDestroyed(); }
   public boolean isShowingFullscreen () { return isShowing() && (fullscreen || videoFullscreen != null); }

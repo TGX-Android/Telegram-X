@@ -291,6 +291,16 @@ final class MiniAppHostDeviceChecks {
       main(host::close);
       main(() -> verification[0] = new MiniAppAgeVerification(synthetic, tdlib.myUserId(), (owner, passed) -> results.add(passed)));
       createFixture("https://miniapp.test/host", verification[0]); waitPage();
+      if (androidx.core.content.ContextCompat.checkSelfPermission(activity, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+        final int[] camera = {0};
+        main(() -> web.getWebChromeClient().onPermissionRequest(new android.webkit.PermissionRequest() {
+          @Override public android.net.Uri getOrigin () { return android.net.Uri.parse("https://miniapp.test"); }
+          @Override public String[] getResources () { return new String[] {RESOURCE_VIDEO_CAPTURE}; }
+          @Override public void grant (String[] resources) { if (resources.length == 1 && RESOURCE_VIDEO_CAPTURE.equals(resources[0])) camera[0]++; }
+          @Override public void deny () { camera[0]--; }
+        }));
+        test.check(camera[0] == 1, "verification camera reuses native consent without a second bot permission dialog");
+      }
       send("web_app_verify_age", "{\"passed\":true}"); Thread.sleep(100);
       test.check(results.isEmpty(), "age verification rejects missing age");
       main(() -> host.onMessage("{\"eventType\":\"web_app_verify_age\",\"eventData\":{\"passed\":true,\"age\":99}}", "https://untrusted.test"));
