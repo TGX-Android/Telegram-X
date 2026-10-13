@@ -105,7 +105,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   /** Ordinary chat search opts in; recipient pickers and message results never do. */
   public void setOpenAppController (@Nullable ViewController<?> controller) {
-    if (openAppController != controller) {
+    if (openAppController != controller || !Lang.getString(R.string.Open).equals(openAppLabel)) {
       openAppController = controller;
       updateOpenApp();
     }
@@ -141,6 +141,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   private boolean openApp () {
     if (openAppBotUserId == 0 || !canOpenApp()) return false;
+    openAppController.hideSoftwareKeyboard();
     tdlib.miniApps().openMainApp(openAppController, openAppBotUserId, lastChat.getChatId());
     return true;
   }
