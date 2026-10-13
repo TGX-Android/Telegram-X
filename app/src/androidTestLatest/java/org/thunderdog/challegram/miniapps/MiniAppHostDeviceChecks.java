@@ -277,12 +277,15 @@ final class MiniAppHostDeviceChecks {
       createFixture(); waitPage();
       final org.thunderdog.challegram.widget.PopupLayout[] intro = {null};
       final int[] cancelled = {0};
+      // PopupLayout rejects a second sheet while the first one's opening animation is active.
+      Thread.sleep(700);
       main(() -> {
         MiniAppAgeVerification preview = new MiniAppAgeVerification(synthetic, tdlib.myUserId(), (owner, passed) -> cancelled[0]++);
         intro[0] = MiniAppAgeVerificationDialog.show(host, preview, (retry, opened) -> retry.run());
       });
       Thread.sleep(400);
-      main(() -> test.check(intro[0].getBoundView().getHeight() < activity.getRootView().getHeight(), "age verification explanation is a bounded bottom sheet"));
+      main(() -> test.check(intro[0].isBoundWindowShowing() && !intro[0].isDestroyed() && intro[0].getBoundView().getHeight() > 0 &&
+        intro[0].getBoundView().getHeight() < activity.getRootView().getHeight(), "age verification explanation is a visible bounded bottom sheet"));
       capture("host-age-verification-intro");
       main(() -> intro[0].hideWindow(false)); Thread.sleep(250);
       test.check(cancelled[0] == 1, "dismissing native age consent cancels its verification once");

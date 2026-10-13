@@ -33,6 +33,7 @@ public final class MiniAppAgeVerificationDialog {
     PopupLayout popup = new PopupLayout(owner.context());
     popup.init(true);
     popup.setNeedRootInsets();
+    popup.setOverlayStatusBar(true);
     final boolean[] opened = {false};
     popup.setDismissListener(window -> { if (!opened[0]) verification.cancel(); });
     LinearLayout content = new LinearLayout(owner.context());

@@ -181,6 +181,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   /** Only native content settings may supply this callback; regular bot entry points cannot. */
   public void verifyAge (ViewController<?> owner, me.vkryl.core.lambda.RunnableBool done) {
     if (!alive(owner) || owner.tdlib() != tdlib || ageVerification != null) return;
+    ownerUserId = tdlib.myUserId();
     TdApi.AgeVerificationParameters parameters = tdlib.ageVerificationParameters();
     if (parameters == null) { done.runWithBool(true); return; }
     if (!MiniAppPlatform.isSupported()) { UI.showToast(R.string.MiniAppWebViewUnavailable, Toast.LENGTH_LONG); return; }
