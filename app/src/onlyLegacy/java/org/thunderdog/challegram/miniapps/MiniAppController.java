@@ -39,6 +39,7 @@ public final class MiniAppController extends ViewController<Void> {
   public void minimize () { }
   public boolean canRestore (MiniAppLaunchRequest request) { return false; }
   public String botName () { return ""; }
+  public CharSequence botTitle (int badgeDp) { return ""; }
   public android.graphics.Bitmap preview () { return null; }
   public int previewColor () { return 0; }
   public boolean needsCloseConfirmation () { return false; }

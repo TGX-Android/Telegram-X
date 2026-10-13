@@ -275,6 +275,17 @@ final class MiniAppHostDeviceChecks {
       // Only test-APK memory is injected. No content option or other account setting is sent to TDLib.
       main(() -> set(tdlib, "ageVerificationParameters", synthetic));
       createFixture(); waitPage();
+      final org.thunderdog.challegram.widget.PopupLayout[] intro = {null};
+      final int[] cancelled = {0};
+      main(() -> {
+        MiniAppAgeVerification preview = new MiniAppAgeVerification(synthetic, tdlib.myUserId(), (owner, passed) -> cancelled[0]++);
+        intro[0] = MiniAppAgeVerificationDialog.show(host, preview, (retry, opened) -> retry.run());
+      });
+      Thread.sleep(400);
+      main(() -> test.check(intro[0].getBoundView().getHeight() < activity.getRootView().getHeight(), "age verification explanation is a bounded bottom sheet"));
+      capture("host-age-verification-intro");
+      main(() -> intro[0].hideWindow(false)); Thread.sleep(250);
+      test.check(cancelled[0] == 1, "dismissing native age consent cancels its verification once");
       send("web_app_verify_age", "{\"passed\":true,\"age\":99}"); Thread.sleep(100);
       test.check(!host.isDestroyed(), "ordinary Mini App ignores privileged verify_age event");
       main(host::close);

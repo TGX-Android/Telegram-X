@@ -180,6 +180,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (isShowing()) resize();
   }
   public String botName () { return tdlib.cache().userName(request.botUserId); }
+  public CharSequence botTitle (int badgeDp) { return MiniAppBotTitle.text(tdlib, request.botUserId, badgeDp); }
   public Bitmap preview () { return preview; }
   public int previewColor () { return header.getBackground() instanceof ColorDrawable ? ((ColorDrawable) header.getBackground()).getColor() : Theme.fillingColor(); }
   public boolean needsCloseConfirmation () { return needsCloseConfirmation; }
@@ -244,7 +245,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     back.getLayoutParams().width = Screen.dp(56);
     header.addView(back);
     title = new TextView(context);
-    title.setText(tdlib.cache().userName(request.botUserId));
+    title.setText(botTitle(20));
     title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 20);
     title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
     title.setSingleLine();

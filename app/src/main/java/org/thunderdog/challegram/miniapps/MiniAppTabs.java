@@ -86,7 +86,7 @@ public final class MiniAppTabs extends FrameLayout implements RootFrameLayout.In
     content.setPadding(content.getPaddingLeft(), content.getPaddingTop(), content.getPaddingRight(), originalPadding + (visible && !activity.isKeyboardVisible() ? height : 0));
     if (visible) {
       String name = sessions.get(sessions.size() - 1).botName();
-      title.setText(name);
+      title.setText(sessions.get(sessions.size() - 1).botTitle(20));
       title.setContentDescription(sessions.size() > 1 ? Lang.getString(R.string.MiniAppTabsTitle, name, sessions.size()) : name);
       stack.setVisibility(sessions.size() > 1 ? VISIBLE : GONE);
       refreshTheme();
@@ -168,10 +168,12 @@ public final class MiniAppTabs extends FrameLayout implements RootFrameLayout.In
     Bitmap backdrop = null;
     if (content.getWidth() > 0 && content.getHeight() > 0) {
       float scale = 240f / content.getWidth();
-      backdrop = Bitmap.createBitmap(240, Math.max(1, Math.round(content.getHeight() * scale)), Bitmap.Config.RGB_565);
+      backdrop = Bitmap.createBitmap(240, Math.max(1, Math.round(content.getHeight() * scale)), Bitmap.Config.ARGB_8888);
       Canvas canvas = new Canvas(backdrop);
       canvas.scale(scale, scale);
       content.draw(canvas);
+      // Telegram's tab overview blurs a reduced snapshot, also before Android 12.
+      if (Build.VERSION.SDK_INT < 31) org.thunderdog.challegram.U.blurBitmap(backdrop, 7, 1);
       ImageView background = new ImageView(activity);
       background.setScaleType(ImageView.ScaleType.FIT_XY);
       background.setImageBitmap(backdrop);
@@ -234,7 +236,7 @@ public final class MiniAppTabs extends FrameLayout implements RootFrameLayout.In
       cards.addView(card, cardParams);
       LinearLayout row = new LinearLayout(activity);
       TextView label = title();
-      label.setText(controller.botName());
+      label.setText(controller.botTitle(20));
       int color = controller.previewColor();
       int foreground = (.299 * android.graphics.Color.red(color) + .587 * android.graphics.Color.green(color) + .114 * android.graphics.Color.blue(color)) > 150 ? android.graphics.Color.BLACK : android.graphics.Color.WHITE;
       label.setTextColor(foreground);

@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -64,19 +65,28 @@ public final class MiniAppAgeVerificationDialog {
     button.setText(Lang.getString(R.string.MiniAppAgeVerificationButton));
     button.setTextColor(Theme.getColor(ColorId.fillingPositiveContent));
     GradientDrawable action = new GradientDrawable(); action.setCornerRadius(Screen.dp(8)); action.setColor(Theme.getColor(ColorId.fillingPositive));
-    button.setBackground(action);
+    FrameLayout actionView = new FrameLayout(owner.context());
+    actionView.setBackground(action);
+    actionView.setContentDescription(button.getText());
+    actionView.setFocusable(true);
+    actionView.addView(button, new FrameLayout.LayoutParams(-1, -1));
+    ProgressBar progress = new ProgressBar(owner.context());
+    progress.getIndeterminateDrawable().setColorFilter(Theme.getColor(ColorId.fillingPositiveContent), android.graphics.PorterDuff.Mode.SRC_IN);
+    progress.setVisibility(View.GONE);
+    actionView.addView(progress, new FrameLayout.LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.CENTER));
     LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, Screen.dp(48));
     actionParams.setMargins(Screen.dp(2), Screen.dp(29), Screen.dp(2), 0);
-    content.addView(button, actionParams);
-    button.setOnClickListener(v -> {
-      button.setEnabled(false); button.setAlpha(.6f);
-      start.run(() -> { button.setEnabled(true); button.setAlpha(1f); }, () -> { opened[0] = true; popup.hideWindow(true); });
+    content.addView(actionView, actionParams);
+    actionView.setOnClickListener(v -> {
+      actionView.setEnabled(false); button.setVisibility(View.INVISIBLE); progress.setVisibility(View.VISIBLE);
+      start.run(() -> { actionView.setEnabled(true); button.setVisibility(View.VISIBLE); progress.setVisibility(View.GONE); }, () -> { opened[0] = true; popup.hideWindow(true); });
     });
     ScrollView scroll = new ScrollView(owner.context());
     scroll.setFillViewport(false); scroll.addView(content);
     int width = owner.context().getRootView().getWidth();
     int maxHeight = Math.max(Screen.dp(200), owner.context().getRootView().getHeight() - Screen.getStatusBarHeight());
     scroll.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(maxHeight, View.MeasureSpec.AT_MOST));
+    scroll.setLayoutParams(new FrameLayout.LayoutParams(-1, scroll.getMeasuredHeight(), Gravity.BOTTOM));
     popup.showSimplePopupView(scroll, scroll.getMeasuredHeight());
     return popup;
   }
