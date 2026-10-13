@@ -6749,10 +6749,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void setIgnoreSensitiveContentRestrictions (boolean ignoreSensitiveContentRestrictions) {
-    if (options.ignoreSensitiveContentRestrictions != ignoreSensitiveContentRestrictions) {
-      options.ignoreSensitiveContentRestrictions = ignoreSensitiveContentRestrictions;
-      send(new TdApi.SetOption("ignore_sensitive_content_restrictions", new TdApi.OptionValueBoolean(ignoreSensitiveContentRestrictions)), typedOkHandler());
-    }
+    setIgnoreSensitiveContentRestrictions(ignoreSensitiveContentRestrictions, null);
+  }
+
+  public void setIgnoreSensitiveContentRestrictions (boolean ignore, @Nullable RunnableBool done) {
+    final long userId = myUserId();
+    send(new TdApi.SetOption("ignore_sensitive_content_restrictions", new TdApi.OptionValueBoolean(ignore)), (ok, error) -> ui().post(() -> {
+      boolean accepted = error == null && userId != 0 && userId == myUserId();
+      if (accepted) options.ignoreSensitiveContentRestrictions = ignore;
+      else if (error != null) UI.showError(error);
+      if (done != null) done.runWithBool(accepted);
+    }));
   }
 
   public String uniqueSuffix () {
@@ -9298,6 +9305,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     synchronized (dataLock) {
       this.ageVerificationParameters = update.parameters;
     }
+    ui().post(() -> miniApps().onAgeVerificationParametersChanged());
   }
 
   @Nullable

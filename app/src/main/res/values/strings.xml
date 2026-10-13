@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
   <string name="MiniAppTitle">Mini App</string>
+  <string name="MiniAppSensitiveContentTitle">18+ Content</string>
+  <string name="MiniAppSensitiveContentConfirm">Confirm that you are over 18 years old and update your settings to see potentially explicit and sensitive content.</string>
+  <string name="MiniAppAgeVerificationTitle">Age Verification</string>
+  <string name="MiniAppAgeVerificationText">To access such content, you must confirm that you are at least %1$d years old as required by local law.\n\nThis is a one-time process using your phone\'s camera. Your selfie will not be stored by Telegram.</string>
+  <string name="MiniAppAgeVerificationTextGB">To access such content, you must confirm that you are at least %1$d years old as required by UK law.\n\nThis is a one-time process using your phone\'s camera. Your selfie will not be stored by Telegram.</string>
+  <string name="MiniAppAgeVerificationButton">Verify My Age</string>
+  <string name="MiniAppAgeVerificationFailed">Age Check Failed. Sorry, you can\'t view 18+ content.</string>
+  <string name="MiniAppAgeVerificationPassed">Age Check Passed</string>
+  <string name="MiniAppAgeVerificationUnavailable">Age verification is currently unavailable. Please try again later.</string>
   <string name="MiniAppMoreAboutBot">More about this bot  ›</string>
   <string name="MiniAppLaunchTerms">By launching this mini app, you agree to the %1$s for Mini Apps.</string>
   <string name="MiniAppUnsupportedChat">This Mini App cannot be used in this chat.</string>

@@ -79,11 +79,14 @@ import static org.thunderdog.challegram.miniapps.MiniAppTheme.object;
 public final class MiniAppController extends ViewController<Void> implements MiniAppBridgeTransport, GlobalAccountListener {
   private static final long PAGE_READY_FALLBACK_MS = 5000;
   private final MiniAppLaunchRequest request;
+  private final MiniAppAgeVerification ageVerification;
   private final MiniAppSession session;
   private final MiniAppPlatform platform = new MiniAppPlatform();
   private Runnable onOpened;
   private MiniAppDocument document;
   private WebView webView;
+  private View videoFullscreen;
+  private WebChromeClient.CustomViewCallback videoFullscreenCallback;
   private FrameLayout root, browserArea;
   private LinearLayout column, header;
   private MiniAppFullscreenControls fullscreenControls;
@@ -149,8 +152,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   public MiniAppController (Context context, Tdlib tdlib, MiniAppLaunchRequest request, Runnable onOpened) {
+    this(context, tdlib, request, onOpened, null);
+  }
+
+  public MiniAppController (Context context, Tdlib tdlib, MiniAppLaunchRequest request, Runnable onOpened, @Nullable MiniAppAgeVerification ageVerification) {
     super(context, tdlib);
     this.request = request;
+    this.ageVerification = ageVerification;
     this.onOpened = onOpened;
     session = new MiniAppSession(id -> tdlib.send(new TdApi.CloseWebApp(id), tdlib.typedOkHandler()));
     expanded = !(request.mode instanceof TdApi.WebAppOpenModeCompact);
@@ -164,9 +172,10 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   public long launchId () { return session.launchId(); }
   public long guardQueryId () { return request.guardQueryId; }
+  public boolean isAgeVerification (MiniAppAgeVerification verification) { return ageVerification == verification; }
   public boolean isMinimized () { return minimized && !isDestroyed(); }
   public boolean isShowing () { return popup != null && !minimized && !isDestroyed(); }
-  public boolean isShowingFullscreen () { return isShowing() && fullscreen; }
+  public boolean isShowingFullscreen () { return isShowing() && (fullscreen || videoFullscreen != null); }
   public void onTabsChanged () {
     if (isShowing()) resize();
   }
@@ -201,7 +210,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
         return;
       }
       if (MiniAppOrigin.of(url.url) == null) { showSheet(); showLoadError(); return; }
-      document = new MiniAppDocument(url.url, url.requireSameOrigin);
+      if (ageVerification != null) { expanded = true; fullscreen = false; }
+      document = new MiniAppDocument(url.url, url.requireSameOrigin || ageVerification != null);
       // Resolve the server's launch mode before the sheet's first visible frame.
       showSheet();
       webView.loadUrl(url.url);
@@ -242,6 +252,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     title.setPadding(Screen.dp(16), 0, Screen.dp(8), 0);
     header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
     collapse = icon(R.drawable.baseline_direction_arrow_down_24, R.string.MiniAppMinimize, v -> minimize());
+    if (ageVerification != null) collapse.setVisibility(View.GONE);
     header.addView(collapse);
     more = icon(R.drawable.baseline_more_vert_24, R.string.MiniAppMore, v -> showMenu());
     header.addView(more);
@@ -384,6 +395,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
         }
       });
       webView.setWebChromeClient(new WebChromeClient() {
+        @Override public void onShowCustomView (View view, CustomViewCallback callback) { showVideoFullscreen(view, callback); }
+        @Override public void onHideCustomView () { hideVideoFullscreen(); }
         @Override public void onProgressChanged (WebView view, int value) {
           if (!isDestroyed() && view == webView && !pageLoadFailed) progress.setProgress(value);
         }
@@ -425,6 +438,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       @Override
       protected void dispatchDraw (Canvas canvas) {
         super.dispatchDraw(canvas);
+        if (videoFullscreen != null) return;
         // The expanded sheet colors the status area, but its controls stay below the cutout.
         int top = Math.max(getTopInset(), Screen.getStatusBarHeight());
         if (expanded && !fullscreen && root.getY() <= top + 1 && header.getBackground() instanceof ColorDrawable) {
@@ -465,7 +479,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       if (b - t != ob - ot || r - l != or - ol) resize();
     });
     popup.setBackListener((fromTop, commit) -> {
-      if (commit) { if (backVisible) pressed("back_button_pressed"); else minimize(); }
+      if (commit) { if (videoFullscreen != null) hideVideoFullscreen(); else if (backVisible) pressed("back_button_pressed"); else minimize(); }
       return true;
     });
     popup.setTouchDownInterceptor((window, event) -> { minimize(); return true; });
@@ -501,28 +515,31 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void resize (boolean animate) {
     if (root == null) return;
-    if (popup != null) popup.setPadding(0, 0, 0, fullscreen ? 0 : tdlib.miniApps().tabsHeight(context()));
+    boolean video = videoFullscreen != null;
+    boolean full = fullscreen || video;
+    if (popup != null) popup.setPadding(0, 0, 0, full ? 0 : tdlib.miniApps().tabsHeight(context()));
     int available = popup != null && popup.getHeight() > 0 ? popup.getHeight() : context().getRootView().getHeight();
     if (available <= 0) available = context().getResources().getDisplayMetrics().heightPixels;
-    if (!fullscreen) available -= tdlib.miniApps().tabsHeight(context());
+    if (!full) available -= tdlib.miniApps().tabsHeight(context());
     Rect insets = sheetSystemInsets();
     Rect stableInsets = stableSystemInsets();
-    int top = fullscreen ? stableInsets.top : Math.max(insets.top, Screen.getStatusBarHeight());
+    int top = full ? stableInsets.top : Math.max(insets.top, Screen.getStatusBarHeight());
     boolean keyboard = insets.bottom > stableInsets.bottom;
-    int bottom = !fullscreen || keyboard ? insets.bottom : buttons.getVisibility() == View.VISIBLE ? stableInsets.bottom : 0;
-    int height = MiniAppViewport.sheetHeight(available, top, bottom, expanded, fullscreen);
+    int bottom = video ? 0 : !fullscreen || keyboard ? insets.bottom : buttons.getVisibility() == View.VISIBLE ? stableInsets.bottom : 0;
+    int height = MiniAppViewport.sheetHeight(available, top, bottom, expanded, full);
     FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-1, height, Gravity.BOTTOM);
     params.bottomMargin = bottom;
-    if (!fullscreen) { params.leftMargin = insets.left; params.rightMargin = insets.right; }
+    if (!full) { params.leftMargin = insets.left; params.rightMargin = insets.right; }
     FrameLayout.LayoutParams headerParams = (FrameLayout.LayoutParams) header.getLayoutParams();
     headerParams.topMargin = fullscreen ? top : 0;
     header.setLayoutParams(headerParams);
-    header.setVisibility(fullscreen ? View.GONE : View.VISIBLE);
+    header.setVisibility(full ? View.GONE : View.VISIBLE);
+    column.setVisibility(video ? View.INVISIBLE : View.VISIBLE);
     FrameLayout.LayoutParams controls = (FrameLayout.LayoutParams) fullscreenControls.getLayoutParams();
     controls.topMargin = top;
     controls.leftMargin = stableInsets.left; controls.rightMargin = stableInsets.right;
     fullscreenControls.setLayoutParams(controls);
-    fullscreenControls.setVisibility(fullscreen ? View.VISIBLE : View.GONE);
+    fullscreenControls.setVisibility(fullscreen && !video ? View.VISIBLE : View.GONE);
     LinearLayout.LayoutParams buttonParams = (LinearLayout.LayoutParams) buttons.getLayoutParams();
     buttonParams.leftMargin = fullscreen ? stableInsets.left : 0;
     buttonParams.rightMargin = fullscreen ? stableInsets.right : 0;
@@ -542,8 +559,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
     updateFullscreen();
     applyTheme();
     if (popup != null) {
-      popup.setNeedFullScreen(fullscreen);
-      popup.setIgnoreAllInsets(fullscreen);
+      popup.setNeedFullScreen(full);
+      popup.setIgnoreAllInsets(full);
     }
     root.post(this::sendViewport);
   }
@@ -611,6 +628,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void headerBack () {
+    if (videoFullscreen != null) { hideVideoFullscreen(); return; }
     if (backVisible) pressed("back_button_pressed"); else requestClose();
   }
 
@@ -625,6 +643,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   public void minimize () {
     if (isDestroyed() || minimized) return;
+    hideVideoFullscreen();
+    // The official verification sheet is never kept in the Mini Apps tab strip.
+    if (ageVerification != null) { close(); return; }
     emit("deactivated", object());
     platform.setMediaPaused(true);
     if (browserArea.getWidth() > 0 && browserArea.getHeight() > 0) {
@@ -652,6 +673,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   @Override
   public void destroy () {
     if (isDestroyed()) return;
+    hideVideoFullscreen();
     cancelPageReadyFallback();
     pageLoadGeneration++;
     if (webView != null) webView.animate().cancel();
@@ -684,11 +706,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
       webView.destroy();
       webView = null;
     }
+    if (ageVerification != null) ageVerification.cancel();
   }
 
   @Override
   public void onActivityPause () {
     super.onActivityPause();
+    hideVideoFullscreen();
     dismissOptions();
     if (sensors != null) sensors.pause();
     if (webView != null) webView.onPause();
@@ -721,6 +745,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void cancelDocumentRequests () {
+    hideVideoFullscreen();
     if (requestedChat != null) requestedChat.cancel();
     if (preparedMessage != null) preparedMessage.cancel();
     dismissOptions();
@@ -822,6 +847,12 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void dispatch (MiniAppDocument.Request origin, String event, JSONObject data) throws JSONException {
     switch (event) {
+      case "web_app_verify_age":
+        if (ageVerification != null && current(origin)) {
+          data.getBoolean("passed"); // Required by the official wire format; the account's min_age takes priority.
+          ageVerification.report(tdlib.ageVerificationParameters(), tdlib.myUserId(), data.getDouble("age"));
+        }
+        break;
       case "web_app_ready": revealPageWhenReady(); break;
       case "web_app_request_theme": sendTheme(); break;
       case "web_app_request_viewport": sendViewport(); break;
@@ -1248,6 +1279,11 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   private void showMenu () {
     dismissOptions(); options = new MiniAppOptions(this);
+    if (ageVerification != null) {
+      options.add(R.drawable.miniapp_msg_retry, Lang.getString(R.string.MiniAppReload), () -> { if (webView != null && document != null) { document.navigate(); webView.reload(); } });
+      options.show(fullscreen ? fullscreenControls : more);
+      return;
+    }
     if (!actions().downloads().isEmpty()) {
       options.add(R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), () -> actions().showDownloads()); options.gap();
     }
@@ -1305,7 +1341,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void updateFullscreen () {
-    if (fullscreen && !minimized && !isDestroyed()) context().addFullScreenView(this, true);
+    if ((fullscreen || videoFullscreen != null) && !minimized && !isDestroyed()) context().addFullScreenView(this, true);
     else context().removeFullScreenView(this, true);
     tdlib.miniApps().updateTabsVisibility(context());
   }
@@ -1317,7 +1353,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     int bar = headerColor != null ? headerColor : "secondary_bg_color".equals(headerColorKey) ? theme.secondaryBackgroundColor : theme.backgroundColor;
     GradientDrawable shape = new GradientDrawable();
     shape.setColor(background);
-    float radius = expanded || fullscreen ? 0 : Screen.dp(16);
+    float radius = expanded || fullscreen || videoFullscreen != null ? 0 : Screen.dp(16);
     shape.setCornerRadii(new float[] { radius, radius, radius, radius, 0, 0, 0, 0 });
     root.setBackground(shape);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) root.setClipToOutline(true);
@@ -1338,8 +1374,33 @@ public final class MiniAppController extends ViewController<Void> implements Min
       Boolean lightNavigation = !fullscreen || buttons.getVisibility() == View.VISIBLE
         ? androidx.core.graphics.ColorUtils.calculateLuminance(bottomColor != null ? bottomColor : theme.bottomBarBackgroundColor) >= .721 : null;
       context().setSystemBarAppearance(this, lightStatus, lightNavigation);
+      if (videoFullscreen != null) context().setSystemBarAppearance(this, false, false);
     }
     if (popup != null) popup.invalidate();
+  }
+
+  private void showVideoFullscreen (View view, WebChromeClient.CustomViewCallback callback) {
+    if (view == null || view.getParent() != null || videoFullscreen != null || !isShowing()) {
+      if (callback != null) callback.onCustomViewHidden();
+      return;
+    }
+    Keyboard.hide(webView);
+    videoFullscreen = view;
+    videoFullscreenCallback = callback;
+    view.setBackgroundColor(Color.BLACK);
+    root.addView(view, new FrameLayout.LayoutParams(-1, -1));
+    resize();
+    view.requestFocus();
+  }
+
+  private void hideVideoFullscreen () {
+    if (videoFullscreen == null) return;
+    View view = videoFullscreen;
+    WebChromeClient.CustomViewCallback callback = videoFullscreenCallback;
+    videoFullscreen = null; videoFullscreenCallback = null;
+    root.removeView(view);
+    resize();
+    if (callback != null) callback.onCustomViewHidden();
   }
 
   @Override

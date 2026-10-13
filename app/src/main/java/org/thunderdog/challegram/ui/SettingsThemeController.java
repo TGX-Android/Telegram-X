@@ -1182,7 +1182,23 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     } else if (viewId == R.id.btn_separateMedia) {
       Settings.instance().setNeedSeparateMediaTab(adapter.toggleView(v));
     } else if (viewId == R.id.btn_restrictSensitiveContent) {
-      tdlib.setIgnoreSensitiveContentRestrictions(adapter.toggleView(v));
+      if (tdlib.ignoreSensitiveContentRestrictions()) {
+        tdlib.setIgnoreSensitiveContentRestrictions(false, accepted -> {
+          if (!isDestroyed()) adapter.updateValuedSettingById(R.id.btn_restrictSensitiveContent);
+        });
+      } else {
+        showAlert(new android.app.AlertDialog.Builder(context()).setTitle(Lang.getString(R.string.MiniAppSensitiveContentTitle))
+          .setMessage(Lang.getString(R.string.MiniAppSensitiveContentConfirm))
+          .setNegativeButton(Lang.getString(R.string.Cancel), null)
+          .setPositiveButton(Lang.getString(R.string.Confirm), (dialog, which) -> tdlib.miniApps().verifyAge(this, passed -> {
+            if (passed && !isDestroyed()) {
+              tdlib.setIgnoreSensitiveContentRestrictions(true, accepted -> {
+                if (!isDestroyed()) adapter.updateValuedSettingById(R.id.btn_restrictSensitiveContent);
+                if (accepted && tdlib.ageVerificationParameters() != null) UI.showToast(R.string.MiniAppAgeVerificationPassed, android.widget.Toast.LENGTH_SHORT);
+              });
+            }
+          })));
+      }
     } else if (viewId == R.id.btn_ignoreContentRestrictions) {
       Settings.instance().setRestrictContent(!adapter.toggleView(v));
     } else if (viewId == R.id.btn_secret_batmanTransitions) {

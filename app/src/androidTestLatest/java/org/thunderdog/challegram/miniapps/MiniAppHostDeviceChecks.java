@@ -49,13 +49,14 @@ final class MiniAppHostDeviceChecks {
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "host has an initialized account");
     final int previousOrientation = activity.getRequestedOrientation();
     try {
-      if (!rendererLoss) checkPageReadiness();
+      if (!rendererLoss) { checkPageReadiness(); checkAgeVerification(); }
       createFixture();
       waitPage();
       Thread.sleep(700);
       View root = field(host, "root");
       int compactHeight = root.getHeight();
       test.check(compactHeight < activity.getRootView().getHeight() * .85f, "explicit compact mode keeps compact height");
+      if (!rendererLoss) checkVideoFullscreen();
       send("web_app_expand", "{}"); Thread.sleep(400);
       test.check(root.getHeight() > compactHeight, "expand animates to available height");
       main(() -> {
@@ -201,12 +202,14 @@ final class MiniAppHostDeviceChecks {
 
   private void createFixture () { createFixture("https://miniapp.test/host"); }
 
-  private void createFixture (String url) {
+  private void createFixture (String url) { createFixture(url, null); }
+
+  private void createFixture (String url, MiniAppAgeVerification verification) {
     main(() -> {
       Tdlib tdlib = activity.currentTdlib();
       MiniAppLaunchRequest request = new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.MAIN_APP, Long.MAX_VALUE - 104, 0,
         "https://miniapp.test/host", "", "", "", null, null, new TdApi.WebAppOpenModeCompact(), false);
-      host = new MiniAppController(activity, tdlib, request, null);
+      host = new MiniAppController(activity, tdlib, request, null, verification);
       host.getValue(); web = field(host, "webView");
       set(host, "document", new MiniAppDocument("https://miniapp.test/host", true));
       WebViewClient original = web.getWebViewClient();
@@ -228,6 +231,76 @@ final class MiniAppHostDeviceChecks {
       finishedLoads = 0;
       invoke(host, "showSheet"); web.loadUrl(url);
     });
+  }
+
+  private void checkVideoFullscreen () throws Exception {
+    final int[] hidden = {0}, rejected = {0};
+    final View[] video = {null};
+    View root = field(host, "root");
+    int previousHeight = root.getHeight();
+    main(() -> {
+      video[0] = new android.widget.FrameLayout(activity);
+      web.getWebChromeClient().onShowCustomView(video[0], () -> hidden[0]++);
+    });
+    Thread.sleep(350);
+    main(() -> {
+      test.check(host.isShowingFullscreen() && video[0].getHeight() >= activity.getRootView().getHeight() - Screen.dp(2), "HTML video custom view uses the full host window");
+      test.check(((View) field(host, "column")).getVisibility() == View.INVISIBLE, "video hides web chrome without destroying the document");
+      web.getWebChromeClient().onShowCustomView(new View(activity), () -> rejected[0]++);
+      test.check(rejected[0] == 1 && hidden[0] == 0, "duplicate custom view is rejected without closing the active video");
+    });
+    test.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+    Thread.sleep(350);
+    main(() -> {
+      test.check(hidden[0] == 1 && video[0].getParent() == null && host.isShowing() && !host.isShowingFullscreen(), "Back exits HTML video before minimizing the Mini App");
+      test.check(root.getHeight() == previousHeight, "video exit restores compact sheet dimensions");
+      web.getWebChromeClient().onHideCustomView();
+      test.check(hidden[0] == 1, "custom view completion is delivered once");
+      web.getWebChromeClient().onShowCustomView(new View(activity), () -> hidden[0]++);
+      host.onActivityPause(); host.onActivityResume();
+      test.check(hidden[0] == 2 && !host.isShowingFullscreen(), "backgrounding releases the video overlay and restores system bars");
+      web.getWebChromeClient().onShowCustomView(new View(activity), () -> hidden[0]++);
+      invoke(host, "cancelDocumentRequests");
+      test.check(hidden[0] == 3, "navigation cancellation releases a fullscreen custom view");
+    });
+  }
+
+  private void checkAgeVerification () throws Exception {
+    Tdlib tdlib = activity.currentTdlib();
+    TdApi.AgeVerificationParameters previous = tdlib.ageVerificationParameters();
+    TdApi.AgeVerificationParameters synthetic = new TdApi.AgeVerificationParameters(21, "synthetic_age_bot", "GB");
+    java.util.List<Boolean> results = new java.util.ArrayList<>();
+    MiniAppAgeVerification[] verification = {null};
+    try {
+      // Only test-APK memory is injected. No content option or other account setting is sent to TDLib.
+      main(() -> set(tdlib, "ageVerificationParameters", synthetic));
+      createFixture(); waitPage();
+      send("web_app_verify_age", "{\"passed\":true,\"age\":99}"); Thread.sleep(100);
+      test.check(!host.isDestroyed(), "ordinary Mini App ignores privileged verify_age event");
+      main(host::close);
+      main(() -> verification[0] = new MiniAppAgeVerification(synthetic, tdlib.myUserId(), (owner, passed) -> results.add(passed)));
+      createFixture("https://miniapp.test/host", verification[0]); waitPage();
+      send("web_app_verify_age", "{\"passed\":true}"); Thread.sleep(100);
+      test.check(results.isEmpty(), "age verification rejects missing age");
+      main(() -> host.onMessage("{\"eventType\":\"web_app_verify_age\",\"eventData\":{\"passed\":true,\"age\":99}}", "https://untrusted.test"));
+      test.check(results.isEmpty(), "verification rejects a foreign frame origin");
+      send("web_app_verify_age", "{\"passed\":true,\"age\":20}"); Thread.sleep(100);
+      test.check(results.size() == 1 && Boolean.FALSE.equals(results.get(0)), "native min_age overrides the page passed flag");
+      send("web_app_verify_age", "{\"passed\":true,\"age\":30}"); Thread.sleep(100);
+      test.check(results.size() == 1, "verification cannot be completed twice");
+      main(host::close);
+      main(() -> verification[0] = new MiniAppAgeVerification(synthetic, tdlib.myUserId(), (owner, passed) -> results.add(passed)));
+      createFixture("https://miniapp.test/host", verification[0]); waitPage();
+      send("web_app_verify_age", "{\"passed\":false,\"age\":21}"); Thread.sleep(100);
+      test.check(results.size() == 2 && Boolean.TRUE.equals(results.get(1)), "synthetic age at the account threshold completes successfully");
+      main(host::close);
+      main(() -> verification[0] = new MiniAppAgeVerification(synthetic, tdlib.myUserId(), (owner, passed) -> results.add(passed)));
+      createFixture("https://miniapp.test/host", verification[0]); waitPage();
+      main(host::minimize);
+      test.check(host.isDestroyed() && !host.isMinimized() && results.size() == 3 && results.get(2) == null, "cancelled verification is closed instead of entering Mini App tabs");
+    } finally {
+      main(() -> { if (host != null) host.close(); set(tdlib, "ageVerificationParameters", previous); });
+    }
   }
 
   private void checkPageReadiness () throws Exception {

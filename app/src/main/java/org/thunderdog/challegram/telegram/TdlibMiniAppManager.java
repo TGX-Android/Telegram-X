@@ -14,6 +14,8 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.miniapps.MiniAppController;
+import org.thunderdog.challegram.miniapps.MiniAppAgeVerification;
+import org.thunderdog.challegram.miniapps.MiniAppAgeVerificationDialog;
 import org.thunderdog.challegram.miniapps.MiniAppChatPolicy;
 import org.thunderdog.challegram.miniapps.MiniAppLaunchRequest;
 import org.thunderdog.challegram.miniapps.MiniAppPlatform;
@@ -40,6 +42,8 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   private int epoch;
   private long ownerUserId;
   private SharedPreferences consent;
+  private MiniAppAgeVerification ageVerification;
+  private org.thunderdog.challegram.widget.PopupLayout ageVerificationDialog;
   private TdApi.AttachmentMenuBot[] menuBots = new TdApi.AttachmentMenuBot[0];
   private final List<Runnable> menuListeners = new ArrayList<>();
   private final java.util.Map<Long, Runnable> guardCompletions = new java.util.HashMap<>();
@@ -172,6 +176,66 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
 
   public void openMainApp (TdlibDelegate context, long botUserId, long chatId) {
     open(context, new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.MAIN_APP, botUserId, chatId, "", "", "", "", null, null, null, false));
+  }
+
+  /** Only native content settings may supply this callback; regular bot entry points cannot. */
+  public void verifyAge (ViewController<?> owner, me.vkryl.core.lambda.RunnableBool done) {
+    if (!alive(owner) || owner.tdlib() != tdlib || ageVerification != null) return;
+    TdApi.AgeVerificationParameters parameters = tdlib.ageVerificationParameters();
+    if (parameters == null) { done.runWithBool(true); return; }
+    if (!MiniAppPlatform.isSupported()) { UI.showToast(R.string.MiniAppWebViewUnavailable, Toast.LENGTH_LONG); return; }
+    final int generation = epoch;
+    final MiniAppAgeVerification verification;
+    try {
+      verification = new MiniAppAgeVerification(parameters, tdlib.myUserId(), (finished, passed) -> {
+        if (ageVerification == finished) ageVerification = null;
+        if (ageVerificationDialog != null) { ageVerificationDialog.hideWindow(true); ageVerificationDialog = null; }
+        for (MiniAppController app : new ArrayList<>(sessions)) if (app.isAgeVerification(finished)) app.close();
+        if (generation != epoch || !alive(owner)) return;
+        if (Boolean.FALSE.equals(passed)) UI.showToast(R.string.MiniAppAgeVerificationFailed, Toast.LENGTH_LONG);
+        done.runWithBool(Boolean.TRUE.equals(passed));
+      });
+    } catch (IllegalArgumentException ignored) {
+      UI.showToast(R.string.MiniAppAgeVerificationUnavailable, Toast.LENGTH_LONG);
+      return;
+    }
+    ageVerification = verification;
+    ageVerificationDialog = MiniAppAgeVerificationDialog.show(owner, verification, (retry, opened) -> {
+      Runnable resolve = () -> {
+        if (!currentVerification(owner, verification, generation)) { verification.cancel(); return; }
+        tdlib.send(new TdApi.SearchPublicChat(verification.username), (chat, error) -> tdlib.ui().post(() -> {
+          if (!currentVerification(owner, verification, generation)) { verification.cancel(); return; }
+          if (error != null) { UI.showError(error); retry.run(); return; }
+          if (!(chat.type instanceof TdApi.ChatTypePrivate)) { UI.showToast(R.string.MiniAppAgeVerificationUnavailable, Toast.LENGTH_LONG); retry.run(); return; }
+          long botId = ((TdApi.ChatTypePrivate) chat.type).userId;
+          tdlib.send(new TdApi.GetUser(botId), (bot, botError) -> tdlib.ui().post(() -> {
+            if (!currentVerification(owner, verification, generation)) { verification.cancel(); return; }
+            if (botError != null) { UI.showError(botError); retry.run(); return; }
+            if (!(bot.type instanceof TdApi.UserTypeBot) || !((TdApi.UserTypeBot) bot.type).hasMainWebApp) {
+              UI.showToast(R.string.MiniAppAgeVerificationUnavailable, Toast.LENGTH_LONG); retry.run(); return;
+            }
+            MiniAppLaunchRequest request = new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.MAIN_APP,
+              botId, chat.id, "", "", "", "", null, null, new TdApi.WebAppOpenModeFullSize(), false);
+            opened.run(); ageVerificationDialog = null;
+            MiniAppController controller = new MiniAppController(owner.context(), tdlib, request, null, verification);
+            sessions.add(controller);
+            controller.open(false);
+          }));
+        }));
+      };
+      if (!owner.context().permissions().requestAccessCameraPermission(allowed -> {
+        if (allowed) resolve.run(); else retry.run();
+      })) resolve.run();
+    });
+  }
+
+  private boolean currentVerification (TdlibDelegate owner, MiniAppAgeVerification verification, int generation) {
+    return ageVerification == verification && generation == epoch && alive(owner) &&
+      verification.isCurrent(tdlib.ageVerificationParameters(), tdlib.myUserId());
+  }
+
+  public void onAgeVerificationParametersChanged () {
+    if (ageVerification != null && !ageVerification.isCurrent(tdlib.ageVerificationParameters(), tdlib.myUserId())) ageVerification.cancel();
   }
 
   /** A pinned bot shortcut obtains a fresh launch URL; it never persists authorization data. */
@@ -435,6 +499,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   private void reset () {
     guardTargets.clear(); guardCompletions.clear();
     epoch++;
+    if (ageVerification != null) ageVerification.cancel();
     pending.clear();
     for (MiniAppController session : new ArrayList<>(sessions)) session.close();
   }
