@@ -322,11 +322,11 @@ final class MiniAppHostDeviceChecks {
   }
 
   private boolean lightStatusBar () {
-    return (activity.getWindow().getInsetsController().getSystemBarsAppearance() & android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS) != 0;
+    return androidx.core.view.WindowCompat.getInsetsController(activity.getWindow(), activity.getWindow().getDecorView()).isAppearanceLightStatusBars();
   }
 
   private boolean lightNavigationBar () {
-    return (activity.getWindow().getInsetsController().getSystemBarsAppearance() & android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS) != 0;
+    return androidx.core.view.WindowCompat.getInsetsController(activity.getWindow(), activity.getWindow().getDecorView()).isAppearanceLightNavigationBars();
   }
 
   private String sensorCount () throws Exception {
