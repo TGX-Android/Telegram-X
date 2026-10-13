@@ -33,6 +33,7 @@ final class MiniAppHostDeviceChecks {
   private MiniAppController host;
   private WebView web;
   private BaseActivity activity;
+  private volatile int finishedLoads;
   MiniAppHostDeviceChecks (MiniAppWebViewInstrumentation test) { this.test = test; }
 
   void run () throws Exception { run(false); }
@@ -48,6 +49,7 @@ final class MiniAppHostDeviceChecks {
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "host has an initialized account");
     final int previousOrientation = activity.getRequestedOrientation();
     try {
+      if (!rendererLoss) checkPageReadiness();
       createFixture();
       waitPage();
       Thread.sleep(700);
@@ -185,7 +187,9 @@ final class MiniAppHostDeviceChecks {
     }
   }
 
-  private void createFixture () {
+  private void createFixture () { createFixture("https://miniapp.test/host"); }
+
+  private void createFixture (String url) {
     main(() -> {
       Tdlib tdlib = activity.currentTdlib();
       MiniAppLaunchRequest request = new MiniAppLaunchRequest(MiniAppLaunchRequest.Source.MAIN_APP, Long.MAX_VALUE - 104, 0,
@@ -196,20 +200,76 @@ final class MiniAppHostDeviceChecks {
       WebViewClient original = web.getWebViewClient();
       web.setWebViewClient(new WebViewClient() {
         @Override public WebResourceResponse shouldInterceptRequest (WebView view, WebResourceRequest request) {
+          boolean manual = request.getUrl().getQueryParameter("manual") != null;
           String html = "<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><meta charset='utf-8'>" +
-            "<style>body{background:#17212b;color:white;font:16px sans-serif;margin:0;padding:70px 20px}input{font-size:20px}</style>" +
+            "<style>body{background:" + (manual ? "white" : "#17212b") + ";color:white;font:16px sans-serif;margin:0;padding:70px 20px}input{font-size:20px}</style>" +
             "<h1>Mini App device fixture</h1><input id='entry' placeholder='Keyboard check'><p>Native shell / viewport / storage</p>" +
             "<script>window.events=[];window.Telegram={WebView:{receiveEvent:function(n,d){events.push({event:n,data:d});" +
-            "if(n==='theme_changed'){document.body.style.background=d.theme_params.bg_color;document.body.style.color=d.theme_params.text_color}}}};" +
-            "function send(n,d){TelegramWebviewProxy.postEvent(n,JSON.stringify(d||{}))}send('web_app_ready');</script>";
+            "if(n==='theme_changed' && " + !manual + "){document.body.style.background=d.theme_params.bg_color;document.body.style.color=d.theme_params.text_color}}}};" +
+            "function send(n,d){TelegramWebviewProxy.postEvent(n,JSON.stringify(d||{}))}" + (manual ? "" : "send('web_app_ready');") + "</script>";
           return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
         }
         @Override public void onPageStarted (WebView view, String url, Bitmap icon) { original.onPageStarted(view, url, icon); }
-        @Override public void onPageFinished (WebView view, String url) { original.onPageFinished(view, url); }
+        @Override public void onPageFinished (WebView view, String url) { original.onPageFinished(view, url); finishedLoads++; }
         @Override public boolean onRenderProcessGone (WebView view, android.webkit.RenderProcessGoneDetail detail) { return original.onRenderProcessGone(view, detail); }
       });
-      invoke(host, "showSheet"); web.loadUrl("https://miniapp.test/host");
+      finishedLoads = 0;
+      invoke(host, "showSheet"); web.loadUrl(url);
     });
+  }
+
+  private void checkPageReadiness () throws Exception {
+    try {
+      createFixture("https://miniapp.test/host?manual=late-ready");
+      waitFinished();
+      Thread.sleep(250);
+      test.check("\"rgb(255, 255, 255)\"".equals(test.evaluate(web, "getComputedStyle(document.body).backgroundColor")), "late-ready fixture starts with a light document");
+      main(() -> test.check(web.getAlpha() == 0 && ((View) field(host, "progress")).getVisibility() == View.VISIBLE,
+        "completed document stays hidden while the app prepares its theme"));
+      capture("host-loading-before-ready");
+      test.evaluate(web, "document.body.style.background='#17212b';send('web_app_ready')");
+      waitVisible();
+      test.check("\"rgb(23, 33, 43)\"".equals(test.evaluate(web, "getComputedStyle(document.body).backgroundColor")), "first revealed document has its app theme");
+      main(() -> test.check(((View) field(host, "progress")).getVisibility() == View.GONE, "ready fades away the loading placeholder"));
+
+      main(() -> { finishedLoads = 0; web.loadUrl("https://miniapp.test/host?manual=without-ready"); });
+      waitFinished();
+      main(() -> test.check(web.getAlpha() == 0, "reload hides the previous document"));
+      waitVisible();
+      test.check(true, "an app without ready still becomes visible within the fallback bound");
+
+      main(() -> { finishedLoads = 0; web.loadUrl("https://miniapp.test/host?manual=old-load"); });
+      waitFinished(); Thread.sleep(3000);
+      main(() -> { finishedLoads = 0; web.loadUrl("https://miniapp.test/host?manual=new-load"); });
+      waitFinished(); Thread.sleep(2300);
+      main(() -> test.check(web.getAlpha() == 0, "the previous document's fallback cannot reveal a newer loading document"));
+      send("web_app_ready", "{}"); waitVisible();
+      test.check(true, "ready reveals the current document after cancellation of an older fallback");
+
+      main(() -> { finishedLoads = 0; web.loadUrl("https://miniapp.test/host?manual=minimized"); });
+      waitFinished(); main(host::minimize); Thread.sleep(400);
+      send("web_app_ready", "{}"); Thread.sleep(150);
+      main(() -> test.check(web.getAlpha() == 0 && (boolean) field(host, "pageReady"), "ready in the background does not reveal or activate the app"));
+      long restoring = android.os.SystemClock.uptimeMillis();
+      main(host::restore); waitVisible();
+      test.check(android.os.SystemClock.uptimeMillis() - restoring < 2000, "restoring a ready app does not wait for the no-ready fallback");
+    } finally { main(() -> { if (host != null) host.close(); }); }
+  }
+
+  private void waitFinished () throws Exception {
+    waitPage();
+    for (int i = 0; i < 60; i++) { if (finishedLoads > 0) return; Thread.sleep(100); }
+    throw new AssertionError("Host document did not finish loading");
+  }
+
+  private void waitVisible () throws Exception {
+    for (int i = 0; i < 80; i++) {
+      final boolean[] visible = new boolean[1];
+      main(() -> visible[0] = web.getAlpha() == 1f && ((View) field(host, "progress")).getVisibility() == View.GONE);
+      if (visible[0]) return;
+      Thread.sleep(100);
+    }
+    throw new AssertionError("Host document was not revealed");
   }
 
   private void checkMinimizedClose () throws Exception {

@@ -43,6 +43,7 @@ iv_textReferenceOutline, tooltip_outline: #FFF4
 messageSelection: #FFFFFF2A
 notificationSecure, textSecure: #78E27E
 placeholder: #FFFFFF0C
+miniAppLoadingIcon: #2D2D2D
 playerButtonActive: #CCC
 playerCoverPlaceholder: #111
 previewBackground: #00000070

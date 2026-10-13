@@ -3489,6 +3489,7 @@
   <string name="c_fillingPressed">Hold to see **fillingPressed** in action. Used on **Android&#160;4.x only**.</string>
   <string name="c_placeholder">Placeholder color used before image gets loaded.</string>
   <string name="c_previewBackground">Transparent background for the previews of stickers, media and chats.</string>
+  <string name="c_miniAppLoadingIcon">Mini App loading placeholder.</string>
   <string name="c_overlayFilling">Three-dot menus, sticker suggestions, small circle buttons, etc.</string>
   <string name="c_fillingNegative">Swipe to see **fillingNegative** in action.</string>
   <string name="c_fillingPositive">Background of the Send button in the Share menu.</string>

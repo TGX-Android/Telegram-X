@@ -18,14 +18,19 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -43,6 +48,7 @@ import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -51,6 +57,7 @@ import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
@@ -70,6 +77,8 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.SingleViewProvider;
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -85,6 +94,82 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   private static final int FLAG_NO_SUBTITLE = 1 << 4;
 
   private int flags;
+
+  private @Nullable ViewController<?> openAppController;
+  private final RectF openAppBounds = new RectF();
+  private final BoolAnimator openAppPressed = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 120);
+  private String openAppLabel;
+  private float openAppWidth;
+  private long openAppBotUserId;
+  private boolean openAppTouch;
+
+  /** Ordinary chat search opts in; recipient pickers and message results never do. */
+  public void setOpenAppController (@Nullable ViewController<?> controller) {
+    if (openAppController != controller) {
+      openAppController = controller;
+      updateOpenApp();
+    }
+  }
+
+  private boolean canOpenApp () {
+    return openAppController != null && !openAppController.isDestroyed() && !openAppController.inSelectMode()
+      && (!(openAppController instanceof ChatsController) || !((ChatsController) openAppController).isPicker())
+      && lastChat != null && !lastChat.isSecret() && lastMessage == null
+      && (checkBoxHelper == null || !checkBoxHelper.isChecked());
+  }
+
+  private void updateOpenApp () {
+    TdApi.User user = canOpenApp() ? tdlib.cache().user(lastChat.getUserId()) : null;
+    openAppBotUserId = user != null && user.type instanceof TdApi.UserTypeBot && ((TdApi.UserTypeBot) user.type).hasMainWebApp ? user.id : 0;
+    openAppLabel = Lang.getString(R.string.Open);
+    openAppWidth = openAppBotUserId != 0 ? Paints.getBoldTextPaint(14).measureText(openAppLabel) + Screen.dp(28) : 0;
+    openAppTouch = false;
+    openAppPressed.setValue(false, false);
+    setTrimmedTitle();
+    setTrimmedSubtitle();
+    invalidate();
+  }
+
+  private float openAppSpace () { return openAppWidth > 0 && canOpenApp() ? openAppWidth + Screen.dp(8) : 0; }
+
+  private boolean openAppContains (float x, float y) {
+    if (openAppSpace() == 0) return false;
+    float left = Lang.rtl() ? Screen.dp(15) : getMeasuredWidth() - Screen.dp(15) - openAppWidth;
+    openAppBounds.set(left, getHeight() / 2f - Screen.dp(14), left + openAppWidth, getHeight() / 2f + Screen.dp(14));
+    return openAppBounds.contains(x, y);
+  }
+
+  private boolean openApp () {
+    if (openAppBotUserId == 0 || !canOpenApp()) return false;
+    tdlib.miniApps().openMainApp(openAppController, openAppBotUserId, lastChat.getChatId());
+    return true;
+  }
+
+  @Override
+  public boolean onTouchEvent (MotionEvent event) {
+    int action = event.getActionMasked();
+    if (action == MotionEvent.ACTION_DOWN) openAppTouch = isEnabled() && openAppContains(event.getX(), event.getY());
+    if (!openAppTouch) return super.onTouchEvent(event);
+    boolean inside = openAppContains(event.getX(), event.getY());
+    openAppPressed.setValue(inside && action != MotionEvent.ACTION_UP && action != MotionEvent.ACTION_CANCEL, true);
+    if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+      openAppTouch = false;
+      if (action == MotionEvent.ACTION_UP && inside && openApp()) playSoundEffect(android.view.SoundEffectConstants.CLICK);
+    }
+    return true;
+  }
+
+  @Override
+  public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
+    super.onInitializeAccessibilityNodeInfo(info);
+    if (openAppSpace() != 0) AccessibilityNodeInfoCompat.wrap(info).addAction(
+      new AccessibilityNodeInfoCompat.AccessibilityActionCompat(R.id.btn_miniApp, Lang.getString(R.string.MiniAppOpen)));
+  }
+
+  @Override
+  public boolean performAccessibilityAction (int action, Bundle arguments) {
+    return action == R.id.btn_miniApp ? openApp() : super.performAccessibilityAction(action, arguments);
+  }
 
   private final AvatarReceiver avatarReceiver;
   private final ComplexReceiver subtitleMediaReceiver;
@@ -150,6 +235,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
         checkBoxHelper = new SimplestCheckBoxHelper(this);
       }
       checkBoxHelper.setIsChecked(isChecked, animated);
+      updateOpenApp();
     }
   }
 
@@ -288,7 +374,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   private void setTrimmedTitle () {
     int width = getMeasuredWidth();
-    float avail = width - Screen.dp(72f) - ChatView.getTimePaddingRight();
+    float avail = width - Screen.dp(72f) - ChatView.getTimePaddingRight() - openAppSpace();
     if (timeWidth != 0) {
       avail -= timeWidth + ChatView.getTimePaddingLeft();
     }
@@ -341,7 +427,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   private void setTrimmedSubtitle () {
     int width = getMeasuredWidth();
-    float avail = width - Screen.dp(72f) - ChatView.getTimePaddingRight();
+    float avail = width - Screen.dp(72f) - ChatView.getTimePaddingRight() - openAppSpace();
     if (subtitleIcon != 0) {
       avail -= Screen.dp(18f);
     }
@@ -446,7 +532,19 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       c.drawText(time, rtl ? ChatView.getTimePaddingRight() : width - ChatView.getTimePaddingRight() - timeWidth, Screen.dp(28f), ChatView.getTimePaint());
     }
 
-    counter.draw(c, rtl ? ChatView.getTimePaddingRight() + Screen.dp(11.5f) : width - ChatView.getTimePaddingRight() - Screen.dp(11.5f), getMeasuredHeight() / 2f, rtl ? Gravity.LEFT : Gravity.RIGHT, 1f);
+    float counterRight = ChatView.getTimePaddingRight() + Screen.dp(11.5f) + openAppSpace();
+    counter.draw(c, rtl ? counterRight : width - counterRight, getMeasuredHeight() / 2f, rtl ? Gravity.LEFT : Gravity.RIGHT, 1f);
+
+    if (openAppSpace() > 0) {
+      openAppContains(0, 0); // Refresh bounds after layout or an RTL change.
+      c.save();
+      float scale = 1f - .06f * openAppPressed.getFloatValue();
+      c.scale(scale, scale, openAppBounds.centerX(), openAppBounds.centerY());
+      c.drawRoundRect(openAppBounds, Screen.dp(14), Screen.dp(14), Paints.fillingPaint(Theme.getColor(ColorId.fillingPositive)));
+      Paint label = Paints.getBoldTextPaint(14, Theme.getColor(ColorId.fillingPositiveContent));
+      c.drawText(openAppLabel, openAppBounds.left + Screen.dp(14), openAppBounds.centerY() - (label.ascent() + label.descent()) / 2f, label);
+      c.restore();
+    }
 
     if (removeHelper != null) {
       removeHelper.restore(c);
@@ -525,6 +623,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       }
     }
     this.lastChat = chat;
+    updateOpenApp();
     this.flags = BitwiseUtils.setFlag(flags, FLAG_SELF_CHAT, chat != null && chat.isSelfChat());
     if (chat != null) {
       long chatId = 0;
@@ -559,6 +658,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     if (update) {
       lastChat.updateChat();
     }
+    updateOpenApp();
     setTitle(lastChat.getTitle(), lastChat.getTitleHighlight());
     setEmojiStatus(lastChat.getChat() != null ? tdlib.chatUser(lastChat.getChat()) : (lastChat.getUserId() != 0 ? tdlib.cache().user(lastChat.getUserId()) : null));
     updateSubtitle();

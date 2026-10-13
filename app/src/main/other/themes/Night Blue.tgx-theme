@@ -50,6 +50,7 @@ messageVerticalLine: #538EBD
 nameInactive, lineInactive, themeNightBlack: #6A6A6A
 notificationSecure, textSecure: #78E27E
 placeholder: #FFFFFF0C
+miniAppLoadingIcon: #2C3B4E
 playerButtonActive: #58A6E0
 playerCoverIcon: #697882
 previewBackground: #00000070

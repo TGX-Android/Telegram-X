@@ -61,6 +61,7 @@
     <item name="fillingPressed" />  <!-- same as filling, but pressed. Not transparent -->
     <item name="placeholder" />  <!-- solid color for space where image will be loaded, usually very transparent #fff or #000 -->
     <item name="previewBackground" />
+    <item name="miniAppLoadingIcon" />
     <item name="overlayFilling" />
 
     <item name="snackbarUpdate" tinted="true" />

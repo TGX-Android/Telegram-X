@@ -418,6 +418,9 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
       protected void setChatData (ListItem item, int position, BetterChatView chatView) {
         chatView.setPreviewActionListProvider(previewProvider);
         int itemId = item.getId();
+        boolean ordinarySearch = TelegramViewController.this instanceof org.thunderdog.challegram.ui.MainController
+          || TelegramViewController.this instanceof org.thunderdog.challegram.ui.ChatsController && !((org.thunderdog.challegram.ui.ChatsController) TelegramViewController.this).isPicker();
+        chatView.setOpenAppController(ordinarySearch && (itemId == R.id.search_chat_local || itemId == R.id.search_chat_global) ? TelegramViewController.this : null);
         if (itemId == R.id.search_chat_local || itemId == R.id.search_chat_global) {
           chatView.setChat((TGFoundChat) item.getData());
         } else if (itemId == R.id.search_message) {

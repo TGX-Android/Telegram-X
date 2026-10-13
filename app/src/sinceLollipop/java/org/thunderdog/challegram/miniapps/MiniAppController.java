@@ -41,7 +41,6 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -78,6 +77,7 @@ import static org.thunderdog.challegram.miniapps.MiniAppTheme.object;
 
 /** API 21+ native sheet owning one WebView; the TDLib session also survives minimization. */
 public final class MiniAppController extends ViewController<Void> implements MiniAppBridgeTransport, GlobalAccountListener {
+  private static final long PAGE_READY_FALLBACK_MS = 5000;
   private final MiniAppLaunchRequest request;
   private final MiniAppSession session;
   private final MiniAppPlatform platform = new MiniAppPlatform();
@@ -93,7 +93,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private long pageLoadGeneration;
   private boolean pageReady, pageRevealRequested, pageLoadFailed;
   private ValueAnimator sizeAnimator;
-  private ProgressBar progress;
+  private MiniAppLoadingView progress;
+  private Runnable pageReadyFallback;
   private ImageView back, collapse, more;
   private PopupLayout popup;
   private AlertDialog activeDialog;
@@ -204,8 +205,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
     root.addView(column, new FrameLayout.LayoutParams(-1, -1));
     browserArea = new FrameLayout(context);
     column.addView(browserArea, new LinearLayout.LayoutParams(-1, 0, 1));
-    progress = new ProgressBar(context);
-    browserArea.addView(progress, new FrameLayout.LayoutParams(Screen.dp(40), Screen.dp(40), Gravity.CENTER));
+    progress = new MiniAppLoadingView(context);
+    browserArea.addView(progress, new FrameLayout.LayoutParams(-1, -1));
     errorView = new TextView(context);
     errorView.setText(Lang.getString(R.string.MiniAppLoadError));
     errorView.setTextColor(Theme.textAccentColor());
@@ -340,8 +341,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
           platform.onPageStarted(view);
           sendTheme();
           sendViewport();
-          // Apps without ready() must still become visible after their page has loaded.
-          revealPageWhenReady();
+          // Loading the document can finish before deferred scripts apply the Telegram theme.
+          // Give ready() priority; apps which never call it still have a bounded fallback.
+          schedulePageReadyFallback();
         }
 
         @Override
@@ -370,6 +372,9 @@ public final class MiniAppController extends ViewController<Void> implements Min
         }
       });
       webView.setWebChromeClient(new WebChromeClient() {
+        @Override public void onProgressChanged (WebView view, int value) {
+          if (!isDestroyed() && view == webView && !pageLoadFailed) progress.setProgress(value);
+        }
         @Override public void onPermissionRequest (android.webkit.PermissionRequest request) { media().permission(request); }
         @Override public void onPermissionRequestCanceled (android.webkit.PermissionRequest request) { media().cancelled(request); }
         @Override public void onGeolocationPermissionsShowPrompt (String origin, android.webkit.GeolocationPermissions.Callback callback) { media().geolocation(origin, callback); }
@@ -520,6 +525,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void beginPageLoad () {
+    cancelPageReadyFallback();
     if (sensors != null) sensors.stopAll();
     pageLoadGeneration++;
     pageReady = pageRevealRequested = pageLoadFailed = false;
@@ -528,11 +534,31 @@ public final class MiniAppController extends ViewController<Void> implements Min
     progress.animate().cancel();
     progress.setAlpha(1f);
     progress.setVisibility(View.VISIBLE);
+    progress.reset();
     errorView.setVisibility(View.GONE);
+  }
+
+  private void cancelPageReadyFallback () {
+    if (pageReadyFallback != null && webView != null) webView.removeCallbacks(pageReadyFallback);
+    pageReadyFallback = null;
+  }
+
+  private void schedulePageReadyFallback () {
+    if (pageReady || pageLoadFailed || pageReadyFallback != null || webView == null) return;
+    final long generation = pageLoadGeneration;
+    final WebView page = webView;
+    pageReadyFallback = () -> {
+      if (!isDestroyed() && webView == page && pageLoadGeneration == generation) {
+        pageReadyFallback = null;
+        revealPageWhenReady();
+      }
+    };
+    page.postDelayed(pageReadyFallback, PAGE_READY_FALLBACK_MS);
   }
 
   private void revealPageWhenReady () {
     if (isDestroyed() || pageLoadFailed || webView == null) return;
+    cancelPageReadyFallback();
     pageReady = true;
     if (minimized || popup == null || pageRevealRequested) return;
     pageRevealRequested = true;
@@ -550,6 +576,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void showLoadError () {
+    cancelPageReadyFallback();
     pageLoadGeneration++;
     pageLoadFailed = true;
     pageReady = pageRevealRequested = false;
@@ -601,6 +628,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   @Override
   public void destroy () {
     if (isDestroyed()) return;
+    cancelPageReadyFallback();
     pageLoadGeneration++;
     if (webView != null) webView.animate().cancel();
     if (progress != null) progress.animate().cancel();
@@ -753,6 +781,8 @@ public final class MiniAppController extends ViewController<Void> implements Min
       // other actions or return-to-caller navigation from a background app.
       if (minimized) {
         if ("web_app_close".equals(event)) close();
+        // Remember readiness without showing or activating a background app.
+        else if ("web_app_ready".equals(event)) revealPageWhenReady();
         return;
       }
       if ("web_app_allow_scroll".equals(event)) {
@@ -1274,6 +1304,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     collapse.setColorFilter(foreground);
     more.setColorFilter(foreground);
     browserArea.setBackgroundColor(background);
+    progress.refreshColors(background, backgroundColor != null);
     if (webView != null) webView.setBackgroundColor(background);
     buttons.setBackgroundColor(bottomColor != null ? bottomColor : theme.bottomBarBackgroundColor);
     buttons.refreshTheme();
