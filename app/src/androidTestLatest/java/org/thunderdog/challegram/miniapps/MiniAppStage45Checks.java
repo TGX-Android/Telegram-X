@@ -341,10 +341,18 @@ final class MiniAppStage45Checks {
     Thread.sleep(900); capture("stage45-file-picker");
     // DocumentsUI remembers its last folder. Back may navigate parents before cancelling the picker.
     for (int attempt = 0; attempt < 6 && replies.get() == 0; attempt++) {
-      try (android.os.ParcelFileDescriptor ignored = test.getUiAutomation().executeShellCommand("input keyevent 4")) { Thread.sleep(500); }
+      try (android.os.ParcelFileDescriptor command = test.getUiAutomation().executeShellCommand("input keyevent 4");
+           java.io.InputStream output = new android.os.ParcelFileDescriptor.AutoCloseInputStream(command)) {
+        while (output.read() != -1) { }
+      }
+      // On slower devices the result/resume arrives after the key command. Do not queue
+      // another Back that can minimize the Mini App after DocumentsUI has gone away.
+      for (int i = 0; i < 20 && replies.get() == 0; i++) Thread.sleep(100);
     }
     for (int i = 0; i < 30 && replies.get() == 0; i++) Thread.sleep(100);
     test.check(replies.get() == 1, "real Android multiple-file picker cancellation completes once");
+    for (int i = 0; i < 50 && !host.canShowNativeUi(); i++) Thread.sleep(100);
+    if (!host.canShowNativeUi()) throw new AssertionError("Picker did not return to the active Mini App: minimized=" + host.isMinimized() + ", activity=" + activity.getActivityState());
   }
 
   private void opticalQrChecks () throws Exception {
