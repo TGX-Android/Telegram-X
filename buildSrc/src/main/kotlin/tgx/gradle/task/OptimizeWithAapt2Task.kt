@@ -21,24 +21,30 @@ abstract class OptimizeWithAapt2Task @Inject constructor(
     if (minSdk.get() < 33) {
       fatal("Rudimentary ${className()} task for minSdk=${minSdk.get()}")
     }
-    val resources = task.outputs.files.asFileTree.matching { include("**/*.ap_") }.files
-    if (resources.isEmpty()) fatal("${task.name}: no .ap_ outputs found")
+    val resources = task.outputs.files.asFileTree.matching {
+      include("**/*.ap_")
+    }.files
+    if (resources.isEmpty()) {
+      fatal("${task.name}: no .ap_ outputs found")
+    }
     resources.forEach { inputFile ->
       val tempFile = File(inputFile.parentFile, "${inputFile.name}.sparse")
       val output = ByteArrayOutputStream()
       val result = exec.exec {
         executable = aapt2.get()
         args("optimize", "--enable-sparse-encoding")
-        args("-o", tempFile.absolutePath, inputFile.absolutePath)
         if (minSdk.get() >= 34) {
           args("--enable-compact-entries")
         }
+        args("-o", tempFile.absolutePath, inputFile.absolutePath)
         standardOutput = output
         errorOutput = output
         isIgnoreExitValue = true
       }
       if (result.exitValue != 0) {
-        fs.delete { delete(tempFile) }
+        fs.delete {
+          delete(tempFile)
+        }
         fatal("aapt2 optimize $inputFile:\n$output")
       }
       moveFile(tempFile, inputFile)
