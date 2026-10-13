@@ -2,11 +2,12 @@
 	path = app/jni/third_party/webp
 	url = https://github.com/webmproject/libwebp
 	shallow = true
-	branch = 1.4.0
+	branch = 1.6.0
 [submodule "libyuv"]
 	path = app/jni/third_party/libyuv
 	url = https://chromium.googlesource.com/libyuv/libyuv
 	shallow = true
+	branch = stable
 [submodule "ffmpeg"]
 	path = app/jni/third_party/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg
@@ -16,6 +17,7 @@
 	path = app/jni/third_party/lz4
 	url = https://github.com/lz4/lz4
 	shallow = true
+	branch = dev
 [submodule "androidx-media"]
 	path = app/thirdparty/androidx-media/legacy
 	url = https://github.com/androidx/media
@@ -25,22 +27,27 @@
 	path = app/jni/third_party/flac
 	url = https://github.com/xiph/flac
 	shallow = true
+	branch = master
 [submodule "opus"]
 	path = app/jni/third_party/opus
 	url = https://github.com/xiph/opus
 	shallow = true
+	branch = main
 [submodule "opusfile"]
 	path = app/jni/third_party/opusfile
 	url = https://github.com/xiph/opusfile
 	shallow = true
+	branch = main
 [submodule "ogg"]
 	path = app/jni/third_party/ogg
 	url = https://github.com/xiph/ogg
 	shallow = true
+	branch = main
 [submodule "libvpx"]
 	path = app/jni/third_party/libvpx
 	url = https://github.com/webmproject/libvpx
 	shallow = true
+	branch = yellowbilled
 [submodule "tdlib"]
 	path = tdlib
 	url = https://github.com/TGX-Android/tdlib
@@ -80,29 +87,32 @@
 	path = app/jni/tgvoip/third_party/usrsctp
 	url = https://github.com/sctplab/usrsctp
 	shallow = true
+	branch = master
 [submodule "libsrtp"]
 	path = app/jni/tgvoip/third_party/libsrtp
 	url = https://github.com/cisco/libsrtp
 	shallow = true
+	branch = main
 [submodule "openh264"]
 	path = app/jni/tgvoip/third_party/openh264
 	url = https://github.com/cisco/openh264
 	shallow = true
-	branch = v2.4.1
+	branch = openh264v2.4.1
 [submodule "abseil"]
 	path = app/jni/tgvoip/third_party/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
 	shallow = true
+	branch = lts_2024_01_16
 [submodule "webrtc"]
 	path = app/jni/tgvoip/third_party/webrtc
 	url = https://github.com/TGX-Android/webrtc
 	shallow = true
-	branch = main
+	branch = production
 [submodule "tgcalls"]
 	path = app/jni/tgvoip/third_party/tgcalls
 	url = https://github.com/TGX-Android/tgcalls
 	shallow = true
-	branch = main
+	branch = production
 [submodule "libevent"]
 	path = app/jni/tgvoip/third_party/libevent
 	url = https://github.com/TGX-Android/libevent
@@ -117,19 +127,29 @@
 	path = app/jni/tgvoip/third_party/rnnoise
 	url = https://github.com/xiph/rnnoise
 	shallow = true
-	branch = master
+	branch = main
 [submodule "rtc_base"]
 	path = app/jni/tgvoip/third_party/webrtc_deps/base
 	url = https://chromium.googlesource.com/chromium/src/base
+	shallow = true
+	branch = main
 [submodule "rtc_third_party"]
 	path = app/jni/tgvoip/third_party/webrtc_deps/third_party
 	url = https://chromium.googlesource.com/chromium/src/third_party
+	shallow = true
+	branch = main
 [submodule "thirdparty/androidx-media/latest"]
 	path = app/thirdparty/androidx-media/latest
 	url = https://github.com/androidx/media
+	shallow = true
+	branch = release
 [submodule "thirdparty/androidx-media/lollipop"]
 	path = app/thirdparty/androidx-media/lollipop
 	url = https://github.com/androidx/media
+	shallow = true
+	branch = release
 [submodule "app/jni/third_party/pixman"]
 	path = app/jni/third_party/pixman
 	url = https://gitlab.freedesktop.org/pixman/pixman.git
+	shallow = true
+	branch = master
