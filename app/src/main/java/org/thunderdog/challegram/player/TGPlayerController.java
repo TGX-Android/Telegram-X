@@ -1260,6 +1260,13 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     return 0;
   }
 
+  public boolean hasPlayListScope (Tdlib tdlib, long chatId, @Nullable TdApi.MessageTopic topic, @Nullable String query) {
+    synchronized (this) {
+      return this.tdlib == tdlib && playlistChatId == chatId && Td.matchesTopic(playlistTopicId, topic) &&
+        Td.matchesTopic(topic, playlistTopicId) && StringUtils.equalsOrBothEmpty(playlistSearchQuery, query);
+    }
+  }
+
   public TdApi.Message getCurrentTrack () {
     synchronized (this) {
       if (playState != STATE_NONE) {
@@ -1279,6 +1286,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   }
 
   private Client.ResultHandler newStackHandler (final int contextId, final boolean areNew, final Tdlib tdlib, final long chatId, final int contentType, final long maxMessageId, final long minMessageId) {
+    final TdApi.MessageTopic requestedTopic = playlistTopicId;
     return object -> {
       final List<TdApi.Message> moreMessages;
       switch (object.getConstructor()) {
@@ -1321,7 +1329,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
             moreMessages = new ArrayList<>(array.length);
             for (int i = array.length - 1; i >= 0; i--) {
               TdApi.Message message = array[i];
-              if (message == null || message.chatId != chatId || !matchesFilter(message.content, contentType)) {
+              if (message == null || message.chatId != chatId || !Td.matchesTopic(message.topicId, requestedTopic) || !matchesFilter(message.content, contentType)) {
                 continue;
               }
               if (areNew) {
@@ -1605,7 +1613,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
       return;
     }
     synchronized (this) {
-      if (this.tdlib == tdlib && this.message != null && this.message.chatId == message.chatId && message.chatId != 0 && this.message.content.getConstructor() == message.content.getConstructor() && TD.isScheduled(this.message) == TD.isScheduled(message)) {
+      if (this.tdlib == tdlib && this.message != null && this.message.chatId == message.chatId && message.chatId != 0 && Td.matchesTopic(message.topicId, playlistTopicId) && this.message.content.getConstructor() == message.content.getConstructor() && TD.isScheduled(this.message) == TD.isScheduled(message)) {
         if ((messageListStateFlags & LIST_STATE_LOADED_NEW) != 0) {
           int position = messageList.size();
           addMessageImpl(message);

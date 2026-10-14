@@ -149,6 +149,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   // TODO: get rid of chat-related logic inside of InputView
   private @Nullable MessagesController controller;
+  private boolean inputDestroyed;
   private boolean ignoreDraft;
 
   private String suffix = "", prefix = "", displaySuffix = "";
@@ -391,6 +392,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   @Override
   public void performDestroy () {
+    inputDestroyed = true;
     super.performDestroy();
     mediaHolder.performDestroy();
   }
@@ -1191,13 +1193,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private boolean textChangedSinceChatOpened;
 
-  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.DraftMessageContent forceDraft, @Nullable String customInputField, boolean isSilent) {
+  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.DraftMessageContent draft, @Nullable String customInputField, boolean isSilent) {
     textChangedSinceChatOpened = false;
     updateMessageHint(chat, messageThread, customInputField, isSilent);
-    setDraft(forceDraft != null ? forceDraft : !tdlib.canSendBasicMessage(chat) ? null :
-      messageThread != null ? messageThread.getDraftContent() :
-      chat.draftMessage != null ? chat.draftMessage.content : null
-    );
+    // The controller resolves the draft. Null explicitly means an empty draft,
+    // including a forum topic with no draft in a group that has one.
+    setDraft(draft);
   }
 
   public boolean isEmpty () {
@@ -1508,6 +1509,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       JPEG = 4;
   }
 
+  private boolean canSendImeContent (InputSendContext sendContext, TdApi.InputMessageContent content) {
+    MessagesController current = controller;
+    return current != null && sendContext.matches(current, current.tdlib(), current.getArguments(),
+      inputDestroyed || current.isDestroyed(), current.getChatId(), current.getMessageTopicId(), current.areScheduledOnly()) &&
+      !current.showForumTopicRestriction(this) &&
+      !current.showRestriction(this, tdlib.getRestrictionText(current.getChat(), content));
+  }
+
   @Override
   protected InputConnection createInputConnection (EditorInfo editorInfo) {
     InputConnection ic = super.createInputConnection(editorInfo);
@@ -1526,10 +1535,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return null;
     final InputConnectionCompat.OnCommitContentListener callback =
       (inputContentInfo, flags, bundle) -> {
-        if (controller == null)
+        final MessagesController sendController = controller;
+        if (inputDestroyed || sendController == null || sendController.isDestroyed() || sendController.tdlib() != tdlib ||
+            sendController.showForumTopicRestriction(this))
           return false;
 
-        final long chatId = controller.getChatId();
+        final long chatId = sendController.getChatId();
         final TdApi.Chat chat = tdlib.chat(chatId);
         if (chat == null) {
           return false;
@@ -1561,11 +1572,15 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
         Uri uri = inputContentInfo.getContentUri();
         long timestamp = System.currentTimeMillis();
-        MessagesController.ReplyInfo replyInfo = controller.obtainReplyTo();
+        // All has a null visible topic even when its outgoing destination is General/a reply topic.
+        TdApi.MessageTopic viewTopic = sendController.getMessageTopicId();
+        Object viewArguments = sendController.getArguments();
+        boolean needMenu = sendController.areScheduledOnly();
+        MessagesController.ReplyInfo replyInfo = sendController.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
-        TdApi.MessageTopic topicId = controller.getMessageTopicId(replyInfo);
-        boolean silent = controller.obtainSilentMode();
-        boolean needMenu = controller.areScheduledOnly();
+        InputSendContext sendContext = new InputSendContext(sendController, tdlib, viewArguments,
+          chatId, viewTopic, needMenu, sendController.getMessageTopicId(replyInfo));
+        boolean silent = sendController.obtainSilentMode();
 
         Background.instance().post(() -> {
           int imageWidth, imageHeight;
@@ -1607,18 +1622,20 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           }
 
           UI.post(() -> {
-            if (controller.showRestriction(this, tdlib.getRestrictionText(chat, content))) {
+            if (!canSendImeContent(sendContext, content)) {
               return;
             }
             if (needMenu) {
-              tdlib.ui().showScheduleOptions(controller, chatId, false,
+              tdlib.ui().showScheduleOptions(sendController, chatId, false,
                 (sendOptions, disableMarkdown) -> {
+                  // The picker is another asynchronous boundary; do not send from a stale view.
+                  if (!canSendImeContent(sendContext, content)) return;
                   TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(
                     sendOptions,
-                    controller.getInputSuggestedPostInfo(replyInfo),
+                    sendController.getInputSuggestedPostInfo(replyInfo),
                     silent
                   );
-                  tdlib.sendMessage(chatId, topicId, replyTo,
+                  tdlib.sendMessage(chatId, sendContext.outgoingTopic, replyTo,
                     finalSendOptions,
                     content,
                     null
@@ -1627,10 +1644,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                 null, null);
             } else {
               TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
-                controller.getInputSuggestedPostInfo(replyInfo),
+                sendController.getInputSuggestedPostInfo(replyInfo),
                 silent
               );
-              tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, content);
+              tdlib.sendMessage(chatId, sendContext.outgoingTopic, replyTo, sendOptions, content);
             }
           });
         });

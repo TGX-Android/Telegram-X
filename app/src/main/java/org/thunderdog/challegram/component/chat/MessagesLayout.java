@@ -39,6 +39,7 @@ public class MessagesLayout extends RelativeLayout implements Animated {
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+    controller.layoutForumTabs();
     boolean emojiState = controller.getEmojiState();
     KeyboardFrameLayout emojiLayout = controller.getEmojiKeyboardLayout();
 

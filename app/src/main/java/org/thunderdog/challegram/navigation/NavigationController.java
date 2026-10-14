@@ -41,6 +41,7 @@ import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.widget.ShadowView;
@@ -76,6 +77,8 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   private NavigationProcessor processor;
 
   private RootLayout rootView;
+  private ForumNavigationContainer forumContainer;
+  private boolean forumTransition;
   private NavigationLayout contentWrapper;
   private HeaderView headerView;
   private ShadowView shadowView, shadowTop;
@@ -235,6 +238,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       }
     } else {
       contentWrapper.addView(controller.getValue());
+      if (controller instanceof org.thunderdog.challegram.ui.ForumTopicsController) forumContainer.addTopicView(controller.getValue());
     }
     controller.attachNavigationController(this);
     controller.onPrepareToShow();
@@ -252,6 +256,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       rootView.addView(controller.getValue(), 0);
     } else {
       contentWrapper.addView(controller.getValue(), index);
+      if (controller instanceof org.thunderdog.challegram.ui.ForumTopicsController) forumContainer.addTopicView(controller.getValue());
     }
     controller.attachNavigationController(this);
     controller.onPrepareToShow();
@@ -271,6 +276,8 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       rootView.removeView(controller.getValue());
     } else {
       contentWrapper.removeView(controller.getValue());
+      forumContainer.onControllerViewRemoved(controller.getValue());
+      if (controller instanceof org.thunderdog.challegram.ui.ForumTopicsController) forumContainer.removeTopicView(controller.getValue());
     }
     controller.onCleanAfterHide();
     controller.detachNavigationController();
@@ -406,7 +413,21 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
     Lang.addLanguageListener(this);
 
-    return rootView;
+    forumContainer = new ForumNavigationContainer(context, this, rootView);
+    return forumContainer;
+  }
+
+  public ForumNavigationContainer forumContainer () {
+    getValue();
+    return forumContainer;
+  }
+
+  public boolean isForumRailTouch (float x, float y) {
+    return forumContainer != null && forumContainer.isRailTouch(x, y);
+  }
+
+  public float contentTouchX (float x, float y) {
+    return forumContainer != null ? forumContainer.contentX(x, y) : x;
   }
 
   public void addViewUnderHeader (View view) {
@@ -429,6 +450,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   @Override
   public void onThemeColorsChanged (boolean areTemp, ColorState state) {
+    if (forumContainer != null) forumContainer.refresh();
     ViewController<?> c;
     if (isAnimating && ((translatingForward && translationFactor == 1f) || (!translatingForward && translationFactor == 0f))) {
       c = getPreviousStackItem();
@@ -456,6 +478,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   public void destroy () {
     isDestroyed = true;
+    if (forumContainer != null) forumContainer.destroy();
     ThemeManager.instance().removeThemeListener(this);
     getStack().clear(this);
     clearChildWrappers();
@@ -508,6 +531,26 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
         processor.setController(controller);
       }
     }
+  }
+
+  /** Replace one history atomically, preserving the caller's Back destination. UI thread only. */
+  public boolean replaceCurrent (ViewController<?> expected, ViewController<?> replacement) {
+    if (!UI.inUiThread() || isAnimating() || getStack().isLocked() || getStack().getCurrent() != expected || expected.isDestroyed()) return false;
+    replacement.getValue();
+    if (expected.inSearchMode()) getHeaderView().closeSearchMode(false, null);
+    if (expected.inSelectMode()) getHeaderView().closeSelectMode(true, false);
+    // A controller may veto leaving a nested search mode. Never retire it while
+    // that search still owns callbacks or the header is transforming.
+    if (expected.inSearchMode() || expected.inSelectMode() || getHeaderView().isAnimating()) return false;
+    expected.onBlur();
+    removeChildWrapper(expected);
+    if (expected instanceof MessagesController) ((MessagesController) expected).retireForumTabsController();
+    getStack().replace(getStack().getCurrentIndex(), replacement);
+    addChildWrapper(replacement);
+    getHeaderView().setTitle(replacement);
+    replacement.onFocus();
+    forumContainer.refresh();
+    return true;
   }
 
   public ViewController<?> getPendingController () {
@@ -686,6 +729,10 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   public void prepareFactorAnimation (ViewController<?> left, ViewController<?> right, boolean forward, int direction, @PredictiveGesture int predictiveGestureMode) {
+    // Legacy swipe Back also respects reduced motion for the forum transition.
+    if (direction == TRANSLATION_HORIZONTAL && right instanceof org.thunderdog.challegram.ui.ForumTopicsController && Settings.instance().needReduceMotion()) {
+      direction = TRANSLATION_FADE;
+    }
     preventLayout();
     if (Views.HARDWARE_LAYER_ENABLED) {
       setLayerType(View.LAYER_TYPE_HARDWARE, left, right);
@@ -886,6 +933,10 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       }
     }
 
+    forumTransition = direction != TRANSLATION_NONE && forumContainer.beginTransition(left, right,
+      direction == TRANSLATION_HORIZONTAL && needRtl() == Lang.rtl(), 1f - translationFactor);
+    if (forumTransition) applyForumTransition(translationFactor);
+
     prepareHeaderAnimation(left, right, forward, direction, forceRtlAnimation);
 
     layoutIfRequested();
@@ -1071,7 +1122,8 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
         }
       }, timeout);
     } else {
-      AnimatorUtils.startAnimator(forward ? right.getValue() : left.getValue(), animator);
+      Runnable start = () -> AnimatorUtils.startAnimator(forward ? right.getValue() : left.getValue(), animator);
+      if (forumTransition) forumContainer.startTransitionWhenReady(start); else start.run();
     }
   }
 
@@ -1087,6 +1139,8 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
         ((android.view.ActionMode) actionMode).finish();
       }
       if (!animating) {
+        if (forumContainer != null) forumContainer.endTransition();
+        forumTransition = false;
         processor.checkRebaseMessage();
       }
     }
@@ -1379,6 +1433,24 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   private float translationFactor;
 
+  private void applyForumTransition (float factor) {
+    if (!forumContainer.hasTransition()) { forumTransition = false; return; }
+    float progress = 1f - factor;
+    forumContainer.setTransitionProgress(progress);
+    currentLeft.onTranslationChanged(0f);
+    if (translationMode == TRANSLATION_HORIZONTAL) {
+      // Predictive Back from the opposite edge needs the full exit distance. Ordinary
+      // forum motion subtracts the leading margin, without changing gesture coordinates.
+      float translation = needRtl() == Lang.rtl() ?
+        org.thunderdog.challegram.data.ForumRailLayout.topicTranslation((int) currentWidth, forumContainer.transitionRailWidth(), progress, needRtl()) :
+        currentWidth * factor * (needRtl() ? -1f : 1f);
+      rightWrap.setTranslationX(translation);
+      currentRight.onTranslationChanged(translation);
+    }
+    if (USE_PREVIEW_FADE) fadeView.setAlpha(0f);
+    if (DROP_SHADOW_ENABLED) shadowView.setVisibility(View.GONE);
+  }
+
   public void setFactor (float factor) {
     if (this.translationFactor == factor) return;
 
@@ -1477,6 +1549,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       }
     }
 
+    if (forumTransition) applyForumTransition(this.translationFactor);
     updateHackyViews();
   }
 
@@ -1625,6 +1698,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   @Override
   public void onLanguagePackEvent (int event, int arg1) {
+    if (forumContainer != null) forumContainer.refresh();
     boolean directionChanged = Lang.hasDirectionChanged(event, arg1);
 
     if (directionChanged) {
@@ -1651,6 +1725,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   private void setBottomInset (int bottomInset, int bottomInsetWithoutIme) {
+    if (forumContainer != null) forumContainer.setBottomInset(bottomInsetWithoutIme);
     if (this.bottomInset != bottomInset || this.bottomInsetWithoutIme != bottomInsetWithoutIme) {
       this.bottomInset = bottomInset;
       this.bottomInsetWithoutIme = bottomInsetWithoutIme;

@@ -242,6 +242,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private long receiverChatId;
     private @Nullable TdApi.MessageTopic topicId;
+    private @Nullable String searchQuery;
 
     private boolean areOnlyScheduled;
 
@@ -314,6 +315,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       this.topicId = topicId;
       return this;
     }
+
+    public Args setSearchQuery (@Nullable String query) { this.searchQuery = query; return this; }
 
     public @Nullable TdApi.SearchMessagesFilter filter;
 
@@ -1900,7 +1903,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (c instanceof MessagesController && ((MessagesController) c).compareChat(item.getSourceChatId(), topicId)) {
         ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
       } else {
-        tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
+        if (topicId != null) tdlib.ui().openChat(this, item.getSourceChatId(), new TdlibUi.ChatOpenParameters()
+          .messageTopic(topicId).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId())).ensureHighlightAvailable().keepStack());
+        else tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
       }
 
       close();
@@ -2249,7 +2254,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           MediaItem item = reverseMode ? stack.lastAvalable() : stack.firstAvailable();
           long initialFromMessageId = item.getSourceMessageId();
           TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
-            chatId, topicId, null, null,
+            chatId, topicId, getArgumentsStrict().searchQuery, null,
             initialFromMessageId, 0,
             LOAD_COUNT, searchFilter()
           );
@@ -2264,7 +2269,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           MediaItem item = stack.lastAvalable();
           long initialFromMessageId = item.getSourceMessageId();
           TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
-            chatId, topicId, null, null,
+            chatId, topicId, getArgumentsStrict().searchQuery, null,
             initialFromMessageId, 0,
             LOAD_COUNT_PROFILE, searchFilter()
           );
@@ -2357,7 +2362,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     List<TdApi.Message> list = new ArrayList<>(messages.messages.length);
     for (TdApi.Message message : messages.messages) {
-      if (!Td.isSecret(message.content)) {
+      if (message.chatId == chatId && Td.matchesTopic(message.topicId, topicId) && !Td.isSecret(message.content)) {
         list.add(message);
       }
     }
@@ -2370,7 +2375,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       getArgumentsStrict().noLoadMore = true;
     } else if (addedCount == 0) {
       TdApi.SearchChatMessages retryFunction = new TdApi.SearchChatMessages(
-        chatId, topicId, null, null,
+        chatId, topicId, getArgumentsStrict().searchQuery, null,
         messages.nextFromMessageId, 0,
         loadCount, searchFilter()
       );

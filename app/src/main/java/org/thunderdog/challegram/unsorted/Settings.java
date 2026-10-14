@@ -123,7 +123,6 @@ import me.vkryl.leveldb.LevelDB;
 import tgx.td.ChatId;
 import tgx.td.MessageId;
 import tgx.td.Td;
-import tgx.td.TdConstants;
 
 /**
  * All app-related settings.
@@ -319,7 +318,7 @@ public class Settings {
   private static final String KEY_PIP_GRAVITY = "pip_gravity";
   private static final String KEY_PLAYER_FLAGS = "player_flags";
   private static final String KEY_HIDE_BOT_KEYBOARD_PREFIX = "hide_bot_keyboard_";
-  private static final String KEY_SCROLL_CHAT_PREFIX = "scroll_chat";
+  private static final String KEY_SCROLL_CHAT_PREFIX = ScrollStateKey.PREFIX;
   private static final String KEY_SCROLL_CHAT_ALIASES = "_aliases";
   private static final String KEY_SCROLL_CHAT_MESSAGE_ID = "_message";
   private static final String KEY_SCROLL_CHAT_MESSAGE_CHAT_ID = "_chat";
@@ -4351,26 +4350,15 @@ public class Settings {
   @Nullable
   public SavedMessageId getScrollMessageId (int accountId, long chatId, @Nullable TdApi.MessageTopic topicId) {
     String prefix = makeScrollChatKey(null, accountId, chatId, null);
-    String topicSuffix = topicId != null ? "_" + Td.cacheKey(topicId) : null;
     SavedMessageId.Builder b = null;
     for (LevelDB.Entry entry : pmc.find(prefix)) {
-      String key = entry.key();
-      boolean mismatch;
-      if (StringUtils.isEmpty(topicSuffix)) {
-        if (TdConstants.COMPILE_CHECK) {
-          Td.assertMessageTopic_98b4a9a3();
-        }
-        mismatch = key.matches("^.+_(?:thread|forum|direct|saved)+\\d+$");
-      } else {
-        mismatch = !key.endsWith(topicSuffix);
-      }
-      if (mismatch) {
+      String dataKey = ScrollStateKey.field(entry.key(), accountId, chatId, topicId);
+      if (dataKey == null) {
         continue;
       }
       if (b == null) {
         b = new SavedMessageId.Builder(chatId);
       }
-      String dataKey = key.substring(prefix.length(), key.length() - StringUtils.length(topicSuffix));
       switch (dataKey) {
         case KEY_SCROLL_CHAT_MESSAGE_ID:
           b.messageId = entry.asLong();
@@ -4405,7 +4393,10 @@ public class Settings {
     String prefix = key(KEY_SCROLL_CHAT_PREFIX + chatId, accountId);
     SharedPreferences.Editor editor = null;
     for (LevelDB.Entry entry : pmc.find(prefix)) {
-      String suffix = entry.key().substring(prefix.length()).replaceAll("_thread[\\d]+$", "");
+      String suffix = ScrollStateKey.field(entry.key(), accountId, chatId);
+      if (suffix == null) {
+        continue;
+      }
       switch (suffix) {
         case KEY_SCROLL_CHAT_MESSAGE_ID: {
           if (entry.asLong() == oldMessageId) {
@@ -4438,15 +4429,7 @@ public class Settings {
   }
 
   private static String makeScrollChatKey (String key, int accountId, long chatId, @Nullable TdApi.MessageTopic topicId) {
-    StringBuilder b = new StringBuilder(KEY_SCROLL_CHAT_PREFIX)
-      .append(chatId);
-    if (key != null) {
-      b.append(key);
-    }
-    if (topicId != null) {
-      b.append("_").append(Td.cacheKey(topicId));
-    }
-    return key(b.toString(), accountId);
+    return ScrollStateKey.key(key, accountId, chatId, topicId);
   }
 
   // Other settings

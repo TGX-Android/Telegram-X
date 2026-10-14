@@ -57,6 +57,20 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
 
   private static final float AVATAR_PLACEHOLDER_RADIUS = 25f;
 
+  /** Read-only poll summary; tapping opens the original scoped message and its native poll UI. */
+  public InlineResultMultiline (BaseActivity context, Tdlib tdlib, TdApi.Message message, TdApi.Poll poll) {
+    super(context, tdlib, TYPE_ARTICLE, null, null);
+    setMessage(message);
+    title = poll.question.text;
+    StringBuilder summary = new StringBuilder(Lang.getString(poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen));
+    summary.append(" · ").append(Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount));
+    for (TdApi.PollOption option : poll.options) summary.append('\n').append(option.text.text);
+    description = summary.toString();
+    avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS,
+      new AvatarPlaceholder.Metadata(tdlib.accentColorForString(title), TD.getLetters(title)), null);
+    layoutInternal(Screen.currentWidth());
+  }
+
   public InlineResultMultiline (BaseActivity context, Tdlib tdlib, TdApi.InlineQueryResultArticle article) {
     super(context, tdlib, TYPE_ARTICLE, article.id, article);
 
@@ -276,7 +290,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
 
   @Override
   public TdApi.LinkPreview findLinkPreview (String link) {
-    if (TGWebPage.isPreviewOf(linkPreview.url, link)) {
+    if (linkPreview != null && TGWebPage.isPreviewOf(linkPreview.url, link)) {
       return linkPreview;
     }
     return null;

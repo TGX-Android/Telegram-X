@@ -94,6 +94,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   private static final int ARCHIVE_PREVIEW_LIMIT = 9;
 
   private int flags, listMode;
+  private boolean forum;
+  private TdApi.DraftMessage forumDraft;
+  private int forumDraftTopicId;
 
   private final ViewController<?> context;
   private final Tdlib tdlib;
@@ -154,7 +157,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     this.chatList = chatList;
     this.chat = Td.copyOf(chat);
     this.archive = null;
-    this.listMode = Settings.instance().getChatListMode();
+    this.forum = tdlib.isForum(chat.id);
+    this.listMode = resolveListMode();
     this.dataType = chat.type.getConstructor();
     switch (dataType) {
       case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
@@ -298,15 +302,63 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     return listMode;
   }
 
+  public boolean isForumRow () { return forum; }
+
+  private int resolveListMode () {
+    int mode = Settings.instance().getChatListMode();
+    return forum && mode == Settings.CHAT_MODE_2LINE ? Settings.CHAT_MODE_3LINE : mode;
+  }
+
+  public boolean canShowForumPreview () {
+    return forum && !tdlib.hasPasscode(chat) && StringUtils.isEmpty(Lang.getRestrictionText(tdlib.chatRestriction(chat)));
+  }
+
+  public @Nullable TdApi.Message getPreviewMessage () { return chat != null ? chat.lastMessage : null; }
+
+  public int getPreviewCounterWidth () { return getCounterAddWidth(); }
+
+  public void updateForumUnread () {
+    if (forum) {
+      setCounter(needAnimateChanges());
+      currentViews.invalidate();
+    }
+  }
+
+  private @Nullable TdApi.DraftMessage getPreviewDraft () {
+    TdApi.DraftMessage chatDraft = chat != null ? chat.draftMessage : null;
+    return forum && forumDraft != null && (!ForumChatPreview.hasTextDraft(chatDraft) || forumDraft.date >= chatDraft.date) ? forumDraft : chatDraft;
+  }
+
+  public int getPreviewTopicId () {
+    return showDraft() && forumDraft != null && getPreviewDraft() == forumDraft ? forumDraftTopicId :
+      ForumChatPreview.topicId(getChatId(), getPreviewMessage());
+  }
+
+  public void updateForumDraft (@Nullable TdApi.ForumTopic topic) {
+    TdApi.DraftMessage next = topic != null ? topic.draftMessage : null;
+    int nextId = topic != null ? topic.info.forumTopicId : 0;
+    if (forum && (forumDraftTopicId != nextId || !Td.equalsTo(forumDraft, next))) {
+      forumDraft = next;
+      forumDraftTopicId = nextId;
+      setTime();
+      setText();
+      layoutTitle(false);
+      currentViews.invalidate();
+    }
+  }
+
   public void checkChatListMode () {
-    int newMode = Settings.instance().getChatListMode();
-    if (listMode != newMode) {
+    boolean wasForum = forum;
+    forum = chat != null && tdlib.isForum(chat.id);
+    int newMode = resolveListMode();
+    if (listMode != newMode || wasForum != forum) {
       listMode = newMode;
       currentWidth = 0;
       if (avatarPlaceholder != null) {
         setAvatar();
       }
       currentViews.requestLayout();
+      currentViews.invalidateContent(this);
       currentViews.invalidate();
     }
   }
@@ -428,7 +480,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     if (getChatId() == chatId) {
       TdApi.Message oldMessage = chat.lastMessage;
       chat.lastMessage = message;
-      if ((oldMessage == null && message == null) || (oldMessage != null && message != null && oldMessage.id == message.id))
+      if ((oldMessage == null && message == null) || (!forum && oldMessage != null && message != null && oldMessage.id == message.id))
         return false;
       setCounter(true);
       setTime();
@@ -744,7 +796,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
   public boolean showDraft () {
     // TODO rich message
-    return !isArchive() && chat.unreadCount == 0 && chat.draftMessage != null && chat.draftMessage.content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR;
+    TdApi.DraftMessage draft = getPreviewDraft();
+    return !isArchive() && (forum || chat.unreadCount == 0) && draft != null && draft.content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR;
   }
 
   public boolean isUnread () {
@@ -813,7 +866,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
     reactionsCounter.setCount(hasReactions ? Tdlib.CHAT_MARKED_AS_UNREAD : 0, !notificationsEnabled(), allowAnimation && needAnimateChanges());
     mentionCounter.setCount(hasMentions ? Tdlib.CHAT_MARKED_AS_UNREAD : 0, false, allowAnimation && needAnimateChanges());
-    counter.setCount(hasMentions && unreadCount == 1 ? 0 : unreadCount, !notificationsEnabled(), allowAnimation && needAnimateChanges());
+    counter.setCount(!forum && hasMentions && unreadCount == 1 ? 0 : unreadCount, !notificationsEnabled(), allowAnimation && needAnimateChanges());
   }
 
   public boolean needAnimateChanges () {
@@ -830,7 +883,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     } else if (getSource() != null) {
       return 0;
     } else {
-      return chat.unreadCount > 0 ? chat.unreadCount : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
+      return tdlib.topics().unreadCount(chat);
     }
   }
 
@@ -1039,7 +1092,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
           }
         }
       } else {
-        int date = chat.draftMessage != null && showDraft() ? chat.draftMessage.date : chat.lastMessage != null ? chat.lastMessage.date : 0;
+        int date = showDraft() ? getPreviewDraft().date : chat.lastMessage != null ? chat.lastMessage.date : 0;
         time = date != 0 ? Lang.timeOrDateShort(date, TimeUnit.SECONDS) : "";
       }
     }
@@ -1161,7 +1214,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   private void layoutText () {
     int avail = currentWidth - ChatView.getLeftPadding(listMode) - ChatView.getRightPadding() - (lastCounterAddWidth = getCounterAddWidth());
     textLeft = ChatView.getLeftPadding(listMode);
-    if ((flags & FLAG_HAS_PREFIX) != 0 && prefix != null && listMode == Settings.CHAT_MODE_2LINE) {
+    if ((flags & FLAG_HAS_PREFIX) != 0 && prefix != null && (forum || listMode == Settings.CHAT_MODE_2LINE)) {
       int prefixWidth = prefix.getWidth();
       avail -= prefixWidth;
       textLeft += prefixWidth;
@@ -1189,10 +1242,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         })
         .noClickable()
         .build();
-      currentViews.invalidateContent(this);
     } else {
       trimmedText = null;
     }
+    currentViews.invalidateContent(this);
 
     layoutChatAction();
   }
@@ -1220,7 +1273,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       final String prefix;
       boolean needSuffix = true;
       if (showDraft()) {
-        TdApi.DraftMessage draftMessage = chat.draftMessage;
+        TdApi.DraftMessage draftMessage = getPreviewDraft();
         Td.assertDraftMessageContent_f690069b();
         needSuffix = draftMessage != null && draftMessage.content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR && !Td.isEmpty(((TdApi.DraftMessageContentText) draftMessage.content).text);
         prefix = Lang.getString(R.string.Draft);
@@ -1229,16 +1282,18 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         prefix = Lang.getString(listMode != Settings.CHAT_MODE_2LINE && tdlib.isMultiChat(chat) && Td.getSenderId(chat.lastMessage) == chat.id ? R.string.FromYouAnonymous : R.string.FromYou);
         flags |= FLAG_CONTENT_STRING;
       } else if (chat.lastMessage != null && !Td.isProximityAlertTriggered(chat.lastMessage.content)) {
-        prefix = listMode == Settings.CHAT_MODE_2LINE && Td.getMessageAuthorId(chat.lastMessage) == chat.lastMessage.chatId && StringUtils.isEmpty(chat.lastMessage.authorSignature) ?
+        prefix = (forum || listMode == Settings.CHAT_MODE_2LINE) && Td.getMessageAuthorId(chat.lastMessage) == chat.lastMessage.chatId && StringUtils.isEmpty(chat.lastMessage.authorSignature) ?
           Lang.getString(R.string.FromAnonymous) :
-          tdlib.senderName(chat.lastMessage, false, listMode == Settings.CHAT_MODE_2LINE);
+          tdlib.senderName(chat.lastMessage, false, forum || listMode == Settings.CHAT_MODE_2LINE);
       } else {
         prefix = null;
       }
 
       if (!StringUtils.isEmpty(prefix)) {
         int avail;
-        if (listMode != Settings.CHAT_MODE_2LINE) {
+        if (forum) {
+          avail = Math.min(Screen.dp(120), Math.max(0, (currentWidth - ChatView.getLeftPadding(listMode) - ChatView.getRightPadding() - getCounterAddWidth()) / 2));
+        } else if (listMode != Settings.CHAT_MODE_2LINE) {
           avail = currentWidth - ChatView.getLeftPadding(listMode) - ChatView.getRightPadding() - getCounterAddWidth();
         } else {
           avail = Screen.dp(120f);
@@ -1247,7 +1302,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
           Text.Builder b = new Text.Builder(prefix, avail, getTextStyleProvider(listMode), BitwiseUtils.hasFlag(flags, FLAG_TEXT_DRAFT) ? TextColorSets.Regular.NEGATIVE : TextColorSets.Regular.NORMAL)
             .singleLine()
             .textFlags(Text.FLAG_ELLIPSIZE_NO_FILL);
-          if (needSuffix && listMode == Settings.CHAT_MODE_2LINE) {
+          if (needSuffix && (forum || listMode == Settings.CHAT_MODE_2LINE)) {
             b.suffix(": ");
           }
           this.prefix = b.build();
@@ -1272,7 +1327,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   }
 
   private boolean isSingleLine () {
-    return listMode == Settings.CHAT_MODE_2LINE || (flags & FLAG_HAS_PREFIX) != 0;
+    return forum || listMode == Settings.CHAT_MODE_2LINE || (flags & FLAG_HAS_PREFIX) != 0;
   }
 
   private void setTextValue (String text, TextEntity[] entities, boolean isTranslatable) {
@@ -1335,11 +1390,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       return;
     }
 
-    if (chat.draftMessage != null && showDraft()) {
+    if (showDraft()) {
       flags |= FLAG_TEXT_DRAFT | FLAG_HAS_PREFIX;
       // TODO rich message
       Td.assertDraftMessageContent_f690069b();
-      TdApi.FormattedText text = ((TdApi.DraftMessageContentText) chat.draftMessage.content).text;
+      TdApi.FormattedText text = ((TdApi.DraftMessageContentText) getPreviewDraft().content).text;
       setTextValue(text.text, text.entities, false);
       setPrefix();
       return;
@@ -1566,7 +1621,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       int avail = currentWidth - ChatView.getLeftPadding(listMode) - ChatView.getRightPadding() - getCounterAddWidth();
       int iconWidth = statusHelper.actionIconWidth();
       if (avail > 0) {
-        Text.Builder b = new Text.Builder(chatActionText, avail, getTextStyleProvider(listMode), TextColorSets.Regular.LIGHT).maxLineCount(listMode == Settings.CHAT_MODE_2LINE ? 1 : 2);
+        Text.Builder b = new Text.Builder(chatActionText, avail, getTextStyleProvider(listMode), TextColorSets.Regular.LIGHT).maxLineCount(forum || listMode == Settings.CHAT_MODE_2LINE ? 1 : 2);
         if (iconWidth > 0) {
           b.lineMarginProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? iconWidth : 0);
         }
