@@ -40,13 +40,15 @@ final class MiniAppHostDeviceChecks {
 
   private void initializeActivity () throws Exception {
     Intent intent = new Intent(test.getTargetContext(), MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-    test.startActivitySync(intent);
+    // MainActivity is singleTask and may already be running after an update.
+    // startActivitySync waits for a new instance and never returns in that case.
+    main(() -> test.getTargetContext().startActivity(intent));
     for (int i = 0; i < 100; i++) {
       main(() -> activity = UI.getUiContext());
-      if (activity != null && activity.currentTdlib().myUserId() != 0 && activity.getRootView().getHeight() > 0) break;
+      if (activity != null && activity.getActivityState() == UI.State.RESUMED && activity.currentTdlib().myUserId() != 0 && activity.getRootView().getHeight() > 0) break;
       Thread.sleep(100);
     }
-    test.check(activity != null && activity.currentTdlib().myUserId() != 0, "host has an initialized account");
+    test.check(activity != null && activity.getActivityState() == UI.State.RESUMED && activity.currentTdlib().myUserId() != 0 && activity.getRootView().getHeight() > 0, "host has a resumed activity and initialized account");
   }
 
   void run (boolean rendererLoss) throws Exception {
