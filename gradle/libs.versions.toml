@@ -1,7 +1,7 @@
 [versions]
 android-gradle-plugin = "9.4.1"
 
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 ksp = "2.3.4"
 desugaring = "2.1.5"
 
@@ -14,7 +14,7 @@ androidx-multidex = "2.0.1"
 androidx-annotation = "1.11.0"
 androidx-biometric = "1.1.0"
 androidx-palette = "1.0.0"
-androidx-collection = "1.6.0"
+androidx-collection = "1.7.0"
 androidx-interpolator = "1.0.0"
 
 google-zxing = "3.5.4"
@@ -33,7 +33,7 @@ sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # TODO: Upgrade to 1.1.22
 
-annotations-checkerframework = "4.3.0"
+annotations-checkerframework = "4.3.1"
 annotations-errorprone = "2.50.0"
 annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
@@ -64,7 +64,7 @@ androidx-camera-latest = "1.6.2"
 androidx-media-latest = "1.11.1"
 androidx-tracing-latest = "2.0.3"
 
-firebase-messaging-latest = "25.1.3"
+firebase-messaging-latest = "26.0.0"
 
 google-recaptcha-latest = "18.9.3"
 
@@ -82,6 +82,8 @@ google-mlkit-language-id-latest = "17.0.6"
 # marshmallow
 
 androidx-work-marshmallow = "2.11.2" # 2.12.0+ requires minSdk 24
+
+firebase-messaging-marshmallow = "25.1.3"
 
 google-recaptcha-marshmallow = "18.8.0"
 
@@ -231,6 +233,7 @@ google-recaptcha-latest = { module = "com.google.android.recaptcha:recaptcha", v
 
 google-firebase-messaging-legacy = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging-legacy" }
 google-firebase-messaging-lollipop = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging-lollipop" }
+google-firebase-messaging-marshmallow = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging-marshmallow" }
 google-firebase-messaging-latest = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging-latest" }
 
 google-zxing-core = { module = "com.google.zxing:core", version.ref = "google-zxing" }

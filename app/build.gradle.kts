@@ -71,9 +71,6 @@ val generateThemes = tasks.register<GenerateThemesTask>("generateThemes") {
   resOutputDir.set(layout.buildDirectory.dir(
     "generated/tgx/themes/res"
   ))
-  javaOutputDir.set(layout.buildDirectory.dir(
-    "generated/tgx/themes/java"
-  ))
   kotlinOutputDir.set(layout.buildDirectory.dir(
     "generated/tgx/themes/kotlin"
   ))
@@ -86,13 +83,13 @@ val generateLangFunctions = tasks.register<GenerateLangFunctions>("generateLangF
     "src/main/res/values/strings.xml"
   ))
   colorIdJava.set(generateThemes.flatMap {
-    it.javaOutputDir.file(
-      "org/thunderdog/challegram/theme/ColorId.java"
+    it.kotlinOutputDir.file(
+      "org/thunderdog/challegram/theme/ColorId.kt"
     )
   })
   propertyIdJava.set(generateThemes.flatMap {
-    it.javaOutputDir.file(
-      "org/thunderdog/challegram/theme/PropertyId.java"
+    it.kotlinOutputDir.file(
+      "org/thunderdog/challegram/theme/PropertyId.kt"
     )
   })
   // Output
@@ -124,8 +121,8 @@ val generateExceptions = tasks.register<GenerateExceptionsTask>("updateException
   applicationVersion.set(
     config.applicationVersion
   )
-  javaOutputDir.set(layout.buildDirectory.dir(
-    "generated/tgx/exceptions/java"
+  kotlinOutputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/exceptions/kotlin"
   ))
 }
 val validateApiTokens = tasks.register<ValidateApiTokensTask>("validateApiTokens") {
@@ -569,7 +566,7 @@ android {
           arguments(
             "-DANDROID_PLATFORM=android-${selectedMinSdk}",
             "-DANDROID_MIN_SDK_VERSION=${selectedMinSdk}",
-            "-DANDROID_STL=${if (appliedNdkVersion.ndkVersionMajor() >= 27) "c++_shared" else "c++_static"}",
+            "-DANDROID_STL=c++_shared",
             "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
             "-DCMAKE_SKIP_RPATH=ON",
             "-DCMAKE_C_VISIBILITY_PRESET=hidden",
@@ -668,7 +665,7 @@ android {
 
         ndkVersion = appliedNdkVersion
         buildConfigString("NDK_VERSION", ndkVersion)
-        buildConfigBool("SHARED_STL", ndkVersion.ndkVersionMajor() >= 27)
+        buildConfigBool("SHARED_STL", true)
         buildConfigBool("WEBP_ENABLED", true)
         if (ndk.abiFilters.isNotEmpty())
           error(ndk.abiFilters.joinToString())
@@ -692,6 +689,25 @@ android {
           file.asFile.readLines().filter { it.isNotBlank() }
         }
       )
+
+      if (variant.minSdk.apiLevel >= 33) {
+        val aapt2 = sdkComponents.resolveBuildToolsBinary(
+          config.build.buildToolsVersion,
+          "aapt2"
+        )
+        val optimizeTaskName = "optimize${variant.name.uppercaseFirstChar()}Resources"
+        tasks.named {
+          it == optimizeTaskName
+        }.configureEach {
+          inputs
+            .file(aapt2)
+            .withPathSensitivity(PathSensitivity.NONE)
+          doLast(objects.newInstance<OptimizeWithAapt2Task>().apply {
+            aapt2File.set(aapt2)
+            minSdk.set(variant.minSdk.apiLevel)
+          })
+        }
+      }
     }
 
     onVariants { variant ->
@@ -751,15 +767,10 @@ android {
           generateLangFunctions, GenerateLangFunctions::resOutputDir
         )
       }
-      variant.sources.java?.apply {
-        addGeneratedSourceDirectory(
-          generateThemes, GenerateThemesTask::javaOutputDir
-        )
-        addGeneratedSourceDirectory(
-          generateExceptions, GenerateExceptionsTask::javaOutputDir
-        )
-      }
       variant.sources.kotlin?.apply {
+        addGeneratedSourceDirectory(
+          generateExceptions, GenerateExceptionsTask::kotlinOutputDir
+        )
         addGeneratedSourceDirectory(
           generateThemes, GenerateThemesTask::kotlinOutputDir
         )
@@ -1056,6 +1067,7 @@ dependencies {
   flavorImplementation(
     libs.google.firebase.messaging.legacy,
     libs.google.firebase.messaging.lollipop,
+    libs.google.firebase.messaging.marshmallow,
     libs.google.firebase.messaging.latest
   ) {
     exclude(group = "com.google.firebase", module = "firebase-core")

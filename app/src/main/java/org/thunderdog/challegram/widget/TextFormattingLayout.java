@@ -498,11 +498,12 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       case TdApi.TextEntityTypeMention.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
         return -1;
 
       // unsupported
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
     }
   }

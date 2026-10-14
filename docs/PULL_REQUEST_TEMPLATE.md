@@ -2,7 +2,11 @@ The guide below provides the flow for creating a perfect pull request to the Tel
 
 ## Perfect PRs must be:
 - [ ] **Rational**. Explain the changes you've made. Be explicit and describe the changes in a few short, concise sentences.
-- [ ] **Completed**. All changes are properly tested and ready to be merged.
+- [ ] **Completed**. All changes are properly tested (including manually) and ready to be merged.
+- [ ] **Scoped**. Changes solve only single problem and do not combine multiple ones at once.
+- [ ] **Minimal**. All changes rely on existing components from appropriate modules.
+- [ ] **Transparent**. Changes that were made with the help of LLMs must be properly annotated with `@MadeByLLM`. 
+- [ ] **Clean**. There are no unnecessary or accidental changes.
 - [ ] **Up-To-Date**. Your PR is based on the **latest** commit of the `'main'` branch.
 
 ## When fixing issues, make sure that your PR is:
@@ -10,7 +14,7 @@ The guide below provides the flow for creating a perfect pull request to the Tel
 - [ ] **Separated**. Different bug fixes are divided into independent PRs.
 - [ ] **Linked**. If you fix a specific issue, add it to the title and its description to the body.
 - [ ] **Creating**. The fix does not break anything in other interfaces or on specific devices. 
-- [ ] **Consistent**. Use the proper design relevant to the issue. If the design is missing, the PR must include at least two screenshots (before and after the changes).
+- [ ] **Consistent**. Use the proper design relevant to the issue. If the design is missing, the PR must include at least two screen recordings per each change (before and after the changes).
  
 ## When adding features, expect:
 - [ ] **Discussion**. If you implement a feature that requires a new design for the app, be ready to receive and follow comments or edit suggestions.
