@@ -33,7 +33,7 @@ import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -104,7 +104,7 @@ public class TdlibNotificationChannelGroup {
   }
 
   public void create (@Nullable TdApi.User account) throws ChannelCreationFailureException {
-    NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m == null)
       throw new ChannelCreationFailureException("Notification service unavailable");
     try {
@@ -209,7 +209,7 @@ public class TdlibNotificationChannelGroup {
       oldVersion = getChannelVersion(scope);
       channel = (android.app.NotificationChannel) getChannel(scope);
     }
-    NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m == null)
       throw new ChannelCreationFailureException("Notification service unavailable");
     if (oldVersion != newVersion) {
@@ -394,7 +394,7 @@ public class TdlibNotificationChannelGroup {
   }
 
   public static void updateGroup (@NonNull TdApi.User user, boolean isDebug) {
-    NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
       final String groupId = makeGroupId(user.id, isDebug);
       final String groupName = getChannelGroupName(user.id, user, isDebug);
@@ -407,7 +407,7 @@ public class TdlibNotificationChannelGroup {
   @RequiresApi(Build.VERSION_CODES.O)
   public static void cleanupChannels (Tdlib tdlib) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+      NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
       if (m == null)
         return;
       long accountUserId = tdlib.myUserId(true);
@@ -470,7 +470,7 @@ public class TdlibNotificationChannelGroup {
   @RequiresApi(Build.VERSION_CODES.O)
   public static void cleanupChannelGroups (TdlibManager context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+      NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
       if (m == null)
         return;
       List<android.app.NotificationChannelGroup> groups = m.getNotificationChannelGroups();
@@ -499,7 +499,7 @@ public class TdlibNotificationChannelGroup {
     if (accountUserId == 0) {
       return;
     }
-    NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
       if (customChatId != 0) {
         TdApi.Chat chat = tdlib.chat(customChatId);
@@ -526,7 +526,7 @@ public class TdlibNotificationChannelGroup {
     if (accountUserId == 0) {
       return;
     }
-    NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
       long channelVersion = tdlib.notifications().getChannelVersion(null, chat.id);
       String channelId = makeChannelId(accountUserId, tdlib.notifications().getChannelsGlobalVersion(), null, chat.id, channelVersion);
@@ -547,7 +547,7 @@ public class TdlibNotificationChannelGroup {
     if (account == null) {
       return;
     }
-    NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
       List<android.app.NotificationChannel> channels = m.getNotificationChannels();
       final String groupId = makeGroupId(accountUserId, isDebug);

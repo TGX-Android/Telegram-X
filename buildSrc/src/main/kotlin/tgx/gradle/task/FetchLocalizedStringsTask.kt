@@ -24,8 +24,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.*
 import tgx.gradle.fatal
 import tgx.gradle.validateDir
 import java.io.IOException
@@ -36,6 +36,9 @@ import kotlin.system.measureTimeMillis
 abstract class FetchLocalizedStringsTask : DefaultTask() {
   @get:OutputDirectory
   abstract val resOutputDir: DirectoryProperty
+
+  @get:OutputFile
+  abstract val localeFiltersOutputFile: RegularFileProperty
 
   @TaskAction
   fun fetchLanguages () {
@@ -166,7 +169,7 @@ abstract class FetchLocalizedStringsTask : DefaultTask() {
     val defaultStrings = mutableMapOf<String, String>()
     val threeDotFixKeysList = mutableListOf<Pair<String, List<String>>>()
 
-    val allFolders = mutableListOf<String>()
+    val allFolders = mutableSetOf(defaultLanguageCode)
 
     val latch = CountDownLatch(languageCodes.size)
 
@@ -283,6 +286,12 @@ abstract class FetchLocalizedStringsTask : DefaultTask() {
     }
 
     latch.await()
+
+    localeFiltersOutputFile.get().asFile.writeText(
+      allFolders.sorted().joinToString("\n") {
+        it.substringAfter("values-")
+      }
+    )
 
     if (threeDotFixKeysList.isNotEmpty()) {
       val message = StringBuilder("In ${threeDotFixKeysList.size} language(s) \"...\" could be replaced with \"…\" in these keys:")

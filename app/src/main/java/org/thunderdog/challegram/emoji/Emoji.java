@@ -40,7 +40,7 @@ import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Emojis;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Text;
 
@@ -635,7 +635,7 @@ public class Emoji {
   }
 
   public static File getEmojiPackDirectory () {
-    return new File(UI.getAppContext().getFilesDir(), "emoji");
+    return new File(AppContext.get().getFilesDir(), "emoji");
   }
 
   public EmojiInfo getEmojiInfo (CharSequence code) {

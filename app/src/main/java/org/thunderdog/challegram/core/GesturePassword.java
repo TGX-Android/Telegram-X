@@ -21,7 +21,7 @@ import android.gesture.Prediction;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.Log;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,7 +48,7 @@ public class GesturePassword {
   }
 
   private File getFile () {
-    String path = UI.getAppContext().getFilesDir().getPath();
+    String path = AppContext.get().getFilesDir().getPath();
     if (path.charAt(path.length() - 1) == '/') {
       path = path + "int/temp.g";
     } else {

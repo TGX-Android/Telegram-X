@@ -63,7 +63,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
-import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -71,6 +70,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.RingtoneItem;
 import org.thunderdog.challegram.util.SimpleStringItem;
@@ -1401,7 +1401,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     Throwable fullError = tdlib.context().getTokenFullError();
     String error = tdlib.context().getTokenError();
     if (!StringUtils.isEmpty(error) || fullError != null) {
-      DeviceTokenRetriever retriever = TdlibNotificationUtils.getDeviceTokenRetriever();
+      DeviceTokenRetriever retriever = DeviceTokenRetrieverInstance.get();
       String report = "#" + retriever.name + "_error";
       if (!StringUtils.isEmpty(error)) {
         report += " " + error;

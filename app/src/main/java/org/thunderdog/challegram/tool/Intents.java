@@ -52,6 +52,7 @@ import org.thunderdog.challegram.receiver.TGShareBroadcastReceiver;
 import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.util.Permissions;
 
 import java.io.File;
@@ -79,7 +80,7 @@ public class Intents {
   public static final int ACTIVITY_RESULT_VIDEO_CAPTURE = 109;
   public static final int ACTIVITY_RESULT_MANAGE_STORAGE = 110;
 
-  private static final String PACKAGE_NAME = BuildConfig.APPLICATION_ID; // UI.getAppContext().getPackageName();
+  private static final String PACKAGE_NAME = BuildConfig.APPLICATION_ID; // AppContext.get().getPackageName();
 
   // "chat_id" -> long
   public static final String ACTION_OPEN_CHAT = PACKAGE_NAME + ".OPEN_CHAT";
@@ -118,7 +119,7 @@ public class Intents {
 
   @RequiresApi(Build.VERSION_CODES.O)
   public static String newSimpleChannel (String channelId, @StringRes int channelName) {
-    NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
       android.app.NotificationChannel channel = new android.app.NotificationChannel(channelId, Lang.getString(channelName), NotificationManager.IMPORTANCE_LOW);
       channel.enableVibration(false);
@@ -203,7 +204,7 @@ public class Intents {
     try {
       intent.setData(Uri.parse("https://www.example.com/"));
 
-      PackageManager packageManager = UI.getAppContext().getPackageManager();
+      PackageManager packageManager = AppContext.get().getPackageManager();
       List<ResolveInfo> activities = packageManager.queryIntentActivities(intent, 0); // PackageManager.MATCH_ALL
       List<Intent> targetIntents = new ArrayList<>();
       String[] blackList = {BuildConfig.APPLICATION_ID, "org.telegram.messenger"};
@@ -325,7 +326,7 @@ public class Intents {
   private static void revokeFileReadPermission (Uri uri) {
     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
       try {
-        UI.getAppContext().revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        AppContext.get().revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
       } catch (Throwable e) {
         Log.e("Cannot revokeUriPermission", e);
       }
@@ -387,7 +388,7 @@ public class Intents {
         intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
       }
 
-      PackageManager pm = UI.getAppContext().getPackageManager();
+      PackageManager pm = AppContext.get().getPackageManager();
 
       // Workaround for Android bug.
       // grantUriPermission also needed for KITKAT,
@@ -396,7 +397,7 @@ public class Intents {
         List<ResolveInfo> resInfoList = pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
         for (ResolveInfo resolveInfo : resInfoList) {
           String packageName = resolveInfo.activityInfo.packageName;
-          UI.getAppContext().grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+          AppContext.get().grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         }
         synchronized (Intents.class) {
           if (openedFiles == null) {
@@ -507,7 +508,7 @@ public class Intents {
       intent = new Intent();
       intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
       intent.addCategory(Intent.CATEGORY_DEFAULT);
-      intent.setData(Uri.parse("package:" + UI.getAppContext().getPackageName()));
+      intent.setData(Uri.parse("package:" + AppContext.get().getPackageName()));
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
       intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
       intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
@@ -676,7 +677,7 @@ public class Intents {
     if (allowStopped) {
       intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
     }
-    // intent.setClass(UI.getAppContext(), MainActivity.class);
+    // intent.setClass(AppContext.get(), MainActivity.class);
     return intent;
   }
 

@@ -21,7 +21,7 @@ import android.util.SparseIntArray;
 import androidx.annotation.RawRes;
 
 import org.thunderdog.challegram.core.BaseThread;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 public class SoundPoolMap {
   private final SparseIntArray sounds;
@@ -63,7 +63,7 @@ public class SoundPoolMap {
     }
     int sound = sounds.get(res);
     if (sound == 0) {
-      sound = soundPool.load(UI.getAppContext(), res, 1);
+      sound = soundPool.load(AppContext.get(), res, 1);
       sounds.put(res, sound);
     }
     return sound;

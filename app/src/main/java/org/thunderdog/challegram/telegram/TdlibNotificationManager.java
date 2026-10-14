@@ -56,6 +56,8 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.unsorted.AppContext;
+import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 
@@ -290,7 +292,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   private AudioManager audioManager () {
     if (_audioManager == null) {
       try {
-        _audioManager = (AudioManager) UI.getAppContext().getSystemService(Context.AUDIO_SERVICE);
+        _audioManager = (AudioManager) AppContext.get().getSystemService(Context.AUDIO_SERVICE);
       } catch (Throwable t) {
         Log.e(Log.TAG_FCM, "Context.AUDIO_SERVICE is not available", t);
       }
@@ -549,7 +551,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   private boolean hasRemotePushService () {
-    return TdlibNotificationUtils.getDeviceTokenRetriever().isAvailable(UI.getContext());
+    return DeviceTokenRetrieverInstance.get().isAvailable(AppContext.get());
   }
 
   private boolean isSyncDisabledGlobally () {
@@ -590,7 +592,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   public @Status
   int getNotificationBlockStatus () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      if (ContextCompat.checkSelfPermission(UI.getAppContext(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+      if (ContextCompat.checkSelfPermission(AppContext.get(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
         return Status.MISSING_PERMISSION;
       }
     }
@@ -603,7 +605,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         }
       }
     }
-    if (!NotificationManagerCompat.from(UI.getAppContext()).areNotificationsEnabled()) {
+    if (!NotificationManagerCompat.from(AppContext.get()).areNotificationsEnabled()) {
       return Status.BLOCKED_ALL;
     }
     boolean hasPushServices = hasRemotePushService();
@@ -995,8 +997,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
           outputFile = U.newFile(U.getRingtonesDir(), fileName, fileExtension);
         }
 
-        if ((fileAccessible && FileUtils.copy(new File(filePath), outputFile)) || U.copyFile(UI.getAppContext(), uri, outputFile)) {
-          return FileProvider.getUriForFile(UI.getAppContext(), Config.FILE_PROVIDER_AUTHORITY, outputFile);
+        if ((fileAccessible && FileUtils.copy(new File(filePath), outputFile)) || U.copyFile(AppContext.get(), uri, outputFile)) {
+          return FileProvider.getUriForFile(AppContext.get(), Config.FILE_PROVIDER_AUTHORITY, outputFile);
         }
       }
       return null;
@@ -1251,7 +1253,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       long selfUserId = tdlib.myUserId();
       if (selfUserId == 0)
         return null;
-      NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+      NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
       String groupId = TdlibNotificationChannelGroup.makeGroupId(selfUserId, tdlib.account().isDebug());
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         return m.getNotificationChannelGroup(groupId);
@@ -1270,7 +1272,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @RequiresApi(Build.VERSION_CODES.O)
   public Object getSystemChannel (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+      NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
       if (m != null) {
         String channelId = getSystemChannelId(scope, customChatId);
         if (channelId != null) {
@@ -1309,7 +1311,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
             if (defaultRingtoneUri != null && StringUtils.equalsOrBothEmpty(defaultRingtoneUri.toString(), soundString)) {
               return null;
             }
-            defaultRingtoneUri = RingtoneManager.getActualDefaultRingtoneUri(UI.getAppContext(), RingtoneManager.TYPE_NOTIFICATION);
+            defaultRingtoneUri = RingtoneManager.getActualDefaultRingtoneUri(AppContext.get(), RingtoneManager.TYPE_NOTIFICATION);
             if (defaultRingtoneUri != null && StringUtils.equalsOrBothEmpty(defaultRingtoneUri.toString(), soundString)) {
               return null;
             }
@@ -1987,7 +1989,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       int soundID = sounds.get(soundResource);
       if (soundID == 0 && loadedSounds.get(soundResource) != 1) {
         loadedSounds.put(soundResource, 1);
-        sounds.put(soundResource, soundID = soundPool.load(UI.getAppContext(), soundResource, 1));
+        sounds.put(soundResource, soundID = soundPool.load(AppContext.get(), soundResource, 1));
       }
       if (soundID != 0) {
         soundPool.play(soundID, 1f, 1f, 1, 0, 1f);
@@ -2203,9 +2205,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   void onUpdateNotificationGroup (TdApi.UpdateNotificationGroup update) {
     if (Config.FOREGROUND_SERVICE_DEMO) {
       Context context = UI.getContext();
-      PushProcessor.showForegroundNotification(context, tdlib.context(), false, -1, tdlib.accountId(), true, new CountDownLatch(0));
+      @PushProcessor.ShowStatus int result = PushProcessor.showForegroundNotification(context, tdlib.context(), false, -1, tdlib.accountId(), true, new CountDownLatch(0));
       queue.post(() -> {
-        FetchNotificationService.stopForegroundTask(context, -1, tdlib.accountId());
+        if (result != PushProcessor.ShowStatus.NOT_SHOWN) {
+          FetchNotificationService.stopForegroundTask(context, -1, tdlib.accountId());
+        }
         sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
       }, 1500L);
       return;

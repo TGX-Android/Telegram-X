@@ -43,6 +43,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPServerConfig;
@@ -99,7 +100,7 @@ public class CallManager implements GlobalCallListener {
         serviceCancellationSignal = null;
       }
       if (call != null) {
-        Intent intent = new Intent(UI.getAppContext(), TGCallService.class);
+        Intent intent = new Intent(AppContext.get(), TGCallService.class);
         intent.putExtra("account_id", tdlib.id());
         intent.putExtra("call_id", call.id);
         serviceCancellationSignal = new CancellationSignal();
@@ -304,7 +305,7 @@ debugCall id:long debug:string = Ok;
   }
 
   public void acceptIncomingCall (Tdlib tdlib, int callId) {
-    acceptCall(UI.getAppContext(), tdlib, callId);
+    acceptCall(AppContext.get(), tdlib, callId);
   }
 
   public void declineIncomingCall (Tdlib tdlib, int callId, boolean isVideo) {
@@ -313,7 +314,7 @@ debugCall id:long debug:string = Ok;
 
   public boolean checkRecordPermissions (final Context context, final Tdlib tdlib, final @Nullable TdApi.Call call, final long userId, final @Nullable ViewController<?> makeCallContext) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (UI.getAppContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+      if (AppContext.get().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = UI.getUiContext();
         if (activity != null) {
           activity.requestMicPermissionForCall((code, permissions, grantResults, grantCount) -> {
@@ -384,7 +385,7 @@ debugCall id:long debug:string = Ok;
       showAlert(AlertType.ANDROID_VERSION_UNSUPPORTED);
       return;
     }
-    if (!U.deviceHasMicrophone(UI.getAppContext())) {
+    if (!U.deviceHasMicrophone(AppContext.get())) {
       showAlert(AlertType.MICROPHONE_HARDWARE_MISSING);
       return;
     }

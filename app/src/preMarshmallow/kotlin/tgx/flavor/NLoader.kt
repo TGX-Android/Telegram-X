@@ -8,7 +8,7 @@ import com.getkeepsafe.relinker.ReLinker
 import com.getkeepsafe.relinker.ReLinkerInstance
 import org.thunderdog.challegram.BuildConfig
 import org.thunderdog.challegram.N
-import org.thunderdog.challegram.tool.UI
+import org.thunderdog.challegram.unsorted.AppContext
 
 private val lock = Any()
 private var messages: MutableList<String>? = null
@@ -32,7 +32,7 @@ private fun loadLibrary(
 ) {
   val ms = SystemClock.uptimeMillis()
   trace("load:$library") {
-    reLinker.loadLibrary(UI.getAppContext(), library, version)
+    reLinker.loadLibrary(AppContext.get(), library, version)
   }
   android.util.Log.v("tgx", "Loaded $library in ${SystemClock.uptimeMillis() - ms}ms")
 }

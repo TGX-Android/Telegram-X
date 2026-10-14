@@ -497,7 +497,7 @@ public class EditChatFolderInviteLinkController extends EditBaseController<EditC
     protected void setHeaderText (ListItem item, TextView view, boolean isUpdate) {
       if (item.getId() == headerId) {
         if (chatIds != null && chatIds.length > 0) {
-          Views.setMediumText(view, Lang.plural(R.string.xOfYChatsSelected2, selectedChatIds.size(), Strings.buildCounter(chatIds.length)));
+          Views.setMediumText(view, Lang.plural(R.string.xOfYChatsSelected3, selectedChatIds.size(), Strings.buildCounter(chatIds.length)));
         } else {
           view.setText(null);
         }

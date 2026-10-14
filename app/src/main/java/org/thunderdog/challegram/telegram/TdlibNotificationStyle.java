@@ -59,7 +59,7 @@ import org.thunderdog.challegram.receiver.TGWearReplyReceiver;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Letters;
@@ -359,10 +359,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     if (needReply) {
       // reply
-      Intent replyIntent = new Intent(UI.getAppContext(), TGWearReplyReceiver.class);
+      Intent replyIntent = new Intent(AppContext.get(), TGWearReplyReceiver.class);
       Intents.secureIntent(replyIntent, true);
       TdlibNotificationExtras.put(replyIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
-      PendingIntent replyPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, replyIntent, Intents.mutabilityFlags(true));
+      PendingIntent replyPendingIntent = PendingIntent.getBroadcast(AppContext.get(), notificationId, replyIntent, Intents.mutabilityFlags(true));
       RemoteInput remoteInput = new RemoteInput.Builder(TGBaseReplyReceiver.EXTRA_VOICE_REPLY).setLabel(Lang.getString(R.string.Reply)).build();
       String replyToString = Lang.getString(R.string.Reply);
       replyAction = new NotificationCompat.Action.Builder(R.drawable.baseline_reply_24_white, replyToString, replyPendingIntent)
@@ -375,10 +375,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     if (needPreview) {
       // mark as read
-      Intent intent = new Intent(UI.getAppContext(), TGMessageReceiver.class);
+      Intent intent = new Intent(AppContext.get(), TGMessageReceiver.class);
       styleIntent(Intents.ACTION_MESSAGE_READ, intent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
       try {
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, intent, Intents.mutabilityFlags(true));
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(AppContext.get(), notificationId, intent, Intents.mutabilityFlags(true));
         readAction = new NotificationCompat.Action.Builder(R.drawable.baseline_done_all_24_white, Lang.getString(R.string.ActionRead), pendingIntent)
           .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ)
           .setShowsUserInterface(hideOnAndroidAuto)
@@ -406,10 +406,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       }
 
       // mute for 1h
-      Intent muteIntent = new Intent(UI.getAppContext(), TGMessageReceiver.class);
+      Intent muteIntent = new Intent(AppContext.get(), TGMessageReceiver.class);
       styleIntent(Intents.ACTION_MESSAGE_MUTE, muteIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
       try {
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, muteIntent, Intents.mutabilityFlags(true));
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(AppContext.get(), notificationId, muteIntent, Intents.mutabilityFlags(true));
         muteAction = new NotificationCompat.Action.Builder(R.drawable.baseline_volume_off_24_white, muteText, pendingIntent)
           .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MUTE)
           .setShowsUserInterface(hideOnAndroidAuto)
@@ -419,11 +419,11 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       }
 
       // Unmute
-      Intent unmuteIntent = new Intent(UI.getAppContext(), TGMessageReceiver.class);
+      Intent unmuteIntent = new Intent(AppContext.get(), TGMessageReceiver.class);
       styleIntent(Intents.ACTION_MESSAGE_UNMUTE, unmuteIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
 
       try {
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, unmuteIntent, Intents.mutabilityFlags(true));
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(AppContext.get(), notificationId, unmuteIntent, Intents.mutabilityFlags(true));
         unmuteAction = new NotificationCompat.Action.Builder(R.drawable.baseline_volume_up_24_white, unmuteText, pendingIntent)
           .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_UNMUTE)
           .setShowsUserInterface(hideOnAndroidAuto)
@@ -433,10 +433,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       }
     }
 
-    Intent hideIntent = new Intent(UI.getAppContext(), TGRemoveReceiver.class);
+    Intent hideIntent = new Intent(AppContext.get(), TGRemoveReceiver.class);
     Intents.secureIntent(hideIntent, true);
     TdlibNotificationExtras.put(hideIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
-    PendingIntent hidePendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, hideIntent, Intents.mutabilityFlags(true));
+    PendingIntent hidePendingIntent = PendingIntent.getBroadcast(AppContext.get(), notificationId, hideIntent, Intents.mutabilityFlags(true));
 
     NotificationCompat.Style style = null;
 
@@ -597,7 +597,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     NotificationCompat.Builder builder;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      builder = new NotificationCompat.Builder(UI.getAppContext(), channelId);
+      builder = new NotificationCompat.Builder(AppContext.get(), channelId);
       boolean needNotification = settings != null;
       builder.setOnlyAlertOnce(!needNotification);
       if (needGroupLogic) {
@@ -611,7 +611,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         TDLib.Tag.notifications("displaying notification with behavior:%d", behavior);
       }
     } else {
-      builder = new NotificationCompat.Builder(UI.getAppContext());
+      builder = new NotificationCompat.Builder(AppContext.get());
     }
 
     builder
@@ -714,7 +714,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       }
 
       if (isSummary) {
-        ShortcutBadger.applyNotification(UI.getAppContext(), notification, badgeCount);
+        ShortcutBadger.applyNotification(AppContext.get(), notification, badgeCount);
       }
 
       try {
@@ -827,7 +827,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         tdlib.settings().trackNotificationProblem(t, false, 0);
         return;
       }
-      ShortcutBadger.applyNotification(UI.getAppContext(), notification, badgeCount);
+      ShortcutBadger.applyNotification(AppContext.get(), notification, badgeCount);
       try {
         if (Config.TEST_NOTIFICATION_PROBLEM_RESOLUTION)
           throw new RuntimeException();
@@ -1097,11 +1097,11 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final boolean[] hasCustomText = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? new boolean[1] : null;
 
     if (allowPreview) {
-      Intent hideIntent = new Intent(UI.getAppContext(), TGRemoveAllReceiver.class);
+      Intent hideIntent = new Intent(AppContext.get(), TGRemoveAllReceiver.class);
       Intents.secureIntent(hideIntent, true);
       hideIntent.putExtra("account_id", tdlib.id());
       hideIntent.putExtra("category", category);
-      PendingIntent hidePendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), helper.getBaseNotificationId(category), hideIntent, Intents.mutabilityFlags(true));
+      PendingIntent hidePendingIntent = PendingIntent.getBroadcast(AppContext.get(), helper.getBaseNotificationId(category), hideIntent, Intents.mutabilityFlags(true));
       b.setDeleteIntent(hidePendingIntent);
 
       if (displayingChatsCount == 1) {

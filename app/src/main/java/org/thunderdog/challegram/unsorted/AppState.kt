@@ -10,7 +10,6 @@ import org.thunderdog.challegram.BuildConfig
 import org.thunderdog.challegram.Log
 import org.thunderdog.challegram.N
 import org.thunderdog.challegram.telegram.TdlibManager
-import org.thunderdog.challegram.telegram.TdlibNotificationUtils
 import org.thunderdog.challegram.util.Crash
 import tgx.flavor.collectLog
 import java.util.concurrent.atomic.AtomicBoolean
@@ -53,7 +52,7 @@ private fun initApplicationImpl() {
     Settings.instance()
   }
   trace("TdlibNotificationUtils") {
-    TdlibNotificationUtils.initialize()
+    DeviceTokenRetrieverInstance.initialize()
   }
 
   if (BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL) {

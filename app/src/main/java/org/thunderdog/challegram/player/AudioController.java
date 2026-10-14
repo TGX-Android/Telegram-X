@@ -51,6 +51,7 @@ import org.thunderdog.challegram.service.AudioService;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
@@ -166,7 +167,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
       }
       if (mode == PLAYBACK_MODE_EXOPLAYER_LIST) {
         serviceLaunchCancellationSignal = new CancellationSignal();
-        UI.startService(new Intent(UI.getAppContext(), AudioService.class), needForeground, false, serviceLaunchCancellationSignal);
+        UI.startService(new Intent(AppContext.get(), AudioService.class), needForeground, false, serviceLaunchCancellationSignal);
       }
     }
   }
@@ -365,7 +366,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
       exoPlayer = null;
     }
 
-    ExoPlayer exoPlayer = this.exoPlayer = U.newExoPlayer(UI.getAppContext(), true);
+    ExoPlayer exoPlayer = this.exoPlayer = U.newExoPlayer(AppContext.get(), true);
     exoPlayer.addListener(this);
     setExoPlayerParameters();
     setExoPlayerSpeed();

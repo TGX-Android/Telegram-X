@@ -87,6 +87,7 @@ import java.util.List;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -209,6 +210,61 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     if (Settings.instance().isIntroAttempted()) {
       Log.w("Not showing intro controller, because it has failed once");
       return true;
+    }
+    return false;
+  }
+
+  private static boolean hasDefaultGlConfig, hasDefaultGlConfigChecked;
+
+  public static boolean hasDefaultGlConfig () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      return true;
+    }
+    if (hasDefaultGlConfigChecked) {
+      return hasDefaultGlConfig;
+    }
+    boolean result = hasDefaultGlConfigImpl();
+    hasDefaultGlConfig = result;
+    hasDefaultGlConfigChecked = true;
+    return result;
+  }
+
+  private static boolean hasDefaultGlConfigImpl () {
+    try {
+      EGL10 egl = (EGL10) EGLContext.getEGL();
+      EGLDisplay display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+      boolean isRgb888 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1;
+      int[] spec = {
+        EGL10.EGL_RED_SIZE, isRgb888 ? 8 : 5,
+        EGL10.EGL_GREEN_SIZE, isRgb888 ? 8 : 6,
+        EGL10.EGL_BLUE_SIZE, isRgb888 ? 8 : 5,
+        EGL10.EGL_ALPHA_SIZE, 0,
+        EGL10.EGL_DEPTH_SIZE, 16,
+        EGL10.EGL_STENCIL_SIZE, 0,
+        EGL10.EGL_RENDERABLE_TYPE, 4 /*EGL_OPENGL_ES2_BIT*/, EGL10.EGL_NONE};
+      int[] version = new int[2];
+      int[] count = new int[1];
+      if (!egl.eglInitialize(display, version) || !egl.eglChooseConfig(display, spec, null, 0, count)) {
+        return false;
+      }
+      EGLConfig[] configs = new EGLConfig[count[0]];
+      if (!egl.eglChooseConfig(display, spec, configs, configs.length, count)) {
+        return false;
+      }
+      int[] value = new int[1];
+      for (int i = 0; i < Math.min(count[0], configs.length); i++) {
+        boolean isExactMatch = configs[i] != null;
+        for (int j = 0; j < 4 && isExactMatch; j++) {
+          final int attribute = spec[j * 2];
+          final int expectedValue = spec[j * 2 + 1];
+          isExactMatch = egl.eglGetConfigAttrib(display, configs[i], attribute, value) && value[0] == expectedValue;
+        }
+        if (isExactMatch) {
+          return true;
+        }
+      }
+    } catch (Throwable t) {
+      Log.i("Unable to check for config", t);
     }
     return false;
   }

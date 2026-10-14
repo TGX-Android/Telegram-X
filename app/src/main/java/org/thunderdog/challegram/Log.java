@@ -29,7 +29,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -65,7 +65,7 @@ public class Log {
    * @return Log storage directory. @null in case of error
    */
   public static @Nullable File getLogDir () {
-    File logsDirectory = new File(UI.getAppContext().getFilesDir(), "logs");
+    File logsDirectory = new File(AppContext.get().getFilesDir(), "logs");
     if (!FileUtils.createDirectory(logsDirectory)) {
       android.util.Log.e(LOG_TAG, "Couldn't open logs directory: " + logsDirectory.getAbsolutePath());
       return null;

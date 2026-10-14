@@ -27,6 +27,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.lang.ref.Reference;
@@ -280,7 +281,7 @@ public class WatchDog {
   }
 
   public void letsHelpDoge (boolean dataSaverOnly) {
-    ConnectivityManager manager = (ConnectivityManager) UI.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+    ConnectivityManager manager = (ConnectivityManager) AppContext.get().getSystemService(Context.CONNECTIVITY_SERVICE);
 
     if (manager == null) {
       return;

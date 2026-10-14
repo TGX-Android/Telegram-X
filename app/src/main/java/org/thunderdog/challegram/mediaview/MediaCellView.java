@@ -596,8 +596,8 @@ public class MediaCellView extends ViewGroup implements
         Log.i("videoCell #%d: %dx%d, original: %dx%d, crop: %s, rotated: %s", i + 1,
           imageWidth, imageHeight,
           imageWidthOriginal, imageHeightOriginal,
-          media.getCropState(),
-          media.isVideoRenderRotated(false)
+          media != null ? media.getCropState() : null,
+          media != null ? media.isVideoRenderRotated(false) : null
         );
         if (params != null && params.width == LayoutParams.WRAP_CONTENT && params.height == LayoutParams.WRAP_CONTENT) {
           if (view instanceof CroppedLayout) {

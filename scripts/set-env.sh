@@ -6,7 +6,7 @@ STYLE_ERROR="$(tput bold)$(tput setaf 1)"
 STYLE_WARN="$(tput setaf 3)"
 STYLE_INFO="$(tput setaf 6)"
 
-test -f version.properties || (echo -e "${STYLE_ERROR}You must call this script from the root folder.${STYLE_END}" && exit 1)
+test -f version.properties || { echo -e "${STYLE_ERROR}You must call this script from the root folder.${STYLE_END}" >&2; exit 1; }
 
 PLATFORM="$(uname -s)"
 case "${PLATFORM}" in

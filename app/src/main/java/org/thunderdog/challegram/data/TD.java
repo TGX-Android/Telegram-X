@@ -94,6 +94,7 @@ import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.HashtagController;
 import org.thunderdog.challegram.ui.ShareController;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.text.Letters;
@@ -659,6 +660,7 @@ public class TD {
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
       // Only because custom emoji aren't displayed in the notification
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
@@ -682,7 +684,7 @@ public class TD {
         return allowInternal;
 
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
     }
   }
@@ -3163,11 +3165,11 @@ public class TD {
     if (allowExternal) {
       String state = Environment.getExternalStorageState();
       if (Environment.MEDIA_MOUNTED.equals(state) && !Environment.isExternalStorageEmulated()) {
-        dir = UI.getAppContext().getExternalCacheDir();
+        dir = AppContext.get().getExternalCacheDir();
       }
     }
     if (dir == null) {
-      dir = UI.getAppContext().getCacheDir();
+      dir = AppContext.get().getCacheDir();
     }
     return dir;
   }
@@ -3181,7 +3183,7 @@ public class TD {
       String dirPath = Environment.getExternalStorageDirectory().getPath() + "/Challegram";
       dir = new File(dirPath);
     } else {
-      dir = new File(UI.getAppContext().getFilesDir().getPath() + "/Challegram");
+      dir = new File(AppContext.get().getFilesDir().getPath() + "/Challegram");
     }
 
     if (!FileUtils.createDirectory(dir)) {
@@ -3758,7 +3760,7 @@ public class TD {
         // TODO rich message
         break;
       default:
-        Td.assertMessageContent_af730a78();
+        Td.assertMessageContent_f7758f8b();
         break;
     }
     return false;
@@ -4578,7 +4580,7 @@ public class TD {
       return destFile;
     }
 
-    final DownloadManager downloadManager = (DownloadManager) UI.getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
+    final DownloadManager downloadManager = (DownloadManager) AppContext.get().getSystemService(Context.DOWNLOAD_SERVICE);
     String name = destFile.getName();
     String mimeType = file.mimeType;
     if (StringUtils.isEmpty(mimeType)) {
@@ -4619,7 +4621,7 @@ public class TD {
     if (!FileUtils.copy(sourceFile, destFile))
       return;
     UI.post(() -> {
-      final DownloadManager downloadManager = (DownloadManager) UI.getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
+      final DownloadManager downloadManager = (DownloadManager) AppContext.get().getSystemService(Context.DOWNLOAD_SERVICE);
       if (downloadManager != null) {
         Background.instance().post(() -> {
           try {
@@ -4798,6 +4800,7 @@ public class TD {
       // automatically highlighted
       case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
@@ -4807,7 +4810,7 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(entityType);
     }
   }
@@ -5005,6 +5008,7 @@ public class TD {
         break;
       // automatically detected
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
@@ -5015,7 +5019,7 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
     }
     if (span instanceof TdlibEntitySpan) {
@@ -5076,6 +5080,7 @@ public class TD {
         return true;
       // auto-detected entities
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
@@ -5086,7 +5091,7 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return false;
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
     }
   }
@@ -5155,6 +5160,7 @@ public class TD {
         return new QuoteSpan.EmptySpan(true);
       // auto-detected entities
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
@@ -5165,7 +5171,7 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
     }
   }
@@ -5625,7 +5631,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_af730a78();
+        Td.assertMessageContent_f7758f8b();
         break;
     }
     return false;

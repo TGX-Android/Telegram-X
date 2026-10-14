@@ -269,4 +269,10 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   ),
   TdlibType("UpgradedGiftAttributeRarity"),
   TdlibType("GiftResaleParameters"),
+
+  TdlibType("TonConnectConnectRequest"),
+  TdlibType("TonConnectConnectItem",
+    array = ArrayType.REGULAR
+  ),
+  TdlibType("TonWalletTransferReceiver")
 )

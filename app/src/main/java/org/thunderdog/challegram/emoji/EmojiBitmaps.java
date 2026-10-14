@@ -33,6 +33,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.tool.EmojiCode;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.io.File;
 import java.io.InputStream;
@@ -104,7 +105,7 @@ class EmojiBitmaps {
       try {
         android.graphics.ImageDecoder.Source source;
         if (isAsset) {
-          source = android.graphics.ImageDecoder.createSource(UI.getAppContext().getAssets(), filePath);
+          source = android.graphics.ImageDecoder.createSource(AppContext.get().getAssets(), filePath);
         } else {
           source = android.graphics.ImageDecoder.createSource(new File(filePath));
         }
@@ -122,11 +123,13 @@ class EmojiBitmaps {
         Log.e("Cannot load emoji bitmap (Pie)", t);
       }
     } else {
-      try (InputStream is = isAsset ? UI.getAppContext().getAssets().open(filePath) : U.openInputStream(filePath)) {
-        BitmapFactory.Options opts = new BitmapFactory.Options();
-        opts.inJustDecodeBounds = false;
-        opts.inSampleSize = sampleSize;
-        return BitmapFactory.decodeStream(is, null, opts);
+      try {
+        try (InputStream is = isAsset ? AppContext.get().getAssets().open(filePath) : U.openInputStream(filePath)) {
+          BitmapFactory.Options opts = new BitmapFactory.Options();
+          opts.inJustDecodeBounds = false;
+          opts.inSampleSize = sampleSize;
+          return BitmapFactory.decodeStream(is, null, opts);
+        }
       } catch (Throwable t) {
         Log.e("Cannot load emoji bitmap", t);
       }

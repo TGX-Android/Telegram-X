@@ -514,10 +514,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
             case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
             case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
+            case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
+            case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_af730a78();
+              Td.assertMessageContent_f7758f8b();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
@@ -1496,7 +1498,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
       }
     });
     setDisplayMessage(msg.chatId, pollMessageId, message -> {
-      if (Td.isPoll(message.content)) {
+      if (!Td.isPoll(message.content)) {
         return false;
       }
       setTextCreator(() -> {

@@ -27,6 +27,7 @@ import androidx.core.os.CancellationSignal;
 
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -46,7 +47,7 @@ public class BiometricAuthentication {
 
   private static @Nullable BiometricManager getManager () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      return BiometricManager.from(UI.getAppContext());
+      return BiometricManager.from(AppContext.get());
     } else {
       return null;
     }

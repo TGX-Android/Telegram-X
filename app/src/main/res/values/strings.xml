@@ -5793,7 +5793,8 @@
   <string name="xNewChatsToJoin_other">%1$s new chats to join</string>
   <string name="xNewChatsAvailableToJoin_one">**%1$s new chat** available to join</string>
   <string name="xNewChatsAvailableToJoin_other">**%1$s new chats** available to join</string>
-  <string name="xOfYChatsSelected2">%1$s/%2$s chats selected</string>
+  <string name="xOfYChatsSelected3_one">%1$s/%2$s chats selected</string>
+  <string name="xOfYChatsSelected3_other">%1$s/%2$s chats selected</string>
   <string name="ThisChatCantBeShared">This chat can’t be shared</string>
   <string name="ArchiveAsFolder">Archive as Folder</string>
   <string name="HoldAndDragToReorder">Hold and drag to reorder</string>

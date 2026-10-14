@@ -31,8 +31,8 @@ import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.detector.FinderPattern
 import org.thunderdog.challegram.Log
 import org.thunderdog.challegram.U
-import org.thunderdog.challegram.tool.UI
 import org.thunderdog.challegram.ui.camera.legacy.CameraApiLegacy
+import org.thunderdog.challegram.unsorted.AppContext
 import org.thunderdog.challegram.unsorted.Settings
 import tgx.flavor.Barcode
 import java.nio.ByteBuffer
@@ -52,7 +52,7 @@ class CameraQrBridge(manager: CameraManager<*>) {
   private var mlkitFailed = false
 
   init {
-    if (U.isGooglePlayServicesAvailable(UI.getAppContext()) && !Settings.instance().needForceZxingQrProcessing()) {
+    if (U.isGooglePlayServicesAvailable(AppContext.get()) && !Settings.instance().needForceZxingQrProcessing()) {
       try {
         barcodeScanner = BarcodeScanning.getClient(
           BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE)

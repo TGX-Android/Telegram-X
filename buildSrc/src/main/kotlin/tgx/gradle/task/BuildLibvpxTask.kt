@@ -1,11 +1,13 @@
 package tgx.gradle.task
 
+import Sdk
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.TaskAction
-import org.jetbrains.kotlin.konan.file.File
 import tgx.gradle.createEmptyDir
+import tgx.gradle.fatal
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
+import java.io.File
 
 private const val TAG = "libvpx"
 
@@ -29,13 +31,9 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
     val sysroot = requireDir(prebuilt.resolve(
       "sysroot"
     ))
-    val androidApiLevel = when (flavor) {
-      "legacy" -> 16
-      "lollipop" -> 21
-      "marshmallow" -> 23
-      "latest" -> 24
-      else -> error("Unknown flavor: $flavor")
-    }
+    val androidApiLevel = (Sdk.VARIANTS.values.firstOrNull() {
+      it.flavor == flavor
+    } ?: fatal("Unknown flavor: $flavor")).minSdk
 
     val extraParams = mutableListOf<String>()
     val cFlags = mutableListOf(
@@ -52,7 +50,7 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
     val ldFlags = mutableListOf(
       "-L${requireDir(
         sysroot.resolve("usr/lib")
-      ).absolutePath}"
+      ).toPosixPath()}"
     )
     val ndkAbi: String
     when (abi) {
@@ -74,7 +72,7 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
           "-mfpu=neon",
           "-mthumb",
           "-mtune=cortex-a8",
-          "-I${cpuFeatures.absolutePath}"
+          "-I${cpuFeatures.toPosixPath()}"
         ))
       }
       "x86_64" -> {
@@ -96,15 +94,15 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
         ))
       }
       else -> {
-        error("Unsupported abi: $abi")
+        fatal("Unsupported abi: $abi")
       }
     }
-    val cc = requireFile(prebuilt.resolve(
-      "bin/${ndkAbi}${androidApiLevel}-clang"
-    ))
-    val cxx = requireFile(prebuilt.resolve(
-      "bin/${ndkAbi}${androidApiLevel}-clang++"
-    ))
+    val cc = "${requireFile(prebuilt.resolveNdkBinary(
+      "bin/clang"
+    )).toPosixPath()} --target=${ndkAbi}${androidApiLevel}"
+    val cxx = "${requireFile(prebuilt.resolveNdkBinary(
+      "bin/clang++"
+    )).toPosixPath()} --target=${ndkAbi}${androidApiLevel}"
     val cppFlags = cFlags.joinToString(" ")
     val env = mapOf(
       "CFLAGS" to cppFlags,
@@ -112,40 +110,39 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
       "CXXFLAGS" to "$cppFlags -std=c++17",
       "LDFLAGS" to ldFlags.joinToString(" "),
 
-      "PATH" to arrayOf(
-        "${requireDir(
+      PATH to arrayOf(
+        requireDir(
           prebuilt.resolve("bin")
-        ).absolutePath}",
+        ).absolutePath,
+        msys2Path(msys2Dir),
         System.getenv("PATH")?.takeIf { it.isNotEmpty() }
       ).filterNotNull().joinToString(File.pathSeparator),
 
-      "AR" to "${
-        requireFile(
-          prebuilt.resolve("bin/llvm-ar")
-        ).absolutePath
-      }",
+      "AR" to requireFile(
+        prebuilt.resolveNdkBinary("bin/llvm-ar")
+      ).toPosixPath(),
 
-      "CC" to "${cc.absolutePath}",
-      "AS" to "${cc.absolutePath}",
-      "LD" to "${cc.absolutePath}",
+      "CC" to cc,
+      "AS" to "$cc -c", // libvpx/build/make/configure.sh:1179
+      "LD" to cc,
 
-      "CXX" to "${cxx.absolutePath}",
-      "CPP" to "${cxx.absolutePath}",
+      "CXX" to cxx,
+      "CPP" to cxx,
 
       "ASFLAGS" to "-D__ANDROID__",
-      "YASM" to "${requireFile(
-        prebuilt.resolve("bin/yasm")
-      ).absolutePath}",
+      "YASM" to requireFile(
+        prebuilt.resolveNdkBinary("bin/yasm")
+      ).toPosixPath(),
 
-      "STRIP" to "${requireFile(
-        prebuilt.resolve("bin/llvm-strip")
-      ).absolutePath}",
-      "RANLIB" to "${requireFile(
-        prebuilt.resolve("bin/llvm-ranlib")
-      ).absolutePath}",
-      "NM" to "${requireFile(
-        prebuilt.resolve("bin/llvm-nm")
-      ).absolutePath}"
+      "STRIP" to requireFile(
+        prebuilt.resolveNdkBinary("bin/llvm-strip")
+      ).toPosixPath(),
+      "RANLIB" to requireFile(
+        prebuilt.resolveNdkBinary("bin/llvm-ranlib")
+      ).toPosixPath(),
+      "NM" to requireFile(
+        prebuilt.resolveNdkBinary("bin/llvm-nm")
+      ).toPosixPath()
     )
 
     // Output
@@ -172,7 +169,7 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
       "x86" ->
         "x86-android-gcc"
       else ->
-        error("Unreachable")
+        fatal("Unreachable")
     }
     extraParams +=
       if (abi != "armeabi-v7a" || flavor != "legacy") {
@@ -190,9 +187,9 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
       logFile,
       mapOf(
         "configure" to arrayOf(
-          configure.absolutePath,
-          "--libc=${sysroot.absolutePath}",
-          "--prefix=${output.absolutePath}",
+          *resolveScript(configure, msys2Dir),
+          "--libc=${sysroot.toPosixPath()}",
+          "--prefix=${output.toPosixPath()}",
           "--target=${libvpxTarget}",
           *extraParams.toTypedArray(),
           "--as=auto",
@@ -219,14 +216,25 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
     val configHeader = requireFile(
       build.resolve("vpx_config.h")
     )
-    val contents = configHeader.readText().replace(
+    val newHeaderContent = configHeader.readText().replace(
       Regex("(?<=^#define CONFIG_LIBYUV )(\\d+)", RegexOption.MULTILINE)
     ) {
       require(it.groupValues[1] == "0")
       "1"
     }
     writeToFile(configHeader) { h ->
-      h.append(contents)
+      h.append(newHeaderContent)
+    }
+
+    // Remove NDK path
+    val configSource = requireFile(
+      build.resolve("vpx_config.c")
+    )
+    val newSourceContent = configSource.readText()
+      .replace(sysroot.toPosixPath(), "\$SYSROOT")
+      .replace(output.toPosixPath(), "${output.parentFile.name}/${output.name}")
+    writeToFile(configSource) { c ->
+      c.append(newSourceContent)
     }
 
     runCommands(
@@ -236,7 +244,7 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
       logFile,
       mapOf(
         "make" to arrayOf(
-          "make",
+          resolveBinary("make", msys2Dir),
           "-j${Runtime.getRuntime().availableProcessors()}",
           "install"
         )
