@@ -14,9 +14,12 @@
 
 package tgx.gradle.task
 
+import com.android.build.api.dsl.SdkComponents
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFile
 import org.gradle.api.internal.GeneratedSubclasses
 import org.gradle.api.logging.Logging
+import org.gradle.api.provider.Provider
 import tgx.gradle.fatal
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
@@ -284,6 +287,11 @@ fun File.resolveNdkBinary(path: String): File =
     resolve("${path}.exe")
   } else {
     resolve(path)
+  }
+
+fun SdkComponents.resolveBuildToolsBinary(buildToolsVersion: String, name: String): Provider<RegularFile> =
+  this.sdkDirectory.map {
+    it.file("build-tools/$buildToolsVersion/$name${if (isWindowsHost()) ".exe" else ""}")
   }
 
 val PATH =

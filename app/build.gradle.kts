@@ -677,10 +677,6 @@ android {
   }
 
   androidComponents {
-    val aapt2File = sdkComponents.sdkDirectory.map {
-      it.file("build-tools/${config.build.buildToolsVersion}/aapt2").asFile.toPosixPath()
-    }
-
     onVariants(selector().withBuildType("release")) { variant ->
       if (!config.isExperimentalBuild) {
         variant.lifecycleTasks.registerPreBuild(validateApiTokens)
@@ -695,15 +691,21 @@ android {
       )
 
       if (variant.minSdk.apiLevel >= 33) {
+        val aapt2 = sdkComponents.resolveBuildToolsBinary(
+          config.build.buildToolsVersion,
+          "aapt2"
+        )
         val optimizeTaskName = "optimize${variant.name.uppercaseFirstChar()}Resources"
-        project.afterEvaluate {
-          tasks.named(optimizeTaskName) {
-            inputs.property("tgxAapt2", aapt2File)
-            doLast(objects.newInstance<OptimizeWithAapt2Task>().apply {
-              aapt2.set(aapt2File)
-              minSdk.set(variant.minSdk.apiLevel)
-            })
-          }
+        tasks.named {
+          it == optimizeTaskName
+        }.configureEach {
+          inputs
+            .file(aapt2)
+            .withPathSensitivity(PathSensitivity.NONE)
+          doLast(objects.newInstance<OptimizeWithAapt2Task>().apply {
+            aapt2File.set(aapt2)
+            minSdk.set(variant.minSdk.apiLevel)
+          })
         }
       }
     }
