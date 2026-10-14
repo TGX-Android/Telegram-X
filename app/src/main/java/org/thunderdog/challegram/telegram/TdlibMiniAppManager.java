@@ -473,7 +473,7 @@ public final class TdlibMiniAppManager implements CleanupStartupDelegate {
   }
 
   private static boolean alive (TdlibDelegate context) {
-    return context != null && context.tdlib().isCurrent() && !context.context().isFinishing() && (!(context instanceof ViewController) || !((ViewController<?>) context).isDestroyed());
+    return context != null && context.tdlib().isCurrent() && !context.context().isFinishing() && !context.context().isPasscodeShowing() && (!(context instanceof ViewController) || !((ViewController<?>) context).isDestroyed());
   }
 
   private boolean current (TdlibDelegate context, long token, int generation) {

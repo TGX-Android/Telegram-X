@@ -38,7 +38,7 @@ final class MiniAppHostDeviceChecks {
 
   void run () throws Exception { run(false); }
 
-  void run (boolean rendererLoss) throws Exception {
+  private void initializeActivity () throws Exception {
     Intent intent = new Intent(test.getTargetContext(), MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     test.startActivitySync(intent);
     for (int i = 0; i < 100; i++) {
@@ -47,6 +47,10 @@ final class MiniAppHostDeviceChecks {
       Thread.sleep(100);
     }
     test.check(activity != null && activity.currentTdlib().myUserId() != 0, "host has an initialized account");
+  }
+
+  void run (boolean rendererLoss) throws Exception {
+    initializeActivity();
     final int previousOrientation = activity.getRequestedOrientation();
     try {
       if (!rendererLoss) { checkPageReadiness(); checkAgeVerification(); }
@@ -198,6 +202,118 @@ final class MiniAppHostDeviceChecks {
       main(() -> { if (host != null) host.close(); activity.setRequestedOrientation(previousOrientation); });
       test.check(lightStatusBar() == org.thunderdog.challegram.theme.Theme.needLightStatusBar(), "closing a Mini App restores native status icon contrast");
     }
+  }
+
+  void runLifecycle () throws Exception {
+    initializeActivity();
+    // Exercise the real overlay only when no personal credential is configured.
+    // Never disable, read or unlock a user's existing passcode.
+    test.check(!org.thunderdog.challegram.unsorted.Passcode.instance().isEnabled() && !activity.isPasscodeShowing(),
+      "synthetic lock fixture requires an account without an app passcode");
+    boolean ownedOverlay = false;
+    try {
+      createFixture(); waitPage(); Thread.sleep(500);
+      send("web_app_expand", "{}"); Thread.sleep(300);
+      send("web_app_start_accelerometer", "{\"refresh_rate\":20}"); waitEvent("accelerometer_changed");
+      send("web_app_open_popup", "{\"message\":\"Lifecycle fixture\",\"buttons\":[{\"type\":\"ok\"}]}"); Thread.sleep(200);
+      test.check(field(host, "activeDialog") != null, "fixture opens native popup before locking");
+      ownedOverlay = true;
+      main(() -> activity.showPasscode(false)); Thread.sleep(300);
+      test.check(activity.isPasscodeShowing() && !host.isShowing() && !host.canShowNativeUi(), "app lock makes the sheet inactive");
+      test.check(((View) field(host, "popup")).getParent() == null, "app lock removes the Mini App sheet from the visible root");
+      test.check(field(host, "activeDialog") == null, "app lock dismisses an existing native dialog");
+      test.check((boolean) field(field(host, "platform"), "mediaPaused"), "app lock pauses web media");
+      String samples = sensorCount();
+      main(host::onActivityResume); Thread.sleep(250);
+      test.check(samples.equals(sensorCount()), "activity resume while locked cannot restart motion sensors");
+      send("web_app_setup_back_button", "{\"is_visible\":true}");
+      send("web_app_open_popup", "{\"message\":\"Must stay hidden\",\"buttons\":[{\"type\":\"ok\"}]}");
+      Thread.sleep(200);
+      test.check(!(boolean) field(host, "backVisible") && field(host, "activeDialog") == null, "locked bridge cannot change controls or open dialogs");
+      main(() -> test.check(host.webRequest("https://miniapp.test") == null, "locked page cannot start native media requests"));
+      capture("lifecycle-passcode-overlay");
+      main(activity::hidePasscode); ownedOverlay = false; Thread.sleep(600);
+      test.check(host.isShowing() && host.canShowNativeUi() && web == field(host, "webView"), "unlock restores the same Mini App renderer");
+      test.check(!samples.equals(sensorCount()), "unlock restores previous sensor subscriptions");
+      test.check(!(boolean) field(field(host, "platform"), "mediaPaused"), "unlock resumes web media");
+      test.check("true".equals(test.evaluate(web, "events.some(e=>e.event==='popup_closed')")), "dialog cancellation reaches the document after unlocking");
+      send("web_app_stop_accelerometer", "{}"); waitEvent("accelerometer_stopped");
+      send("web_app_setup_back_button", "{\"is_visible\":true}"); Thread.sleep(150);
+      test.check((boolean) field(host, "backVisible"), "unlocked bridge accepts controls again");
+      capture("lifecycle-unlocked");
+      main(host::minimize); Thread.sleep(450);
+      ownedOverlay = true;
+      main(() -> { activity.showPasscode(false); host.restore(); }); Thread.sleep(250);
+      test.check(host.isMinimized() && !host.isShowing(), "a retained tab cannot restore over app lock");
+      main(activity::hidePasscode); ownedOverlay = false; Thread.sleep(300);
+      test.check(host.isMinimized(), "unlock does not activate a previously minimized app");
+      main(host::restore); Thread.sleep(600);
+      checkCustomThemes();
+      main(host::close);
+      ownedOverlay = true;
+      main(() -> activity.showPasscode(false));
+      createFixture(); waitPage(); Thread.sleep(250);
+      test.check(!host.isShowing() && ((View) field(host, "popup")).getParent() == null && web.getAlpha() == 0f,
+        "a launch completed during app lock stays hidden including its first web frame");
+      main(activity::hidePasscode); ownedOverlay = false; Thread.sleep(650);
+      test.check(host.isShowing() && web.getAlpha() == 1f && "\"alive\"".equals(test.evaluate(web, "'alive'")),
+        "unlock reveals the ready document from a launch completed during app lock");
+    } finally {
+      final boolean removeOverlay = ownedOverlay;
+      main(() -> {
+        if (removeOverlay && !org.thunderdog.challegram.unsorted.Passcode.instance().isEnabled()) activity.hidePasscode();
+        if (host != null) host.close();
+      });
+    }
+    test.check(!org.thunderdog.challegram.unsorted.Passcode.instance().isEnabled() && !activity.isPasscodeShowing(),
+      "synthetic lock fixture preserves the original passcode setting");
+  }
+
+  private void checkCustomThemes () throws Exception {
+    org.thunderdog.challegram.theme.ThemeManager manager = org.thunderdog.challegram.theme.ThemeManager.instance();
+    org.thunderdog.challegram.theme.ThemeDelegate original = manager.currentTheme(false);
+    org.thunderdog.challegram.unsorted.Settings settings = org.thunderdog.challegram.unsorted.Settings.instance();
+    org.thunderdog.challegram.telegram.TdlibSettingsManager account = activity.currentTdlib().settings();
+    int oldDay = account.globalDaylightTheme(), oldNight = account.globalNightTheme(), autoMode = settings.getNightMode();
+    java.util.List<Integer> created = new java.util.ArrayList<>();
+    int[] bases = {org.thunderdog.challegram.theme.ThemeManager.DEFAULT_LIGHT_THEME, org.thunderdog.challegram.theme.ThemeManager.DEFAULT_DARK_THEME};
+    int[] fills = {0xffedf6ef, 0xff202820}, texts = {0xff102c1a, 0xffd8f0df}, accents = {0xff147a44, 0xff60d394};
+    try {
+      for (int i = 0; i < bases.length; i++) {
+        final int index = i;
+        final int[] themeId = {0};
+        main(() -> {
+          themeId[0] = manager.newCustomTheme("Mini Apps lifecycle fixture " + System.nanoTime(), bases[index], org.thunderdog.challegram.theme.ThemeId.NONE);
+          created.add(themeId[0]);
+          int id = org.thunderdog.challegram.theme.ThemeManager.resolveCustomThemeId(themeId[0]);
+          settings.setCustomThemeColor(id, org.thunderdog.challegram.theme.ColorId.filling, fills[index]);
+          settings.setCustomThemeColor(id, org.thunderdog.challegram.theme.ColorId.text, texts[index]);
+          settings.setCustomThemeColor(id, org.thunderdog.challegram.theme.ColorId.textLink, accents[index]);
+          manager.changeGlobalTheme(activity.currentTdlib(), manager.getTheme(themeId[0]), true, null);
+        });
+        Thread.sleep(450);
+        test.check(manager.currentThemeId() == themeId[0] && org.thunderdog.challegram.theme.ThemeManager.isCustomTheme(themeId[0]), "installed custom theme becomes active " + i);
+        String themeJson = test.evaluate(web, "JSON.stringify(events.filter(e=>e.event==='theme_changed').slice(-1)[0].data.theme_params)");
+        test.check(themeJson.contains(MiniAppTheme.hex(fills[i])) && themeJson.contains(MiniAppTheme.hex(texts[i])) && themeJson.contains(MiniAppTheme.hex(accents[i])), "custom fill/text/accent colors reach the existing document " + i);
+        int nativeColor = ((android.graphics.drawable.ColorDrawable) ((View) field(host, "header")).getBackground()).getColor();
+        test.check(nativeColor == fills[i] && lightStatusBar() == (i == 0), "custom shell and system icon contrast match the theme " + i);
+        capture("lifecycle-custom-theme-" + i);
+        main(host::minimize); Thread.sleep(450);
+        main(host::restore); Thread.sleep(650);
+        test.check(host.isShowing() && web == field(host, "webView") && "\"alive\"".equals(test.evaluate(web, "'alive'")), "custom themed Mini App survives minimize/restore " + i);
+      }
+    } finally {
+      for (int id : new int[] {oldDay, oldNight, original.getId()}) {
+        main(() -> manager.changeGlobalTheme(activity.currentTdlib(), manager.getTheme(id), true, null));
+        Thread.sleep(300);
+      }
+      main(() -> {
+        for (int id : created) manager.removeCustomTheme(activity.currentTdlib(), id, original.getId(), null);
+      });
+    }
+    test.check(manager.currentThemeId() == original.getId() && account.globalDaylightTheme() == oldDay && account.globalNightTheme() == oldNight && settings.getNightMode() == autoMode,
+      "custom theme fixtures restore current/day/night themes and auto-night setting");
+    for (int id : created) test.check(!settings.hasCustomTheme(org.thunderdog.challegram.theme.ThemeManager.resolveCustomThemeId(id)), "temporary custom theme removed");
   }
 
   private void createFixture () { createFixture("https://miniapp.test/host"); }

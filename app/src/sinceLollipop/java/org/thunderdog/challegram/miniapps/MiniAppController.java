@@ -52,6 +52,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
@@ -76,7 +77,7 @@ import tgx.td.Td;
 import static org.thunderdog.challegram.miniapps.MiniAppTheme.object;
 
 /** API 21+ native sheet owning one WebView; the TDLib session also survives minimization. */
-public final class MiniAppController extends ViewController<Void> implements MiniAppBridgeTransport, GlobalAccountListener {
+public final class MiniAppController extends ViewController<Void> implements MiniAppBridgeTransport, GlobalAccountListener, BaseActivity.PasscodeListener {
   private static final long PAGE_READY_FALLBACK_MS = 5000;
   private final MiniAppLaunchRequest request;
   private final MiniAppAgeVerification ageVerification;
@@ -164,6 +165,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     expanded = !(request.mode instanceof TdApi.WebAppOpenModeCompact);
     fullscreen = request.mode instanceof TdApi.WebAppOpenModeFullScreen;
     context().addActivityListener(this);
+    context().addPasscodeListener(this);
     tdlib.context().global().addAccountListener(this);
   }
 
@@ -177,7 +179,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     return ageVerification != null && isShowing() && tdlib.isCurrent() && ageVerification.isCurrent(tdlib.ageVerificationParameters(), tdlib.myUserId());
   }
   public boolean isMinimized () { return minimized && !isDestroyed(); }
-  public boolean isShowing () { return popup != null && !minimized && !isDestroyed(); }
+  public boolean isShowing () { return popup != null && !minimized && !isDestroyed() && !context().isPasscodeShowing(); }
   public boolean isShowingFullscreen () { return isShowing() && (fullscreen || videoFullscreen != null); }
   public void onTabsChanged () {
     if (isShowing()) resize();
@@ -189,7 +191,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   public boolean needsCloseConfirmation () { return needsCloseConfirmation; }
   public boolean canRestore (MiniAppLaunchRequest request) { return isMinimized() && this.request.sameLaunch(request); }
   public void restore () {
-    if (!isMinimized()) return;
+    if (!isMinimized() || context().isPasscodeShowing()) return;
     if (popup == null) showSheet(); else restoreWhenHidden = true;
   }
 
@@ -502,14 +504,19 @@ public final class MiniAppController extends ViewController<Void> implements Min
     resize();
     popup.showSimplePopupView(root, root.getLayoutParams().height);
     if (!fullscreen) tdlib.miniApps().raiseTabs(context());
+    if (context().isPasscodeShowing()) {
+      // The launch response can arrive after BaseActivity has hidden its existing windows.
+      popup.hideTemporarily();
+      onPasscodeShowing(context(), true);
+      return;
+    }
     if (webView != null) webView.onResume();
     platform.setMediaPaused(false);
     if (sensors != null && context().getActivityState() == UI.State.RESUMED) sensors.resume();
     if (orientationRequested) setOrientationLocked(true);
     sendTheme();
     emit("activated", object());
-    for (Runnable reply : new ArrayList<>(deferredReplies)) reply.run();
-    deferredReplies.clear();
+    flushDeferredReplies();
     if (pageReady) revealPageWhenReady();
   }
 
@@ -605,14 +612,14 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (isDestroyed() || pageLoadFailed || webView == null) return;
     cancelPageReadyFallback();
     pageReady = true;
-    if (minimized || popup == null || pageRevealRequested) return;
+    if (!isShowing() || pageRevealRequested) return;
     pageRevealRequested = true;
     final long generation = pageLoadGeneration;
     final WebView page = webView;
     // DOM theme updates and the renderer's next frame are asynchronous to the JS ready event.
     platform.whenVisualStateReady(page, generation, () -> {
       if (isDestroyed() || page != webView || generation != pageLoadGeneration || pageLoadFailed) return;
-      if (minimized) { pageRevealRequested = false; return; }
+      if (!isShowing()) { pageRevealRequested = false; return; }
       page.animate().alpha(1f).setDuration(300).start();
       progress.animate().alpha(0f).setDuration(300).withEndAction(() -> {
         if (!isDestroyed() && generation == pageLoadGeneration) progress.setVisibility(View.GONE);
@@ -696,6 +703,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     unlockOrientation();
     if (sizeAnimator != null) { sizeAnimator.cancel(); sizeAnimator = null; }
     context().removeActivityListener(this);
+    context().removePasscodeListener(this);
     tdlib.context().global().removeAccountListener(this);
     tdlib.miniApps().onClosed(this);
     if (preview != null) { preview.recycle(); preview = null; }
@@ -729,11 +737,34 @@ public final class MiniAppController extends ViewController<Void> implements Min
   @Override
   public void onActivityResume () {
     super.onActivityResume();
-    if (sensors != null && !minimized) sensors.resume();
-    if (webView != null && !minimized) webView.onResume();
-    if (!minimized) platform.setMediaPaused(false);
+    if (!isShowing()) return;
+    if (sensors != null) sensors.resume();
+    if (webView != null) webView.onResume();
+    platform.setMediaPaused(false);
     if (location != null) emit("location_checked", location.info());
     if (biometry != null) emit("biometry_info_received", biometry.info());
+  }
+
+  @Override
+  public void onPasscodeShowing (BaseActivity activity, boolean showing) {
+    if (isDestroyed()) return;
+    if (showing) {
+      emit("deactivated", object());
+      onActivityPause();
+      cancelDocumentRequests();
+      if (webView != null) Keyboard.hide(webView);
+      unlockOrientation();
+      context().clearSystemBarAppearance(this);
+    } else if (isShowing()) {
+      if (context().getActivityState() == UI.State.RESUMED) onActivityResume();
+      if (orientationRequested) setOrientationLocked(true);
+      applyTheme();
+      sendTheme();
+      sendViewport();
+      emit("activated", object());
+      flushDeferredReplies();
+      if (pageReady) revealPageWhenReady();
+    }
   }
 
   @Override
@@ -773,7 +804,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   boolean canShowNativeUi () { return isShowing() && activeDialog == null && context().getActivityState() == UI.State.RESUMED; }
   String storageScope () { return MiniAppBotPermissions.scope(tdlib, request.botUserId); }
   MiniAppDocument.Request webRequest (String source) {
-    return document != null && webView != null && !minimized && tdlib.isCurrent() ? document.receive(source, webView.getUrl(), 0) : null;
+    return document != null && webView != null && isShowing() && tdlib.isCurrent() ? document.receive(source, webView.getUrl(), 0) : null;
   }
   private MiniAppMedia media () { if (media == null) media = new MiniAppMedia(this); return media; }
   private MiniAppBiometry biometry () { if (biometry == null) biometry = new MiniAppBiometry(this); return biometry; }
@@ -794,7 +825,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     } else { builder.setMessage(message); if (illustration != null) builder.setView(illustration); }
     builder.setNegativeButton(Lang.getString(R.string.Cancel), null).setPositiveButton(Lang.getString(positive), (dialog, which) -> {
       answered[0] = true; dialog.dismiss(); recordGesture();
-      if (current(origin) && !minimized) accepted.run(); else cancelled.run();
+      if (current(origin) && isShowing()) accepted.run(); else cancelled.run();
     });
     AlertDialog dialog = showAlert(builder); activeDialog = dialog;
     if (dialog == null) { cancelled.run(); return; }
@@ -832,7 +863,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
       // A page may open a Telegram link and then close itself. The link minimizes
       // its host first; still accept the authenticated close, without enabling
       // other actions or return-to-caller navigation from a background app.
-      if (minimized) {
+      if (minimized || context().isPasscodeShowing()) {
         if ("web_app_close".equals(event)) close();
         // Remember readiness without showing or activating a background app.
         else if ("web_app_ready".equals(event)) revealPageWhenReady();
@@ -1069,7 +1100,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   private void restoreStorage (MiniAppDocument.Request origin, String id, String key, MiniAppStorage store, List<Long> candidates, String[] labels) {
     if (!current(origin)) return;
     if (candidates.isEmpty()) { reply(origin, "secure_storage_failed", object("req_id", id, "error", "RESTORE_UNAVAILABLE")); return; }
-    if (minimized || activeDialog != null) { reply(origin, "secure_storage_failed", object("req_id", id, "error", "RESTORE_CANCELLED")); return; }
+    if (!canShowNativeUi()) { reply(origin, "secure_storage_failed", object("req_id", id, "error", "RESTORE_CANCELLED")); return; }
     for (int i = 0; i < labels.length; i++) if (labels[i].isEmpty()) labels[i] = Lang.getString(R.string.MiniAppStorageAccount, Integer.toString(i + 1));
     activeDialog = showAlert(new AlertDialog.Builder(context()).setTitle(Lang.getString(R.string.MiniAppRestoreStorage))
       .setItems(labels, (dialog, which) -> {
@@ -1187,13 +1218,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void confirmAction (MiniAppDocument.Request origin, String message, String response, Runnable accepted) {
-    if (activeDialog != null || minimized || isPaused()) { reply(origin, response, object("status", "cancelled")); return; }
+    if (!canShowNativeUi() || isPaused()) { reply(origin, response, object("status", "cancelled")); return; }
     boolean[] answered = { false };
     activeDialog = showAlert(new AlertDialog.Builder(context()).setTitle(tdlib.cache().userName(request.botUserId)).setMessage(message)
       .setNegativeButton(Lang.getString(R.string.Cancel), null)
       .setPositiveButton(Lang.getString(R.string.OK), (dialog, which) -> {
         answered[0] = true;
-        if (current(origin)) accepted.run();
+        if (current(origin) && isShowing()) accepted.run();
       }));
     if (activeDialog != null) activeDialog.setOnDismissListener(dialog -> {
       activeDialog = null;
@@ -1202,7 +1233,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
   }
 
   private void openPopup (MiniAppDocument.Request origin, JSONObject data) throws JSONException {
-    if (activeDialog != null || requestedChat != null && requestedChat.active() || preparedMessage != null && preparedMessage.active()) return;
+    if (!canShowNativeUi() || requestedChat != null && requestedChat.active() || preparedMessage != null && preparedMessage.active()) return;
     long now = SystemClock.uptimeMillis();
     if (now < popupCooldownUntil) return;
     if (now - lastPopupClosed <= 150 && ++sequentialPopups >= 3) {
@@ -1249,7 +1280,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     String url = data.optString("url"), browser = MiniAppActionPolicy.browserPackage(data.optString("try_browser"));
     boolean instantView = data.optBoolean("try_instant_view");
     tdlib.send(new TdApi.GetOption("web_app_allowed_protocols"), (value, error) -> tdlib.ui().post(() -> {
-      if (!current(origin) || minimized) return;
+      if (!current(origin) || !isShowing()) return;
       String protocols = value instanceof TdApi.OptionValueString ? ((TdApi.OptionValueString) value).value : "http https";
       if (!MiniAppActionPolicy.externalUrl(url, protocols)) return;
       if (browser != null) {
@@ -1267,7 +1298,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     String scheme = uri.getScheme(), host = uri.getHost();
     boolean telegram = "tg".equalsIgnoreCase(scheme) || "t.me".equalsIgnoreCase(host) || "telegram.me".equalsIgnoreCase(host);
     if (telegram) {
-      if (mainFrame && recentGesture()) { minimize(); tdlib.ui().openUrl(this, url, null); }
+      if (mainFrame && isShowing() && recentGesture()) { minimize(); tdlib.ui().openUrl(this, url, null); }
       return true;
     }
     return MiniAppOrigin.of(url) == null;
@@ -1372,7 +1403,7 @@ public final class MiniAppController extends ViewController<Void> implements Min
     if (webView != null) webView.setBackgroundColor(background);
     buttons.setBackgroundColor(bottomColor != null ? bottomColor : theme.bottomBarBackgroundColor);
     buttons.refreshTheme();
-    if (popup != null && !minimized && !isDestroyed()) {
+    if (isShowing()) {
       // Match the official sheet's luminance threshold, independent of the chat theme.
       Boolean lightStatus = expanded && !fullscreen ? androidx.core.graphics.ColorUtils.calculateLuminance(bar) >= .721 : null;
       Boolean lightNavigation = !fullscreen || buttons.getVisibility() == View.VISIBLE
@@ -1452,8 +1483,13 @@ public final class MiniAppController extends ViewController<Void> implements Min
 
   void reply (MiniAppDocument.Request origin, String event, JSONObject data) {
     if (!current(origin)) return;
-    if (minimized) deferredReplies.add(() -> { if (current(origin)) emit(event, data); });
+    if (minimized || context().isPasscodeShowing()) deferredReplies.add(() -> { if (current(origin)) emit(event, data); });
     else emit(event, data);
+  }
+
+  private void flushDeferredReplies () {
+    for (Runnable reply : new ArrayList<>(deferredReplies)) reply.run();
+    deferredReplies.clear();
   }
 
   private void emit (String event, JSONObject data) {
