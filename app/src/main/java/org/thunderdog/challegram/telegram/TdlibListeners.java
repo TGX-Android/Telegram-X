@@ -395,13 +395,17 @@ public class TdlibListeners {
   }
 
   @AnyThread
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   public void subscribeToForumTopicUpdates (long chatId, int forumTopicId, ForumTopicInfoListener listener) {
     specificForumTopicListeners.add(uniqueForumTopicKey(chatId, forumTopicId), listener);
+  // endregion
   }
 
   @AnyThread
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   public void unsubscribeFromForumTopicUpdates (long chatId, int forumTopicId, ForumTopicInfoListener listener) {
     specificForumTopicListeners.remove(uniqueForumTopicKey(chatId, forumTopicId), listener);
+  // endregion
   }
 
   @AnyThread
@@ -1333,7 +1337,9 @@ public class TdlibListeners {
 
   void updateForumTopic (TdApi.UpdateForumTopic update) {
     runForumUpdate(update.chatId, update.forumTopicId, listener ->
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       listener.onForumTopicUpdated(update)
+      // endregion
     );
   }
 

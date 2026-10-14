@@ -15,31 +15,41 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+// endregion
 import android.view.MotionEvent;
 
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.ForumHistory;
+// endregion
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.loader.AvatarReceiver;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.loader.ComplexReceiver;
+// endregion
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ThemeDeprecated;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.tool.DrawAlgorithms;
+// endregion
 import org.thunderdog.challegram.tool.Screen;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+// endregion
 
 import me.vkryl.core.StringUtils;
 import tgx.td.ChatId;
@@ -50,6 +60,7 @@ public class ChatHeaderView extends ComplexHeaderView {
   }
 
   private Callback callback;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private boolean isForumTopic;
   private TdApi.ForumTopicIcon topicIcon;
   private String topicLetter = "#";
@@ -57,6 +68,7 @@ public class ChatHeaderView extends ComplexHeaderView {
   private final ComplexReceiver topicEmojiReceiver = new ComplexReceiver(this);
   private final Paint topicPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
   private final Path topicTail = new Path();
+  // endregion
 
   public ChatHeaderView (Context context, Tdlib tdlib, @Nullable ViewController<?> parent) {
     super(context, tdlib, parent);
@@ -138,6 +150,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     }
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   public void setForumTopic (TdApi.Chat chat, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.ForumTopic topic, @Nullable String restriction) {
     isForumTopic = ForumHistory.isForum(topicId);
     setNoExpand(isForumTopic);
@@ -207,12 +220,15 @@ public class ChatHeaderView extends ComplexHeaderView {
     super.performDestroy();
   }
 
+  // endregion
   // Updates (new)
 
   private Tdlib tdlib;
 
   public void updateUserStatus (TdApi.Chat chat) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (!isForumTopic && StringUtils.isEmpty(forcedSubtitle)) {
+    // endregion
       setSubtitle(tdlib.status().chatStatus(chat));
       setExpandedSubtitle(tdlib.status().chatStatusExpanded(chat));
     }

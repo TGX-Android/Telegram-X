@@ -182,7 +182,9 @@ public class NavigationStack {
     }
     stack.get(index).destroy();
     stack.set(index, c);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     notifyStackChanged();
+    // endregion
   }
 
   public ViewController<?> removeById (int id) {

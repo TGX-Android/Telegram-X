@@ -17,8 +17,10 @@ package org.thunderdog.challegram.component.chat;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import android.os.Bundle;
 import android.view.accessibility.AccessibilityNodeInfo;
+// endregion
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,7 +31,9 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+// endregion
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
@@ -111,7 +115,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final ComplexReceiver reactionAvatarsReceiver;
   private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private final ComplexReceiver forumTopicReceiver;
+  // endregion
   private final DoubleImageReceiver replyReceiver;
   private final RefreshRateLimiter refreshRateLimiter, highRefreshRateLimiter;
   private ComplexReceiver footerTextMediaReceiver;
@@ -143,7 +149,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       .setUpdateListener(highRefreshRateLimiter);
     textMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     forumTopicReceiver = new ComplexReceiver().setUpdateListener(refreshRateLimiter);
+    // endregion
     emojiStatusReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     replyTextMediaReceiver = new ComplexReceiver()
@@ -189,7 +197,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     gifReceiver.destroy();
     reactionsComplexReceiver.performDestroy();
     textMediaReceiver.performDestroy();
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     forumTopicReceiver.performDestroy();
+    // endregion
     emojiStatusReceiver.performDestroy();
     if (contentReceiver != null) {
       contentReceiver.destroy();
@@ -315,16 +325,20 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     // A forum author avatar may be inside the header instead of in the outer gutter.
     // Rebinding an equally tall row does not necessarily trigger onMeasure.
     message.layoutAvatar(this, avatarReceiver);
+    // endregion
     message.requestReactions(reactionsComplexReceiver);
     message.requestCommentsResources(avatarsReceiver, false);
     message.requestGiveawayAvatars(giveawayAvatarsReceiver, false);
     message.requestReactionsResources(reactionAvatarsReceiver, false);
     message.requestAllTextMedia(this);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     setFocusable(message.hasForumTopicButton());
     setImportantForAccessibility(message.hasForumTopicButton() ? IMPORTANT_FOR_ACCESSIBILITY_YES : IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+    // endregion
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
       previewReceiver.setRadius(message.getImageContentRadius(true));
@@ -440,6 +454,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     msg.draw(this, c, avatarReceiver, replyReceiver, replyTextMediaReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   public ComplexReceiver getForumTopicReceiver () { return forumTopicReceiver; }
 
   @Override public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
@@ -460,6 +475,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return super.performAccessibilityAction(action, arguments);
   }
 
+  // endregion
   public AvatarReceiver getAvatarReceiver () {
     return avatarReceiver;
   }
@@ -526,7 +542,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
       textMediaReceiver.attach();
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       forumTopicReceiver.attach();
+      // endregion
       emojiStatusReceiver.attach();
       replyReceiver.attach();
       replyTextMediaReceiver.attach();
@@ -550,7 +568,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       gifReceiver.detach();
       reactionsComplexReceiver.detach();
       textMediaReceiver.detach();
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       forumTopicReceiver.detach();
+      // endregion
       emojiStatusReceiver.detach();
       replyReceiver.detach();
       replyTextMediaReceiver.detach();

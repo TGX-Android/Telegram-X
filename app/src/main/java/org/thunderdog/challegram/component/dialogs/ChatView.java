@@ -172,6 +172,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     return avatarReceiver;
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private boolean forumTransitionAvatarHidden;
 
   public void setForumTransitionAvatarHidden (boolean hidden) {
@@ -181,6 +182,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     }
   }
 
+  // endregion
   public ComplexReceiver getTextMediaReceiver () {
     return textMediaReceiver;
   }
@@ -190,7 +192,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver textMediaReceiver;
   private final ComplexReceiver reactionsReceiver;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private final ForumChatTopics forumTopics;
+  // endregion
 
   private final BoolAnimator isSelected = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final RefreshRateLimiter refreshRateLimiter;
@@ -201,7 +205,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       initPaints();
     }
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     this.forumTopics = new ForumChatTopics(this, tdlib, refreshRateLimiter);
+    // endregion
     setId(R.id.chat);
     RippleSupport.setTransparentSelector(this);
     int chatListMode = getChatListMode();
@@ -227,7 +233,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     textMediaReceiver.setAnimationDisabled(disabled);
     emojiStatusReceiver.setAnimationDisabled(disabled);
     reactionsReceiver.setAnimationDisabled(disabled);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     forumTopics.setAnimationDisabled(disabled);
+    // endregion
   }
 
   public static int getViewHeight (int chatListMode) {
@@ -362,7 +370,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     textMediaReceiver.attach();
     emojiStatusReceiver.attach();
     reactionsReceiver.attach();
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     forumTopics.attach();
+    // endregion
   }
 
   public void detach () {
@@ -370,7 +380,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     textMediaReceiver.detach();
     emojiStatusReceiver.detach();
     reactionsReceiver.detach();
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     forumTopics.detach();
+    // endregion
   }
 
   public void setChat (TGChat chat) {
@@ -382,8 +394,10 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
         }
       }
       this.chat = chat;
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       forumTopics.setChat(chat);
       requestLayout();
+      // endregion
       this.isPinnedArchive.setValue(chat != null && chat.isArchive() && !tdlib.settings().needHideArchive(), false);
       if (chat != null) {
         chat.checkLayout(getMeasuredWidth());
@@ -453,8 +467,10 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   private void requestTextContent () {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     forumTopics.update();
     forumTopics.layout(getMeasuredWidth(), getChatListMode());
+    // endregion
     Text text = chat != null ? chat.getText() : null;
     if (text != null) {
       text.requestMedia(textMediaReceiver);
@@ -530,7 +546,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     if (chat != null && chat.checkLayout(getMeasuredWidth())) {
       requestContent();
     }
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     forumTopics.layout(getMeasuredWidth(), getChatListMode());
+    // endregion
   }
 
   public boolean canStartDrag (float x, float y) {
@@ -681,9 +699,13 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
     TdlibStatusManager.Helper status = chat.statusHelper();
     TdlibStatusManager.ChatState state = status != null ? status.drawingState() : null;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     float statusVisibility = state != null && !(chat.isForumRow() && chat.showDraft()) ? state.visibility() : 0f;
+    // endregion
     float textAlpha = 1f - statusVisibility;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     forumTopics.draw(c);
+    // endregion
     if (textAlpha > 0f) {
       final int dy = (int) (Screen.dp(14f) * statusVisibility);
       final boolean needRestore = dy != 0;
@@ -696,7 +718,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       }
 
       int textTop = getTextTop(chatListMode);
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       if (chat.isForumRow()) textTop += forumTopics.lineHeight();
+      // endregion
       Text prefix = chat.getPrefix();
       if (prefix != null) {
         int titleColor = ColorUtils.alphaColor(textAlpha, chat.showDraft() ? Theme.textRedColor() : Theme.textAccentColor());
@@ -704,7 +728,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       }
       Text text = chat.getText();
       if (text != null) {
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         if (!chat.isForumRow() && chatListMode != Settings.CHAT_MODE_2LINE) {
+        // endregion
           if (prefix != null) {
             textTop += prefix.getNextLineHeight();
           } else if (text.getLineCount() == 1) {
@@ -739,9 +765,11 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       Text text = status.drawingText();
       if (text != null) {
         float top = getTextTop(chatListMode) - Screen.dp(14f) * textAlpha;
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         if (chat.isForumRow()) {
           top += forumTopics.lineHeight();
         } else if (chatListMode != Settings.CHAT_MODE_2LINE && text.getLineCount() == 1) {
+        // endregion
           top += getSingleLineOffset(chatListMode);
         }
         DrawAlgorithms.drawStatus(c, state, rtl ? viewWidth - getLeftPadding(chatListMode) : getLeftPadding(chatListMode), top + text.getLineHeight() / 2f, ColorUtils.alphaColor(statusVisibility, text.getTextColor()), this, statusVisibility == 1f ? ColorId.textLight : ColorId.NONE);
@@ -750,7 +778,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       }
     }
 
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (forumTransitionAvatarHidden) return;
+    // endregion
     avatarReceiver.forceAllowOnline(!isSelected.getValue(), 1f - isSelected.getFloatValue());
     layoutReceiver();
     if (avatarReceiver.needPlaceholder()) {
@@ -781,4 +811,6 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   public int getVisibleMessageFlags () {
     return TdlibMessageViewer.Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION | (chat != null && chat.needRefreshInteractionInfo() ? TdlibMessageViewer.Flags.REFRESH_INTERACTION_INFO : 0);
   }
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 }
+// endregion

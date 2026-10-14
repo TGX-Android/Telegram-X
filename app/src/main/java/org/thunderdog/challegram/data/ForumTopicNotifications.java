@@ -3,6 +3,7 @@ package org.thunderdog.challegram.data;
 import org.drinkless.tdlib.TdApi;
 
 /** Topic-only edits: copy the latest snapshot and preserve every unrelated TDLib field. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicNotifications {
   private ForumTopicNotifications () { }
   public enum Field { PREVIEW, PINNED, MENTIONS }

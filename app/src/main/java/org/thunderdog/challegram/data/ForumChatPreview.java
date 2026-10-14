@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 
 /** A small, immutable projection of the account's forum store, not a second topic cache. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumChatPreview {
   public static final int LIMIT = 4;
 

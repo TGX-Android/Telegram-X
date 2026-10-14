@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.List;
 
 /** Owns a cancellable list session; no forum identifiers are encoded as generic threads. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicsController extends RecyclerViewController<ForumTopicsController.Arguments> implements ChatListener, CleanupStartupDelegate, NotificationSettingsListener, TdlibCache.SupergroupDataChangeListener {
   public static final class Arguments {
     public final long chatId;

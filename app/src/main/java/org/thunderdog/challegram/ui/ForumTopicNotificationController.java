@@ -37,6 +37,7 @@ import java.util.function.Function;
 import tgx.td.ChatId;
 
 /** A topic target is required; no path from this screen sends SetChatNotificationSettings. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicNotificationController extends ViewController<ForumTopicProfileController.Arguments> implements CleanupStartupDelegate, TdlibCache.SupergroupDataChangeListener {
   private ForumTopicStore.TopicSubscription subscription;
   private TdApi.ForumTopic topic;

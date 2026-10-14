@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- region @MadeByLLM("gpt-6-astra", ref = "PR #1095") -->
   <item type="id" name="controller_forumTopicEdit" />
   <item type="id" name="menu_forumTopicEdit" />
   <item type="id" name="btn_forumTopicSave" />
@@ -11,6 +12,7 @@
   <item type="id" name="forum_profile_retry" />
   <item name="menu_forumSelection" type="id" />
   <item name="forum_tabs_panel" type="id" />
+  <!-- endregion -->
   <item type="id" name="app_root" />
   <item type="id" name="app_container" />
 
@@ -192,11 +194,13 @@
   <item type="id" name="controller_archiveSettings" />
   <item type="id" name="controller_storageSettings" />
   <item type="id" name="controller_messages" />
+  <!-- region @MadeByLLM("gpt-6-astra", ref = "PR #1095") -->
   <item type="id" name="controller_forumTopics" />
   <item type="id" name="menu_forumTopics" />
   <item type="id" name="menu_forumActions" />
   <item type="id" name="btn_openForumTopic" />
   <item type="id" name="btn_cancelForumReply" />
+  <!-- endregion -->
   <item type="id" name="controller_wallpaper" />
   <item type="id" name="controller_wallpaper_preview" />
   <item type="id" name="controller_eventLog" />
@@ -1449,4 +1453,6 @@
   <item type="id" name="btn_playback_speed_1_2" />
   <item type="id" name="btn_playback_speed_1_5" />
   <item type="id" name="btn_playback_speed_2_0" />
+<!-- region @MadeByLLM("gpt-6-astra", ref = "PR #1095") -->
 </resources>
+<!-- endregion -->

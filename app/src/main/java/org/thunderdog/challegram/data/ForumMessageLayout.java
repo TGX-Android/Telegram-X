@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 
 /** Width policy shared by standalone forum topics and forum tabs; widths are local pixels. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumMessageLayout {
   private ForumMessageLayout () { }
 

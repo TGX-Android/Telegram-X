@@ -25,10 +25,14 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.data.ForumNotificationReadScope;
+// endregion
 import org.thunderdog.challegram.tool.UI;
 
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import java.util.List;
+// endregion
 import java.util.concurrent.TimeUnit;
 
 import tgx.td.ChatId;
@@ -79,7 +83,9 @@ public class TdlibNotificationExtras {
     this.areMentions = false;
     this.messageIds = null;
     this.userIds = null;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     this.readForumTopicIds = null;
+    // endregion
   }
 
   public static @Nullable TdlibNotificationExtras parseCategory (Bundle bundle) {
@@ -107,12 +113,16 @@ public class TdlibNotificationExtras {
     boolean mentions = bundle.getBoolean("mentions");
     long[] messageIds = getLongArray(bundle, "message_ids");
     long[] userIds = getLongOrIntArray(bundle, "user_ids");
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     int[] readForumTopicIds = getIntArray(bundle, "read_forum_topic_ids");
+    // endregion
     if (accountId == TdlibAccount.NO_ID || category == -1 || chatId == 0 || maxNotificationId == 0 || notificationGroupId == 0) {
       Log.w("Incomplete notification extras: %s", bundle);
       return null;
     }
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return new TdlibNotificationExtras(accountId, category, chatId, topicId, maxNotificationId, notificationGroupId, needReply, mentions, messageIds, userIds, readForumTopicIds);
+    // endregion
   }
 
   public final int accountId;
@@ -126,10 +136,14 @@ public class TdlibNotificationExtras {
   public final boolean areMentions;
   public final long[] messageIds;
   public final long[] userIds;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   // Null on legacy/unknown scopes; never substitute the navigation/reply topicId.
   private final int[] readForumTopicIds;
+  // endregion
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private TdlibNotificationExtras (int accountId, int category, long chatId, TdApi.MessageTopic topicId, int maxNotificationId, int notificationGroupId, boolean needReply, boolean areMentions, long[] messageIds, long[] userIds, int[] readForumTopicIds) {
+  // endregion
     this.accountId = accountId;
     this.category = category;
     this.chatId = chatId;
@@ -140,7 +154,9 @@ public class TdlibNotificationExtras {
     this.areMentions = areMentions;
     this.messageIds = messageIds != null && messageIds.length > 0 ? messageIds : null;
     this.userIds = userIds != null && userIds.length > 0 ? userIds : null;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     this.readForumTopicIds = readForumTopicIds;
+    // endregion
   }
 
   public static void put (Intent intent, Tdlib tdlib, TdlibNotificationGroup group, boolean needReply, long[] messageIds, long[] userIds) {
@@ -155,7 +171,9 @@ public class TdlibNotificationExtras {
     intent.putExtra("mentions", group.isMention());
     intent.putExtra("message_ids", messageIds);
     intent.putExtra("user_ids", userIds);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     intent.putExtra("read_forum_topic_ids", group.isMention() ? group.getMentionReadForumTopicIds() : null);
+    // endregion
   }
 
   public void setMuteFor (Tdlib tdlib, int muteForSeconds) {
@@ -204,6 +222,7 @@ public class TdlibNotificationExtras {
   public void read (Tdlib tdlib) {
     boolean needToast = tdlib.notifications().isUnknownGroup(notificationGroupId);
     if (areMentions) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       List<TdApi.Function<TdApi.Ok>> requests = ForumNotificationReadScope.requests(chatId, readForumTopicIds);
       ForumNotificationReadScope.Completion completion = new ForumNotificationReadScope.Completion(requests.size());
       for (TdApi.Function<TdApi.Ok> request : requests) {
@@ -220,11 +239,16 @@ public class TdlibNotificationExtras {
         });
       }
       return;
+      // endregion
     }
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     tdlib.readMessages(chatId, messageIds, new TdApi.MessageSourceNotification());
+    // endregion
     hide(tdlib);
     if (needToast) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       UI.showToast(R.string.NotificationRead, Toast.LENGTH_SHORT);
+      // endregion
     }
   }
 

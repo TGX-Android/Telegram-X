@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 
 /** Presentation-only decisions; never changes selection, permissions or batch execution. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 final class ForumTopicActionPresentation {
   private ForumTopicActionPresentation () { }
 

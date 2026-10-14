@@ -14,6 +14,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 /** Local tab commands. A tab selection is never a server-side viewAsTopics preference. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 final class ForumTabsNavigation {
   private ForumTabsNavigation () { }
 

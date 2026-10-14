@@ -114,6 +114,9 @@ import org.thunderdog.challegram.util.NonBubbleEmojiLayout;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+import org.thunderdog.challegram.util.text.FormattedText;
+// endregion
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
@@ -217,7 +220,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected int mergeTime, mergeIndex;
 
   protected int width;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private boolean forumContentWidth;
+  // endregion
   protected int height;
 
   protected String time;
@@ -783,7 +788,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     boolean isChannel = isChannel();
 
     TdApi.Message topMessage = top.getMessage();
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (!Td.equalsTo(topMessage.topicId, msg.topicId) || top.headerDisabled() || top.isSponsoredMessage() != isSponsoredMessage() || (flags & FLAG_SHOW_BADGE) != 0 || !tdlib.isSameSender(topMessage, msg) || !TD.isSameSource(topMessage, msg, forceForwardOrImportInfo()) || topMessage.viaBotUserId != msg.viaBotUserId || !StringUtils.equalsOrBothEmpty(topMessage.authorSignature, msg.authorSignature) || mergeDisabled() || (useBubbles ? top.isOutgoingBubble() != isOutgoingBubble() : top.getMessage().mediaAlbumId != msg.mediaAlbumId || msg.mediaAlbumId != 0)) {
+    // endregion
       setHeaderEnabled(!headerDisabled());
       top.setIsBottom(true);
       return false;
@@ -826,6 +833,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
 
       top.setIsBottom(false);
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      prepareForumTopicButton(false);
+      // endregion
       return true;
     }
 
@@ -864,6 +874,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected int getSmallestMaxContentWidth () {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return Math.min(pRealContentMaxWidth, Screen.smallestSide() - getContentEndPadding() - pRealContentX);
   }
 
@@ -891,6 +902,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private int getContentEndPadding () {
     return forumContentWidth ? Screen.dp(8f) : xPaddingRight;
+    // endregion
   }
 
   protected int getSmallestMaxContentHeight () {
@@ -905,7 +917,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private int computeBubbleLeft () {
     final int x;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (needAvatar() && !isOutgoing() && !useForumHeaderAvatar()) {
+    // endregion
       x = xBubbleLeft1 + Screen.dp(40f);
     } else {
       x = Device.NEED_BIGGER_BUBBLE_OFFSETS ? xBubbleLeft2 : xBubbleLeft1;
@@ -918,10 +932,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private int getAuthorWidth () {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return getAuthorTextWidth() + (hAuthorNameT != null ? getForumHeaderAvatarOffset() : 0);
   }
 
   private int getAuthorTextWidth () {
+    // endregion
     return hAuthorNameT != null ?
       hAuthorNameT.getWidth() + (hAuthorEmojiStatus != null ? hAuthorEmojiStatus.getWidth(Screen.dp(3)) : 0) + (hAuthorChatMark != null ? hAuthorChatMark.getWidth() + Screen.dp(16f) : 0) :
       needName(true) ? -Screen.dp(3f) : 0;
@@ -937,7 +953,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (needName(true) && (flags & FLAG_HEADER_ENABLED) != 0) {
         int nameWidth = getAuthorWidth();
         if (needAdminSign() && hAdminNameT != null) {
+          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
           nameWidth += hAdminNameT.getWidth() + (useForumHeaderAvatar() ? Screen.dp(8f) : 0);
+          // endregion
         }
         if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
           nameWidth += isChannelHeaderCounter.getScaledWidth(Screen.dp(5));
@@ -1209,7 +1227,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private static int getBubbleForwardOffset () {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return Screen.dp(24f);
+    // endregion
   }
 
   private int getBubbleReplyOffset () {
@@ -1226,6 +1246,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public void onUpdateTextSize () {
     messageReactions.onUpdateTextSize();
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    prepareForumTopicButton(false);
+    // endregion
   }
 
   public void prepareLayout () {
@@ -1237,21 +1260,25 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public void buildLayout (int width) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     final boolean forumContentWidth = ForumMessageLayout.useWideContent(messagesController().isForumTabsHost(),
       messagesController().getMessageTopicId(), isEventLog(), isThreadHeader());
     if (width == 0 || this.width == width && this.forumContentWidth == forumContentWidth) {
+      prepareForumTopicButton(false);
+    // endregion
       return;
     }
 
     this.width = width;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     this.forumContentWidth = forumContentWidth;
-
-    if (hasForumTopicButton() && !topicObserverRegistered) withTopicInfo(inPlace -> postInvalidate());
-    clearForumTopicButton();
+    // endregion
 
     if (useBubbles()) {
       pRealContentX = computeBubbleLeft();
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       pRealContentMaxWidth = width - (Device.NEED_BIGGER_BUBBLE_OFFSETS ? xBubbleLeft2 : xBubbleLeft1) - computeBubbleLeft() - Screen.dp(ForumMessageLayout.bubbleGutterDp(forumContentWidth, isThreadHeader()));
+      // endregion
 
       if (useForward()) {
         pRealContentX += Screen.dp(11f);
@@ -1271,7 +1298,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         pRealContentX = xfContentLeft;
         pContentY = getForwardTop() + getForwardHeaderHeight();
       }
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       pRealContentMaxWidth = width - getContentEndPadding() - pRealContentX;
+      // endregion
       if (isPsa()) {
         pContentY += getPsaTitleHeight();
       }
@@ -1326,6 +1355,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     height = computeHeight();
 
     flags |= FLAG_LAYOUT_BUILT;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    prepareForumTopicButton(false);
+    // endregion
   }
 
   protected int getContentMaxWidth () {
@@ -2032,8 +2064,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
     }
 
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     drawForumTopicButton(view, c);
 
+    // endregion
     if (useBubbles && !needViewGroup()) {
       drawBackground(view, c);
     }
@@ -2136,16 +2170,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (needName(true)) {
         int left = useBubbles ? getActualLeftContentEdge() + xBubblePadding + xBubblePaddingSmall : xContentLeft;
         int top = useBubbles ? topContentEdge + xBubbleNameTop : xNameTop + getHeaderPadding();
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         final boolean headerAvatar = useForumHeaderAvatar();
         final boolean rtlHeader = headerAvatar && Lang.rtl();
         if (headerAvatar) {
           left = ForumMessageLayout.headerAuthorLeft(rtlHeader, getInternalBubbleStartX(), getInternalBubbleEndX(),
             getForumHeaderAvatarSize(), Screen.dp(8f), getAuthorTextWidth());
         }
+        // endregion
         boolean isPsa = isPsa() && forceForwardOrImportInfo();
         if (hAuthorNameT != null) {
+          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
           int newTop = headerAvatar ? topContentEdge + xBubblePadding + (getForumHeaderAvatarSize() - hAuthorNameT.getLineHeight(false)) / 2 :
             useBubbles ? topContentEdge + Screen.dp(9f) : getHeaderPadding() + Screen.dp(1f);
+          // endregion
           if (isPsa && hPsaTextT != null) {
             hPsaTextT.draw(c, left, left + hPsaTextT.getWidth(), 0, newTop);
             newTop += getPsaTitleHeight();
@@ -2167,16 +2205,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         int right = getActualRightContentEdge() - xBubblePadding - xBubblePaddingSmall;
         if (useBubbles && needAdminSign() && hAdminNameT != null) {
           right -= hAdminNameT.getWidth();
+          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
           int adminLeft = headerAvatar ? ForumMessageLayout.headerTrailingLeft(rtlHeader,
             getInternalBubbleStartX(), getInternalBubbleEndX(), hAdminNameT.getWidth()) : right;
           int adminTop = headerAvatar ? getForumHeaderAvatarTop() + (getForumHeaderAvatarSize() - hAdminNameT.getLineHeight(false)) / 2 : top - Screen.dp(12f);
           hAdminNameT.draw(c, adminLeft, adminTop);
+          // endregion
         }
         if (useBubbles && needDrawChannelIconInHeader() && hAuthorNameT != null) {
+          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
           int counterX = rtlHeader ? getInternalBubbleStartX() + (hAdminNameT != null ? hAdminNameT.getWidth() : 0) + Screen.dp(6f) : right - Screen.dp(6f);
           int counterY = headerAvatar ? getForumHeaderAvatarTop() + getForumHeaderAvatarSize() / 2 : top - Screen.dp(5f);
           int counterGravity = headerAvatar ? (rtlHeader ? Gravity.LEFT : Gravity.RIGHT) : Gravity.RIGHT | Gravity.BOTTOM;
           isChannelHeaderCounter.draw(c, counterX, counterY, counterGravity, 1f, view, isOutgoing() ? ColorId.bubbleOut_time : ColorId.bubbleIn_time, isChannelHeaderCounterLastDrawRect);
+          // endregion
         }
       }
     }
@@ -2923,7 +2965,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean shouldIgnoreTap (MotionEvent e) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return !(hasForumTopicButton() && forumTopicButtonBounds.contains(e.getX(), e.getY())) && e.getY() < findTopEdge();
+    // endregion
   }
 
   private static boolean checkClickOnRect (RectF rectF, float x, float y, float accuracy) {
@@ -2934,7 +2978,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private int getClickType (MessageView view, float x, float y) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (hasForumTopicButton() && forumTopicButtonBounds.contains(x, y)) return CLICK_TYPE_FORUM_TOPIC;
+    // endregion
     if (isTranslated()) {
       if (checkClickOnRect(isTranslatedCounterLastDrawRect, x, y, Screen.dp(4))) {
         return CLICK_TYPE_TRANSLATE_MESSAGE_ICON;
@@ -2978,10 +3024,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     @Override
     public void onClickAt (View view, float x, float y) {
       switch (clickType) {
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         case CLICK_TYPE_FORUM_TOPIC: {
           openForumTopic();
           break;
         }
+        // endregion
         case CLICK_TYPE_TRANSLATE_MESSAGE_ICON: {
           openLanguageSelectorInlineMode();
           break;
@@ -3100,7 +3148,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int CLICK_TYPE_MESSAGE_RESTRICTED_ICON = 5;
   private static final int CLICK_TYPE_MESSAGE_EDITED_ICON = 6;
   private static final int CLICK_TYPE_CHANNEL_MESSAGE_SENDER_ICON = 7;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private static final int CLICK_TYPE_FORUM_TOPIC = 8;
+  // endregion
 
   private int clickType = CLICK_TYPE_NONE;
 
@@ -3418,12 +3468,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       // header part
       int maxWidth = (allowMessageHorizontalExtend() ? pRealContentMaxWidth : getContentWidth()) + getBubblePaddingRight() + getBubblePaddingRight() - (xBubblePadding + xBubblePaddingSmall) * 2;
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       maxWidth -= getForumHeaderAvatarOffset();
+      // endregion
 
       if (needAdminSign()) {
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         int adminMaxWidth = useForumHeaderAvatar() ? Math.max(1, maxWidth / 3) : maxWidth;
         hAdminNameT = new Text.Builder(getAdministratorSign(), adminMaxWidth, getTimeTextStyleProvider(), getDecentColorSet()).singleLine().build();
         maxWidth -= hAdminNameT.getWidth() + (useForumHeaderAvatar() ? Screen.dp(8f) : 0);
+        // endregion
       } else {
         hAdminNameT = null;
       }
@@ -3432,7 +3486,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (needName(true) && maxWidth > 0) {
         if (!forceForwardOrImportInfo() && sender.hasChatMark()) {
           hAuthorChatMark = makeChatMark(maxWidth);
+          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
           maxWidth -= hAuthorChatMark.getWidth() + (useForumHeaderAvatar() ? Screen.dp(16f) : 0);
+          // endregion
         }
         isChannelHeaderCounter.showHide(needDrawChannelIconInHeader(), false);
         if (needDrawChannelIconInHeader()) {
@@ -4263,11 +4319,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void layoutAvatar (MessageView view, AvatarReceiver receiver) {
     int left, top, size;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (useForumHeaderAvatar()) {
       size = getForumHeaderAvatarSize();
       left = ForumMessageLayout.headerAvatarLeft(Lang.rtl(), getInternalBubbleStartX(), getInternalBubbleEndX(), size);
       top = getForumHeaderAvatarTop();
     } else if (useBubbles()) {
+    // endregion
       left = xBubbleAvatarLeft;
       top = computeBubbleTop();
       size = xBubbleAvatarRadius * 2;
@@ -4276,7 +4334,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       left = xAvatarLeft;
       size = xAvatarRadius * 2;
     }
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (Lang.rtl() && useBubbles() && !useForumHeaderAvatar()) {
+    // endregion
       left = view.getMeasuredWidth() - left - size;
     }
     receiver.setBounds(left, top, left + size, top + size);
@@ -4342,8 +4402,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
 
   public final void requestAllTextMedia (MessageView view) {
-    if (forumTopicButton != null) forumTopicButton.requestMedia(view.getForumTopicReceiver());
-    else view.getForumTopicReceiver().clear();
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    prepareForumTopicButton(false);
+    requestForumTopicMedia(view.getForumTopicReceiver());
+    // endregion
     requestTextMedia(view.getTextMediaReceiver());
     requestAuthorTextMedia(view.getEmojiStatusReceiver());
 
@@ -4486,7 +4548,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         result = 0;
       }
     }
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     result += forumTopicButtonHeight();
+    // endregion
     return (flags & FLAG_HEADER_ENABLED) != 0 && !useBubbles() ? xHeaderPadding + result : result;
   }
 
@@ -4823,6 +4887,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
     }
     return msg.unreadReactions != null && msg.unreadReactions.length > 0;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   }
 
   public final boolean containsUnreadPollVotes () {
@@ -4837,6 +4902,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       TdApi.Message message = getMessage(messageId);
       if (message != null) message.containsUnreadPollVotes = unread;
     }
+  // endregion
   }
 
   public final boolean containsUnreadMention () {
@@ -5278,10 +5344,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       setChatData(chat, messageThread);
     }
     long lastReadMessageId;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     ForumTopicContext forum = messagesController().getForumTopicContext();
     if (forum != null) {
       lastReadMessageId = msg.isOutgoing ? forum.lastReadOutbox() : forum.lastReadInbox();
     } else if (messageThread != null) {
+    // endregion
       lastReadMessageId = msg.isOutgoing ? messageThread.getLastReadOutboxMessageId() : messageThread.getLastReadInboxMessageId();
     } else if (chat != null) {
       lastReadMessageId = msg.isOutgoing ? chat.lastReadOutboxMessageId : chat.lastReadInboxMessageId;
@@ -5448,8 +5516,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.flags = flags;
 
     if (isOutgoing() && !isSending()) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       ForumTopicContext forum = messagesController().getForumTopicContext();
       setUnread(forum != null ? forum.lastReadOutbox() : messageThread != null ? messageThread.getLastReadOutboxMessageId() : chat.lastReadOutboxMessageId);
+      // endregion
     }
 
     /*if (replyData != null && TD.isMultiChat(chat)) {
@@ -6241,8 +6311,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return useForward() ? xBubblePadding + xBubblePaddingSmall : getBubbleContentPadding();
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private int getBubbleNameHeight () {
     return Screen.dp(useForumHeaderAvatar() ? 32f : 24f);
+  // endregion
   }
 
   private static int getPsaTitleHeight () {
@@ -6342,20 +6414,34 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       if ((flags & FLAG_LAYOUT_BUILT) != 0) {
         buildBubble(true);
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        prepareForumTopicButton(false);
+        // endregion
       }
     }
   }
 
   // Destructor
 
-  private boolean isDestroyed;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  private volatile boolean isDestroyed;
+  // endregion
 
   public final void onDestroy () {
     isDestroyed = true;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     clearForumTopicButton();
-    if (topicObserverRegistered) {
-      tdlib.topics().stopObserving(forumTopicKey, this);
-      topicObserverRegistered = false;
+    if (forumTopicKey != null) {
+      boolean stopObserving;
+      synchronized (forumTopicKey) {
+        stopObserving = topicObserverRegistered;
+        topicObserverRegistered = false;
+        postponedTopicInfoCallbacks = null;
+      }
+      if (stopObserving) {
+        tdlib.topics().stopObserving(forumTopicKey, this);
+      }
+    // endregion
     }
     stopHotTimer();
     if (forwardInfo != null)
@@ -7717,6 +7803,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
     }
     updateInteractionInfo(true);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    if (forumTopicKey != null) {
+      prepareForumTopicButton(true);
+      updated |= hasForumTopicButton();
+    }
+    // endregion
     if (onLocaleChange()) {
       updated = true;
     }
@@ -9984,7 +10076,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // Topics
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private Text forumTopicButton;
+  private String forumTopicButtonName;
+  private long forumTopicButtonEmojiId;
+  private boolean forumTopicButtonClosed;
+  private int forumTopicButtonMaxWidth, forumTopicButtonTextSize;
   private final RectF forumTopicButtonBounds = new RectF();
 
   public final boolean hasForumTopicButton () {
@@ -9998,7 +10095,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final String forumTopicLabel () {
-    TdApi.ForumTopicInfo info = topicInfo;
+    TdApi.ForumTopicInfo info = findTopicInfo();
     return info != null ? info.name : Lang.getString(R.string.ForumTopicTitle);
   }
 
@@ -10010,24 +10107,85 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private void clearForumTopicButton () {
-    if (forumTopicButton != null) forumTopicButton.performDestroy();
+    if (forumTopicKey == null) {
+      return;
+    }
+    if (!UI.inUiThread()) {
+      tdlib.ui().post(this::clearForumTopicButton);
+      return;
+    }
+    Text previous = forumTopicButton;
     forumTopicButton = null;
+    forumTopicButtonName = null;
     forumTopicButtonBounds.setEmpty();
+    if (previous != null) {
+      previous.performDestroy();
+      performWithViews(view -> view.getForumTopicReceiver().clear());
+      invalidate();
+    }
+  }
+
+  private void requestForumTopicMedia (ComplexReceiver receiver) {
+    if (!isDestroyed && hasForumTopicButton() && forumTopicButton != null && forumTopicButton.hasMedia()) {
+      forumTopicButton.requestMedia(receiver);
+    } else {
+      receiver.clear();
+    }
+  }
+
+  private void prepareForumTopicButton (boolean force) {
+    if (forumTopicKey == null) {
+      return;
+    }
+    if (!UI.inUiThread()) {
+      runOnUiThreadOptional(() -> prepareForumTopicButton(force));
+      return;
+    }
+    if (isDestroyed || width <= 0 || !hasForumTopicButton()) {
+      clearForumTopicButton();
+      return;
+    }
+
+    // A cached topic may arrive synchronously; read its snapshot after subscribing.
+    withTopicInfo(null);
+    TdApi.ForumTopicInfo info = findTopicInfo();
+    String name = info != null ? info.name : Lang.getString(R.string.ForumTopicTitle);
+    long emojiId = info != null && info.icon != null ? info.icon.customEmojiId : 0;
+    boolean closed = info != null && info.isClosed;
+    int maxWidth = Math.max(1, width - Screen.dp(56));
+    int textSize = getSmallerTextStyleProvider().getTextSizeInPixels();
+    if (!force && forumTopicButton != null && StringUtils.equalsOrBothEmpty(forumTopicButtonName, name) &&
+        forumTopicButtonEmojiId == emojiId && forumTopicButtonClosed == closed &&
+        forumTopicButtonMaxWidth == maxWidth && forumTopicButtonTextSize == textSize) {
+      return;
+    }
+
+    clearForumTopicButton();
+    String label = closed ? Lang.getString(R.string.format_ivRelatedInfo, name, Lang.getString(R.string.ForumTopicClosed)) : name;
+    FormattedText formatted = FormattedText.concat(" ", emojiId != 0 ? FormattedText.customEmoji(tdlib, "*", emojiId) : new FormattedText("#"), new FormattedText(label));
+    forumTopicButton = new Text.Builder(formatted, maxWidth, getSmallerTextStyleProvider(), TextColorSets.Regular.NORMAL,
+      (text, media) -> {
+        if (!isDestroyed && text == forumTopicButton) {
+          performWithViews(view -> {
+            requestForumTopicMedia(view.getForumTopicReceiver());
+            view.invalidate();
+          });
+        }
+      }).singleLine().build();
+    forumTopicButton.setViewProvider(currentViews);
+    forumTopicButtonName = name;
+    forumTopicButtonEmojiId = emojiId;
+    forumTopicButtonClosed = closed;
+    forumTopicButtonMaxWidth = maxWidth;
+    forumTopicButtonTextSize = textSize;
+    performWithViews(view -> requestForumTopicMedia(view.getForumTopicReceiver()));
+    invalidate();
   }
 
   private void drawForumTopicButton (MessageView view, Canvas canvas) {
-    if (!hasForumTopicButton()) { forumTopicButtonBounds.setEmpty(); return; }
-    if (forumTopicButton == null) {
-      TdApi.ForumTopicInfo info = topicInfo;
-      long emojiId = info != null && info.icon != null ? info.icon.customEmojiId : 0;
-      String label = (emojiId != 0 ? "* " : "# ") + forumTopicLabel() + (info != null && info.isClosed ? " · " + Lang.getString(R.string.ForumTopicClosed) : "");
-      TdApi.FormattedText formatted = new TdApi.FormattedText(label, emojiId != 0 ?
-        new TdApi.TextEntity[] {new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(emojiId))} : null);
-      forumTopicButton = new Text.Builder(tdlib, formatted, null, Math.max(1, width - Screen.dp(56)), getSmallerTextStyleProvider(), TextColorSets.Regular.NORMAL,
-        (text, media) -> performWithViews(v -> {
-          if (text == forumTopicButton) { text.requestMedia(v.getForumTopicReceiver()); v.invalidate(); }
-        })).singleLine().build();
-      forumTopicButton.requestMedia(view.getForumTopicReceiver());
+    if (isDestroyed || !hasForumTopicButton() || forumTopicButton == null) {
+      forumTopicButtonBounds.setEmpty();
+      return;
     }
     int height = forumTopicButtonHeight();
     int top = getHeaderPadding() - height;
@@ -10038,31 +10196,59 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     forumTopicButton.draw(canvas, left + Screen.dp(12), top + (height - forumTopicButton.getHeight()) / 2, null, 1f, view.getForumTopicReceiver());
   }
 
+  // endregion
   private List<RunnableBool> postponedTopicInfoCallbacks;
 
-  protected final void withTopicInfo (RunnableBool after) {
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  private @Nullable TdApi.ForumTopicInfo findTopicInfo () {
+  // endregion
+    if (forumTopicKey == null) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      return null;
+    }
+    synchronized (forumTopicKey) {
+      return topicInfo;
+    }
+  }
+
+  protected final void withTopicInfo (@Nullable RunnableBool after) {
     if (forumTopicKey == null || isDestroyed) {
+      // endregion
       return;
     }
     boolean needRegister;
     boolean hasTopicInfo;
     synchronized (forumTopicKey) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      if (isDestroyed) {
+        return;
+      }
+      // endregion
       needRegister = !topicObserverRegistered;
       if (needRegister) {
         topicObserverRegistered = true;
       }
       hasTopicInfo = topicInfo != null;
-      if (!hasTopicInfo) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      if (!hasTopicInfo && after != null) {
         if (postponedTopicInfoCallbacks == null) postponedTopicInfoCallbacks = new ArrayList<>();
         postponedTopicInfoCallbacks.add(after);
       }
+      // endregion
     }
-    if (hasTopicInfo) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    if (hasTopicInfo && after != null && !isDestroyed) {
+    // endregion
       after.runWithBool(true);
     }
     if (needRegister) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       // Register callbacks before observing: a warm-cache result can arrive synchronously.
       tdlib.topics().findAndObserve(forumTopicKey, this);
+      if (isDestroyed) {
+        tdlib.topics().stopObserving(forumTopicKey, this);
+      // endregion
+      }
     }
   }
 
@@ -10078,10 +10264,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private void setTopicInfo (TdApi.ForumTopicInfo topicInfo, boolean inPlace) {
+  // endregion
     List<RunnableBool> postponedCallbacks;
     synchronized (forumTopicKey) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      if (isDestroyed) return;
       if (this.topicInfo == topicInfo) return; // Store snapshots never mutate topic info in place.
+      // endregion
       if (this.topicInfo == null) {
         postponedCallbacks = this.postponedTopicInfoCallbacks;
         this.postponedTopicInfoCallbacks = null;
@@ -10090,18 +10281,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       this.topicInfo = topicInfo;
     }
-    tdlib.ui().post(() -> {
-      if (!isDestroyed) {
-        clearForumTopicButton();
-        postInvalidate();
-      }
-    });
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    runOnUiThreadOptional(() -> prepareForumTopicButton(false));
+    // endregion
     if (postponedCallbacks != null) {
       for (RunnableBool postponedCallback : postponedCallbacks) {
-        postponedCallback.runWithBool(inPlace);
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        if (!isDestroyed) postponedCallback.runWithBool(inPlace);
+        // endregion
       }
     }
-    onTopicInfoUpdated();
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    if (!isDestroyed) onTopicInfoUpdated();
+    // endregion
   }
 
   @AnyThread
@@ -10111,22 +10303,28 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @Override
   public final void onTopicFound (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.ForumTopic topic, boolean inPlace) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (isDestroyed || !key.equals(forumTopicKey)) return;
     setTopicInfo(topic.info, inPlace);
+    // endregion
   }
 
   @Override
   public final void onTopicInfoUpdated (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.ForumTopicInfo topicInfo) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (isDestroyed || !key.equals(forumTopicKey)) return;
     setTopicInfo(topicInfo, false);
+    // endregion
   }
 
   @Override
   public final void onTopicUpdated (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.UpdateForumTopic update) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (isDestroyed || !key.equals(forumTopicKey)) return;
     // The update is partial; consume the store's reconciled value instead of inventing metadata.
     TdlibForumTopicManager.Entry entry = tdlib.topics().find(key);
     if (entry != null && entry.value != null) setTopicInfo(entry.value.info, false);
     else tdlib.topics().retryTopic(key);
+    // endregion
   }
 }

@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 /** One visible chat row. Owns rendering/subscriptions, never owns forum records or issues requests from draw. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 final class ForumChatTopics {
   private final ChatView view;
   private final Tdlib tdlib;
@@ -45,6 +46,7 @@ final class ForumChatTopics {
   private List<ForumChatPreview.Item> items = Collections.emptyList();
   private final ArrayList<Text> labels = new ArrayList<>();
   private final ArrayList<Text> icons = new ArrayList<>();
+  private final ArrayList<String> initials = new ArrayList<>();
   private final ArrayList<Integer> offsets = new ArrayList<>();
   private Text placeholder;
   private int width, mode, counterWidth;
@@ -159,7 +161,7 @@ final class ForumChatTopics {
     this.width = width;
     this.mode = mode;
     for (Text icon : icons) if (icon != null) icon.performDestroy();
-    labels.clear(); icons.clear(); offsets.clear();
+    labels.clear(); icons.clear(); initials.clear(); offsets.clear();
     receiver.clear();
     placeholder = null;
     if (chat == null || !chat.canShowForumPreview()) return;
@@ -181,6 +183,7 @@ final class ForumChatTopics {
       Text label = new Text.Builder(name, nameWidth, Paints.robotoStyleProvider(size), TextColorSets.Regular.LIGHT)
         .singleLine().ignoreNewLines().noClickable().build();
       labels.add(label);
+      initials.add(item.general ? "#" : item.name.isEmpty() ? "·" : item.name.substring(0, item.name.offsetByCodePoints(0, 1)));
       Text emoji = null;
       if (item.customEmojiId != 0) {
         final int slot = icons.size();
@@ -227,9 +230,8 @@ final class ForumChatTopics {
         tail.reset(); tail.moveTo(iconX + Screen.dp(2), iconY + iconSize - Screen.dp(5));
         tail.lineTo(iconX + Screen.dp(2), iconY + iconSize); tail.lineTo(iconX + Screen.dp(7), iconY + iconSize - Screen.dp(3)); tail.close();
         c.drawPath(tail, paint);
-        String letter = item.general ? "#" : item.name.isEmpty() ? "·" : item.name.substring(0, item.name.offsetByCodePoints(0, 1));
         paint.setColor(0xffffffff); paint.setTypeface(Fonts.getRobotoMedium()); paint.setTextSize(Screen.dp(10)); paint.setTextAlign(Paint.Align.CENTER);
-        c.drawText(letter, iconX + iconSize / 2, iconY + (iconSize - Screen.dp(2) - paint.ascent() - paint.descent()) / 2, paint);
+        c.drawText(initials.get(i), iconX + iconSize / 2, iconY + (iconSize - Screen.dp(2) - paint.ascent() - paint.descent()) / 2, paint);
       }
       int textX = logicalX + Math.round(iconSize) + Screen.dp(4);
       if (rtl) textX = width - textX - label.getWidth();

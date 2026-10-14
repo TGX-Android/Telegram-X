@@ -8,6 +8,7 @@ import java.util.List;
 import tgx.td.Td;
 
 /** Pure topic-material contract. Counts are hints, never proof that a category is empty. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicMedia {
   private ForumTopicMedia () { }
 

@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 /** A one-transaction projection of already visible avatars. No animator, account or image cache. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumRailTransition {
   public interface Drawing { void draw (Canvas canvas, float decorations); }
   public interface Visibility { void setHidden (boolean hidden); }
@@ -101,7 +102,8 @@ public final class ForumRailTransition {
   public void draw (Canvas canvas, float progress) {
     if (closed) return;
     float p = ForumRailLayout.progress(progress);
-    for (Pair pair : pairs) {
+    for (int i = 0; i < pairs.size(); i++) {
+      Pair pair = pairs.get(i);
       Avatar from = pair.from, to = pair.to;
       if (p == 0f) {
         if (from != null) from.draw(canvas, from.x, from.y, from.radius, 1f, 0f);

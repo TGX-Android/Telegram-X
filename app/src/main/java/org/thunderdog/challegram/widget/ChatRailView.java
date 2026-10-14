@@ -37,6 +37,7 @@ import java.util.List;
 import me.vkryl.core.lambda.RunnableLong;
 
 /** A paged projection of the existing account/folder list, not a second chat cache. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ChatRailView extends FrameLayout implements ChatListListener, NotificationSettingsListener {
   private final Tdlib tdlib;
   private final TdlibChatListSlice slice;
@@ -282,8 +283,13 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
       boolean muted = !tdlib.chatNotificationsEnabled(chatId);
       int unreadCount = chat != null ? tdlib.topics().unreadCount(chat) : 0;
       counter.setCount(unreadCount, muted, false);
-      setContentDescription((chat != null ? chat.title : "") + (muted ? ", " + Lang.getString(R.string.ForumRailMuted) : "") +
-        (unreadCount > 0 ? ", " + Lang.getString(tdlib.isForum(chatId) ? R.string.ForumRailUnreadTopics : R.string.ForumRailUnread, unreadCount) : ""));
+      ArrayList<String> description = new ArrayList<>();
+      if (chat != null) description.add(chat.title);
+      if (muted) description.add(Lang.getString(R.string.ForumRailMuted));
+      if (unreadCount > 0) {
+        description.add(Lang.getString(tdlib.isForum(chatId) ? R.string.ForumRailUnreadTopics : R.string.ForumRailUnread, unreadCount));
+      }
+      setContentDescription(android.text.TextUtils.join(Lang.getConcatSeparator(), description));
       invalidate();
     }
     void startUnreadUpdates () {

@@ -723,12 +723,14 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_INVOICE, 0, Lang.getString(R.string.PaymentRefunded, tdlib.senderName(refunded.ownerId), amount), true);
       }
 
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
       case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
       case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
       case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
         return new ContentPreview(null, ForumPresentation.servicePreview(message.content));
 
+      // endregion
       // Handled by getSimpleContentPreview
       case TdApi.MessageLocation.CONSTRUCTOR:
       case TdApi.MessageLiveLocation.CONSTRUCTOR:

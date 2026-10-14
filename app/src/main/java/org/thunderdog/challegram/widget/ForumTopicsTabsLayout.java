@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.widget;
 
 /** Pure, widget-local geometry. The host owns the full-width header and composer. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicsTabsLayout {
   private ForumTopicsTabsLayout () { }
 

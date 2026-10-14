@@ -90,9 +90,11 @@ import me.vkryl.core.util.FilteredIterator;
 import tgx.bridge.TokenRetrieverListener;
 import tgx.td.JSON;
 import tgx.td.Td;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import tgx.td.ChatId;
 import org.thunderdog.challegram.data.ForumHistory;
 import org.thunderdog.challegram.data.ForumNavigation;
+// endregion
 
 public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   // Util
@@ -217,6 +219,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (StringUtils.isEmpty(text))
       return;
     performSyncTask(context, extras.accountId, "reply", (tdlib, onDone) -> {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       if (ChatId.isSupergroup(extras.chatId) && !ForumHistory.isForum(extras.topicId)) {
         // Push-only notifications have no topic field in this TDLib schema. Resolve the
         // reply target; failure is safer than silently sending to General.
@@ -228,8 +231,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
             if (onDone != null) onDone.run();
           } else {
             sendExternalReply(tdlib, text, extras, topic != null ? topic : extras.topicId, onDone);
+      // endregion
           }
         });
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       } else {
         sendExternalReply(tdlib, text, extras, extras.topicId, onDone);
       }
@@ -266,8 +271,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         if (onDone != null) {
           onDone.run();
         }
+      // endregion
       });
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     });
+    // endregion
   }
 
   // Singleton

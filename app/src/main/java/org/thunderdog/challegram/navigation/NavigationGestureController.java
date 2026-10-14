@@ -107,11 +107,13 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
     if (navigation.isDestroyed() || navigation.isAnimating())
       return false;
 
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (navigation.isForumRailTouch(event.getX(0), event.getY(0))) {
       listenSlidingBack = false;
       return false;
     }
 
+    // endregion
     startX = event.getX(0);
     startY = event.getY(0);
 
@@ -138,7 +140,9 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
   private boolean canSlideBack (ViewController<?> c, float x, float y) {
     int stackSize = navigation.getStackSize();
     if (navigation.swipeNavigationEnabled() && stackSize > 0 && c != null){
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       if (c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode()) && c.canSlideBackFrom(navigation, navigation.contentTouchX(x, y), y)) {
+      // endregion
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
           RootFrameLayout rootFrameLayout = UI.getContext(navigation.getContext()).getRootView();
           Rect gestureInsets = rootFrameLayout.getSystemGesturesInsets();

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import tgx.td.Td;
 
 /** Pure history routing rules shared by the loader, albums and live updates. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumHistory {
   private ForumHistory () { }
 

@@ -496,6 +496,7 @@ public class TGMessageMedia extends TGMessage {
     }
 
     if (wrapper != null) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       // Measure the caption first, then let its bubble width expand the media as well.
       // Bounded width fitting keeps the height cap: receivers crop sources, never stretch.
       wrapper.prepare(ForumMessageLayout.captionMaxWidth(useForumContentWidth(), useBubbles(),
@@ -505,12 +506,15 @@ public class TGMessageMedia extends TGMessage {
       if (mediaWidth > mosaicWrapper.getWidth()) {
         mosaicWrapper.build(mediaWidth, maxHeight, minWidth, minHeight, MosaicWrapper.MODE_FIT_WIDTH_BOUNDED, false);
       }
+      // endregion
     }
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   }
 
   private int getCaptionHorizontalPadding () {
     // Forwarded bubbles already include the text inset in their outer content padding.
     return useForumContentWidth() && useForward() ? 0 : xBubblePadding * 2;
+  // endregion
   }
 
   @Override
@@ -815,8 +819,10 @@ public class TGMessageMedia extends TGMessage {
     int mosaicWidth = mosaicWrapper != null ? mosaicWrapper.getWidth() : 0;
     return wrapper == null ?
       mosaicWidth :
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       ForumMessageLayout.mediaContentWidth(useForumContentWidth(), useBubbles(),
         mosaicWidth, wrapper.getWidth(), getCaptionHorizontalPadding());
+      // endregion
   }
 
   @Override

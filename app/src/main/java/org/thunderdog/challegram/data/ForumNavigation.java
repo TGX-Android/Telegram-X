@@ -7,6 +7,7 @@ import org.drinkless.tdlib.TdApi;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Pure routing rules. A null topic denotes the whole chat, never General. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumNavigation {
   private ForumNavigation () { }
 

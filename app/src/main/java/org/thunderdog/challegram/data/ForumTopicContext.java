@@ -7,6 +7,7 @@ import org.drinkless.tdlib.TdApi;
 import tgx.td.MessageId;
 
 /** One open topic. A new instance is also the epoch token for asynchronous UI work. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicContext {
   public final long chatId;
   public final int topicId;

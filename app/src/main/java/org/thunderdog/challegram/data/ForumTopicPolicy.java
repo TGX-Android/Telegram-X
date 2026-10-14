@@ -5,6 +5,7 @@ import org.drinkless.tdlib.TdApi;
 import java.util.List;
 
 /** Pure UI policy for the pinned TDLib contract. The server remains authoritative. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicPolicy {
   private ForumTopicPolicy () { }
   public static final int[] ICON_COLORS = {0x6FB9F0, 0xFFD67E, 0xCB86DB, 0x8EEE98, 0xFF93B2, 0xFB6F5F};

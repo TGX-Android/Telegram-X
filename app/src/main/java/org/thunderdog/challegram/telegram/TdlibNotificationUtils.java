@@ -229,14 +229,17 @@ public class TdlibNotificationUtils {
   }
 
   static PendingIntent newIntent (int accountId, long forLocalChatId, long specificMessageId) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return newIntent(accountId, forLocalChatId, specificMessageId, null);
   }
 
   static PendingIntent newIntent (int accountId, long forLocalChatId, long specificMessageId, @Nullable TdApi.MessageTopic topic) {
     return PendingIntent.getActivity(UI.getContext(), 0, newCoreIntent(accountId, forLocalChatId, specificMessageId, topic), PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(true));
+    // endregion
   }
 
   static Intent newCoreIntent (int accountId, long forLocalChatId, long specificMessageId) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return newCoreIntent(accountId, forLocalChatId, specificMessageId, null);
   }
 
@@ -244,6 +247,7 @@ public class TdlibNotificationUtils {
     Intent intent = forLocalChatId != 0 ? Intents.valueOfLocalChatId(accountId, forLocalChatId, specificMessageId) : Intents.valueOfMain(accountId);
     Td.put(intent, "topic_id", topic);
     return intent;
+    // endregion
   }
 
   public static class NotificationInitializationFailedError extends RuntimeException {

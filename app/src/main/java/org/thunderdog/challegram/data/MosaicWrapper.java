@@ -330,7 +330,9 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
       MosaicItemInfo info = new MosaicItemInfo(this, item, 0, width, height, (float) width / (float) height);
 
       switch (fitMode) {
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         case MODE_FIT_WIDTH_BOUNDED:
+        // endregion
         case MODE_FIT_WIDTH: {
           float scale = (float) layoutWidth / (float) width;
           width = layoutWidth;
@@ -744,6 +746,7 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
     for (MosaicItemInfo info : itemInfos) {
       mosaicWidth = Math.max(mosaicWidth, Math.round(info.x + info.width));
       mosaicHeight = Math.max(mosaicHeight, Math.round(info.y + info.height));
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     }
 
     if (fitMode == MODE_FIT_WIDTH_BOUNDED && mosaicWidth > 0 && mosaicHeight > 0) {
@@ -765,17 +768,20 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
     }
 
     for (MosaicItemInfo info : itemInfos) {
+    // endregion
       info.target.buildContent(info.width, info.height);
       info.target.setImageScaling(Math.min(info.width, info.height));
       info.target.setNeedRound(info.needTopLeftRounding(), info.needTopRightRounding(), info.needBottomRightRounding(), info.needBottomLeftRounding());
     }
 
     return setMosaic(mosaicWidth, mosaicHeight, itemInfos, fitMode, animateChanges, isRetry);
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   }
 
   private static int fitCellEdge (int edge, int sourceSize, int targetSize, float spacing, boolean end) {
     float halfGap = spacing * .5f * (end ? 1f : -1f);
     return Math.round((edge + halfGap) * targetSize / sourceSize - halfGap);
+  // endregion
   }
 
   private static float multiHeight (float[] ratios, int start, int end, int maxWidth, float spacing) {
@@ -824,8 +830,10 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
   public static final int MODE_FIT_AS_IS = 0;
   public static final int MODE_FIT_WIDTH = 1;
   public static final int MODE_FIT_HEIGHT = 2;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   /** Fill the width with center-cropped cells while keeping the requested height cap. */
   public static final int MODE_FIT_WIDTH_BOUNDED = 3;
+  // endregion
 
   private int setMosaic (int width, int height, MosaicItemInfo[] items, int fitMode, boolean animate, boolean isRetry) {
     if (!isRetry) {

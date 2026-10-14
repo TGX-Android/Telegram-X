@@ -29,27 +29,35 @@ import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.telegram.PollListener;
+// endregion
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.v.MediaRecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
+// endregion
 
 import tgx.td.MessageId;
 import tgx.td.Td;
 
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 public class SharedCommonController extends SharedBaseController<InlineResult<?>> implements View.OnClickListener, TGPlayerController.TrackChangeListener, TGPlayerController.PlayListBuilder, PollListener {
+// endregion
   public SharedCommonController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
 
   private TdApi.SearchMessagesFilter filter;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private final Set<Long> observedPolls = new HashSet<>();
+  // endregion
 
   public SharedCommonController setFilter (TdApi.SearchMessagesFilter filter) {
     this.filter = filter;
@@ -67,9 +75,12 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   @Override
   public void destroy () {
     super.destroy();
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     onScopeChanged();
+    // endregion
     if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterAudio.CONSTRUCTOR) {
       tdlib.context().player().removeTrackChangeListener(this);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     }
   }
 
@@ -77,6 +88,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
     synchronized (observedPolls) {
       for (long id : observedPolls) tdlib.listeners().removePollListener(id, this);
       observedPolls.clear();
+    // endregion
     }
   }
 
@@ -91,8 +103,10 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
         return Lang.getString(R.string.TabLinks);
       case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR:
         return Lang.getString(R.string.TabVoiceMessages);
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       case TdApi.SearchMessagesFilterPoll.CONSTRUCTOR:
         return Lang.getString(R.string.ForumProfilePolls);
+      // endregion
     }
     return "";
   }
@@ -108,8 +122,10 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
         return R.drawable.baseline_language_24;
       case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR:
         return R.drawable.baseline_mic_24;
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       case TdApi.SearchMessagesFilterPoll.CONSTRUCTOR:
         return R.drawable.baseline_poll_24;
+      // endregion
     }
     return 0;
   }
@@ -131,7 +147,9 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
 
   @Override
   public void onClick (View v) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (retryLoad(v)) return;
+    // endregion
     ListItem item = (ListItem) v.getTag();
     if (item != null && item.getViewType() == ListItem.TYPE_CUSTOM_INLINE) {
       if (adapter.isInSelectMode()) {
@@ -151,8 +169,10 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
           break;
         }
         case InlineResult.TYPE_ARTICLE: {
+          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
           if (topicId != null) openScopedMessage(result.getMessage());
           else tdlib.ui().openMessage(this, chatId, new MessageId(chatId, result.getQueryId()), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+          // endregion
           break;
         }
       }
@@ -169,9 +189,12 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   @Override
   protected InlineResult<?> parseObject (TdApi.Object object) {
     TdApi.Message message = (TdApi.Message) object;
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (!acceptsMessage(message)) return null;
+    // endregion
     InlineResult<?> result;
 
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (filter instanceof TdApi.SearchMessagesFilterPoll) {
       if (!(message.content instanceof TdApi.MessagePoll)) return null;
       TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
@@ -180,6 +203,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
       }
       result = new InlineResultMultiline(context, tdlib, message, poll);
     } else if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterUrl.CONSTRUCTOR) {
+    // endregion
       result = new InlineResultMultiline(context, tdlib, message);
     } else {
       result = InlineResult.valueOf(context, tdlib, message);
@@ -209,8 +233,10 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
       case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR: {
         return Lang.pluralBold(R.string.xVoiceMessages, data.size());
       }
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       case TdApi.SearchMessagesFilterPoll.CONSTRUCTOR:
         return Lang.getString(R.string.ForumProfilePollCount, data.size());
+      // endregion
     }
     return null;
   }
@@ -218,6 +244,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   @Override
   protected int provideViewType () {
     return ListItem.TYPE_CUSTOM_INLINE;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   }
 
   @Override public void onUpdatePoll (TdApi.Poll poll) {
@@ -239,6 +266,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
       TdApi.Message message = item.getMessage();
       if (message != null && message.content instanceof TdApi.MessagePoll && ((TdApi.MessagePoll) message.content).poll.id == pollId) ids.put(message.id, (TdApi.MessagePoll) message.content);
     }
+  // endregion
   }
 
   // Playback
@@ -273,7 +301,9 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   @Nullable
   @Override
   public TGPlayerController.PlayList buildPlayList (TdApi.Message fromMessage) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (!acceptsMessage(fromMessage)) return null;
+    // endregion
     String query;
     ArrayList<InlineResult<?>> data;
     if (isSearching()) {
@@ -310,7 +340,9 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
       }
       if (result instanceof InlineResultCommon) {
         TdApi.Message msg = result.getMessage();
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         if (!acceptsMessage(msg)) continue;
+        // endregion
         if (TGPlayerController.compareTracks(fromMessage, msg)) {
           if (foundIndex != -1) {
             throw new IllegalStateException();
@@ -325,15 +357,19 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
       throw new IllegalArgumentException();
     }
 
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return new TGPlayerController.PlayList(out, foundIndex).setPlayListFlags(TGPlayerController.PLAYLIST_FLAG_REVERSE).setSearchQuery(query).setTopicId(topicId);
+    // endregion
   }
 
   @Override
   public boolean wouldReusePlayList (TdApi.Message fromMessage, boolean isReverse, boolean hasAltered, List<TdApi.Message> trackList, long playListChatId) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     // A same-chat list may have been built by another topic or by the common stream.
     // Scope includes account, typed topic and query, not just the visible track list.
     return playListChatId != 0 && playListChatId == fromMessage.chatId && isReverse &&
       tdlib.context().player().hasPlayListScope(tdlib, chatId, topicId, getCurrentQuery());
+    // endregion
   }
 
   @Override

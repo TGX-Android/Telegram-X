@@ -66,6 +66,7 @@ import java.util.concurrent.TimeUnit;
 import tgx.td.Td;
 
 /** One fullscreen form for every Create/Edit entry point. Mutations belong to ForumTopicActions. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicEditController extends ViewController<ForumTopicEditController.Arguments>
   implements Menu, ChatListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.MyUserDataChangeListener {
   private static final long PICKER_TIMEOUT_MS = 12000;
@@ -631,8 +632,9 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
     for (int i = 0; i < candidates.size(); i++) {
       TdApi.ForumTopicInfo candidate = candidates.get(i);
       final int topicId = candidate.forumTopicId;
-      String date = Lang.getDate(candidate.creationDate, TimeUnit.SECONDS) + ", " + Lang.time(candidate.creationDate, TimeUnit.SECONDS);
-      results.addView(button(Lang.getString(R.string.ForumEditorOpenMatch, i + 1) + "\n" + date, () -> {
+      String date = Lang.getString(R.string.format_dateTime,
+        Lang.getDate(candidate.creationDate, TimeUnit.SECONDS), Lang.time(candidate.creationDate, TimeUnit.SECONDS));
+      results.addView(button(Lang.getString(R.string.format_nameAndDate, Lang.getString(R.string.ForumEditorOpenMatch, i + 1), date), () -> {
         if (form.resolveToExisting(topicId)) finishIfReady();
       }));
     }

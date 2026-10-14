@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /** Shared topic actions for the list and the history header. Never mutates a cached TDLib value. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicUi implements ChatListener {
   private final ViewController<?> owner;
   private final Tdlib tdlib;

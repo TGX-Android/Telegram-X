@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.data;
 
 /** Geometry shared by measurement, hit testing and the navigation gesture boundary. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumRailLayout {
   private ForumRailLayout () { }
 

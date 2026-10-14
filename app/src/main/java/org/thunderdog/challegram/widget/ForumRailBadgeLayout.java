@@ -7,6 +7,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
 
 /** Fits the complete rail counter, including its outline, without clipping its text. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumRailBadgeLayout {
   public static final float TEXT_SIZE_DP = 13f;
 

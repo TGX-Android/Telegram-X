@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 /** Account/chat-scoped forum identities, never adapter positions or generic message threads. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicSelection {
   public static final int MAX_SELECTED = 100;
   public enum Action {

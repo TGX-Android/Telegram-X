@@ -56,6 +56,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
   private final AvatarPlaceholder avatarPlaceholder;
 
   private static final float AVATAR_PLACEHOLDER_RADIUS = 25f;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 
   /** Read-only poll summary; tapping opens the original scoped message and its native poll UI. */
   public InlineResultMultiline (BaseActivity context, Tdlib tdlib, TdApi.Message message, TdApi.Poll poll) {
@@ -70,6 +71,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       new AvatarPlaceholder.Metadata(tdlib.accentColorForString(title), TD.getLetters(title)), null);
     layoutInternal(Screen.currentWidth());
   }
+// endregion
 
   public InlineResultMultiline (BaseActivity context, Tdlib tdlib, TdApi.InlineQueryResultArticle article) {
     super(context, tdlib, TYPE_ARTICLE, article.id, article);
@@ -290,7 +292,9 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
 
   @Override
   public TdApi.LinkPreview findLinkPreview (String link) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     if (linkPreview != null && TGWebPage.isPreviewOf(linkPreview.url, link)) {
+    // endregion
       return linkPreview;
     }
     return null;

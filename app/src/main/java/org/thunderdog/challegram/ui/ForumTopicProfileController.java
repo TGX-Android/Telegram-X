@@ -71,6 +71,7 @@ import tgx.td.ChatId;
 import tgx.td.Td;
 
 /** Topic identity/settings plus existing shared-media pages, not a second group profile. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicProfileController extends ViewController<ForumTopicProfileController.Arguments>
   implements Menu, ChatListener, MessageListener, NotificationSettingsListener, TdlibCache.SupergroupDataChangeListener, CleanupStartupDelegate {
   public static final class Arguments {

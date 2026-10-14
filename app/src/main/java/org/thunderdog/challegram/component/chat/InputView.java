@@ -149,7 +149,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   // TODO: get rid of chat-related logic inside of InputView
   private @Nullable MessagesController controller;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private boolean inputDestroyed;
+  // endregion
   private boolean ignoreDraft;
 
   private String suffix = "", prefix = "", displaySuffix = "";
@@ -392,7 +394,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   @Override
   public void performDestroy () {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     inputDestroyed = true;
+    // endregion
     super.performDestroy();
     mediaHolder.performDestroy();
   }
@@ -1193,12 +1197,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private boolean textChangedSinceChatOpened;
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.DraftMessageContent draft, @Nullable String customInputField, boolean isSilent) {
+  // endregion
     textChangedSinceChatOpened = false;
     updateMessageHint(chat, messageThread, customInputField, isSilent);
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     // The controller resolves the draft. Null explicitly means an empty draft,
     // including a forum topic with no draft in a group that has one.
     setDraft(draft);
+    // endregion
   }
 
   public boolean isEmpty () {
@@ -1509,6 +1517,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       JPEG = 4;
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private boolean canSendImeContent (InputSendContext sendContext, TdApi.InputMessageContent content) {
     MessagesController current = controller;
     return current != null && sendContext.matches(current, current.tdlib(), current.getArguments(),
@@ -1517,6 +1526,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       !current.showRestriction(this, tdlib.getRestrictionText(current.getChat(), content));
   }
 
+  // endregion
   @Override
   protected InputConnection createInputConnection (EditorInfo editorInfo) {
     InputConnection ic = super.createInputConnection(editorInfo);
@@ -1535,12 +1545,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return null;
     final InputConnectionCompat.OnCommitContentListener callback =
       (inputContentInfo, flags, bundle) -> {
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         final MessagesController sendController = controller;
         if (inputDestroyed || sendController == null || sendController.isDestroyed() || sendController.tdlib() != tdlib ||
             sendController.showForumTopicRestriction(this))
+        // endregion
           return false;
 
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         final long chatId = sendController.getChatId();
+        // endregion
         final TdApi.Chat chat = tdlib.chat(chatId);
         if (chat == null) {
           return false;
@@ -1572,15 +1586,19 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
         Uri uri = inputContentInfo.getContentUri();
         long timestamp = System.currentTimeMillis();
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         // All has a null visible topic even when its outgoing destination is General/a reply topic.
         TdApi.MessageTopic viewTopic = sendController.getMessageTopicId();
         Object viewArguments = sendController.getArguments();
         boolean needMenu = sendController.areScheduledOnly();
         MessagesController.ReplyInfo replyInfo = sendController.obtainReplyTo();
+        // endregion
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
+        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
         InputSendContext sendContext = new InputSendContext(sendController, tdlib, viewArguments,
           chatId, viewTopic, needMenu, sendController.getMessageTopicId(replyInfo));
         boolean silent = sendController.obtainSilentMode();
+        // endregion
 
         Background.instance().post(() -> {
           int imageWidth, imageHeight;
@@ -1622,20 +1640,30 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           }
 
           UI.post(() -> {
+            // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
             if (!canSendImeContent(sendContext, content)) {
+            // endregion
               return;
             }
             if (needMenu) {
+              // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
               tdlib.ui().showScheduleOptions(sendController, chatId, false,
+              // endregion
                 (sendOptions, disableMarkdown) -> {
+                  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
                   // The picker is another asynchronous boundary; do not send from a stale view.
                   if (!canSendImeContent(sendContext, content)) return;
+                  // endregion
                   TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(
                     sendOptions,
+                    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
                     sendController.getInputSuggestedPostInfo(replyInfo),
+                    // endregion
                     silent
                   );
+                  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
                   tdlib.sendMessage(chatId, sendContext.outgoingTopic, replyTo,
+                  // endregion
                     finalSendOptions,
                     content,
                     null
@@ -1644,10 +1672,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                 null, null);
             } else {
               TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
+                // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
                 sendController.getInputSuggestedPostInfo(replyInfo),
+                // endregion
                 silent
               );
+              // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
               tdlib.sendMessage(chatId, sendContext.outgoingTopic, replyTo, sendOptions, content);
+              // endregion
             }
           });
         });

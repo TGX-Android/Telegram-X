@@ -43,6 +43,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import tgx.td.Td;
 
 /** Two text lines. Topic counters and outgoing delivery are intentionally independent. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicView extends View {
   private final Tdlib tdlib;
   private final TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -56,6 +57,7 @@ public final class ForumTopicView extends View {
   private long emojiId;
   private float emojiSize;
   private String preview = "", time = "";
+  private String titleLine = "", previewLine = "", iconInitial = "#";
   private boolean hasDraft, muted, selectionMode;
   private float selectionFactor;
   private FactorAnimator selectionAnimator;
@@ -127,11 +129,32 @@ public final class ForumTopicView extends View {
     wrapStates = !stateIcons.isEmpty() && timeAndDelivery + Screen.dp(18 * stateIcons.size()) > available;
     if (wrapStates) firstHeight = Math.max(firstHeight, scaled(14) + Screen.dp(20));
     secondHeight = Math.max(scaled(22), (float) Math.ceil((double) counters.size() / counterColumns) * (scaled(16) + Screen.dp(3)));
+    prepareText(width, timeAndDelivery);
     setMeasuredDimension(width, Math.max(Screen.dp(64), (int) (Screen.dp(18) + firstHeight + secondHeight)));
+  }
+
+  private void prepareText (int width, float timeAndDelivery) {
+    if (topic == null) {
+      titleLine = previewLine = "";
+      return;
+    }
+    // Prepare for the destination width once; the selection animator only moves/clips it.
+    float start = Screen.dp(selectionMode ? 50 : 14), end = width - Screen.dp(14);
+    float statesWidth = Screen.dp(18 * stateIcons.size());
+    float trailing = end - (wrapStates ? Math.max(timeAndDelivery, statesWidth) : timeAndDelivery + statesWidth);
+    setPaint(17, Theme.textAccentColor(), true);
+    titleLine = TextUtils.ellipsize(topic.info.name.replace('\n', ' '), paint,
+      Math.max(0, trailing - Screen.dp(12) - start - scaled(20)), TextUtils.TruncateAt.END).toString();
+    float countersWidth = counters.isEmpty() ? 0 : counterColumns * (counterWidth + Screen.dp(3)) + Screen.dp(6);
+    setPaint(14, Theme.textDecentColor(), false);
+    previewLine = TextUtils.ellipsize(preview.replace('\n', ' '), paint,
+      Math.max(0, end - countersWidth - start), TextUtils.TruncateAt.END).toString();
   }
 
   public void setTopic (TdApi.ForumTopic topic) {
     this.topic = topic;
+    String name = topic.info.name;
+    iconInitial = topic.info.isGeneral || name.isEmpty() ? "#" : name.substring(0, name.offsetByCodePoints(0, 1));
     receiver.setAnimationDisabled(Settings.instance().needReduceMotion());
     TdlibSettingsManager.LocalForumDraft local = tdlib.settings().getLocalForumDraft(topic.info.chatId, topic.info.forumTopicId);
     TdApi.DraftMessage draft = local != null ? local.draft : topic.draftMessage;
@@ -182,7 +205,7 @@ public final class ForumTopicView extends View {
         customEmoji.requestMedia(receiver);
       }
     }
-    setContentDescription(Lang.getString(R.string.ForumTopicAccessibility, topic.info.name, time, TextUtils.join(". ", status), preview,
+    setContentDescription(Lang.getString(R.string.ForumTopicAccessibility, topic.info.name, time, TextUtils.join(Lang.getConcatSeparator(), status), preview,
       Lang.getString(R.string.ForumUnreadCounts, topic.unreadCount, topic.unreadMentionCount, topic.unreadReactionCount, topic.unreadPollVoteCount)));
     requestLayout(); invalidate();
   }
@@ -193,10 +216,13 @@ public final class ForumTopicView extends View {
   }
   private float x (float logical, boolean rtl) { return rtl ? getWidth() - logical : logical; }
   private void text (Canvas c, String value, float start, float end, float cy, float size, int color, boolean medium, boolean rtl) {
+    if (end <= start) return;
     setPaint(size, color, medium);
     paint.setTextAlign(rtl ? Paint.Align.RIGHT : Paint.Align.LEFT);
-    CharSequence line = TextUtils.ellipsize(value.replace('\n', ' '), paint, Math.max(0, end - start), TextUtils.TruncateAt.END);
-    c.drawText(line.toString(), x(start, rtl), cy - (paint.ascent() + paint.descent()) / 2, paint);
+    int save = c.save();
+    c.clipRect(rtl ? getWidth() - end : start, 0, rtl ? getWidth() - start : end, getHeight());
+    c.drawText(value, x(start, rtl), cy - (paint.ascent() + paint.descent()) / 2, paint);
+    c.restoreToCount(save);
   }
   private void icon (Canvas c, Drawable icon, float start, float cy, float size, int colorId, boolean rtl) {
     int save = c.save();
@@ -215,10 +241,8 @@ public final class ForumTopicView extends View {
       paint.setColor(0xff000000 | (topic.info.icon != null ? topic.info.icon.color : 0x6fb9f0));
       DrawAlgorithms.drawRoundRect(c, r/2, cx-r, cy-r, cx+r, cy+r-1, paint);
       path.reset(); path.moveTo(cx-r+size*.15f, cy+r-size*.3f); path.lineTo(cx-r+size*.15f, cy+r); path.lineTo(cx, cy+r-size*.15f); path.close(); c.drawPath(path, paint);
-      String name = topic.info.name;
-      String letter = topic.info.isGeneral || name.isEmpty() ? "#" : name.substring(0, name.offsetByCodePoints(0, 1));
       setPaint(13, 0xffffffff, true); paint.setTextAlign(Paint.Align.CENTER);
-      c.drawText(letter, cx, cy-(paint.ascent()+paint.descent())/2, paint);
+      c.drawText(iconInitial, cx, cy-(paint.ascent()+paint.descent())/2, paint);
     }
   }
 
@@ -250,12 +274,15 @@ public final class ForumTopicView extends View {
     if (delivery != null) { trailing -= slot; icon(c, delivery, trailing, timeCy, Screen.dp(16), deliveryColor, rtl); }
     float statesStart = wrapStates ? end : trailing;
     float statesCy = wrapStates ? Screen.dp(9) + scaled(14) + Screen.dp(10) : cy1;
-    for (Drawable state : stateIcons) { statesStart -= slot; icon(c, state, statesStart, statesCy, Screen.dp(16), ColorId.iconLight, rtl); }
+    for (int i = 0; i < stateIcons.size(); i++) {
+      statesStart -= slot;
+      icon(c, stateIcons.get(i), statesStart, statesCy, Screen.dp(16), ColorId.iconLight, rtl);
+    }
     trailing = Math.min(trailing, statesStart);
     topicIcon(c, start, cy1, rtl);
-    text(c, topic.info.name, start+scaled(20)+Screen.dp(6), trailing-Screen.dp(6), cy1, 17, Theme.textAccentColor(), true, rtl);
+    text(c, titleLine, start+scaled(20)+Screen.dp(6), trailing-Screen.dp(6), cy1, 17, Theme.textAccentColor(), true, rtl);
     float countersWidth = counters.isEmpty() ? 0 : counterColumns * (counterWidth+Screen.dp(3));
-    text(c, preview, start, end-countersWidth-Screen.dp(counters.isEmpty() ? 0 : 6), cy2, 14,
+    text(c, previewLine, start, end-countersWidth-Screen.dp(counters.isEmpty() ? 0 : 6), cy2, 14,
       hasDraft ? Theme.textRedColor() : Theme.textDecentColor(), false, rtl);
     float chipHeight = scaled(16), gap = Screen.dp(3);
     int rows = (counters.size()+counterColumns-1)/counterColumns;
@@ -277,7 +304,7 @@ public final class ForumTopicView extends View {
   }
   public void clear () {
     if (selectionAnimator != null) selectionAnimator.forceFactor(0f);
-    clearEmoji(); topic = null; selectionFactor = 0; selectionMode = false; setSelected(false); setContentDescription(null);
+    clearEmoji(); topic = null; titleLine = previewLine = ""; selectionFactor = 0; selectionMode = false; setSelected(false); setContentDescription(null);
   }
   @Override protected void onAttachedToWindow () { super.onAttachedToWindow(); receiver.attach(); }
   @Override protected void onDetachedFromWindow () {

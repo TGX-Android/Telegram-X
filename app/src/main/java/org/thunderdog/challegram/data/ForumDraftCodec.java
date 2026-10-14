@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /** Versioned, platform-independent storage for the primitive fields of TdBundle drafts. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumDraftCodec {
   private static final int VERSION = 1;
   private static final int MAX_BYTES = 16 * 1024 * 1024;

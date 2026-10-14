@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 
 /** One list lease shared only by successive histories in one navigation slot. No second topic cache. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTabsHost implements CleanupStartupDelegate {
   public final Tdlib tdlib;
   public final long chatId;

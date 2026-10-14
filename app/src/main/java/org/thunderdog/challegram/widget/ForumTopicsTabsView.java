@@ -60,6 +60,7 @@ import java.util.Set;
  * The owner supplies effective snapshots and calls destroy() when discarding the widget.
  */
 @UiThread
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalidateListener, Lang.Listener {
   public interface Listener {
     void onSelectTopic (int topicId);
@@ -515,7 +516,7 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     @Nullable Item item;
     @Nullable Text customEmoji;
     long emojiId;
-    String badge = "", displayedBadge = "";
+    String badge = "", displayedBadge = "", iconInitial = "#";
     float badgeWidth, metadataWidth, metadataHeight;
     int labelStart, labelEnd, labelTop;
 
@@ -548,6 +549,8 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
 
     void bind (Item item) {
       this.item = item;
+      String name = item.name.trim();
+      iconInitial = name.isEmpty() ? "#" : name.substring(0, name.offsetByCodePoints(0, 1));
       setSelected(item.selected);
       badge = item.unread > 0 ? unreadBadge(item.unread) : item.mentions > 0 ? "@" : item.reactions > 0 ? "♥" : item.votes > 0 ? "✓" : "";
       receiver.setAnimationDisabled(reduceMotion());
@@ -588,14 +591,14 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       if (item.closed) append(description, R.string.ForumTopicClosed);
       if (item.pinned) append(description, R.string.ForumPinned);
       if (item.unread > 0 || item.mentions > 0 || item.reactions > 0 || item.votes > 0) {
-        description.append(". ").append(string(R.string.ForumTabsUnread, item.unread, item.mentions, item.reactions, item.votes));
+        description.append(Lang.getConcatSeparator()).append(string(R.string.ForumTabsUnread, item.unread, item.mentions, item.reactions, item.votes));
       }
       setContentDescription(description);
       if (Build.VERSION.SDK_INT >= 26) setTooltipText(description);
       updateTheme(); requestLayout();
     }
 
-    void append (StringBuilder builder, int resId) { builder.append(". ").append(string(resId)); }
+    void append (StringBuilder builder, int resId) { builder.append(Lang.getConcatSeparator()).append(string(resId)); }
     void updateTheme () {
       label.setTextColor(Theme.getColor(item != null && (item.selected || item.id == NEW_TOPIC) ? ColorId.iconActive : ColorId.text));
       invalidate();
@@ -658,6 +661,8 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         labelTop = Screen.dp(4);
         label.measure(MeasureSpec.makeMeasureSpec(Math.max(0, labelEnd - labelStart), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(labelHeight, MeasureSpec.EXACTLY));
       }
+      badgePaint();
+      displayedBadge = TextUtils.ellipsize(displayedBadge, paint, Math.max(0, badgeWidth - Screen.dp(4)), TextUtils.TruncateAt.END).toString();
       setMeasuredDimension(width, height);
     }
 
@@ -731,10 +736,8 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         rounded(c, cx - r, cy - r, cx + r, cy + r - Screen.dp(2), Screen.dp(6));
         path.reset(); path.moveTo(cx - Screen.dp(8), cy + Screen.dp(5)); path.lineTo(cx - Screen.dp(8), cy + r + Screen.dp(1));
         path.lineTo(cx + Screen.dp(1), cy + Screen.dp(7)); path.close(); c.drawPath(path, paint);
-        String name = item.name.trim();
-        String initial = name.isEmpty() ? "#" : name.substring(0, name.offsetByCodePoints(0, 1));
         paint.setTypeface(Fonts.getRobotoMedium()); paint.setTextSize(Screen.dp(14)); paint.setTextAlign(Paint.Align.CENTER); paint.setColor(0xffffffff);
-        c.drawText(initial, cx, cy - (paint.ascent() + paint.descent()) / 2, paint);
+        c.drawText(iconInitial, cx, cy - (paint.ascent() + paint.descent()) / 2, paint);
       }
       paint.setStrokeCap(Paint.Cap.BUTT); paint.setStyle(Paint.Style.FILL);
       c.restoreToCount(save);
@@ -765,8 +768,7 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       paint.setColor(item.muted ? Theme.badgeMutedColor() : Theme.badgeColor());
       rounded(c, left, cy - metadataHeight / 2, left + badgeWidth, cy + metadataHeight / 2, metadataHeight / 2);
       badgePaint(); paint.setColor(Theme.badgeTextColor());
-      CharSequence text = TextUtils.ellipsize(displayedBadge, paint, Math.max(0, badgeWidth - Screen.dp(4)), TextUtils.TruncateAt.END);
-      c.drawText(text.toString(), left + badgeWidth / 2, cy - (paint.ascent() + paint.descent()) / 2, paint);
+      c.drawText(displayedBadge, left + badgeWidth / 2, cy - (paint.ascent() + paint.descent()) / 2, paint);
     }
 
     private void drawState (Canvas c, Drawable drawable, float logical, float cy, float size) {

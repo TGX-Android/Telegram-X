@@ -62,7 +62,9 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.data.ForumHistory;
+// endregion
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -2152,6 +2154,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     TdApi.Message newestMessage = album.get(0);
     TdApi.Message oldestMessage = album.get(album.size() - 1);
 
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     // Forum history has no local-only request. Preserve the caller's two-pass
     // contract instead of querying the unscoped local chat history.
     if (onlyLocal && ForumHistory.isForum(newestMessage.topicId)) {
@@ -2159,6 +2162,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       return;
     }
 
+    // endregion
     List<TdApi.Message> olderMessages = new ArrayList<>();
     List<TdApi.Message> newerMessages = new ArrayList<>();
 
@@ -2200,14 +2204,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
     int count = TdConstants.MAX_MESSAGE_GROUP_SIZE - album.size() + 1;
     if (!endFound.get()) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       client().send(ForumHistory.request(oldestMessage.chatId, oldestMessage.topicId, oldestMessage.id, 0, count, onlyLocal), result -> {
+      // endregion
         switch (result.getConstructor()) {
           case TdApi.Messages.CONSTRUCTOR: {
             TdApi.Message[] messages = ((TdApi.Messages) result).messages;
             for (TdApi.Message message : messages) {
               if (message.id >= oldestMessage.id)
                 continue;
+              // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
               if (!ForumHistory.sameAlbum(oldestMessage, message)) {
+              // endregion
                 endFound.set(true);
                 break;
               }
@@ -2229,7 +2237,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       });
     }
     if (!startFound.get()) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       client().send(ForumHistory.request(newestMessage.chatId, newestMessage.topicId, newestMessage.id, -count, count + 1, onlyLocal), result -> {
+      // endregion
         switch (result.getConstructor()) {
           case TdApi.Messages.CONSTRUCTOR: {
             TdApi.Message[] messages = ((TdApi.Messages) result).messages;
@@ -2238,7 +2248,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
               if (message.id <= newestMessage.id) {
                 continue;
               }
+              // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
               if (!ForumHistory.sameAlbum(newestMessage, message)) {
+              // endregion
                 startFound.set(true);
                 break;
               }
@@ -3389,11 +3401,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public boolean isForum (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isForum;
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   }
 
   public boolean hasForumTabs (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isForum && supergroup.hasForumTabs;
+  // endregion
   }
 
   public @Nullable TdApi.BlockList chatBlockList (TdApi.Chat chat) {

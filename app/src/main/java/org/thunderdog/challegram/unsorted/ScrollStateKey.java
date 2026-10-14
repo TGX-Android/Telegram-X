@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import tgx.td.Td;
 
 /** Existing on-disk format for normal-history positions; special modes do not persist positions. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 final class ScrollStateKey {
   static final String PREFIX = "scroll_chat";
   private static final Pattern FIELD = Pattern.compile("^(_(?:message|chat|aliases|stack|offset|read|top))(?:_(?:thread|forum|direct|saved)-?\\d+)?$");

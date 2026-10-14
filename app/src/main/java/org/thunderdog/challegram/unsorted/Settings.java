@@ -318,7 +318,9 @@ public class Settings {
   private static final String KEY_PIP_GRAVITY = "pip_gravity";
   private static final String KEY_PLAYER_FLAGS = "player_flags";
   private static final String KEY_HIDE_BOT_KEYBOARD_PREFIX = "hide_bot_keyboard_";
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private static final String KEY_SCROLL_CHAT_PREFIX = ScrollStateKey.PREFIX;
+  // endregion
   private static final String KEY_SCROLL_CHAT_ALIASES = "_aliases";
   private static final String KEY_SCROLL_CHAT_MESSAGE_ID = "_message";
   private static final String KEY_SCROLL_CHAT_MESSAGE_CHAT_ID = "_chat";
@@ -4352,8 +4354,10 @@ public class Settings {
     String prefix = makeScrollChatKey(null, accountId, chatId, null);
     SavedMessageId.Builder b = null;
     for (LevelDB.Entry entry : pmc.find(prefix)) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       String dataKey = ScrollStateKey.field(entry.key(), accountId, chatId, topicId);
       if (dataKey == null) {
+      // endregion
         continue;
       }
       if (b == null) {
@@ -4393,10 +4397,12 @@ public class Settings {
     String prefix = key(KEY_SCROLL_CHAT_PREFIX + chatId, accountId);
     SharedPreferences.Editor editor = null;
     for (LevelDB.Entry entry : pmc.find(prefix)) {
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       String suffix = ScrollStateKey.field(entry.key(), accountId, chatId);
       if (suffix == null) {
         continue;
       }
+      // endregion
       switch (suffix) {
         case KEY_SCROLL_CHAT_MESSAGE_ID: {
           if (entry.asLong() == oldMessageId) {
@@ -4429,7 +4435,9 @@ public class Settings {
   }
 
   private static String makeScrollChatKey (String key, int accountId, long chatId, @Nullable TdApi.MessageTopic topicId) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return ScrollStateKey.key(key, accountId, chatId, topicId);
+    // endregion
   }
 
   // Other settings

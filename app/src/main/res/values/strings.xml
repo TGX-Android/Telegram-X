@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
+  <!-- region @MadeByLLM("gpt-6-astra", ref = "PR #1095") -->
   <string name="ForumEditorNew">New Topic</string>
   <string name="ForumEditorEdit">Edit Topic</string>
   <string name="ForumEditorCreate">Create</string>
@@ -202,6 +203,7 @@
   <string name="ForumGeneralShown">General topic shown</string>
   <string name="ForumTopicUnavailable">Topic unavailable. Tap to retry</string>
   <string name="ForumTopicLoadFailed">Could not load topic. Tap to retry</string>
+  <!-- endregion -->
   <string name="language_continueInLanguage">Continue in English</string>
 
   <string name="Page1Title">Telegram X</string>

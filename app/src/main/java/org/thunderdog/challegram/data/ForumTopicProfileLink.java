@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.data;
 
 /** Profile-only link state. Request identity rejects late replies after retry, retarget, or cleanup. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTopicProfileLink {
   public enum State { EMPTY, LOADING, READY, UNAVAILABLE }
 

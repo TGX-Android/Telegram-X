@@ -1,18 +1,26 @@
 package org.thunderdog.challegram.telegram
 
 import me.vkryl.core.reference.ReferenceMap
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.drinkless.tdlib.Client
 import org.drinkless.tdlib.TdApi
+// endregion
 import org.drinkless.tdlib.TdApi.*
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.tool.UI
+// endregion
 
+// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 /** TDLib/UI-thread adapter for the account's single forum topic store. */
 class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate, MessageListener, ChatListener, ConnectionListener, UI.StateListener {
+// endregion
   data class Key(
     @JvmField val chatId: Long,
     @JvmField val forumTopicId: Int
   )
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   class Entry : TdlibDataManager.AbstractEntry<Key, ForumTopic> {
+  // endregion
     @JvmField val forumTopicId: Int
 
     constructor(key: Key, value: ForumTopic?, error: Error?) : super(key, value, error) {
@@ -20,24 +28,29 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
     }
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private val backend = object : ForumTopicStore.Backend {
-    override fun execute(action: () -> Unit) = tdlib.executeOnTdlibThread(action)
-    override fun send(request: TdApi.Function<*>, callback: (TdApi.Object) -> Unit) = tdlib.client().send(request, Client.ResultHandler { callback(it) })
-    override fun schedule(delayMs: Long, action: () -> Unit) = tdlib.runOnTdlibThread(action, delayMs / 1000.0, false)
-    override fun publish(action: () -> Unit) = tdlib.runOnUiThread(action)
+    override fun execute(action: Runnable) = tdlib.executeOnTdlibThread(action)
+    override fun send(request: TdApi.Function<*>, callback: Client.ResultHandler) = tdlib.client().send(request, callback)
+    override fun schedule(delayMs: Long, action: Runnable) = tdlib.runOnTdlibThread(action, delayMs / 1000.0, false)
+    override fun publish(action: Runnable) = tdlib.runOnUiThread(action)
   }
   private val store = ForumTopicStore(backend)
   private val unread = ForumUnreadCounter(backend, UI.getUiState() == UI.State.RESUMED)
   @JvmField val actions = ForumTopicActions(store)
   private val observers = ReferenceMap<Key, Observer>(true)
   private val subscriptions = HashMap<Key, ForumTopicStore.TopicSubscription>()
+  // endregion
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   init {
     tdlib.listeners().addCleanupListener(this)
     tdlib.listeners().subscribeForGlobalUpdates(this)
     UI.addStateListener(this)
+  // endregion
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   fun openList(chatId: Long, query: String, observer: ForumTopicStore.ListObserver) = store.openList(chatId, query, observer)
   fun openPreview(chatId: Long, observer: ForumTopicStore.ListObserver) = store.openPreview(chatId, observer)
   fun observeTopic(key: Key, observer: ForumTopicStore.TopicObserver) = store.observeTopic(key, observer)
@@ -48,6 +61,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
   fun unreadCount(chat: Chat): Int = if (tdlib.isForum(chat.id)) {
     ForumUnreadCounter.badgeCount(unread.cachedCount(chat.id), chat.unreadCount, chat.isMarkedAsUnread)
   } else if (chat.unreadCount > 0) chat.unreadCount else if (chat.isMarkedAsUnread) Tdlib.CHAT_MARKED_AS_UNREAD else 0
+  // endregion
 
   // Existing message consumers keep their weak subscriptions; list consumers own closeable sessions.
   // Updates now deliver the merged full value through onTopicFound as well.
@@ -59,6 +73,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
 
   @TdlibThread
   fun updateForumTopic(update: UpdateForumTopic) {
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     store.updateTopic(update)
     unread.onTopicRead(update.chatId, update.forumTopicId, update.lastReadInboxMessageId)
   }
@@ -75,8 +90,10 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
           if (topic != null) observers.iterate(key) { it.onTopicFound(key, topic, false) }
           synchronized(subscriptions) { pruneObservers() }
         }
+    // endregion
       }
     }
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     return find(key)?.also { observer.onTopicFound(key, it.value!!, true) }
   }
 
@@ -94,17 +111,21 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
       if (!observers.has(key)) {
         subscription.close()
         iterator.remove()
+    // endregion
       }
     }
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   private fun clear() {
     synchronized(subscriptions) {
       store.reset()
       unread.reset()
       subscriptions.clear()
       observers.clear()
+  // endregion
     }
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   }
   override fun onPerformUserCleanup() = clear()
   override fun onPerformRestart() = clear()
@@ -142,8 +163,11 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
     if (newState == ConnectionState.CONNECTED && oldState != newState) {
       store.onConnectionRestored()
       unread.refreshVisible()
+  // endregion
     }
   }
 
+  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
   override fun onUiStateChanged(newState: Int) = unread.setEnabled(newState == UI.State.RESUMED)
 }
+  // endregion

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 /** Mention-read scope for a notification group, independent of its open/reply topic. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumNotificationReadScope {
   private ForumNotificationReadScope () { }
 

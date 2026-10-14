@@ -591,7 +591,9 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final String textContent = textBuilder.toString();
     final CharSequence tickerText = getTickerText(tdlib, helper, allowPreview, chat, lastNotification, true, group.singleSenderId() != 0, hasCustomText);
 
+    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), group.findTargetMessageId(), group.getMessageTopicId());
+    // endregion
 
     boolean needGroupLogic = true; // !isSummary || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && settings == null);
 
@@ -766,7 +768,9 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       .setIsConversation()
       .setLongLived(true)
       .setShortLabel(visualChatTitle)
+      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       .setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId(), group.getMessageTopicId()))
+      // endregion
       .setIcon(chatIcon)
       .build();
 

@@ -3,6 +3,7 @@ package org.thunderdog.challegram.data;
 import androidx.annotation.Nullable;
 
 /** Immutable, platform-independent UI state for one account's forum chat. */
+@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumTabsState {
   public static final int TOP = 0;
   public static final int START = 1;
