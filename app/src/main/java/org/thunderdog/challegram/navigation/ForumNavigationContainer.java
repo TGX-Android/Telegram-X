@@ -218,6 +218,11 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     // Navigation draws the opaque topic body after the source, so it still covers the fading source.
     allowAvatarMorph = morph && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
     setTransitionProgress(progress);
+    // Interactive Back may not run startTransitionWhenReady. Capture existing layout now,
+    // or let onLayout prepare the projection before drawing the first gesture frame.
+    if (!isLayoutRequested() && !content.isLayoutRequested() && !rail.isLayoutRequested()) {
+      captureTransition();
+    }
     return true;
   }
 
@@ -385,6 +390,7 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
       rail.setVisibility(session && !topicViews.isEmpty() ? VISIBLE : INVISIBLE);
     }
     content.layout(0, 0, width, height);
+    captureTransition();
   }
 
   public void saveState (Bundle out) {
