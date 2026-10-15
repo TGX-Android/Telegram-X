@@ -66,6 +66,8 @@ This is the complete source code and the build instructions for the official alt
    telegram.api_hash=YOUR_TELEGRAM_API_HASH</pre>
 3. [Setup Firebase](https://firebase.google.com/docs/android/setup) and replace `google-services.json` with the one that's suitable for your `app.id`
 
+In Windows `.properties` files, use forward slashes in paths, e.g. `keystore.file=E:/Telegram-X/release-tgx.jks` in `keystore.properties`. In `local.properties`, `keystore.file` points to the settings file, e.g. `keystore.file=keystore.properties`.
+
 ## Reproducing public builds
 
 In order to verify that there is no additional source code injected inside official APKs, you must use one of the following versions of **Ubuntu**:
