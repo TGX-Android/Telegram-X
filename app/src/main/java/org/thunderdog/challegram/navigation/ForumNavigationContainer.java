@@ -190,6 +190,15 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     requestLayout();
   }
 
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  public void updateThemeColors () {
+    if (destroyed) return;
+    if (rail != null) rail.updateThemeColors();
+    // Transition backgrounds read Theme during drawing; never recapture avatars here.
+    invalidate();
+  }
+  // endregion
+
   void addTopicView (View view) {
     if (!topicViews.contains(view)) topicViews.add(view);
     requestLayout();

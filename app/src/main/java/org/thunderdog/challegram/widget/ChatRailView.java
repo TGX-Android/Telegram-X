@@ -29,6 +29,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
 
 import java.util.ArrayList;
@@ -105,6 +106,15 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     setBackgroundColor(Theme.fillingColor());
     adapter.notifyItemRangeChanged(0, chats.size());
   }
+
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  public void updateThemeColors () {
+    if (destroyed) return;
+    setBackgroundColor(Theme.fillingColor());
+    // Rows, avatars and counters resolve their colors at draw time, without rebinding data.
+    Views.invalidateChildren(list);
+  }
+  // endregion
 
   public void setSelectedChat (long chatId) {
     if (selectedChat == chatId) return;

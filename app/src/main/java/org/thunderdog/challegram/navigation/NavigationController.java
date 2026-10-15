@@ -463,7 +463,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   @Override
   public void onThemeColorsChanged (boolean areTemp, ColorState state) {
     // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
-    if (forumContainer != null) forumContainer.refresh();
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    if (forumContainer != null) forumContainer.updateThemeColors();
+    // endregion
     // endregion
     ViewController<?> c;
     if (isAnimating && ((translatingForward && translationFactor == 1f) || (!translatingForward && translationFactor == 0f))) {
