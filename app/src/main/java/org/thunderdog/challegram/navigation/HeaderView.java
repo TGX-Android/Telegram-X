@@ -42,6 +42,7 @@ import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SwitchDrawable;
@@ -557,12 +558,19 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public void updateButton (int menuId, int id, int visibility, int image) {
+    updateButton(menuId, id, visibility, image, 0);
+  }
+
+  public void updateButton (int menuId, int id, int visibility, int image, @StringRes int contentDescriptionRes) {
     if (menu.getId() == menuId) {
       View button = menu.findViewById(id);
       if (button != null) {
         button.setVisibility(visibility);
         if (image != 0) {
           ((HeaderButton) button).setImageResource(image);
+        }
+        if (contentDescriptionRes != 0) {
+          ((HeaderButton) button).setContentDescriptionRes(contentDescriptionRes);
         }
       }
     }
@@ -572,6 +580,9 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
         button.setVisibility(visibility);
         if (image != 0) {
           ((HeaderButton) button).setImageResource(image);
+        }
+        if (contentDescriptionRes != 0) {
+          ((HeaderButton) button).setContentDescriptionRes(contentDescriptionRes);
         }
       }
     }
@@ -686,16 +697,19 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
   }
 
-  public HeaderButton genButton (@IdRes int id, @DrawableRes int drawableRes, @ColorId int themeColorId, @Nullable ViewController<?> themeProvider, int width, OnClickListener listener) {
-    return genButton(id, drawableRes, themeColorId, themeProvider, width, ThemeDeprecated.headerSelector(), listener);
+  public HeaderButton genButton (@IdRes int id, @DrawableRes int drawableRes, @StringRes int contentDescriptionRes, @ColorId int themeColorId, @Nullable ViewController<?> themeProvider, int width, OnClickListener listener) {
+    return genButton(id, drawableRes, contentDescriptionRes, themeColorId, themeProvider, width, ThemeDeprecated.headerSelector(), listener);
   }
 
-  public HeaderButton genButton (@IdRes int id, @DrawableRes int image, @ColorId int themeColorId, @Nullable ViewController<?> themeProvider, int width, int resource, OnClickListener listener) {
+  public HeaderButton genButton (@IdRes int id, @DrawableRes int image, @StringRes int contentDescriptionRes, @ColorId int themeColorId, @Nullable ViewController<?> themeProvider, int width, int resource, OnClickListener listener) {
     HeaderButton btn = new HeaderButton(getContext());
     btn.setButtonBackground(resource);
     btn.setId(id);
     if (image != 0) {
       btn.setImageResource(image);
+    }
+    if (contentDescriptionRes != 0) {
+      btn.setContentDescriptionRes(contentDescriptionRes);
     }
     if (themeColorId != 0) {
       btn.setThemeColorId(themeColorId);
@@ -765,43 +779,43 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   public HeaderButton addDoneButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_done, R.drawable.baseline_check_24, colorId, themeProvider, Screen.dp(56f), this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(R.id.menu_btn_done, R.drawable.baseline_check_24, R.string.Done, colorId, themeProvider, Screen.dp(56f), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
   public HeaderButton addReplyButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_reply, R.drawable.baseline_reply_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this).setThemeColorId(colorId), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(R.id.menu_btn_reply, R.drawable.baseline_reply_24, R.string.Reply, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this).setThemeColorId(colorId), Lang.rtl() ? 0 : -1);
     return button;
   }
 
   public HeaderButton addEditButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_edit, R.drawable.baseline_edit_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(R.id.menu_btn_edit, R.drawable.baseline_edit_24, R.string.edit, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
   public HeaderButton addCopyButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_copy, R.drawable.baseline_content_copy_24, colorId, themeProvider, Screen.dp(50f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(R.id.menu_btn_copy, R.drawable.baseline_content_copy_24, R.string.Copy, colorId, themeProvider, Screen.dp(50f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
   public HeaderButton addViewButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_view, R.drawable.baseline_visibility_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerLightSelector(), this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(R.id.menu_btn_view, R.drawable.baseline_visibility_24, R.string.ShowInChat, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerLightSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
   public HeaderButton addRetryButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_retry, R.drawable.baseline_repeat_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(R.id.menu_btn_retry, R.drawable.baseline_repeat_24, R.string.Resend, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
   public HeaderButton addDeleteButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_delete, R.drawable.baseline_delete_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(R.id.menu_btn_delete, R.drawable.baseline_delete_24, R.string.Delete, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
@@ -811,7 +825,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   public HeaderButton addForwardButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_forward, R.drawable.baseline_forward_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(R.id.menu_btn_forward, R.drawable.baseline_forward_24, R.string.Share, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
@@ -820,7 +834,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public HeaderButton addMoreButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
-    return addButton(menu, R.id.menu_btn_more, R.drawable.baseline_more_vert_24, 49f, themeProvider, colorId);
+    return addButton(menu, R.id.menu_btn_more, R.drawable.baseline_more_vert_24, R.string.AccDescrMoreOptions, 49f, themeProvider, colorId);
   }
 
   public HeaderButton addSearchButton (LinearLayout menu, @NonNull ViewController<?> themeProvider) {
@@ -828,12 +842,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public HeaderButton addSearchButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
-    return addButton(menu, R.id.menu_btn_search, R.drawable.baseline_search_24, 49f, themeProvider, colorId);
+    return addButton(menu, R.id.menu_btn_search, R.drawable.baseline_search_24, R.string.Search, 49f, themeProvider, colorId);
   }
 
-  public HeaderButton addButton (LinearLayout menu, @IdRes int buttonId, @DrawableRes int iconRes, float widthDp, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
+  public HeaderButton addButton (LinearLayout menu, @IdRes int buttonId, @DrawableRes int iconRes, @StringRes int contentDescriptionRes, float widthDp, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(buttonId, iconRes, colorId, themeProvider, Screen.dp(widthDp), this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(buttonId, iconRes, contentDescriptionRes, colorId, themeProvider, Screen.dp(widthDp), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
@@ -858,15 +872,15 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   // Buttons core
 
-  public HeaderButton addButton (LinearLayout menu, @IdRes int id, @DrawableRes int drawableRes, @ColorId int themeColorId, @Nullable ViewController<?> themeProvider, int width) {
+  public HeaderButton addButton (LinearLayout menu, @IdRes int id, @DrawableRes int drawableRes, @StringRes int contentDescriptionRes, @ColorId int themeColorId, @Nullable ViewController<?> themeProvider, int width) {
     HeaderButton button;
-    menu.addView(button = genButton(id, drawableRes, themeColorId, themeProvider, width, this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(id, drawableRes, contentDescriptionRes, themeColorId, themeProvider, width, this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addButton (LinearLayout menu, @IdRes int id, @ColorId int themeColorId, @Nullable ViewController<?> themeProvider, @DrawableRes int drawableRes, int width, int resource) {
+  public HeaderButton addButton (LinearLayout menu, @IdRes int id, @ColorId int themeColorId, @Nullable ViewController<?> themeProvider, @DrawableRes int drawableRes, @StringRes int contentDescriptionRes, int width, int resource) {
     HeaderButton button;
-    menu.addView(button = genButton(id, drawableRes, themeColorId, themeProvider, width, resource, this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(id, drawableRes, contentDescriptionRes, themeColorId, themeProvider, width, resource, this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
