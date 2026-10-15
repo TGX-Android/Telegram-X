@@ -32,7 +32,6 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
-import java.util.ArrayList;
 import java.util.function.Function;
 import tgx.td.ChatId;
 
@@ -48,7 +47,6 @@ public final class ForumTopicNotificationController extends ViewController<Forum
   private SettingRow mute, sound, preview, pinned, mentions;
   private ScrollView scroll;
   private boolean terminal;
-  private int soundRequest;
 
   public ForumTopicNotificationController (Context context, Tdlib tdlib) { super(context, tdlib); }
   @Override public int getId () { return R.id.controller_forumTopicNotifications; }
@@ -167,7 +165,11 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     if (s == null) return;
     String muteState = !s.useDefaultMuteFor && s.muteFor > 0 ? (s.muteFor > 366 * 86400 ? Lang.getString(R.string.ForumMuteForever) : Lang.getString(R.string.ForumProfileDuration, Lang.getDuration(s.muteFor))) : state(s.useDefaultMuteFor, s.muteFor == 0);
     mute.setValue(muteState);
-    sound.setValue(Lang.getString(s.useDefaultSound ? R.string.ForumProfileDefault : s.soundId == 0 ? R.string.ForumProfileSilent : R.string.ForumProfileCustomSound));
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    // Saved sounds selected in another client use the local group fallback. Do not
+    // overwrite that server setting unless the user explicitly selects an option.
+    sound.setValue(Lang.getString(s.useDefaultSound || s.soundId != 0 ? R.string.ForumProfileDefault : R.string.ForumProfileSilent));
+    // endregion
     preview.setValue(state(s.useDefaultShowPreview, s.showPreview));
     pinned.setValue(state(s.useDefaultDisablePinnedMessageNotifications, !s.disablePinnedMessageNotifications));
     mentions.setValue(state(s.useDefaultDisableMentionNotifications, !s.disableMentionNotifications));
@@ -202,25 +204,12 @@ public final class ForumTopicNotificationController extends ViewController<Forum
       .setNegativeButton(Lang.getString(R.string.Cancel), null));
   }
 
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
   private void chooseSound () {
-    busy = true; render(); final int ticket = ++soundRequest;
-    tdlib.send(new TdApi.GetSavedNotificationSounds(), (sounds, error) -> tdlib.ui().post(() -> {
-      if (isDestroyed() || terminal || ticket != soundRequest) return;
-      ++soundRequest;
-      busy = false; render();
-      if (error != null) { showError(error); return; }
-      ArrayList<String> labels = new ArrayList<>();
-      labels.add(Lang.getString(R.string.ForumProfileDefault)); labels.add(Lang.getString(R.string.ForumProfileSilent));
-      for (TdApi.NotificationSound value : sounds.notificationSounds) labels.add(value.title);
-      showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(Lang.getString(R.string.ForumProfileSound))
-        .setItems(labels.toArray(new String[0]), (dialog, which) -> apply(s -> ForumTopicNotifications.sound(s, which == 0, which < 2 ? 0 : sounds.notificationSounds[which - 2].id)))
-        .setNegativeButton(Lang.getString(R.string.Cancel), null));
-    }));
-    tdlib.ui().postDelayed(() -> {
-      if (!isDestroyed() && !terminal && ticket == soundRequest && busy) {
-        ++soundRequest; busy = false; render(); showError(new TdApi.Error(408, Lang.getString(R.string.ForumProfileRetry)));
-      }
-    }, 15000);
+    String[] labels = {Lang.getString(R.string.ForumProfileDefault), Lang.getString(R.string.ForumProfileSilent)};
+    showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(Lang.getString(R.string.ForumProfileSound))
+      .setItems(labels, (dialog, which) -> apply(s -> ForumTopicNotifications.sound(s, which == 0, 0)))
+      .setNegativeButton(Lang.getString(R.string.Cancel), null));
   }
 
   private void showError (TdApi.Error error) {
@@ -250,7 +239,6 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     setArguments(args); super.restoreInstanceState(in, prefix); return true;
   }
   @Override public void destroy () {
-    ++soundRequest;
     if (subscription != null) subscription.close();
     tdlib.listeners().removeCleanupListener(this);
     tdlib.cache().unsubscribeFromSupergroupUpdates(ChatId.toSupergroupId(getChatId()), this);
@@ -258,7 +246,7 @@ public final class ForumTopicNotificationController extends ViewController<Forum
   }
   @Override public void onSupergroupUpdated (TdApi.Supergroup supergroup) { runOnUiThreadOptional(this::render); }
   @Override public void onPerformUserCleanup () {
-    terminal = true; ++soundRequest;
+    terminal = true;
     tdlib.ui().post(() -> { if (isDestroyed()) return; if (subscription != null) subscription.close(); topic = null; busy = false; render(); });
   }
   @Override public void onPerformRestart () { onPerformUserCleanup(); }

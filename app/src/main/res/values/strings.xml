@@ -95,7 +95,6 @@
   <string name="ForumProfileMentionNotifications">Mention notifications</string>
   <string name="ForumProfileSound">Notification sound</string>
   <string name="ForumProfileSilent">No sound</string>
-  <string name="ForumProfileCustomSound">Custom sound</string>
   <string name="ForumProfileSettingsHint">These settings affect only this topic. Inherited values follow the parent group. Story settings are unchanged.</string>
   <string name="ForumProfileDuration">Muted for %1$s</string>
   <string name="ForumDeliveryPending">Sending</string>
@@ -108,14 +107,10 @@
   <string name="ForumSelectionProgress">Completed: %1$d / %2$d</string>
   <string name="ForumSelectionDeleteConfirm">Permanently delete this selection and all of its messages? This cannot be undone. Other topics will not be changed. Selection count: %1$d</string>
   <string name="ForumSelectionClearConfirm">Permanently clear the messages in this selected General topic? General itself is kept. This cannot be undone. Other topics will not be changed. Selected topics: %1$d</string>
-  <string name="ForumSelectionSucceeded">Completed</string>
-  <string name="ForumSelectionFailed">Not completed</string>
   <string name="ForumSelectionRetryFailed">Retry failed only</string>
   <string name="ForumSelectionUncertain">The server outcome is unknown. Refresh and verify before another destructive action. This operation will not be retried.</string>
   <string name="ForumSelectionPinsUnavailable">Could not verify the full pinned-topic order. Refresh and try again.</string>
   <string name="ForumSelectionBusy">Another topic batch is still running.</string>
-  <string name="ForumSelectionPreflightAborted">Not sent: another selected topic failed the preflight check. No batch changes were started.</string>
-  <string name="ForumSelectionNoActions">No common actions are available for these topics.</string>
   <string name="ForumSelectionActions">Selected topics</string>
   <string name="ForumTabsFinishAction">Finish editing, sending or attaching your message before switching topics.</string>
   <string name="ForumTabsLabel">Forum topic tabs</string>
@@ -144,12 +139,6 @@
   <string name="ForumNoUnreadPollVotes">No unread poll votes in this topic.</string>
   <string name="ForumGroupProfile">Group profile</string>
   <string name="ForumEditTopic">Edit topic</string>
-  <string name="ForumTopicName">Topic name</string>
-  <string name="ForumInvalidName">Enter a name with 1–128 characters.</string>
-  <string name="ForumChooseIcon">Choose icon</string>
-  <string name="ForumCustomIconSelected">Change selected custom emoji</string>
-  <string name="ForumRegularIcon">Use regular topic icon</string>
-  <string name="ForumMoreIcons">More custom emoji</string>
   <string name="ForumColorBlue">Blue</string>
   <string name="ForumColorYellow">Yellow</string>
   <string name="ForumColorPurple">Purple</string>
@@ -170,8 +159,6 @@
   <string name="ForumPinAtEdge">The topic is already at this end of the pinned list, or is no longer pinned.</string>
   <string name="ForumDeleteTopic">Delete topic</string>
   <string name="ForumClearGeneral">Clear General history</string>
-  <string name="ForumDeleteTopicConfirm">Delete this topic and its messages for everyone? This cannot be undone. Without delete-message permission, a topic creator can delete only a topic with at most 11 messages, all their own. Telegram will verify this.</string>
-  <string name="ForumClearGeneralConfirm">Delete all messages in General for everyone? This cannot be undone. The General topic itself will remain available.</string>
   <string name="ForumNotifications">Topic notifications</string>
   <string name="ForumNotificationsState">Topic notifications · %1$s</string>
   <string name="format_forumPreview">%1$s: %2$s</string>

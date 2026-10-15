@@ -125,9 +125,7 @@ public class TdlibNotificationSettings {
     } else if (!soundPath.isEmpty()) {
       /*
       * if (!Strings.isEmpty(soundPath) && soundPath.startsWith("file://")) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
-        org.thunderdog.challegram.unsorted.AppContext.get().grantUriPermission("com.android.systemui", Uri.parse(soundPath), Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        // endregion
+        UI.getAppContext().grantUriPermission("com.android.systemui", Uri.parse(soundPath), Intent.FLAG_GRANT_READ_URI_PERMISSION);
       }
       * */
       /*Uri uri = null;
