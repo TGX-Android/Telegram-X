@@ -26,7 +26,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.chat.CustomTouchHelper;
 import org.thunderdog.challegram.component.chat.MessagesAdapter;
-import org.thunderdog.challegram.component.chat.MessagesHolder;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.MessagesTouchHelperCallback;
 import org.thunderdog.challegram.config.Config;
@@ -34,6 +33,7 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
 
 import me.vkryl.android.AnimatorUtils;
@@ -128,7 +128,7 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
     } catch (IllegalArgumentException ignored) {
       return;
     }
-    if (holder != null && holder.getItemViewType() != MessagesHolder.TYPE_EMPTY) {
+    if (holder != null && holder.getItemViewType() != ListItem.TYPE_CHAT_EMPTY) {
       touchHelper.startSwipe(holder);
     }
   }

@@ -126,9 +126,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   public static final int ENTITY_FLAG_USERNAME = 1 << 1;
   public static final int ENTITY_FLAG_HASHTAG = 1 << 2;
   public static final int ENTITY_FLAG_COMMAND = 1 << 3;
+  public static final int ENTITY_FLAG_TON_ADDRESS = 1 << 4;
 
   public static final int ENTITY_FLAGS_EXTERNAL = ENTITY_FLAG_URL;
-  public static final int ENTITY_FLAGS_ALL_NO_COMMANDS = ENTITY_FLAGS_EXTERNAL | ENTITY_FLAG_USERNAME | ENTITY_FLAG_HASHTAG;
+  public static final int ENTITY_FLAGS_ALL_NO_COMMANDS = ENTITY_FLAGS_EXTERNAL | ENTITY_FLAG_USERNAME | ENTITY_FLAG_HASHTAG | ENTITY_FLAG_TON_ADDRESS;
   public static final int ENTITY_FLAGS_ALL = ENTITY_FLAGS_ALL_NO_COMMANDS | ENTITY_FLAG_COMMAND;
   public static final int ENTITY_FLAGS_NONE = 0;
 
@@ -598,6 +599,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
         return (flags & ENTITY_FLAG_HASHTAG) != 0;
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
+        return (flags & ENTITY_FLAG_TON_ADDRESS) != 0;
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
@@ -620,7 +623,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         break;
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(entity.type);
     }
     return false;
@@ -2714,6 +2717,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     default boolean onEmailClick (String email) { return false; }
     default boolean onPhoneNumberClick (String phoneNumber) { return false; }
     default boolean onBankCardNumberClick (String cardNumber) { return false; }
+    default boolean onTonAddressClick (String tonAddress) { return false; }
     default boolean onHashtagClick (String hashtag) { return false; }
     default boolean onUrlClick (View view, String link, boolean promptUser, @NonNull TdlibUi.UrlOpenParameters openParameters) { return false; }
     default boolean onAnchorClick (View view, String anchor) { return false; }

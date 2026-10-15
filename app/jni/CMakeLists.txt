@@ -14,6 +14,10 @@ if (NOT DEFINED ANDROID_MIN_SDK_VERSION)
   message(FATAL_ERROR "ANDROID_MIN_SDK_VERSION is not set")
 endif()
 
+if(NOT EXISTS "${ANDROID_NDK}")
+  message(FATAL_ERROR "ANDROID_NDK is not set")
+endif()
+
 # == Include ==
 
 include("${CMAKE_HOME_DIRECTORY}/cmake/ReadVariables.cmake")
@@ -70,11 +74,25 @@ add_compile_options(
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fvisibility=hidden>"
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fvisibility-inlines-hidden>"
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
-  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fno-unwind-tables>"
-  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-fno-asynchronous-unwind-tables>"
 )
 
-if (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 23)
+add_compile_options(
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${TGX_ROOT_DIR}/=>"
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${ANDROID_NDK}/=ndk/>"
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${CMAKE_BINARY_DIR}=.cxx>"
+)
+
+if (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 30)
+  add_link_options(
+    "-Wl,--pack-dyn-relocs=android+relr"
+    "-Wl,--no-use-android-relr-tags"
+  )
+elseif (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 28)
+  add_link_options(
+    "-Wl,--pack-dyn-relocs=android+relr"
+    "-Wl,--use-android-relr-tags"
+  )
+elseif (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 23)
   add_link_options(
     "-Wl,--pack-dyn-relocs=android"
   )

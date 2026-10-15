@@ -552,7 +552,7 @@ public class SettingsController extends ViewController<Void> implements
               view.setText(obtainWrapper(Lang.getString(R.string.ReminderSetLoginEmailText), action.getConstructor()));
               break;
             default:
-              Td.assertSuggestedAction_a78df4c9();
+              Td.assertSuggestedAction_17e8d183();
               throw Td.unsupported(action);
           }
         } else if (itemId == R.id.btn_birthdate) {
@@ -875,7 +875,7 @@ public class SettingsController extends ViewController<Void> implements
         item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_alternate_email_24, R.string.ReminderSetLoginEmail);
         break;
       default:
-        Td.assertSuggestedAction_a78df4c9();
+        Td.assertSuggestedAction_17e8d183();
         throw Td.unsupported(action);
     }
     item
@@ -1021,7 +1021,7 @@ public class SettingsController extends ViewController<Void> implements
   private boolean setUsername (@Nullable TdApi.User myUser) {
     TdApi.Usernames usernames = myUser != null ? myUser.usernames : null;
     if (myUser != null && usernames == null) {
-      usernames = new TdApi.Usernames(new String[0], new String[0], "", new String[0]);
+      usernames = new TdApi.Usernames(new String[0], new String[0], "", new String[0], "");
     }
     if ((myUsernames == null && usernames != null) || (myUsernames != null && !Td.equalsTo(myUsernames, usernames))) {
       this.myUsernames = usernames;
@@ -1312,7 +1312,7 @@ public class SettingsController extends ViewController<Void> implements
         return;
       }
       default: {
-        Td.assertSuggestedAction_a78df4c9();
+        Td.assertSuggestedAction_17e8d183();
         throw Td.unsupported(suggestedAction);
       }
     }
