@@ -4093,6 +4093,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     int baseY = Views.getLocationInWindow(navigationController.getValue())[1];
 
+    // region @MadeByLLM("gpt-5", ref = "PR #1095")
+    if (forumTabsView != null && forumTabsView.isShown()) {
+      // Keep panel drags out of slide-back, including the translated panel above the keyboard.
+      final int baseX = Views.getLocationInWindow(navigationController.getValue())[0];
+      final int[] location = Views.getLocationInWindow(forumTabsView);
+      final int tabsX = location[0] - baseX;
+      final int tabsY = location[1] - baseY;
+      if (x >= tabsX && x < tabsX + forumTabsView.getWidth() && y >= tabsY && y < tabsY + forumTabsView.getHeight()) {
+        return false;
+      }
+    }
+    // endregion
+
     /*if (areInlineResultsVisible()) {
       return false;
     }*/
