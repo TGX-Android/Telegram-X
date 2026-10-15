@@ -18,6 +18,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -162,7 +163,7 @@ public class UI {
 
   public static boolean startService (Intent intent, boolean isForeground, boolean forcePermissionRequest, @Nullable CancellationSignal signal) {
     if (isForeground) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.FOREGROUND_SERVICE) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = getUiContext();
         if (activity != null) {
           activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, permissions, grantResults, grantCount) -> {
@@ -179,7 +180,7 @@ public class UI {
         return startServiceImpl(getContext(), intent, true);
       }
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && forcePermissionRequest) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && forcePermissionRequest && ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.FOREGROUND_SERVICE) != PackageManager.PERMISSION_GRANTED) {
       BaseActivity activity = getUiContext();
       if (activity != null) {
         activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, permissions, grantResults, grantCount) -> {
