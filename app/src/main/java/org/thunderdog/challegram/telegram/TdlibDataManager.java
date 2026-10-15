@@ -94,6 +94,15 @@ public abstract class TdlibDataManager<Key, Value extends TdApi.Object, Result e
     }
   }
 
+  /** Remove only the failed entry the caller observed; never discard a newer result. */
+  protected final void forgetError (Result expected) {
+    synchronized (dataLock) {
+      if (expected.error != null && entries.get(expected.key) == expected && !loadingKeys.contains(expected.key)) {
+        entries.remove(expected.key);
+      }
+    }
+  }
+
   public interface Replacer<Value extends TdApi.Object> {
     @Nullable
     Value replace (@Nullable Value oldValue, @Nullable TdApi.Error oldError);

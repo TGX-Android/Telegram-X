@@ -2182,6 +2182,11 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       ColorId.inlineText,
       ColorId.inlineIcon,
       ColorId.inlineContentActive,
+      ColorId.botButtonPrimary,
+      ColorId.botButtonDanger,
+      ColorId.botButtonSuccess,
+      ColorId.botButtonText,
+      ColorId.botButtonRipple,
     };
     int[] circleColorIds = new int[] {
       ColorId.circleButtonRegular,
