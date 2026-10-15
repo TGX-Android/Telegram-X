@@ -470,7 +470,9 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       if (mergedList.size() == 1) {
         TdlibNotification notification = mergedList.get(0);
         final CharSequence messageText;
-        if (needPreview) {
+        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+        if (helper.needPreview(group, notification)) {
+          // endregion
           CharSequence content = notification.getTextRepresentation(tdlib, group.isMention() && onlyPinned, true, hasCustomText);
           messageText = Config.USE_GROUP_NAMES || tdlib.isUserChat(chat) || tdlib.isChannelChat(chat) ? content : Lang.getString(R.string.format_notificationContentGroup, notification.findSenderName(), content);
         } else {
@@ -498,7 +500,9 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
             isEditedVisible = true;
           }
         }
-        if (needPreview) {
+        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+        if (helper.needPreview(group, mergedList.get(0))) {
+          // endregion
           CharSequence content = mergedList.get(0).getTextRepresentation(tdlib, group.isMention() && onlyPinned, true, mergedList, isEdited, isEditedVisible, hasCustomText);
           messageText = Config.USE_GROUP_NAMES || tdlib.isUserChat(chat) || tdlib.isChannelChat(chat) ? content : Lang.getCharSequence(R.string.format_notificationContentGroup, mergedList.get(0).findSenderName(), content);
         } else {
@@ -940,7 +944,9 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   private void addMessage (NotificationCompat.MessagingStyle style, CharSequence messageText, Person person, TdApi.Chat chat, TdlibNotification notification, long loadTimeout, boolean isRebuild, boolean isExclusivelyScheduled, boolean isExclusivelySilent, boolean isOnlyPinned) {
     long chatId = chat.id;
     boolean isMention = notification.group().isMention();
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && tdlib.notifications().needContentPreview(chatId, isMention)) {
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && (!Passcode.instance().isLocked() || Passcode.instance().displayNotifications()) && tdlib.notifications().needContentPreview(chatId, isMention, notification.isForumMessage() ? notification.allowContentPreview() : null) && notification.needContentPreview()) {
+      // endregion
       final long date = notification.getDate() * 1000l;
       TdlibNotificationMediaFile file = TdlibNotificationMediaFile.newFile(tdlib, chat, notification.getNotificationContent());
       if (file != null) {
@@ -1160,10 +1166,11 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
           final boolean onlyScheduled = lastNotification.group().isOnlyScheduled();
           final boolean onlySilent = lastNotification.group().isOnlyInitiallySilent();
           style = newMessagingStyle(tdlib.notifications(), chat, notifications.size(), isMention, onlyPinned, onlyScheduled, onlySilent, !isRebuild);
-          boolean usePreview = allowPreview && tdlib.notifications().isShowPreviewEnabled(chat.id, lastNotification.group().isMention());
           for (TdlibNotification notification : notifications) {
             CharSequence preview;
-            if (usePreview) {
+            // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+            if (allowPreview && helper.needPreview(notification.group(), notification)) {
+              // endregion
               preview = notification.getTextRepresentation(tdlib, isMention && onlyPinned, true, hasCustomText);
             } else {
               preview = Lang.getString(R.string.YouHaveNewMessage);
@@ -1218,7 +1225,9 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (chat == null || !allowPreview) {
       return Lang.getString(R.string.YouHaveNewMessage);
     }
-    boolean needPreview = helper.needPreview(notification.group());
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    boolean needPreview = helper.needPreview(notification.group(), notification);
+    // endregion
     String prefix;
     if (needPrefix) {
       if (ChatId.isUserChat(chat.id)) {

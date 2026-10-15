@@ -1736,6 +1736,21 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  public boolean needContentPreview (long chatId, boolean isMention, @Nullable Boolean resolvedShowPreview) {
+    if (resolvedShowPreview == null) return needContentPreview(chatId, isMention);
+    if (!Config.NEED_NOTIFICATION_CONTENT_PREVIEW || !resolvedShowPreview) return false;
+    // TDLib resolves forum topic overrides; only the separate local media preference still applies here.
+    if (ChatId.isUserChat(chatId) || isMention) {
+      return privateSettings.needContentPreview();
+    } else if (tdlib.isChannel(chatId)) {
+      return channelSettings.needContentPreview();
+    } else {
+      return groupSettings.needContentPreview();
+    }
+  }
+  // endregion
+
   // Pinned Messages
 
   public boolean defaultDisablePinnedMessages (TdApi.NotificationSettingsScope scope) {

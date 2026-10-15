@@ -538,15 +538,30 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   }
 
   public boolean needPreview (@NonNull TdlibNotificationGroup group) {
-    return tdlib.notifications().isShowPreviewEnabled(group.getChatId(), group.isMention());
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    return allowNotificationPreview() && tdlib.notifications().isShowPreviewEnabled(group.getChatId(), group.isMention());
+    // endregion
   }
 
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  public boolean needPreview (@NonNull TdlibNotificationGroup group, @Nullable TdlibNotification notification) {
+    return notification != null && allowNotificationPreview() && notification.allowContentPreview() &&
+      (notification.isForumMessage() || needPreview(group));
+  }
+  // endregion
+
   public boolean needContentPreview (@NonNull TdlibNotificationGroup group) {
-    return tdlib.notifications().needContentPreview(group.getChatId(), group.isMention());
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    return allowNotificationPreview() && tdlib.notifications().needContentPreview(group.getChatId(), group.isMention());
+    // endregion
   }
 
   public boolean needContentPreview (@NonNull TdlibNotificationGroup group, @Nullable TdlibNotification notification) {
-    return notification != null && needContentPreview(group) && notification.needContentPreview();
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    return notification != null && allowNotificationPreview() &&
+      tdlib.notifications().needContentPreview(group.getChatId(), group.isMention(), notification.isForumMessage() ? notification.allowContentPreview() : null) &&
+      notification.needContentPreview();
+    // endregion
   }
 
   // Impl
