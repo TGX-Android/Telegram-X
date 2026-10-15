@@ -102,11 +102,11 @@ public class Tracer {
         ClientException.throwAssertionError(error);
         break;
       case Cause.DATABASE_ERROR:
-        throw new ClientException.DatabaseError(error.getClass().getSimpleName() + ": " + error.getMessage());
+        throw new DatabaseError(error.getClass().getSimpleName() + ": " + error.getMessage());
       case Cause.TDLIB_LAUNCH_ERROR:
-        throw new ClientException.TdlibLaunchError(error.getMessage());
+        throw new TdlibLaunchError(error.getMessage());
       case Cause.TDLIB_LOST_PROMISE_ERROR:
-        throw new ClientException.TdlibLostPromiseError(error.getMessage());
+        throw new TdlibLostPromiseError(error.getMessage());
       case Cause.LAUNCH_ERROR:
       case Cause.UI_ERROR:
       case Cause.OTHER_ERROR:
@@ -151,11 +151,11 @@ public class Tracer {
       .flags(Crash.Flags.SOURCE_TDLIB_PARAMETERS)
     );
     if (stackTrace != null) {
-      Throwable t = new ClientException.TdlibLaunchError(message);
+      Throwable t = new TdlibLaunchError(message);
       t.setStackTrace(stackTrace);
       onFatalError(t, Cause.TDLIB_HANDLER_ERROR);
     } else {
-      onFatalError(new ClientException.TdlibLaunchError(message), Cause.TDLIB_HANDLER_ERROR);
+      onFatalError(new TdlibLaunchError(message), Cause.TDLIB_HANDLER_ERROR);
     }
   }
 

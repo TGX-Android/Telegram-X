@@ -526,6 +526,11 @@ public class FormattedText {
         parseRichText(context, bankCardNumber.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_BANK_CARD_NUMBER, bankCardNumber.bankCardNumber, linkCached, referenceAnchorName, null, openParameters);
         break;
       }
+      case TdApi.RichTextTonAddress.CONSTRUCTOR: {
+        TdApi.RichTextTonAddress tonAddress = (TdApi.RichTextTonAddress) in;
+        parseRichText(context, tonAddress.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_TON_ADDRESS, tonAddress.address, linkCached, referenceAnchorName, null, openParameters);
+        break;
+      }
       case TdApi.RichTextBotCommand.CONSTRUCTOR: {
         TdApi.RichTextBotCommand botCommand = (TdApi.RichTextBotCommand) in;
         parseRichText(context, botCommand.text, out, entities, offset, flags | TextEntityCustom.FLAG_CLICKABLE, linkOffset, new int[1], TextEntityCustom.LINK_TYPE_BOT_COMMAND, botCommand.botCommand, linkCached, referenceAnchorName, null, openParameters);
@@ -584,7 +589,7 @@ public class FormattedText {
         break;
       }
       default: {
-        Td.assertRichText_caec3729();
+        Td.assertRichText_801eae96();
         throw Td.unsupported(in);
       }
     }

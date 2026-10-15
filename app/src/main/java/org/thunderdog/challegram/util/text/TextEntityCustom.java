@@ -65,6 +65,7 @@ public class TextEntityCustom extends TextEntity {
   public static final int LINK_TYPE_HASHTAG = 8;
   public static final int LINK_TYPE_MENTION = 9;
   public static final int LINK_TYPE_MENTION_NAME = 10;
+  public static final int LINK_TYPE_TON_ADDRESS = 11;
 
   public static final int LINK_TYPE_ANCHOR = 100;
   public static final int LINK_TYPE_REFERENCE = 101;

@@ -151,10 +151,11 @@ class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), va
       return true
     }
 
+  val isUniversal: Boolean
+    get() = flavor == Abi.VARIANTS[Abi.UNIVERSAL]!!.flavor
+
   val isTestingLab: Boolean
-    get() {
-      return flavor == Abi.VARIANTS[Abi.LAB]!!.flavor
-    }
+    get() = flavor == Abi.VARIANTS[Abi.LAB]!!.flavor
 
   val minSdk: Int
     get() = if (is64Bit) {
@@ -191,6 +192,9 @@ data class SdkVariant(
 ) {
   val isLatest: Boolean =
     flavor == "latest"
+
+  val isTens: Boolean =
+    flavor == "tens"
   val isMarshmallow: Boolean =
     flavor == "marshmallow"
   val isLollipop: Boolean =
@@ -199,7 +203,7 @@ data class SdkVariant(
     flavor == "legacy"
 
   val jetpackMediaFlavor: String =
-    flavor.takeIf { !isMarshmallow } ?: "latest"
+    flavor.takeIf { isLegacy || isLollipop } ?: "latest"
 
   val usesLegacyNdk: Boolean =
     isLegacy
@@ -209,7 +213,9 @@ object Sdk {
   const val LEGACY = 0
   const val LOLLIPOP = 1
   const val MARSHMALLOW = 2
-  const val LATEST = 3
+  const val NOUGAT_OREO_PIE = 3
+  const val Q_R_S = 4
+  const val LATEST = 5
 
   val VARIANTS = mapOf(
     Pair(LEGACY, SdkVariant(
@@ -227,9 +233,21 @@ object Sdk {
       minSdk = 23,
       maxSdk = 23
     )),
+    Pair(NOUGAT_OREO_PIE, SdkVariant(
+      flavor = "tens",
+      minSdk = 24,
+      maxSdk = 28,
+      displayName = "nougatOreoPie"
+    )),
+    Pair(Q_R_S, SdkVariant(
+      flavor = "qrs",
+      minSdk = 29,
+      maxSdk = 32,
+      displayName = "QRS"
+    )),
     Pair(LATEST, SdkVariant(
       flavor = "latest",
-      minSdk = 24,
+      minSdk = 33,
       displayName = null
     ))
   )

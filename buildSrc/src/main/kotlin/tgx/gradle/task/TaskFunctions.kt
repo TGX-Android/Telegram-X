@@ -14,14 +14,20 @@
 
 package tgx.gradle.task
 
+import com.android.build.api.dsl.SdkComponents
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFile
+import org.gradle.api.internal.GeneratedSubclasses
 import org.gradle.api.logging.Logging
+import org.gradle.api.provider.Provider
 import tgx.gradle.fatal
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
 import java.io.File
 import java.io.Writer
+import java.nio.file.CopyOption
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.*
 
 fun isWindowsHost(): Boolean =
@@ -102,6 +108,10 @@ fun copyOrReplace(fromFile: File, toFile: File) {
       input.copyTo(output)
     }
   }
+}
+
+fun moveFile(fromFile: File, toFile: File, vararg copyOption: CopyOption = arrayOf(StandardCopyOption.REPLACE_EXISTING)) {
+  Files.move(fromFile.toPath(), toFile.toPath(), *copyOption)
 }
 
 fun areFileContentsIdentical(a: File, b: File): Boolean =
@@ -279,8 +289,16 @@ fun File.resolveNdkBinary(path: String): File =
     resolve(path)
   }
 
+fun SdkComponents.resolveBuildToolsBinary(buildToolsVersion: String, name: String): Provider<RegularFile> =
+  this.sdkDirectory.map {
+    it.file("build-tools/$buildToolsVersion/$name${if (isWindowsHost()) ".exe" else ""}")
+  }
+
 val PATH =
   if (isWindowsHost())
     "Path"
   else
     "PATH"
+
+fun Any.className(): String =
+  GeneratedSubclasses.unpackType(this).simpleName

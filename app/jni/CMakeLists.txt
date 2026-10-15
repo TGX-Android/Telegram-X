@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 project(tgx VERSION 1.0.0 LANGUAGES C CXX)
-message(STATUS "Building ${PROJECT_NAME} ndk: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION}) platform: ${ANDROID_PLATFORM} (${CMAKE_SYSTEM_VERSION}) abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
+message(STATUS "Building ${PROJECT_NAME} ndk: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION}) platform: ${ANDROID_PLATFORM} (${ANDROID_MIN_SDK_VERSION}) abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
 
 if(NOT ANDROID_NDK_MAJOR OR NOT ANDROID_NDK_REVISION)
   message(FATAL_ERROR "Unknown NDK: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION})")
@@ -8,6 +8,14 @@ endif()
 
 if (NOT TGX_FLAVOR MATCHES "^(legacy|lollipop|marshmallow|latest)$")
   message(FATAL_ERROR "Unknown flavor: ${TGX_FLAVOR}")
+endif()
+
+if (NOT DEFINED ANDROID_MIN_SDK_VERSION)
+  message(FATAL_ERROR "ANDROID_MIN_SDK_VERSION is not set")
+endif()
+
+if(NOT EXISTS "${ANDROID_NDK}")
+  message(FATAL_ERROR "ANDROID_NDK is not set")
 endif()
 
 # == Include ==
@@ -68,8 +76,26 @@ add_compile_options(
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
 )
 
-if (CMAKE_SYSTEM_VERSION GREATER_EQUAL 23)
-  string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--pack-dyn-relocs=android")
+add_compile_options(
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${TGX_ROOT_DIR}/=>"
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${ANDROID_NDK}/=ndk/>"
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${CMAKE_BINARY_DIR}=.cxx>"
+)
+
+if (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 30)
+  add_link_options(
+    "-Wl,--pack-dyn-relocs=android+relr"
+    "-Wl,--no-use-android-relr-tags"
+  )
+elseif (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 28)
+  add_link_options(
+    "-Wl,--pack-dyn-relocs=android+relr"
+    "-Wl,--use-android-relr-tags"
+  )
+elseif (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 23)
+  add_link_options(
+    "-Wl,--pack-dyn-relocs=android"
+  )
 endif()
 
 # == Libraries ==

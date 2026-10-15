@@ -127,11 +127,17 @@ open class ModulePlugin : Plugin<Project> {
               }
             }
             Sdk.VARIANTS.forEach { (_, variant) ->
+              val selectedMinSdk = maxOf(
+                Config.MIN_SDK_VERSION,
+                variant.minSdk,
+                ndkVersion.ndkVersionToMinSdk()
+              )
               register(variant.flavor) {
                 dimension = "SDK"
                 externalNativeBuild.cmake.arguments(
-                  "-DANDROID_PLATFORM=android-${maxOf(variant.minSdk, ndkVersion.ndkVersionToMinSdk())}",
-                  "-DANDROID_STL=${if (ndkVersion.ndkVersionMajor() >= 27) "c++_shared" else "c++_static"}",
+                  "-DANDROID_PLATFORM=android-${selectedMinSdk}",
+                  "-DANDROID_MIN_SDK_VERSION=${selectedMinSdk}",
+                  "-DANDROID_STL=c++_shared",
                   "-DTGX_FLAVOR=${variant.flavor}"
                 )
                 sourceSets.getByName(variant.flavor) {
