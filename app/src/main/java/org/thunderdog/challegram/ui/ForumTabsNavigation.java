@@ -82,6 +82,46 @@ final class ForumTabsNavigation {
     return owner.navigateBack() ? Result.RETURNED : Result.RETRY;
   }
 
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  static Result returnFromUnavailableTopic (ViewController<?> owner, int topicId, boolean commit) {
+    if (topicId <= 0 || !isCurrent(owner)) return Result.UNAVAILABLE;
+    NavigationController navigation = owner.context().navigation();
+    NavigationStack stack = navigation.getStack();
+    if (owner.context().isNavigationBusy() || stack.isLocked()) return Result.RETRY;
+    long chatId = owner.getChatId();
+    int ownerIndex = stack.indexOf(owner);
+    int parentIndex = unavailableTopicParentIndex(stack.getAll(), ownerIndex,
+      item -> sameChat(owner, item, chatId) && (item instanceof ForumTopicsController ||
+        item instanceof MessagesController && (((MessagesController) item).isForumTabsHost() ||
+          ((MessagesController) item).compareChat(chatId, null, null, false))),
+      item -> sameChat(owner, item, chatId) && item instanceof MessagesController &&
+        ((MessagesController) item).canLeaveUnavailableTopic(topicId));
+    if (parentIndex < 0) return Result.UNAVAILABLE;
+    if (!commit) return Result.RETURNED;
+    ViewController<?> parent = stack.get(parentIndex);
+    if (parent instanceof MessagesController && ((MessagesController) parent).isForumTabsHost() &&
+        !((MessagesController) parent).requestForumTab(0)) return Result.UNAVAILABLE;
+    // Remove only disposable histories of this topic. The visible profile stays
+    // alive until NavigationProcessor finishes its normal Back animation.
+    for (int i = ownerIndex - 1; i > parentIndex; i--) {
+      ViewController<?> intermediate = stack.get(i);
+      if (intermediate.isAttachedToNavigationController()) navigation.removeChildWrapper(intermediate);
+      stack.destroy(i);
+    }
+    return owner.navigateBack() ? Result.RETURNED : Result.RETRY;
+  }
+
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  static <T> int unavailableTopicParentIndex (List<T> stack, int ownerIndex, Predicate<T> isParent, Predicate<T> removable) {
+    if (ownerIndex < 0 || ownerIndex >= stack.size()) return -1;
+    for (int i = ownerIndex - 1; i >= 0; i--) {
+      T item = stack.get(i);
+      if (isParent.test(item)) return i;
+      if (!removable.test(item)) break;
+    }
+    return -1;
+  }
+
   static void openViewMode (ViewController<?> owner, long chatId, boolean topics, BooleanSupplier active, Runnable finished) {
     openViewMode(owner, chatId, topics, active, finished, 8);
   }

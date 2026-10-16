@@ -31,6 +31,12 @@ public final class ForumTopicContext {
   @Nullable public TdApi.ForumTopic topic () { return topic; }
   @Nullable public TdApi.Error error () { return error; }
   public boolean isLoading () { return topic == null && error == null; }
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  public static boolean isUnavailable (@Nullable TdApi.Error error) {
+    return error != null && (error.code == 404 || error.code == 403 ||
+      "TOPIC_DELETED".equals(error.message) || "TOPIC_NOT_FOUND".equals(error.message));
+  }
+
   public boolean hasLocalDraft () { return hasLocalDraft; }
   public void setLocalDraft (@Nullable TdApi.DraftMessage draft) { hasLocalDraft = true; localDraft = draft; }
   public void acknowledgeDraft (@Nullable TdApi.DraftMessage draft) {

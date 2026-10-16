@@ -31,6 +31,9 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.ForumPresentation;
+// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+import org.thunderdog.challegram.data.ForumTopicContext;
+// endregion
 import org.thunderdog.challegram.data.ForumTopicMedia;
 import org.thunderdog.challegram.data.ForumTopicNotifications;
 import org.thunderdog.challegram.data.ForumTopicPolicy;
@@ -95,6 +98,9 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   private String query = "";
   private boolean restoreSearch, restoreScrollPending;
   private boolean busy, subscribed, materialsStarted, refreshScheduled, terminal;
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+  private boolean returnToTopics;
+  // endregion
   private volatile Object epoch = new Object();
   private ForumTopicStore.TopicSubscription subscription;
   private ForumTopicStore.ListSession pinsSession;
@@ -345,8 +351,14 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     subscription = tdlib.topics().observeTopic(key(), (value, error) -> {
       if (isDestroyed() || epoch != ticket) return;
       topic = value; metadataError = error;
-      terminal = error != null && (error.code == 404 || error.code == 403 || error.message.contains("TOPIC_DELETED") || error.message.contains("TOPIC_NOT_FOUND"));
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      terminal = ForumTopicContext.isUnavailable(error);
+      returnToTopics = terminal;
+      // endregion
       render();
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      if (returnToTopics) returnToTopics(8);
+      // endregion
       if (ready() && !materialsStarted) { materialsStarted = true; refreshMaterials(); }
     });
   }
@@ -362,11 +374,37 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   private boolean canEdit () { TdApi.ForumTopic current = currentTopic(); return ready() && current != null && ForumTopicPolicy.canEdit(tdlib.chatStatus(getChatId()), current.info); }
   private boolean canManage () { return ready() && ForumTopicPolicy.canManage(tdlib.chatStatus(getChatId())); }
 
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  private CharSequence profileTitle () {
+    if (terminal) return Lang.getString(R.string.ForumTopicUnavailable);
+    return topic != null ? topic.info.name : Lang.getString(metadataError != null ? R.string.ForumTopicTitle : R.string.ForumProfileLoading);
+  }
+
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  private void returnToTopics (int retries) {
+    if (!returnToTopics || isDestroyed() || !isFocused()) return;
+    ForumTabsNavigation.Result result = ForumTabsNavigation.returnFromUnavailableTopic(this, getForumTopicId(), true);
+    if (result == ForumTabsNavigation.Result.RETRY && retries > 0) {
+      Object ticket = epoch;
+      tdlib.ui().postDelayed(() -> { if (epoch == ticket) returnToTopics(retries - 1); }, 150);
+    }
+  }
+
+  @Override
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
+    if (returnToTopics && ForumTabsNavigation.returnFromUnavailableTopic(this, getForumTopicId(), commit) == ForumTabsNavigation.Result.RETURNED) return true;
+    return super.performOnBackPressed(fromTop, commit);
+  }
+
   private void render () {
     if (title == null) return;
     boolean available = ready();
     group.setText(Lang.getString(R.string.ForumProfileGroupLink, tdlib.chatTitle(getChatId())));
-    title.setText(topic != null ? topic.info.name : Lang.getString(R.string.ForumProfileLoading));
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    title.setText(profileTitle());
+    state.setEnabled(!terminal && metadataError != null && !busy);
+    // endregion
     state.setText(Lang.getString(terminal || topic != null && !tdlib.chatAvailable(tdlib.chat(getChatId())) ? R.string.ForumProfileUnavailable :
       metadataError != null ? R.string.ForumProfileRetry : topic == null ? R.string.ForumProfileLoading : topic.info.isClosed ? R.string.ForumTopicClosed :
         topic.info.isGeneral ? R.string.ForumProfileGeneralHint : R.string.ForumTopicTitle));
@@ -564,8 +602,19 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
       .setMessage(Lang.getString(R.string.ForumProfileDeleteTopicConfirm, current.info.name, tdlib.chatTitle(getChatId())))
       .setNegativeButton(Lang.getString(R.string.Cancel), null).setPositiveButton(Lang.getString(R.string.Delete), (dialog, which) -> {
         TdApi.ForumTopic fresh = currentTopic();
-        if (fresh != null && !fresh.info.isGeneral && ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), fresh.info))
-          run(done -> tdlib.topics().actions.delete(key(), (ok, error) -> { done.onResult(ok, error); if (error == null && !isDestroyed()) { terminal = true; render(); } }));
+        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+        if (fresh != null && !fresh.info.isGeneral && ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), fresh.info)) {
+          Object ticket = epoch;
+          run(done -> tdlib.topics().actions.delete(key(), (ok, error) -> {
+            done.onResult(ok, error);
+            if (error == null && !isDestroyed() && epoch == ticket) {
+              terminal = returnToTopics = true;
+              render();
+              returnToTopics(8);
+            }
+          }));
+        }
+        // endregion
       }));
   }
   private boolean canDeleteGroup () { TdApi.Chat chat = tdlib.chat(getChatId()); return ready() && chat != null && chat.canBeDeletedForAllUsers; }
@@ -784,6 +833,9 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   }
   @Override public void onFocus () {
     super.onFocus(); render(); if (activeTab >= 0 && pages[activeTab] != null && !pages[activeTab].isFocused()) pages[activeTab].onFocus();
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    if (returnToTopics) returnToTopics(8);
+    // endregion
     if (restoreSearch) { restoreSearch = false; String saved = query; openSearchMode(); setSearchInput(saved); }
   }
   @Override public void onBlur () { if (activeTab >= 0 && pages[activeTab] != null) pages[activeTab].onBlur(); super.onBlur(); }
@@ -820,6 +872,9 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   }
   @Override public void onPerformUserCleanup () {
     epoch = new Object();
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    returnToTopics = false;
+    // endregion
     tdlib.ui().post(() -> {
       if (isDestroyed()) return;
       if (subscription != null) { subscription.close(); subscription = null; }

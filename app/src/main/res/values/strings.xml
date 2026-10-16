@@ -62,7 +62,7 @@
   <string name="ForumProfileMute">Mute</string>
   <string name="ForumProfileUnmute">Unmute</string>
   <string name="ForumProfileLoading">Loading topic…</string>
-  <string name="ForumProfileUnavailable">This topic is no longer available. Your previous history has not been replaced.</string>
+  <string name="ForumProfileUnavailable">This topic is no longer available.</string>
   <string name="ForumProfileRetry">Could not load this topic. Tap to retry.</string>
   <string name="ForumProfileTopicLink">Topic link</string>
   <string name="ForumProfileLinkHint">A topic link does not grant access to a private group.</string>
@@ -194,7 +194,7 @@
   <string name="ForumTopicReopened">Topic reopened</string>
   <string name="ForumGeneralHidden">General topic hidden</string>
   <string name="ForumGeneralShown">General topic shown</string>
-  <string name="ForumTopicUnavailable">Topic unavailable. Tap to retry</string>
+  <string name="ForumTopicUnavailable">Topic unavailable</string>
   <string name="ForumTopicLoadFailed">Could not load topic. Tap to retry</string>
   <!-- endregion -->
   <string name="language_continueInLanguage">Continue in English</string>

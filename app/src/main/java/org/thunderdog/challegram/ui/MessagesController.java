@@ -2924,6 +2924,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return safe;
   }
 
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  public boolean canLeaveUnavailableTopic (int topicId) {
+    return !isForumTabsHost() && forumTopicContext != null && forumTopicContext.topicId == topicId &&
+      canSwitchForumTab(false) && !performOnBackPressed(true, false);
+  }
+
   public boolean requestForumTab (int topicId) {
     if (!isForumTabsHost() || isDestroyed() || topicId < 0) return false;
     if (!isFocused() || context().isNavigationBusy()) {
@@ -3063,13 +3069,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.DraftMessage previousDraft = forum.draft();
       if (!forum.update(value, error)) return;
       updateForumTabsView();
-      if (isForumTabsHost() && (value != null && value.info.isHidden || error != null && (error.code == 404 || error.code == 403)) &&
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      if (isForumTabsHost() && (value != null && value.info.isHidden || ForumTopicContext.isUnavailable(error)) &&
           tdlib.chatAccessState(chat) >= Tdlib.CHAT_ACCESS_OK) {
         pendingForumTab = 0;
         if (isFocused()) tdlib.ui().post(() -> {
-          if (!isDestroyed() && requestForumTab(0)) UI.showToast(R.string.ForumTopicUnavailable, Toast.LENGTH_SHORT);
+          if (!isDestroyed() && forumTopicContext == forum && requestForumTab(0)) UI.showToast(R.string.ForumTopicUnavailable, Toast.LENGTH_SHORT);
         });
       }
+      // endregion
       if (contentView != null) {
         updateForumHeader();
         updateCounters(true);
@@ -3143,12 +3151,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private String forumRestriction () {
     ForumTopicContext forum = composerForumContext();
     if (forum == null) return null;
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    if (ForumTopicContext.isUnavailable(forum.error()) || ForumTopicContext.isUnavailable(forumHistoryError)) return Lang.getString(R.string.ForumTopicUnavailable);
+    // endregion
     if (forum.isLoading()) return Lang.getString(R.string.ForumTopicLoading);
     if (forum.error() != null || forumHistoryError != null) {
-      TdApi.Error error = forum.error() != null ? forum.error() : forumHistoryError;
-      return Lang.getString(error.code == 404 || error.code == 403 ? R.string.ForumTopicUnavailable : R.string.ForumTopicLoadFailed);
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      return Lang.getString(R.string.ForumTopicLoadFailed);
+      // endregion
     }
     return canSendToForumTopic() ? null : Lang.getString(R.string.ForumTopicClosed);
+  }
+
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  private boolean canRetryForum () {
+    ForumTopicContext forum = composerForumContext();
+    return forum != null && (forum.error() != null || forumHistoryError != null) &&
+      !ForumTopicContext.isUnavailable(forum.error()) && !ForumTopicContext.isUnavailable(forumHistoryError);
   }
 
   private void updateForumHeader () {
@@ -3781,7 +3800,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
     String topicRestriction = forumRestriction();
     if (topicRestriction != null) {
-      boolean retry = composerForumContext().error() != null || forumHistoryError != null;
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      boolean retry = canRetryForum();
+      // endregion
       showActionButton(topicRestriction, retry ? ACTION_RETRY_FORUM : ACTION_EMPTY, retry);
       return;
     }
@@ -6952,6 +6973,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       case ACTION_RETRY_FORUM: {
+        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+        if (!canRetryForum()) break;
+        // endregion
         if (replyForumContext != null) tdlib.topics().retryTopic(new TdlibForumTopicManager.Key(replyForumContext.chatId, replyForumContext.topicId));
         if (generalForumContext != null) tdlib.topics().retryTopic(new TdlibForumTopicManager.Key(generalForumContext.chatId, generalForumContext.topicId));
         if (forumTopicContext != null) {
