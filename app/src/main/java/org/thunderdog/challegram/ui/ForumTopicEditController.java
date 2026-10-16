@@ -580,12 +580,26 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
 
   boolean canReturnToForumTabs () { return ForumTabsNavigation.canLeaveEditor(form); }
 
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  public boolean completeCreationNavigation (MessagesController controller) {
+    if (isDestroyed() || controller.isDestroyed() || controller.tdlib() != tdlib || controller.getChatId() != getChatId() ||
+        form == null || !form.creating || form.phase() != ForumTopicEditorState.Phase.SUCCEEDED || form.completedTopicId() <= 0) return false;
+    TdApi.MessageTopic topic = controller.getMessageTopicId();
+    if (!(topic instanceof TdApi.MessageTopicForum) || ((TdApi.MessageTopicForum) topic).forumTopicId != form.completedTopicId()) return false;
+    // Focus can precede the deferred editor cleanup, including after stack restore.
+    // Keep the outgoing view until the navigation processor has finished with it.
+    tdlib.ui().post(() -> removeCompletedEditor(context().navigation()));
+    return true;
+  }
+
   private void removeCompletedEditor (NavigationController navigation) {
     if (isDestroyed() || navigation == null) return;
     // ChatOpenParameters.after runs at animation readiness, not at completion. The
     // navigation processor still needs the editor as getPrevious() to detach its
     // view. Removing it earlier strands the editor above every subsequent page.
-    if (navigation.isAnimating()) {
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    if (navigation.isAnimating() || navigation.getStack().isLocked()) {
+    // endregion
       tdlib.ui().postDelayed(() -> removeCompletedEditor(navigation), 100);
       return;
     }

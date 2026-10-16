@@ -107,6 +107,9 @@ import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.ui.MapControllerFactory;
 import org.thunderdog.challegram.ui.MessagesController;
+// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+import org.thunderdog.challegram.ui.ForumTopicEditController;
+// endregion
 // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.ui.ForumTopicsController;
 import org.thunderdog.challegram.data.ForumHistory;
@@ -2609,15 +2612,23 @@ public class TdlibUi extends Handler {
       previous = stack.get(index-1);
     }
     // Switching A -> B in one forum replaces A, retaining its existing list/stream parent.
-    while (previous instanceof MessagesController && previous.tdlib() == tdlib && previous.getChatId() == chat.id &&
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    while (previous instanceof MessagesController && !((MessagesController) previous).isForumTabsHost() && previous.tdlib() == tdlib && previous.getChatId() == chat.id &&
         ForumHistory.isForum(((MessagesController) previous).getMessageTopicId())) {
       stack.destroy(index-1);
       index = stack.indexOf(controller);
       previous = stack.get(index-1);
     }
-    if (previous != null && previous.tdlib() == tdlib && previous.getChatId() == chat.id &&
-        (previous instanceof ForumTopicsController || previous instanceof MessagesController &&
-          ((MessagesController) previous).compareChat(chat.id, null, null, false))) return;
+    ViewController<?> candidate = previous;
+    if (previous instanceof ForumTopicEditController && ((ForumTopicEditController) previous).completeCreationNavigation(controller)) {
+      // The completed editor is still the outgoing animation view. Reuse only
+      // its immediate matching parent; never search across unrelated history.
+      candidate = stack.get(index-2);
+    }
+    if (candidate != null && !candidate.isDestroyed() && candidate.tdlib() == tdlib && candidate.getChatId() == chat.id &&
+        (candidate instanceof ForumTopicsController || candidate instanceof MessagesController &&
+          (((MessagesController) candidate).isForumTabsHost() || ((MessagesController) candidate).compareChat(chat.id, null, null, false)))) return;
+    // endregion
     ViewController<?> parent;
     if (chat.viewAsTopics) {
       ForumTopicsController topics = new ForumTopicsController(controller.context(), tdlib);
