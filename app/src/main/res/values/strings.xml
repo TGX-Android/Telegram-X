@@ -82,6 +82,12 @@
   <string name="ForumProfilePollClosed">Closed poll</string>
   <string name="ForumProfilePollVoters">Voters: %1$d</string>
   <string name="ForumProfilePollCount">Polls: %1$d</string>
+  <!-- region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "L10N-01") -->
+  <!-- Poll state, formatted voter count. Translators may change order and punctuation. -->
+  <string name="format_forumPollSummary">%1$s · %2$s</string>
+  <!-- Poll question, poll state, formatted voter count; spoken description. -->
+  <string name="format_forumPollAccessibility">%1$s. %2$s. %3$s</string>
+  <!-- endregion -->
   <string name="ForumProfileLeaveGroup">Leave group</string>
   <string name="ForumProfileDeleteGroup">Delete group for everyone</string>
   <string name="ForumProfileDeleteGroupConfirm">Delete “%1$s” and all its messages for everyone? This deletes the entire group, not just this topic.</string>

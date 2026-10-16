@@ -63,8 +63,11 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     super(context, tdlib, TYPE_ARTICLE, null, null);
     setMessage(message);
     title = poll.question.text;
-    StringBuilder summary = new StringBuilder(Lang.getString(poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen));
-    summary.append(" · ").append(Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount));
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "L10N-01")
+    StringBuilder summary = new StringBuilder(Lang.getString(R.string.format_forumPollSummary,
+      Lang.getString(poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen),
+      Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount)));
+    // endregion
     for (TdApi.PollOption option : poll.options) summary.append('\n').append(option.text.text);
     description = summary.toString();
     avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS,

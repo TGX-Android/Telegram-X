@@ -270,8 +270,11 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
           TdApi.Message message = ((MessageSourceProvider) data).getMessage();
           if (message != null && message.content instanceof TdApi.MessagePoll) {
             TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
-            holder.itemView.setContentDescription(poll.question.text + ". " + Lang.getString(poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen) +
-              ". " + Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount));
+            // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "L10N-01")
+            holder.itemView.setContentDescription(Lang.getString(R.string.format_forumPollAccessibility, poll.question.text,
+              Lang.getString(poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen),
+              Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount)));
+            // endregion
           }
         }
       }
