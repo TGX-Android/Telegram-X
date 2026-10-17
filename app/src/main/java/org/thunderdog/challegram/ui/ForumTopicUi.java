@@ -392,7 +392,7 @@ public final class ForumTopicUi implements ChatListener {
     if (failure.uncertain) {
       String warning = Lang.getString(R.string.ForumSelectionUncertain);
       // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "C2-L10N-02")
-      text = failure.retryTargets.isEmpty() ? warning : Lang.getString(R.string.format_forumBatchWarning, text, warning);
+      text = failure.retryTargets.isEmpty() ? warning : Lang.getString(R.string.format_doubleLines, text, warning);
       // endregion
     }
     AlertDialog.Builder dialog = new AlertDialog.Builder(owner.context(), Theme.dialogTheme())

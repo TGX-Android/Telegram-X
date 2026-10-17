@@ -79,8 +79,6 @@
   <string name="format_forumClosedTopicSubtitle">%1$s · %2$s</string>
   <!-- Open-topic action label, message preview; spoken fallback description. -->
   <string name="format_forumMessageAccessibility">%1$s. %2$s</string>
-  <!-- Known action error, warning about an uncertain outcome; both must remain visible. -->
-  <string name="format_forumBatchWarning">%1$s\n\n%2$s</string>
   <!-- endregion -->
   <string name="ForumProfileDeleteGroup">Delete group for everyone</string>
   <string name="ForumProfileDeleteGroupConfirm">Delete “%1$s” and all its messages for everyone? This deletes the entire group, not just this topic.</string>
