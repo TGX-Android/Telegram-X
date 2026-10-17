@@ -67,7 +67,7 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     list.setItemAnimator(null);
     list.setClipToPadding(false);
     list.setVerticalScrollBarEnabled(false);
-    list.setContentDescription(Lang.getString(R.string.ForumRailChats));
+    list.setContentDescription(Lang.getString(R.string.Chats));
     addView(list, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     updateTheme();
     list.addOnScrollListener(new RecyclerView.OnScrollListener() {

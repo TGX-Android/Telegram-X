@@ -183,7 +183,7 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     // Cloud-language and Settings singletons must not be initialized by an account-free view.
     return owner.tdlib() == null ? getResources().getString(resId, args) : Lang.getString(resId, args);
   }
-  private String label (Item item) { return item.id == 0 ? string(R.string.ForumTabsAll) : item.id == NEW_TOPIC ? string(R.string.ForumTabsNew) : item.name; }
+  private String label (Item item) { return item.id == 0 ? string(R.string.ForumTabsAll) : item.id == NEW_TOPIC ? string(R.string.ForumEditorNew) : item.name; }
   private String unreadBadge (int count) {
     String compact = owner.tdlib() != null ? Lang.compactNumber(count) : null;
     // Lang.compactNumber is nullable on pre-24/vendor ICU implementations.
@@ -591,7 +591,7 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       if (item.closed) append(description, R.string.ForumTopicClosed);
       if (item.pinned) append(description, R.string.ForumPinned);
       if (item.unread > 0 || item.mentions > 0 || item.reactions > 0 || item.votes > 0) {
-        description.append(Lang.getConcatSeparator()).append(string(R.string.ForumTabsUnread, item.unread, item.mentions, item.reactions, item.votes));
+        description.append(Lang.getConcatSeparator()).append(string(R.string.ForumUnreadCounts, item.unread, item.mentions, item.reactions, item.votes));
       }
       setContentDescription(description);
       if (Build.VERSION.SDK_INT >= 26) setTooltipText(description);
@@ -836,7 +836,7 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     void update () {
       boolean canRetry = failed && !loading && !retryRequested;
       setClickable(canRetry); setFocusable(canRetry);
-      String description = string(canRetry ? R.string.ForumTabsRetry : R.string.ForumTabsLoading);
+      String description = string(canRetry ? R.string.ForumTopicsLoadFailed : R.string.ForumTopicsLoading);
       setContentDescription(description);
       if (Build.VERSION.SDK_INT >= 26) setTooltipText(description);
       invalidate();

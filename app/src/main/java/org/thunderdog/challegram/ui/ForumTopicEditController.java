@@ -439,7 +439,7 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
   private void updateAction () {
     if (action == null) return;
     boolean pending = form != null && form.phase() == ForumTopicEditorState.Phase.PENDING;
-    action.setText(Lang.getString(pending ? R.string.ForumEditorSending : getArgumentsStrict().topicId == 0 ? R.string.ForumEditorCreate : R.string.Save));
+    action.setText(Lang.getString(pending ? R.string.ForumSaving : getArgumentsStrict().topicId == 0 ? R.string.ForumEditorCreate : R.string.Save));
     action.setEnabled(form != null && form.canSubmit(available(), iconAllowed(), defaultsLoaded));
     action.setAlpha(action.isEnabled() || pending ? 1f : .45f);
   }
@@ -462,7 +462,7 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
     results.setVisibility(unknown ? View.VISIBLE : View.GONE);
     String message = "";
     if (form == null) {
-      message = Lang.getString(metadataMissing ? R.string.ForumEditorUnavailable : metadataFailed ? R.string.ForumEditorLoadError : R.string.ForumEditorLoading);
+      message = Lang.getString(metadataMissing ? R.string.ForumEditorUnavailable : metadataFailed ? R.string.ForumEditorLoadError : R.string.ForumTopicLoading);
     } else {
       binding = true;
       if (!nameInput.getText().toString().equals(form.name())) nameInput.setText(form.name());
@@ -474,8 +474,8 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
       nameError.setText(nameMessage);
       nameError.setVisibility(nameMessage.isEmpty() ? View.GONE : View.VISIBLE);
       if (unknown) message = Lang.getString(R.string.ForumEditorUnknown);
-      else if (form.phase() == ForumTopicEditorState.Phase.PENDING) message = Lang.getString(R.string.ForumEditorSending);
-      else if (!available()) message = Lang.getString(!form.creating && currentInfo == null && !metadataFailed ? R.string.ForumEditorLoading :
+      else if (form.phase() == ForumTopicEditorState.Phase.PENDING) message = Lang.getString(R.string.ForumSaving);
+      else if (!available()) message = Lang.getString(!form.creating && currentInfo == null && !metadataFailed ? R.string.ForumTopicLoading :
         metadataFailed && !metadataMissing ? R.string.ForumEditorLoadError : form.creating ? R.string.ForumEditorCreateUnavailable : R.string.ForumEditorUnavailable);
       else if (!form.serverError().isEmpty()) message = form.serverError();
       else if (!selectionError.isEmpty()) message = selectionError;
@@ -835,7 +835,7 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
       .setTitle(Lang.getString(R.string.ForumEditorDiscardTitle))
       .setMessage(Lang.getString(unknown ? R.string.ForumEditorUnknownLeave : R.string.ForumEditorDiscardText))
       .setNegativeButton(Lang.getString(R.string.ForumEditorKeepEditing), null)
-      .setPositiveButton(Lang.getString(unknown ? R.string.ForumEditorLeave : R.string.ForumEditorDiscard), (dialog, which) -> { finishing = true; navigateBack(); }));
+      .setPositiveButton(Lang.getString(unknown ? R.string.ForumEditorLeave : R.string.Discard), (dialog, which) -> { finishing = true; navigateBack(); }));
     return true;
   }
 

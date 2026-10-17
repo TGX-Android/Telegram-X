@@ -282,7 +282,7 @@ public final class ForumTopicUi implements ChatListener {
 
   public void notifications (int id) {
     String[] labels = {Lang.getString(R.string.ForumNotificationsDefault), Lang.getString(R.string.ForumNotificationsOn),
-      Lang.getString(R.string.ForumMuteHour), Lang.getString(R.string.ForumMuteDay), Lang.getString(R.string.ForumMuteForever)};
+      Lang.getString(R.string.ForumMuteHour), Lang.getString(R.string.ForumMuteDay), Lang.getString(R.string.MuteForever)};
     int[] durations = {0, 0, 3600, 86400, Integer.MAX_VALUE};
     TdApi.ForumTopic t = topic(id);
     if (!check(t != null && t.notificationSettings != null)) return;
@@ -350,7 +350,10 @@ public final class ForumTopicUi implements ChatListener {
     ArrayList<ForumTopicActions.BatchTarget> targets = new ArrayList<>(input);
     Runnable start = () -> startBatch(action, targets, completed);
     if (!action.isDestructive()) { start.run(); return; }
-    StringBuilder scope = new StringBuilder(Lang.getString(action == Action.CLEAR_GENERAL ? R.string.ForumSelectionClearConfirm : R.string.ForumSelectionDeleteConfirm, targets.size()));
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "C2-L10N-02")
+    StringBuilder scope = new StringBuilder(action == Action.CLEAR_GENERAL ? Lang.getString(R.string.ForumSelectionClearConfirm) :
+      Lang.plural(R.string.ForumSelectionDeleteConfirm, targets.size()));
+    // endregion
     for (ForumTopicActions.BatchTarget target : targets) scope.append("\n• ").append(target.name);
     owner.showAlert(new AlertDialog.Builder(owner.context(), Theme.dialogTheme())
       .setTitle(Lang.getString(actionLabel(action))).setMessage(scope)
@@ -388,7 +391,9 @@ public final class ForumTopicUi implements ChatListener {
     String text = failure.error != null ? batchError(failure.error) : Lang.getString(R.string.LaunchSubtitleFatalError);
     if (failure.uncertain) {
       String warning = Lang.getString(R.string.ForumSelectionUncertain);
-      text = failure.retryTargets.isEmpty() ? warning : text + "\n\n" + warning;
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "C2-L10N-02")
+      text = failure.retryTargets.isEmpty() ? warning : Lang.getString(R.string.format_forumBatchWarning, text, warning);
+      // endregion
     }
     AlertDialog.Builder dialog = new AlertDialog.Builder(owner.context(), Theme.dialogTheme())
       .setTitle(Lang.getString(R.string.Error)).setMessage(text).setPositiveButton(Lang.getString(R.string.OK), null);

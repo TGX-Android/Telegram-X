@@ -87,8 +87,8 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     }
   }
 
-  private static final int[] TAB_NAMES = {R.string.ForumProfileMedia, R.string.ForumProfileFiles, R.string.ForumProfileLinks,
-    R.string.ForumProfileMusic, R.string.ForumProfilePolls, R.string.ForumProfileGifs, R.string.ForumProfileVoice};
+  private static final int[] TAB_NAMES = {R.string.TabMedia, R.string.MessageSearchFilterFiles, R.string.TabLinks,
+    R.string.MessageSearchFilterMusic, R.string.ForumProfilePolls, R.string.TabGifs, R.string.TabVoiceMessages};
   private final ForumTopicMedia.Category[] categories = new ForumTopicMedia.Category[ForumTopicMedia.CATEGORY_COUNT];
   private final SharedBaseController<?>[] pages = new SharedBaseController<?>[ForumTopicMedia.CATEGORY_COUNT];
   private final Parcelable[] restoredPageStates = new Parcelable[ForumTopicMedia.CATEGORY_COUNT];
@@ -186,8 +186,8 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     state.setOnClickListener(v -> retryMetadata()); profile.addView(state, new LinearLayout.LayoutParams(-1, -2));
     actions = new LinearLayout(context); actions.setOrientation(LinearLayout.VERTICAL); profile.addView(actions, new LinearLayout.LayoutParams(-1, -2));
     LinearLayout row = actionRow();
-    messageButton = button(row, R.string.ForumProfileMessage, R.drawable.baseline_chat_bubble_24, this::navigateBack);
-    muteButton = button(row, R.string.ForumProfileMute, R.drawable.baseline_notifications_off_24, this::toggleMute);
+    messageButton = button(row, R.string.TabMessages, R.drawable.baseline_chat_bubble_24, this::navigateBack);
+    muteButton = button(row, R.string.Mute, R.drawable.baseline_notifications_off_24, this::toggleMute);
     pinButton = button(row, R.string.ForumPinTopic, R.drawable.deproko_baseline_pin_24, this::togglePin);
     createLinkRow(profile);
     tabScroll = new HorizontalScrollView(context); tabScroll.setHorizontalScrollBarEnabled(false);
@@ -377,7 +377,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
   private CharSequence profileTitle () {
     if (terminal) return Lang.getString(R.string.ForumTopicUnavailable);
-    return topic != null ? topic.info.name : Lang.getString(metadataError != null ? R.string.ForumTopicTitle : R.string.ForumProfileLoading);
+    return topic != null ? topic.info.name : Lang.getString(metadataError != null ? R.string.ForumTopicTitle : R.string.ForumTopicLoading);
   }
 
   @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
@@ -406,7 +406,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     state.setEnabled(!terminal && metadataError != null && !busy);
     // endregion
     state.setText(Lang.getString(terminal || topic != null && !tdlib.chatAvailable(tdlib.chat(getChatId())) ? R.string.ForumProfileUnavailable :
-      metadataError != null ? R.string.ForumProfileRetry : topic == null ? R.string.ForumProfileLoading : topic.info.isClosed ? R.string.ForumTopicClosed :
+      metadataError != null ? R.string.ForumTopicLoadFailed : topic == null ? R.string.ForumTopicLoading : topic.info.isClosed ? R.string.ForumTopicClosed :
         topic.info.isGeneral ? R.string.ForumProfileGeneralHint : R.string.ForumTopicTitle));
     state.setVisibility(available && !topic.info.isClosed && !topic.info.isGeneral ? View.GONE : View.VISIBLE);
     actions.setVisibility(available ? View.VISIBLE : View.GONE);
@@ -415,7 +415,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     pinButton.setVisibility(canManage() ? View.VISIBLE : View.GONE);
     if (topic != null) {
       boolean muted = ForumPresentation.isMuted(topic.notificationSettings, tdlib.chatMuteFor(getChatId()) > 0);
-      muteButton.setText(Lang.getString(muted ? R.string.ForumProfileUnmute : R.string.ForumProfileMute));
+      muteButton.setText(Lang.getString(muted ? R.string.Unmute : R.string.Mute));
       muteButton.setIcon(muted ? R.drawable.baseline_notifications_24 : R.drawable.baseline_notifications_off_24);
       pinButton.setText(Lang.getString(topic.isPinned ? R.string.ForumUnpinTopic : R.string.ForumPinTopic));
       pinButton.setIcon(topic.isPinned ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24);
@@ -559,7 +559,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     ForumTopicStore.ListSession requested = pinsSession;
     tdlib.ui().postDelayed(() -> {
       if (!isDestroyed() && epoch == ticket && requested == pinsSession) {
-        closePins(); busy = false; render(); error(Lang.getString(R.string.ForumProfileRetry));
+        closePins(); busy = false; render(); error(Lang.getString(R.string.ForumTopicLoadFailed));
       }
     }, 15000);
   }
@@ -588,7 +588,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     add(labels, actions, R.string.ForumShowAllMessages, () -> topicUi.setViewMode(false));
     add(labels, actions, R.string.ForumShowTopics, () -> topicUi.setViewMode(true));
     if (!current.info.isGeneral && ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), current.info)) add(labels, actions, R.string.ForumDeleteTopic, this::deleteTopic);
-    if (ForumTopicPolicy.isMember(tdlib.chatStatus(getChatId()))) add(labels, actions, R.string.ForumProfileLeaveGroup, () -> {
+    if (ForumTopicPolicy.isMember(tdlib.chatStatus(getChatId()))) add(labels, actions, R.string.LeaveMegaMenu, () -> {
       if (ForumTopicPolicy.isMember(tdlib.chatStatus(getChatId()))) tdlib.ui().processLeaveButton(this, getChatList(), getChatId(), R.id.btn_removeChatFromList, () -> tdlib.ui().exitToChatScreen(this, getChatId()));
     });
     if (canDeleteGroup()) add(labels, actions, R.string.ForumProfileDeleteGroup, this::deleteGroup);

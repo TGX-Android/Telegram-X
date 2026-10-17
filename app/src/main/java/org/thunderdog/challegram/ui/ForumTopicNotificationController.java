@@ -84,7 +84,7 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     status.setOnClickListener(v -> { if (!terminal && !busy) { failure = null; tdlib.topics().retryTopic(key()); render(); } });
     mute = row(R.string.ForumNotifications, this::chooseMute, true);
     sound = row(R.string.ForumProfileSound, this::chooseSound, true);
-    preview = row(R.string.ForumProfilePreview, () -> chooseField(ForumTopicNotifications.Field.PREVIEW), true);
+    preview = row(R.string.MessagePreview, () -> chooseField(ForumTopicNotifications.Field.PREVIEW), true);
     pinned = row(R.string.ForumProfilePinnedNotifications, () -> chooseField(ForumTopicNotifications.Field.PINNED), true);
     mentions = row(R.string.ForumProfileMentionNotifications, () -> chooseField(ForumTopicNotifications.Field.MENTIONS), false);
     hint = new TextView(context); hint.setText(Lang.getString(R.string.ForumProfileSettingsHint));
@@ -154,21 +154,21 @@ public final class ForumTopicNotificationController extends ViewController<Forum
 
   private boolean ready () { return !isDestroyed() && !terminal && !busy && failure == null && topic != null && topic.notificationSettings != null && tdlib.chatAvailable(tdlib.chat(getChatId())); }
   private String state (boolean inherit, boolean enabled) {
-    return Lang.getString(inherit ? R.string.ForumProfileDefault : enabled ? R.string.ForumProfileEnabled : R.string.ForumProfileDisabled);
+    return Lang.getString(inherit ? R.string.ForumNotificationsDefault : enabled ? R.string.ForumProfileEnabled : R.string.ForumProfileDisabled);
   }
 
   private void render () {
     if (status == null) return;
-    status.setText(terminal || topic != null && !tdlib.chatAvailable(tdlib.chat(getChatId())) ? Lang.getString(R.string.ForumProfileUnavailable) : busy ? Lang.getString(R.string.ForumSaving) : failure != null ? Lang.getString(R.string.ForumProfileRetry) : topic == null ? Lang.getString(R.string.ForumProfileLoading) : topic.info.name);
+    status.setText(terminal || topic != null && !tdlib.chatAvailable(tdlib.chat(getChatId())) ? Lang.getString(R.string.ForumProfileUnavailable) : busy ? Lang.getString(R.string.ForumSaving) : failure != null ? Lang.getString(R.string.ForumTopicLoadFailed) : topic == null ? Lang.getString(R.string.ForumTopicLoading) : topic.info.name);
     for (SettingRow row : new SettingRow[] {mute, sound, preview, pinned, mentions}) row.setEnabled(ready());
     TdApi.ChatNotificationSettings s = topic != null ? topic.notificationSettings : null;
     if (s == null) return;
-    String muteState = !s.useDefaultMuteFor && s.muteFor > 0 ? (s.muteFor > 366 * 86400 ? Lang.getString(R.string.ForumMuteForever) : Lang.getString(R.string.ForumProfileDuration, Lang.getDuration(s.muteFor))) : state(s.useDefaultMuteFor, s.muteFor == 0);
+    String muteState = !s.useDefaultMuteFor && s.muteFor > 0 ? (s.muteFor > 366 * 86400 ? Lang.getString(R.string.MuteForever) : Lang.getString(R.string.ForumProfileDuration, Lang.getDuration(s.muteFor))) : state(s.useDefaultMuteFor, s.muteFor == 0);
     mute.setValue(muteState);
     // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
     // Saved sounds selected in another client use the local group fallback. Do not
     // overwrite that server setting unless the user explicitly selects an option.
-    sound.setValue(Lang.getString(s.useDefaultSound || s.soundId != 0 ? R.string.ForumProfileDefault : R.string.ForumProfileSilent));
+    sound.setValue(Lang.getString(s.useDefaultSound || s.soundId != 0 ? R.string.ForumNotificationsDefault : R.string.ForumProfileSilent));
     // endregion
     preview.setValue(state(s.useDefaultShowPreview, s.showPreview));
     pinned.setValue(state(s.useDefaultDisablePinnedMessageNotifications, !s.disablePinnedMessageNotifications));
@@ -189,8 +189,8 @@ public final class ForumTopicNotificationController extends ViewController<Forum
   }
 
   private void chooseMute () {
-    String[] labels = {Lang.getString(R.string.ForumProfileDefault), Lang.getString(R.string.ForumNotificationsOn),
-      Lang.getString(R.string.ForumMuteHour), Lang.getString(R.string.ForumMuteDay), Lang.getString(R.string.ForumMuteForever)};
+    String[] labels = {Lang.getString(R.string.ForumNotificationsDefault), Lang.getString(R.string.ForumNotificationsOn),
+      Lang.getString(R.string.ForumMuteHour), Lang.getString(R.string.ForumMuteDay), Lang.getString(R.string.MuteForever)};
     int[] seconds = {0, 0, 3600, 86400, Integer.MAX_VALUE};
     showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(getName()).setItems(labels,
       (dialog, which) -> apply(s -> ForumTopicNotifications.mute(s, which == 0, seconds[which])))
@@ -198,7 +198,7 @@ public final class ForumTopicNotificationController extends ViewController<Forum
   }
 
   private void chooseField (ForumTopicNotifications.Field field) {
-    String[] labels = {Lang.getString(R.string.ForumProfileDefault), Lang.getString(R.string.ForumProfileEnabled), Lang.getString(R.string.ForumProfileDisabled)};
+    String[] labels = {Lang.getString(R.string.ForumNotificationsDefault), Lang.getString(R.string.ForumProfileEnabled), Lang.getString(R.string.ForumProfileDisabled)};
     showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(getName()).setItems(labels,
       (dialog, which) -> apply(s -> ForumTopicNotifications.field(s, field, which == 0, which == 1)))
       .setNegativeButton(Lang.getString(R.string.Cancel), null));
@@ -206,7 +206,7 @@ public final class ForumTopicNotificationController extends ViewController<Forum
 
   @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
   private void chooseSound () {
-    String[] labels = {Lang.getString(R.string.ForumProfileDefault), Lang.getString(R.string.ForumProfileSilent)};
+    String[] labels = {Lang.getString(R.string.ForumNotificationsDefault), Lang.getString(R.string.ForumProfileSilent)};
     showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(Lang.getString(R.string.ForumProfileSound))
       .setItems(labels, (dialog, which) -> apply(s -> ForumTopicNotifications.sound(s, which == 0, 0)))
       .setNegativeButton(Lang.getString(R.string.Cancel), null));

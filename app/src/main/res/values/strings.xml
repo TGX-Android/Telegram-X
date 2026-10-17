@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
   <!-- region @MadeByLLM("gpt-6-astra", ref = "PR #1095") -->
+  <!-- Copy edits and resource reuse: @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "C2-L10N-02"). Original feature authorship above is retained. -->
   <string name="ForumEditorNew">New Topic</string>
   <string name="ForumEditorEdit">Edit Topic</string>
   <string name="ForumEditorCreate">Create</string>
   <string name="ForumEditorRetry">Retry</string>
   <string name="ForumEditorCard">Choose a topic name and icon</string>
   <string name="ForumEditorNameHint">What do you want to discuss?</string>
-  <string name="ForumEditorIconHeading">Select Topic Icon</string>
+  <string name="ForumEditorIconHeading">Choose a topic icon</string>
   <string name="ForumEditorDefaults">Topic icons</string>
   <string name="ForumEditorSearch">Search emoji</string>
   <string name="ForumEditorRegular">Use ordinary icon</string>
@@ -27,9 +28,8 @@
   <string name="ForumEditorIconLoading">Checking available topic icons…</string>
   <string name="ForumEditorEmojiLoading">Loading emoji…</string>
   <string name="ForumEditorEmojiEmpty">No emoji found. Try another search or set.</string>
-  <string name="ForumEditorEmojiError">Emoji could not be loaded. Your form is unchanged.</string>
+  <string name="ForumEditorEmojiError">Could not load emoji. Try again.</string>
   <string name="ForumEditorEmojiPartial">Some emoji sections could not be loaded. Retry to load them.</string>
-  <string name="ForumEditorLoading">Loading topic…</string>
   <string name="ForumEditorUnavailable">This topic is unavailable or you no longer have permission to edit it.</string>
   <string name="ForumEditorCreateUnavailable">You no longer have permission to create topics here.</string>
   <string name="ForumEditorLoadError">The topic could not be loaded. Your changes are preserved.</string>
@@ -37,47 +37,33 @@
   <string name="ForumEditorPermissionError">The server rejected this change. Check your permissions before trying again.</string>
   <string name="ForumEditorDiscardTitle">Discard changes?</string>
   <string name="ForumEditorDiscardText">Your changes to this topic will be lost.</string>
-  <string name="ForumEditorDiscard">Discard</string>
   <string name="ForumEditorKeepEditing">Keep editing</string>
-  <string name="ForumEditorSending">Saving…</string>
-  <string name="ForumEditorSendingBack">The request is still being checked. Please wait.</string>
-  <string name="ForumEditorUnknown">The Create result is unknown. Check for the topic before starting another Create; the original request may still finish.</string>
+  <string name="ForumEditorSendingBack">Your changes are still being saved. Please wait.</string>
+  <string name="ForumEditorUnknown">We couldn’t confirm whether your topic was created. Check the topic list before creating it again; the original request may still finish.</string>
   <string name="ForumEditorCheckResult">Check result</string>
   <string name="ForumEditorChecking">Checking existing topics…</string>
-  <string name="ForumEditorCheckFailed">The result could not be checked. Connect and check again; Create will not be repeated.</string>
-  <string name="ForumEditorNoMatch">No matching topic is visible yet. Check again later or return to the topic list. This does not prove that Create failed.</string>
-  <string name="ForumEditorMatches">Possible matches found. Open the topic you intended to create; these may include older topics with the same name.</string>
+  <string name="ForumEditorCheckFailed">Could not check whether the topic was created. Check your connection and try checking again. This won’t create another topic.</string>
+  <string name="ForumEditorNoMatch">No matching topic was found yet. The original request may still finish. Check again later before creating another topic.</string>
+  <string name="ForumEditorMatches">Check the topics below before creating another one. Some may be older topics with the same name.</string>
   <string name="ForumEditorOpenMatch">Open matching topic %1$d</string>
-  <string name="ForumEditorUnknownLeave">The original Create request may still finish. Leaving will not cancel it. Check the topic list before creating again.</string>
+  <string name="ForumEditorUnknownLeave">The topic may still be created after you leave. Leaving won’t cancel the request. Check the topic list before creating it again.</string>
   <string name="ForumEditorLeave">Return</string>
   <string name="ForumEditorRestoredEdit">Your changes were restored. Check the current topic before saving again.</string>
-  <string name="ForumRailChats">Chats</string>
   <string name="ForumRailMuted">Notifications muted</string>
   <string name="ForumRailUnread">Unread messages: %1$d</string>
   <string name="ForumRailUnreadTopics">Unread topics: %1$d</string>
-  <string name="ForumProfileMessage">Messages</string>
   <string name="ForumProfileMore">More topic actions</string>
   <string name="ForumProfileGroupLink">%1$s ›</string>
   <string name="ForumProfileSettingValue">%1$s\n%2$s</string>
-  <string name="ForumProfileMute">Mute</string>
-  <string name="ForumProfileUnmute">Unmute</string>
-  <string name="ForumProfileLoading">Loading topic…</string>
   <string name="ForumProfileUnavailable">This topic is no longer available.</string>
-  <string name="ForumProfileRetry">Could not load this topic. Tap to retry.</string>
   <string name="ForumProfileTopicLink">Topic link</string>
   <string name="ForumProfileLinkHint">A topic link does not grant access to a private group.</string>
-  <string name="ForumProfileMediaLoading">Checking topic materials…</string>
-  <string name="ForumProfileMediaEmpty">No materials in this topic yet.</string>
-  <string name="ForumProfileMediaRetry">Could not load some topic materials. Tap to retry.</string>
-  <string name="ForumProfileMediaOffline">Topic materials are unavailable offline. Tap to retry when connected.</string>
-  <string name="ForumProfileMediaUnknown">The material count is not known yet. Tap to retry.</string>
-  <string name="ForumProfileMedia">Media</string>
-  <string name="ForumProfileFiles">Files</string>
-  <string name="ForumProfileLinks">Links</string>
-  <string name="ForumProfileMusic">Music</string>
+  <string name="ForumProfileMediaLoading">Loading shared content…</string>
+  <string name="ForumProfileMediaEmpty">No shared content in this topic yet.</string>
+  <string name="ForumProfileMediaRetry">Could not load some shared content. Tap to retry.</string>
+  <string name="ForumProfileMediaOffline">Shared content is unavailable offline. Tap to retry when connected.</string>
+  <string name="ForumProfileMediaUnknown">Could not check this topic’s shared content. Tap to retry.</string>
   <string name="ForumProfilePolls">Polls</string>
-  <string name="ForumProfileGifs">GIFs</string>
-  <string name="ForumProfileVoice">Voice</string>
   <string name="ForumProfilePollOpen">Open poll</string>
   <string name="ForumProfilePollClosed">Closed poll</string>
   <string name="ForumProfilePollVoters">Voters: %1$d</string>
@@ -88,20 +74,25 @@
   <!-- Poll question, poll state, formatted voter count; spoken description. -->
   <string name="format_forumPollAccessibility">%1$s. %2$s. %3$s</string>
   <!-- endregion -->
-  <string name="ForumProfileLeaveGroup">Leave group</string>
+  <!-- region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "C2-L10N-02") -->
+  <!-- Group title, closed-topic status. Translators may change order and punctuation. -->
+  <string name="format_forumClosedTopicSubtitle">%1$s · %2$s</string>
+  <!-- Open-topic action label, message preview; spoken fallback description. -->
+  <string name="format_forumMessageAccessibility">%1$s. %2$s</string>
+  <!-- Known action error, warning about an uncertain outcome; both must remain visible. -->
+  <string name="format_forumBatchWarning">%1$s\n\n%2$s</string>
+  <!-- endregion -->
   <string name="ForumProfileDeleteGroup">Delete group for everyone</string>
   <string name="ForumProfileDeleteGroupConfirm">Delete “%1$s” and all its messages for everyone? This deletes the entire group, not just this topic.</string>
   <string name="ForumProfileDeleteTopicConfirm">Delete topic “%1$s” and all its messages? Other topics in “%2$s” will not be deleted.</string>
   <string name="ForumProfileGeneralHint">General cannot be deleted as an ordinary topic.</string>
-  <string name="ForumProfileDefault">Use group settings</string>
   <string name="ForumProfileEnabled">Enabled for this topic</string>
   <string name="ForumProfileDisabled">Disabled for this topic</string>
-  <string name="ForumProfilePreview">Message preview</string>
   <string name="ForumProfilePinnedNotifications">Pinned message notifications</string>
   <string name="ForumProfileMentionNotifications">Mention notifications</string>
   <string name="ForumProfileSound">Notification sound</string>
   <string name="ForumProfileSilent">No sound</string>
-  <string name="ForumProfileSettingsHint">These settings affect only this topic. Inherited values follow the parent group. Story settings are unchanged.</string>
+  <string name="ForumProfileSettingsHint">These settings apply only to this topic. By default, it uses the group’s notification settings.</string>
   <string name="ForumProfileDuration">Muted for %1$s</string>
   <string name="ForumDeliveryPending">Sending</string>
   <string name="ForumDeliveryFailed">Message failed to send</string>
@@ -111,25 +102,23 @@
   <string name="ForumSelectionUnmute">Unmute topics</string>
   <string name="ForumSelectionLimit">Selection limit: %1$d</string>
   <string name="ForumSelectionProgress">Completed: %1$d / %2$d</string>
-  <string name="ForumSelectionDeleteConfirm">Permanently delete this selection and all of its messages? This cannot be undone. Other topics will not be changed. Selection count: %1$d</string>
-  <string name="ForumSelectionClearConfirm">Permanently clear the messages in this selected General topic? General itself is kept. This cannot be undone. Other topics will not be changed. Selected topics: %1$d</string>
-  <string name="ForumSelectionRetryFailed">Retry failed only</string>
-  <string name="ForumSelectionUncertain">The server outcome is unknown. Refresh and verify before another destructive action. This operation will not be retried.</string>
+  <!-- Formatted number of selected topics. The confirmed topic names follow this text. -->
+  <string name="ForumSelectionDeleteConfirm_one">Permanently delete %1$s selected topic and all its messages?\n\nThis cannot be undone. Other topics will not be changed.</string>
+  <string name="ForumSelectionDeleteConfirm_other">Permanently delete %1$s selected topics and all their messages?\n\nThis cannot be undone. Other topics will not be changed.</string>
+  <string name="ForumSelectionClearConfirm">Permanently clear all messages in General? The topic itself will be kept.\n\nThis cannot be undone. Other topics will not be changed.</string>
+  <string name="ForumSelectionRetryFailed">Retry failed actions</string>
+  <string name="ForumSelectionUncertain">Could not confirm the result. Refresh the topic list and check which changes were applied. This action won’t be repeated automatically.</string>
   <string name="ForumSelectionPinsUnavailable">Could not verify the full pinned-topic order. Refresh and try again.</string>
-  <string name="ForumSelectionBusy">Another topic batch is still running.</string>
+  <string name="ForumSelectionBusy">Please wait for the current topic action to finish.</string>
   <string name="ForumSelectionActions">Selected topics</string>
   <string name="ForumTabsFinishAction">Finish editing, sending or attaching your message before switching topics.</string>
   <string name="ForumTabsLabel">Forum topic tabs</string>
   <string name="ForumTabsAll">All</string>
   <string name="ForumTabsAllDescription">All topics</string>
-  <string name="ForumTabsNew">New Topic</string>
   <string name="ForumTabsSelected">Selected</string>
   <string name="ForumTabsMoveTop">Move topic tabs to the top</string>
   <string name="ForumTabsMoveStart">Move topic tabs to the side</string>
   <string name="ForumTabsMoveBottom">Move topic tabs to the bottom</string>
-  <string name="ForumTabsLoading">Loading topics</string>
-  <string name="ForumTabsRetry">Could not load topics. Tap to retry.</string>
-  <string name="ForumTabsUnread">Unread messages: %1$d; mentions: %2$d; reactions: %3$d; poll votes: %4$d</string>
   <string name="ForumCreateTopic">Create topic</string>
   <string name="ForumShowTopics">View as topics</string>
   <string name="ForumShowAllMessages">View all messages</string>
@@ -174,7 +163,6 @@
   <string name="ForumNotificationsMuted">Muted</string>
   <string name="ForumMuteHour">Mute for 1 hour</string>
   <string name="ForumMuteDay">Mute for 1 day</string>
-  <string name="ForumMuteForever">Mute forever</string>
   <string name="ForumRefresh">Refresh topics</string>
   <string name="ForumTopicTitle">Topic</string>
   <string name="ForumChatTopics">Topics</string>
@@ -184,8 +172,8 @@
   <string name="ForumSearchTopics">Search topics</string>
   <string name="ForumTopicsLoading">Loading topics…</string>
   <string name="ForumTopicsEmpty">No topics found</string>
-  <string name="ForumTopicsLoadFailed">Could not load topics. Tap to retry</string>
-  <string name="ForumTopicsStale">Showing cached topics. Tap to refresh</string>
+  <string name="ForumTopicsLoadFailed">Could not load topics. Tap to retry.</string>
+  <string name="ForumTopicsStale">Showing saved topics. Tap to refresh.</string>
   <string name="ForumUnreadCounts">Unread messages: %1$d; mentions: %2$d; reactions: %3$d; poll votes: %4$d</string>
   <string name="ForumTopicLoading">Loading topic…</string>
   <string name="ForumTopicClosed">Topic closed</string>
@@ -195,7 +183,7 @@
   <string name="ForumGeneralHidden">General topic hidden</string>
   <string name="ForumGeneralShown">General topic shown</string>
   <string name="ForumTopicUnavailable">Topic unavailable</string>
-  <string name="ForumTopicLoadFailed">Could not load topic. Tap to retry</string>
+  <string name="ForumTopicLoadFailed">Could not load this topic. Tap to retry.</string>
   <!-- endregion -->
   <string name="language_continueInLanguage">Continue in English</string>
 
