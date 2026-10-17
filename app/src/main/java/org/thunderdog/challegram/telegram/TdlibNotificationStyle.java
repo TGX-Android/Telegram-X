@@ -342,7 +342,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     // Notification itself
 
-    final boolean needPreview = helper.needPreview(group);
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    // Actions address the latest notification; its topic may override the group's preview setting.
+    final boolean needPreview = lastNotification.isForumMessage() ? helper.needPreview(group, lastNotification) : helper.needPreview(group);
+    // endregion
     final boolean needReply = !Passcode.instance().isLocked() && needPreview && (!isSummary || Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) && !isChannel && tdlib.canSendBasicMessage(chat) && !group.isOnlyScheduled();
     final boolean needReplyToMessage = needReply && canReplyTo(group) && (!ChatId.isPrivate(chatId) || (singleNotification != null && chat.unreadCount > 1));
     final long[] allMessageIds = group.getAllMessageIds();
