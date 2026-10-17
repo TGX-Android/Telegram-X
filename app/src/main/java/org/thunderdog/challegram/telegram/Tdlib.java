@@ -65,6 +65,9 @@ import org.thunderdog.challegram.data.TD;
 // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
 import org.thunderdog.challegram.data.ForumHistory;
 // endregion
+// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+import org.thunderdog.challegram.data.ForumNotificationReadScope;
+// endregion
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -5809,6 +5812,38 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     send(new TdApi.ViewMessages(chatId, messageIds, source, true), typedOkHandler());
   }
+
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  public void readNotificationMessages (long chatId, long[] messageIds, ResultHandler<TdApi.Ok> handler) {
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    if (!ChatId.isSupergroup(chatId) || supergroup != null && !supergroup.isForum) {
+      send(new TdApi.ViewMessages(chatId, messageIds, new TdApi.MessageSourceNotification(), true), handler);
+      return;
+    }
+    // Push-only and restored notifications may not carry topics. Resolve every message instead
+    // of assigning the group's latest topic to messages from other topics.
+    send(new TdApi.GetMessages(chatId, messageIds), (messages, error) -> {
+      if (error != null) {
+        handler.onResult(null, error);
+        return;
+      }
+      List<TdApi.ViewMessages> requests = ForumNotificationReadScope.messageRequests(chatId, messageIds, messages.messages);
+      if (requests == null) {
+        handler.onResult(null, new TdApi.Error(404, Lang.getString(R.string.MessageNotFound)));
+        return;
+      }
+      AtomicReference<TdApi.Error> firstError = new AtomicReference<>();
+      sendAll(requests.toArray(new TdApi.ViewMessages[0]), (ok, readError) -> {
+        if (readError != null) {
+          firstError.compareAndSet(null, readError);
+        }
+      }, () -> {
+        TdApi.Error readError = firstError.get();
+        handler.onResult(readError == null ? new TdApi.Ok() : null, readError);
+      });
+    });
+  }
+  // endregion
 
   // TDLib config
 

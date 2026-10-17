@@ -200,8 +200,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           tdlib.notifications().onHideAll(extras.category);
           break;
         case ExternalAction.MARK_AS_READ:
-          extras.read(tdlib);
-          break;
+          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+          extras.read(tdlib, () -> tdlib.notifications().releaseTdlibReference(onDone));
+          return;
+          // endregion
         case ExternalAction.MUTE:
           extras.mute(tdlib);
           break;
@@ -264,12 +266,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       tdlib.awaitMessageSent(sendingMessage, () -> {
         if (ForumHistory.isForum(topic)) {
           // A chat-wide notification group may include other topics; don't mark them read.
-          tdlib.readMessages(extras.chatId, new long[] {extras.messageIds[extras.messageIds.length-1]}, new TdApi.MessageSourceNotification());
+          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+          tdlib.readNotificationMessages(extras.chatId, new long[] {extras.messageIds[extras.messageIds.length-1]}, (ok, error) -> {
+            if (error != null) {
+              UI.showError(error);
+            }
+            if (onDone != null) {
+              onDone.run();
+            }
+          });
+          return;
+          // endregion
         } else {
-          extras.read(tdlib);
-        }
-        if (onDone != null) {
-          onDone.run();
+          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+          extras.read(tdlib, onDone);
+          // endregion
         }
       // endregion
       });

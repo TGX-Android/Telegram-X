@@ -4,11 +4,13 @@ import org.drinkless.tdlib.TdApi;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-/** Mention-read scope for a notification group, independent of its open/reply topic. */
+/** Notification read scopes, independent of the group's open/reply topic. */
 @me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
 public final class ForumNotificationReadScope {
   private ForumNotificationReadScope () { }
@@ -66,6 +68,49 @@ public final class ForumNotificationReadScope {
     List<TdApi.Function<TdApi.Ok>> requests = new ArrayList<>(topicIds.size());
     for (int topicId : topicIds) {
       requests.add(new TdApi.ReadAllForumTopicMentions(chatId, topicId));
+    }
+    return requests;
+  }
+
+  /**
+   * Resolve ordinary notifications before reading them: MessageSourceNotification reads the chat,
+   * not its forum topics. Each topic needs a separate ViewMessages request, including General.
+   * Missing or mismatched messages must not fall back to reading an unrelated topic or whole chat.
+   */
+  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  public static List<TdApi.ViewMessages> messageRequests (long chatId, long[] messageIds, TdApi.Message[] messages) {
+    if (messageIds == null || messageIds.length == 0 || messages == null || messages.length != messageIds.length) {
+      return null;
+    }
+    Map<Integer, Set<Long>> groups = new LinkedHashMap<>();
+    for (int i = 0; i < messageIds.length; i++) {
+      TdApi.Message message = messages[i];
+      if (message == null || message.id != messageIds[i] || message.chatId != chatId) {
+        return null;
+      }
+      int topicId = 0;
+      if (message.topicId instanceof TdApi.MessageTopicForum) {
+        topicId = ((TdApi.MessageTopicForum) message.topicId).forumTopicId;
+        if (topicId <= 0) {
+          return null;
+        }
+      }
+      Set<Long> group = groups.get(topicId);
+      if (group == null) {
+        group = new LinkedHashSet<>();
+        groups.put(topicId, group);
+      }
+      group.add(message.id);
+    }
+    List<TdApi.ViewMessages> requests = new ArrayList<>(groups.size());
+    for (Map.Entry<Integer, Set<Long>> entry : groups.entrySet()) {
+      long[] ids = new long[entry.getValue().size()];
+      int index = 0;
+      for (long messageId : entry.getValue()) {
+        ids[index++] = messageId;
+      }
+      TdApi.MessageSource source = entry.getKey() != 0 ? new TdApi.MessageSourceForumTopicHistory() : new TdApi.MessageSourceNotification();
+      requests.add(new TdApi.ViewMessages(chatId, ids, source, true));
     }
     return requests;
   }

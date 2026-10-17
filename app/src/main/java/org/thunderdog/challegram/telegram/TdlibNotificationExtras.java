@@ -34,6 +34,9 @@ import org.thunderdog.challegram.tool.UI;
 import java.util.List;
 // endregion
 import java.util.concurrent.TimeUnit;
+// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+import java.util.concurrent.atomic.AtomicInteger;
+// endregion
 
 import tgx.td.ChatId;
 import tgx.td.Td;
@@ -219,12 +222,17 @@ public class TdlibNotificationExtras {
     setMuteFor(tdlib, muteFor);
   }
 
-  public void read (Tdlib tdlib) {
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  public void read (Tdlib tdlib, @Nullable Runnable after) {
+  // endregion
     boolean needToast = tdlib.notifications().isUnknownGroup(notificationGroupId);
     if (areMentions) {
       // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
       List<TdApi.Function<TdApi.Ok>> requests = ForumNotificationReadScope.requests(chatId, readForumTopicIds);
       ForumNotificationReadScope.Completion completion = new ForumNotificationReadScope.Completion(requests.size());
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+      AtomicInteger remaining = new AtomicInteger(requests.size());
+      // endregion
       for (TdApi.Function<TdApi.Ok> request : requests) {
         tdlib.client().send(request, result -> {
           boolean success = result.getConstructor() == TdApi.Ok.CONSTRUCTOR;
@@ -236,20 +244,31 @@ public class TdlibNotificationExtras {
           } else if (!success) {
             UI.showError(result);
           }
+          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+          if (remaining.decrementAndGet() == 0 && after != null) {
+            after.run();
+          }
+          // endregion
         });
       }
       return;
       // endregion
     }
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
-    tdlib.readMessages(chatId, messageIds, new TdApi.MessageSourceNotification());
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    tdlib.readNotificationMessages(chatId, messageIds, (ok, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        hide(tdlib);
+        if (needToast) {
+          UI.showToast(R.string.NotificationRead, Toast.LENGTH_SHORT);
+        }
+      }
+      if (after != null) {
+        after.run();
+      }
+    });
     // endregion
-    hide(tdlib);
-    if (needToast) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
-      UI.showToast(R.string.NotificationRead, Toast.LENGTH_SHORT);
-      // endregion
-    }
   }
 
   public void hide (Tdlib tdlib) {
