@@ -15,7 +15,7 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -25,14 +25,14 @@ import android.view.MotionEvent;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.ForumHistory;
 // endregion
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.loader.AvatarReceiver;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.loader.ComplexReceiver;
 // endregion
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
@@ -40,11 +40,11 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ThemeDeprecated;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 // endregion
 import org.thunderdog.challegram.tool.Screen;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.util.text.Text;
@@ -60,7 +60,7 @@ public class ChatHeaderView extends ComplexHeaderView {
   }
 
   private Callback callback;
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private boolean isForumTopic;
   private TdApi.ForumTopicIcon topicIcon;
   private String topicLetter = "#";
@@ -150,7 +150,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     }
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public void setForumTopic (TdApi.Chat chat, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.ForumTopic topic, @Nullable String restriction) {
     isForumTopic = ForumHistory.isForum(topicId);
     setNoExpand(isForumTopic);
@@ -172,7 +172,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     setShowScam(false);
     setShowFake(false);
     setShowLock(false);
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "C2-L10N-02")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "C2-L10N-02")
     CharSequence subtitle = !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : restriction != null ? restriction :
       topic != null && topic.info.isClosed ? Lang.getString(R.string.format_forumClosedTopicSubtitle, chat.title, Lang.getString(R.string.ForumTopicClosed)) : chat.title;
     // endregion
@@ -228,7 +228,7 @@ public class ChatHeaderView extends ComplexHeaderView {
   private Tdlib tdlib;
 
   public void updateUserStatus (TdApi.Chat chat) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (!isForumTopic && StringUtils.isEmpty(forcedSubtitle)) {
     // endregion
       setSubtitle(tdlib.status().chatStatus(chat));

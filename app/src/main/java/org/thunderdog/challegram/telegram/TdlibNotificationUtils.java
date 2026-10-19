@@ -229,7 +229,7 @@ public class TdlibNotificationUtils {
   }
 
   static PendingIntent newIntent (int accountId, long forLocalChatId, long specificMessageId) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return newIntent(accountId, forLocalChatId, specificMessageId, null);
   }
 
@@ -239,7 +239,7 @@ public class TdlibNotificationUtils {
   }
 
   static Intent newCoreIntent (int accountId, long forLocalChatId, long specificMessageId) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return newCoreIntent(accountId, forLocalChatId, specificMessageId, null);
   }
 

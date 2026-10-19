@@ -41,7 +41,7 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageVideo;
 import org.thunderdog.challegram.data.ThreadInfo;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.data.MessageTopics;
 import org.thunderdog.challegram.data.ForumHistory;
 import org.thunderdog.challegram.data.ForumTopicContext;
@@ -497,7 +497,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     long maxMessageId = maxPinnedMessageId();
     if (maxMessageId != 0) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       tdlib.settings().dismissMessage(loader.getChatId(), loader.getMessageTopicId(), maxMessageId);
       // endregion
       setPinnedMessagesAvailable(false);
@@ -515,7 +515,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private void checkPinnedMessages () {
     long chatId = loader.getChatId();
     setPinnedMessagesAvailable(pinnedMessages != null && pinnedMessages.isAvailable() &&
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       !(tdlib.settings().isMessageDismissed(chatId, loader.getMessageTopicId(), pinnedMessages.getMaxMessageId()) || tdlib.chatRestricted(chatId))
       // endregion
     );
@@ -536,7 +536,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void restorePinnedMessage () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     tdlib.settings().restorePinnedMessages(loader.getChatId(), loader.getMessageTopicId());
     // endregion
     setPinnedMessagesAvailable(pinnedMessages != null && pinnedMessages.isAvailable());
@@ -608,14 +608,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Search
 
   public void openSearch (TdApi.Chat chat, String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (pinnedMessages != null) { pinnedMessages.performDestroy(); pinnedMessages = null; }
     loader.setChat(chat, null, controller.getMessageTopicId(), MessagesLoader.SPECIAL_MODE_SEARCH, filter);
     // endregion
     loader.setSearchParameters(query, sender, filter);
     adapter.setChatType(chat.type);
     if (filter != null && Td.isPinnedFilter(filter)) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       initPinned(chat.id, controller.getMessageTopicId(), 1, 1);
       // endregion
     }
@@ -679,12 +679,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessageListManager.MaxMessageIdListener pinnedMessageAvailabilityChangeListener = new MessageListManager.MaxMessageIdListener() {
     @Override
     public void onMaxMessageIdChanged (ListManager<TdApi.Message> list, long maxMessageId) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (list != pinnedMessages) return;
       // endregion
       if (maxMessageId != 0) {
         long chatId = loader.getChatId();
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         setPinnedMessagesAvailable(!(tdlib.settings().isMessageDismissed(chatId, loader.getMessageTopicId(), maxMessageId) || tdlib.chatRestricted(chatId)));
         // endregion
       } else if (!list.isAvailable()) {
@@ -695,11 +695,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessageListManager.ChangeListener pinnedMessageListener = new MessageListManager.ChangeListener() {
     @Override
     public void onAvailabilityChanged (ListManager<TdApi.Message> list, boolean isAvailable) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (list != pinnedMessages) return;
       // endregion
       long chatId = loader.getChatId();
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (!isAvailable || !(tdlib.settings().hasDismissedMessages(chatId, loader.getMessageTopicId()) || tdlib.chatRestricted(chatId))) {
       // endregion
         // Either list became unavailable,
@@ -718,7 +718,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private void initPinned (long chatId, @Nullable TdApi.MessageTopic topicId, int initialLoadCount, int loadCount) {
     this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, topicId, null, null, new TdApi.SearchMessagesFilterPinned());
   // endregion
@@ -738,7 +738,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void openChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.MessageTopic topicId, TdApi.SearchMessagesFilter filter, MessagesController context, boolean areScheduled, boolean needPinnedMessages) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (pinnedMessages != null) { pinnedMessages.performDestroy(); pinnedMessages = null; }
     // Scheduled messages have no persisted history position or unread anchor.
     if (areScheduled && (highlightMode == HIGHLIGHT_MODE_POSITION_RESTORE || highlightMode == HIGHLIGHT_MODE_UNREAD || highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT)) {
@@ -753,7 +753,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       // readOneShot = true;
     }
     if (chat.id != 0 && messageThread == null && !areScheduled && needPinnedMessages) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       initPinned(chat.id, MessageTopics.effectiveTopic(messageThread, topicId), 10, 50);
       // endregion
     } else {
@@ -768,7 +768,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       loader.setChat(chat, messageThread, topicId, areScheduled ? MessagesLoader.SPECIAL_MODE_SCHEDULED : MessagesLoader.SPECIAL_MODE_NONE, filter);
       clearHeaderMessage();
       adapter.setChatType(chat.type);
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (ForumHistory.isForum(topicId)) adapter.reset(null);
       context.whenForumTopicReady(() -> {
         // Resolve automatic unread anchors only after the topic's own read state.
@@ -812,7 +812,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           return false;
         MessageProvider provider = (MessageProvider) view;
         TGMessage msg = provider.getMessage();
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (msg.markAsViewed() || msg.containsUnreadReactions() || msg.containsUnreadPollVotes()) {
         // endregion
           long messageId = msg.getBiggestId();
@@ -857,7 +857,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void loadFromStart () {
     loadFromStart(new MessageId(loader.getChatId(), 0), null);
   }
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
   public void retryForumHistory () { loader.retryForumHistory(); }
 // endregion
@@ -1953,7 +1953,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         return;
     }
     TdApi.MessageTopic topicId = loader.getMessageTopicId();
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (!ForumHistory.matches(message.getMessage(), loader.getChatId(), topicId, areScheduled())) {
     // endregion
       return;
@@ -2338,7 +2338,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     TdApi.Chat chat = tdlib.chatStrict(chatId);
     ThreadInfo messageThread = loader.getMessageThread();
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     ForumTopicContext forum = loader.getForumTopicContext();
     long lastReadInboxMessageId = forum != null ? forum.lastReadInbox() : messageThread != null ? messageThread.getLastReadInboxMessageId() : chat.lastReadInboxMessageId;
     // endregion
@@ -2430,7 +2430,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       prevItem = item;
     }
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   }
 
   public void updateForumReadState (TdApi.ForumTopic topic) {
@@ -2628,7 +2628,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return !(inSpecialMode() || readMessagesDisabled());
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public void saveForumTabsAnchor () { saveScrollPosition(); }
 
   // endregion
@@ -2681,7 +2681,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         scrollMessageId = message.getBiggestId();
         scrollMessageOtherIds = message.getOtherMessageIds(scrollMessageId);
         scrollChatId = message.getChatId();
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (loader.getForumTopicContext() != null) {
           readFully = scrollChatId == loader.getChatId() && loader.getForumTopicContext().lastMessageId() == scrollMessageId;
         } else if (threadInfo != null) {
@@ -2775,7 +2775,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Empty text
 
   public void setEmptyText (TextView view, boolean isLoaded) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     String forumError = controller.getForumHistoryErrorText();
     if (forumError != null) { view.setText(forumError); return; }
     // endregion
@@ -3151,7 +3151,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     if (highlightMode == HIGHLIGHT_MODE_POSITION_RESTORE) {
       final int accountId = tdlib.id();
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       Settings.SavedMessageId messageId = !inSpecialMode() ? Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageTopicId()) : null;
       // endregion
       int offset = messageId != null ? messageId.offsetPixels - scrollMessage.getExtraPadding() : 0;
@@ -3394,7 +3394,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public static final int CHATS_THRESHOLD = 1;
 
   public static boolean canGoUnread (TdApi.Chat chat, @Nullable ThreadInfo threadInfo) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return canGoUnread(chat, threadInfo, null);
   }
 
@@ -3407,7 +3407,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     // endregion
     if (threadInfo != null) {
       return threadInfo.hasUnreadMessages(chat) && threadInfo.getLastReadInboxMessageId() != 0;
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     }
     // Per-topic read state is loaded separately; never borrow the whole-chat anchor.
     if (topicId != null) {
@@ -3421,7 +3421,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public static int getAnchorHighlightMode (int accountId, TdApi.Chat chat, @Nullable ThreadInfo threadInfo) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return getAnchorHighlightMode(accountId, chat, threadInfo, null);
   }
 
@@ -3434,11 +3434,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (chat == null) {
       return HIGHLIGHT_MODE_NONE;
     }
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     boolean canGoUnread = canGoUnread(chat, threadInfo, topicId, forum);
     // endregion
     Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, chat.id,
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       MessageTopics.effectiveTopic(threadInfo, topicId)
       // endregion
     );
@@ -3461,7 +3461,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public static MessageId getAnchorMessageId (int accountId, TdApi.Chat chat, @Nullable ThreadInfo threadInfo, int anchorMode) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return getAnchorMessageId(accountId, chat, threadInfo, null, anchorMode);
   }
 
@@ -3474,7 +3474,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     switch (anchorMode) {
       case HIGHLIGHT_MODE_POSITION_RESTORE: {
         Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           accountId, chat.id, MessageTopics.effectiveTopic(threadInfo, topicId)
           // endregion
         );
@@ -3484,7 +3484,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case HIGHLIGHT_MODE_UNREAD_NEXT: {
         if (threadInfo != null) {
           return new MessageId(threadInfo.getChatId(), threadInfo.getLastReadInboxMessageId() == 0 ? MessageId.MIN_VALID_ID : threadInfo.getLastReadInboxMessageId());
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         } else if (ForumHistory.isForum(topicId) && forum != null) {
           return new MessageId(chat.id, forum.lastReadInboxMessageId != 0 ? forum.lastReadInboxMessageId : MessageId.MIN_VALID_ID);
         } else if (topicId != null) {
@@ -3558,7 +3558,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   @Override
   public void onNewMessage (final TdApi.Message message) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (message.chatId != loader.getChatId() || !Td.matchesTopic(message.topicId, loader.getMessageTopicId())) return;
     // endregion
     final ThreadInfo messageThread = loader.getMessageThread();
@@ -3584,7 +3584,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public List<TGMessage> parseMessages (List<TdApi.Message> messages) {
     final List<TGMessage> parsedMessages = new ArrayList<>(messages.size());
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (messages.isEmpty()) return parsedMessages;
     // endregion
     final TdApi.Chat chat = tdlib.chatStrict(messages.get(0).chatId);
@@ -3592,7 +3592,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     TGMessage cur = null;
     LongSparseArray<TdApi.ChatAdministrator> chatAdmins = this.chatAdmins;
     for (TdApi.Message message : messages) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (ForumHistory.isForum(loader.getMessageTopicId()) && !ForumHistory.matches(message, loader.getChatId(), loader.getMessageTopicId(), areScheduled())) continue;
       // endregion
       if (cur != null) {
@@ -3638,7 +3638,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     tdlib.ui().post(() -> {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (ForumHistory.matches(message, loader.getChatId(), loader.getMessageTopicId(), areScheduled())) {
       // endregion
         updateMessageSendSucceeded(message, oldMessageId);
@@ -3654,7 +3654,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     tdlib.ui().post(() -> {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (ForumHistory.matches(message, loader.getChatId(), loader.getMessageTopicId(), areScheduled())) {
       // endregion
         updateMessageSendFailed(message, oldMessageId);
@@ -3717,7 +3717,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (loader.getChatId() == chatId) {
         updateMessageUnreadReactions(messageId, unreadReactions);
       }
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     });
   }
 

@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /** Shared topic actions for the list and the history header. Never mutates a cached TDLib value. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicUi implements ChatListener {
   private final ViewController<?> owner;
   private final Tdlib tdlib;
@@ -350,7 +350,7 @@ public final class ForumTopicUi implements ChatListener {
     ArrayList<ForumTopicActions.BatchTarget> targets = new ArrayList<>(input);
     Runnable start = () -> startBatch(action, targets, completed);
     if (!action.isDestructive()) { start.run(); return; }
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "C2-L10N-02")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "C2-L10N-02")
     StringBuilder scope = new StringBuilder(action == Action.CLEAR_GENERAL ? Lang.getString(R.string.ForumSelectionClearConfirm) :
       Lang.plural(R.string.ForumSelectionDeleteConfirm, targets.size()));
     // endregion
@@ -391,7 +391,7 @@ public final class ForumTopicUi implements ChatListener {
     String text = failure.error != null ? batchError(failure.error) : Lang.getString(R.string.LaunchSubtitleFatalError);
     if (failure.uncertain) {
       String warning = Lang.getString(R.string.ForumSelectionUncertain);
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "C2-L10N-02")
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "C2-L10N-02")
       text = failure.retryTargets.isEmpty() ? warning : Lang.getString(R.string.format_doubleLines, text, warning);
       // endregion
     }

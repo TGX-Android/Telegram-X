@@ -40,7 +40,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
  * reserve its width; messages, profiles and editors retain normal full-width navigation.
  * Keeping the rail behind the stack also lets Back reveal it without resizing either screen.
  */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumNavigationContainer extends FrameLayoutFix implements NavigationStack.ChangeListener {
   private final NavigationController navigation;
   private final View content;
@@ -190,7 +190,7 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     requestLayout();
   }
 
-  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
   public void updateThemeColors () {
     if (destroyed) return;
     if (rail != null) rail.updateThemeColors();

@@ -60,7 +60,7 @@ import java.util.Set;
  * The owner supplies effective snapshots and calls destroy() when discarding the widget.
  */
 @UiThread
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalidateListener, Lang.Listener {
   public interface Listener {
     void onSelectTopic (int topicId);

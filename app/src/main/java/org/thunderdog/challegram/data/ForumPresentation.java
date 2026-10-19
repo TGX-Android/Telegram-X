@@ -4,7 +4,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 
 /** Pure common-stream rules: display identity, composer identity and read actions must agree. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumPresentation {
   private ForumPresentation () { }
 

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 /** Server-authoritative operations. Permission checks and confirmation dialogs belong to the UI. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicActions {
   public interface Callback<T extends TdApi.Object> {
     void onResult (@Nullable T value, @Nullable TdApi.Error error);

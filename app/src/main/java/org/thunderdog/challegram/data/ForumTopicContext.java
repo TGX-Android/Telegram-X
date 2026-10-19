@@ -7,7 +7,7 @@ import org.drinkless.tdlib.TdApi;
 import tgx.td.MessageId;
 
 /** One open topic. A new instance is also the epoch token for asynchronous UI work. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicContext {
   public final long chatId;
   public final int topicId;
@@ -31,7 +31,7 @@ public final class ForumTopicContext {
   @Nullable public TdApi.ForumTopic topic () { return topic; }
   @Nullable public TdApi.Error error () { return error; }
   public boolean isLoading () { return topic == null && error == null; }
-  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   public static boolean isUnavailable (@Nullable TdApi.Error error) {
     return error != null && (error.code == 404 || error.code == 403 ||
       "TOPIC_DELETED".equals(error.message) || "TOPIC_NOT_FOUND".equals(error.message));

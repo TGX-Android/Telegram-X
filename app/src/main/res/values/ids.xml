@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <!-- region @MadeByLLM("gpt-6-astra", ref = "PR #1095") -->
+  <!-- region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095") -->
   <item type="id" name="controller_forumTopicEdit" />
   <item type="id" name="menu_forumTopicEdit" />
   <item type="id" name="btn_forumTopicSave" />
@@ -194,7 +194,7 @@
   <item type="id" name="controller_archiveSettings" />
   <item type="id" name="controller_storageSettings" />
   <item type="id" name="controller_messages" />
-  <!-- region @MadeByLLM("gpt-6-astra", ref = "PR #1095") -->
+  <!-- region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095") -->
   <item type="id" name="controller_forumTopics" />
   <item type="id" name="menu_forumTopics" />
   <item type="id" name="menu_forumActions" />
@@ -1453,6 +1453,6 @@
   <item type="id" name="btn_playback_speed_1_2" />
   <item type="id" name="btn_playback_speed_1_5" />
   <item type="id" name="btn_playback_speed_2_0" />
-<!-- region @MadeByLLM("gpt-6-astra", ref = "PR #1095") -->
+<!-- region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095") -->
 </resources>
 <!-- endregion -->

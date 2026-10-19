@@ -41,7 +41,7 @@ import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.ui.MessagesController;
 // endregion
 import org.thunderdog.challegram.unsorted.Settings;
@@ -80,7 +80,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   private NavigationProcessor processor;
 
   private RootLayout rootView;
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private ForumNavigationContainer forumContainer;
   private boolean forumTransition;
   // endregion
@@ -243,7 +243,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       }
     } else {
       contentWrapper.addView(controller.getValue());
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (controller instanceof org.thunderdog.challegram.ui.ForumTopicsController) forumContainer.addTopicView(controller.getValue());
       // endregion
     }
@@ -264,7 +264,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       rootView.addView(controller.getValue(), 0);
     } else {
       contentWrapper.addView(controller.getValue(), index);
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (controller instanceof org.thunderdog.challegram.ui.ForumTopicsController) forumContainer.addTopicView(controller.getValue());
       // endregion
     }
@@ -294,7 +294,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       rootView.removeView(controller.getValue());
     } else {
       contentWrapper.removeView(controller.getValue());
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       forumContainer.onControllerViewRemoved(controller.getValue());
       if (controller instanceof org.thunderdog.challegram.ui.ForumTopicsController) forumContainer.removeTopicView(controller.getValue());
       // endregion
@@ -433,7 +433,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
     Lang.addLanguageListener(this);
 
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     forumContainer = new ForumNavigationContainer(context, this, rootView);
     return forumContainer;
   }
@@ -472,8 +472,8 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   @Override
   public void onThemeColorsChanged (boolean areTemp, ColorState state) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
     if (forumContainer != null) forumContainer.updateThemeColors();
     // endregion
     // endregion
@@ -504,7 +504,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   public void destroy () {
     isDestroyed = true;
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (forumContainer != null) forumContainer.destroy();
     // endregion
     ThemeManager.instance().removeThemeListener(this);
@@ -559,7 +559,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
         processor.setController(controller);
       }
     }
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   }
 
   /** Replace one history atomically, preserving the caller's Back destination. UI thread only. */
@@ -759,7 +759,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   public void prepareFactorAnimation (ViewController<?> left, ViewController<?> right, boolean forward, int direction, @PredictiveGesture int predictiveGestureMode) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     // Legacy swipe Back also respects reduced motion for the forum transition.
     if (direction == TRANSLATION_HORIZONTAL && right instanceof org.thunderdog.challegram.ui.ForumTopicsController && Settings.instance().needReduceMotion()) {
       direction = TRANSLATION_FADE;
@@ -965,7 +965,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       }
     }
 
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     forumTransition = direction != TRANSLATION_NONE && forumContainer.beginTransition(left, right,
       direction == TRANSLATION_HORIZONTAL && needRtl() == Lang.rtl(), 1f - translationFactor);
     if (forumTransition) applyForumTransition(translationFactor);
@@ -1156,7 +1156,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
         }
       }, timeout);
     } else {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       Runnable start = () -> AnimatorUtils.startAnimator(forward ? right.getValue() : left.getValue(), animator);
       if (forumTransition) forumContainer.startTransitionWhenReady(start); else start.run();
       // endregion
@@ -1175,7 +1175,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
         ((android.view.ActionMode) actionMode).finish();
       }
       if (!animating) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (forumContainer != null) forumContainer.endTransition();
         forumTransition = false;
         // endregion
@@ -1471,7 +1471,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   private float translationFactor;
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private void applyForumTransition (float factor) {
     if (!forumContainer.hasTransition()) { forumTransition = false; return; }
     float progress = 1f - factor;
@@ -1589,7 +1589,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       }
     }
 
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (forumTransition) applyForumTransition(this.translationFactor);
     // endregion
     updateHackyViews();
@@ -1740,7 +1740,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   @Override
   public void onLanguagePackEvent (int event, int arg1) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (forumContainer != null) forumContainer.refresh();
     // endregion
     boolean directionChanged = Lang.hasDirectionChanged(event, arg1);
@@ -1769,7 +1769,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   private void setBottomInset (int bottomInset, int bottomInsetWithoutIme) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (forumContainer != null) forumContainer.setBottomInset(bottomInsetWithoutIme);
     // endregion
     if (this.bottomInset != bottomInset || this.bottomInsetWithoutIme != bottomInsetWithoutIme) {

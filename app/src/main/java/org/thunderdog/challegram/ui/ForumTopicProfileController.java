@@ -31,7 +31,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.ForumPresentation;
-// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
 import org.thunderdog.challegram.data.ForumTopicContext;
 // endregion
 import org.thunderdog.challegram.data.ForumTopicMedia;
@@ -74,7 +74,7 @@ import tgx.td.ChatId;
 import tgx.td.Td;
 
 /** Topic identity/settings plus existing shared-media pages, not a second group profile. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicProfileController extends ViewController<ForumTopicProfileController.Arguments>
   implements Menu, ChatListener, MessageListener, NotificationSettingsListener, TdlibCache.SupergroupDataChangeListener, CleanupStartupDelegate {
   public static final class Arguments {
@@ -98,7 +98,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   private String query = "";
   private boolean restoreSearch, restoreScrollPending;
   private boolean busy, subscribed, materialsStarted, refreshScheduled, terminal;
-  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   private boolean returnToTopics;
   // endregion
   private volatile Object epoch = new Object();
@@ -351,12 +351,12 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     subscription = tdlib.topics().observeTopic(key(), (value, error) -> {
       if (isDestroyed() || epoch != ticket) return;
       topic = value; metadataError = error;
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
       terminal = ForumTopicContext.isUnavailable(error);
       returnToTopics = terminal;
       // endregion
       render();
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
       if (returnToTopics) returnToTopics(8);
       // endregion
       if (ready() && !materialsStarted) { materialsStarted = true; refreshMaterials(); }
@@ -374,13 +374,13 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   private boolean canEdit () { TdApi.ForumTopic current = currentTopic(); return ready() && current != null && ForumTopicPolicy.canEdit(tdlib.chatStatus(getChatId()), current.info); }
   private boolean canManage () { return ready() && ForumTopicPolicy.canManage(tdlib.chatStatus(getChatId())); }
 
-  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   private CharSequence profileTitle () {
     if (terminal) return Lang.getString(R.string.ForumTopicUnavailable);
     return topic != null ? topic.info.name : Lang.getString(metadataError != null ? R.string.ForumTopicTitle : R.string.ForumTopicLoading);
   }
 
-  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   private void returnToTopics (int retries) {
     if (!returnToTopics || isDestroyed() || !isFocused()) return;
     ForumTabsNavigation.Result result = ForumTabsNavigation.returnFromUnavailableTopic(this, getForumTopicId(), true);
@@ -391,7 +391,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   }
 
   @Override
-  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (returnToTopics && ForumTabsNavigation.returnFromUnavailableTopic(this, getForumTopicId(), commit) == ForumTabsNavigation.Result.RETURNED) return true;
     return super.performOnBackPressed(fromTop, commit);
@@ -401,7 +401,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     if (title == null) return;
     boolean available = ready();
     group.setText(Lang.getString(R.string.ForumProfileGroupLink, tdlib.chatTitle(getChatId())));
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
     title.setText(profileTitle());
     state.setEnabled(!terminal && metadataError != null && !busy);
     // endregion
@@ -602,7 +602,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
       .setMessage(Lang.getString(R.string.ForumProfileDeleteTopicConfirm, current.info.name, tdlib.chatTitle(getChatId())))
       .setNegativeButton(Lang.getString(R.string.Cancel), null).setPositiveButton(Lang.getString(R.string.Delete), (dialog, which) -> {
         TdApi.ForumTopic fresh = currentTopic();
-        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
         if (fresh != null && !fresh.info.isGeneral && ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), fresh.info)) {
           Object ticket = epoch;
           run(done -> tdlib.topics().actions.delete(key(), (ok, error) -> {
@@ -833,7 +833,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   }
   @Override public void onFocus () {
     super.onFocus(); render(); if (activeTab >= 0 && pages[activeTab] != null && !pages[activeTab].isFocused()) pages[activeTab].onFocus();
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
     if (returnToTopics) returnToTopics(8);
     // endregion
     if (restoreSearch) { restoreSearch = false; String saved = query; openSearchMode(); setSearchInput(saved); }
@@ -872,7 +872,7 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   }
   @Override public void onPerformUserCleanup () {
     epoch = new Object();
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
     returnToTopics = false;
     // endregion
     tdlib.ui().post(() -> {

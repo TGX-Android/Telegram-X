@@ -7,7 +7,7 @@ import org.drinkless.tdlib.TdApi;
 import tgx.td.Td;
 
 /** Topic identity for navigation. A null topic means the whole chat, not a wildcard. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class MessageTopics {
   private MessageTopics () { }
 

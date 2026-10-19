@@ -146,7 +146,7 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.data.MessageTopics;
 import org.thunderdog.challegram.data.ForumHistory;
 import org.thunderdog.challegram.data.ForumTopicContext;
@@ -311,7 +311,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   ActivityResultHandler, MoreDelegate, CommandKeyboardLayout.Callback, MediaCollectorDelegate, SelectDelegate,
   ReplyBarView.Callback, RaiseHelper.Listener,
   TGLegacyManager.EmojiLoadListener, ChatHeaderView.Callback,
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   ChatListener, NotificationSettingsListener, EmojiLayout.Listener, CleanupStartupDelegate,
   // endregion
   MessageThreadListener, TdlibSingleUnreadReactionsManager.UnreadSingleReactionListener,
@@ -398,7 +398,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public MessagesController (Context context, Tdlib tdlib) {
     super(context, tdlib);
     this.manager = new MessagesManager(this);
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     tdlib.listeners().addCleanupListener(this);
     // endregion
   }
@@ -931,7 +931,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       @Override
       public void onShowAllRequest (PinnedMessagesBar view) {
         MessagesController c = new MessagesController(context, tdlib);
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         c.setArguments(new Arguments(null, chat, getMessageTopicId(), null, null, new TdApi.SearchMessagesFilterPinned()));
         // endregion
         navigateTo(c);
@@ -983,7 +983,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mentionButton.setOnLongClickListener(v -> {
       long chatId = getChatId();
       if (chatId != 0 && !isDestroyed()) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         tdlib.send(org.thunderdog.challegram.data.ForumPresentation.readMentions(chatId, getMessageTopicId()), tdlib.typedOkHandler());
         // endregion
         return true;
@@ -1066,7 +1066,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     reactionsButton.setOnLongClickListener(v -> {
       long chatId = getChatId();
       if (chatId != 0 && !isDestroyed()) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         tdlib.send(org.thunderdog.challegram.data.ForumPresentation.readReactions(chatId, getMessageTopicId()), tdlib.typedOkHandler());
         // endregion
         return true;
@@ -1511,7 +1511,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     contentView.addView(searchByUserViewWrapper);
 
     updateView();
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     createForumTabsView();
     // endregion
 
@@ -1826,14 +1826,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Nullable
   public final TdApi.MessageTopic getMessageTopicId () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return MessageTopics.effectiveTopic(messageThread, messageTopicId);
     // endregion
   }
 
   @Nullable
   public final TdApi.MessageTopic getMessageTopicId (ReplyInfo replyInfo) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     TdApi.MessageTopic topic = ForumHistory.outgoingTopic(getMessageTopicId(), replyInfo != null ? replyInfo.inTopicId : null);
     if (topic == null && replyForumContext != null) return new TdApi.MessageTopicForum(replyForumContext.topicId);
     return topic == null && isForumTabsAll() ? new TdApi.MessageTopicForum(ForumNavigation.GENERAL_TOPIC_ID) : topic;
@@ -1841,7 +1841,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean matchesTopic (@Nullable TdApi.MessageTopic topicId) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     // Message membership in the whole-chat view is deliberately a wildcard.
     return Td.matchesTopic(topicId, getMessageTopicId());
     // endregion
@@ -1859,7 +1859,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Nullable
   public TdApi.DraftMessage getDraftMessage () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (isForumTabsAll()) {
       org.thunderdog.challegram.telegram.TdlibSettingsManager.LocalForumDraft local = tdlib.settings().getLocalForumDraft(getChatId(), 0);
       return local != null ? local.draft : null;
@@ -1875,12 +1875,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean compareChat (long chatId, @Nullable ThreadInfo threadInfo) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return compareChat(chatId, threadInfo, null, areScheduledOnly());
     // endregion
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public boolean compareChat (long chatId, @Nullable TdApi.MessageTopic topicId) {
     return MessageTopics.sameChat(getChatId(), getMessageTopicId(), chatId, topicId);
   // endregion
@@ -1891,7 +1891,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean compareChat (long chatId, @Nullable ThreadInfo threadInfo, boolean areScheduledOnly) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return compareChat(chatId, threadInfo, null, areScheduledOnly);
   }
 
@@ -1942,7 +1942,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatHeaderClick () {
     if (chat != null) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (forumTopicContext != null && !inPreviewSearchMode()) {
         ForumTopicProfileController profile = new ForumTopicProfileController(context(), tdlib);
         profile.setArguments(new ForumTopicProfileController.Arguments(chat.id, forumTopicContext.topicId, chatList()));
@@ -2034,7 +2034,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void viewScheduledMessages (boolean force) {
     MessagesController c = new MessagesController(context, tdlib);
     boolean keyboardVisible = getKeyboardState();
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     c.setArguments(new Arguments(openedFromChatList, chat, /* messageThread */ null, getMessageTopicId(), null, MessagesManager.HIGHLIGHT_MODE_NONE, null).setScheduled(true).setOpenKeyboard(keyboardVisible));
     // endregion
     if (force) {
@@ -2233,7 +2233,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       final ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
       final boolean[] isTimeout = new boolean[1];
       final long chatId = getChatId();
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       final Object sendEpoch = draftEpoch;
       final long sendRevision = inputEditRevision;
       final boolean sendFromAll = isForumTabsAll();
@@ -2243,7 +2243,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       setIsSendingText(true);
       manager.setSentMessages(sentMessages);
       Runnable clearInputRunnable = () -> {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (getChatId() == chatId && draftEpoch == sendEpoch && inputEditRevision == sendRevision) {
           if (!ForumHistory.isForum(sentTopic)) {
             clearInputAfterSend(true, true, replyTo, true, null, sendFromAll);
@@ -2256,7 +2256,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       UI.post(clearInputRunnable, MathUtils.clamp(50 * selectedItems.size(), 200, 500));
 
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       final List<TdApi.Function<?>> musicFunctions = getSendMusicFunctions(sendButton, musicEntries, true, !musicEntries.isEmpty(), caption, sendOptions, replyTo, true);
       // endregion
       sendFiles(sendButton, files, true, true, !musicEntries.isEmpty() && !files.isEmpty() ? null : caption, sendOptions, filesFunctions -> {
@@ -2267,7 +2267,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           functions.addAll(musicFunctions);
         }
         executeSendMessageFunctions(functions, sentMessages, sendOptions != null && sendOptions.schedulingState != null, success -> UI.post(() -> {
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           if (!isTimeout[0] && getChatId() == chatId && draftEpoch == sendEpoch) {
             if (inputEditRevision == sendRevision) clearInputAfterSend(success, true, replyTo, true, sentTopic, sendFromAll);
             else { manager.setSentMessages(null); setIsSendingText(false); }
@@ -2275,7 +2275,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
           UI.cancel(clearInputRunnable);
         }));
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       }, replyTo, true);
       // endregion
     } else {
@@ -2285,7 +2285,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onMoreItemPressed (int id) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (id == R.id.menu_forumActions) {
       if (forumTopicContext != null) forumTopicUi().showTopicMenu(forumTopicContext.topicId);
       else forumTopicUi().setViewMode(true);
@@ -2415,7 +2415,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       Td.put(outState, keyPrefix + "topicId", args.messageTopicId);
       Td.put(outState, keyPrefix + "filter_", args.searchFilter);
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (args.constructor == 1 || args.constructor == 4 || args.constructor == 5) {
       // endregion
         outState.putInt(keyPrefix + "mode", args.highlightMode);
@@ -2427,14 +2427,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (args.constructor == 2) {
         outState.putInt(keyPrefix + "mode", args.previewMode);
       }
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (args.constructor == 3 || args.constructor == 4 || args.constructor == 5) {
       // endregion
         outState.putString(keyPrefix + "query", args.searchQuery);
         Td.put(outState, keyPrefix + "sender_", args.searchSender);
       }
       outState.putBoolean(keyPrefix + "scheduled", args.areScheduled);
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       outState.putBoolean(keyPrefix + "forum_tabs", isForumTabsHost());
       outState.putBoolean(keyPrefix + "forum_tabs_suppressed", args.forumTabsSuppressed);
       if (forumTabsView != null) outState.putBundle(keyPrefix + "forum_tabs_panel", forumTabsView.saveState());
@@ -2480,7 +2480,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case 3: {
         String query = in.getString(keyPrefix + "query", null);
         TdApi.MessageSender sender = Td.restoreMessageSender(in, keyPrefix + "sender_");
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         args = new Arguments(chatList, chat, topicId, query, sender, filter);
         // endregion
         break;
@@ -2491,7 +2491,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         int highlightMode = in.getInt(keyPrefix + "mode", 0);
         long highlightMessageId = in.getLong(keyPrefix + "message_id", 0);
         long highlightMessageChatId = in.getLong(keyPrefix + "message_chat_id", 0);
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         args = new Arguments(chatList, chat, topicId, query, sender, filter, highlightMessageId != 0 ? new MessageId(highlightMessageChatId, highlightMessageId) : null, highlightMode);
         break;
       }
@@ -2508,12 +2508,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (args != null) {
       super.restoreInstanceState(in, keyPrefix);
       args.areScheduled = in.getBoolean(keyPrefix + "scheduled", false);
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       args.forumTabs(in.getBoolean(keyPrefix + "forum_tabs", false) && tdlib.hasForumTabs(chatId));
       args.forumTabsSuppressed = in.getBoolean(keyPrefix + "forum_tabs_suppressed", false);
       // endregion
       setArguments(args);
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (forumTabsHost != null) forumTabsHost.panelState = in.getBundle(keyPrefix + "forum_tabs_panel");
       int composerTopic = in.getInt(keyPrefix + "composer_forum_topic", 0);
       if (composerTopic > 0 && topicId == null && messageThread == null && tdlib.isForum(chatId)) observeReplyForum(composerTopic, true);
@@ -2540,7 +2540,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public TdApi.SearchMessagesFilter searchFilter;
 
     public boolean areScheduled, openKeyboard;
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     public boolean forumTabs;
     public boolean forumTabsSuppressed;
     public ForumTabsHost forumTabsHost;
@@ -2563,7 +2563,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.chat = chat;
       this.messageThread = messageThread;
       this.messageTopicId = messageTopicId;
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       this.highlightMode = MessagesManager.getAnchorHighlightMode(tdlib.id(), chat, messageThread, messageTopicId);
       this.highlightMessageId = MessagesManager.getAnchorMessageId(tdlib.id(), chat, messageThread, messageTopicId, highlightMode);
       // endregion
@@ -2601,7 +2601,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     public Arguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable String query, @Nullable TdApi.MessageSender sender, @Nullable TdApi.SearchMessagesFilter filter) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       this(chatList, chat, null, query, sender, filter);
     }
 
@@ -2611,7 +2611,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.chat = chat;
       this.chatList = chatList;
       this.messageThread = null;
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       this.messageTopicId = topicId;
       // endregion
       this.searchQuery = query;
@@ -2625,7 +2625,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     public Arguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable String query, @Nullable TdApi.MessageSender sender, @Nullable TdApi.SearchMessagesFilter filter,  MessageId highlightMessageId, int highlightMode) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       this(chatList, chat, null, query, sender, filter, highlightMessageId, highlightMode);
     }
 
@@ -2635,7 +2635,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.chat = chat;
       this.chatList = chatList;
       this.messageThread = null;
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       this.messageTopicId = topicId;
       // endregion
       this.searchQuery = query;
@@ -2680,7 +2680,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     public Arguments referrer (Referrer referrer) {
       this.referrer = referrer;
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       return this;
     }
 
@@ -2753,7 +2753,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private TdApi.SearchMessagesFilter previewSearchFilter;
   private ThreadInfo messageThread;
   private TdApi.MessageTopic messageTopicId;
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private volatile ForumTopicContext forumTopicContext;
   private ForumTabsHost forumTabsHost;
   private ForumTopicsTabsView forumTabsView;
@@ -2924,7 +2924,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return safe;
   }
 
-  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   public boolean canLeaveUnavailableTopic (int topicId) {
     return !isForumTabsHost() && forumTopicContext != null && forumTopicContext.topicId == topicId &&
       canSwitchForumTab(false) && !performOnBackPressed(true, false);
@@ -3069,7 +3069,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.DraftMessage previousDraft = forum.draft();
       if (!forum.update(value, error)) return;
       updateForumTabsView();
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
       if (isForumTabsHost() && (value != null && value.info.isHidden || ForumTopicContext.isUnavailable(error)) &&
           tdlib.chatAccessState(chat) >= Tdlib.CHAT_ACCESS_OK) {
         pendingForumTab = 0;
@@ -3151,19 +3151,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private String forumRestriction () {
     ForumTopicContext forum = composerForumContext();
     if (forum == null) return null;
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
     if (ForumTopicContext.isUnavailable(forum.error()) || ForumTopicContext.isUnavailable(forumHistoryError)) return Lang.getString(R.string.ForumTopicUnavailable);
     // endregion
     if (forum.isLoading()) return Lang.getString(R.string.ForumTopicLoading);
     if (forum.error() != null || forumHistoryError != null) {
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
       return Lang.getString(R.string.ForumTopicLoadFailed);
       // endregion
     }
     return canSendToForumTopic() ? null : Lang.getString(R.string.ForumTopicClosed);
   }
 
-  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   private boolean canRetryForum () {
     ForumTopicContext forum = composerForumContext();
     return forum != null && (forum.error() != null || forumHistoryError != null) &&
@@ -3212,7 +3212,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private long linkedChatId;
 
   public void setArguments (Arguments args) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     saveDraft();
     if (forumTopicContext != null && contentView != null) manager.resetScroll();
     closeForumTopic();
@@ -3222,7 +3222,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     super.setArguments(args);
 
     this.chat = args.chat;
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     forumViewModeChanged = false;
     // endregion
     this.customBotPlaceholder = null;
@@ -3244,7 +3244,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.foundMessageId = args.foundMessageId;
     this.fillDraft = args.fillDraft;
 
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (args.forumTabs && args.chat != null && !args.inPreviewMode && !args.areScheduled && args.messageThread == null && args.searchFilter == null) {
       forumTabsHost = args.forumTabsHost != null ? args.forumTabsHost : new ForumTabsHost(tdlib, args.chat.id);
       forumTabsHost.attach(forumTabsObserver);
@@ -3256,7 +3256,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // endregion
     if (contentView != null) {
       updateView();
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       createForumTabsView();
       // endregion
     }
@@ -3407,7 +3407,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     TdApi.Chat headerChat = messageThread != null ? tdlib.chatSync(messageThread.getContextChatId()) : null;
     headerCell.setChat(tdlib, headerChat != null ? headerChat : chat, messageThread);
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     updateForumHeader();
     // endregion
 
@@ -3452,7 +3452,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     TdApi.DraftMessage draftMessage = null;
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (tdlib.canSendBasicMessage(chat) || forumTopicContext != null) {
       draftMessage = !areScheduledOnly() ? getDraftMessage() : null;
     // endregion
@@ -3484,7 +3484,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (inputView != null) {
       inputView.setChat(chat, messageThread, draftMessage != null ? draftMessage.content : null, getCustomInputPlaceholder(), silentButton != null && silentButton.getIsSilent());
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (composerForumContext() != null && composerForumContext().hasLocalDraft()) inputView.setTextChangedSinceChatOpened(true);
       // endregion
     }
@@ -3582,7 +3582,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void updateCounters (boolean animated) {
     if (chat != null) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (forumTopicContext != null) {
         TdApi.ForumTopic topic = !areScheduledOnly() ? forumTopicContext.topic() : null;
         setUnreadCountBadge(topic != null ? topic.unreadCount : 0, animated);
@@ -3611,19 +3611,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void scrollToUnreadOrStartMessage () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     TdApi.ForumTopic forum = forumTopicContext != null ? forumTopicContext.topic() : null;
     int anchorMode = MessagesManager.getAnchorHighlightMode(tdlib.id(), chat, messageThread, messageTopicId, forum);
     // endregion
     if (!manager.hasReturnMessage()) {
       if (!inPreviewMode && !isInForceTouchMode() && anchorMode == MessagesManager.HIGHLIGHT_MODE_UNREAD) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         MessageId messageId = MessagesManager.getAnchorMessageId(tdlib.id(), chat, messageThread, messageTopicId, anchorMode, forum);
         // endregion
         manager.highlightMessage(messageId, MessagesManager.HIGHLIGHT_MODE_UNREAD_NEXT, null, true);
         return;
       }
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (chat != null && MessagesManager.canGoUnread(chat, messageThread, messageTopicId, forum)) {
         MessageId messageId = MessagesManager.getAnchorMessageId(tdlib.id(), chat, messageThread, messageTopicId, MessagesManager.HIGHLIGHT_MODE_UNREAD, forum);
       // endregion
@@ -3781,7 +3781,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateBottomBar (boolean isUpdate) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     setInputBlockFlag(FLAG_INPUT_TEXT_DISABLED, !tdlib.canSendBasicMessage(chat) || !canSendToForumTopic());
     // endregion
     if (sendButton != null) {
@@ -3797,10 +3797,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       setInputVisible(false, false);
       return;
     }
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     String topicRestriction = forumRestriction();
     if (topicRestriction != null) {
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
       boolean retry = canRetryForum();
       // endregion
       showActionButton(topicRestriction, retry ? ACTION_RETRY_FORUM : ACTION_EMPTY, retry);
@@ -3808,7 +3808,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     // endregion
     if (inPreviewSearchMode()) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       hideActionButton();
       // endregion
       setInputVisible(false, false);
@@ -4114,7 +4114,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     int baseY = Views.getLocationInWindow(navigationController.getValue())[1];
 
-    // region @MadeByLLM("gpt-5", ref = "PR #1095")
+    // region @MadeByLLM("gpt-5", id = "forum-topics", ref = "PR #1095")
     if (forumTabsView != null && forumTabsView.isShown()) {
       // Keep panel drags out of slide-back, including the translated panel above the keyboard.
       final int baseX = Views.getLocationInWindow(navigationController.getValue())[0];
@@ -4672,7 +4672,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onFocus () {
     super.onFocus();
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (forumTabsHost != null) forumTabsHost.remember(forumTabsHost.state.withSelectedTopic(getSelectedForumTabId()));
     pendingForumTabAttempts = 0;
     UI.cancel(pendingForumTabRetry);
@@ -4807,7 +4807,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean canSaveDraft () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return !accountDataCleared && (composerForumContext() != null || canWriteMessagesOrWaitingForReply()) && getChatId() != 0 && !areScheduledOnly() && !inPreviewMode() && !isInForceTouchMode();
     // endregion
   }
@@ -4816,7 +4816,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (canSaveDraft()) {
       if (isEditingMessage()) {
         // TODO save local draft
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       } else if (inputView != null && inputView.textChangedSinceChatOpened() && (isFocused() || composerForumContext() != null)) {
       // endregion
         final TdApi.FormattedText outputText = inputView.getOutputText(false);
@@ -4834,13 +4834,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
           null
         );
         final long outputChatId = messageThread != null ? messageThread.getChatId() : getChatId();
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         TdApi.MessageTopic topicId = messageThread != null ? messageThread.getMessageTopicId() : getMessageTopicId(replyTo);
         if (topicId == null && replyForumContext != null) topicId = new TdApi.MessageTopicForum(replyForumContext.topicId);
         // endregion
         if (messageThread != null) {
           messageThread.setDraft(draftMessage);
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         }
         final TdApi.DraftMessage outputDraft = !Td.isEmpty(draftMessage) ? draftMessage : null;
         if (isForumTabsAll()) {
@@ -4861,7 +4861,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.send(new TdApi.SetChatDraftMessage(
           outputChatId,
           topicId,
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           outputDraft
         ), (ok, error) -> {
           if (ok != null && forum != null) {
@@ -4891,7 +4891,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onBlur () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     UI.cancel(pendingForumTabRetry);
     // endregion
     saveDraft();
@@ -4979,7 +4979,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void destroy () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     saveDraft();
     closeForumTopic();
     closeForumTabs();
@@ -5094,7 +5094,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // TODO chat = null;
 
     if (destroyInstance || !reuseEnabled) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       tdlib.listeners().removeCleanupListener(this);
       // endregion
       super.destroy();
@@ -5150,7 +5150,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     StringList strings = new StringList(4);
 
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
     if (tdlib.isForum(chat.id) && messageThread == null && !areScheduledOnly()) {
       ids.append(R.id.menu_forumActions);
@@ -6225,7 +6225,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean canPinAnyMessage (boolean checkUi) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (forumTopicContext != null) {
       // Closing a topic restricts sending, not an administrator's independent pin-message right.
       return chat != null && !areScheduled && !isEventLog() && (!checkUi || !inPreviewMode) &&
@@ -6250,14 +6250,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Deprecated
   private boolean hasWritePermission () {
     // FIXME: this check is outdated and no longer correct
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return chat != null && tdlib.canSendBasicMessage(chat) && canSendToForumTopic() && !isEventLog();
     // endregion
   }
 
   public boolean canSendPhotosAndVideos () { // FIXME separate photos and videos
     return
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       canSendToForumTopic() &&
       // endregion
       tdlib.canSendMessage(chat, RightId.SEND_PHOTOS) &&
@@ -6265,19 +6265,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean hasSendMessagePermission (@RightId int rightId) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return chat != null && tdlib.canSendMessage(chat, rightId) && canSendToForumTopic() && !isEventLog();
     // endregion
   }
 
   public boolean hasSendBasicMessagePermission () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return chat != null && tdlib.canSendBasicMessage(chat) && canSendToForumTopic() && !isEventLog();
     // endregion
   }
 
   public boolean hasSendSomeMediaPermission () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return chat != null && tdlib.canSendSendSomeMedia(chat) && canSendToForumTopic() && !isEventLog();
     // endregion
   }
@@ -6752,7 +6752,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final int ACTION_EMPTY = 6;
   private static final int ACTION_EVENT_LOG_SETTINGS = 7;
   private static final int ACTION_AWAITING_REPLY = 8;
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private static final int ACTION_RETRY_FORUM = 9;
   // endregion
 
@@ -6971,9 +6971,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.unblockSender(tdlib.sender(chat.id), tdlib.okHandler());
         break;
       }
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       case ACTION_RETRY_FORUM: {
-        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
         if (!canRetryForum()) break;
         // endregion
         if (replyForumContext != null) tdlib.topics().retryTopic(new TdlibForumTopicManager.Key(replyForumContext.chatId, replyForumContext.topicId));
@@ -7122,7 +7122,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       setReactionButtonVisible(visible, animate);
     }
     if (reactionCount > 0) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       // A chat-wide single reaction can belong to a different topic.
       reactionsButton.setUnreadReaction(forumTopicContext == null ? tdlib.getSingleUnreadReaction(getChatId()) : null);
       // endregion
@@ -7169,7 +7169,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       tdlib.ui().openMessage(this, getChatId(), messageId, null);
       return;
     }
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     highlightMessageInTopic(messageId, null);
     // endregion
   }
@@ -7187,7 +7187,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void highlightMessage (MessageId messageId, long[] returnToMessageIds) {
     if (inPreviewSearchMode()) {
       tdlib.ui().openMessage(this, getChatId(), messageId, null);
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       return;
     }
     highlightMessageInTopic(messageId, returnToMessageIds);
@@ -7247,7 +7247,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     public ReplyInfo withTopic (long inChatId, @Nullable TdApi.MessageTopic inTopicId) {
       if (inTopicId == null && inChatId == message.message.chatId) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         inTopicId = ForumHistory.isForum(message.message.topicId) ? org.thunderdog.challegram.data.ForumPresentation.composerTopic(inChatId, null, message.message) : message.message.topicId;
         // endregion
       }
@@ -7358,13 +7358,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     collapsePinnedMessagesBar(true);
     // TODO show keyboard properly
     if (reply == null || reply.message.message.id != msg.message.id || reply.message.message.chatId != msg.message.chatId || !Td.equalsTo(reply.quote, quote) || reply.checklistTaskId != checklistTaskId || !StringUtils.equalsOrBothEmpty(reply.pollOptionId, pollOptionId)) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (byUser && replyForumContext != null) saveDraft();
       // endregion
       setReplyInfo(new ReplyInfo(tdlib, msg, quote, checklistTaskId, pollOptionId), true);
 
       if (byUser) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         inputEditRevision++;
         // endregion
         inputView.setTextChangedSinceChatOpened(true);
@@ -7510,7 +7510,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
     if (message.chatId == getChatId()) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (ForumHistory.isForum(getMessageTopicId()) && !compareChat(message.chatId, message.topicId)) {
         tdlib.ui().openChat(this, message.chatId, new TdlibUi.ChatOpenParameters().keepStack().highlightMessage(message));
       } else {
@@ -7531,7 +7531,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void forceDraftReply (final TdApi.InputMessageReplyTo replyTo) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     final Object epoch = draftEpoch;
     final long revision = inputEditRevision;
     // endregion
@@ -7568,11 +7568,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (replyToChatId == currentChatId) {
       TGMessage foundMessage = manager.getAdapter().findMessageById(replyToMessageId);
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (foundMessage != null && foundMessage.getChatId() == replyToChatId) {
       // endregion
         foundMessage.getMessageWithProperties(msg -> runOnUiThreadOptional(() -> {
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           if (draftEpoch != epoch || isDestroyed() || inputEditRevision != revision) return;
           // endregion
           forceReply(msg, replyToQuote, replyToChecklistTaskId, replyToPollOptionId);
@@ -7583,14 +7583,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.send(new TdApi.GetMessage(replyToChatId, replyToMessageId), (foundReplyMessage, error) -> {
       if (foundReplyMessage != null) {
         runOnUiThreadOptional(() -> {
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           if (draftEpoch == epoch && !isDestroyed() && inputEditRevision == revision && chat != null && chat.id == currentChatId) {
           // endregion
             TdApi.DraftMessage draftMessage = getDraftMessage();
             TdApi.InputMessageReplyTo currentReplyTo = draftMessage != null ? draftMessage.replyTo : null;
             if (Td.equalsTo(replyTo, currentReplyTo)) {
               tdlib.getMessageProperties(foundReplyMessage, properties -> runOnUiThreadOptional(() -> {
-                // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+                // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
                 if (properties != null && draftEpoch == epoch && !isDestroyed() && inputEditRevision == revision && getDraftMessage() != null && Td.equalsTo(replyTo, getDraftMessage().replyTo)) {
                 // endregion
                   forceReply(
@@ -7619,11 +7619,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void setReplyInfo (ReplyInfo replyInfo, boolean animated) {
     boolean replyRequired = this.isReplyRequired();
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     TdApi.MessageTopic before = getMessageTopicId(getCurrentReplyId());
     // endregion
     this.reply = replyInfo;
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     ReplyInfo scopedReply = getCurrentReplyId();
     TdApi.MessageTopic after = ForumHistory.outgoingTopic(getMessageTopicId(), scopedReply != null ? scopedReply.inTopicId : null);
     if (!Td.equalsTo(before, after)) cancelChatActions();
@@ -7651,7 +7651,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (reply != null) {
         setReplyInfo(null, animated);
         if (byUser) {
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           inputEditRevision++;
           // endregion
           inputView.setTextChangedSinceChatOpened(true);
@@ -7728,7 +7728,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private float getButtonsOffset () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return getReplyOffset() + getAttachedFilesOffset() + getSearchControlsOffset() + getKeyboardOffset() + forumTabsBottomHeight() + (bottomWrap.getVisibility() == View.VISIBLE ? 0 : extraBottomInsetWithoutIme);
     // endregion
   }
@@ -7791,7 +7791,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       replyBarView.setTranslationY(y + keyboardOffset);
     }
     checkScrollButtonOffsets();
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (forumTabsView != null) contentView.requestLayout();
     // endregion
     onMessagesFrameChanged();
@@ -8096,7 +8096,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void openPreviewMessage (TGMessage msg) {
     if (arePinnedMessages()) {
       ViewController<?> c = previousStackItem();
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (c instanceof MessagesController && c.tdlib() == tdlib &&
           ((MessagesController) c).compareChat(getChatId(), messageThread, getMessageTopicId(), areScheduledOnly())) {
       // endregion
@@ -8824,7 +8824,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private String getCustomInputPlaceholder () {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (replyForumContext != null) {
       TdApi.ForumTopic topic = replyForumContext.topic();
       return Lang.getString(R.string.ForumMessageInTopic, topic != null ? topic.info.name : Lang.getString(R.string.ForumTopicTitle));
@@ -8959,7 +8959,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (pinnedCount == ListManager.COUNT_UNKNOWN) {
       return;
     }
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     final long targetChatId = getChatId();
     final TdApi.MessageTopic targetTopic = getMessageTopicId();
     // endregion
@@ -8981,7 +8981,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       .build(),
       (itemView, id) -> {
         if (id == R.id.btn_unpinMessage) {
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           if (ForumHistory.isForum(targetTopic)) {
             TdApi.Chat target = tdlib.chat(targetChatId);
             if (target != null && org.thunderdog.challegram.data.ForumTopicPolicy.canPinMessages(tdlib.chatStatus(targetChatId), target.permissions)) {
@@ -9550,7 +9550,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (isInForceTouchMode()) {
       return Screen.currentWidth() - ForceTouchView.getMatchParentHorizontalMargin() * 2;
     } else {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       int hostWidth = contentView != null && contentView.getMeasuredWidth() > 0 ?
         contentView.getMeasuredWidth() : context.navigation().forumContainer().targetContentWidth();
       boolean side = forumTabsHost != null && forumTabsHost.state.placement == ForumTabsState.START;
@@ -9937,7 +9937,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     updateSendButton(charSequence, true);
     if (byUserAction) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       inputEditRevision++;
       // endregion
       setTyping(charSequence.length() > 0);
@@ -10043,19 +10043,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean showRestriction (View view, @RightId int rightId) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (showRestriction(view, forumRestriction())) return true;
     // endregion
     CharSequence text = tdlib.getDefaultRestrictionText(chat, rightId);
     return showRestriction(view, text);
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public boolean showForumTopicRestriction (View view) { return showRestriction(view, forumRestriction()); }
 
   // endregion
   public boolean showSlowModeRestriction (View v, @Nullable TdApi.MessageSendOptions sendOptions) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (showRestriction(v, forumRestriction())) return true;
     // endregion
     CharSequence restriction = tdlib().getSlowModeRestrictionText(getChatId(), sendOptions != null ? sendOptions.schedulingState : null);
@@ -10087,7 +10087,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean showRestriction (View view, @RightId int rightId, int defaultRes, int specificRes, int specificUntilRes) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (showRestriction(view, forumRestriction())) return true;
     // endregion
     CharSequence restrictionText = tdlib.buildRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
@@ -10654,7 +10654,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (this.isSendingText != isSendingText) {
       this.isSendingText = isSendingText;
       setStackLocked(isSendingText);
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (inputView != null) inputView.setInputBlocked(isSendingText);
       // endregion
 
@@ -10698,11 +10698,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (showRestriction(sendButton, RightId.SEND_OTHER_MESSAGES, disabledRes, restrictedRes, restrictedUntilRes)) {
         return;
       }
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       content = new TdApi.InputMessageDice(msg.text.trim(), clearInput && !isForumTabsAll());
       // endregion
     } else {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       content = new TdApi.InputMessageText(msg, linkPreviewOptions, clearInput && !isForumTabsAll());
       // endregion
     }
@@ -10722,7 +10722,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (clearInput) {
       final List<TdApi.Message> sentMessages = new ArrayList<>(functions.size());
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       final Object sendEpoch = draftEpoch;
       final long sendRevision = inputEditRevision;
       final boolean sendFromAll = isForumTabsAll();
@@ -10730,7 +10730,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       setIsSendingText(true);
       manager.setSentMessages(sentMessages);
       executeSendMessageFunctions(functions, sentMessages, finalSendOptions.schedulingState != null, success -> {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (draftEpoch == sendEpoch) {
           if (inputEditRevision == sendRevision) clearInputAfterSend(success, allowReply, replyInfo, allowLinkPreview, topicId, sendFromAll);
           else { manager.setSentMessages(null); setIsSendingText(false); }
@@ -10744,13 +10744,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private void clearInputAfterSend (boolean success, boolean allowReply, ReplyInfo replyTo, boolean allowLinkPreview, TdApi.MessageTopic sentTopic, boolean sendFromAll) {
   // endregion
     if (!isDestroyed()) {
       manager.setSentMessages(null);
       if (success) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (sendFromAll) {
           tdlib.settings().putLocalForumDraft(getChatId(), 0, null);
         } else if (ForumHistory.isForum(sentTopic)) {
@@ -10768,12 +10768,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         // endregion
         if (allowReply && replyTo != null && replyTo.equals(getCurrentReplyId())) {
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           // Do not checkpoint the just-sent text again while dismissing its reply bar.
           closeReply(false, false);
           // endregion
         }
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (replyForumContext != null && ForumHistory.isForum(sentTopic) && replyForumContext.topicId == ((TdApi.MessageTopicForum) sentTopic).forumTopicId) closeReplyForum();
         // endregion
         if (allowLinkPreview) {
@@ -10790,7 +10790,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void executeSendMessageFunctions (List<TdApi.Function<?>> functions, List<TdApi.Message> sentMessages, final boolean isSchedule, RunnableBool onDone) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (functions.isEmpty()) { onDone.runWithBool(false); return; }
     final Object sendEpoch = draftEpoch;
     // endregion
@@ -10857,11 +10857,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
             for (int i = sentMessagesCount - 1; i >= 0; i--) {
               tdlib.listeners().unsubscribeFromUpdates(sentMessages.get(i));
             }
-            // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
             List<TGMessage> parsedMessages = draftEpoch == sendEpoch ? manager.parseMessages(sentMessages) : null;
             // endregion
             tdlib.ui().post(() -> {
-              // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+              // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
               if (draftEpoch != sendEpoch || isDestroyed()) {
                 if (parsedMessages != null) for (TGMessage message : parsedMessages) message.onDestroy();
                 return;
@@ -10869,7 +10869,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               if (parsedMessages != null && isSchedule == areScheduled) {
               // endregion
                 manager.addSentMessages(parsedMessages);
-              // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+              // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
               } else if (parsedMessages != null) {
                 for (TGMessage message : parsedMessages) message.onDestroy();
               // endregion
@@ -10997,7 +10997,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private List<TdApi.Function<?>> getSendMusicFunctions (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return getSendMusicFunctions(view, musicFiles, needGroupMedia, allowReply, lastFileCaption, initialSendOptions, null, false);
   }
 
@@ -11010,7 +11010,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         MediaBottomFilesController.MusicEntry musicFile = musicFiles.get(i);
         content[i] = tdlib.filegen().createThumbnail(new TdApi.InputMessageAudio(new TdApi.InputAudio(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, (int) (musicFile.getDuration() / 1000l), musicFile.getTitle(), musicFile.getArtist()), caption), isSecretChat());
       }
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       ReplyInfo replyInfo = keepReply ? suppliedReply : allowReply ? obtainReplyTo() : null;
       // endregion
       TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
@@ -11026,7 +11026,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void forwardMessage (TdApi.Message message) { // TODO remove all related to Forward stuff to replace with ShareLayout
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (showForumTopicRestriction(null)) return;
     // endregion
     if (tdlib.getRestrictionText(chat, message) == null) {
@@ -11236,7 +11236,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void sendFiles (View view, final List<String> paths, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions, RunnableData<List<TdApi.Function<?>>> onReadyToSend) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     sendFiles(view, paths, needGroupMedia, allowReply, lastFileCaption, initialSendOptions, onReadyToSend, null, false);
   }
 
@@ -11249,7 +11249,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     final long chatId = chat.id;
     final boolean isSecretChat = isSecretChat();
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     ReplyInfo replyInfo = keepReply ? suppliedReply : allowReply ? obtainReplyTo() : null;
     // endregion
     TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
@@ -11337,7 +11337,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions modifiedSendOptions, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (showForumTopicRestriction(null)) return false;
     // endregion
     if (files == null || files.length == 0) {
@@ -11522,7 +11522,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private SparseIntArray actions;
   private boolean lastActionCancelled;
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private TdApi.MessageTopic lastChatActionTopic;
   private long lastChatActionChatId;
 
@@ -11538,7 +11538,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // endregion
 
   public void setChatAction (@TdApi.ChatAction.Constructors int action, boolean set, boolean force) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (chat == null || set && !canSendToForumTopic()) {
     // endregion
       return;
@@ -11555,7 +11555,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (isEditingMessage()) {
       topicId = editContext.getExistingMessage().topicId;
     } else {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       topicId = getMessageTopicId(getCurrentReplyId());
       if (topicId == null && replyForumContext != null) topicId = new TdApi.MessageTopicForum(replyForumContext.topicId);
       if (topicId == null && reply != null && reply.message.message.chatId == chat.id) {
@@ -11568,14 +11568,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
     if (set) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (lastChatActionChatId != 0 && !MessageTopics.sameChat(lastChatActionChatId, lastChatActionTopic, chat.id, topicId)) cancelChatActions();
       // endregion
       int time = (int) (SystemClock.uptimeMillis() / 1000L);
       if (time - actions.get(action) >= 4 || force || lastActionCancelled) {
         actions.put(action, time);
         tdlib.send(new TdApi.SendChatAction(chat.id, topicId, null, Td.constructChatAction(action)), handler);
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         lastChatActionChatId = chat.id;
         lastChatActionTopic = topicId;
         // endregion
@@ -11584,7 +11584,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       if (actions.get(action, 0) != 0) {
         actions.delete(action);
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         cancelChatActions();
         // endregion
       }
@@ -11814,7 +11814,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatTitleChanged (final long chatId, final String title) {
     runOnUiThreadOptional(() -> {
       if (getHeaderChatId() == chatId) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (forumTopicContext != null) updateForumHeader();
         else headerCell.setTitle(title);
         // endregion
@@ -11892,7 +11892,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatReadOutbox (final long chatId, final long lastReadOutboxMessageId) {
     tdlib.ui().post(() -> {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (getChatId() == chatId && messageThread == null && getMessageTopicId() == null) {
       // endregion
         manager.updateChatReadOutbox(lastReadOutboxMessageId);
@@ -11922,7 +11922,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatDraftMessageChanged (final long chatId, final @Nullable TdApi.DraftMessage draftMessage) {
     runOnUiThreadOptional(() -> {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (getChatId() == chatId && inputView != null && !inputView.textChangedSinceChatOpened() && !isSecretChat() && messageThread == null && getMessageTopicId() == null && replyForumContext == null && !isForumTabsAll()) {
       // endregion
         // Applying server chat draft changes only if text wasn't changed while chat was open
@@ -11935,7 +11935,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (isEditingMessage()) {
       return;
     }
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     final Object context = draftEpoch;
     // endregion
     TdApi.InputMessageReplyTo replyTo = draftMessage != null ? draftMessage.replyTo : null;
@@ -11973,7 +11973,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       tdlib.send(new TdApi.GetMessage(replyChatId, replyMessageId), (remoteMessage, error) -> tdlib.send(new TdApi.GetMessageProperties(replyChatId, replyMessageId), (properties, error1) -> {
         runOnUiThreadOptional(() -> {
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           if (draftEpoch != context || isDestroyed() || inputView.textChangedSinceChatOpened() || !Td.equalsTo(getDraftMessage(), draftMessage)) return;
           // endregion
           if (getChatId() == chatId && Td.equalsTo(getDraftMessage(), draftMessage) && remoteMessage != null && properties != null) {
@@ -12065,7 +12065,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onSupergroupUpdated (final TdApi.Supergroup supergroup) {
     tdlib.ui().post(() -> {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (!isDestroyed() && ChatId.toSupergroupId(getChatId()) == supergroup.id) {
         syncForumTabsPresentation();
       // endregion
@@ -12151,7 +12151,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onNotificationSettingsChanged (TdApi.NotificationSettingsScope scope, TdApi.ScopeNotificationSettings settings) {
     tdlib.ui().post(() -> {
       if (Td.matchesScope(tdlib.chatType(getChatId()), scope)) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (forumTopicContext != null) updateForumHeader();
         // endregion
         updateCounters(true);
@@ -12163,7 +12163,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) {
     tdlib.ui().post(() -> {
       if (getHeaderChatId() == chatId) {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (forumTopicContext != null) updateForumHeader();
         else headerCell.setShowMute(TD.needMuteIcon(settings, tdlib.scopeNotificationSettings(chatId)));
         // endregion
@@ -12175,7 +12175,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   // Raise to speak / listen utils
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
   private boolean forumViewModeChanged;
   @Override public void onChatViewAsTopics (long chatId, boolean viewAsTopics) {
@@ -12371,7 +12371,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       manager.rebuildLayouts();
       if (headerCell != null) {
         headerCell.setChat(tdlib, chat, messageThread);
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         updateForumHeader();
         // endregion
         if (messageThread != null) {

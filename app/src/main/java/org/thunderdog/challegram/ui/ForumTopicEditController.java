@@ -66,7 +66,7 @@ import java.util.concurrent.TimeUnit;
 import tgx.td.Td;
 
 /** One fullscreen form for every Create/Edit entry point. Mutations belong to ForumTopicActions. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicEditController extends ViewController<ForumTopicEditController.Arguments>
   implements Menu, ChatListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.MyUserDataChangeListener {
   private static final long PICKER_TIMEOUT_MS = 12000;
@@ -580,7 +580,7 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
 
   boolean canReturnToForumTabs () { return ForumTabsNavigation.canLeaveEditor(form); }
 
-  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)")
+  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   public boolean completeCreationNavigation (MessagesController controller) {
     if (isDestroyed() || controller.isDestroyed() || controller.tdlib() != tdlib || controller.getChatId() != getChatId() ||
         form == null || !form.creating || form.phase() != ForumTopicEditorState.Phase.SUCCEEDED || form.completedTopicId() <= 0) return false;
@@ -597,7 +597,7 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
     // ChatOpenParameters.after runs at animation readiness, not at completion. The
     // navigation processor still needs the editor as getPrevious() to detach its
     // view. Removing it earlier strands the editor above every subsequent page.
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
     if (navigation.isAnimating() || navigation.getStack().isLocked()) {
     // endregion
       tdlib.ui().postDelayed(() -> removeCompletedEditor(navigation), 100);

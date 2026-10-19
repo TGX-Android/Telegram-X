@@ -38,7 +38,7 @@ import java.util.List;
 import me.vkryl.core.lambda.RunnableLong;
 
 /** A paged projection of the existing account/folder list, not a second chat cache. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ChatRailView extends FrameLayout implements ChatListListener, NotificationSettingsListener {
   private final Tdlib tdlib;
   private final TdlibChatListSlice slice;
@@ -107,7 +107,7 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     adapter.notifyItemRangeChanged(0, chats.size());
   }
 
-  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
   public void updateThemeColors () {
     if (destroyed) return;
     setBackgroundColor(Theme.fillingColor());

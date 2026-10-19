@@ -36,7 +36,7 @@ import java.util.function.Function;
 import tgx.td.ChatId;
 
 /** A topic target is required; no path from this screen sends SetChatNotificationSettings. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicNotificationController extends ViewController<ForumTopicProfileController.Arguments> implements CleanupStartupDelegate, TdlibCache.SupergroupDataChangeListener {
   private ForumTopicStore.TopicSubscription subscription;
   private TdApi.ForumTopic topic;
@@ -165,7 +165,7 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     if (s == null) return;
     String muteState = !s.useDefaultMuteFor && s.muteFor > 0 ? (s.muteFor > 366 * 86400 ? Lang.getString(R.string.MuteForever) : Lang.getString(R.string.ForumProfileDuration, Lang.getDuration(s.muteFor))) : state(s.useDefaultMuteFor, s.muteFor == 0);
     mute.setValue(muteState);
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
     // Saved sounds selected in another client use the local group fallback. Do not
     // overwrite that server setting unless the user explicitly selects an option.
     sound.setValue(Lang.getString(s.useDefaultSound || s.soundId != 0 ? R.string.ForumNotificationsDefault : R.string.ForumProfileSilent));
@@ -204,7 +204,7 @@ public final class ForumTopicNotificationController extends ViewController<Forum
       .setNegativeButton(Lang.getString(R.string.Cancel), null));
   }
 
-  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
   private void chooseSound () {
     String[] labels = {Lang.getString(R.string.ForumNotificationsDefault), Lang.getString(R.string.ForumProfileSilent)};
     showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(Lang.getString(R.string.ForumProfileSound))

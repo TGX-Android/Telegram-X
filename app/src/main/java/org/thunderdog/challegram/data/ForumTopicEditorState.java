@@ -3,7 +3,7 @@ package org.thunderdog.challegram.data;
 import java.io.Serializable;
 
 /** Android-free editor state. Never stores a message draft or retries a mutation. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicEditorState {
   public enum Phase { READY, PENDING, UNKNOWN, SUCCEEDED }
   public enum Error { NONE, UNAVAILABLE, EMPTY_NAME, LONG_NAME, INVALID_COLOR, GENERAL_ICON, ICON_LOADING, PREMIUM }

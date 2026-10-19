@@ -15,7 +15,7 @@
 package org.thunderdog.challegram.telegram;
 
 import android.content.SharedPreferences;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import android.os.Bundle;
 // endregion
 
@@ -30,7 +30,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.data.ForumDraftCodec;
 import org.thunderdog.challegram.data.ForumTabsState;
 // endregion
@@ -43,7 +43,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DeviceTokenType;
 
 import java.util.Arrays;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
@@ -81,7 +81,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   private static final String DISMISS_MESSAGE_PREFIX = "dismiss_pinned_";
   private static final String DISMISS_REQUESTS_PREFIX = "dismiss_requests_";
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private static final String FORUM_DRAFT_PREFIX = "forum_draft_";
   private static final String FORUM_TABS_STATE_PREFIX = "forum_tabs_state_";
   private static final String FORUM_TABS_MRU_KEY = "forum_tabs_mru";
@@ -289,7 +289,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   public void onPerformRestart () { }
 
   @Override
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public synchronized void onPerformUserCleanup () {
     // Invalidate existing hosts before deleting data, under the same lock as guarded writes.
     forumTabsStateEpoch++;
@@ -309,7 +309,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.remove(key(THEME_GLOBAL_THEME_NIGHT_KEY, accountId));
     editor.remove(key(THEME_GLOBAL_THEME_DAYLIGHT_KEY, accountId));
     editor.remove(key(LOCAL_CHAT_IDS_COUNT, accountId));
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     editor.remove(key(FORUM_TABS_MRU_KEY, accountId));
     // endregion
     editor.remove(key(MAIN_CHAT_LIST_ENABLED, accountId));
@@ -337,7 +337,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       notificationDataPrefix,
       conversionPrefix,
       localChatIdPrefix,
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       remoteChatIdPrefix,
       key(FORUM_DRAFT_PREFIX, accountId),
       key(FORUM_TABS_STATE_PREFIX, accountId)
@@ -384,7 +384,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   public void dismissMessage (long chatId, long messageId) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     dismissMessage(chatId, null, messageId);
   }
 
@@ -401,7 +401,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   public void restorePinnedMessages (long chatId) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     restorePinnedMessages(chatId, null);
   }
 
@@ -414,7 +414,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   public boolean isMessageDismissed (long chatId, long messageId) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return isMessageDismissed(chatId, null, messageId);
   }
 
@@ -424,7 +424,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   public boolean hasDismissedMessages (long chatId) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return hasDismissedMessages(chatId, null);
   }
 

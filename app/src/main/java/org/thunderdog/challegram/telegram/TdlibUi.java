@@ -107,10 +107,10 @@ import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.ui.MapControllerFactory;
 import org.thunderdog.challegram.ui.MessagesController;
-// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
 import org.thunderdog.challegram.ui.ForumTopicEditController;
 // endregion
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.ui.ForumTopicsController;
 import org.thunderdog.challegram.data.ForumHistory;
 import org.thunderdog.challegram.data.ForumNavigation;
@@ -1745,7 +1745,7 @@ public class TdlibUi extends Handler {
   private static final int CHAT_OPTION_SCHEDULED_MESSAGES = 1 << 6;
   private static final int CHAT_OPTION_OPEN_PROFILE_IF_DUPLICATE = 1 << 7;
   private static final int CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT = 1 << 8;
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private static final int CHAT_OPTION_FORUM_MESSAGES = 1 << 9;
   private static final int CHAT_OPTION_TOPIC_RESOLVED = 1 << 10;
   private static final int CHAT_OPTION_RESTORED_ANCHOR = 1 << 11;
@@ -1824,7 +1824,7 @@ public class TdlibUi extends Handler {
   // endregion
 
   public static class ChatOpenParameters {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     private long requestTicket;
     private boolean awaitingForumMetadata;
     // endregion
@@ -1930,7 +1930,7 @@ public class TdlibUi extends Handler {
       return this;
     }
 
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     public ChatOpenParameters messageTopic (@Nullable TdApi.MessageTopic topicId) {
       this.messageTopicId = topicId;
       return this;
@@ -1949,7 +1949,7 @@ public class TdlibUi extends Handler {
     }
 
     public ChatOpenParameters passcodeUnlocked () {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       this.requestTicket = 0;
       // endregion
       this.options |= CHAT_OPTION_PASSCODE_UNLOCKED;
@@ -2015,7 +2015,7 @@ public class TdlibUi extends Handler {
     }
 
     public ChatOpenParameters highlightMessage (TdApi.Message message) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (ForumHistory.isForum(message.topicId)) messageTopic(message.topicId);
       // endregion
       return highlightMessage(new MessageId(message.chatId, message.id));
@@ -2024,7 +2024,7 @@ public class TdlibUi extends Handler {
     public ChatOpenParameters foundMessage (String query, TdApi.Message message) {
       this.foundMessage = new MessageId(message.chatId, message.id);
       this.searchQuery = query;
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       return highlightMessage(message);
       // endregion
     }
@@ -2040,7 +2040,7 @@ public class TdlibUi extends Handler {
       this.highlightSet = true;
       this.highlightMode = highlightMode;
       this.highlightMessageId = highlightMessageId;
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       return this;
     }
 
@@ -2117,7 +2117,7 @@ public class TdlibUi extends Handler {
   }
 
   private void openChat (final TdlibDelegate context, final long chatId, final TdApi.Function<?> createRequest, final @Nullable ChatOpenParameters params) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (params == null) { openChat(context, chatId, createRequest, new ChatOpenParameters()); return; }
     if (!UI.inUiThread()) { tdlib.ui().post(() -> openChat(context, chatId, createRequest, params)); return; }
     if (!acceptChatOpen(params)) return;
@@ -2148,7 +2148,7 @@ public class TdlibUi extends Handler {
   }
 
   public void openChat (final TdlibDelegate context, final @NonNull TdApi.Chat chatFinal, final @Nullable ChatOpenParameters params) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (params == null) { openChat(context, chatFinal, new ChatOpenParameters()); return; }
     if (!UI.inUiThread()) { tdlib.ui().post(() -> openChat(context, chatFinal, params)); return; }
     if (!acceptChatOpen(params)) return;
@@ -2192,7 +2192,7 @@ public class TdlibUi extends Handler {
     // endregion
     if (params != null && params.highlightMessageId != null) {
       params.highlightMessageId = new MessageId(chatFinal.id, params.highlightMessageId.getMessageId(), params.highlightMessageId.getOtherMessageIds());
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     }
     // Search results, notifications and in-message jumps often carry only a message id.
     // Resolve its forum identity before deduplication, anchors or controller reuse.
@@ -2221,7 +2221,7 @@ public class TdlibUi extends Handler {
       } else {
         function = new TdApi.GetMessage(params.highlightMessageId.getChatId(), params.highlightMessageId.getMessageId());
       }
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       tdlib.client().send(function, object -> tdlib.ui().post(() -> {
         if (!acceptChatOpen(params)) return;
       // endregion
@@ -2247,7 +2247,7 @@ public class TdlibUi extends Handler {
           }
         }
         if (error) {
-          // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           if (!(context instanceof MessagesController && context.tdlib() == tdlib && ((MessagesController) context).compareChat(chatFinal.id, params.threadInfo, params.messageTopicId, (params.options & CHAT_OPTION_SCHEDULED_MESSAGES) != 0))) {
           // endregion
             UI.showToast(TD.isChannel(chatFinal.type) ? R.string.PostNotFound : R.string.MessageNotFound, Toast.LENGTH_SHORT);
@@ -2264,7 +2264,7 @@ public class TdlibUi extends Handler {
           params.options &= ~CHAT_OPTION_ENSURE_HIGHLIGHT_AVAILABILITY;
           openChat(context, chatFinal, params);
         }
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       }));
       // endregion
       return;
@@ -2279,7 +2279,7 @@ public class TdlibUi extends Handler {
     }
 
     NavigationController navigation = context.context().navigation();
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
     if (context.context().isNavigationBusy() || context instanceof ViewController && ((ViewController<?>) context).isDestroyed()) {
       if (params != null) params.onDone();
@@ -2325,7 +2325,7 @@ public class TdlibUi extends Handler {
     final boolean onlyScheduled = (options & CHAT_OPTION_SCHEDULED_MESSAGES) != 0;
     final TdApi.InternalLinkTypeVideoChat voiceChatInvitation = params != null ? params.videoChatOrLiveStreamInvitation : null;
     final ThreadInfo messageThread = params != null ? params.threadInfo : null;
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     final boolean forumTabs = opensForumTabs(chat, params);
     if (forumTabs && (params.options & CHAT_OPTION_TABS_RESOLVED) == 0) {
       params.options |= CHAT_OPTION_TABS_RESOLVED;
@@ -2360,7 +2360,7 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (tdlib.isForum(chat.id) && !tdlib.hasForumTabs(chat.id) && !onlyScheduled && messageThread == null) {
       navigation.forumContainer().enable(tdlib, chatList);
     }
@@ -2378,13 +2378,13 @@ public class TdlibUi extends Handler {
     if (params != null && params.highlightSet) {
       highlightMode = params.highlightMode;
       highlightMessageId = params.highlightMessageId;
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     } else if (onlyScheduled) {
       highlightMode = MessagesManager.HIGHLIGHT_MODE_NONE;
       highlightMessageId = null;
     // endregion
     } else {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       highlightMode = MessagesManager.getAnchorHighlightMode(tdlib.id(), chat, messageThread, messageTopicId);
       highlightMessageId = MessagesManager.getAnchorMessageId(tdlib.id(), chat, messageThread, messageTopicId, highlightMode);
       // endregion
@@ -2392,7 +2392,7 @@ public class TdlibUi extends Handler {
 
     final boolean isSelfChat = tdlib.isSelfChat(chat.id);
 
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (forumTabs && context instanceof MessagesController && navigation.getCurrentStackItem() == context && context.tdlib() == tdlib &&
         ((MessagesController) context).isForumTabsHost() && ((MessagesController) context).getChatId() == chat.id &&
         !((MessagesController) context).compareChat(chat.id, messageThread, messageTopicId, onlyScheduled)) {
@@ -2405,7 +2405,7 @@ public class TdlibUi extends Handler {
 
     // endregion
     boolean doneOpen = false;
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (context instanceof MessagesController && context.tdlib() == tdlib && !((MessagesController) context).inPreviewMode() && ((MessagesController) context).compareChat(chat.id, messageThread, messageTopicId, onlyScheduled)) {
     // endregion
       boolean doneSomething = false;
@@ -2439,7 +2439,7 @@ public class TdlibUi extends Handler {
     }
     if (!doneOpen && highlightMode == MessagesManager.HIGHLIGHT_MODE_NORMAL && highlightMessageId != null) {
       ViewController<?> c = context.context().navigation().getCurrentStackItem();
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (c != null && c != context && c.tdlib() == tdlib && c instanceof MessagesController && !((MessagesController) c).inPreviewMode() && ((MessagesController) c).compareChat(chat.id, messageThread, messageTopicId, onlyScheduled)) {
       // endregion
         ((MessagesController) c).highlightMessage(highlightMessageId, urlOpenParameters);
@@ -2461,7 +2461,7 @@ public class TdlibUi extends Handler {
 
     ViewController<?> current = context.context().navigation().getCurrentStackItem();
 
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (forumTabs || !(context.context() instanceof MainActivity) || context instanceof MessagesController || isSelfChat || current == ((MainActivity) context.context()).getMessagesController(tdlib, false)) {
     // endregion
       controller = new MessagesController(context.context(), context.tdlib());
@@ -2488,7 +2488,7 @@ public class TdlibUi extends Handler {
     }
 
     controller.setShareItem(shareItem);
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (ForumHistory.isForum(messageTopicId) && !onlyScheduled && !forumTabs) {
       controller.addOneShotFocusListener(() -> ensureForumParent(controller, chat, chatList));
     }
@@ -2517,7 +2517,7 @@ public class TdlibUi extends Handler {
     final MessagesController.Arguments arguments;
     if (params != null && !StringUtils.isEmpty(params.searchQuery) && params.foundMessage != null) {
       arguments = new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter, params.foundMessage, params.searchQuery);
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     } else if (highlightMessageId != null || onlyScheduled) {
     // endregion
       arguments = new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter);
@@ -2525,7 +2525,7 @@ public class TdlibUi extends Handler {
       arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, messageTopicId, filter);
     }
     controller.setArguments(arguments
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       .forumTabs(forumTabs)
       .suppressForumTabs(shareItem != null || forceDraft != null || voiceChatInvitation != null)
       // endregion
@@ -2537,7 +2537,7 @@ public class TdlibUi extends Handler {
 
     View view = controller.getValue();
     if (controller.context().isNavigationBusy()) {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (forumTabs) controller.destroy();
       // endregion
       if (params != null) {
@@ -2554,7 +2554,7 @@ public class TdlibUi extends Handler {
       MainController c = new MainController(context.context(), context.tdlib());
       c.getValue();
       navigation.getStack().insert(c, 0);
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     } else if (navigation.getStackSize() > 1 && (options & CHAT_OPTION_KEEP_STACK) == 0 && !ForumHistory.isForum(messageTopicId)) {
     // endregion
       navigation.setControllerAnimated(controller, true, true);
@@ -2564,7 +2564,7 @@ public class TdlibUi extends Handler {
     if (params != null) {
       params.onDone();
     }
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   }
 
   private void openForumTopics (TdlibDelegate context, TdApi.Chat chat, TdApi.ChatList chatList, @Nullable ChatOpenParameters params) {
@@ -2612,7 +2612,7 @@ public class TdlibUi extends Handler {
       previous = stack.get(index-1);
     }
     // Switching A -> B in one forum replaces A, retaining its existing list/stream parent.
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
     while (previous instanceof MessagesController && !((MessagesController) previous).isForumTabsHost() && previous.tdlib() == tdlib && previous.getChatId() == chat.id &&
         ForumHistory.isForum(((MessagesController) previous).getMessageTopicId())) {
       stack.destroy(index-1);
@@ -2826,7 +2826,7 @@ public class TdlibUi extends Handler {
   }
 
   public void openMessage (final TdlibDelegate context, final TdApi.MessageLinkInfo messageLink, final @Nullable UrlOpenParameters openParameters) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     TdApi.MessageTopic topic = ForumNavigation.linkTopic(messageLink);
     if (ForumHistory.isForum(topic)) {
       ChatOpenParameters params = new ChatOpenParameters().keepStack().messageTopic(topic).urlOpenParameters(openParameters);
@@ -2874,7 +2874,7 @@ public class TdlibUi extends Handler {
           }
         });
       } else {
-        // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         openChat(context, messageLink.chatId, new ChatOpenParameters().keepStack().messageTopic(topic).highlightMessage(messageId).ensureHighlightAvailable().urlOpenParameters(openParameters));
         // endregion
       }
@@ -2882,7 +2882,7 @@ public class TdlibUi extends Handler {
       if (tdlib.chat(messageLink.chatId) != null) {
         UI.showToast(tdlib.isChannel(messageLink.chatId) ? R.string.PostNotFound : R.string.MessageNotFound, Toast.LENGTH_SHORT);
       }
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       openChat(context, messageLink.chatId, new ChatOpenParameters().keepStack().messageTopic(topic).urlOpenParameters(openParameters));
       // endregion
     }

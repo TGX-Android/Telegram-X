@@ -15,7 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 /** A one-transaction projection of already visible avatars. No animator, account or image cache. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumRailTransition {
   public interface Drawing { void draw (Canvas canvas, float decorations); }
   public interface Visibility { void setHidden (boolean hidden); }

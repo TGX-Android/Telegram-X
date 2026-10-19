@@ -342,7 +342,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     // Notification itself
 
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
     // Actions address the latest notification; its topic may override the group's preview setting.
     final boolean needPreview = lastNotification.isForumMessage() ? helper.needPreview(group, lastNotification) : helper.needPreview(group);
     // endregion
@@ -473,7 +473,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       if (mergedList.size() == 1) {
         TdlibNotification notification = mergedList.get(0);
         final CharSequence messageText;
-        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
         if (helper.needPreview(group, notification)) {
           // endregion
           CharSequence content = notification.getTextRepresentation(tdlib, group.isMention() && onlyPinned, true, hasCustomText);
@@ -503,7 +503,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
             isEditedVisible = true;
           }
         }
-        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
         if (helper.needPreview(group, mergedList.get(0))) {
           // endregion
           CharSequence content = mergedList.get(0).getTextRepresentation(tdlib, group.isMention() && onlyPinned, true, mergedList, isEdited, isEditedVisible, hasCustomText);
@@ -598,7 +598,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final String textContent = textBuilder.toString();
     final CharSequence tickerText = getTickerText(tdlib, helper, allowPreview, chat, lastNotification, true, group.singleSenderId() != 0, hasCustomText);
 
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), group.findTargetMessageId(), group.getMessageTopicId());
     // endregion
 
@@ -775,7 +775,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       .setIsConversation()
       .setLongLived(true)
       .setShortLabel(visualChatTitle)
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       .setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId(), group.getMessageTopicId()))
       // endregion
       .setIcon(chatIcon)
@@ -947,7 +947,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   private void addMessage (NotificationCompat.MessagingStyle style, CharSequence messageText, Person person, TdApi.Chat chat, TdlibNotification notification, long loadTimeout, boolean isRebuild, boolean isExclusivelyScheduled, boolean isExclusivelySilent, boolean isOnlyPinned) {
     long chatId = chat.id;
     boolean isMention = notification.group().isMention();
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && (!Passcode.instance().isLocked() || Passcode.instance().displayNotifications()) && tdlib.notifications().needContentPreview(chatId, isMention, notification.isForumMessage() ? notification.allowContentPreview() : null) && notification.needContentPreview()) {
       // endregion
       final long date = notification.getDate() * 1000l;
@@ -1171,7 +1171,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
           style = newMessagingStyle(tdlib.notifications(), chat, notifications.size(), isMention, onlyPinned, onlyScheduled, onlySilent, !isRebuild);
           for (TdlibNotification notification : notifications) {
             CharSequence preview;
-            // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+            // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
             if (allowPreview && helper.needPreview(notification.group(), notification)) {
               // endregion
               preview = notification.getTextRepresentation(tdlib, isMention && onlyPinned, true, hasCustomText);
@@ -1228,7 +1228,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (chat == null || !allowPreview) {
       return Lang.getString(R.string.YouHaveNewMessage);
     }
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
     boolean needPreview = helper.needPreview(notification.group(), notification);
     // endregion
     String prefix;

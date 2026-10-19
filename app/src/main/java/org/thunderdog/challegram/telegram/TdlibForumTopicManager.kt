@@ -1,16 +1,16 @@
 package org.thunderdog.challegram.telegram
 
 import me.vkryl.core.reference.ReferenceMap
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.drinkless.tdlib.Client
 import org.drinkless.tdlib.TdApi
 // endregion
 import org.drinkless.tdlib.TdApi.*
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.tool.UI
 // endregion
 
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 /** TDLib/UI-thread adapter for the account's single forum topic store. */
 class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate, MessageListener, ChatListener, ConnectionListener, UI.StateListener {
 // endregion
@@ -18,7 +18,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
     @JvmField val chatId: Long,
     @JvmField val forumTopicId: Int
   )
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   class Entry : TdlibDataManager.AbstractEntry<Key, ForumTopic> {
   // endregion
     @JvmField val forumTopicId: Int
@@ -28,7 +28,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
     }
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private val backend = object : ForumTopicStore.Backend {
     override fun execute(action: Runnable) = tdlib.executeOnTdlibThread(action)
     override fun send(request: TdApi.Function<*>, callback: Client.ResultHandler) = tdlib.client().send(request, callback)
@@ -42,7 +42,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
   private val subscriptions = HashMap<Key, ForumTopicStore.TopicSubscription>()
   // endregion
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   init {
     tdlib.listeners().addCleanupListener(this)
     tdlib.listeners().subscribeForGlobalUpdates(this)
@@ -50,7 +50,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
   // endregion
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   fun openList(chatId: Long, query: String, observer: ForumTopicStore.ListObserver) = store.openList(chatId, query, observer)
   fun openPreview(chatId: Long, observer: ForumTopicStore.ListObserver) = store.openPreview(chatId, observer)
   fun observeTopic(key: Key, observer: ForumTopicStore.TopicObserver) = store.observeTopic(key, observer)
@@ -73,7 +73,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
 
   @TdlibThread
   fun updateForumTopic(update: UpdateForumTopic) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     store.updateTopic(update)
     unread.onTopicRead(update.chatId, update.forumTopicId, update.lastReadInboxMessageId)
   }
@@ -93,7 +93,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
     // endregion
       }
     }
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return find(key)?.also { observer.onTopicFound(key, it.value!!, true) }
   }
 
@@ -116,7 +116,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
     }
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private fun clear() {
     synchronized(subscriptions) {
       store.reset()
@@ -125,7 +125,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
       observers.clear()
   // endregion
     }
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   }
   override fun onPerformUserCleanup() = clear()
   override fun onPerformRestart() = clear()
@@ -167,7 +167,7 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
     }
   }
 
-  // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   override fun onUiStateChanged(newState: Int) = unread.setEnabled(newState == UI.State.RESUMED)
 }
   // endregion

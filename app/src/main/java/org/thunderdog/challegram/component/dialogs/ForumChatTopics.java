@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 /** One visible chat row. Owns rendering/subscriptions, never owns forum records or issues requests from draw. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 final class ForumChatTopics {
   private final ChatView view;
   private final Tdlib tdlib;

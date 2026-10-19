@@ -13,7 +13,7 @@ import java.util.Map;
 
 /** Account-scoped badge projection, not a message cache. Only complete unfiltered walks may
  * replace the total. In particular, the sixteen-topic chat preview is never a count source. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumUnreadCounter {
   public interface Observer {
     void onUnreadChanged (int unreadTopics);

@@ -23,7 +23,7 @@ import java.util.Set;
 import tgx.td.Td;
 
 /** Account-scoped, in-memory source of truth. TDLib values exposed to consumers are read-only. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicStore {
   public interface Backend {
     void execute (@NonNull Runnable action);

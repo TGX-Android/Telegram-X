@@ -7,7 +7,7 @@ import org.drinkless.tdlib.TdApi;
 import tgx.td.Td;
 
 /** Pure identity snapshot for a delayed IME send; its destination need not be the visible topic. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 final class InputSendContext {
   private final Object controller, account, arguments;
   private final long chatId;

@@ -7,7 +7,7 @@ import org.drinkless.tdlib.TdApi;
 import java.util.List;
 
 /** Store rows are immutable snapshots. A stale/loading change must not rebind every topic. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicListDiff extends DiffUtil.Callback {
   public static final Object SELECTION_PAYLOAD = new Object();
   // Rebind the existing holder: a content refresh must not cross-fade an identical row.

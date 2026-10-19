@@ -56,14 +56,14 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
   private final AvatarPlaceholder avatarPlaceholder;
 
   private static final float AVATAR_PLACEHOLDER_RADIUS = 25f;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
   /** Read-only poll summary; tapping opens the original scoped message and its native poll UI. */
   public InlineResultMultiline (BaseActivity context, Tdlib tdlib, TdApi.Message message, TdApi.Poll poll) {
     super(context, tdlib, TYPE_ARTICLE, null, null);
     setMessage(message);
     title = poll.question.text;
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "L10N-01")
+    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "L10N-01")
     StringBuilder summary = new StringBuilder(Lang.getString(R.string.format_forumPollSummary,
       Lang.getString(poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen),
       Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount)));
@@ -295,7 +295,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
 
   @Override
   public TdApi.LinkPreview findLinkPreview (String link) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (linkPreview != null && TGWebPage.isPreviewOf(linkPreview.url, link)) {
     // endregion
       return linkPreview;

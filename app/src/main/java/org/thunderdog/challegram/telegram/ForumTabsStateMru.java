@@ -5,7 +5,7 @@ import androidx.annotation.Nullable;
 import java.util.Arrays;
 
 /** Pure bounded index for forum-tabs state; most recently used chat comes first. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 final class ForumTabsStateMru {
   static final int MAX_CHATS = 64;
 

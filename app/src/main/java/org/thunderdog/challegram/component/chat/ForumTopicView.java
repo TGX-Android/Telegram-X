@@ -43,7 +43,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import tgx.td.Td;
 
 /** Two text lines. Topic counters and outgoing delivery are intentionally independent. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicView extends View {
   private final Tdlib tdlib;
   private final TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);

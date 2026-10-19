@@ -90,7 +90,7 @@ import me.vkryl.core.util.FilteredIterator;
 import tgx.bridge.TokenRetrieverListener;
 import tgx.td.JSON;
 import tgx.td.Td;
-// region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import tgx.td.ChatId;
 import org.thunderdog.challegram.data.ForumHistory;
 import org.thunderdog.challegram.data.ForumNavigation;
@@ -200,7 +200,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           tdlib.notifications().onHideAll(extras.category);
           break;
         case ExternalAction.MARK_AS_READ:
-          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
           extras.read(tdlib, () -> tdlib.notifications().releaseTdlibReference(onDone));
           return;
           // endregion
@@ -221,7 +221,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (StringUtils.isEmpty(text))
       return;
     performSyncTask(context, extras.accountId, "reply", (tdlib, onDone) -> {
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (ChatId.isSupergroup(extras.chatId) && !ForumHistory.isForum(extras.topicId)) {
         // Push-only notifications have no topic field in this TDLib schema. Resolve the
         // reply target; failure is safer than silently sending to General.
@@ -236,7 +236,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       // endregion
           }
         });
-      // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       } else {
         sendExternalReply(tdlib, text, extras, extras.topicId, onDone);
       }
@@ -266,7 +266,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       tdlib.awaitMessageSent(sendingMessage, () -> {
         if (ForumHistory.isForum(topic)) {
           // A chat-wide notification group may include other topics; don't mark them read.
-          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
           tdlib.readNotificationMessages(extras.chatId, new long[] {extras.messageIds[extras.messageIds.length-1]}, (ok, error) -> {
             if (error != null) {
               UI.showError(error);
@@ -278,13 +278,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           return;
           // endregion
         } else {
-          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
           extras.read(tdlib, onDone);
           // endregion
         }
       // endregion
       });
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     });
     // endregion
   }

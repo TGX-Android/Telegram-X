@@ -39,7 +39,7 @@ public class MessagesLayout extends RelativeLayout implements Animated {
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    // region @MadeByLLM("gpt-6-astra", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     controller.layoutForumTabs();
     // endregion
     boolean emojiState = controller.getEmojiState();

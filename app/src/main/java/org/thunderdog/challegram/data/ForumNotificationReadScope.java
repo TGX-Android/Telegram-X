@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 /** Notification read scopes, independent of the group's open/reply topic. */
-@me.vkryl.annotation.MadeByLLM(models = "gpt-6-astra", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumNotificationReadScope {
   private ForumNotificationReadScope () { }
 
@@ -77,7 +77,7 @@ public final class ForumNotificationReadScope {
    * not its forum topics. Each topic needs a separate ViewMessages request, including General.
    * Missing or mismatched messages must not fall back to reading an unrelated topic or whole chat.
    */
-  @me.vkryl.annotation.MadeByLLM(models = "GPT-5 (Codex; exact runtime version unavailable)", ref = "PR #1095")
+  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
   public static List<TdApi.ViewMessages> messageRequests (long chatId, long[] messageIds, TdApi.Message[] messages) {
     if (messageIds == null || messageIds.length == 0 || messages == null || messages.length != messageIds.length) {
       return null;
