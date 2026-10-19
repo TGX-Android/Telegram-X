@@ -54,6 +54,7 @@ import java.util.ArrayList;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.annotation.MadeByLLM;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Future;
 
@@ -247,6 +248,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       // endregion
     }
     controller.attachNavigationController(this);
+    syncKeyboardState(controller); // @MadeByLLM("opus-5.5")
     controller.onPrepareToShow();
     controller.onAttachStateChanged(this, true);
     checkDisallowScreenshots();
@@ -267,9 +269,17 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       // endregion
     }
     controller.attachNavigationController(this);
+    syncKeyboardState(controller); // @MadeByLLM("opus-5.5")
     controller.onPrepareToShow();
     controller.onAttachStateChanged(this, true);
     checkDisallowScreenshots();
+  }
+
+  @MadeByLLM(value = "opus-5.5", id = "stale-keyboard-state-fix")
+  private void syncKeyboardState (ViewController<?> controller) {
+    if (controller.getKeyboardState() && !UI.getContext(context).isKeyboardVisible()) {
+      controller.onKeyboardStateChanged(false);
+    }
   }
 
   public void removeChildWrapper (ViewController<?> controller) {

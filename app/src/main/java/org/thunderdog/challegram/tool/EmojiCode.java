@@ -2,7 +2,7 @@ package org.thunderdog.challegram.tool;
 
 import me.vkryl.annotation.MadeByGenerator;
 
-@MadeByGenerator(name = "EmojiFetcher")
+@MadeByGenerator("EmojiFetcher")
 public class EmojiCode {
 
 /*
