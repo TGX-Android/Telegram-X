@@ -1548,9 +1548,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         final MessagesController sendController = controller;
         if (inputDestroyed || sendController == null || sendController.isDestroyed() || sendController.tdlib() != tdlib ||
-            sendController.showForumTopicRestriction(this))
-        // endregion
+            sendController.showForumTopicRestriction(this)) {
+          // endregion
           return false;
+        }
 
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         final long chatId = sendController.getChatId();
@@ -1652,7 +1653,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                 (sendOptions, disableMarkdown) -> {
                   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
                   // The picker is another asynchronous boundary; do not send from a stale view.
-                  if (!canSendImeContent(sendContext, content)) return;
+                  if (!canSendImeContent(sendContext, content)) {
+                    return;
+                  }
                   // endregion
                   TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(
                     sendOptions,

@@ -11,7 +11,8 @@ import tgx.td.Td;
 /** Pure history routing rules shared by the loader, albums and live updates. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumHistory {
-  private ForumHistory () { }
+  private ForumHistory () {
+  }
 
   public static boolean isForum (@Nullable TdApi.MessageTopic topicId) {
     return topicId instanceof TdApi.MessageTopicForum;
@@ -31,10 +32,14 @@ public final class ForumHistory {
   }
 
   public static TdApi.Message[] filter (TdApi.Message[] messages, long chatId, @Nullable TdApi.MessageTopic topicId, boolean scheduled) {
-    if (!isForum(topicId)) return messages;
+    if (!isForum(topicId)) {
+      return messages;
+    }
     ArrayList<TdApi.Message> result = new ArrayList<>(messages.length);
     for (TdApi.Message message : messages) {
-      if (matches(message, chatId, topicId, scheduled)) result.add(message);
+      if (matches(message, chatId, topicId, scheduled)) {
+        result.add(message);
+      }
     }
     return result.toArray(new TdApi.Message[0]);
   }

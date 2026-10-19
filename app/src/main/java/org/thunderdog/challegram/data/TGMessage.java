@@ -2979,7 +2979,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private int getClickType (MessageView view, float x, float y) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (hasForumTopicButton() && forumTopicButtonBounds.contains(x, y)) return CLICK_TYPE_FORUM_TOPIC;
+    if (hasForumTopicButton() && forumTopicButtonBounds.contains(x, y)) {
+      return CLICK_TYPE_FORUM_TOPIC;
+    }
     // endregion
     if (isTranslated()) {
       if (checkClickOnRect(isTranslatedCounterLastDrawRect, x, y, Screen.dp(4))) {
@@ -4892,7 +4894,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final boolean containsUnreadPollVotes () {
     synchronized (this) {
-      if (combinedMessages != null) for (TdApi.Message message : combinedMessages) if (message.containsUnreadPollVotes) return true;
+      if (combinedMessages != null) {
+        for (TdApi.Message message : combinedMessages) {
+          if (message.containsUnreadPollVotes) {
+            return true;
+          }
+        }
+      }
       return msg.containsUnreadPollVotes;
     }
   }
@@ -4900,7 +4908,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public final void setMessageUnreadPollVote (long messageId, boolean unread) {
     synchronized (this) {
       TdApi.Message message = getMessage(messageId);
-      if (message != null) message.containsUnreadPollVotes = unread;
+      if (message != null) {
+        message.containsUnreadPollVotes = unread;
+      }
     }
   // endregion
   }
@@ -10231,7 +10241,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       hasTopicInfo = topicInfo != null;
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (!hasTopicInfo && after != null) {
-        if (postponedTopicInfoCallbacks == null) postponedTopicInfoCallbacks = new ArrayList<>();
+        if (postponedTopicInfoCallbacks == null) {
+          postponedTopicInfoCallbacks = new ArrayList<>();
+        }
         postponedTopicInfoCallbacks.add(after);
       }
       // endregion
@@ -10270,8 +10282,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     List<RunnableBool> postponedCallbacks;
     synchronized (forumTopicKey) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (isDestroyed) return;
-      if (this.topicInfo == topicInfo) return; // Store snapshots never mutate topic info in place.
+      if (isDestroyed) {
+        return;
+      }
+      if (this.topicInfo == topicInfo) {
+        return; // Store snapshots never mutate topic info in place.
+      }
       // endregion
       if (this.topicInfo == null) {
         postponedCallbacks = this.postponedTopicInfoCallbacks;
@@ -10287,12 +10303,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (postponedCallbacks != null) {
       for (RunnableBool postponedCallback : postponedCallbacks) {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        if (!isDestroyed) postponedCallback.runWithBool(inPlace);
+        if (!isDestroyed) {
+          postponedCallback.runWithBool(inPlace);
+        }
         // endregion
       }
     }
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (!isDestroyed) onTopicInfoUpdated();
+    if (!isDestroyed) {
+      onTopicInfoUpdated();
+    }
     // endregion
   }
 
@@ -10304,7 +10324,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   @Override
   public final void onTopicFound (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.ForumTopic topic, boolean inPlace) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (isDestroyed || !key.equals(forumTopicKey)) return;
+    if (isDestroyed || !key.equals(forumTopicKey)) {
+      return;
+    }
     setTopicInfo(topic.info, inPlace);
     // endregion
   }
@@ -10312,7 +10334,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   @Override
   public final void onTopicInfoUpdated (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.ForumTopicInfo topicInfo) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (isDestroyed || !key.equals(forumTopicKey)) return;
+    if (isDestroyed || !key.equals(forumTopicKey)) {
+      return;
+    }
     setTopicInfo(topicInfo, false);
     // endregion
   }
@@ -10320,11 +10344,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   @Override
   public final void onTopicUpdated (@NonNull TdlibForumTopicManager.Key key, @NonNull TdApi.UpdateForumTopic update) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (isDestroyed || !key.equals(forumTopicKey)) return;
+    if (isDestroyed || !key.equals(forumTopicKey)) {
+      return;
+    }
     // The update is partial; consume the store's reconciled value instead of inventing metadata.
     TdlibForumTopicManager.Entry entry = tdlib.topics().find(key);
-    if (entry != null && entry.value != null) setTopicInfo(entry.value.info, false);
-    else tdlib.topics().retryTopic(key);
+    if (entry != null && entry.value != null) {
+      setTopicInfo(entry.value.info, false);
+    } else {
+      tdlib.topics().retryTopic(key);
+    }
     // endregion
   }
 }

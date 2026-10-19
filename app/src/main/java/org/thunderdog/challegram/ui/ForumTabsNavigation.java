@@ -16,9 +16,12 @@ import java.util.function.Predicate;
 /** Local tab commands. A tab selection is never a server-side viewAsTopics preference. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 final class ForumTabsNavigation {
-  private ForumTabsNavigation () { }
+  private ForumTabsNavigation () {
+  }
 
-  enum Result { RETURNED, QUEUED, RETRY, UNAVAILABLE }
+  enum Result {
+    RETURNED, QUEUED, RETRY, UNAVAILABLE
+  }
 
   static boolean isTabForum (ViewController<?> owner, long chatId) {
     return owner.tdlib().isForum(chatId) && owner.tdlib().hasForumTabs(chatId);
@@ -30,7 +33,9 @@ final class ForumTabsNavigation {
 
   static @Nullable MessagesController findHost (ViewController<?> owner, long chatId) {
     NavigationController navigation = owner.context().navigation();
-    if (owner.isDestroyed() || navigation == null || !isTabForum(owner, chatId)) return null;
+    if (owner.isDestroyed() || navigation == null || !isTabForum(owner, chatId)) {
+      return null;
+    }
     NavigationStack stack = navigation.getStack();
     int index = nearestHostIndex(stack.getAll(), stack.indexOf(owner), item ->
       sameChat(owner, item, chatId) && item instanceof MessagesController && ((MessagesController) item).isForumTabsHost());
@@ -38,9 +43,13 @@ final class ForumTabsNavigation {
   }
 
   static boolean isLiveHost (ViewController<?> owner, long chatId, @Nullable MessagesController host) {
-    if (!sameChat(owner, host, chatId) || !isTabForum(owner, chatId) || !host.isForumTabsHost()) return false;
+    if (!sameChat(owner, host, chatId) || !isTabForum(owner, chatId) || !host.isForumTabsHost()) {
+      return false;
+    }
     NavigationController navigation = owner.context().navigation();
-    if (navigation == null) return false;
+    if (navigation == null) {
+      return false;
+    }
     NavigationStack stack = navigation.getStack();
     int hostIndex = stack.indexOf(host), ownerIndex = stack.indexOf(owner);
     return hostIndex >= 0 && ownerIndex >= hostIndex;
@@ -52,8 +61,12 @@ final class ForumTabsNavigation {
   }
 
   private static boolean canRemovePage (ViewController<?> owner, ViewController<?> item, long chatId) {
-    if (!sameChat(owner, item, chatId)) return false;
-    if (item instanceof ForumTopicEditController) return ((ForumTopicEditController) item).canReturnToForumTabs();
+    if (!sameChat(owner, item, chatId)) {
+      return false;
+    }
+    if (item instanceof ForumTopicEditController) {
+      return ((ForumTopicEditController) item).canReturnToForumTabs();
+    }
     // A group profile can itself be an editor or have an active selection. Probe
     // its non-committing Back handler before treating it as a disposable profile.
     return (item instanceof ForumTopicProfileController || item instanceof ProfileController) && !item.performOnBackPressed(true, false);
@@ -61,20 +74,32 @@ final class ForumTabsNavigation {
 
   /** Queue before exposing the host; never remove another chat, account or screen kind. */
   static Result requestAndReturn (ViewController<?> owner, MessagesController host, int topicId) {
-    if (topicId < 0 || !isCurrent(owner) || !isLiveHost(owner, owner.getChatId(), host)) return Result.UNAVAILABLE;
+    if (topicId < 0 || !isCurrent(owner) || !isLiveHost(owner, owner.getChatId(), host)) {
+      return Result.UNAVAILABLE;
+    }
     NavigationController navigation = owner.context().navigation();
     NavigationStack stack = navigation.getStack();
-    if (owner.context().isNavigationBusy() || stack.isLocked()) return Result.RETRY;
+    if (owner.context().isNavigationBusy() || stack.isLocked()) {
+      return Result.RETRY;
+    }
     int ownerIndex = stack.indexOf(owner), hostIndex = stack.indexOf(host);
     boolean canReturn = canUnwind(stack.getAll(), ownerIndex, hostIndex, item -> canRemovePage(owner, item, host.getChatId()));
-    if (!host.requestForumTab(topicId)) return Result.UNAVAILABLE;
-    if (owner == host) return Result.RETURNED;
+    if (!host.requestForumTab(topicId)) {
+      return Result.UNAVAILABLE;
+    }
+    if (owner == host) {
+      return Result.RETURNED;
+    }
     // Keep the selection queued for the user's eventual Back navigation. In
     // particular, do not open a duplicate host to jump over unrelated history.
-    if (!canReturn) return Result.QUEUED;
+    if (!canReturn) {
+      return Result.QUEUED;
+    }
     for (int i = ownerIndex - 1; i > hostIndex; i--) {
       ViewController<?> intermediate = stack.get(i);
-      if (intermediate.isAttachedToNavigationController()) navigation.removeChildWrapper(intermediate);
+      if (intermediate.isAttachedToNavigationController()) {
+        navigation.removeChildWrapper(intermediate);
+      }
       stack.destroy(i);
     }
     // Leave the visible owner to NavigationProcessor: it needs the outgoing
@@ -84,10 +109,14 @@ final class ForumTabsNavigation {
 
   @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   static Result returnFromUnavailableTopic (ViewController<?> owner, int topicId, boolean commit) {
-    if (topicId <= 0 || !isCurrent(owner)) return Result.UNAVAILABLE;
+    if (topicId <= 0 || !isCurrent(owner)) {
+      return Result.UNAVAILABLE;
+    }
     NavigationController navigation = owner.context().navigation();
     NavigationStack stack = navigation.getStack();
-    if (owner.context().isNavigationBusy() || stack.isLocked()) return Result.RETRY;
+    if (owner.context().isNavigationBusy() || stack.isLocked()) {
+      return Result.RETRY;
+    }
     long chatId = owner.getChatId();
     int ownerIndex = stack.indexOf(owner);
     int parentIndex = unavailableTopicParentIndex(stack.getAll(), ownerIndex,
@@ -96,16 +125,24 @@ final class ForumTabsNavigation {
           ((MessagesController) item).compareChat(chatId, null, null, false))),
       item -> sameChat(owner, item, chatId) && item instanceof MessagesController &&
         ((MessagesController) item).canLeaveUnavailableTopic(topicId));
-    if (parentIndex < 0) return Result.UNAVAILABLE;
-    if (!commit) return Result.RETURNED;
+    if (parentIndex < 0) {
+      return Result.UNAVAILABLE;
+    }
+    if (!commit) {
+      return Result.RETURNED;
+    }
     ViewController<?> parent = stack.get(parentIndex);
     if (parent instanceof MessagesController && ((MessagesController) parent).isForumTabsHost() &&
-        !((MessagesController) parent).requestForumTab(0)) return Result.UNAVAILABLE;
+        !((MessagesController) parent).requestForumTab(0)) {
+      return Result.UNAVAILABLE;
+    }
     // Remove only disposable histories of this topic. The visible profile stays
     // alive until NavigationProcessor finishes its normal Back animation.
     for (int i = ownerIndex - 1; i > parentIndex; i--) {
       ViewController<?> intermediate = stack.get(i);
-      if (intermediate.isAttachedToNavigationController()) navigation.removeChildWrapper(intermediate);
+      if (intermediate.isAttachedToNavigationController()) {
+        navigation.removeChildWrapper(intermediate);
+      }
       stack.destroy(i);
     }
     return owner.navigateBack() ? Result.RETURNED : Result.RETRY;
@@ -113,11 +150,17 @@ final class ForumTabsNavigation {
 
   @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
   static <T> int unavailableTopicParentIndex (List<T> stack, int ownerIndex, Predicate<T> isParent, Predicate<T> removable) {
-    if (ownerIndex < 0 || ownerIndex >= stack.size()) return -1;
+    if (ownerIndex < 0 || ownerIndex >= stack.size()) {
+      return -1;
+    }
     for (int i = ownerIndex - 1; i >= 0; i--) {
       T item = stack.get(i);
-      if (isParent.test(item)) return i;
-      if (!removable.test(item)) break;
+      if (isParent.test(item)) {
+        return i;
+      }
+      if (!removable.test(item)) {
+        break;
+      }
     }
     return -1;
   }
@@ -152,24 +195,39 @@ final class ForumTabsNavigation {
   }
 
   private static int ownerTopicId (ViewController<?> owner) {
-    if (owner instanceof ForumTopicProfileController) return ((ForumTopicProfileController) owner).getForumTopicId();
-    if (owner instanceof ForumTopicEditController) return ((ForumTopicEditController) owner).getArgumentsStrict().topicId;
+    if (owner instanceof ForumTopicProfileController) {
+      return ((ForumTopicProfileController) owner).getForumTopicId();
+    }
+    if (owner instanceof ForumTopicEditController) {
+      return ((ForumTopicEditController) owner).getArgumentsStrict().topicId;
+    }
     if (owner instanceof MessagesController) {
       MessagesController messages = (MessagesController) owner;
-      if (messages.isForumTabsHost()) return messages.getSelectedForumTabId();
+      if (messages.isForumTabsHost()) {
+        return messages.getSelectedForumTabId();
+      }
       TdApi.MessageTopic topic = messages.getMessageTopicId();
-      if (topic instanceof TdApi.MessageTopicForum) return ((TdApi.MessageTopicForum) topic).forumTopicId;
+      if (topic instanceof TdApi.MessageTopicForum) {
+        return ((TdApi.MessageTopicForum) topic).forumTopicId;
+      }
     }
     return 0;
   }
 
   private static TdlibUi.ChatOpenParameters parameters (ViewController<?> owner, int topicId) {
     TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack();
-    if (owner instanceof MessagesController) params.chatList(((MessagesController) owner).chatList());
-    else if (owner instanceof ForumTopicProfileController) params.chatList(((ForumTopicProfileController) owner).getChatList());
-    else if (owner instanceof ForumTopicsController) params.chatList(((ForumTopicsController) owner).getArgumentsStrict().chatList);
-    if (topicId > 0) params.messageTopic(new TdApi.MessageTopicForum(topicId));
-    else params.forumMessages();
+    if (owner instanceof MessagesController) {
+      params.chatList(((MessagesController) owner).chatList());
+    } else if (owner instanceof ForumTopicProfileController) {
+      params.chatList(((ForumTopicProfileController) owner).getChatList());
+    } else if (owner instanceof ForumTopicsController) {
+      params.chatList(((ForumTopicsController) owner).getArgumentsStrict().chatList);
+    }
+    if (topicId > 0) {
+      params.messageTopic(new TdApi.MessageTopicForum(topicId));
+    } else {
+      params.forumMessages();
+    }
     return params;
   }
 
@@ -179,14 +237,26 @@ final class ForumTabsNavigation {
   }
 
   static <T> int nearestHostIndex (List<T> stack, int ownerIndex, Predicate<T> isHost) {
-    if (ownerIndex < 0 || ownerIndex >= stack.size()) return -1;
-    for (int i = ownerIndex; i >= 0; i--) if (isHost.test(stack.get(i))) return i;
+    if (ownerIndex < 0 || ownerIndex >= stack.size()) {
+      return -1;
+    }
+    for (int i = ownerIndex; i >= 0; i--) {
+      if (isHost.test(stack.get(i))) {
+        return i;
+      }
+    }
     return -1;
   }
 
   static <T> boolean canUnwind (List<T> stack, int ownerIndex, int hostIndex, Predicate<T> removable) {
-    if (hostIndex < 0 || ownerIndex < hostIndex || ownerIndex >= stack.size()) return false;
-    for (int i = ownerIndex; i > hostIndex; i--) if (!removable.test(stack.get(i))) return false;
+    if (hostIndex < 0 || ownerIndex < hostIndex || ownerIndex >= stack.size()) {
+      return false;
+    }
+    for (int i = ownerIndex; i > hostIndex; i--) {
+      if (!removable.test(stack.get(i))) {
+        return false;
+      }
+    }
     return true;
   }
 

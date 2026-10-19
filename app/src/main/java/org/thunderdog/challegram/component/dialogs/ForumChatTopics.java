@@ -84,13 +84,24 @@ final class ForumChatTopics {
     receiver.detach();
   }
 
-  void setAnimationDisabled (boolean disabled) { receiver.setAnimationDisabled(disabled); }
+  void setAnimationDisabled (boolean disabled) {
+    receiver.setAnimationDisabled(disabled);
+  }
 
   private void close () {
     generation++;
-    if (session != null) { session.close(); session = null; }
-    if (unreadSubscription != null) { unreadSubscription.close(); unreadSubscription = null; }
-    if (leadingSubscription != null) { leadingSubscription.close(); leadingSubscription = null; }
+    if (session != null) {
+      session.close();
+      session = null;
+    }
+    if (unreadSubscription != null) {
+      unreadSubscription.close();
+      unreadSubscription = null;
+    }
+    if (leadingSubscription != null) {
+      leadingSubscription.close();
+      leadingSubscription = null;
+    }
     leadingId = 0;
     leadingError = null;
   }
@@ -106,17 +117,23 @@ final class ForumChatTopics {
     if (attached && session == null) {
       final int ticket = generation;
       session = tdlib.topics().openPreview(chat.getChatId(), snapshot -> {
-        if (ticket == generation && attached && session != null) refresh();
+        if (ticket == generation && attached && session != null) {
+          refresh();
+        }
       });
       unreadSubscription = tdlib.topics().observeUnread(chat.getChatId(), count -> {
-        if (ticket == generation && attached) chat.updateForumUnread();
+        if (ticket == generation && attached) {
+          chat.updateForumUnread();
+        }
       });
     }
     refresh();
   }
 
   private void refresh () {
-    if (refreshing || chat == null || !chat.canShowForumPreview()) return;
+    if (refreshing || chat == null || !chat.canShowForumPreview()) {
+      return;
+    }
     refreshing = true;
     try {
       ForumTopicStore.Snapshot snapshot = session != null ? session.getSnapshot() : tdlib.topics().cachedList(chat.getChatId(), "");
@@ -124,13 +141,19 @@ final class ForumChatTopics {
       chat.updateForumDraft(unavailable ? null : ForumChatPreview.latestDraft(chat.getChatId(), snapshot.topics));
       int id = unavailable ? 0 : chat.getPreviewTopicId();
       if (attached && id != leadingId) {
-        if (leadingSubscription != null) { leadingSubscription.close(); leadingSubscription = null; }
+        if (leadingSubscription != null) {
+          leadingSubscription.close();
+          leadingSubscription = null;
+        }
         leadingId = id;
         leadingError = null;
         if (id != 0) {
           final int ticket = generation;
           leadingSubscription = tdlib.topics().observeTopic(new TdlibForumTopicManager.Key(chat.getChatId(), id), (topic, error) -> {
-            if (ticket == generation && attached && leadingId == id) { leadingError = error; refresh(); }
+            if (ticket == generation && attached && leadingId == id) {
+              leadingError = error;
+              refresh();
+            }
           });
         }
       }
@@ -149,25 +172,40 @@ final class ForumChatTopics {
     }
   }
 
-  int lineHeight () { return Screen.dp(mode == Settings.CHAT_MODE_3LINE_BIG ? 20 : 19); }
+  int lineHeight () {
+    return Screen.dp(mode == Settings.CHAT_MODE_3LINE_BIG ? 20 : 19);
+  }
 
   void layout (int width, int mode) {
     String language = Lang.packId();
     int counterWidth = chat != null ? chat.getPreviewCounterWidth() : 0;
-    if (!layoutDirty && this.width == width && this.mode == mode && this.counterWidth == counterWidth && language.equals(this.language)) return;
+    if (!layoutDirty && this.width == width && this.mode == mode && this.counterWidth == counterWidth && language.equals(this.language)) {
+      return;
+    }
     layoutDirty = false;
     this.language = language;
     this.counterWidth = counterWidth;
     this.width = width;
     this.mode = mode;
-    for (Text icon : icons) if (icon != null) icon.performDestroy();
-    labels.clear(); icons.clear(); initials.clear(); offsets.clear();
+    for (Text icon : icons) {
+      if (icon != null) {
+        icon.performDestroy();
+      }
+    }
+    labels.clear();
+    icons.clear();
+    initials.clear();
+    offsets.clear();
     receiver.clear();
     placeholder = null;
-    if (chat == null || !chat.canShowForumPreview()) return;
+    if (chat == null || !chat.canShowForumPreview()) {
+      return;
+    }
     int available = Math.max(0, width - ChatView.getLeftPadding(mode) - ChatView.getRightPadding() - counterWidth);
     float size = mode == Settings.CHAT_MODE_3LINE_BIG ? 16 : 15;
-    if (available <= 0) return;
+    if (available <= 0) {
+      return;
+    }
     if (items.isEmpty()) {
       placeholder = new Text.Builder(Lang.getString(R.string.ForumChatTopics), available, Paints.robotoStyleProvider(size), TextColorSets.Regular.LIGHT)
         .singleLine().allBold(false).build();
@@ -177,7 +215,9 @@ final class ForumChatTopics {
     for (ForumChatPreview.Item item : items) {
       int iconWidth = Screen.dp(size + 1);
       int nameWidth = available - x - iconWidth - Screen.dp(4);
-      if (nameWidth < Screen.dp(16)) break;
+      if (nameWidth < Screen.dp(16)) {
+        break;
+      }
       offsets.add(x);
       String name = item.name.isEmpty() ? Lang.getString(R.string.ForumTopicTitle) : item.name;
       Text label = new Text.Builder(name, nameWidth, Paints.robotoStyleProvider(size), TextColorSets.Regular.LIGHT)
@@ -201,13 +241,17 @@ final class ForumChatTopics {
           }).singleLine().noClickable().build();
       }
       icons.add(emoji);
-      if (emoji != null) emoji.requestMedia(receiver, (icons.size() - 1) * 16L, 16);
+      if (emoji != null) {
+        emoji.requestMedia(receiver, (icons.size() - 1) * 16L, 16);
+      }
       x += iconWidth + Screen.dp(4) + label.getWidth() + Screen.dp(10);
     }
   }
 
   void draw (Canvas c) {
-    if (chat == null || !chat.canShowForumPreview()) return;
+    if (chat == null || !chat.canShowForumPreview()) {
+      return;
+    }
     int start = ChatView.getLeftPadding(mode), top = ChatView.getTextTop(mode);
     boolean rtl = Lang.rtl();
     if (placeholder != null) {
@@ -227,14 +271,22 @@ final class ForumChatTopics {
       } else {
         paint.setColor(0xff000000 | item.color);
         DrawAlgorithms.drawRoundRect(c, Screen.dp(5), iconX, iconY, iconX + iconSize, iconY + iconSize - Screen.dp(2), paint);
-        tail.reset(); tail.moveTo(iconX + Screen.dp(2), iconY + iconSize - Screen.dp(5));
-        tail.lineTo(iconX + Screen.dp(2), iconY + iconSize); tail.lineTo(iconX + Screen.dp(7), iconY + iconSize - Screen.dp(3)); tail.close();
+        tail.reset();
+        tail.moveTo(iconX + Screen.dp(2), iconY + iconSize - Screen.dp(5));
+        tail.lineTo(iconX + Screen.dp(2), iconY + iconSize);
+        tail.lineTo(iconX + Screen.dp(7), iconY + iconSize - Screen.dp(3));
+        tail.close();
         c.drawPath(tail, paint);
-        paint.setColor(0xffffffff); paint.setTypeface(Fonts.getRobotoMedium()); paint.setTextSize(Screen.dp(10)); paint.setTextAlign(Paint.Align.CENTER);
+        paint.setColor(0xffffffff);
+        paint.setTypeface(Fonts.getRobotoMedium());
+        paint.setTextSize(Screen.dp(10));
+        paint.setTextAlign(Paint.Align.CENTER);
         c.drawText(initials.get(i), iconX + iconSize / 2, iconY + (iconSize - Screen.dp(2) - paint.ascent() - paint.descent()) / 2, paint);
       }
       int textX = logicalX + Math.round(iconSize) + Screen.dp(4);
-      if (rtl) textX = width - textX - label.getWidth();
+      if (rtl) {
+        textX = width - textX - label.getWidth();
+      }
       label.draw(c, textX, top);
     }
   }

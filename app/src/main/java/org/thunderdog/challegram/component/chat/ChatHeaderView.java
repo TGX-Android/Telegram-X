@@ -159,11 +159,15 @@ public class ChatHeaderView extends ComplexHeaderView {
     long previousEmojiId = topicIcon != null ? topicIcon.customEmojiId : 0;
     topicIcon = icon;
     if (!isForumTopic || customEmojiId != previousEmojiId) {
-      if (customTopicEmoji != null) customTopicEmoji.performDestroy();
+      if (customTopicEmoji != null) {
+        customTopicEmoji.performDestroy();
+      }
       customTopicEmoji = null;
       topicEmojiReceiver.clear();
     }
-    if (!isForumTopic) return;
+    if (!isForumTopic) {
+      return;
+    }
     setShowMute(org.thunderdog.challegram.data.ForumPresentation.isMuted(topic != null ? topic.notificationSettings : null, tdlib.chatNeedsMuteIcon(chat)));
     String title = topic != null ? topic.info.name : Lang.getString(R.string.ForumTopicTitle);
     topicLetter = topic != null && topic.info.isGeneral || title.isEmpty() ? "#" : title.substring(0, title.offsetByCodePoints(0, 1));
@@ -182,7 +186,10 @@ public class ChatHeaderView extends ComplexHeaderView {
     if (customEmojiId != 0 && customTopicEmoji == null) {
       TdApi.FormattedText emoji = new TdApi.FormattedText("*", new TdApi.TextEntity[] {new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(customEmojiId))});
       customTopicEmoji = new Text.Builder(tdlib, emoji, null, Screen.dp(60), Paints.robotoStyleProvider(30), TextColorSets.WHITE, (text, media) -> {
-        if (text == customTopicEmoji) { text.requestMedia(topicEmojiReceiver); invalidate(); }
+        if (text == customTopicEmoji) {
+          text.requestMedia(topicEmojiReceiver);
+          invalidate();
+        }
       }).singleLine().build();
       customTopicEmoji.requestMedia(topicEmojiReceiver);
     }
@@ -191,7 +198,10 @@ public class ChatHeaderView extends ComplexHeaderView {
 
   @Override
   protected void drawAvatar (Canvas c) {
-    if (!isForumTopic) { super.drawAvatar(c); return; }
+    if (!isForumTopic) {
+      super.drawAvatar(c);
+      return;
+    }
     AvatarReceiver avatar = getAvatarReceiver();
     float cx = avatar.centerX(), cy = avatar.centerY();
     if (customTopicEmoji != null) {
@@ -214,10 +224,20 @@ public class ChatHeaderView extends ComplexHeaderView {
     c.drawText(topicLetter, cx, cy - Screen.dp(2) - (topicPaint.ascent() + topicPaint.descent()) / 2, topicPaint);
   }
 
-  @Override protected void onAttachedToWindow () { super.onAttachedToWindow(); topicEmojiReceiver.attach(); }
-  @Override protected void onDetachedFromWindow () { topicEmojiReceiver.detach(); super.onDetachedFromWindow(); }
+  @Override protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    topicEmojiReceiver.attach();
+  }
+
+  @Override protected void onDetachedFromWindow () {
+    topicEmojiReceiver.detach();
+    super.onDetachedFromWindow();
+  }
+
   @Override public void performDestroy () {
-    if (customTopicEmoji != null) customTopicEmoji.performDestroy();
+    if (customTopicEmoji != null) {
+      customTopicEmoji.performDestroy();
+    }
     topicEmojiReceiver.performDestroy();
     super.performDestroy();
   }

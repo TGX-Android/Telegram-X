@@ -319,7 +319,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
-    public Args setSearchQuery (@Nullable String query) { this.searchQuery = query; return this; }
+    public Args setSearchQuery (@Nullable String query) {
+      this.searchQuery = query;
+      return this;
+    }
 // endregion
 
     public @Nullable TdApi.SearchMessagesFilter filter;
@@ -1908,9 +1911,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
       } else {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        if (topicId != null) tdlib.ui().openChat(this, item.getSourceChatId(), new TdlibUi.ChatOpenParameters()
-          .messageTopic(topicId).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId())).ensureHighlightAvailable().keepStack());
-        else tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
+        if (topicId != null) {
+          tdlib.ui().openChat(this, item.getSourceChatId(), new TdlibUi.ChatOpenParameters()
+            .messageTopic(topicId).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId())).ensureHighlightAvailable().keepStack());
+        } else {
+          tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
+        }
         // endregion
       }
 

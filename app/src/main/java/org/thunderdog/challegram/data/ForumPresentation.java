@@ -6,7 +6,8 @@ import org.thunderdog.challegram.R;
 /** Pure common-stream rules: display identity, composer identity and read actions must agree. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumPresentation {
-  private ForumPresentation () { }
+  private ForumPresentation () {
+  }
 
   /** Compact service text for previews; the history retains its full actor/name formatting. */
   public static int servicePreview (TdApi.MessageContent content) {

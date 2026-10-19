@@ -352,7 +352,9 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
   @Override
   public void onClick (View v) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (retryLoad(v)) return;
+    if (retryLoad(v)) {
+      return;
+    }
     onClickAt(v, v.getWidth() / 2f, v.getHeight() / 2f);
     // endregion
   }

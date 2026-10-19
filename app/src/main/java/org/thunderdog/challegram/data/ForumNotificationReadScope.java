@@ -13,7 +13,8 @@ import java.util.Set;
 /** Notification read scopes, independent of the group's open/reply topic. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumNotificationReadScope {
-  private ForumNotificationReadScope () { }
+  private ForumNotificationReadScope () {
+  }
 
   /**
    * Returns every represented forum topic, or null when a topic-only read cannot cover the group.

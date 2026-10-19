@@ -9,7 +9,8 @@ import java.util.Arrays;
 final class ForumTabsStateMru {
   static final int MAX_CHATS = 64;
 
-  private ForumTabsStateMru () { }
+  private ForumTabsStateMru () {
+  }
 
   /** Never mutates the input; repairs duplicates, zero IDs and oversized indexes. */
   static long[] touch (@Nullable long[] chatIds, long chatId) {

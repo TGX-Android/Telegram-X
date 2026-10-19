@@ -27,8 +27,11 @@ import tgx.td.Td;
 public final class ForumTopicStore {
   public interface Backend {
     void execute (@NonNull Runnable action);
+
     void send (@NonNull TdApi.Function<?> request, @NonNull Client.ResultHandler callback);
+
     void schedule (long delayMs, @NonNull Runnable action);
+
     void publish (@NonNull Runnable action);
   }
 
@@ -41,14 +44,26 @@ public final class ForumTopicStore {
       this.query = query;
     }
 
-    public long component1 () { return chatId; }
-    public String component2 () { return query; }
-    public ListKey copy (long chatId, String query) { return new ListKey(chatId, query); }
+    public long component1 () {
+      return chatId;
+    }
+
+    public String component2 () {
+      return query;
+    }
+
+    public ListKey copy (long chatId, String query) {
+      return new ListKey(chatId, query);
+    }
 
     @Override
     public boolean equals (Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof ListKey)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof ListKey)) {
+        return false;
+      }
       ListKey other = (ListKey) obj;
       return chatId == other.chatId && query.equals(other.query);
     }
@@ -69,9 +84,17 @@ public final class ForumTopicStore {
     public final long messageId;
     public final int topicId;
 
-    public Cursor () { this(0, 0, 0); }
-    public Cursor (int date) { this(date, 0, 0); }
-    public Cursor (int date, long messageId) { this(date, messageId, 0); }
+    public Cursor () {
+      this(0, 0, 0);
+    }
+
+    public Cursor (int date) {
+      this(date, 0, 0);
+    }
+
+    public Cursor (int date, long messageId) {
+      this(date, messageId, 0);
+    }
 
     public Cursor (int date, long messageId, int topicId) {
       this.date = date;
@@ -79,16 +102,34 @@ public final class ForumTopicStore {
       this.topicId = topicId;
     }
 
-    public boolean isEmpty () { return date == 0 && messageId == 0 && topicId == 0; }
-    public int component1 () { return date; }
-    public long component2 () { return messageId; }
-    public int component3 () { return topicId; }
-    public Cursor copy (int date, long messageId, int topicId) { return new Cursor(date, messageId, topicId); }
+    public boolean isEmpty () {
+      return date == 0 && messageId == 0 && topicId == 0;
+    }
+
+    public int component1 () {
+      return date;
+    }
+
+    public long component2 () {
+      return messageId;
+    }
+
+    public int component3 () {
+      return topicId;
+    }
+
+    public Cursor copy (int date, long messageId, int topicId) {
+      return new Cursor(date, messageId, topicId);
+    }
 
     @Override
     public boolean equals (Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof Cursor)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof Cursor)) {
+        return false;
+      }
       Cursor other = (Cursor) obj;
       return date == other.date && messageId == other.messageId && topicId == other.topicId;
     }
@@ -178,25 +219,39 @@ public final class ForumTopicStore {
     }
 
     public void refresh () {
-      onOwner(() -> { if (live()) ForumTopicStore.this.refresh(state(key)); });
+      onOwner(() -> {
+        if (live()) {
+          ForumTopicStore.this.refresh(state(key));
+        }
+      });
     }
 
     public void loadMore () {
-      onOwner(() -> { if (live()) ForumTopicStore.this.loadMore(state(key)); });
+      onOwner(() -> {
+        if (live()) {
+          ForumTopicStore.this.loadMore(state(key));
+        }
+      });
     }
 
     public void retry () {
       onOwner(() -> {
         if (live()) {
           ListState state = state(key);
-          if (state.error != null && state.error.code == PAGINATION_ERROR) ForumTopicStore.this.refresh(state);
-          else if (state.error != null) requestPage(state, state.retryKind);
-          else {
+          if (state.error != null && state.error.code == PAGINATION_ERROR) {
+            ForumTopicStore.this.refresh(state);
+          } else if (state.error != null) {
+            requestPage(state, state.retryKind);
+          } else {
             List<Key> failed = new ArrayList<>();
             for (Map.Entry<Key, Record> entry : records.entrySet()) {
-              if (entry.getKey().chatId == key.chatId && entry.getValue().error != null) failed.add(entry.getKey());
+              if (entry.getKey().chatId == key.chatId && entry.getValue().error != null) {
+                failed.add(entry.getKey());
+              }
             }
-            for (Key failedKey : failed) queueTopic(failedKey);
+            for (Key failedKey : failed) {
+              queueTopic(failedKey);
+            }
             ForumTopicStore.this.refresh(state);
           }
         }
@@ -206,7 +261,10 @@ public final class ForumTopicStore {
     @Override
     public void close () {
       disposed = true; // Also cancels UI callbacks that are already queued.
-      onOwner(() -> { detach(this); trim(); });
+      onOwner(() -> {
+        detach(this);
+        trim();
+      });
     }
 
     boolean live () {
@@ -219,10 +277,14 @@ public final class ForumTopicStore {
 
     void deliver (Snapshot value, boolean terminal) {
       snapshot = value;
-      if (terminal) invalidated = true;
+      if (terminal) {
+        invalidated = true;
+      }
       long ticket = ++delivery;
       backend.publish(() -> {
-        if (!disposed && delivery == ticket) observer.onSnapshot(value);
+        if (!disposed && delivery == ticket) {
+          observer.onSnapshot(value);
+        }
       });
     }
   }
@@ -246,7 +308,9 @@ public final class ForumTopicStore {
         Set<TopicSubscription> observers = topicObservers.get(key);
         if (observers != null) {
           observers.remove(this);
-          if (observers.isEmpty()) topicObservers.remove(key);
+          if (observers.isEmpty()) {
+            topicObservers.remove(key);
+          }
         }
         trim();
       });
@@ -255,12 +319,16 @@ public final class ForumTopicStore {
     void deliver (@Nullable TdApi.ForumTopic value, @Nullable TdApi.Error error) {
       long ticket = ++delivery;
       backend.publish(() -> {
-        if (!closed && context == epoch && delivery == ticket) observer.onTopic(value, error);
+        if (!closed && context == epoch && delivery == ticket) {
+          observer.onTopic(value, error);
+        }
       });
     }
   }
 
-  private enum Load { INITIAL, MORE, REFRESH }
+  private enum Load {
+    INITIAL, MORE, REFRESH
+  }
 
   private static final class PageRequest {
     final long stamp;
@@ -345,12 +413,22 @@ public final class ForumTopicStore {
   private volatile long epoch;
   private boolean reconciliationScheduled;
 
-  public ForumTopicStore (Backend backend) { this(backend, 50, 512, 8); }
-  public ForumTopicStore (Backend backend, int pageSize) { this(backend, pageSize, 512, 8); }
-  public ForumTopicStore (Backend backend, int pageSize, int maxCachedTopics) { this(backend, pageSize, maxCachedTopics, 8); }
+  public ForumTopicStore (Backend backend) {
+    this(backend, 50, 512, 8);
+  }
+
+  public ForumTopicStore (Backend backend, int pageSize) {
+    this(backend, pageSize, 512, 8);
+  }
+
+  public ForumTopicStore (Backend backend, int pageSize, int maxCachedTopics) {
+    this(backend, pageSize, maxCachedTopics, 8);
+  }
 
   public ForumTopicStore (Backend backend, int pageSize, int maxCachedTopics, int maxInactiveLists) {
-    if (pageSize < 1 || pageSize > 100 || maxCachedTopics <= 0 || maxInactiveLists < 0) throw new IllegalArgumentException();
+    if (pageSize < 1 || pageSize > 100 || maxCachedTopics <= 0 || maxInactiveLists < 0) {
+      throw new IllegalArgumentException();
+    }
     this.backend = backend;
     this.pageSize = pageSize;
     this.maxCachedTopics = maxCachedTopics;
@@ -361,7 +439,9 @@ public final class ForumTopicStore {
     long context = epoch;
     backend.execute(() -> {
       synchronized (this) {
-        if (context == epoch) action.run();
+        if (context == epoch) {
+          action.run();
+        }
       }
     });
   }
@@ -378,17 +458,29 @@ public final class ForumTopicStore {
   }
 
   public @NonNull ListSession openList (long chatId, String query, ListObserver observer) {
-    if (chatId == 0) throw new IllegalArgumentException();
+    if (chatId == 0) {
+      throw new IllegalArgumentException();
+    }
     ListSession session = new ListSession(new ListKey(chatId, normalizeQuery(query)), observer, false);
-    onOwner(() -> { if (session.live()) attach(session); });
+    onOwner(() -> {
+      if (session.live()) {
+        attach(session);
+      }
+    });
     return session;
   }
 
   /** Visible chat rows need only a bounded first-page projection. Fast scrolls do not start requests. */
   public @NonNull ListSession openPreview (long chatId, ListObserver observer) {
-    if (chatId == 0) throw new IllegalArgumentException();
+    if (chatId == 0) {
+      throw new IllegalArgumentException();
+    }
     ListSession session = new ListSession(new ListKey(chatId, ""), observer, true);
-    backend.schedule(PREVIEW_ATTACH_DELAY_MS, () -> onOwner(() -> { if (session.live()) attach(session); }));
+    backend.schedule(PREVIEW_ATTACH_DELAY_MS, () -> onOwner(() -> {
+      if (session.live()) {
+        attach(session);
+      }
+    }));
     return session;
   }
 
@@ -403,15 +495,22 @@ public final class ForumTopicStore {
         }
         observers.add(subscription);
         Record record = records.get(key);
-        if (record != null && record.value != null) subscription.deliver(record.value, null);
-        if (record == null || record.value == null || record.error != null || record.mutationStamp != 0 || record.dirtyStamp > record.fullStamp) queueTopic(key);
+        if (record != null && record.value != null) {
+          subscription.deliver(record.value, null);
+        }
+        if (record == null || record.value == null || record.error != null || record.mutationStamp != 0 || record.dirtyStamp > record.fullStamp) {
+          queueTopic(key);
+        }
       }
     });
     return subscription;
   }
 
   public void retryTopic (Key key) {
-    onOwner(() -> { invalidate(key); drainTopics(); });
+    onOwner(() -> {
+      invalidate(key);
+      drainTopics();
+    });
   }
 
   /** Reset on both logout and client restart; callbacks from the old epoch cannot refill the cache. */
@@ -423,11 +522,15 @@ public final class ForumTopicStore {
     topicRequests.clear();
     for (ListState state : lists.values()) {
       Snapshot empty = snapshot(new ListState(state.key));
-      for (ListSession session : state.sessions) session.deliver(empty, true);
+      for (ListSession session : state.sessions) {
+        session.deliver(empty, true);
+      }
     }
     lists.clear();
     for (Set<TopicSubscription> observers : topicObservers.values()) {
-      for (TopicSubscription subscription : observers) subscription.closed = true;
+      for (TopicSubscription subscription : observers) {
+        subscription.closed = true;
+      }
     }
     topicObservers.clear();
   }
@@ -452,17 +555,29 @@ public final class ForumTopicStore {
 
   private List<ListState> chatLists (long chatId) {
     List<ListState> result = new ArrayList<>();
-    for (ListState state : lists.values()) if (state.key.chatId == chatId) result.add(state);
+    for (ListState state : lists.values()) {
+      if (state.key.chatId == chatId) {
+        result.add(state);
+      }
+    }
     return result;
   }
 
   private static boolean hasLiveSession (ListState state) {
-    for (ListSession session : state.sessions) if (session.live()) return true;
+    for (ListSession session : state.sessions) {
+      if (session.live()) {
+        return true;
+      }
+    }
     return false;
   }
 
   private static boolean hasLivePreview (ListState state) {
-    for (ListSession session : state.sessions) if (session.previewOnly && session.live()) return true;
+    for (ListSession session : state.sessions) {
+      if (session.previewOnly && session.live()) {
+        return true;
+      }
+    }
     return false;
   }
 
@@ -475,15 +590,24 @@ public final class ForumTopicStore {
     if (!session.previewOnly && state.previewTruncated && state.request != null && state.request.kind == Load.MORE) {
       refresh(state); // A pending next page cannot repair an earlier, trimmed prefix.
     } else if (state.request == null) {
-      if (!state.initialized) requestPage(state, Load.INITIAL);
-      else if (state.stale || !session.previewOnly && state.previewTruncated || wasInactive && (!session.previewOnly || !state.previewFresh)) refresh(state);
+      if (!state.initialized) {
+        requestPage(state, Load.INITIAL);
+      } else if (state.stale || !session.previewOnly && state.previewTruncated || wasInactive && (!session.previewOnly || !state.previewFresh)) {
+        refresh(state);
+      }
     }
-    if (session.previewOnly && state.previewDraftKey != null) queueTopic(state.previewDraftKey);
+    if (session.previewOnly && state.previewDraftKey != null) {
+      queueTopic(state.previewDraftKey);
+    }
     List<Key> mutations = new ArrayList<>();
     for (Map.Entry<Key, Record> entry : records.entrySet()) {
-      if (entry.getKey().chatId == session.key.chatId && entry.getValue().mutationStamp != 0 && interested(entry.getKey())) mutations.add(entry.getKey());
+      if (entry.getKey().chatId == session.key.chatId && entry.getValue().mutationStamp != 0 && interested(entry.getKey())) {
+        mutations.add(entry.getKey());
+      }
     }
-    for (Key key : mutations) queueTopic(key);
+    for (Key key : mutations) {
+      queueTopic(key);
+    }
     trim();
   }
 
@@ -491,10 +615,14 @@ public final class ForumTopicStore {
     ListState state = lists.get(session.key);
     if (state != null) {
       if (state.sessions.remove(session) && state.sessions.isEmpty()) {
-        if (state.request != null || !session.previewOnly) state.stale = true;
+        if (state.request != null || !session.previewOnly) {
+          state.stale = true;
+        }
         state.request = null;
       }
-      if (trimPreview(state)) emit(state);
+      if (trimPreview(state)) {
+        emit(state);
+      }
     }
   }
 
@@ -504,12 +632,16 @@ public final class ForumTopicStore {
   }
 
   private void loadMore (ListState state) {
-    if (state.request != null || state.endReached || state.error != null) return;
+    if (state.request != null || state.endReached || state.error != null) {
+      return;
+    }
     requestPage(state, state.initialized ? Load.MORE : Load.INITIAL);
   }
 
   private void requestPage (ListState state, Load kind) {
-    if (state.request != null) return;
+    if (state.request != null) {
+      return;
+    }
     Cursor cursor = kind == Load.MORE ? state.cursor : new Cursor();
     PageRequest request = new PageRequest(++sequence, epoch, cursor, kind);
     state.request = request;
@@ -524,14 +656,18 @@ public final class ForumTopicStore {
   }
 
   private void finishPage (ListState state, PageRequest request, TdApi.Object response) {
-    if (request.epoch != epoch || state.request != request) return;
+    if (request.epoch != epoch || state.request != request) {
+      return;
+    }
     state.request = null;
     if (response instanceof TdApi.Error) {
       state.error = (TdApi.Error) response;
       state.stale = true;
       state.dirty = false; // No automatic retry loop while offline.
       emit(state);
-      if (!pendingTopics.isEmpty()) scheduleReconciliation();
+      if (!pendingTopics.isEmpty()) {
+        scheduleReconciliation();
+      }
       return;
     }
     TdApi.ForumTopics result = response instanceof TdApi.ForumTopics ? (TdApi.ForumTopics) response : null;
@@ -549,7 +685,9 @@ public final class ForumTopicStore {
       state.stale = true;
       state.dirty = false;
       emit(state);
-      if (!pendingTopics.isEmpty()) scheduleReconciliation();
+      if (!pendingTopics.isEmpty()) {
+        scheduleReconciliation();
+      }
       return;
     }
     Set<Key> previousIds = new LinkedHashSet<>(state.ids);
@@ -558,7 +696,9 @@ public final class ForumTopicStore {
       Iterator<Key> iterator = state.ids.iterator();
       while (iterator.hasNext()) {
         Record record = records.get(iterator.next());
-        if (record == null || Math.max(Math.max(record.infoStamp, record.updateStamp), Math.max(record.dirtyStamp, record.fullStamp)) <= request.stamp) iterator.remove();
+        if (record == null || Math.max(Math.max(record.infoStamp, record.updateStamp), Math.max(record.dirtyStamp, record.fullStamp)) <= request.stamp) {
+          iterator.remove();
+        }
       }
       state.seenCursors.clear();
       state.overlapPages = 0;
@@ -573,11 +713,15 @@ public final class ForumTopicStore {
         state.ids.add(key);
         if (topic.isPinned && !state.pinnedRanks.containsKey(key)) {
           int maxRank = -1;
-          for (int rank : state.pinnedRanks.values()) maxRank = Math.max(maxRank, rank);
+          for (int rank : state.pinnedRanks.values()) {
+            maxRank = Math.max(maxRank, rank);
+          }
           state.pinnedRanks.put(key, maxRank + 1);
         }
         TdApi.ForumTopic value = cachedTopic(key);
-        if (!sameInfo(previousInfo, value != null ? value.info : null)) invalidateSearch(key.chatId, state);
+        if (!sameInfo(previousInfo, value != null ? value.info : null)) {
+          invalidateSearch(key.chatId, state);
+        }
       }
     }
     Cursor next = new Cursor(result.nextOffsetDate, result.nextOffsetMessageId, result.nextOffsetForumTopicId);
@@ -586,7 +730,9 @@ public final class ForumTopicStore {
     state.previewFresh = true;
     state.previewStamp = request.stamp;
     backend.schedule(PREVIEW_CACHE_MS, () -> onOwner(() -> {
-      if (lists.get(state.key) == state && state.previewStamp == request.stamp) state.previewFresh = false;
+      if (lists.get(state.key) == state && state.previewStamp == request.stamp) {
+        state.previewFresh = false;
+      }
     }));
     state.endReached = result.topics.length == 0 && next.isEmpty();
     // TDLib may return an overlapping page (notably hidden General) before EOF.
@@ -597,29 +743,47 @@ public final class ForumTopicStore {
         state.overlapPages > MAX_OVERLAP_PAGES || result.topics.length == 0)) {
       state.error = new TdApi.Error(PAGINATION_ERROR, "Forum topic pagination made no progress; refresh to retry");
     }
-    if (!next.isEmpty()) state.cursor = next;
+    if (!next.isEmpty()) {
+      state.cursor = next;
+    }
     for (ListState other : chatLists(state.key.chatId)) {
       trimPreview(other);
       updateStaleness(other);
     }
     emitChat(state.key.chatId);
     trim();
-    if (needsReconciliation()) scheduleReconciliation();
+    if (needsReconciliation()) {
+      scheduleReconciliation();
+    }
   }
 
   private boolean needsReconciliation () {
-    if (!pendingTopics.isEmpty()) return true;
-    for (ListState state : lists.values()) if (state.dirty && !state.sessions.isEmpty()) return true;
+    if (!pendingTopics.isEmpty()) {
+      return true;
+    }
+    for (ListState state : lists.values()) {
+      if (state.dirty && !state.sessions.isEmpty()) {
+        return true;
+      }
+    }
     return false;
   }
 
   private boolean merge (Key key, TdApi.ForumTopic incoming, long stamp) {
     Record record = record(key);
-    if (record.removedStamp > stamp) return false;
-    if (record.fullStamp > stamp) return record.value != null;
+    if (record.removedStamp > stamp) {
+      return false;
+    }
+    if (record.fullStamp > stamp) {
+      return record.value != null;
+    }
     TdApi.ForumTopic value = copy(incoming, incoming.info);
-    if (record.infoStamp > stamp) value = copy(value, record.info);
-    if (record.updateStamp > stamp) value = applyUpdate(value, record.update);
+    if (record.infoStamp > stamp) {
+      value = copy(value, record.info);
+    }
+    if (record.updateStamp > stamp) {
+      value = applyUpdate(value, record.update);
+    }
     record.value = value;
     record.error = null;
     for (ListState state : chatLists(key.chatId)) {
@@ -638,7 +802,9 @@ public final class ForumTopicStore {
       pendingTopics.remove(key);
     }
     notifyTopic(key, record);
-    if ((record.mutationStamp != 0 || record.dirtyStamp > stamp) && interested(key)) queueTopic(key);
+    if ((record.mutationStamp != 0 || record.dirtyStamp > stamp) && interested(key)) {
+      queueTopic(key);
+    }
     return true;
   }
 
@@ -651,7 +817,9 @@ public final class ForumTopicStore {
         previous = records.get(key);
         previousInfo = previous != null ? previous.info : null;
       }
-      if (sameInfo(previousInfo, info)) return;
+      if (sameInfo(previousInfo, info)) {
+        return;
+      }
       invalidateSearch(info.chatId);
       if (!records.containsKey(key) && !interested(key)) {
         scheduleReconciliation();
@@ -660,7 +828,9 @@ public final class ForumTopicStore {
       Record record = record(key);
       record.infoStamp = ++sequence;
       record.info = info;
-      if (record.value != null) record.value = copy(record.value, info);
+      if (record.value != null) {
+        record.value = copy(record.value, info);
+      }
       record.dirtyStamp = sequence;
       notifyTopic(key, record);
       invalidate(key, false);
@@ -674,7 +844,9 @@ public final class ForumTopicStore {
       // A remote draft can arrive before either topic metadata or its list page. Keep only the
       // newest pending draft interested per visible preview, using the existing bounded hydrator.
       for (ListState state : lists.values()) {
-        if (state.key.chatId != key.chatId || !state.key.query.isEmpty()) continue;
+        if (state.key.chatId != key.chatId || !state.key.query.isEmpty()) {
+          continue;
+        }
         // Clear even offscreen; resolved or cleared drafts must not leave a date threshold behind.
         if (key.equals(state.previewDraftKey) && (!ForumChatPreview.hasTextDraft(draft) || cachedTopic(key) != null)) {
           setPreviewDraftInterest(state, null);
@@ -684,17 +856,25 @@ public final class ForumTopicStore {
           setPreviewDraftInterest(state, key, draft.date);
         }
       }
-      if (!records.containsKey(key) && !interested(key)) return;
-      if (sameUpdate(cachedTopic(key), update)) return;
+      if (!records.containsKey(key) && !interested(key)) {
+        return;
+      }
+      if (sameUpdate(cachedTopic(key), update)) {
+        return;
+      }
       Record record = record(key);
       boolean pinChanged = record.value != null && record.value.isPinned != update.isPinned;
       record.updateStamp = ++sequence;
       record.update = update;
-      if (record.value != null) record.value = applyUpdate(record.value, update);
+      if (record.value != null) {
+        record.value = applyUpdate(record.value, update);
+      }
       if (ForumChatPreview.hasTextDraft(update.draftMessage) && record.value != null) {
         List<ListState> previews = new ArrayList<>();
         for (ListState state : lists.values()) {
-          if (state.key.chatId == key.chatId && state.key.query.isEmpty() && hasLivePreview(state)) previews.add(state);
+          if (state.key.chatId == key.chatId && state.key.query.isEmpty() && hasLivePreview(state)) {
+            previews.add(state);
+          }
         }
         for (ListState state : previews) {
           state.ids.add(key);
@@ -705,7 +885,9 @@ public final class ForumTopicStore {
       notifyTopic(key, record);
       invalidate(key, false);
       // A pin event has no position. Reconcile the list, including changes from another client.
-      if (pinChanged) invalidateChatImpl(key.chatId);
+      if (pinChanged) {
+        invalidateChatImpl(key.chatId);
+      }
       trim();
     });
   }
@@ -715,8 +897,12 @@ public final class ForumTopicStore {
       if (message.topicId instanceof TdApi.MessageTopicForum && message.schedulingState == null) {
         Key key = new Key(message.chatId, ((TdApi.MessageTopicForum) message.topicId).forumTopicId);
         boolean known = records.containsKey(key) || topicObservers.containsKey(key);
-        if (known) invalidate(key);
-        if (!known || !interested(key)) invalidateChatImpl(message.chatId); // Discover a burst of unseen topics with one list refresh.
+        if (known) {
+          invalidate(key);
+        }
+        if (!known || !interested(key)) {
+          invalidateChatImpl(message.chatId); // Discover a burst of unseen topics with one list refresh.
+        }
       }
     });
   }
@@ -724,14 +910,22 @@ public final class ForumTopicStore {
   public void onMessageChanged (long chatId, long[] messageIds) {
     onOwner(() -> {
       Set<Long> ids = new HashSet<>();
-      for (long id : messageIds) ids.add(id);
+      for (long id : messageIds) {
+        ids.add(id);
+      }
       List<Key> keys = new ArrayList<>();
       for (Map.Entry<Key, Record> entry : records.entrySet()) {
         TdApi.ForumTopic topic = entry.getValue().value;
-        if (entry.getKey().chatId == chatId && topic != null && topic.lastMessage != null && ids.contains(topic.lastMessage.id)) keys.add(entry.getKey());
+        if (entry.getKey().chatId == chatId && topic != null && topic.lastMessage != null && ids.contains(topic.lastMessage.id)) {
+          keys.add(entry.getKey());
+        }
       }
-      for (Key key : keys) invalidate(key);
-      if (keys.size() < ids.size()) invalidateChatImpl(chatId);
+      for (Key key : keys) {
+        invalidate(key);
+      }
+      if (keys.size() < ids.size()) {
+        invalidateChatImpl(chatId);
+      }
     });
   }
 
@@ -743,20 +937,32 @@ public final class ForumTopicStore {
     onOwner(() -> {
       List<ListState> stale = new ArrayList<>();
       for (ListState state : new ArrayList<>(lists.values())) {
-        if (state.stale && state.request == null && hasLiveSession(state)) stale.add(state);
+        if (state.stale && state.request == null && hasLiveSession(state)) {
+          stale.add(state);
+        }
       }
-      for (ListState state : stale) refresh(state);
+      for (ListState state : stale) {
+        refresh(state);
+      }
       List<Key> drafts = new ArrayList<>();
       for (ListState state : lists.values()) {
-        if (hasLivePreview(state) && state.previewDraftKey != null) drafts.add(state.previewDraftKey);
+        if (hasLivePreview(state) && state.previewDraftKey != null) {
+          drafts.add(state.previewDraftKey);
+        }
       }
-      for (Key key : drafts) queueTopic(key);
+      for (Key key : drafts) {
+        queueTopic(key);
+      }
       List<Key> staleTopics = new ArrayList<>();
       for (Key key : topicObservers.keySet()) {
         Record record = records.get(key);
-        if (record == null || record.error != null || record.mutationStamp != 0 || record.dirtyStamp > record.fullStamp) staleTopics.add(key);
+        if (record == null || record.error != null || record.mutationStamp != 0 || record.dirtyStamp > record.fullStamp) {
+          staleTopics.add(key);
+        }
       }
-      for (Key key : staleTopics) queueTopic(key);
+      for (Key key : staleTopics) {
+        queueTopic(key);
+      }
     });
   }
 
@@ -766,7 +972,9 @@ public final class ForumTopicStore {
         boolean notify = !state.stale;
         state.stale = true;
         state.dirty = true;
-        if (notify) emit(state);
+        if (notify) {
+          emit(state);
+        }
       }
     }
     scheduleReconciliation();
@@ -790,31 +998,45 @@ public final class ForumTopicStore {
   }
 
   private void invalidate (Key key, boolean externalEvent) {
-    if (!records.containsKey(key) && !interested(key)) return;
+    if (!records.containsKey(key) && !interested(key)) {
+      return;
+    }
     Record record = record(key);
     record.dirtyStamp = ++sequence;
-    if (externalEvent) record.eventStamp = sequence;
+    if (externalEvent) {
+      record.eventStamp = sequence;
+    }
     for (ListState state : lists.values()) {
       if (state.key.chatId == key.chatId) {
         // Repeated message invalidations do not change rows. Publish the stale transition once;
         // metadata/counter updates must still publish their new immutable row while already stale.
         boolean notify = !state.stale || !externalEvent;
         state.stale = true;
-        if (notify) emit(state);
+        if (notify) {
+          emit(state);
+        }
       }
     }
-    if (interested(key)) queueTopic(key);
+    if (interested(key)) {
+      queueTopic(key);
+    }
   }
 
   private boolean interested (Key key) {
     Set<TopicSubscription> observers = topicObservers.get(key);
     if (observers != null) {
-      for (TopicSubscription subscription : observers) if (!subscription.closed) return true;
+      for (TopicSubscription subscription : observers) {
+        if (!subscription.closed) {
+          return true;
+        }
+      }
     }
     for (ListState state : lists.values()) {
       if (state.key.chatId == key.chatId && (state.key.query.isEmpty() || state.ids.contains(key))) {
         for (ListSession session : state.sessions) {
-          if (session.live() && (!session.previewOnly || state.ids.contains(key) || key.equals(state.previewDraftKey))) return true;
+          if (session.live() && (!session.previewOnly || state.ids.contains(key) || key.equals(state.previewDraftKey))) {
+            return true;
+          }
         }
       }
     }
@@ -830,7 +1052,9 @@ public final class ForumTopicStore {
     state.previewDraftKey = key;
     state.previewDraftDate = key != null ? date : 0;
     // Do not cancel work still needed by a full list or an explicit topic observer.
-    if (previous != null && !previous.equals(key) && !interested(previous)) pendingTopics.remove(previous);
+    if (previous != null && !previous.equals(key) && !interested(previous)) {
+      pendingTopics.remove(previous);
+    }
   }
 
   private void queueTopic (Key key) {
@@ -839,14 +1063,20 @@ public final class ForumTopicStore {
   }
 
   private void scheduleReconciliation () {
-    if (reconciliationScheduled) return;
+    if (reconciliationScheduled) {
+      return;
+    }
     reconciliationScheduled = true;
     long context = epoch;
     backend.schedule(RECONCILE_DELAY_MS, () -> onOwner(() -> {
-      if (context != epoch) return;
+      if (context != epoch) {
+        return;
+      }
       reconciliationScheduled = false;
       for (ListState state : new ArrayList<>(lists.values())) {
-        if (state.dirty && state.request == null && hasLiveSession(state)) refresh(state);
+        if (state.dirty && state.request == null && hasLiveSession(state)) {
+          refresh(state);
+        }
       }
       drainTopics();
     }));
@@ -861,7 +1091,9 @@ public final class ForumTopicStore {
         iterator.remove();
         continue;
       }
-      if (topicRequests.containsKey(key)) continue;
+      if (topicRequests.containsKey(key)) {
+        continue;
+      }
       Record record = records.get(key);
       if (record != null && record.value != null && record.error == null && record.mutationStamp == 0 && record.dirtyStamp <= record.fullStamp) {
         iterator.remove();
@@ -875,7 +1107,9 @@ public final class ForumTopicStore {
             break;
           }
         }
-        if (pendingList) continue;
+        if (pendingList) {
+          continue;
+        }
       }
       iterator.remove();
       TopicRequest request = new TopicRequest(++sequence, epoch);
@@ -891,7 +1125,9 @@ public final class ForumTopicStore {
   }
 
   private void finishTopic (Key key, TopicRequest request, TdApi.Object result) {
-    if (request.epoch != epoch || topicRequests.get(key) != request) return;
+    if (request.epoch != epoch || topicRequests.get(key) != request) {
+      return;
+    }
     topicRequests.remove(key);
     Record record = record(key);
     boolean afterMutation = record.mutationStamp != 0 && request.stamp > record.mutationStamp;
@@ -906,20 +1142,30 @@ public final class ForumTopicStore {
       if (afterMutation && request.stamp >= Math.max(record.fullStamp, record.removedStamp) &&
           record.eventStamp <= request.stamp &&
           (record.infoStamp <= request.stamp || sameInfo(topic.info, record.info)) &&
-          (record.updateStamp <= request.stamp || sameUpdate(topic, record.update))) record.mutationStamp = 0;
+          (record.updateStamp <= request.stamp || sameUpdate(topic, record.update))) {
+        record.mutationStamp = 0;
+      }
       if (merge(key, topic, request.stamp)) {
         for (ListState state : lists.values()) {
-          if (state.key.chatId == key.chatId && state.key.query.isEmpty() && hasLiveSession(state)) state.ids.add(key);
+          if (state.key.chatId == key.chatId && state.key.query.isEmpty() && hasLiveSession(state)) {
+            state.ids.add(key);
+          }
         }
         invalidateSearch(key.chatId);
       }
-      if (record.mutationStamp == 0 && record.dirtyStamp <= request.stamp) pendingTopics.remove(key);
-      if (record.mutationStamp != 0 && interested(key)) queueTopic(key);
+      if (record.mutationStamp == 0 && record.dirtyStamp <= request.stamp) {
+        pendingTopics.remove(key);
+      }
+      if (record.mutationStamp != 0 && interested(key)) {
+        queueTopic(key);
+      }
     } else {
       TdApi.Error error = result instanceof TdApi.Error ? (TdApi.Error) result : new TdApi.Error(502, "Invalid forum topic response");
       // One failed/timed-out attempt ends the forced read. Expose the error and leave
       // retries to a new event, reconnect or explicit retry, not an automatic loop.
-      if (afterMutation) record.mutationStamp = 0;
+      if (afterMutation) {
+        record.mutationStamp = 0;
+      }
       if (afterMutation || request.stamp >= record.fullStamp) {
         record.error = error;
         boolean removed = error.code == 404 && Math.max(Math.max(record.infoStamp, record.updateStamp), record.dirtyStamp) <= request.stamp;
@@ -930,30 +1176,46 @@ public final class ForumTopicStore {
           for (ListState state : lists.values()) {
             state.ids.remove(key);
             state.pinnedRanks.remove(key);
-            if (key.equals(state.previewDraftKey)) setPreviewDraftInterest(state, null);
+            if (key.equals(state.previewDraftKey)) {
+              setPreviewDraftInterest(state, null);
+            }
           }
         }
         for (ListState state : chatLists(key.chatId)) {
-          if (removed) state.topicErrors.remove(key);
-          else if (state.key.query.isEmpty() || state.ids.contains(key)) state.topicErrors.put(key, error);
+          if (removed) {
+            state.topicErrors.remove(key);
+          } else if (state.key.query.isEmpty() || state.ids.contains(key)) {
+            state.topicErrors.put(key, error);
+          }
         }
         notifyTopic(key, record);
       }
       // A genuinely newer event still needs reconciliation; an ordinary error never retries itself.
-      if ((record.mutationStamp != 0 || record.dirtyStamp > Math.max(request.stamp, record.fullStamp)) && interested(key)) queueTopic(key);
-      else pendingTopics.remove(key);
+      if ((record.mutationStamp != 0 || record.dirtyStamp > Math.max(request.stamp, record.fullStamp)) && interested(key)) {
+        queueTopic(key);
+      } else {
+        pendingTopics.remove(key);
+      }
     }
-    for (ListState state : chatLists(key.chatId)) updateStaleness(state);
-    for (ListState state : chatLists(key.chatId)) trimPreview(state);
+    for (ListState state : chatLists(key.chatId)) {
+      updateStaleness(state);
+    }
+    for (ListState state : chatLists(key.chatId)) {
+      trimPreview(state);
+    }
     emitChat(key.chatId);
     trim();
-    if (needsReconciliation()) scheduleReconciliation();
+    if (needsReconciliation()) {
+      scheduleReconciliation();
+    }
   }
 
   private void notifyTopic (Key key, Record record) {
     Set<TopicSubscription> observers = topicObservers.get(key);
     if (observers != null) {
-      for (TopicSubscription subscription : new ArrayList<>(observers)) subscription.deliver(record.value, record.error);
+      for (TopicSubscription subscription : new ArrayList<>(observers)) {
+        subscription.deliver(record.value, record.error);
+      }
     }
   }
 
@@ -996,71 +1258,109 @@ public final class ForumTopicStore {
     // Resolve all raw members before filtering, preserving the access-ordered cache behavior.
     for (Key key : state.ids) {
       TdApi.ForumTopic value = cachedTopic(key);
-      if (value != null) topics.add(value);
+      if (value != null) {
+        topics.add(value);
+      }
     }
     // A server page can include pinned topics unrelated to the query. Filter display rows only:
     // raw membership and the server cursor must still advance through such pages.
     if (!state.key.query.isEmpty()) {
       Iterator<TdApi.ForumTopic> iterator = topics.iterator();
       while (iterator.hasNext()) {
-        if (!containsIgnoreCase(iterator.next().info.name, state.key.query)) iterator.remove();
+        if (!containsIgnoreCase(iterator.next().info.name, state.key.query)) {
+          iterator.remove();
+        }
       }
     }
     topics.sort((a, b) -> {
       int result = Boolean.compare(b.isPinned, a.isPinned);
-      if (result == 0) result = Integer.compare(pinRank(state, a), pinRank(state, b));
-      if (result == 0) result = Long.compare(b.order, a.order);
-      if (result == 0) result = Integer.compare(a.info.forumTopicId, b.info.forumTopicId);
+      if (result == 0) {
+        result = Integer.compare(pinRank(state, a), pinRank(state, b));
+      }
+      if (result == 0) {
+        result = Long.compare(b.order, a.order);
+      }
+      if (result == 0) {
+        result = Integer.compare(a.info.forumTopicId, b.info.forumTopicId);
+      }
       return result;
     });
     TdApi.Error error = state.error;
-    if (error == null && !state.topicErrors.isEmpty()) error = state.topicErrors.values().iterator().next();
+    if (error == null && !state.topicErrors.isEmpty()) {
+      error = state.topicErrors.values().iterator().next();
+    }
     return new Snapshot(state.key, Collections.unmodifiableList(topics), state.totalCount, state.initialized,
       state.request != null && state.request.kind == Load.INITIAL, state.request != null && state.request.kind == Load.MORE,
       state.request != null && state.request.kind == Load.REFRESH, state.endReached, state.stale, error, state.cursor);
   }
 
   private static int pinRank (ListState state, TdApi.ForumTopic topic) {
-    if (!topic.isPinned) return Integer.MAX_VALUE;
+    if (!topic.isPinned) {
+      return Integer.MAX_VALUE;
+    }
     Integer rank = state.pinnedRanks.get(new Key(topic.info.chatId, topic.info.forumTopicId));
     return rank != null ? rank : Integer.MAX_VALUE;
   }
 
   private static boolean containsIgnoreCase (String value, String query) {
     for (int i = 0; i <= value.length() - query.length(); i++) {
-      if (value.regionMatches(true, i, query, 0, query.length())) return true;
+      if (value.regionMatches(true, i, query, 0, query.length())) {
+        return true;
+      }
     }
     return false;
   }
 
   private void emit (ListState state) {
-    if (state.sessions.isEmpty()) return;
+    if (state.sessions.isEmpty()) {
+      return;
+    }
     Snapshot value = snapshot(state);
-    for (ListSession session : new ArrayList<>(state.sessions)) if (session.live()) session.deliver(value);
+    for (ListSession session : new ArrayList<>(state.sessions)) {
+      if (session.live()) {
+        session.deliver(value);
+      }
+    }
   }
 
   private void emitChat (long chatId) {
-    for (ListState state : chatLists(chatId)) emit(state);
+    for (ListState state : chatLists(chatId)) {
+      emit(state);
+    }
   }
 
   private boolean trimPreview (ListState state) {
-    if (state.sessions.isEmpty()) return false;
-    for (ListSession session : state.sessions) if (!session.previewOnly) return false;
+    if (state.sessions.isEmpty()) {
+      return false;
+    }
+    for (ListSession session : state.sessions) {
+      if (!session.previewOnly) {
+        return false;
+      }
+    }
     List<TdApi.ForumTopic> values = new ArrayList<>();
     for (Key key : state.ids) {
       TdApi.ForumTopic value = cachedTopic(key);
-      if (value != null) values.add(value);
+      if (value != null) {
+        values.add(value);
+      }
     }
     LinkedHashSet<Key> retained = new LinkedHashSet<>();
     // Draft priority is independent of last-message timestamps, including much newer messages.
     TdApi.ForumTopic draft = ForumChatPreview.latestDraft(state.key.chatId, values);
-    if (draft != null) retained.add(new Key(draft.info.chatId, draft.info.forumTopicId));
+    if (draft != null) {
+      retained.add(new Key(draft.info.chatId, draft.info.forumTopicId));
+    }
     values.sort(ForumChatPreview.CACHE_FIRST);
     for (TdApi.ForumTopic topic : values) {
-      if (retained.size() >= MAX_PREVIEW_TOPICS) break;
+      if (retained.size() >= MAX_PREVIEW_TOPICS) {
+        break;
+      }
       retained.add(new Key(topic.info.chatId, topic.info.forumTopicId));
     }
-    if (retained.size() < state.ids.size()) state.previewTruncated = true;
+    if (retained.size() < state.ids.size()) {
+      state.previewTruncated = true;
+    }
     boolean changed = state.ids.retainAll(retained);
     state.pinnedRanks.keySet().retainAll(retained);
     return changed;
@@ -1068,27 +1368,43 @@ public final class ForumTopicStore {
 
   private List<ListState> inactiveLists () {
     List<ListState> inactive = new ArrayList<>();
-    for (ListState state : lists.values()) if (state.sessions.isEmpty()) inactive.add(state);
+    for (ListState state : lists.values()) {
+      if (state.sessions.isEmpty()) {
+        inactive.add(state);
+      }
+    }
     return inactive;
   }
 
   private void trim () {
     List<ListState> inactive = inactiveLists();
     int removeCount = Math.max(0, inactive.size() - maxInactiveLists);
-    for (int i = 0; i < removeCount; i++) lists.remove(inactive.get(i).key);
-    if (records.size() <= maxCachedTopics) return;
+    for (int i = 0; i < removeCount; i++) {
+      lists.remove(inactive.get(i).key);
+    }
+    if (records.size() <= maxCachedTopics) {
+      return;
+    }
     for (ListState state : inactiveLists()) {
       lists.remove(state.key);
       evictUnused();
-      if (records.size() <= maxCachedTopics) return;
+      if (records.size() <= maxCachedTopics) {
+        return;
+      }
     }
     evictUnused();
   }
 
   private void evictUnused () {
     Set<Key> retained = new HashSet<>();
-    for (ListState state : lists.values()) retained.addAll(state.ids);
-    for (ListState state : lists.values()) if (state.previewDraftKey != null) retained.add(state.previewDraftKey);
+    for (ListState state : lists.values()) {
+      retained.addAll(state.ids);
+    }
+    for (ListState state : lists.values()) {
+      if (state.previewDraftKey != null) {
+        retained.add(state.previewDraftKey);
+      }
+    }
     Iterator<Map.Entry<Key, Record>> iterator = records.entrySet().iterator();
     while (records.size() > maxCachedTopics && iterator.hasNext()) {
       Map.Entry<Key, Record> entry = iterator.next();
@@ -1104,7 +1420,9 @@ public final class ForumTopicStore {
           }
         }
       }
-      if (!retained.contains(key) && !topicRequests.containsKey(key) && !topicObservers.containsKey(key) && !protectedRemoval) iterator.remove();
+      if (!retained.contains(key) && !topicRequests.containsKey(key) && !topicObservers.containsKey(key) && !protectedRemoval) {
+        iterator.remove();
+      }
     }
   }
 
@@ -1122,12 +1440,16 @@ public final class ForumTopicStore {
         boolean finished;
 
         void complete (TdApi.Object result) {
-          if (finished || context != epoch) return;
+          if (finished || context != epoch) {
+            return;
+          }
           finished = true;
           TdApi.Error error = result instanceof TdApi.Error ? (TdApi.Error) result :
             result.getConstructor() != expectedConstructor ? new TdApi.Error(502, "Unexpected forum operation response") : null;
           if (error == null && changesState) {
-            if (result instanceof TdApi.ForumTopicInfo) updateInfo((TdApi.ForumTopicInfo) result);
+            if (result instanceof TdApi.ForumTopicInfo) {
+              updateInfo((TdApi.ForumTopicInfo) result);
+            }
             if (key != null) {
               // Prevent an older full fetch from undoing an operation that just succeeded.
               if (records.containsKey(key) || interested(key)) {
@@ -1151,11 +1473,17 @@ public final class ForumTopicStore {
               if (merge(readKey, topic, readStamp)) {
                 List<ListState> active = new ArrayList<>();
                 for (ListState state : lists.values()) {
-                  if (state.key.chatId == readKey.chatId && state.key.query.isEmpty() && hasLiveSession(state)) active.add(state);
+                  if (state.key.chatId == readKey.chatId && state.key.query.isEmpty() && hasLiveSession(state)) {
+                    active.add(state);
+                  }
                 }
-                for (ListState state : active) state.ids.add(readKey);
+                for (ListState state : active) {
+                  state.ids.add(readKey);
+                }
                 TdApi.ForumTopic value = cachedTopic(readKey);
-                if (!sameInfo(previousInfo, value != null ? value.info : null)) invalidateSearch(readKey.chatId);
+                if (!sameInfo(previousInfo, value != null ? value.info : null)) {
+                  invalidateSearch(readKey.chatId);
+                }
               }
               for (ListState state : chatLists(readKey.chatId)) {
                 trimPreview(state);
@@ -1163,11 +1491,15 @@ public final class ForumTopicStore {
               }
               emitChat(readKey.chatId);
               trim();
-              if (needsReconciliation()) scheduleReconciliation();
+              if (needsReconciliation()) {
+                scheduleReconciliation();
+              }
             }
           }
           backend.publish(() -> {
-            if (context == epoch) callback.onResult(error == null ? result : null, error);
+            if (context == epoch) {
+              callback.onResult(error == null ? result : null, error);
+            }
           });
         }
       }
@@ -1190,8 +1522,12 @@ public final class ForumTopicStore {
     // Kotlin trim() includes Unicode space characters which String.trim() does not.
     int start = 0;
     int end = query.length();
-    while (start < end && isWhitespace(query.charAt(start))) start++;
-    while (end > start && isWhitespace(query.charAt(end - 1))) end--;
+    while (start < end && isWhitespace(query.charAt(start))) {
+      start++;
+    }
+    while (end > start && isWhitespace(query.charAt(end - 1))) {
+      end--;
+    }
     return query.substring(start, end);
   }
 

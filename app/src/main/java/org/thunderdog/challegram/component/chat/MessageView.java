@@ -455,7 +455,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public ComplexReceiver getForumTopicReceiver () { return forumTopicReceiver; }
+  public ComplexReceiver getForumTopicReceiver () {
+    return forumTopicReceiver;
+  }
 
   @Override public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
     super.onInitializeAccessibilityNodeInfo(info);
@@ -475,7 +477,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   @Override public boolean performAccessibilityAction (int action, Bundle arguments) {
     if (action == R.id.btn_openForumTopic && msg != null && msg.hasForumTopicButton() && !msg.messagesController().inSelectMode()) {
-      msg.openForumTopic(); return true;
+      msg.openForumTopic();
+      return true;
     }
     return super.performAccessibilityAction(action, arguments);
   }

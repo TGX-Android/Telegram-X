@@ -197,7 +197,9 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
         }
         // Push notifications have neither showPreview nor a topic identifier; their message is not in history yet.
         TdApi.Chat chat = tdlib.chat(getChatId());
-        if (chat == null) return false;
+        if (chat == null) {
+          return false;
+        }
         switch (chat.type.getConstructor()) {
           case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
             TdApi.Supergroup supergroup = tdlib.chatToSupergroup(chat.id);
@@ -219,7 +221,9 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
 
   public boolean needContentPreview () {
     // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
-    if (!allowContentPreview()) return false;
+    if (!allowContentPreview()) {
+      return false;
+    }
     // endregion
     switch (notification.type.getConstructor()) {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR: {
@@ -360,13 +364,17 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
 
   public CharSequence getTextRepresentation (Tdlib tdlib, boolean onlyPinned, boolean allowContent, List<TdlibNotification> mergedList, boolean isEdited, boolean isEditedVisible, @Nullable boolean[] hasCustomText) {
     // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
-    if (!allowContent) return Lang.plural(R.string.xNewMessages, mergedList.size());
+    if (!allowContent) {
+      return Lang.plural(R.string.xNewMessages, mergedList.size());
+    }
     // endregion
     List<TdApi.Message> messages = new ArrayList<>(mergedList.size());
     boolean isForward = false;
     for (TdlibNotification notification : mergedList) {
       // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
-      if (!notification.allowContentPreview()) return Lang.plural(R.string.xNewMessages, mergedList.size());
+      if (!notification.allowContentPreview()) {
+        return Lang.plural(R.string.xNewMessages, mergedList.size());
+      }
       // endregion
       TdApi.Message message = notification.findMessage();
       if (ChatId.isSecret(group.getChatId()) && message.selfDestructType != null) {
@@ -394,7 +402,9 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     switch (notification.type.getConstructor()) {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR: {
         // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
-        if (!allowContent || !allowContentPreview()) return Lang.getString(R.string.YouHaveNewMessage);
+        if (!allowContent || !allowContentPreview()) {
+          return Lang.getString(R.string.YouHaveNewMessage);
+        }
         // endregion
         TdApi.Message message = ((TdApi.NotificationTypeNewMessage) notification.type).message;
 
@@ -425,7 +435,9 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       }
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR: {
         // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
-        if (!allowContent || !allowContentPreview()) return Lang.getString(R.string.YouHaveNewMessage);
+        if (!allowContent || !allowContentPreview()) {
+          return Lang.getString(R.string.YouHaveNewMessage);
+        }
         // endregion
         TdApi.NotificationTypeNewPushMessage push = (TdApi.NotificationTypeNewPushMessage) notification.type;
         ContentPreview content = ContentPreview.getNotificationPreview(tdlib, getChatId(), push, allowContent);

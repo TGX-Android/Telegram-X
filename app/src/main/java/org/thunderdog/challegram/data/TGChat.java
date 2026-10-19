@@ -307,7 +307,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public boolean isForumRow () { return forum; }
+  public boolean isForumRow () {
+    return forum;
+  }
 
   private int resolveListMode () {
     int mode = Settings.instance().getChatListMode();
@@ -318,9 +320,13 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     return forum && !tdlib.hasPasscode(chat) && StringUtils.isEmpty(Lang.getRestrictionText(tdlib.chatRestriction(chat)));
   }
 
-  public @Nullable TdApi.Message getPreviewMessage () { return chat != null ? chat.lastMessage : null; }
+  public @Nullable TdApi.Message getPreviewMessage () {
+    return chat != null ? chat.lastMessage : null;
+  }
 
-  public int getPreviewCounterWidth () { return getCounterAddWidth(); }
+  public int getPreviewCounterWidth () {
+    return getCounterAddWidth();
+  }
 
   public void updateForumUnread () {
     if (forum) {
@@ -491,9 +497,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       TdApi.Message oldMessage = chat.lastMessage;
       chat.lastMessage = message;
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if ((oldMessage == null && message == null) || (!forum && oldMessage != null && message != null && oldMessage.id == message.id))
-      // endregion
+      if ((oldMessage == null && message == null) || (!forum && oldMessage != null && message != null && oldMessage.id == message.id)) {
+        // endregion
         return false;
+      }
       setCounter(true);
       setTime();
       setText();

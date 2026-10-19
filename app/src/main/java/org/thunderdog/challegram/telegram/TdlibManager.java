@@ -230,7 +230,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           TdApi.Supergroup supergroup = tdlib.chatToSupergroup(extras.chatId);
           if (topic == null && (supergroup == null || supergroup.isForum)) {
             UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
-            if (onDone != null) onDone.run();
+            if (onDone != null) {
+              onDone.run();
+            }
           } else {
             sendExternalReply(tdlib, text, extras, topic != null ? topic : extras.topicId, onDone);
       // endregion

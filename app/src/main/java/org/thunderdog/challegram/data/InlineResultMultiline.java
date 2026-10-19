@@ -68,7 +68,9 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       Lang.getString(poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen),
       Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount)));
     // endregion
-    for (TdApi.PollOption option : poll.options) summary.append('\n').append(option.text.text);
+    for (TdApi.PollOption option : poll.options) {
+      summary.append('\n').append(option.text.text);
+    }
     description = summary.toString();
     avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS,
       new AvatarPlaceholder.Metadata(tdlib.accentColorForString(title), TD.getLetters(title)), null);

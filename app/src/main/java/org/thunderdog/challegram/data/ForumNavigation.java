@@ -9,7 +9,8 @@ import java.util.concurrent.atomic.AtomicLong;
 /** Pure routing rules. A null topic denotes the whole chat, never General. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumNavigation {
-  private ForumNavigation () { }
+  private ForumNavigation () {
+  }
 
   // TDLib ForumTopicId::general(), an int32 forum identity, NOT a message/thread id.
   public static final int GENERAL_TOPIC_ID = 1;
@@ -28,8 +29,14 @@ public final class ForumNavigation {
   /** Latest user navigation wins; delayed metadata must not reopen an older target. */
   public static final class RequestGate {
     private final AtomicLong sequence = new AtomicLong();
-    public long begin () { return sequence.incrementAndGet(); }
-    public boolean isCurrent (long ticket) { return ticket != 0 && ticket == sequence.get(); }
+
+    public long begin () {
+      return sequence.incrementAndGet();
+    }
+
+    public boolean isCurrent (long ticket) {
+      return ticket != 0 && ticket == sequence.get();
+    }
   }
 
   public static boolean openTopicList (boolean isForum, boolean viewAsTopics, @Nullable TdApi.MessageTopic topic,

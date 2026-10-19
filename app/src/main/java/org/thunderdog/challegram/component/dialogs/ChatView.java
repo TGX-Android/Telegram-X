@@ -719,7 +719,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
       int textTop = getTextTop(chatListMode);
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (chat.isForumRow()) textTop += forumTopics.lineHeight();
+      if (chat.isForumRow()) {
+        textTop += forumTopics.lineHeight();
+      }
       // endregion
       Text prefix = chat.getPrefix();
       if (prefix != null) {
@@ -779,7 +781,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     }
 
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (forumTransitionAvatarHidden) return;
+    if (forumTransitionAvatarHidden) {
+      return;
+    }
     // endregion
     avatarReceiver.forceAllowOnline(!isSelected.getValue(), 1f - isSelected.getFloatValue());
     layoutReceiver();

@@ -17,8 +17,12 @@ import java.util.List;
 /** A one-transaction projection of already visible avatars. No animator, account or image cache. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumRailTransition {
-  public interface Drawing { void draw (Canvas canvas, float decorations); }
-  public interface Visibility { void setHidden (boolean hidden); }
+  public interface Drawing {
+    void draw (Canvas canvas, float decorations);
+  }
+  public interface Visibility {
+    void setHidden (boolean hidden);
+  }
 
   /** Keep captured holders bound to their IDs while adapter updates wait for the next layout. */
   public static Runnable holdSourceLayout (RecyclerView source) {
@@ -27,8 +31,11 @@ public final class ForumRailTransition {
     source.suppressLayout(true);
     return new Runnable() {
       private boolean released;
+
       @Override public void run () {
-        if (released) return;
+        if (released) {
+          return;
+        }
         released = true;
         source.suppressLayout(alreadySuppressed);
       }
@@ -63,11 +70,15 @@ public final class ForumRailTransition {
     }
 
     private void draw (Canvas canvas, float x, float y, float radius, float alpha, float decorations) {
-      if (alpha <= 0f || radius <= 0f) return;
+      if (alpha <= 0f || radius <= 0f) {
+        return;
+      }
       int save = canvas.save();
       canvas.translate(x, y);
       canvas.scale(radius, radius);
-      if (alpha < 1f) Views.saveLayerAlpha(canvas, -2f, -2f, 2f, 2f, Math.round(255f * alpha), Canvas.ALL_SAVE_FLAG);
+      if (alpha < 1f) {
+        Views.saveLayerAlpha(canvas, -2f, -2f, 2f, 2f, Math.round(255f * alpha), Canvas.ALL_SAVE_FLAG);
+      }
       drawing.draw(canvas, decorations);
       canvas.restoreToCount(save);
     }
@@ -86,7 +97,9 @@ public final class ForumRailTransition {
       Pair pair = new Pair();
       pair.from = avatar;
       byId.put(avatar.chatId, pair);
-      if (avatar.visibility != null) avatar.visibility.setHidden(true);
+      if (avatar.visibility != null) {
+        avatar.visibility.setHidden(true);
+      }
     }
     for (Avatar avatar : target) {
       Pair pair = byId.get(avatar.chatId);
@@ -100,17 +113,23 @@ public final class ForumRailTransition {
   }
 
   public void draw (Canvas canvas, float progress) {
-    if (closed) return;
+    if (closed) {
+      return;
+    }
     float p = ForumRailLayout.progress(progress);
     for (int i = 0; i < pairs.size(); i++) {
       Pair pair = pairs.get(i);
       Avatar from = pair.from, to = pair.to;
       if (p == 0f) {
-        if (from != null) from.draw(canvas, from.x, from.y, from.radius, 1f, 0f);
+        if (from != null) {
+          from.draw(canvas, from.x, from.y, from.radius, 1f, 0f);
+        }
         continue;
       }
       if (p == 1f) {
-        if (to != null) to.draw(canvas, to.x, to.y, to.radius, 1f, 1f);
+        if (to != null) {
+          to.draw(canvas, to.x, to.y, to.radius, 1f, 1f);
+        }
         continue;
       }
       if (from != null && to != null) {
@@ -119,7 +138,9 @@ public final class ForumRailTransition {
         float radius = ForumRailLayout.interpolate(from.radius, to.radius, p);
         // Keep the image opaque while blending receivers; badges appear with the rail.
         to.draw(canvas, x, y, radius, 1f, p);
-        if (p < 1f) from.draw(canvas, x, y, radius, 1f - p, 0f);
+        if (p < 1f) {
+          from.draw(canvas, x, y, radius, 1f - p, 0f);
+        }
       } else if (from != null) {
         from.draw(canvas, from.x, from.y, from.radius, 1f - p, 0f);
       } else if (to != null) {
@@ -129,10 +150,14 @@ public final class ForumRailTransition {
   }
 
   public void close () {
-    if (closed) return;
+    if (closed) {
+      return;
+    }
     closed = true;
     for (Pair pair : pairs) {
-      if (pair.from != null && pair.from.visibility != null) pair.from.visibility.setHidden(false);
+      if (pair.from != null && pair.from.visibility != null) {
+        pair.from.visibility.setHidden(false);
+      }
     }
     pairs.clear();
   }

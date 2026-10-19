@@ -159,6 +159,7 @@ public final class ForumTopicActions {
 
   public interface BatchCallback {
     void onProgress (int completed, int total);
+
     void onComplete (BatchResult result);
   }
 
@@ -166,7 +167,9 @@ public final class ForumTopicActions {
 
   /** One account-wide runner, at most 100 targets, one request in flight. Never auto-retries a write. */
   public @Nullable Batch startBatch (long chatId, long selfUserId, Action action, List<BatchTarget> targets, BatchCallback callback) {
-    if (activeBatch != null) return null;
+    if (activeBatch != null) {
+      return null;
+    }
     Batch batch = new Batch(chatId, selfUserId, action, new ArrayList<>(targets), callback);
     activeBatch = batch;
     batch.start();
@@ -199,7 +202,9 @@ public final class ForumTopicActions {
     /** Stops unsent operations. An already sent request cannot be recalled. */
     public void cancel () {
       cancelled = true;
-      if (activeBatch == this) activeBatch = null;
+      if (activeBatch == this) {
+        activeBatch = null;
+      }
     }
 
     private boolean live () {
@@ -211,7 +216,9 @@ public final class ForumTopicActions {
     }
 
     private void failAll (TdApi.Error error) {
-      if (!live()) return;
+      if (!live()) {
+        return;
+      }
       for (int i = outcomes.size(); i < targets.size(); i++) {
         outcomes.add(new BatchOutcome(targets.get(i), error));
       }
@@ -219,16 +226,24 @@ public final class ForumTopicActions {
     }
 
     private void finish () {
-      if (!live()) return;
+      if (!live()) {
+        return;
+      }
       finished = true;
-      if (activeBatch == this) activeBatch = null;
+      if (activeBatch == this) {
+        activeBatch = null;
+      }
       callback.onComplete(new BatchResult(action, outcomes));
     }
 
     private <T extends TdApi.Object> void read (TdApi.Function<T> request, int constructor, Callback<T> block) {
-      if (!live()) return;
+      if (!live()) {
+        return;
+      }
       send(request, chatId, null, constructor, (value, error) -> {
-        if (live()) block.onResult(value, error);
+        if (live()) {
+          block.onResult(value, error);
+        }
       }, false);
     }
 
@@ -270,7 +285,9 @@ public final class ForumTopicActions {
       Set<Integer> ids = new HashSet<>();
       boolean invalidTarget = false;
       for (BatchTarget target : targets) {
-        if (target.topicId <= 0) invalidTarget = true;
+        if (target.topicId <= 0) {
+          invalidTarget = true;
+        }
         ids.add(target.topicId);
       }
       if (chatId == 0 || selfUserId == 0 || targets.isEmpty() || targets.size() > ForumTopicSelection.MAX_SELECTED ||
@@ -280,22 +297,32 @@ public final class ForumTopicActions {
       }
       callback.onProgress(0, targets.size());
       rights(error -> {
-        if (error != null) failAll(error);
-        else muteDefault(failure -> {
-          if (failure != null) failAll(failure);
-          else preflight(0);
-        });
+        if (error != null) {
+          failAll(error);
+        } else {
+          muteDefault(failure -> {
+            if (failure != null) {
+              failAll(failure);
+            } else {
+              preflight(0);
+            }
+          });
+        }
       });
     }
 
     private List<Integer> remainingIds (int start) {
       List<Integer> ids = new ArrayList<>();
-      for (int i = start; i < targets.size(); i++) ids.add(targets.get(i).topicId);
+      for (int i = start; i < targets.size(); i++) {
+        ids.add(targets.get(i).topicId);
+      }
       return ids;
     }
 
     private void preflight (int index) {
-      if (!live()) return;
+      if (!live()) {
+        return;
+      }
       if (index == targets.size()) {
         if (!preflightErrors.isEmpty()) {
           for (BatchTarget target : targets) {
@@ -307,10 +334,15 @@ public final class ForumTopicActions {
         }
         if (action == Action.PIN || action == Action.UNPIN) {
           checkPins(remainingIds(0), error -> {
-            if (error != null) failAll(error);
-            else next();
+            if (error != null) {
+              failAll(error);
+            } else {
+              next();
+            }
           });
-        } else next();
+        } else {
+          next();
+        }
         return;
       }
       BatchTarget target = targets.get(index);
@@ -354,15 +386,24 @@ public final class ForumTopicActions {
                   done.onResult(unavailable());
                   return;
                 }
-                if (topic.isPinned && !reachedUnpinned) pinned.add(topic.info.forumTopicId);
-                else reachedUnpinned = true;
+                if (topic.isPinned && !reachedUnpinned) {
+                  pinned.add(topic.info.forumTopicId);
+                } else {
+                  reachedUnpinned = true;
+                }
               }
               ForumTopicStore.Cursor next = new ForumTopicStore.Cursor(result.nextOffsetDate, result.nextOffsetMessageId, result.nextOffsetForumTopicId);
               if (reachedUnpinned || next.isEmpty()) {
                 int needed = 0;
-                for (int id : remaining) if (!pinned.contains(id)) needed++;
+                for (int id : remaining) {
+                  if (!pinned.contains(id)) {
+                    needed++;
+                  }
+                }
                 done.onResult(action == Action.PIN && (long) pinned.size() + needed > pinLimit ? new TdApi.Error(BATCH_PIN_LIMIT, "Pinned topic limit exceeded") : null);
-              } else page(next, pages + 1);
+              } else {
+                page(next, pages + 1);
+              }
             });
           }
         }
@@ -371,7 +412,9 @@ public final class ForumTopicActions {
     }
 
     private void next () {
-      if (!live()) return;
+      if (!live()) {
+        return;
+      }
       if (outcomes.size() == targets.size()) {
         finish();
         return;
@@ -408,17 +451,24 @@ public final class ForumTopicActions {
             }
             if (action == Action.PIN || action == Action.UNPIN) {
               checkPins(remainingIds(outcomes.size()), pinError -> {
-                if (pinError != null) failAll(pinError);
-                else apply(target, topic);
+                if (pinError != null) {
+                  failAll(pinError);
+                } else {
+                  apply(target, topic);
+                }
               });
-            } else apply(target, topic);
+            } else {
+              apply(target, topic);
+            }
           });
         });
       });
     }
 
     private void apply (BatchTarget target, TdApi.ForumTopic topic) {
-      if (!live()) return;
+      if (!live()) {
+        return;
+      }
       Key key = new Key(chatId, target.topicId);
       Callback<TdApi.Ok> done = (value, error) -> record(target, error,
         action.isDestructive() && error != null && (error.code == 408 || error.code >= 500 || error.code == 0));
@@ -438,7 +488,9 @@ public final class ForumTopicActions {
     }
 
     private void record (BatchTarget target, @Nullable TdApi.Error error, boolean uncertain) {
-      if (!live()) return;
+      if (!live()) {
+        return;
+      }
       outcomes.add(new BatchOutcome(target, error, uncertain));
       callback.onProgress(outcomes.size(), targets.size());
       next();

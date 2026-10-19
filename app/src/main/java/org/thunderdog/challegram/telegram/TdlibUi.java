@@ -1753,8 +1753,12 @@ public class TdlibUi extends Handler {
   private final ForumNavigation.RequestGate chatOpenRequests = new ForumNavigation.RequestGate();
 
   private boolean acceptChatOpen (ChatOpenParameters params) {
-    if (params.requestTicket == 0) params.requestTicket = chatOpenRequests.begin();
-    if (chatOpenRequests.isCurrent(params.requestTicket)) return true;
+    if (params.requestTicket == 0) {
+      params.requestTicket = chatOpenRequests.begin();
+    }
+    if (chatOpenRequests.isCurrent(params.requestTicket)) {
+      return true;
+    }
     params.onDone();
     return false;
   }
@@ -1803,7 +1807,9 @@ public class TdlibUi extends Handler {
           (!ownerInStack || navigation.getStack().indexOf(owner) >= 0));
     }
 
-    boolean isCurrent () { return !abandoned && matches(); }
+    boolean isCurrent () {
+      return !abandoned && matches();
+    }
 
     @Override public void onStackChanged (NavigationStack stack) {
       if (!matches()) {
@@ -2016,7 +2022,9 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters highlightMessage (TdApi.Message message) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (ForumHistory.isForum(message.topicId)) messageTopic(message.topicId);
+      if (ForumHistory.isForum(message.topicId)) {
+        messageTopic(message.topicId);
+      }
       // endregion
       return highlightMessage(new MessageId(message.chatId, message.id));
     }
@@ -2118,9 +2126,17 @@ public class TdlibUi extends Handler {
 
   private void openChat (final TdlibDelegate context, final long chatId, final TdApi.Function<?> createRequest, final @Nullable ChatOpenParameters params) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (params == null) { openChat(context, chatId, createRequest, new ChatOpenParameters()); return; }
-    if (!UI.inUiThread()) { tdlib.ui().post(() -> openChat(context, chatId, createRequest, params)); return; }
-    if (!acceptChatOpen(params)) return;
+    if (params == null) {
+      openChat(context, chatId, createRequest, new ChatOpenParameters());
+      return;
+    }
+    if (!UI.inUiThread()) {
+      tdlib.ui().post(() -> openChat(context, chatId, createRequest, params));
+      return;
+    }
+    if (!acceptChatOpen(params)) {
+      return;
+    }
     // endregion
     if (chatId != 0) {
       final TdApi.Chat chat = tdlib.chat(chatId);
@@ -2149,11 +2165,21 @@ public class TdlibUi extends Handler {
 
   public void openChat (final TdlibDelegate context, final @NonNull TdApi.Chat chatFinal, final @Nullable ChatOpenParameters params) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (params == null) { openChat(context, chatFinal, new ChatOpenParameters()); return; }
-    if (!UI.inUiThread()) { tdlib.ui().post(() -> openChat(context, chatFinal, params)); return; }
-    if (!acceptChatOpen(params)) return;
+    if (params == null) {
+      openChat(context, chatFinal, new ChatOpenParameters());
+      return;
+    }
+    if (!UI.inUiThread()) {
+      tdlib.ui().post(() -> openChat(context, chatFinal, params));
+      return;
+    }
+    if (!acceptChatOpen(params)) {
+      return;
+    }
     if (chatFinal.type instanceof TdApi.ChatTypeSupergroup && tdlib.chatToSupergroup(chatFinal.id) == null) {
-      if (params.awaitingForumMetadata) return;
+      if (params.awaitingForumMetadata) {
+        return;
+      }
       final ForumMetadataOrigin origin = new ForumMetadataOrigin(context);
       if (!origin.isCurrent()) {
         origin.close();
@@ -2168,16 +2194,22 @@ public class TdlibUi extends Handler {
           params.onDone();
           return;
         }
-        if (group != null && tdlib.chatToSupergroup(chatFinal.id) != null) openChat(context, chatFinal, params);
-        else {
+        if (group != null && tdlib.chatToSupergroup(chatFinal.id) != null) {
+          openChat(context, chatFinal, params);
+        } else {
           params.onDone();
-          if (context instanceof ViewController) ((ViewController<?>) context).showAlert(new AlertDialog.Builder(context.context(), Theme.dialogTheme())
-            .setMessage(Lang.getString(R.string.ForumTopicLoadFailed))
-            .setPositiveButton(Lang.getString(R.string.ForumEditorRetry), (dialog, which) -> {
-              if (origin.isCurrent()) openChat(context, chatFinal, params);
-            })
-            .setNegativeButton(Lang.getString(R.string.Cancel), null));
-          else UI.showToast(R.string.ForumTopicLoadFailed, Toast.LENGTH_SHORT);
+          if (context instanceof ViewController) {
+            ((ViewController<?>) context).showAlert(new AlertDialog.Builder(context.context(), Theme.dialogTheme())
+              .setMessage(Lang.getString(R.string.ForumTopicLoadFailed))
+              .setPositiveButton(Lang.getString(R.string.ForumEditorRetry), (dialog, which) -> {
+                if (origin.isCurrent()) {
+                  openChat(context, chatFinal, params);
+                }
+              })
+              .setNegativeButton(Lang.getString(R.string.Cancel), null));
+          } else {
+            UI.showToast(R.string.ForumTopicLoadFailed, Toast.LENGTH_SHORT);
+          }
         }
       }));
       return;
@@ -2200,7 +2232,9 @@ public class TdlibUi extends Handler {
         params.messageTopicId == null && (params.options & (CHAT_OPTION_TOPIC_RESOLVED | CHAT_OPTION_SCHEDULED_MESSAGES)) == 0 && tdlib.isForum(chatFinal.id)) {
       params.options |= CHAT_OPTION_TOPIC_RESOLVED;
       tdlib.send(new TdApi.GetMessage(chatFinal.id, params.highlightMessageId.getMessageId()), (message, error) -> tdlib.ui().post(() -> {
-        if (!acceptChatOpen(params)) return;
+        if (!acceptChatOpen(params)) {
+          return;
+        }
         params.messageTopicId = ForumNavigation.forumTopic(chatFinal.id, message);
         if (error != null) {
           params.highlightSet = false;
@@ -2223,7 +2257,9 @@ public class TdlibUi extends Handler {
       }
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       tdlib.client().send(function, object -> tdlib.ui().post(() -> {
-        if (!acceptChatOpen(params)) return;
+        if (!acceptChatOpen(params)) {
+          return;
+        }
       // endregion
         boolean error = true;
         switch (object.getConstructor()) {
@@ -2282,7 +2318,9 @@ public class TdlibUi extends Handler {
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
     if (context.context().isNavigationBusy() || context instanceof ViewController && ((ViewController<?>) context).isDestroyed()) {
-      if (params != null) params.onDone();
+      if (params != null) {
+        params.onDone();
+      }
       return;
     }
 // endregion
@@ -2398,7 +2436,9 @@ public class TdlibUi extends Handler {
         !((MessagesController) context).compareChat(chat.id, messageThread, messageTopicId, onlyScheduled)) {
       int topicId = messageTopicId instanceof TdApi.MessageTopicForum ? ((TdApi.MessageTopicForum) messageTopicId).forumTopicId : 0;
       boolean changed = ((MessagesController) context).openForumTab(topicId, params.highlightSet ? highlightMessageId : null, highlightMode);
-      if (changed && after != null) after.runWithLong(chat.id);
+      if (changed && after != null) {
+        after.runWithLong(chat.id);
+      }
       params.onDone();
       return;
     }
@@ -2538,7 +2578,9 @@ public class TdlibUi extends Handler {
     View view = controller.getValue();
     if (controller.context().isNavigationBusy()) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (forumTabs) controller.destroy();
+      if (forumTabs) {
+        controller.destroy();
+      }
       // endregion
       if (params != null) {
         params.onDone();
@@ -2579,7 +2621,9 @@ public class TdlibUi extends Handler {
         controller.addOneShotFocusListener(() -> {
           NavigationStack stack = navigation.getStack();
           int index = stack.indexOf(controller)-1;
-          if (stack.get(index) instanceof PasscodeController && stack.get(index).getChatId() == chat.id) stack.destroy(index);
+          if (stack.get(index) instanceof PasscodeController && stack.get(index).getChatId() == chat.id) {
+            stack.destroy(index);
+          }
         });
       }
       controller.getValue();
@@ -2595,7 +2639,9 @@ public class TdlibUi extends Handler {
       }
     }
     if (params != null) {
-      if (params.after != null) params.after.runWithLong(chat.id);
+      if (params.after != null) {
+        params.after.runWithLong(chat.id);
+      }
       params.onDone();
     }
   }
@@ -2604,7 +2650,9 @@ public class TdlibUi extends Handler {
   private void ensureForumParent (MessagesController controller, TdApi.Chat chat, TdApi.ChatList chatList) {
     NavigationStack stack = controller.context().navigation().getStack();
     int index = stack.indexOf(controller);
-    if (index < 0 || controller.isDestroyed()) return;
+    if (index < 0 || controller.isDestroyed()) {
+      return;
+    }
     ViewController<?> previous = stack.get(index-1);
     if (previous instanceof PasscodeController && previous.tdlib() == tdlib && previous.getChatId() == chat.id) {
       stack.destroy(index-1);
@@ -2627,7 +2675,9 @@ public class TdlibUi extends Handler {
     }
     if (candidate != null && !candidate.isDestroyed() && candidate.tdlib() == tdlib && candidate.getChatId() == chat.id &&
         (candidate instanceof ForumTopicsController || candidate instanceof MessagesController &&
-          (((MessagesController) candidate).isForumTabsHost() || ((MessagesController) candidate).compareChat(chat.id, null, null, false)))) return;
+          (((MessagesController) candidate).isForumTabsHost() || ((MessagesController) candidate).compareChat(chat.id, null, null, false)))) {
+      return;
+    }
     // endregion
     ViewController<?> parent;
     if (chat.viewAsTopics) {

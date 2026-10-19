@@ -2161,7 +2161,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     // Forum history has no local-only request. Preserve the caller's two-pass
     // contract instead of querying the unscoped local chat history.
     if (onlyLocal && ForumHistory.isForum(newestMessage.topicId)) {
-      if (callback != null) callback.runWithData(new Album(album, true, true));
+      if (callback != null) {
+        callback.runWithData(new Album(album, true, true));
+      }
       return;
     }
 

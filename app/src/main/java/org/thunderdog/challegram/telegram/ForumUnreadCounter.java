@@ -40,7 +40,9 @@ public final class ForumUnreadCounter {
 
     void deliver (int count) {
       backend.publish(() -> {
-        if (live()) observer.onUnreadChanged(count);
+        if (live()) {
+          observer.onUnreadChanged(count);
+        }
       });
     }
 
@@ -108,7 +110,9 @@ public final class ForumUnreadCounter {
 
     boolean visible () {
       for (Subscription subscription : observers) {
-        if (subscription.live()) return true;
+        if (subscription.live()) {
+          return true;
+        }
       }
       return false;
     }
@@ -135,7 +139,9 @@ public final class ForumUnreadCounter {
     long context = epoch;
     backend.execute(() -> {
       synchronized (this) {
-        if (context == epoch) action.run();
+        if (context == epoch) {
+          action.run();
+        }
       }
     });
   }
@@ -146,7 +152,9 @@ public final class ForumUnreadCounter {
   }
 
   public Subscription observe (long chatId, Observer observer) {
-    if (chatId == 0) throw new IllegalArgumentException();
+    if (chatId == 0) {
+      throw new IllegalArgumentException();
+    }
     Subscription subscription = new Subscription(chatId, observer);
     backend.schedule(ATTACH_DELAY_MS, () -> owner(() -> {
       if (subscription.live()) {
@@ -157,7 +165,9 @@ public final class ForumUnreadCounter {
         }
         state.observers.add(subscription);
         subscription.deliver(state.count);
-        if (!state.fresh) enqueue(state);
+        if (!state.fresh) {
+          enqueue(state);
+        }
         trim();
       }
     }));
@@ -178,19 +188,29 @@ public final class ForumUnreadCounter {
 
   public void onTopicRead (long chatId, int topicId, long inbox) {
     owner(() -> {
-      if (inbox <= 0) return;
+      if (inbox <= 0) {
+        return;
+      }
       State state = states.get(chatId);
-      if (state == null) return;
+      if (state == null) {
+        return;
+      }
       Long previous = state.reads.get(topicId);
       if (previous == null && state.topics != null) {
         ReadState value = state.topics.get(topicId);
-        if (value != null) previous = value.inbox;
+        if (value != null) {
+          previous = value.inbox;
+        }
       }
       if (previous == null && state.scan != null) {
         ReadState value = state.scan.topics.get(topicId);
-        if (value != null) previous = value.inbox;
+        if (value != null) {
+          previous = value.inbox;
+        }
       }
-      if (previous != null && inbox <= previous) return;
+      if (previous != null && inbox <= previous) {
+        return;
+      }
       state.reads.put(topicId, inbox);
       ReadState value = state.topics != null ? state.topics.get(topicId) : null;
       if (value != null && state.fresh) {
@@ -230,7 +250,9 @@ public final class ForumUnreadCounter {
             state.fresh = false;
           }
         } else {
-          for (State state : new ArrayList<>(states.values())) enqueue(state);
+          for (State state : new ArrayList<>(states.values())) {
+            enqueue(state);
+          }
         }
       }
     });
@@ -245,34 +267,48 @@ public final class ForumUnreadCounter {
   }
 
   private void enqueue (State state) {
-    if (!enabled || !state.visible()) return;
+    if (!enabled || !state.visible()) {
+      return;
+    }
     queue.add(state);
     scheduleDrain(RECONCILE_DELAY_MS);
   }
 
   private void scheduleDrain (long delay) {
-    if (drainScheduled) return;
+    if (drainScheduled) {
+      return;
+    }
     drainScheduled = true;
     long context = epoch;
     backend.schedule(delay, () -> owner(() -> {
-      if (context != epoch) return;
+      if (context != epoch) {
+        return;
+      }
       drainScheduled = false;
       drain();
     }));
   }
 
   private void drain () {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
     // One page per chat, at most two requests per account, round-robin between visible chats.
     for (State state : new ArrayList<>(queue)) {
-      if (inFlight >= MAX_REQUESTS) break;
+      if (inFlight >= MAX_REQUESTS) {
+        break;
+      }
       if (!state.visible()) {
         queue.remove(state);
         continue;
       }
-      if (state.pending) continue;
+      if (state.pending) {
+        continue;
+      }
       queue.remove(state);
-      if (state.scan == null) state.scan = new Scan(state.revision);
+      if (state.scan == null) {
+        state.scan = new Scan(state.revision);
+      }
       Scan scan = state.scan;
       ForumTopicStore.Cursor cursor = scan.cursor;
       long context = epoch;
@@ -283,14 +319,18 @@ public final class ForumUnreadCounter {
 
         void complete (TdApi.Object result) {
           owner(() -> {
-            if (finished || context != epoch) return;
+            if (finished || context != epoch) {
+              return;
+            }
             finished = true;
             inFlight--;
             state.pending = false;
             if (states.get(state.chatId) == state && state.scan == scan && state.visible() && enabled) {
               finishPage(state, scan, cursor, result);
             }
-            if (!queue.isEmpty()) scheduleDrain(0);
+            if (!queue.isEmpty()) {
+              scheduleDrain(0);
+            }
           });
         }
       }
@@ -353,7 +393,9 @@ public final class ForumUnreadCounter {
     for (TdApi.ForumTopic topic : result.topics) {
       ReadState value = new ReadState(topic.lastMessage != null ? topic.lastMessage.id : 0, topic.lastReadInboxMessageId, topic.unreadCount > 0);
       Long read = state.reads.get(topic.info.forumTopicId);
-      if (read != null && read > value.inbox) value = value.readThrough(read);
+      if (read != null && read > value.inbox) {
+        value = value.readThrough(read);
+      }
       scan.topics.put(topic.info.forumTopicId, value);
     }
     // Hidden General and other overlaps can advance the cursor without adding a topic.
@@ -372,12 +414,18 @@ public final class ForumUnreadCounter {
     int count = UNKNOWN;
     if (state.topics != null) {
       count = 0;
-      for (ReadState value : state.topics.values()) if (value.unread) count++;
+      for (ReadState value : state.topics.values()) {
+        if (value.unread) {
+          count++;
+        }
+      }
     }
     if (state.count != count) {
       state.count = count;
       for (Subscription subscription : new ArrayList<>(state.observers)) {
-        if (subscription.live()) subscription.deliver(count);
+        if (subscription.live()) {
+          subscription.deliver(count);
+        }
       }
     }
   }
@@ -385,10 +433,14 @@ public final class ForumUnreadCounter {
   private void trim () {
     List<State> inactive = new ArrayList<>();
     for (State state : states.values()) {
-      if (!state.visible() && !state.pending) inactive.add(state);
+      if (!state.visible() && !state.pending) {
+        inactive.add(state);
+      }
     }
     int removeCount = Math.max(0, inactive.size() - MAX_INACTIVE_CHATS);
-    for (int i = 0; i < removeCount; i++) states.remove(inactive.get(i).chatId);
+    for (int i = 0; i < removeCount; i++) {
+      states.remove(inactive.get(i).chatId);
+    }
   }
 
   public static final int UNKNOWN = -1;
@@ -403,8 +455,12 @@ public final class ForumUnreadCounter {
 
   /** Unknown is an unread dot, not a made-up topic count or a prematurely cleared badge. */
   public static int badgeCount (int unreadTopics, int unreadMessages, boolean markedUnread) {
-    if (unreadTopics > 0) return unreadTopics;
-    if (markedUnread || unreadTopics == UNKNOWN && unreadMessages > 0) return Tdlib.CHAT_MARKED_AS_UNREAD;
+    if (unreadTopics > 0) {
+      return unreadTopics;
+    }
+    if (markedUnread || unreadTopics == UNKNOWN && unreadMessages > 0) {
+      return Tdlib.CHAT_MARKED_AS_UNREAD;
+    }
     return 0;
   }
 }

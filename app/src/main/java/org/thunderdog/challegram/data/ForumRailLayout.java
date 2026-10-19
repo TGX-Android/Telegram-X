@@ -3,9 +3,12 @@ package org.thunderdog.challegram.data;
 /** Geometry shared by measurement, hit testing and the navigation gesture boundary. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumRailLayout {
-  private ForumRailLayout () { }
+  private ForumRailLayout () {
+  }
 
-  public static float progress (float value) { return Math.max(0f, Math.min(1f, value)); }
+  public static float progress (float value) {
+    return Math.max(0f, Math.min(1f, value));
+  }
 
   public static float interpolate (float from, float to, float progress) {
     return from + (to - from) * progress(progress);
@@ -26,8 +29,12 @@ public final class ForumRailLayout {
 
   /** A short initial page must not make LinearLayoutManager fill its end gap above the anchor. */
   public static boolean canRestoreScroll (int count, int position, int offset, int rowHeight, int viewportHeight, boolean endReached) {
-    if (count <= 0 || position < 0 || rowHeight <= 0 || viewportHeight <= 0) return false;
-    if (endReached) return true; // Only the real list end may legitimately clamp the viewport.
+    if (count <= 0 || position < 0 || rowHeight <= 0 || viewportHeight <= 0) {
+      return false;
+    }
+    if (endReached) {
+      return true; // Only the real list end may legitimately clamp the viewport.
+    }
     return position < count && (long) (count - position) * rowHeight + offset >= viewportHeight;
   }
 

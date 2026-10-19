@@ -19,8 +19,13 @@ public final class ForumTopicListDiff extends DiffUtil.Callback {
     this.after = after;
   }
 
-  @Override public int getOldListSize () { return before.size() + 1; }
-  @Override public int getNewListSize () { return after.size() + 1; }
+  @Override public int getOldListSize () {
+    return before.size() + 1;
+  }
+
+  @Override public int getNewListSize () {
+    return after.size() + 1;
+  }
 
   @Override public boolean areItemsTheSame (int oldPosition, int newPosition) {
     if (oldPosition == before.size() || newPosition == after.size()) {

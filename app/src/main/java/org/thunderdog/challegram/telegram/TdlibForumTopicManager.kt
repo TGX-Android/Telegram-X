@@ -60,7 +60,13 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
   fun observeUnread(chatId: Long, observer: ForumUnreadCounter.Observer) = unread.observe(chatId, observer)
   fun unreadCount(chat: Chat): Int = if (tdlib.isForum(chat.id)) {
     ForumUnreadCounter.badgeCount(unread.cachedCount(chat.id), chat.unreadCount, chat.isMarkedAsUnread)
-  } else if (chat.unreadCount > 0) chat.unreadCount else if (chat.isMarkedAsUnread) Tdlib.CHAT_MARKED_AS_UNREAD else 0
+  } else if (chat.unreadCount > 0) {
+    chat.unreadCount
+  } else if (chat.isMarkedAsUnread) {
+    Tdlib.CHAT_MARKED_AS_UNREAD
+  } else {
+    0
+  }
   // endregion
 
   // Existing message consumers keep their weak subscriptions; list consumers own closeable sessions.
@@ -87,14 +93,22 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
       observers.add(key, observer)
       if (key !in subscriptions) {
         subscriptions[key] = store.observeTopic(key) { topic, _ ->
-          if (topic != null) observers.iterate(key) { it.onTopicFound(key, topic, false) }
-          synchronized(subscriptions) { pruneObservers() }
+          if (topic != null) {
+            observers.iterate(key) {
+              it.onTopicFound(key, topic, false)
+            }
+          }
+          synchronized(subscriptions) {
+            pruneObservers()
+          }
         }
     // endregion
       }
     }
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    return find(key)?.also { observer.onTopicFound(key, it.value!!, true) }
+    return find(key)?.also {
+      observer.onTopicFound(key, it.value!!, true)
+    }
   }
 
   fun stopObserving(key: Key, observer: Observer) {
@@ -132,7 +146,9 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
 
   private fun messageChanged(message: Message) {
     store.onMessage(message)
-    if (message.topicId is MessageTopicForum && message.schedulingState == null) unread.invalidate(message.chatId)
+    if (message.topicId is MessageTopicForum && message.schedulingState == null) {
+      unread.invalidate(message.chatId)
+    }
   }
   override fun onNewMessage(message: Message) = messageChanged(message)
   override fun onMessageSendSucceeded(message: Message, oldMessageId: Long) = messageChanged(message)

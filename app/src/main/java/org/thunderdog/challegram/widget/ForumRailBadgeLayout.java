@@ -11,14 +11,19 @@ import org.thunderdog.challegram.util.text.Counter;
 public final class ForumRailBadgeLayout {
   public static final float TEXT_SIZE_DP = 13f;
 
-  private ForumRailBadgeLayout () { }
+  private ForumRailBadgeLayout () {
+  }
 
   /** The counter must use TEXT_SIZE_DP and the default background/outline sizing. */
   public static void draw (Canvas canvas, Counter counter, int width, int height, float avatarRadius, boolean rtl, float alpha) {
-    if (alpha <= 0f || counter.getVisibility() <= 0f) return;
+    if (alpha <= 0f || counter.getVisibility() <= 0f) {
+      return;
+    }
     float inset = Screen.dp(3f);
     float availableWidth = width - inset * 2f, availableHeight = height - inset * 2f;
-    if (availableWidth <= 0f || availableHeight <= 0f) return;
+    if (availableWidth <= 0f || availableHeight <= 0f) {
+      return;
+    }
 
     // DrawAlgorithms adds a 1.5dp outline outside getWidth() and the (textSize - 2) radius.
     float outline = Screen.dp(1.5f);

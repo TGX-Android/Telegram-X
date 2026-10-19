@@ -7,7 +7,8 @@ import org.drinkless.tdlib.TdApi;
 /** Width policy shared by standalone forum topics and forum tabs; widths are local pixels. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumMessageLayout {
-  private ForumMessageLayout () { }
+  private ForumMessageLayout () {
+  }
 
   public static boolean useWideContent (boolean forumTabs, @Nullable TdApi.MessageTopic openTopic, boolean eventLog, boolean threadHeader) {
     // Use the open history's typed identity, not a message's topic or the group's type.
@@ -21,7 +22,9 @@ public final class ForumMessageLayout {
   }
 
   public static int captionMaxWidth (boolean forumContent, boolean bubbles, int contentWidth, int mediaWidth, int captionPadding) {
-    if (!bubbles) return contentWidth;
+    if (!bubbles) {
+      return contentWidth;
+    }
     return Math.max(1, (forumContent ? contentWidth : mediaWidth) - captionPadding);
   }
 

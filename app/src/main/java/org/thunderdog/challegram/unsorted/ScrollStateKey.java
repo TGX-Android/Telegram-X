@@ -15,7 +15,8 @@ final class ScrollStateKey {
   static final String PREFIX = "scroll_chat";
   private static final Pattern FIELD = Pattern.compile("^(_(?:message|chat|aliases|stack|offset|read|top))(?:_(?:thread|forum|direct|saved)-?\\d+)?$");
 
-  private ScrollStateKey () { }
+  private ScrollStateKey () {
+  }
 
   static String key (@Nullable String field, int accountId, long chatId, @Nullable TdApi.MessageTopic topicId) {
     return (accountId != 0 ? accountId + "_" : "") + PREFIX + chatId +

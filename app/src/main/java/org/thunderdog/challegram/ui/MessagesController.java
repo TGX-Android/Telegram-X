@@ -1835,7 +1835,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public final TdApi.MessageTopic getMessageTopicId (ReplyInfo replyInfo) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     TdApi.MessageTopic topic = ForumHistory.outgoingTopic(getMessageTopicId(), replyInfo != null ? replyInfo.inTopicId : null);
-    if (topic == null && replyForumContext != null) return new TdApi.MessageTopicForum(replyForumContext.topicId);
+    if (topic == null && replyForumContext != null) {
+      return new TdApi.MessageTopicForum(replyForumContext.topicId);
+    }
     return topic == null && isForumTabsAll() ? new TdApi.MessageTopicForum(ForumNavigation.GENERAL_TOPIC_ID) : topic;
     // endregion
   }
@@ -1864,8 +1866,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       org.thunderdog.challegram.telegram.TdlibSettingsManager.LocalForumDraft local = tdlib.settings().getLocalForumDraft(getChatId(), 0);
       return local != null ? local.draft : null;
     }
-    if (forumTopicContext != null) return forumTopicContext.draft();
-    if (replyForumContext != null) return replyForumContext.draft();
+    if (forumTopicContext != null) {
+      return forumTopicContext.draft();
+    }
+    if (replyForumContext != null) {
+      return replyForumContext.draft();
+    }
     // endregion
     return messageThread != null ? messageThread.getDraft() : chat != null ? chat.draftMessage : null;
   }
@@ -2269,8 +2275,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         executeSendMessageFunctions(functions, sentMessages, sendOptions != null && sendOptions.schedulingState != null, success -> UI.post(() -> {
           // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           if (!isTimeout[0] && getChatId() == chatId && draftEpoch == sendEpoch) {
-            if (inputEditRevision == sendRevision) clearInputAfterSend(success, true, replyTo, true, sentTopic, sendFromAll);
-            else { manager.setSentMessages(null); setIsSendingText(false); }
+            if (inputEditRevision == sendRevision) {
+              clearInputAfterSend(success, true, replyTo, true, sentTopic, sendFromAll);
+            } else {
+              manager.setSentMessages(null);
+              setIsSendingText(false);
+            }
           // endregion
           }
           UI.cancel(clearInputRunnable);
@@ -2287,8 +2297,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onMoreItemPressed (int id) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (id == R.id.menu_forumActions) {
-      if (forumTopicContext != null) forumTopicUi().showTopicMenu(forumTopicContext.topicId);
-      else forumTopicUi().setViewMode(true);
+      if (forumTopicContext != null) {
+        forumTopicUi().showTopicMenu(forumTopicContext.topicId);
+      } else {
+        forumTopicUi().setViewMode(true);
+      }
       return;
     }
     if (id == R.id.btn_cancelForumReply) {
@@ -2437,7 +2450,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       outState.putBoolean(keyPrefix + "forum_tabs", isForumTabsHost());
       outState.putBoolean(keyPrefix + "forum_tabs_suppressed", args.forumTabsSuppressed);
-      if (forumTabsView != null) outState.putBundle(keyPrefix + "forum_tabs_panel", forumTabsView.saveState());
+      if (forumTabsView != null) {
+        outState.putBundle(keyPrefix + "forum_tabs_panel", forumTabsView.saveState());
+      }
       saveDraft();
       outState.putInt(keyPrefix + "composer_forum_topic", replyForumContext != null ? replyForumContext.topicId : 0);
       // endregion
@@ -2514,9 +2529,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       // endregion
       setArguments(args);
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (forumTabsHost != null) forumTabsHost.panelState = in.getBundle(keyPrefix + "forum_tabs_panel");
+      if (forumTabsHost != null) {
+        forumTabsHost.panelState = in.getBundle(keyPrefix + "forum_tabs_panel");
+      }
       int composerTopic = in.getInt(keyPrefix + "composer_forum_topic", 0);
-      if (composerTopic > 0 && topicId == null && messageThread == null && tdlib.isForum(chatId)) observeReplyForum(composerTopic, true);
+      if (composerTopic > 0 && topicId == null && messageThread == null && tdlib.isForum(chatId)) {
+        observeReplyForum(composerTopic, true);
+      }
       // endregion
       return true;
     }
@@ -2689,7 +2708,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return this;
     }
 
-    public Arguments suppressForumTabs (boolean suppress) { this.forumTabsSuppressed = suppress; return this; }
+    public Arguments suppressForumTabs (boolean suppress) {
+      this.forumTabsSuppressed = suppress;
+      return this;
+    }
 
     public Arguments forumTabs (ForumTabsHost host) {
       this.forumTabs = true;
@@ -2776,14 +2798,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private volatile boolean forumRestartPending;
 
   @Nullable
-  public ForumTopicContext getForumTopicContext () { return forumTopicContext; }
+  public ForumTopicContext getForumTopicContext () {
+    return forumTopicContext;
+  }
 
-  public boolean hasAutomaticAnchor () { return getArgumentsStrict().constructor == 0; }
+  public boolean hasAutomaticAnchor () {
+    return getArgumentsStrict().constructor == 0;
+  }
 
   private void closeForumTopic () {
     cancelChatActions();
     closeReplyForum();
-    if (generalForumSubscription != null) generalForumSubscription.close();
+    if (generalForumSubscription != null) {
+      generalForumSubscription.close();
+    }
     generalForumSubscription = null;
     generalForumContext = null;
     if (forumTopicSubscription != null) {
@@ -2800,33 +2828,56 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void closeReplyForum () {
-    if (replyForumSubscription != null) replyForumSubscription.close();
+    if (replyForumSubscription != null) {
+      replyForumSubscription.close();
+    }
     replyForumSubscription = null;
     replyForumContext = null;
     restoreReplyForumDraft = false;
   }
 
-  private ForumTopicContext composerForumContext () { return forumTopicContext != null ? forumTopicContext : replyForumContext != null ? replyForumContext : generalForumContext; }
+  private ForumTopicContext composerForumContext () {
+    return forumTopicContext != null ? forumTopicContext : replyForumContext != null ? replyForumContext : generalForumContext;
+  }
 
-  private boolean isForumTabsAll () { return isForumTabsHost() && getMessageTopicId() == null; }
-  public boolean isForumTabsHost () { return forumTabsHost != null; }
+  private boolean isForumTabsAll () {
+    return isForumTabsHost() && getMessageTopicId() == null;
+  }
+
+  public boolean isForumTabsHost () {
+    return forumTabsHost != null;
+  }
   /** Called only once the same-slot navigation replacement has been accepted. */
   public void retireForumTabsController () {
-    if (!isForumTabsHost()) return;
+    if (!isForumTabsHost()) {
+      return;
+    }
     setDestroyInstance();
-    if (context() instanceof MainActivity) ((MainActivity) context()).forgetMessagesController(this);
+    if (context() instanceof MainActivity) {
+      ((MainActivity) context()).forgetMessagesController(this);
+    }
   }
-  public int getSelectedForumTabId () { return getMessageTopicId() instanceof TdApi.MessageTopicForum ? ((TdApi.MessageTopicForum) getMessageTopicId()).forumTopicId : 0; }
+
+  public int getSelectedForumTabId () {
+    return getMessageTopicId() instanceof TdApi.MessageTopicForum ? ((TdApi.MessageTopicForum) getMessageTopicId()).forumTopicId : 0;
+  }
 
   private void observeAllGeneral () {
-    if (!isForumTabsAll()) return;
+    if (!isForumTabsAll()) {
+      return;
+    }
     final ForumTopicContext general = new ForumTopicContext(getChatId(), ForumNavigation.GENERAL_TOPIC_ID);
     generalForumContext = general;
     generalForumSubscription = tdlib.topics().observeTopic(new TdlibForumTopicManager.Key(getChatId(), general.topicId), (value, error) -> {
-      if (isDestroyed() || generalForumContext != general) return;
+      if (isDestroyed() || generalForumContext != general) {
+        return;
+      }
       general.update(value, error);
       updateForumTabsView();
-      if (inputView != null) { updateBottomBar(true); updateInputHint(); }
+      if (inputView != null) {
+        updateBottomBar(true);
+        updateInputHint();
+      }
     });
   }
 
@@ -2835,12 +2886,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     pendingForumTab = null;
     pendingForumTabAttempts = 0;
     if (forumTabsView != null) {
-      if (forumTabsHost != null) forumTabsHost.panelState = forumTabsView.saveState();
+      if (forumTabsHost != null) {
+        forumTabsHost.panelState = forumTabsView.saveState();
+      }
       forumTabsView.destroy();
-      if (contentView != null) contentView.removeView(forumTabsView);
+      if (contentView != null) {
+        contentView.removeView(forumTabsView);
+      }
       forumTabsView = null;
     }
-    if (forumTabsHost != null) { forumTabsHost.detach(forumTabsObserver); forumTabsHost = null; }
+    if (forumTabsHost != null) {
+      forumTabsHost.detach(forumTabsObserver);
+      forumTabsHost = null;
+    }
     if (messagesView != null) {
       RelativeLayout.LayoutParams p = (RelativeLayout.LayoutParams) messagesView.getLayoutParams();
       p.leftMargin = p.rightMargin = p.topMargin = p.bottomMargin = 0;
@@ -2848,7 +2906,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       p.leftMargin = p.rightMargin = p.topMargin = 0;
       for (Map.Entry<View, int[]> entry : forumTabsBaseMargins.entrySet()) {
         p = (RelativeLayout.LayoutParams) entry.getKey().getLayoutParams();
-        p.leftMargin = entry.getValue()[0]; p.rightMargin = entry.getValue()[1];
+        p.leftMargin = entry.getValue()[0];
+        p.rightMargin = entry.getValue()[1];
       }
       contentView.requestLayout();
     }
@@ -2856,9 +2915,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void syncForumTabsPresentation () {
-    if (isDestroyed() || contentView == null || inPreviewMode || isInForceTouchMode() || areScheduled || messageThread != null || previewSearchFilter != null || getArgumentsStrict().forumTabsSuppressed) return;
+    if (isDestroyed() || contentView == null || inPreviewMode || isInForceTouchMode() || areScheduled || messageThread != null || previewSearchFilter != null || getArgumentsStrict().forumTabsSuppressed) {
+      return;
+    }
     boolean enabled = tdlib.hasForumTabs(getChatId()) && (getMessageTopicId() == null || ForumHistory.isForum(getMessageTopicId()));
-    if (enabled == isForumTabsHost()) { updateForumTabsView(); return; }
+    if (enabled == isForumTabsHost()) {
+      updateForumTabsView();
+      return;
+    }
     // Keep the current history, reply and input while a server-side presentation flag changes.
     // Only user tab selection replaces its controller and starts another history.
     saveDraft();
@@ -2870,7 +2934,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       createForumTabsView();
     } else {
       closeForumTabs();
-      if (generalForumSubscription != null) generalForumSubscription.close();
+      if (generalForumSubscription != null) {
+        generalForumSubscription.close();
+      }
       generalForumSubscription = null;
       generalForumContext = null;
     }
@@ -2883,18 +2949,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void createForumTabsView () {
-    if (forumTabsHost == null || contentView == null || forumTabsView != null) return;
+    if (forumTabsHost == null || contentView == null || forumTabsView != null) {
+      return;
+    }
     forumTabsView = new ForumTopicsTabsView(this, new ForumTopicsTabsView.Listener() {
-      @Override public void onSelectTopic (int topicId) { requestForumTab(topicId); }
-      @Override public void onNewTopic () { if (canSwitchForumTab(true)) forumTopicUi().openEditor(0); }
+      @Override public void onSelectTopic (int topicId) {
+        requestForumTab(topicId);
+      }
+
+      @Override public void onNewTopic () {
+        if (canSwitchForumTab(true)) {
+          forumTopicUi().openEditor(0);
+        }
+      }
+
       @Override public void onCyclePlacement () {
         forumTabsHost.remember(forumTabsHost.state.cyclePlacement());
         updateForumTabsView();
         contentView.requestLayout();
       }
-      @Override public void onLoadMore () { if (forumTabsHost != null) forumTabsHost.loadMore(); }
+
+      @Override public void onLoadMore () {
+        if (forumTabsHost != null) {
+          forumTabsHost.loadMore();
+        }
+      }
+
       @Override public void onRetry () {
-        if (forumTabsHost != null) forumTabsHost.retry();
+        if (forumTabsHost != null) {
+          forumTabsHost.retry();
+        }
         int id = getSelectedForumTabId();
         tdlib.topics().retryTopic(new TdlibForumTopicManager.Key(getChatId(), id != 0 ? id : ForumNavigation.GENERAL_TOPIC_ID));
       }
@@ -2903,11 +2987,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     forumTabsView.setId(R.id.forum_tabs_panel);
     contentView.addView(forumTabsView);
     updateForumTabsView();
-    if (forumTabsHost.panelState != null) forumTabsView.restoreState(forumTabsHost.panelState);
+    if (forumTabsHost.panelState != null) {
+      forumTabsView.restoreState(forumTabsHost.panelState);
+    }
   }
 
   private void updateForumTabsView () {
-    if (isDestroyed() || forumTabsHost == null || forumTabsView == null) return;
+    if (isDestroyed() || forumTabsHost == null || forumTabsView == null) {
+      return;
+    }
     ForumTopicStore.Snapshot snapshot = forumTabsHost.snapshot();
     forumTabsView.setPlacement(forumTabsHost.state.placement, forumTabsHost.state.nextHorizontal);
     forumTabsView.setTopics(snapshot.topics, forumTopicContext != null ? forumTopicContext.topic() : null,
@@ -2920,7 +3008,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     boolean safe = !isEditingMessage() && !hasAttachedFiles() && !isSendingText &&
       !context().getRecordAudioVideoController().isOpen() && !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_RECORDING) &&
       (forumUi == null || !forumUi.isBusy());
-    if (!safe && explain) UI.showToast(R.string.ForumTabsFinishAction, Toast.LENGTH_SHORT);
+    if (!safe && explain) {
+      UI.showToast(R.string.ForumTabsFinishAction, Toast.LENGTH_SHORT);
+    }
     return safe;
   }
 
@@ -2931,12 +3021,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean requestForumTab (int topicId) {
-    if (!isForumTabsHost() || isDestroyed() || topicId < 0) return false;
+    if (!isForumTabsHost() || isDestroyed() || topicId < 0) {
+      return false;
+    }
     if (!isFocused() || context().isNavigationBusy()) {
       pendingForumTab = topicId;
       pendingForumTabAttempts = 0;
       UI.cancel(pendingForumTabRetry);
-      if (isFocused()) UI.post(pendingForumTabRetry, 100);
+      if (isFocused()) {
+        UI.post(pendingForumTabRetry, 100);
+      }
       return true;
     }
     UI.cancel(pendingForumTabRetry);
@@ -2945,11 +3039,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void drainPendingForumTab () {
-    if (pendingForumTab == null || !isForumTabsHost() || isDestroyed() || !isFocused()) return;
+    if (pendingForumTab == null || !isForumTabsHost() || isDestroyed() || !isFocused()) {
+      return;
+    }
     if (context().isNavigationBusy()) {
       // Header animations do not dispatch another onFocus. Retry only within this
       // focused host, with a finite window; a later onFocus also resumes the request.
-      if (++pendingForumTabAttempts < 50) UI.post(pendingForumTabRetry, 100);
+      if (++pendingForumTabAttempts < 50) {
+        UI.post(pendingForumTabRetry, 100);
+      }
       return;
     }
     int topicId = pendingForumTab;
@@ -2958,13 +3056,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean openForumTab (int topicId, @Nullable MessageId anchor, int highlightMode) {
-    if (!isForumTabsHost() || isDestroyed() || !isFocused() || context().isNavigationBusy() || topicId < 0) return false;
+    if (!isForumTabsHost() || isDestroyed() || !isFocused() || context().isNavigationBusy() || topicId < 0) {
+      return false;
+    }
     if (topicId == getSelectedForumTabId()) {
-      if (anchor != null) highlightMessage(anchor, (TdlibUi.UrlOpenParameters) null);
+      if (anchor != null) {
+        highlightMessage(anchor, (TdlibUi.UrlOpenParameters) null);
+      }
       return true;
     }
-    if (!canSwitchForumTab(true)) return false;
-    if (inSearchMode() && searchMode == SEARCH_MODE_USERS) showSearchByUserView(false, false);
+    if (!canSwitchForumTab(true)) {
+      return false;
+    }
+    if (inSearchMode() && searchMode == SEARCH_MODE_USERS) {
+      showSearchByUserView(false, false);
+    }
     saveDraft();
     manager.saveForumTabsAnchor();
     forumTabsHost.panelState = forumTabsView != null ? forumTabsView.saveState() : null;
@@ -2975,13 +3081,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     MessagesController next = new MessagesController(context(), tdlib);
     next.setArguments(args);
     next.getValue();
-    if (!context().navigation().replaceCurrent(this, next)) { next.destroy(); return false; }
+    if (!context().navigation().replaceCurrent(this, next)) {
+      next.destroy();
+      return false;
+    }
     return true;
   }
 
   /** Called before RelativeLayout measurement: only history and its overlays are inset. */
   public void layoutForumTabs () {
-    if (forumTabsView == null || forumTabsHost == null || messagesView == null) return;
+    if (forumTabsView == null || forumTabsHost == null || messagesView == null) {
+      return;
+    }
     final int placement = forumTabsHost.state.placement;
     final int bar = forumTabsView.recommendedHorizontalHeight();
     final int side = placement == ForumTabsState.START ? forumTabsView.recommendedSideWidth() : 0;
@@ -2989,9 +3100,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     final int bottom = placement == ForumTabsState.BOTTOM ? bar : 0;
     final int left = Lang.rtl() ? 0 : side, right = Lang.rtl() ? side : 0;
     RelativeLayout.LayoutParams history = (RelativeLayout.LayoutParams) messagesView.getLayoutParams();
-    history.leftMargin = left; history.rightMargin = right; history.topMargin = top; history.bottomMargin = bottom;
+    history.leftMargin = left;
+    history.rightMargin = right;
+    history.topMargin = top;
+    history.bottomMargin = bottom;
     RelativeLayout.LayoutParams overlay = (RelativeLayout.LayoutParams) topBar.getLayoutParams();
-    overlay.leftMargin = left; overlay.rightMargin = right; overlay.topMargin = top;
+    overlay.leftMargin = left;
+    overlay.rightMargin = right;
+    overlay.topMargin = top;
     RelativeLayout.LayoutParams panel = (RelativeLayout.LayoutParams) forumTabsView.getLayoutParams();
     panel.width = side != 0 ? side : ViewGroup.LayoutParams.MATCH_PARENT;
     panel.height = side != 0 ? ViewGroup.LayoutParams.MATCH_PARENT : bar;
@@ -3001,11 +3117,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     panel.bottomMargin = side != 0 ? (int) (getReplyOffset() + getAttachedFilesOffset() + getKeyboardOffset()) : 0;
     forumTabsView.setTranslationY(bottom != 0 ? -getReplyOffset() - getAttachedFilesOffset() - getKeyboardOffset() : 0);
     for (View view : new View[] {scrollToBottomButtonWrap, mentionButtonWrap, reactionsButtonWrap, goToNextFoundMessageButtonBadge, goToPrevFoundMessageButtonBadge}) {
-      if (view == null) continue;
+      if (view == null) {
+        continue;
+      }
       RelativeLayout.LayoutParams p = (RelativeLayout.LayoutParams) view.getLayoutParams();
       int[] base = forumTabsBaseMargins.get(view);
-      if (base == null) { base = new int[] {p.leftMargin, p.rightMargin}; forumTabsBaseMargins.put(view, base); }
-      p.leftMargin = base[0] + left; p.rightMargin = base[1] + right;
+      if (base == null) {
+        base = new int[] {p.leftMargin, p.rightMargin};
+        forumTabsBaseMargins.put(view, base);
+      }
+      p.leftMargin = base[0] + left;
+      p.rightMargin = base[1] + right;
     }
   }
 
@@ -3014,19 +3136,29 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void observeReplyForum (int topicId, boolean restoreDraft) {
-    if (replyForumContext != null && replyForumContext.topicId == topicId) return;
+    if (replyForumContext != null && replyForumContext.topicId == topicId) {
+      return;
+    }
     closeReplyForum();
-    if (topicId == 0 || forumTopicContext != null || getMessageTopicId() != null || messageThread != null) return;
+    if (topicId == 0 || forumTopicContext != null || getMessageTopicId() != null || messageThread != null) {
+      return;
+    }
     final ForumTopicContext forum = new ForumTopicContext(getChatId(), topicId);
     replyForumContext = forum;
     restoreReplyForumDraft = restoreDraft;
     org.thunderdog.challegram.telegram.TdlibSettingsManager.LocalForumDraft local = tdlib.settings().getLocalForumDraft(forum.chatId, topicId);
-    if (local != null && !isForumTabsAll()) forum.setLocalDraft(local.draft);
+    if (local != null && !isForumTabsAll()) {
+      forum.setLocalDraft(local.draft);
+    }
     TdlibForumTopicManager.Key key = new TdlibForumTopicManager.Key(forum.chatId, topicId);
     TdlibForumTopicManager.Entry cached = tdlib.topics().find(key);
-    if (cached != null) forum.update(cached.value, null);
+    if (cached != null) {
+      forum.update(cached.value, null);
+    }
     replyForumSubscription = tdlib.topics().observeTopic(key, (value, error) -> {
-      if (isDestroyed() || replyForumContext != forum) return;
+      if (isDestroyed() || replyForumContext != forum) {
+        return;
+      }
       forum.update(value, error);
       if (inputView != null) {
         if (!isForumTabsAll() && restoreReplyForumDraft && !inputView.textChangedSinceChatOpened() && (value != null || local != null)) {
@@ -3040,9 +3172,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private ForumTopicUi forumUi;
   private long forumUiChatId;
+
   private ForumTopicUi forumTopicUi () {
     if (forumUi == null || forumUiChatId != getChatId()) {
-      if (forumUi != null) forumUi.destroy();
+      if (forumUi != null) {
+        forumUi.destroy();
+      }
       forumUiChatId = getChatId();
       forumUi = new ForumTopicUi(this, forumUiChatId);
     }
@@ -3051,31 +3186,47 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void observeForumTopic () {
     TdApi.MessageTopic topicId = getMessageTopicId();
-    if (!ForumHistory.isForum(topicId)) return;
+    if (!ForumHistory.isForum(topicId)) {
+      return;
+    }
     final ForumTopicContext forum = new ForumTopicContext(getChatId(), ((TdApi.MessageTopicForum) topicId).forumTopicId);
     forumTopicContext = forum;
     org.thunderdog.challegram.telegram.TdlibSettingsManager.LocalForumDraft local = tdlib.settings().getLocalForumDraft(forum.chatId, forum.topicId);
-    if (local != null) forum.setLocalDraft(local.draft);
+    if (local != null) {
+      forum.setLocalDraft(local.draft);
+    }
     TdlibForumTopicManager.Key key = new TdlibForumTopicManager.Key(forum.chatId, forum.topicId);
     TdlibForumTopicManager.Entry cached = tdlib.topics().find(key);
-    if (cached != null) forum.update(cached.value, null);
+    if (cached != null) {
+      forum.update(cached.value, null);
+    }
     subscribeForumTopic(forum);
   }
 
   private void subscribeForumTopic (ForumTopicContext forum) {
-    if (forumTopicSubscription != null) forumTopicSubscription.close();
+    if (forumTopicSubscription != null) {
+      forumTopicSubscription.close();
+    }
     forumTopicSubscription = tdlib.topics().observeTopic(new TdlibForumTopicManager.Key(forum.chatId, forum.topicId), (value, error) -> {
-      if (forumTopicContext != forum || isDestroyed()) return;
+      if (forumTopicContext != forum || isDestroyed()) {
+        return;
+      }
       TdApi.DraftMessage previousDraft = forum.draft();
-      if (!forum.update(value, error)) return;
+      if (!forum.update(value, error)) {
+        return;
+      }
       updateForumTabsView();
       // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
       if (isForumTabsHost() && (value != null && value.info.isHidden || ForumTopicContext.isUnavailable(error)) &&
           tdlib.chatAccessState(chat) >= Tdlib.CHAT_ACCESS_OK) {
         pendingForumTab = 0;
-        if (isFocused()) tdlib.ui().post(() -> {
-          if (!isDestroyed() && forumTopicContext == forum && requestForumTab(0)) UI.showToast(R.string.ForumTopicUnavailable, Toast.LENGTH_SHORT);
-        });
+        if (isFocused()) {
+          tdlib.ui().post(() -> {
+            if (!isDestroyed() && forumTopicContext == forum && requestForumTab(0)) {
+              UI.showToast(R.string.ForumTopicUnavailable, Toast.LENGTH_SHORT);
+            }
+          });
+        }
       }
       // endregion
       if (contentView != null) {
@@ -3098,12 +3249,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     });
   }
 
-  @Override public void onPerformRestart () { forumRestartPending = true; }
+  @Override public void onPerformRestart () {
+    forumRestartPending = true;
+  }
 
   @Override
   public void onPerformStartup (boolean isAfterRestart) {
     tdlib.ui().post(() -> {
-      if (isDestroyed()) return;
+      if (isDestroyed()) {
+        return;
+      }
       boolean restarted = isAfterRestart || forumRestartPending;
       forumRestartPending = false;
       if (restarted && !accountDataCleared && forumTopicContext != null) {
@@ -3117,7 +3272,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         observeReplyForum(topicId, restore);
       }
       if (restarted && !accountDataCleared && isForumTabsAll()) {
-        if (generalForumSubscription != null) generalForumSubscription.close();
+        if (generalForumSubscription != null) {
+          generalForumSubscription.close();
+        }
         observeAllGeneral();
       }
       accountDataCleared = false;
@@ -3130,13 +3287,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().post(() -> {
       closeForumTopic();
       closeForumTabs();
-      if (!isDestroyed() && inputView != null) inputView.setDraft(null);
+      if (!isDestroyed() && inputView != null) {
+        inputView.setDraft(null);
+      }
     });
   }
 
   public void whenForumTopicReady (Runnable load) {
-    if (forumTopicContext == null || forumTopicContext.topic() != null && forumTopicContext.error() == null) load.run();
-    else {
+    if (forumTopicContext == null || forumTopicContext.topic() != null && forumTopicContext.error() == null) {
+      load.run();
+    } else {
       forumInitialHistory = load;
       manager.onNetworkRequestSent();
     }
@@ -3150,11 +3310,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Nullable
   private String forumRestriction () {
     ForumTopicContext forum = composerForumContext();
-    if (forum == null) return null;
+    if (forum == null) {
+      return null;
+    }
     // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
-    if (ForumTopicContext.isUnavailable(forum.error()) || ForumTopicContext.isUnavailable(forumHistoryError)) return Lang.getString(R.string.ForumTopicUnavailable);
+    if (ForumTopicContext.isUnavailable(forum.error()) || ForumTopicContext.isUnavailable(forumHistoryError)) {
+      return Lang.getString(R.string.ForumTopicUnavailable);
+    }
     // endregion
-    if (forum.isLoading()) return Lang.getString(R.string.ForumTopicLoading);
+    if (forum.isLoading()) {
+      return Lang.getString(R.string.ForumTopicLoading);
+    }
     if (forum.error() != null || forumHistoryError != null) {
       // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
       return Lang.getString(R.string.ForumTopicLoadFailed);
@@ -3171,11 +3337,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateForumHeader () {
-    if (headerCell != null) headerCell.setForumTopic(chat, getMessageTopicId(), forumTopicContext != null ? forumTopicContext.topic() : null, forumRestriction());
+    if (headerCell != null) {
+      headerCell.setForumTopic(chat, getMessageTopicId(), forumTopicContext != null ? forumTopicContext.topic() : null, forumRestriction());
+    }
   }
 
   public void onForumHistoryError (TdApi.Error error) {
-    if (forumTopicContext == null) return;
+    if (forumTopicContext == null) {
+      return;
+    }
     forumHistoryError = error;
     updateForumHeader();
     updateBottomBar(true);
@@ -3214,10 +3384,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void setArguments (Arguments args) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     saveDraft();
-    if (forumTopicContext != null && contentView != null) manager.resetScroll();
+    if (forumTopicContext != null && contentView != null) {
+      manager.resetScroll();
+    }
     closeForumTopic();
     closeForumTabs();
-    if (forumUi != null && (args.chat == null || forumUiChatId != args.chat.id)) { forumUi.destroy(); forumUi = null; }
+    if (forumUi != null && (args.chat == null || forumUiChatId != args.chat.id)) {
+      forumUi.destroy();
+      forumUi = null;
+    }
     // endregion
     super.setArguments(args);
 
@@ -3485,7 +3660,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (inputView != null) {
       inputView.setChat(chat, messageThread, draftMessage != null ? draftMessage.content : null, getCustomInputPlaceholder(), silentButton != null && silentButton.getIsSilent());
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (composerForumContext() != null && composerForumContext().hasLocalDraft()) inputView.setTextChangedSinceChatOpened(true);
+      if (composerForumContext() != null && composerForumContext().hasLocalDraft()) {
+        inputView.setTextChangedSinceChatOpened(true);
+      }
       // endregion
     }
     ignoreDraftLoad = false;
@@ -4673,10 +4850,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onFocus () {
     super.onFocus();
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (forumTabsHost != null) forumTabsHost.remember(forumTabsHost.state.withSelectedTopic(getSelectedForumTabId()));
+    if (forumTabsHost != null) {
+      forumTabsHost.remember(forumTabsHost.state.withSelectedTopic(getSelectedForumTabId()));
+    }
     pendingForumTabAttempts = 0;
     UI.cancel(pendingForumTabRetry);
-    if (pendingForumTab != null) UI.post(pendingForumTabRetry);
+    if (pendingForumTab != null) {
+      UI.post(pendingForumTabRetry);
+    }
     followForumViewMode();
     // endregion
     if (promptDraftPrefillOnFocus) {
@@ -4836,7 +5017,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         final long outputChatId = messageThread != null ? messageThread.getChatId() : getChatId();
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         TdApi.MessageTopic topicId = messageThread != null ? messageThread.getMessageTopicId() : getMessageTopicId(replyTo);
-        if (topicId == null && replyForumContext != null) topicId = new TdApi.MessageTopicForum(replyForumContext.topicId);
+        if (topicId == null && replyForumContext != null) {
+          topicId = new TdApi.MessageTopicForum(replyForumContext.topicId);
+        }
         // endregion
         if (messageThread != null) {
           messageThread.setDraft(draftMessage);
@@ -4866,7 +5049,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         ), (ok, error) -> {
           if (ok != null && forum != null) {
             tdlib.settings().acknowledgeLocalForumDraft(outputChatId, forum.topicId, localDraft);
-            tdlib.ui().post(() -> { if (composerForumContext() == forum) forum.acknowledgeDraft(outputDraft); });
+            tdlib.ui().post(() -> {
+              if (composerForumContext() == forum) {
+                forum.acknowledgeDraft(outputDraft);
+              }
+            });
           }
         });
           // endregion
@@ -6974,14 +7161,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       case ACTION_RETRY_FORUM: {
         // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
-        if (!canRetryForum()) break;
+        if (!canRetryForum()) {
+          break;
+        }
         // endregion
-        if (replyForumContext != null) tdlib.topics().retryTopic(new TdlibForumTopicManager.Key(replyForumContext.chatId, replyForumContext.topicId));
-        if (generalForumContext != null) tdlib.topics().retryTopic(new TdlibForumTopicManager.Key(generalForumContext.chatId, generalForumContext.topicId));
+        if (replyForumContext != null) {
+          tdlib.topics().retryTopic(new TdlibForumTopicManager.Key(replyForumContext.chatId, replyForumContext.topicId));
+        }
+        if (generalForumContext != null) {
+          tdlib.topics().retryTopic(new TdlibForumTopicManager.Key(generalForumContext.chatId, generalForumContext.topicId));
+        }
         if (forumTopicContext != null) {
           forumHistoryError = null;
           tdlib.topics().retryTopic(new TdlibForumTopicManager.Key(forumTopicContext.chatId, forumTopicContext.topicId));
-          if (forumInitialHistory == null) manager.retryForumHistory();
+          if (forumInitialHistory == null) {
+            manager.retryForumHistory();
+          }
           updateForumHeader();
           updateBottomBar(true);
           manager.refreshEmptyText();
@@ -7201,7 +7396,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (forum != null && !areScheduledOnly() && messageId.getMessageId() > 0 &&
         manager.findMessageView(messageId.getChatId(), messageId.getMessageId()) == null) {
       tdlib.send(new TdApi.GetMessage(messageId.getChatId(), messageId.getMessageId()), (message, error) -> tdlib.ui().post(() -> {
-        if (isDestroyed() || forumTopicContext != forum || forumHighlightRequest != request || !isFocused()) return;
+        if (isDestroyed() || forumTopicContext != forum || forumHighlightRequest != request || !isFocused()) {
+          return;
+        }
         if (message != null && !compareChat(message.chatId, message.topicId)) {
           tdlib.ui().openChat(this, message.chatId, new TdlibUi.ChatOpenParameters().keepStack().messageTopic(message.topicId).highlightMessage(message));
         } else if (message != null) {
@@ -7359,7 +7556,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // TODO show keyboard properly
     if (reply == null || reply.message.message.id != msg.message.id || reply.message.message.chatId != msg.message.chatId || !Td.equalsTo(reply.quote, quote) || reply.checklistTaskId != checklistTaskId || !StringUtils.equalsOrBothEmpty(reply.pollOptionId, pollOptionId)) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (byUser && replyForumContext != null) saveDraft();
+      if (byUser && replyForumContext != null) {
+        saveDraft();
+      }
       // endregion
       setReplyInfo(new ReplyInfo(tdlib, msg, quote, checklistTaskId, pollOptionId), true);
 
@@ -7573,7 +7772,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       // endregion
         foundMessage.getMessageWithProperties(msg -> runOnUiThreadOptional(() -> {
           // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-          if (draftEpoch != epoch || isDestroyed() || inputEditRevision != revision) return;
+          if (draftEpoch != epoch || isDestroyed() || inputEditRevision != revision) {
+            return;
+          }
           // endregion
           forceReply(msg, replyToQuote, replyToChecklistTaskId, replyToPollOptionId);
         }));
@@ -7626,12 +7827,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     ReplyInfo scopedReply = getCurrentReplyId();
     TdApi.MessageTopic after = ForumHistory.outgoingTopic(getMessageTopicId(), scopedReply != null ? scopedReply.inTopicId : null);
-    if (!Td.equalsTo(before, after)) cancelChatActions();
+    if (!Td.equalsTo(before, after)) {
+      cancelChatActions();
+    }
     // The activity pre-creates this controller before binding a chat. clearReply() also runs there.
     if (chat != null && forumTopicContext == null && getMessageTopicId() == null && messageThread == null && !(restoreReplyForumDraft && replyInfo == null)) {
       observeReplyForum(ForumHistory.isForum(after) ? ((TdApi.MessageTopicForum) after).forumTopicId : 0, false);
-      if (replyInfo != null) restoreReplyForumDraft = false;
-      if (inputView != null) updateBottomBar(true);
+      if (replyInfo != null) {
+        restoreReplyForumDraft = false;
+      }
+      if (inputView != null) {
+        updateBottomBar(true);
+      }
     }
     // endregion
     updateReplyBarVisibility(animated);
@@ -7792,7 +7999,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     checkScrollButtonOffsets();
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (forumTabsView != null) contentView.requestLayout();
+    if (forumTabsView != null) {
+      contentView.requestLayout();
+    }
     // endregion
     onMessagesFrameChanged();
   }
@@ -8986,7 +9195,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
             TdApi.Chat target = tdlib.chat(targetChatId);
             if (target != null && org.thunderdog.challegram.data.ForumTopicPolicy.canPinMessages(tdlib.chatStatus(targetChatId), target.permissions)) {
               tdlib.topics().actions.unpinAllMessages(new TdlibForumTopicManager.Key(targetChatId, ((TdApi.MessageTopicForum) targetTopic).forumTopicId), (ok, error) -> {
-                if (error != null) UI.showError(error);
+                if (error != null) {
+                  UI.showError(error);
+                }
               });
             }
           } else {
@@ -10044,19 +10255,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public boolean showRestriction (View view, @RightId int rightId) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (showRestriction(view, forumRestriction())) return true;
+    if (showRestriction(view, forumRestriction())) {
+      return true;
+    }
     // endregion
     CharSequence text = tdlib.getDefaultRestrictionText(chat, rightId);
     return showRestriction(view, text);
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public boolean showForumTopicRestriction (View view) { return showRestriction(view, forumRestriction()); }
+  public boolean showForumTopicRestriction (View view) {
+    return showRestriction(view, forumRestriction());
+  }
 
   // endregion
   public boolean showSlowModeRestriction (View v, @Nullable TdApi.MessageSendOptions sendOptions) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (showRestriction(v, forumRestriction())) return true;
+    if (showRestriction(v, forumRestriction())) {
+      return true;
+    }
     // endregion
     CharSequence restriction = tdlib().getSlowModeRestrictionText(getChatId(), sendOptions != null ? sendOptions.schedulingState : null);
     if (restriction != null) {
@@ -10088,7 +10305,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public boolean showRestriction (View view, @RightId int rightId, int defaultRes, int specificRes, int specificUntilRes) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (showRestriction(view, forumRestriction())) return true;
+    if (showRestriction(view, forumRestriction())) {
+      return true;
+    }
     // endregion
     CharSequence restrictionText = tdlib.buildRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
     return showRestriction(view, restrictionText);
@@ -10655,7 +10874,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.isSendingText = isSendingText;
       setStackLocked(isSendingText);
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (inputView != null) inputView.setInputBlocked(isSendingText);
+      if (inputView != null) {
+        inputView.setInputBlocked(isSendingText);
+      }
       // endregion
 
     }
@@ -10732,8 +10953,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       executeSendMessageFunctions(functions, sentMessages, finalSendOptions.schedulingState != null, success -> {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (draftEpoch == sendEpoch) {
-          if (inputEditRevision == sendRevision) clearInputAfterSend(success, allowReply, replyInfo, allowLinkPreview, topicId, sendFromAll);
-          else { manager.setSentMessages(null); setIsSendingText(false); }
+          if (inputEditRevision == sendRevision) {
+            clearInputAfterSend(success, allowReply, replyInfo, allowLinkPreview, topicId, sendFromAll);
+          } else {
+            manager.setSentMessages(null);
+            setIsSendingText(false);
+          }
         }
         // endregion
       });
@@ -10758,11 +10983,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
           long chatId = getChatId();
           byte[] local = tdlib.settings().putLocalForumDraft(chatId, topic, null);
           ForumTopicContext composer = composerForumContext();
-          if (composer != null && composer.topicId == topic) composer.setLocalDraft(null);
+          if (composer != null && composer.topicId == topic) {
+            composer.setLocalDraft(null);
+          }
           tdlib.send(new TdApi.SetChatDraftMessage(chatId, sentTopic, null), (ok, error) -> {
             if (ok != null) {
               tdlib.settings().acknowledgeLocalForumDraft(chatId, topic, local);
-              tdlib.ui().post(() -> { if (composer != null && composerForumContext() == composer) composer.acknowledgeDraft(null); });
+              tdlib.ui().post(() -> {
+                if (composer != null && composerForumContext() == composer) {
+                  composer.acknowledgeDraft(null);
+                }
+              });
             }
           });
         }
@@ -10774,7 +11005,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           // endregion
         }
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        if (replyForumContext != null && ForumHistory.isForum(sentTopic) && replyForumContext.topicId == ((TdApi.MessageTopicForum) sentTopic).forumTopicId) closeReplyForum();
+        if (replyForumContext != null && ForumHistory.isForum(sentTopic) && replyForumContext.topicId == ((TdApi.MessageTopicForum) sentTopic).forumTopicId) {
+          closeReplyForum();
+        }
         // endregion
         if (allowLinkPreview) {
           obtainLinkPreviewOptions(true);
@@ -10791,7 +11024,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void executeSendMessageFunctions (List<TdApi.Function<?>> functions, List<TdApi.Message> sentMessages, final boolean isSchedule, RunnableBool onDone) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (functions.isEmpty()) { onDone.runWithBool(false); return; }
+    if (functions.isEmpty()) {
+      onDone.runWithBool(false);
+      return;
+    }
     final Object sendEpoch = draftEpoch;
     // endregion
     final int expectedCount = functions.size();
@@ -10863,7 +11099,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
             tdlib.ui().post(() -> {
               // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
               if (draftEpoch != sendEpoch || isDestroyed()) {
-                if (parsedMessages != null) for (TGMessage message : parsedMessages) message.onDestroy();
+                if (parsedMessages != null) {
+                  for (TGMessage message : parsedMessages) {
+                    message.onDestroy();
+                  }
+                }
                 return;
               }
               if (parsedMessages != null && isSchedule == areScheduled) {
@@ -10871,7 +11111,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 manager.addSentMessages(parsedMessages);
               // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
               } else if (parsedMessages != null) {
-                for (TGMessage message : parsedMessages) message.onDestroy();
+                for (TGMessage message : parsedMessages) {
+                  message.onDestroy();
+                }
               // endregion
               }
               onDone.runWithBool(sentFunctionsCount[0] == expectedCount);
@@ -11027,7 +11269,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void forwardMessage (TdApi.Message message) { // TODO remove all related to Forward stuff to replace with ShareLayout
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (showForumTopicRestriction(null)) return;
+    if (showForumTopicRestriction(null)) {
+      return;
+    }
     // endregion
     if (tdlib.getRestrictionText(chat, message) == null) {
       ReplyInfo replyInfo = getCurrentReplyId();
@@ -11338,7 +11582,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions modifiedSendOptions, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (showForumTopicRestriction(null)) return false;
+    if (showForumTopicRestriction(null)) {
+      return false;
+    }
     // endregion
     if (files == null || files.length == 0) {
       return false;
@@ -11528,9 +11774,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void cancelChatActions () {
     if (lastChatActionChatId != 0 && !accountDataCleared) {
-      tdlib.send(new TdApi.SendChatAction(lastChatActionChatId, lastChatActionTopic, null, new TdApi.ChatActionCancel()), (ok, error) -> { });
+      tdlib.send(new TdApi.SendChatAction(lastChatActionChatId, lastChatActionTopic, null, new TdApi.ChatActionCancel()), (ok, error) -> {
+      });
     }
-    if (actions != null) actions.clear();
+    if (actions != null) {
+      actions.clear();
+    }
     lastChatActionChatId = 0;
     lastChatActionTopic = null;
     lastActionCancelled = true;
@@ -11557,7 +11806,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       topicId = getMessageTopicId(getCurrentReplyId());
-      if (topicId == null && replyForumContext != null) topicId = new TdApi.MessageTopicForum(replyForumContext.topicId);
+      if (topicId == null && replyForumContext != null) {
+        topicId = new TdApi.MessageTopicForum(replyForumContext.topicId);
+      }
       if (topicId == null && reply != null && reply.message.message.chatId == chat.id) {
       // endregion
         topicId = reply.message.message.topicId != null ?
@@ -11569,7 +11820,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (set) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (lastChatActionChatId != 0 && !MessageTopics.sameChat(lastChatActionChatId, lastChatActionTopic, chat.id, topicId)) cancelChatActions();
+      if (lastChatActionChatId != 0 && !MessageTopics.sameChat(lastChatActionChatId, lastChatActionTopic, chat.id, topicId)) {
+        cancelChatActions();
+      }
       // endregion
       int time = (int) (SystemClock.uptimeMillis() / 1000L);
       if (time - actions.get(action) >= 4 || force || lastActionCancelled) {
@@ -11815,8 +12068,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     runOnUiThreadOptional(() -> {
       if (getHeaderChatId() == chatId) {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        if (forumTopicContext != null) updateForumHeader();
-        else headerCell.setTitle(title);
+        if (forumTopicContext != null) {
+          updateForumHeader();
+        } else {
+          headerCell.setTitle(title);
+        }
         // endregion
       }
     });
@@ -11974,7 +12230,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       tdlib.send(new TdApi.GetMessage(replyChatId, replyMessageId), (remoteMessage, error) -> tdlib.send(new TdApi.GetMessageProperties(replyChatId, replyMessageId), (properties, error1) -> {
         runOnUiThreadOptional(() -> {
           // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-          if (draftEpoch != context || isDestroyed() || inputView.textChangedSinceChatOpened() || !Td.equalsTo(getDraftMessage(), draftMessage)) return;
+          if (draftEpoch != context || isDestroyed() || inputView.textChangedSinceChatOpened() || !Td.equalsTo(getDraftMessage(), draftMessage)) {
+            return;
+          }
           // endregion
           if (getChatId() == chatId && Td.equalsTo(getDraftMessage(), draftMessage) && remoteMessage != null && properties != null) {
             showReply(new MessageWithProperties(remoteMessage, properties), replyQuote, replyChecklistTaskId, replyPollOptionId, false, false);
@@ -12152,7 +12410,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().post(() -> {
       if (Td.matchesScope(tdlib.chatType(getChatId()), scope)) {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        if (forumTopicContext != null) updateForumHeader();
+        if (forumTopicContext != null) {
+          updateForumHeader();
+        }
         // endregion
         updateCounters(true);
       }
@@ -12164,8 +12424,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().post(() -> {
       if (getHeaderChatId() == chatId) {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        if (forumTopicContext != null) updateForumHeader();
-        else headerCell.setShowMute(TD.needMuteIcon(settings, tdlib.scopeNotificationSettings(chatId)));
+        if (forumTopicContext != null) {
+          updateForumHeader();
+        } else {
+          headerCell.setShowMute(TD.needMuteIcon(settings, tdlib.scopeNotificationSettings(chatId)));
+        }
         // endregion
       }
       if (getChatId() == chatId) {
@@ -12178,9 +12441,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
   private boolean forumViewModeChanged;
+
   @Override public void onChatViewAsTopics (long chatId, boolean viewAsTopics) {
     tdlib.ui().post(() -> {
-      if (getChatId() != chatId || messageThread != null || getMessageTopicId() != null || areScheduledOnly() || inPreviewMode) return;
+      if (getChatId() != chatId || messageThread != null || getMessageTopicId() != null || areScheduledOnly() || inPreviewMode) {
+        return;
+      }
       forumViewModeChanged = true;
       followForumViewMode();
     });
@@ -12189,7 +12455,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void followForumViewMode () {
     if (forumViewModeChanged && isFocused() && chat != null) {
       if (chat.viewAsTopics && !tdlib.hasForumTabs(chat.id)) {
-        if (!canSwitchForumTab(false)) return;
+        if (!canSwitchForumTab(false)) {
+          return;
+        }
         saveDraft();
         ForumTopicUi.openViewMode(this, true);
       }

@@ -247,7 +247,10 @@ public class MessagesLoader implements Client.ResultHandler {
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
   private ForumTopicContext forumContext;
-  @Nullable public ForumTopicContext getForumTopicContext () { return forumContext; }
+
+  @Nullable public ForumTopicContext getForumTopicContext () {
+    return forumContext;
+  }
 // endregion
 
   @Nullable
@@ -340,7 +343,9 @@ public class MessagesLoader implements Client.ResultHandler {
                 isLoading = false;
               }
               UI.post(() -> {
-                if (contextId != currentContextId) return;
+                if (contextId != currentContextId) {
+                  return;
+                }
                 manager.onNetworkRequestSent();
                 manager.controller().onForumHistoryError((TdApi.Error) object);
               });
@@ -1249,9 +1254,14 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   public void retryForumHistory () {
-    if (!ForumHistory.isForum(topicId) || isLoading) return;
-    if (lastFromMessageId != null) load(lastFromMessageId, lastOffset, lastLimit, loadingMode, false, loadingAllowMoreTop, loadingAllowMoreBottom);
-    else manager.loadFromStart();
+    if (!ForumHistory.isForum(topicId) || isLoading) {
+      return;
+    }
+    if (lastFromMessageId != null) {
+      load(lastFromMessageId, lastOffset, lastLimit, loadingMode, false, loadingAllowMoreTop, loadingAllowMoreBottom);
+    } else {
+      manager.loadFromStart();
+    }
   // endregion
   }
 
@@ -1475,7 +1485,9 @@ public class MessagesLoader implements Client.ResultHandler {
       final boolean bottom = loadingMode == MODE_MORE_BOTTOM;
       UI.post(() -> {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        if (contextId != currentContextId) return;
+        if (contextId != currentContextId) {
+          return;
+        }
         // endregion
         for (TdApi.Message message : combineWithMessages) {
           if (bottom) {
@@ -1683,7 +1695,9 @@ public class MessagesLoader implements Client.ResultHandler {
           }
           UI.post(() -> {
             // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-            if (contextId != currentContextId) return;
+            if (contextId != currentContextId) {
+              return;
+            }
             // endregion
             synchronized (lock) {
               isLoading = false;
@@ -1700,7 +1714,11 @@ public class MessagesLoader implements Client.ResultHandler {
           // endregion
           if (lastMessageId != 0 && lastMessageId == messages[0].id) {
             // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-            UI.post(() -> { if (contextId == currentContextId) manager.onBottomEndChecked(); });
+            UI.post(() -> {
+              if (contextId == currentContextId) {
+                manager.onBottomEndChecked();
+              }
+            });
             // endregion
           }
         }
@@ -1718,7 +1736,9 @@ public class MessagesLoader implements Client.ResultHandler {
           }
           UI.post(() -> {
             // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-            if (contextId != currentContextId) return;
+            if (contextId != currentContextId) {
+              return;
+            }
             // endregion
             synchronized (lock) {
               isLoading = false;
@@ -1817,18 +1837,28 @@ public class MessagesLoader implements Client.ResultHandler {
     // endregion
     tdlib.getAlbum(album, true, null, localAlbum -> {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (contextId != currentContextId) return;
+      if (contextId != currentContextId) {
+        return;
+      }
       // endregion
       if (localAlbum.messages.size() != album.size()) {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        tdlib.ui().post(() -> { if (contextId == currentContextId) manager.updateAlbum(album, localAlbum); });
+        tdlib.ui().post(() -> {
+          if (contextId == currentContextId) {
+            manager.updateAlbum(album, localAlbum);
+          }
+        });
         // endregion
       }
       if (localAlbum.mayHaveMoreItems()) {
         tdlib.getAlbum(localAlbum.messages, false, localAlbum, remoteAlbum -> {
           if (remoteAlbum.messages.size() != localAlbum.messages.size()) {
             // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-            tdlib.ui().post(() -> { if (contextId == currentContextId) manager.updateAlbum(localAlbum.messages, remoteAlbum); });
+            tdlib.ui().post(() -> {
+              if (contextId == currentContextId) {
+                manager.updateAlbum(localAlbum.messages, remoteAlbum);
+              }
+            });
             // endregion
           }
         });
@@ -1911,7 +1941,9 @@ public class MessagesLoader implements Client.ResultHandler {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (ForumHistory.isForum(topicId)) {
           long last = lastMessageId();
-          if (last != 0 && messageId.getMessageId() >= last) return true;
+          if (last != 0 && messageId.getMessageId() >= last) {
+            return true;
+          }
         } else if (messageThread != null) {
         // endregion
           if (messageId.getMessageId() >= messageThread.getLastMessageId()) {

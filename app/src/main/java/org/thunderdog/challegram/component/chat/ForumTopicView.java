@@ -84,12 +84,22 @@ public final class ForumTopicView extends View {
     setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
   }
 
-  private Drawable drawable (int id) { return Drawables.get(getResources(), id); }
-  public TdApi.ForumTopic getTopic () { return topic; }
-  private float scaled (float dp) { return Screen.dp(dp * Math.max(1f, getResources().getConfiguration().fontScale)); }
+  private Drawable drawable (int id) {
+    return Drawables.get(getResources(), id);
+  }
+
+  public TdApi.ForumTopic getTopic () {
+    return topic;
+  }
+
+  private float scaled (float dp) {
+    return Screen.dp(dp * Math.max(1f, getResources().getConfiguration().fontScale));
+  }
 
   public void setSelection (boolean mode, boolean selected, boolean animate) {
-    if (selectionMode == mode && isSelected() == selected) return;
+    if (selectionMode == mode && isSelected() == selected) {
+      return;
+    }
     selectionMode = mode;
     setSelected(selected);
     float target = mode ? 1f : 0f;
@@ -102,10 +112,13 @@ public final class ForumTopicView extends View {
       }
       selectionAnimator.animateTo(target);
     } else {
-      if (selectionAnimator != null) selectionAnimator.forceFactor(target);
+      if (selectionAnimator != null) {
+        selectionAnimator.forceFactor(target);
+      }
       selectionFactor = target;
     }
-    requestLayout(); invalidate();
+    requestLayout();
+    invalidate();
   }
 
   @Override public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
@@ -113,21 +126,27 @@ public final class ForumTopicView extends View {
     info.setCheckable(selectionMode);
     info.setChecked(isSelected());
     info.setSelected(isSelected());
-    if (selectionMode) info.setClassName(CheckBox.class.getName());
+    if (selectionMode) {
+      info.setClassName(CheckBox.class.getName());
+    }
   }
 
   @Override protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     int width = MeasureSpec.getSize(widthMeasureSpec);
     setPaint(11, Theme.badgeTextColor(), true);
     counterWidth = 0;
-    for (String label : counters) counterWidth = Math.max(counterWidth, paint.measureText(label) + Screen.dp(10));
+    for (String label : counters) {
+      counterWidth = Math.max(counterWidth, paint.measureText(label) + Screen.dp(10));
+    }
     float available = Math.max(Screen.dp(48), (width - Screen.dp(selectionMode ? 72 : 32)) * .52f);
     counterColumns = counters.isEmpty() ? 1 : Math.max(1, Math.min(counters.size(), (int) (available / (counterWidth + Screen.dp(3)))));
     firstHeight = Math.max(scaled(24), Screen.dp(24));
     setPaint(12, Theme.textDecentColor(), false);
     float timeAndDelivery = paint.measureText(time) + Screen.dp(time.isEmpty() ? 0 : 4) + Screen.dp(delivery != null ? 18 : 0);
     wrapStates = !stateIcons.isEmpty() && timeAndDelivery + Screen.dp(18 * stateIcons.size()) > available;
-    if (wrapStates) firstHeight = Math.max(firstHeight, scaled(14) + Screen.dp(20));
+    if (wrapStates) {
+      firstHeight = Math.max(firstHeight, scaled(14) + Screen.dp(20));
+    }
     secondHeight = Math.max(scaled(22), (float) Math.ceil((double) counters.size() / counterColumns) * (scaled(16) + Screen.dp(3)));
     prepareText(width, timeAndDelivery);
     setMeasuredDimension(width, Math.max(Screen.dp(64), (int) (Screen.dp(18) + firstHeight + secondHeight)));
@@ -168,55 +187,110 @@ public final class ForumTopicView extends View {
       if (!content.hideAuthor) {
         String author = message.isOutgoing ? Lang.getString(Td.getSenderId(message) == message.chatId ? R.string.FromYouAnonymous : R.string.FromYou) :
           Td.getMessageAuthorId(message) == message.chatId && TextUtils.isEmpty(message.authorSignature) ? Lang.getString(R.string.FromAnonymous) : tdlib.senderName(message, false, true);
-        if (!TextUtils.isEmpty(author)) preview = Lang.getString(R.string.format_forumPreview, author, preview);
+        if (!TextUtils.isEmpty(author)) {
+          preview = Lang.getString(R.string.format_forumPreview, author, preview);
+        }
       }
-    } else preview = Lang.getString(R.string.NoMessages);
+    } else {
+      preview = Lang.getString(R.string.NoMessages);
+    }
     time = message != null && message.date != 0 ? Lang.timeOrDateShort(message.date, TimeUnit.SECONDS) : "";
-    delivery = null; deliveryColor = ColorId.iconLight;
+    delivery = null;
+    deliveryColor = ColorId.iconLight;
     int deliveryLabel = 0;
     if (message != null && message.isOutgoing) {
-      if (message.sendingState instanceof TdApi.MessageSendingStateFailed) { delivery = failed; deliveryLabel = R.string.ForumDeliveryFailed; deliveryColor = ColorId.iconNegative; }
-      else if (message.sendingState != null) { delivery = pending; deliveryLabel = R.string.ForumDeliveryPending; }
-      else if (message.id <= topic.lastReadOutboxMessageId) { delivery = read; deliveryLabel = R.string.ForumDeliveryRead; }
-      else { delivery = sent; deliveryLabel = R.string.ForumDeliverySent; }
+      if (message.sendingState instanceof TdApi.MessageSendingStateFailed) {
+        delivery = failed;
+        deliveryLabel = R.string.ForumDeliveryFailed;
+        deliveryColor = ColorId.iconNegative;
+      } else if (message.sendingState != null) {
+        delivery = pending;
+        deliveryLabel = R.string.ForumDeliveryPending;
+      } else if (message.id <= topic.lastReadOutboxMessageId) {
+        delivery = read;
+        deliveryLabel = R.string.ForumDeliveryRead;
+      } else {
+        delivery = sent;
+        deliveryLabel = R.string.ForumDeliverySent;
+      }
     }
     ArrayList<String> status = new ArrayList<>();
-    stateIcons.clear(); counters.clear();
-    if (topic.info.isGeneral) status.add(Lang.getString(R.string.ForumGeneral));
-    if (topic.isPinned) { status.add(Lang.getString(R.string.ForumPinned)); stateIcons.add(pin); }
-    if (topic.info.isClosed) { status.add(Lang.getString(R.string.ForumTopicClosed)); stateIcons.add(closed); }
-    if (topic.info.isHidden) { status.add(Lang.getString(R.string.ForumHidden)); stateIcons.add(hidden); }
+    stateIcons.clear();
+    counters.clear();
+    if (topic.info.isGeneral) {
+      status.add(Lang.getString(R.string.ForumGeneral));
+    }
+    if (topic.isPinned) {
+      status.add(Lang.getString(R.string.ForumPinned));
+      stateIcons.add(pin);
+    }
+    if (topic.info.isClosed) {
+      status.add(Lang.getString(R.string.ForumTopicClosed));
+      stateIcons.add(closed);
+    }
+    if (topic.info.isHidden) {
+      status.add(Lang.getString(R.string.ForumHidden));
+      stateIcons.add(hidden);
+    }
     muted = ForumPresentation.isMuted(topic.notificationSettings, tdlib.chatMuteFor(topic.info.chatId) > 0);
-    if (muted) { status.add(Lang.getString(R.string.ForumNotificationsMuted)); stateIcons.add(mute); }
-    if (deliveryLabel != 0) status.add(Lang.getString(deliveryLabel));
-    if (topic.unreadCount > 0) counters.add(Lang.compactNumber(topic.unreadCount));
-    if (topic.unreadMentionCount > 0) counters.add("@" + Lang.compactNumber(topic.unreadMentionCount));
-    if (topic.unreadReactionCount > 0) counters.add("♥" + Lang.compactNumber(topic.unreadReactionCount));
-    if (topic.unreadPollVoteCount > 0) counters.add("✓" + Lang.compactNumber(topic.unreadPollVoteCount));
+    if (muted) {
+      status.add(Lang.getString(R.string.ForumNotificationsMuted));
+      stateIcons.add(mute);
+    }
+    if (deliveryLabel != 0) {
+      status.add(Lang.getString(deliveryLabel));
+    }
+    if (topic.unreadCount > 0) {
+      counters.add(Lang.compactNumber(topic.unreadCount));
+    }
+    if (topic.unreadMentionCount > 0) {
+      counters.add("@" + Lang.compactNumber(topic.unreadMentionCount));
+    }
+    if (topic.unreadReactionCount > 0) {
+      counters.add("♥" + Lang.compactNumber(topic.unreadReactionCount));
+    }
+    if (topic.unreadPollVoteCount > 0) {
+      counters.add("✓" + Lang.compactNumber(topic.unreadPollVoteCount));
+    }
     long nextEmoji = !topic.info.isGeneral && topic.info.icon != null ? topic.info.icon.customEmojiId : 0;
     float size = scaled(20);
     if (emojiId != nextEmoji || emojiSize != size) {
-      clearEmoji(); emojiId = nextEmoji; emojiSize = size;
+      clearEmoji();
+      emojiId = nextEmoji;
+      emojiSize = size;
       if (emojiId != 0) {
         TdApi.FormattedText emoji = new TdApi.FormattedText("*", new TdApi.TextEntity[] {new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(emojiId))});
         customEmoji = new Text.Builder(tdlib, emoji, null, (int) size * 2, Paints.robotoStyleProvider(20 * Math.max(1f, getResources().getConfiguration().fontScale)), TextColorSets.WHITE, (text, media) -> {
-          if (text == customEmoji) { text.requestMedia(receiver); invalidate(); }
+          if (text == customEmoji) {
+            text.requestMedia(receiver);
+            invalidate();
+          }
         }).singleLine().build();
         customEmoji.requestMedia(receiver);
       }
     }
     setContentDescription(Lang.getString(R.string.ForumTopicAccessibility, topic.info.name, time, TextUtils.join(Lang.getConcatSeparator(), status), preview,
       Lang.getString(R.string.ForumUnreadCounts, topic.unreadCount, topic.unreadMentionCount, topic.unreadReactionCount, topic.unreadPollVoteCount)));
-    requestLayout(); invalidate();
+    requestLayout();
+    invalidate();
   }
 
   private void setPaint (float size, int color, boolean medium) {
-    paint.setTextSize(scaled(size)); paint.setTypeface(medium ? Fonts.getRobotoMedium() : Fonts.getRobotoRegular());
-    paint.setColor(color); paint.setStyle(Paint.Style.FILL); paint.setTextAlign(Paint.Align.LEFT);
+    paint.setTextSize(scaled(size));
+    paint.setTypeface(medium ? Fonts.getRobotoMedium() : Fonts.getRobotoRegular());
+    paint.setColor(color);
+    paint.setStyle(Paint.Style.FILL);
+    paint.setTextAlign(Paint.Align.LEFT);
   }
-  private float x (float logical, boolean rtl) { return rtl ? getWidth() - logical : logical; }
+
+  private float x (float logical, boolean rtl) {
+    return rtl ? getWidth() - logical : logical;
+  }
+
   private void text (Canvas c, String value, float start, float end, float cy, float size, int color, boolean medium, boolean rtl) {
-    if (end <= start) return;
+    if (end <= start) {
+      return;
+    }
     setPaint(size, color, medium);
     paint.setTextAlign(rtl ? Paint.Align.RIGHT : Paint.Align.LEFT);
     int save = c.save();
@@ -224,31 +298,44 @@ public final class ForumTopicView extends View {
     c.drawText(value, x(start, rtl), cy - (paint.ascent() + paint.descent()) / 2, paint);
     c.restoreToCount(save);
   }
+
   private void icon (Canvas c, Drawable icon, float start, float cy, float size, int colorId, boolean rtl) {
     int save = c.save();
     c.translate(rtl ? getWidth() - start - size : start, cy - size / 2);
     c.scale(size / icon.getMinimumWidth(), size / icon.getMinimumHeight());
-    Drawables.draw(c, icon, 0, 0, PorterDuffPaint.get(colorId)); c.restoreToCount(save);
+    Drawables.draw(c, icon, 0, 0, PorterDuffPaint.get(colorId));
+    c.restoreToCount(save);
   }
+
   private void topicIcon (Canvas c, float start, float cy, boolean rtl) {
     float size = scaled(20), cx = x(start + size / 2, rtl);
     if (customEmoji != null) {
-      int save = c.save(); c.translate(cx - size / 2, cy - size / 2);
+      int save = c.save();
+      c.translate(cx - size / 2, cy - size / 2);
       c.scale(size / Math.max(1, customEmoji.getWidth()), size / Math.max(1, customEmoji.getHeight()));
-      customEmoji.draw(c, 0, 0, null, 1f, receiver); c.restoreToCount(save);
+      customEmoji.draw(c, 0, 0, null, 1f, receiver);
+      c.restoreToCount(save);
     } else {
       float r = size / 2;
       paint.setColor(0xff000000 | (topic.info.icon != null ? topic.info.icon.color : 0x6fb9f0));
       DrawAlgorithms.drawRoundRect(c, r/2, cx-r, cy-r, cx+r, cy+r-1, paint);
-      path.reset(); path.moveTo(cx-r+size*.15f, cy+r-size*.3f); path.lineTo(cx-r+size*.15f, cy+r); path.lineTo(cx, cy+r-size*.15f); path.close(); c.drawPath(path, paint);
-      setPaint(13, 0xffffffff, true); paint.setTextAlign(Paint.Align.CENTER);
+      path.reset();
+      path.moveTo(cx-r+size*.15f, cy+r-size*.3f);
+      path.lineTo(cx-r+size*.15f, cy+r);
+      path.lineTo(cx, cy+r-size*.15f);
+      path.close();
+      c.drawPath(path, paint);
+      setPaint(13, 0xffffffff, true);
+      paint.setTextAlign(Paint.Align.CENTER);
       c.drawText(iconInitial, cx, cy-(paint.ascent()+paint.descent())/2, paint);
     }
   }
 
   @Override protected void onDraw (Canvas c) {
     super.onDraw(c);
-    if (topic == null) return;
+    if (topic == null) {
+      return;
+    }
     boolean rtl = Lang.rtl();
     float start = Screen.dp(14) + Screen.dp(36) * selectionFactor, end = getWidth()-Screen.dp(14);
     float cy1 = Screen.dp(9) + firstHeight/2, cy2 = Screen.dp(9) + firstHeight + secondHeight/2;
@@ -257,21 +344,33 @@ public final class ForumTopicView extends View {
       // Positive/online tokens can follow the accent; selection explicitly requires green.
       paint.setColor(Theme.getColor(isSelected() ? ColorId.avatarGreen : ColorId.iconLight));
       paint.setAlpha((int) (255 * selectionFactor));
-      paint.setStyle(isSelected() ? Paint.Style.FILL : Paint.Style.STROKE); paint.setStrokeWidth(Screen.dp(2));
+      paint.setStyle(isSelected() ? Paint.Style.FILL : Paint.Style.STROKE);
+      paint.setStrokeWidth(Screen.dp(2));
       c.drawCircle(cx, cy, r, paint);
       if (isSelected()) {
-        paint.setColor(Theme.getColor(ColorId.white)); paint.setStyle(Paint.Style.STROKE);
-        path.reset(); path.moveTo(cx-Screen.dp(5), cy); path.lineTo(cx-Screen.dp(1), cy+Screen.dp(4)); path.lineTo(cx+Screen.dp(6), cy-Screen.dp(4)); c.drawPath(path, paint);
+        paint.setColor(Theme.getColor(ColorId.white));
+        paint.setStyle(Paint.Style.STROKE);
+        path.reset();
+        path.moveTo(cx-Screen.dp(5), cy);
+        path.lineTo(cx-Screen.dp(1), cy+Screen.dp(4));
+        path.lineTo(cx+Screen.dp(6), cy-Screen.dp(4));
+        c.drawPath(path, paint);
       }
-      paint.setStyle(Paint.Style.FILL); paint.setAlpha(255);
+      paint.setStyle(Paint.Style.FILL);
+      paint.setAlpha(255);
     }
     setPaint(12, Theme.textDecentColor(), false);
     float timeWidth = paint.measureText(time), slot = Screen.dp(18);
     float trailing = end-timeWidth;
     float timeCy = wrapStates ? Screen.dp(9) + scaled(14)/2 : cy1;
     text(c, time, trailing, end, timeCy, 12, Theme.textDecentColor(), false, rtl);
-    if (!time.isEmpty()) trailing -= Screen.dp(4);
-    if (delivery != null) { trailing -= slot; icon(c, delivery, trailing, timeCy, Screen.dp(16), deliveryColor, rtl); }
+    if (!time.isEmpty()) {
+      trailing -= Screen.dp(4);
+    }
+    if (delivery != null) {
+      trailing -= slot;
+      icon(c, delivery, trailing, timeCy, Screen.dp(16), deliveryColor, rtl);
+    }
     float statesStart = wrapStates ? end : trailing;
     float statesCy = wrapStates ? Screen.dp(9) + scaled(14) + Screen.dp(10) : cy1;
     for (int i = 0; i < stateIcons.size(); i++) {
@@ -292,24 +391,47 @@ public final class ForumTopicView extends View {
       float y = top+(i/counterColumns)*(chipHeight+gap);
       paint.setColor(muted ? Theme.badgeMutedColor() : Theme.badgeColor());
       DrawAlgorithms.drawRoundRect(c, chipHeight/2, left, y, left+counterWidth, y+chipHeight, paint);
-      setPaint(11, Theme.badgeTextColor(), true); paint.setTextAlign(Paint.Align.CENTER);
+      setPaint(11, Theme.badgeTextColor(), true);
+      paint.setTextAlign(Paint.Align.CENTER);
       c.drawText(counters.get(i), left+counterWidth/2, y+chipHeight/2-(paint.ascent()+paint.descent())/2, paint);
     }
-    paint.setColor(Theme.separatorColor()); c.drawRect(rtl ? 0 : start, getHeight()-1, rtl ? getWidth()-start : getWidth(), getHeight(), paint);
+    paint.setColor(Theme.separatorColor());
+    c.drawRect(rtl ? 0 : start, getHeight()-1, rtl ? getWidth()-start : getWidth(), getHeight(), paint);
   }
 
   private void clearEmoji () {
-    if (customEmoji != null) customEmoji.performDestroy();
-    customEmoji = null; emojiId = 0; receiver.clear();
+    if (customEmoji != null) {
+      customEmoji.performDestroy();
+    }
+    customEmoji = null;
+    emojiId = 0;
+    receiver.clear();
   }
+
   public void clear () {
-    if (selectionAnimator != null) selectionAnimator.forceFactor(0f);
-    clearEmoji(); topic = null; titleLine = previewLine = ""; selectionFactor = 0; selectionMode = false; setSelected(false); setContentDescription(null);
+    if (selectionAnimator != null) {
+      selectionAnimator.forceFactor(0f);
+    }
+    clearEmoji();
+    topic = null;
+    titleLine = previewLine = "";
+    selectionFactor = 0;
+    selectionMode = false;
+    setSelected(false);
+    setContentDescription(null);
   }
-  @Override protected void onAttachedToWindow () { super.onAttachedToWindow(); receiver.attach(); }
+
+  @Override protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    receiver.attach();
+  }
+
   @Override protected void onDetachedFromWindow () {
     selectionFactor = selectionMode ? 1f : 0f;
-    if (selectionAnimator != null) selectionAnimator.forceFactor(selectionFactor);
-    receiver.detach(); super.onDetachedFromWindow();
+    if (selectionAnimator != null) {
+      selectionAnimator.forceFactor(selectionFactor);
+    }
+    receiver.detach();
+    super.onDetachedFromWindow();
   }
 }

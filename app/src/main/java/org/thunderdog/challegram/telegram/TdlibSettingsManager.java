@@ -165,7 +165,10 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public static final class LocalForumDraft {
     @Nullable public final TdApi.DraftMessage draft;
-    private LocalForumDraft (@Nullable TdApi.DraftMessage draft) { this.draft = draft; }
+
+    private LocalForumDraft (@Nullable TdApi.DraftMessage draft) {
+      this.draft = draft;
+    }
   }
 
   private String forumDraftKey (long chatId, int topicId) {
@@ -176,15 +179,22 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   @Nullable
   public synchronized LocalForumDraft getLocalForumDraft (long chatId, int topicId) {
     byte[] bytes = Settings.instance().pmc().getByteArray(forumDraftKey(chatId, topicId));
-    if (bytes == null) return null;
+    if (bytes == null) {
+      return null;
+    }
     try {
       Bundle bundle = new Bundle();
       for (Map.Entry<String, Object> field : ForumDraftCodec.decode(bytes).entrySet()) {
         Object value = field.getValue();
-        if (value == null || value instanceof String) bundle.putString(field.getKey(), (String) value);
-        else if (value instanceof Integer) bundle.putInt(field.getKey(), (Integer) value);
-        else if (value instanceof Long) bundle.putLong(field.getKey(), (Long) value);
-        else if (value instanceof Boolean) bundle.putBoolean(field.getKey(), (Boolean) value);
+        if (value == null || value instanceof String) {
+          bundle.putString(field.getKey(), (String) value);
+        } else if (value instanceof Integer) {
+          bundle.putInt(field.getKey(), (Integer) value);
+        } else if (value instanceof Long) {
+          bundle.putLong(field.getKey(), (Long) value);
+        } else if (value instanceof Boolean) {
+          bundle.putBoolean(field.getKey(), (Boolean) value);
+        }
       }
       return new LocalForumDraft(Td.restoreDraftMessage(bundle, "draft"));
     } catch (IOException | RuntimeException ignored) {
@@ -197,7 +207,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     Bundle bundle = new Bundle();
     Td.put(bundle, "draft", draft);
     Map<String, Object> fields = new TreeMap<>();
-    for (String key : bundle.keySet()) fields.put(key, bundle.get(key));
+    for (String key : bundle.keySet()) {
+      fields.put(key, bundle.get(key));
+    }
     byte[] bytes = ForumDraftCodec.encode(fields);
     Settings.instance().pmc().putByteArray(forumDraftKey(chatId, topicId), bytes);
     return bytes;

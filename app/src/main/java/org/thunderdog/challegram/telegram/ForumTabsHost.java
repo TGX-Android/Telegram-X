@@ -32,16 +32,24 @@ public final class ForumTabsHost implements CleanupStartupDelegate {
   }
 
   public void attach (Runnable observer) {
-    if (disposed || dataCleared) throw new IllegalStateException("Closed forum tabs host");
+    if (disposed || dataCleared) {
+      throw new IllegalStateException("Closed forum tabs host");
+    }
     observers.add(observer);
-    if (session == null) open();
+    if (session == null) {
+      open();
+    }
   }
 
   private void open () {
     session = tdlib.topics().openList(chatId, "", value -> {
-      if (disposed || dataCleared) return;
+      if (disposed || dataCleared) {
+        return;
+      }
       snapshot = value;
-      for (Runnable observer : new ArrayList<>(observers)) observer.run();
+      for (Runnable observer : new ArrayList<>(observers)) {
+        observer.run();
+      }
     });
   }
 
@@ -49,40 +57,67 @@ public final class ForumTabsHost implements CleanupStartupDelegate {
     observers.remove(observer);
     if (observers.isEmpty()) {
       disposed = true;
-      if (session != null) session.close();
+      if (session != null) {
+        session.close();
+      }
       session = null;
       panelState = null;
       tdlib.listeners().removeCleanupListener(this);
     }
   }
 
-  public ForumTopicStore.Snapshot snapshot () { return snapshot; }
-  public void loadMore () { if (session != null) session.loadMore(); }
-  public void retry () { if (session != null) session.retry(); }
+  public ForumTopicStore.Snapshot snapshot () {
+    return snapshot;
+  }
+
+  public void loadMore () {
+    if (session != null) {
+      session.loadMore();
+    }
+  }
+
+  public void retry () {
+    if (session != null) {
+      session.retry();
+    }
+  }
+
   public void remember (ForumTabsState value) {
-    if (disposed || dataCleared) return;
-    if (tdlib.settings().putForumTabsState(chatId, value, persistenceEpoch)) state = value;
+    if (disposed || dataCleared) {
+      return;
+    }
+    if (tdlib.settings().putForumTabsState(chatId, value, persistenceEpoch)) {
+      state = value;
+    }
   }
 
   @Override public void onPerformUserCleanup () {
     dataCleared = true;
     tdlib.ui().post(() -> {
-      if (session != null) session.close();
+      if (session != null) {
+        session.close();
+      }
       session = null;
       panelState = null;
       state = ForumTabsState.defaultState();
     });
   }
 
-  @Override public void onPerformRestart () { restartPending = true; }
+  @Override public void onPerformRestart () {
+    restartPending = true;
+  }
 
   @Override public void onPerformStartup (boolean afterRestart) {
-    if (afterRestart || restartPending) tdlib.ui().post(() -> {
-      restartPending = false;
-      if (!disposed && !dataCleared) {
-        if (session != null) session.close();
-        open();
-      }
-    });
+    if (afterRestart || restartPending) {
+      tdlib.ui().post(() -> {
+        restartPending = false;
+        if (!disposed && !dataCleared) {
+          if (session != null) {
+            session.close();
+          }
+          open();
+        }
+      });
+    }
   }
 }

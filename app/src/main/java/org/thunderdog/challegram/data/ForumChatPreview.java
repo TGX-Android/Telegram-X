@@ -16,7 +16,8 @@ import java.util.Objects;
 public final class ForumChatPreview {
   public static final int LIMIT = 4;
 
-  private ForumChatPreview () { }
+  private ForumChatPreview () {
+  }
 
   public static final class Item {
     public final int id;
@@ -34,13 +35,17 @@ public final class ForumChatPreview {
     }
 
     @Override public boolean equals (Object obj) {
-      if (!(obj instanceof Item)) return false;
+      if (!(obj instanceof Item)) {
+        return false;
+      }
       Item other = (Item) obj;
       return id == other.id && color == other.color && customEmojiId == other.customEmojiId &&
         general == other.general && Objects.equals(name, other.name);
     }
 
-    @Override public int hashCode () { return Objects.hash(id, name, color, customEmojiId, general); }
+    @Override public int hashCode () {
+      return Objects.hash(id, name, color, customEmojiId, general);
+    }
   }
 
   public static int topicId (long chatId, @Nullable TdApi.Message message) {
@@ -69,7 +74,9 @@ public final class ForumChatPreview {
     TdApi.ForumTopic newest = null;
     for (TdApi.ForumTopic topic : topics) {
       if (available(chatId, topic) && hasTextDraft(topic.draftMessage) &&
-          (newest == null || topic.draftMessage.date > newest.draftMessage.date)) newest = topic;
+          (newest == null || topic.draftMessage.date > newest.draftMessage.date)) {
+        newest = topic;
+      }
     }
     return newest;
   }
@@ -80,7 +87,9 @@ public final class ForumChatPreview {
   }
 
   public static boolean inaccessible (@Nullable TdApi.Error error) {
-    if (error == null) return false;
+    if (error == null) {
+      return false;
+    }
     return error.code == 403 || error.code == 404 || "CHANNEL_PRIVATE".equals(error.message) ||
       "CHAT_ACCESS_DENIED".equals(error.message) || "CHAT_NOT_FOUND".equals(error.message) ||
       "TOPIC_DELETED".equals(error.message);
@@ -95,12 +104,18 @@ public final class ForumChatPreview {
                                   @Nullable TdApi.ForumTopic leadingTopic, boolean leadingUnavailable) {
     LinkedHashMap<Integer, TdApi.ForumTopic> candidates = new LinkedHashMap<>();
     for (TdApi.ForumTopic topic : topics) {
-      if (available(chatId, topic)) candidates.put(topic.info.forumTopicId, topic);
+      if (available(chatId, topic)) {
+        candidates.put(topic.info.forumTopicId, topic);
+      }
     }
-    if (available(chatId, leadingTopic) && leadingTopic.info.forumTopicId == firstId) candidates.put(firstId, leadingTopic);
+    if (available(chatId, leadingTopic) && leadingTopic.info.forumTopicId == firstId) {
+      candidates.put(firstId, leadingTopic);
+    }
     boolean hiddenLeading = leadingTopic != null && leadingTopic.info != null && leadingTopic.info.forumTopicId == firstId && leadingTopic.info.isHidden;
     for (TdApi.ForumTopic topic : topics) {
-      if (topic.info != null && topic.info.chatId == chatId && topic.info.forumTopicId == firstId && topic.info.isHidden) hiddenLeading = true;
+      if (topic.info != null && topic.info.chatId == chatId && topic.info.forumTopicId == firstId && topic.info.isHidden) {
+        hiddenLeading = true;
+      }
     }
     ArrayList<Item> result = new ArrayList<>(LIMIT);
     if (firstId > 0 && !leadingUnavailable && !hiddenLeading) {
@@ -113,9 +128,13 @@ public final class ForumChatPreview {
     ArrayList<TdApi.ForumTopic> recent = new ArrayList<>(candidates.values());
     recent.sort(RECENT_FIRST);
     for (TdApi.ForumTopic topic : recent) {
-      if (result.size() == LIMIT) break;
+      if (result.size() == LIMIT) {
+        break;
+      }
       if (topic.lastMessage != null && topic.lastMessage.schedulingState == null &&
-          topicId(chatId, topic.lastMessage) == topic.info.forumTopicId) result.add(new Item(topic.info.forumTopicId, topic.info));
+          topicId(chatId, topic.lastMessage) == topic.info.forumTopicId) {
+        result.add(new Item(topic.info.forumTopicId, topic.info));
+      }
     }
     return Collections.unmodifiableList(result);
   }

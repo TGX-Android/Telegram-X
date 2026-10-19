@@ -5,8 +5,12 @@ import org.drinkless.tdlib.TdApi;
 /** Topic-only edits: copy the latest snapshot and preserve every unrelated TDLib field. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicNotifications {
-  private ForumTopicNotifications () { }
-  public enum Field { PREVIEW, PINNED, MENTIONS }
+  private ForumTopicNotifications () {
+  }
+
+  public enum Field {
+    PREVIEW, PINNED, MENTIONS
+  }
 
   public static TdApi.ChatNotificationSettings copy (TdApi.ChatNotificationSettings value) {
     return new TdApi.ChatNotificationSettings(value.useDefaultMuteFor, value.muteFor,

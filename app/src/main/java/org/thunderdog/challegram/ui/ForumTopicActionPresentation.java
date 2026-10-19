@@ -13,7 +13,8 @@ import java.util.Objects;
 /** Presentation-only decisions; never changes selection, permissions or batch execution. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 final class ForumTopicActionPresentation {
-  private ForumTopicActionPresentation () { }
+  private ForumTopicActionPresentation () {
+  }
 
   static EnumSet<Action> overflowActions (EnumSet<Action> common, EnumSet<Action> header) {
     EnumSet<Action> overflow = common.clone();
@@ -38,14 +39,24 @@ final class ForumTopicActionPresentation {
     boolean failed = result.outcomes.isEmpty(), uncertain = false, differentErrors = false;
     TdApi.Error cause = null;
     for (ForumTopicActions.BatchOutcome outcome : result.outcomes) {
-      if (outcome.getSuccessful()) continue;
+      if (outcome.getSuccessful()) {
+        continue;
+      }
       failed = true;
-      if (outcome.uncertain) { uncertain = true; continue; }
+      if (outcome.uncertain) {
+        uncertain = true;
+        continue;
+      }
       TdApi.Error error = outcome.error;
       // Unsent siblings are not the reason preflight failed; prefer the actual error.
-      if (error.code == ForumTopicActions.BATCH_PREFLIGHT_ABORTED) continue;
-      if (cause == null) cause = error;
-      else if (cause.code != error.code || !Objects.equals(cause.message, error.message)) differentErrors = true;
+      if (error.code == ForumTopicActions.BATCH_PREFLIGHT_ABORTED) {
+        continue;
+      }
+      if (cause == null) {
+        cause = error;
+      } else if (cause.code != error.code || !Objects.equals(cause.message, error.message)) {
+        differentErrors = true;
+      }
     }
     return failed ? new BatchFailure(differentErrors ? null : cause, uncertain, result.failedTargets()) : null;
   }

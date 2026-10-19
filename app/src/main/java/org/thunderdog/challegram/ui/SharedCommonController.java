@@ -86,7 +86,9 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
 
   @Override protected void onScopeChanged () {
     synchronized (observedPolls) {
-      for (long id : observedPolls) tdlib.listeners().removePollListener(id, this);
+      for (long id : observedPolls) {
+        tdlib.listeners().removePollListener(id, this);
+      }
       observedPolls.clear();
     // endregion
     }
@@ -148,7 +150,9 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   @Override
   public void onClick (View v) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (retryLoad(v)) return;
+    if (retryLoad(v)) {
+      return;
+    }
     // endregion
     ListItem item = (ListItem) v.getTag();
     if (item != null && item.getViewType() == ListItem.TYPE_CUSTOM_INLINE) {
@@ -170,8 +174,11 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
         }
         case InlineResult.TYPE_ARTICLE: {
           // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-          if (topicId != null) openScopedMessage(result.getMessage());
-          else tdlib.ui().openMessage(this, chatId, new MessageId(chatId, result.getQueryId()), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+          if (topicId != null) {
+            openScopedMessage(result.getMessage());
+          } else {
+            tdlib.ui().openMessage(this, chatId, new MessageId(chatId, result.getQueryId()), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+          }
           // endregion
           break;
         }
@@ -190,16 +197,22 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   protected InlineResult<?> parseObject (TdApi.Object object) {
     TdApi.Message message = (TdApi.Message) object;
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (!acceptsMessage(message)) return null;
+    if (!acceptsMessage(message)) {
+      return null;
+    }
     // endregion
     InlineResult<?> result;
 
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (filter instanceof TdApi.SearchMessagesFilterPoll) {
-      if (!(message.content instanceof TdApi.MessagePoll)) return null;
+      if (!(message.content instanceof TdApi.MessagePoll)) {
+        return null;
+      }
       TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
       synchronized (observedPolls) {
-        if (!isDestroyed() && observedPolls.add(poll.id)) tdlib.listeners().addPollListener(poll.id, this);
+        if (!isDestroyed() && observedPolls.add(poll.id)) {
+          tdlib.listeners().addPollListener(poll.id, this);
+        }
       }
       result = new InlineResultMultiline(context, tdlib, message, poll);
     } else if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterUrl.CONSTRUCTOR) {
@@ -249,7 +262,9 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
 
   @Override public void onUpdatePoll (TdApi.Poll poll) {
     tdlib.ui().post(() -> {
-      if (isDestroyed()) return;
+      if (isDestroyed()) {
+        return;
+      }
       Map<Long, TdApi.MessagePoll> ids = new HashMap<>();
       collectPollMessages(data, poll.id, ids);
       collectPollMessages(searchData, poll.id, ids);
@@ -261,10 +276,14 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   }
 
   private static void collectPollMessages (ArrayList<InlineResult<?>> items, long pollId, Map<Long, TdApi.MessagePoll> ids) {
-    if (items == null) return;
+    if (items == null) {
+      return;
+    }
     for (InlineResult<?> item : items) {
       TdApi.Message message = item.getMessage();
-      if (message != null && message.content instanceof TdApi.MessagePoll && ((TdApi.MessagePoll) message.content).poll.id == pollId) ids.put(message.id, (TdApi.MessagePoll) message.content);
+      if (message != null && message.content instanceof TdApi.MessagePoll && ((TdApi.MessagePoll) message.content).poll.id == pollId) {
+        ids.put(message.id, (TdApi.MessagePoll) message.content);
+      }
     }
   // endregion
   }
@@ -302,7 +321,9 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   @Override
   public TGPlayerController.PlayList buildPlayList (TdApi.Message fromMessage) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (!acceptsMessage(fromMessage)) return null;
+    if (!acceptsMessage(fromMessage)) {
+      return null;
+    }
     // endregion
     String query;
     ArrayList<InlineResult<?>> data;
@@ -341,7 +362,9 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
       if (result instanceof InlineResultCommon) {
         TdApi.Message msg = result.getMessage();
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        if (!acceptsMessage(msg)) continue;
+        if (!acceptsMessage(msg)) {
+          continue;
+        }
         // endregion
         if (TGPlayerController.compareTracks(fromMessage, msg)) {
           if (foundIndex != -1) {
