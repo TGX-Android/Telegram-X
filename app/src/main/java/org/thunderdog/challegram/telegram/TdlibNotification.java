@@ -157,7 +157,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   }
 
   public boolean canMergeWith (@Nullable TdlibNotification n) {
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (n != null && notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR && n.notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR && allowContentPreview() && n.allowContentPreview()) {
       // endregion
       TdApi.Message m = ((TdApi.NotificationTypeNewMessage) notification.type).message;
@@ -180,7 +180,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     return false;
   }
 
-  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public boolean isForumMessage () {
     TdApi.Message message = findMessage();
     return message != null && message.topicId instanceof TdApi.MessageTopicForum;
@@ -220,7 +220,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   // endregion
 
   public boolean needContentPreview () {
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (!allowContentPreview()) {
       return false;
     }
@@ -363,7 +363,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   }
 
   public CharSequence getTextRepresentation (Tdlib tdlib, boolean onlyPinned, boolean allowContent, List<TdlibNotification> mergedList, boolean isEdited, boolean isEditedVisible, @Nullable boolean[] hasCustomText) {
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (!allowContent) {
       return Lang.plural(R.string.xNewMessages, mergedList.size());
     }
@@ -371,7 +371,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     List<TdApi.Message> messages = new ArrayList<>(mergedList.size());
     boolean isForward = false;
     for (TdlibNotification notification : mergedList) {
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       if (!notification.allowContentPreview()) {
         return Lang.plural(R.string.xNewMessages, mergedList.size());
       }
@@ -401,7 +401,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   public CharSequence getTextRepresentation (Tdlib tdlib, boolean onlyPinned, boolean allowContent, @Nullable boolean[] hasCustomText) {
     switch (notification.type.getConstructor()) {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR: {
-        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (!allowContent || !allowContentPreview()) {
           return Lang.getString(R.string.YouHaveNewMessage);
         }
@@ -434,7 +434,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
         return Lang.getString(R.string.YouHaveNewMessage);
       }
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR: {
-        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (!allowContent || !allowContentPreview()) {
           return Lang.getString(R.string.YouHaveNewMessage);
         }

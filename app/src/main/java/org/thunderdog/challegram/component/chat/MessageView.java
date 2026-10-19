@@ -466,7 +466,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !msg.messagesController().inSelectMode()) {
         AccessibilityNodeInfoCompat.wrap(info).addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(R.id.btn_openForumTopic, topic));
       }
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "C2-L10N-02")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "C2-L10N-02")
       if (info.getContentDescription() == null) {
         info.setContentDescription(Lang.getString(R.string.format_forumMessageAccessibility, topic,
           ContentPreview.getChatListPreview(msg.tdlib(), msg.getChatId(), msg.getMessage(), true).buildText(false)));

@@ -107,7 +107,7 @@ final class ForumTabsNavigation {
     return owner.navigateBack() ? Result.RETURNED : Result.RETRY;
   }
 
-  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+  @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics")
   static Result returnFromUnavailableTopic (ViewController<?> owner, int topicId, boolean commit) {
     if (topicId <= 0 || !isCurrent(owner)) {
       return Result.UNAVAILABLE;
@@ -148,7 +148,7 @@ final class ForumTabsNavigation {
     return owner.navigateBack() ? Result.RETURNED : Result.RETRY;
   }
 
-  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+  @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics")
   static <T> int unavailableTopicParentIndex (List<T> stack, int ownerIndex, Predicate<T> isParent, Predicate<T> removable) {
     if (ownerIndex < 0 || ownerIndex >= stack.size()) {
       return -1;

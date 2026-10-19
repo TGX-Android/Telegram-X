@@ -63,7 +63,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     super(context, tdlib, TYPE_ARTICLE, null, null);
     setMessage(message);
     title = poll.question.text;
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "L10N-01")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "L10N-01")
     StringBuilder summary = new StringBuilder(Lang.getString(R.string.format_forumPollSummary,
       Lang.getString(poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen),
       Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount)));

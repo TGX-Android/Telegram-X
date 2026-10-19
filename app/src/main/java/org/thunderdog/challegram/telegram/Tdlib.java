@@ -65,7 +65,7 @@ import org.thunderdog.challegram.data.TD;
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.data.ForumHistory;
 // endregion
-// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 import org.thunderdog.challegram.data.ForumNotificationReadScope;
 // endregion
 import org.thunderdog.challegram.data.TGMessage;
@@ -5815,7 +5815,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     send(new TdApi.ViewMessages(chatId, messageIds, source, true), typedOkHandler());
   }
 
-  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public void readNotificationMessages (long chatId, long[] messageIds, ResultHandler<TdApi.Ok> handler) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     if (!ChatId.isSupergroup(chatId) || supergroup != null && !supergroup.isForum) {

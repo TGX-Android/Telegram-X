@@ -538,12 +538,12 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   }
 
   public boolean needPreview (@NonNull TdlibNotificationGroup group) {
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return allowNotificationPreview() && tdlib.notifications().isShowPreviewEnabled(group.getChatId(), group.isMention());
     // endregion
   }
 
-  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public boolean needPreview (@NonNull TdlibNotificationGroup group, @Nullable TdlibNotification notification) {
     return notification != null && allowNotificationPreview() && notification.allowContentPreview() &&
       (notification.isForumMessage() || needPreview(group));
@@ -551,13 +551,13 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   // endregion
 
   public boolean needContentPreview (@NonNull TdlibNotificationGroup group) {
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return allowNotificationPreview() && tdlib.notifications().needContentPreview(group.getChatId(), group.isMention());
     // endregion
   }
 
   public boolean needContentPreview (@NonNull TdlibNotificationGroup group, @Nullable TdlibNotification notification) {
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return notification != null && allowNotificationPreview() &&
       tdlib.notifications().needContentPreview(group.getChatId(), group.isMention(), notification.isForumMessage() ? notification.allowContentPreview() : null) &&
       notification.needContentPreview();

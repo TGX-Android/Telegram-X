@@ -42,7 +42,7 @@ public final class ForumTopicContext {
     return topic == null && error == null;
   }
 
-  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+  @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics")
   public static boolean isUnavailable (@Nullable TdApi.Error error) {
     return error != null && (error.code == 404 || error.code == 403 ||
       "TOPIC_DELETED".equals(error.message) || "TOPIC_NOT_FOUND".equals(error.message));

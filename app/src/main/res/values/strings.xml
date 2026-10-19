@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
   <!-- region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095") -->
-  <!-- Copy edits and resource reuse: @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "C2-L10N-02"). Original feature authorship above is retained. -->
+  <!-- Copy edits and resource reuse: @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "C2-L10N-02"). Original feature authorship above is retained. -->
   <string name="ForumEditorNew">New Topic</string>
   <string name="ForumEditorEdit">Edit Topic</string>
   <string name="ForumEditorCreate">Create</string>
@@ -68,13 +68,13 @@
   <string name="ForumProfilePollClosed">Closed poll</string>
   <string name="ForumProfilePollVoters">Voters: %1$d</string>
   <string name="ForumProfilePollCount">Polls: %1$d</string>
-  <!-- region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "L10N-01") -->
+  <!-- region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "L10N-01") -->
   <!-- Poll state, formatted voter count. Translators may change order and punctuation. -->
   <string name="format_forumPollSummary">%1$s · %2$s</string>
   <!-- Poll question, poll state, formatted voter count; spoken description. -->
   <string name="format_forumPollAccessibility">%1$s. %2$s. %3$s</string>
   <!-- endregion -->
-  <!-- region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "C2-L10N-02") -->
+  <!-- region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "C2-L10N-02") -->
   <!-- Group title, closed-topic status. Translators may change order and punctuation. -->
   <string name="format_forumClosedTopicSubtitle">%1$s · %2$s</string>
   <!-- Open-topic action label, message preview; spoken fallback description. -->

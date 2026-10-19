@@ -119,7 +119,7 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     adapter.notifyItemRangeChanged(0, chats.size());
   }
 
-  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public void updateThemeColors () {
     if (destroyed) {
       return;

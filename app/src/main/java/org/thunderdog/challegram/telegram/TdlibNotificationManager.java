@@ -1736,7 +1736,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
-  // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   public boolean needContentPreview (long chatId, boolean isMention, @Nullable Boolean resolvedShowPreview) {
     if (resolvedShowPreview == null) {
       return needContentPreview(chatId, isMention);

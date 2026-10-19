@@ -498,7 +498,7 @@ public final class ForumTopicUi implements ChatListener {
       start.run();
       return;
     }
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "C2-L10N-02")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "C2-L10N-02")
     StringBuilder scope = new StringBuilder(action == Action.CLEAR_GENERAL ? Lang.getString(R.string.ForumSelectionClearConfirm) :
       Lang.plural(R.string.ForumSelectionDeleteConfirm, targets.size()));
     // endregion
@@ -559,7 +559,7 @@ public final class ForumTopicUi implements ChatListener {
     String text = failure.error != null ? batchError(failure.error) : Lang.getString(R.string.LaunchSubtitleFatalError);
     if (failure.uncertain) {
       String warning = Lang.getString(R.string.ForumSelectionUncertain);
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "C2-L10N-02")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "C2-L10N-02")
       text = failure.retryTargets.isEmpty() ? warning : Lang.getString(R.string.format_doubleLines, text, warning);
       // endregion
     }

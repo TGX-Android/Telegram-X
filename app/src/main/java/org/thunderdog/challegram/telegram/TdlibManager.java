@@ -200,7 +200,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           tdlib.notifications().onHideAll(extras.category);
           break;
         case ExternalAction.MARK_AS_READ:
-          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           extras.read(tdlib, () -> tdlib.notifications().releaseTdlibReference(onDone));
           return;
           // endregion
@@ -268,7 +268,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       tdlib.awaitMessageSent(sendingMessage, () -> {
         if (ForumHistory.isForum(topic)) {
           // A chat-wide notification group may include other topics; don't mark them read.
-          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           tdlib.readNotificationMessages(extras.chatId, new long[] {extras.messageIds[extras.messageIds.length-1]}, (ok, error) -> {
             if (error != null) {
               UI.showError(error);
@@ -280,7 +280,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           return;
           // endregion
         } else {
-          // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "PR #1095")
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           extras.read(tdlib, onDone);
           // endregion
         }

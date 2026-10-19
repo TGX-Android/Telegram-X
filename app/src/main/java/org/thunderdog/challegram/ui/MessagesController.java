@@ -3014,7 +3014,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return safe;
   }
 
-  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+  @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics")
   public boolean canLeaveUnavailableTopic (int topicId) {
     return !isForumTabsHost() && forumTopicContext != null && forumTopicContext.topicId == topicId &&
       canSwitchForumTab(false) && !performOnBackPressed(true, false);
@@ -3216,7 +3216,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return;
       }
       updateForumTabsView();
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
       if (isForumTabsHost() && (value != null && value.info.isHidden || ForumTopicContext.isUnavailable(error)) &&
           tdlib.chatAccessState(chat) >= Tdlib.CHAT_ACCESS_OK) {
         pendingForumTab = 0;
@@ -3313,7 +3313,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (forum == null) {
       return null;
     }
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
     if (ForumTopicContext.isUnavailable(forum.error()) || ForumTopicContext.isUnavailable(forumHistoryError)) {
       return Lang.getString(R.string.ForumTopicUnavailable);
     }
@@ -3322,14 +3322,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return Lang.getString(R.string.ForumTopicLoading);
     }
     if (forum.error() != null || forumHistoryError != null) {
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
       return Lang.getString(R.string.ForumTopicLoadFailed);
       // endregion
     }
     return canSendToForumTopic() ? null : Lang.getString(R.string.ForumTopicClosed);
   }
 
-  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+  @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics")
   private boolean canRetryForum () {
     ForumTopicContext forum = composerForumContext();
     return forum != null && (forum.error() != null || forumHistoryError != null) &&
@@ -3977,7 +3977,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     String topicRestriction = forumRestriction();
     if (topicRestriction != null) {
-      // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
       boolean retry = canRetryForum();
       // endregion
       showActionButton(topicRestriction, retry ? ACTION_RETRY_FORUM : ACTION_EMPTY, retry);
@@ -7160,7 +7160,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       case ACTION_RETRY_FORUM: {
-        // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
         if (!canRetryForum()) {
           break;
         }

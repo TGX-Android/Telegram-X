@@ -732,7 +732,7 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
     return ForumTabsNavigation.canLeaveEditor(form);
   }
 
-  @me.vkryl.annotation.MadeByLLM(value = "GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+  @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics")
   public boolean completeCreationNavigation (MessagesController controller) {
     if (isDestroyed() || controller.isDestroyed() || controller.tdlib() != tdlib || controller.getChatId() != getChatId() ||
         form == null || !form.creating || form.phase() != ForumTopicEditorState.Phase.SUCCEEDED || form.completedTopicId() <= 0) {
@@ -755,7 +755,7 @@ public final class ForumTopicEditController extends ViewController<ForumTopicEdi
     // ChatOpenParameters.after runs at animation readiness, not at completion. The
     // navigation processor still needs the editor as getPrevious() to detach its
     // view. Removing it earlier strands the editor above every subsequent page.
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
     if (navigation.isAnimating() || navigation.getStack().isLocked()) {
     // endregion
       tdlib.ui().postDelayed(() -> removeCompletedEditor(navigation), 100);

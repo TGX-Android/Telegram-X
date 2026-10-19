@@ -107,7 +107,7 @@ import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.ui.MapControllerFactory;
 import org.thunderdog.challegram.ui.MessagesController;
-// region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics")
 import org.thunderdog.challegram.ui.ForumTopicEditController;
 // endregion
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
@@ -2660,7 +2660,7 @@ public class TdlibUi extends Handler {
       previous = stack.get(index-1);
     }
     // Switching A -> B in one forum replaces A, retaining its existing list/stream parent.
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
     while (previous instanceof MessagesController && !((MessagesController) previous).isForumTabsHost() && previous.tdlib() == tdlib && previous.getChatId() == chat.id &&
         ForumHistory.isForum(((MessagesController) previous).getMessageTopicId())) {
       stack.destroy(index-1);

@@ -176,7 +176,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     setShowScam(false);
     setShowFake(false);
     setShowLock(false);
-    // region @MadeByLLM("GPT-5 (Codex; exact runtime version unavailable)", id = "forum-topics", ref = "C2-L10N-02")
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "C2-L10N-02")
     CharSequence subtitle = !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : restriction != null ? restriction :
       topic != null && topic.info.isClosed ? Lang.getString(R.string.format_forumClosedTopicSubtitle, chat.title, Lang.getString(R.string.ForumTopicClosed)) : chat.title;
     // endregion
