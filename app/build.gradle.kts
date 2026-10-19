@@ -138,6 +138,9 @@ val validateApiTokens = tasks.register<ValidateApiTokensTask>("validateApiTokens
 val fetchLocalizedStrings = tasks.register<FetchLocalizedStringsTask>("fetchLocalizedStrings") {
   group = "Setup"
   description = "Generates and updates all strings.xml resources based on translations.telegram.org"
+  builtinStringsFile.set(layout.projectDirectory.file(
+    "src/main/other/builtin-strings.txt"
+  ))
   resOutputDir.set(layout.buildDirectory.dir(
     "generated/tgx/locales/res"
   ))
