@@ -13,6 +13,7 @@ The guide below provides the flow for creating a perfect pull request to the Tel
 - [ ] **Modern**. Latest APIs are used where available, with deprecated ones only as a fallback for older versions.
 - [ ] **Transparent**. Changes made with the help of LLMs are annotated with `@MadeByLLM` and the exact model used (see its documentation).
 - [ ] **Accountable**. All commits are authored by you, without `Co-authored-by` or other attribution to LLMs: the model used is already credited via `@MadeByLLM`.
+- [ ] **Traceable**. Commit titles fit into 65 characters, and descriptions briefly explain the reason for the change, unless the title already does. Each `id` added to `@MadeByLLM` or `@MadeByHuman` is also included as a `Context-Id: <id>` trailer of that commit.
 - [ ] **Measured**. Optimizations are backed by a benchmark or memory measurement when possible: the PR includes how it was measured and the results before and after.
 - [ ] **Completed**. All changes are properly tested (including manually) and ready to be merged.
 - [ ] **Up-To-Date**. Your PR is based on the **latest** commit of the `main` branch.
