@@ -814,6 +814,9 @@ android {
         if (variant.debuggable) {
           append("-debug")
         }
+        if (android.buildTypes.getByName(variant.buildType!!).signingConfig == null) {
+          append("-unsigned")
+        }
       }.toString()
 
       var baseVersionCode: Int? = null
