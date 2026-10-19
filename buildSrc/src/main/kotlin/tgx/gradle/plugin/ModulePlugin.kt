@@ -156,9 +156,9 @@ open class ModulePlugin : Plugin<Project> {
         is ApplicationExtension -> {
           buildToolsVersion = build.buildToolsVersion
           ndkVersion = if (useLegacyNdk) {
-            build.primaryNdkVersion
-          } else {
             build.legacyNdkVersion
+          } else {
+            build.primaryNdkVersion
           }
           compileSdk {
             version = release(build.compileSdkVersion)
