@@ -13,7 +13,6 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.*
 import tgx.gradle.findExtraFolders
-import tgx.gradle.ndkVersionMajor
 import tgx.gradle.ndkVersionToMinSdk
 import tgx.gradle.requireFile
 import tgx.gradle.source.AppBuildVersionSource
@@ -28,6 +27,7 @@ open class ModulePlugin : Plugin<Project> {
     } catch (_: Exception) {
       null
     }
+    val doNotObfuscate = config?.doNotObfuscate ?: false
     val useLegacyNdk = try {
       project.extensions.getByType<AppConfigurationExtension>().useLegacyNdk.get()
     } catch (_: Exception) {
@@ -205,48 +205,53 @@ open class ModulePlugin : Plugin<Project> {
                 }
               }
             }
+          }
 
-            buildTypes {
-              getByName("debug") {
-                signingConfig = signingConfigs["debug"]
+          buildTypes {
+            getByName("debug") {
+              signingConfig = signingConfigs["debug"]
 
-                isDebuggable = true
-                isJniDebuggable = true
-                isMinifyEnabled = false
+              isDebuggable = true
+              isJniDebuggable = true
+              isMinifyEnabled = false
 
-                multiDexKeepProguard = requireFile(project.layout.projectDirectory.file("multidex-rules.pro").asFile)
+              multiDexKeepProguard = requireFile(project.layout.projectDirectory.file("multidex-rules.pro").asFile)
 
-                ndk.debugSymbolLevel = "full"
+              ndk.debugSymbolLevel = "full"
 
-                if (config.forceOptimize) {
-                  proguardFiles(
-                    getDefaultProguardFile(ProguardFiles.ProguardFile.OPTIMIZE.fileName),
-                    "proguard-rules.pro"
-                  )
-                  if (config.isHuaweiBuild) {
-                    proguardFile("proguard-hms.pro")
-                  }
-                }
-              }
-
-              getByName("release") {
-                signingConfig = signingConfigs["release"]
-
-                isMinifyEnabled = !config.doNotObfuscate
-                isShrinkResources = !config.doNotObfuscate
-
-                multiDexKeepProguard = requireFile(project.layout.projectDirectory.file("multidex-rules.pro").asFile)
-
-                ndk.debugSymbolLevel = "full"
+              if (config != null && config.forceOptimize) {
+                isMinifyEnabled = !doNotObfuscate
+                isShrinkResources = !doNotObfuscate
 
                 proguardFiles(
                   getDefaultProguardFile(ProguardFiles.ProguardFile.OPTIMIZE.fileName),
                   "proguard-rules.pro"
                 )
-
                 if (config.isHuaweiBuild) {
                   proguardFile("proguard-hms.pro")
                 }
+              }
+            }
+
+            getByName("release") {
+              signingConfig = signingConfigs.findByName("release") ?: signingConfigs["debug"].takeIf {
+                config?.isExperimentalBuild ?: false
+              }
+
+              isMinifyEnabled = !doNotObfuscate
+              isShrinkResources = !doNotObfuscate
+
+              multiDexKeepProguard = requireFile(project.layout.projectDirectory.file("multidex-rules.pro").asFile)
+
+              ndk.debugSymbolLevel = "full"
+
+              proguardFiles(
+                getDefaultProguardFile(ProguardFiles.ProguardFile.OPTIMIZE.fileName),
+                "proguard-rules.pro"
+              )
+
+              if (config != null && config.isHuaweiBuild) {
+                proguardFile("proguard-hms.pro")
               }
             }
           }
