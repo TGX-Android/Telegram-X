@@ -154,7 +154,7 @@ enum class Abi(
   val isSingleAbi: Boolean
     get() =
       when (this) {
-        UNIVERSAL, ARM -> false
+        UNIVERSAL, ARM, INTEL -> false
         else -> true
       }
 
