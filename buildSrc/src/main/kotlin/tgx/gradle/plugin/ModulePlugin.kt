@@ -51,7 +51,7 @@ open class ModulePlugin : Plugin<Project> {
 
     val enableSplitAbi = (
       project.extensions.findByType<AppConfigurationExtension>()?.enableSplitAbi ?:
-      project.needEnableSplitAbi(useLegacyNdk, globalAbiFiltersProvider)
+      project.needEnableSplitAbi(globalAbiFiltersProvider)
     ).get()
 
     val libs = project.the<LibrariesForLibs>()

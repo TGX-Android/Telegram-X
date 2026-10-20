@@ -55,7 +55,7 @@ open class AppConfigurationPlugin : Plugin<Project> {
     val useLegacyNdk = project.gradleFlag("useLegacyNdk")
     val useLegacyPackaging = project.gradleFlag("useLegacyPackaging")
     val abiFilters = project.findAbiFilters(useLegacyNdk)
-    val enableSplitAbi = project.needEnableSplitAbi(useLegacyNdk, abiFilters)
+    val enableSplitAbi = project.needEnableSplitAbi(abiFilters)
 
     ext.generateBaselineProfile.set(generateBaselineProfile)
     ext.useLegacyNdk.set(useLegacyNdk)

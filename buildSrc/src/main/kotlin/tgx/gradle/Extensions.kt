@@ -279,7 +279,7 @@ fun ApplicationVariant.findAbiFilters(ifEmpty: List<String>): List<String> =
     output.findAbiFilters(ifEmpty)
   }.distinct()
 
-fun Project.needEnableSplitAbi(useLegacyNdk: Provider<Boolean>, abiFilters: Provider<List<String>>): Provider<Boolean> =
+fun Project.needEnableSplitAbi(abiFilters: Provider<List<String>>): Provider<Boolean> =
   providers.gradleProperty("abi")
     .map { it.isEmpty() }
     .orElse(true)
