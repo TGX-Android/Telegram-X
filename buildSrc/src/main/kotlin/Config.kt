@@ -36,7 +36,6 @@ object Config {
     "avfilter",
     "avutil"
   )
-  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
 }
 
 data class PullRequest (
