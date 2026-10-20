@@ -12,6 +12,7 @@
  */
 package tgx.gradle
 
+import Abi
 import Sdk
 import SdkVariant
 import com.android.build.api.dsl.BaseFlavor
@@ -277,6 +278,36 @@ fun ApplicationVariant.findAbiFilters(ifEmpty: List<String>): List<String> =
   this.outputs.flatMap { output ->
     output.findAbiFilters(ifEmpty)
   }.distinct()
+
+fun Project.needEnableSplitAbi(useLegacyNdk: Provider<Boolean>, abiFilters: Provider<List<String>>): Provider<Boolean> =
+  providers.gradleProperty("abi")
+    .map { it.isEmpty() }
+    .orElse(true)
+    .zip(abiFilters) { enableSplitAbi, abiFilters ->
+      enableSplitAbi && abiFilters.size > 1
+    }
+
+fun Project.findAbiFilters(useLegacyNdk: Provider<Boolean>): Provider<List<String>> =
+  providers.gradleProperty("abi")
+    .map(Abi::toFilters)
+    .orElse(Abi.FILTERS)
+    .zip(useLegacyNdk) { abiFilters, useLegacyNdk ->
+      abiFilters.filter { abi ->
+        abi == "armeabi-v7a" || abi == "x86" || !useLegacyNdk
+      }
+    }
+    .zip(providers.gradleProperty("android.injected.build.abi").orElse("")) { abiFilters, injectedAbiList ->
+      val injectedAbi = injectedAbiList
+        .split(",")
+        .filter {
+          it in Abi.FILTERS
+        }
+      injectedAbi.firstOrNull {
+        it in abiFilters
+      }?.let {
+        listOf(it)
+      } ?: abiFilters
+    }
 
 fun String.ndkVersionMajor(): Int =
   VersionNumber.parse(this).major

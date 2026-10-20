@@ -1,6 +1,5 @@
 package tgx.gradle.plugin
 
-import Abi
 import Config
 import Sdk
 import com.android.build.api.dsl.ApplicationExtension
@@ -12,10 +11,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.*
-import tgx.gradle.findExtraFolders
-import tgx.gradle.gradleFlag
-import tgx.gradle.ndkVersionToMinSdk
-import tgx.gradle.requireFile
+import tgx.gradle.*
 import tgx.gradle.source.AppBuildVersionSource
 import tgx.gradle.source.KeystoreSource
 import java.io.File
@@ -23,66 +19,40 @@ import java.io.File
 @Suppress("UnstableApiUsage")
 open class ModulePlugin : Plugin<Project> {
   override fun apply(project: Project) {
-    val config by lazy {
-      try {
-        project.extensions.getByType<AppConfigurationExtension>().config.get()
-      } catch (_: Exception) {
-        null
-      }
-    }
-    val doNotObfuscate by lazy {
+    val config =
+      project.extensions.findByType<AppConfigurationExtension>()?.config?.get()
+    val doNotObfuscate =
       config?.doNotObfuscate ?: false
-    }
-    val useLegacyNdk by lazy {
-      try {
-        project.extensions.getByType<AppConfigurationExtension>().useLegacyNdk.get()
-      } catch (_: Exception) {
-        project.gradleFlag("useLegacyNdk").get()
-      }
-    }
-    val build by lazy {
+    val useLegacyNdk = (
+      project.extensions.findByType<AppConfigurationExtension>()?.useLegacyNdk ?:
+      project.gradleFlag("useLegacyNdk")
+    )
+    val build =
       config?.build ?:
       project.providers.of(AppBuildVersionSource::class) {
         parameters.version.set(
           project.isolated.rootProject.projectDirectory.file("version.properties")
         )
       }.get()
-    }
-    val appliedNdkVersion by lazy {
+
+    val appliedNdkVersion = useLegacyNdk.map { useLegacyNdk ->
       if (useLegacyNdk) {
         build.legacyNdkVersion
       } else {
         build.primaryNdkVersion
       }
-    }
+    }.get()
 
-    val abi by lazy {
-      project.providers.gradleProperty("abi")
-    }
+    val globalAbiFiltersProvider = (
+      project.extensions.findByType<AppConfigurationExtension>()?.abiFilters ?:
+      project.findAbiFilters(useLegacyNdk)
+    )
+    val globalAbiFilters = globalAbiFiltersProvider.get()
 
-    val enableSplitAbi by lazy {
-      try {
-        project.extensions.getByType<AppConfigurationExtension>().enableSplitAbi.get()
-      } catch (_: Exception) {
-        abi.map { it.isEmpty() }.orElse(true).get()
-      }
-    }
-
-    val globalAbiFilters by lazy {
-      try {
-        project.extensions.getByType<AppConfigurationExtension>().abiFilters.get()
-      } catch (_: Exception) {
-        project.providers.gradleProperty("android.injected.build.abi").map {
-          it.split(",")
-        }.orElse(
-          abi.map(Abi::toFilters).orElse(Abi.FILTERS)
-        ).map {
-          it.filter { abi ->
-            abi == "x86" || abi == "armeabi-v7a" || !useLegacyNdk
-          }
-        }.get()
-      }
-    }
+    val enableSplitAbi = (
+      project.extensions.findByType<AppConfigurationExtension>()?.enableSplitAbi ?:
+      project.needEnableSplitAbi(useLegacyNdk, globalAbiFiltersProvider)
+    ).get()
 
     val libs = project.the<LibrariesForLibs>()
     project.dependencies {
