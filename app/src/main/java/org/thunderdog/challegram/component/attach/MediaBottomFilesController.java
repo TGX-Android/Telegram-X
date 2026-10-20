@@ -39,7 +39,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -921,11 +920,13 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         InlineResultCommon external = createItem(context, tdlib, KEY_FOLDER + externalPath, R.drawable.baseline_settings_24, Lang.getString(R.string.ApplicationFolderExternal), externalPath);
         items.add(createItem(external, R.id.btn_folder));
       }
-      items.add(createItem(createItem(context, tdlib, KEY_FOLDER + internalPath, R.drawable.baseline_settings_24, Lang.getString(R.string.ApplicationFolder), internalPath), R.id.btn_folder));
+      if (tdlib.isDeveloper()) {
+        items.add(createItem(createItem(context, tdlib, KEY_FOLDER + internalPath, R.drawable.baseline_settings_24, Lang.getString(R.string.ApplicationFolder), internalPath), R.id.btn_folder));
+      }
     } catch (Throwable t) {
       Log.e(t);
     }
-    if (Config.ENABLE_BASELINE_PROFILE_HOOKS || BuildConfig.DEBUG) {
+    if (Config.ENABLE_BASELINE_PROFILE_HOOKS || tdlib.isDeveloper()) {
       InlineResultCommon snapshot = createItem(context, tdlib, KEY_SNAPSHOT, R.drawable.baseline_lock_24, Lang.getString(R.string.SessionSnapshot), Lang.getString(R.string.SessionSnapshotDesc));
       items.add(createItem(snapshot, R.id.btn_folder));
     }

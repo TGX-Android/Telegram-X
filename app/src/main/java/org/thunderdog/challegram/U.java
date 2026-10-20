@@ -2369,7 +2369,7 @@ public class U {
     String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
       (!"none".equals(BuildConfig.TGX_EXTENSION) ? "Extension: " + BuildConfig.TGX_EXTENSION + "\n" : "") +
-      (!BuildConfig.LATEST_FLAVOR ? ("flavor: " + BuildConfig.FLAVOR_SDK + "\n") : "") +
+      (!BuildConfig.LATEST_FLAVOR ? ("flavor: " + BuildConfig.FLAVOR + "\n") : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
       "androidx-media3: " + MediaLibraryInfo.VERSION + " [" + MediaLibraryInfo.registeredModules().replaceAll("(?<=^| )media3\\.", "") + "]\n" +
       "tgcalls: TGX-Android/tgcalls@" + BuildConfig.TGCALLS_COMMIT + "\n" +
@@ -3590,19 +3590,12 @@ public class U {
 
   public static String getPreferredAbiFlavor () {
     final String abi = U.getCpuAbi();
-    final String flavor = switch (abi) {
+    return switch (abi) {
       case "arm64-v8a" -> "arm64";
       case "armeabi-v7a" -> "arm32";
       case "x86" -> "x86";
       case "x86_64", "x64" -> "x64";
       default -> null;
     };
-    if (flavor == null) {
-      String[] flavors = new String[] {"arm64", "arm32", "x86", "x64"};
-      if (ArrayUtils.contains(flavors, BuildConfig.FLAVOR_ABI)) {
-        return BuildConfig.FLAVOR_ABI;
-      }
-    }
-    return flavor;
   }
 }

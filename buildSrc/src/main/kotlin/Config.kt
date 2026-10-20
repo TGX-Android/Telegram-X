@@ -131,57 +131,72 @@ data class Keystore(
   )
 }
 
-class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
-  init {
-    if (filters.isEmpty())
-      fatal("Empty filters passed")
-    for (filter in filters) {
-      if (!Config.SUPPORTED_ABI.contains(filter))
-        fatal("Unsupported abi filter: $filter")
-    }
-  }
-
-  val is64Bit: Boolean
-    get() {
-      for (filter in filters) {
-        if (filter != "arm64-v8a" && filter != "x86_64") {
-          return false
-        }
-      }
-      return true
-    }
-
-  val isUniversal: Boolean
-    get() = flavor == Abi.VARIANTS[Abi.UNIVERSAL]!!.flavor
-
-  val isTestingLab: Boolean
-    get() = flavor == Abi.VARIANTS[Abi.LAB]!!.flavor
+enum class Abi {
+  UNIVERSAL,
+  ARMEABI_V7A,
+  ARM64_V8A,
+  X86,
+  X64;
 
   val minSdk: Int
-    get() = if (is64Bit) {
-      21
-    } else {
-      16
-    }
-}
+    get() =
+      when (this) {
+        ARM64_V8A, X64 -> 21
+        else -> Config.MIN_SDK_VERSION
+      }
 
-@Suppress("MemberVisibilityCanBePrivate")
-object Abi {
-  const val UNIVERSAL = 0
-  const val ARMEABI_V7A = 1
-  const val ARM64_V8A = 2
-  const val X86 = 3
-  const val X64 = 4
-  const val LAB = 5
+  fun toDisplayName(): String =
+    name.lowercase().replace("_", "-")
 
-  val VARIANTS = mapOf(
-    Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "armeabi-v7a"))),
-    Pair(ARMEABI_V7A, AbiVariant("arm32", "armeabi-v7a")),
-    Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
-    Pair(X86, AbiVariant("x86", "x86")),
-    Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64")),
-    Pair(LAB, AbiVariant("lab", displayName = "testing", filters = arrayOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86"))),
-  )
+  companion object {
+    val FILTERS = listOf(
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64",
+      "x86"
+    )
+
+    fun toFilters(abi: String): List<String> =
+      if (abi.isEmpty() || abi == "all") {
+        FILTERS
+      } else {
+        toFilters(fromFilter(abi))
+      }
+
+    fun toFilters(abi: Abi): List<String> =
+      FILTERS.let { abiFilters ->
+        abiFilters.filter { abiFilter ->
+          when (abiFilter) {
+            "arm64-v8a" -> abi == ARM64_V8A || abi == UNIVERSAL
+            "armeabi-v7a" -> abi == ARMEABI_V7A || abi == UNIVERSAL
+            "x86_64" -> abi == X64
+            "x86" -> abi == X86
+            else -> {
+              fatal("Unknown abi argument: $abi")
+            }
+          }
+        }
+      }
+
+    fun fromFilters(abiFilters: List<String>): Abi =
+      if (abiFilters.isEmpty() || abiFilters.size > 1) {
+        UNIVERSAL
+      } else {
+        fromFilter(abiFilters[0])
+      }
+
+    fun fromFilter(abiFilter: String): Abi =
+      when (abiFilter) {
+        "arm32", "armeabi-v7a" -> ARMEABI_V7A
+        "arm64", "arm64-v8a" -> ARM64_V8A
+        "x86" -> X86
+        "x64", "x86_64" -> X64
+        "all", "arm", "universal" -> UNIVERSAL
+        else -> {
+          fatal("Unknown abi filter: $abiFilter")
+        }
+      }
+  }
 }
 
 data class SdkVariant(

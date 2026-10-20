@@ -575,7 +575,7 @@ public class Settings {
     }
 
     private boolean checkLogSetting (int flag) {
-      if (BuildConfig.LAB_FLAVOR) {
+      if (BuildConfig.GENERATING_BASELINE_PROFILE) {
         if (flag == FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG) {
           return true;
         }
