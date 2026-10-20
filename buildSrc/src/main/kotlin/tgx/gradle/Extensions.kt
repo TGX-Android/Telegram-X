@@ -106,17 +106,16 @@ fun DependencyHandlerScope.sinceNougatImplementation(
 
 fun findExtraFolders(variant: SdkVariant): Set<String> =
   mutableSetOf<String>().apply {
-    val isLatest = (variant.maxSdk ?: Int.MAX_VALUE) >= 26
-    if (variant.minSdk >= 21 || isLatest) {
+    if (variant.minSdk >= 21) {
       this += "sinceLollipop"
     }
     if (variant.minSdk < 23) {
       this += "preMarshmallow"
     }
-    if (variant.minSdk >= 23 || isLatest) {
+    if (variant.minSdk >= 23) {
       this += "sinceMarshmallow"
     }
-    if (variant.minSdk >= 26 || isLatest) {
+    if (variant.minSdk >= 26 || (variant.maxSdk ?: Int.MAX_VALUE) >= 26) {
       this += "sinceOreo"
     }
     this += "only${variant.flavor.uppercaseFirstChar()}"
