@@ -812,7 +812,7 @@ android {
         val modifiedVersionName = "$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$abiSuffix$buildTypeSuffix"
         output.versionName.set(modifiedVersionName)
 
-        val cleanVersionName = modifiedVersionName.replace(Regex("-universal(?=-|$)"), "")
+        val cleanVersionName = modifiedVersionName.replace(Regex("-arm(?=-|$)"), "")
 
         val fileName = "${config.outputFileNamePrefix}-${cleanVersionName}"
         if (output is VariantOutputImpl) {
