@@ -76,9 +76,12 @@ add_compile_options(
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
 )
 
+file(REAL_PATH "${ANDROID_NDK}" ANDROID_NDK_REAL_PATH) # @MadeByLLM("opus-5.5")
+
 add_compile_options(
   "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${TGX_ROOT_DIR}/=>"
   "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${ANDROID_NDK}/=ndk/>"
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${ANDROID_NDK_REAL_PATH}/=ndk/>" # @MadeByLLM("opus-5.5")
   "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${CMAKE_BINARY_DIR}=.cxx>"
 )
 
