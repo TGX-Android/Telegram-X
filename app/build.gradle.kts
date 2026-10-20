@@ -788,11 +788,11 @@ android {
         val flavorVersionCode = if (variant.debuggable) {
           0
         } else {
-          sdk * 100 + abi.ordinal
+          sdk * 100 + abi.versionCode
         }
 
         val extraSuffix = StringBuilder().apply {
-          if (abi != Abi.UNIVERSAL || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
+          if (abi.isSingleAbi || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
             append("-${abi.toDisplayName()}")
           }
           if (variant.debuggable) {
@@ -919,12 +919,8 @@ if (generateBaselineProfile) {
 
 afterEvaluate {
   val rudimentarySuffix = Regex("(Benchmark)?(NonMinified)?(Release|Debug)$", RegexOption.IGNORE_CASE)
-  // val arguments = Regex("(?<=\\[)[^\\]]+(?=\\])")
   tasks.withType<ExternalNativeBuildTask>().configureEach {
     val variantName = variantName.replace(rudimentarySuffix, "")
-    /*val abiFilters = arguments.find(name)?.groupValues?.get(0)
-      ?.split(",")
-      ?.takeIf { it.isNotEmpty() } ?: Abi.ALL_FILTERS*/
     val buildNativeTask = buildNativeTasks[variantName]
     require(buildNativeTask != null) {
       "Could not find buildNativeTask for $variantName (${this.variantName})"

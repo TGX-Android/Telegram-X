@@ -215,9 +215,6 @@ fun DependencyHandlerScope.flavorImplementation(
   }
 }
 
-fun isVariantEnabled(sdkVariant: SdkVariant, isDebug: Boolean): Boolean =
-  true
-
 fun ApplicationAndroidComponentsExtension.disableRudimentaryVariants(
   filter: (SdkVariant) -> Boolean = { _ -> true }
 ) =
@@ -228,7 +225,7 @@ fun ApplicationAndroidComponentsExtension.disableRudimentaryVariants(
     if (sdkVariant.maxSdk != null && !isDebug) {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
-    variantBuilder.enable = isVariantEnabled(sdkVariant, isDebug) && filter(sdkVariant)
+    variantBuilder.enable = filter(sdkVariant)
   }
 
 fun TestAndroidComponentsExtension.disableRudimentaryVariants(
@@ -241,7 +238,7 @@ fun TestAndroidComponentsExtension.disableRudimentaryVariants(
     if (sdkVariant.maxSdk != null && !isDebug) {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
-    variantBuilder.enable = isVariantEnabled(sdkVariant, isDebug) && filter(sdkVariant)
+    variantBuilder.enable = filter(sdkVariant)
   }
 
 fun findHostAbi(): String =
@@ -326,6 +323,3 @@ fun Project.gradleFlag(name: String, defaultValue: Boolean = false): Provider<Bo
   providers.gradleProperty(name).map {
     it.toBoolean()
   }.orElse(defaultValue)
-
-fun Project.gradleOption(name: String, defaultValue: String = ""): Provider<String> =
-  providers.gradleProperty(name).orElse(defaultValue)

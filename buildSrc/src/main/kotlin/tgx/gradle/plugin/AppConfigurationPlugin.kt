@@ -30,7 +30,6 @@ abstract class AppConfigurationExtension {
   abstract val useLegacyNdk: Property<Boolean>
   abstract val useLegacyPackaging: Property<Boolean>
   abstract val enableSplitAbi: Property<Boolean>
-  abstract val abi: Property<String>
   abstract val abiFilters: ListProperty<String>
 }
 

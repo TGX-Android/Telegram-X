@@ -131,18 +131,31 @@ data class Keystore(
   )
 }
 
-enum class Abi {
-  UNIVERSAL,
-  ARMEABI_V7A,
-  ARM64_V8A,
-  X86,
-  X64;
+enum class Abi(
+  val versionCode: Int
+) {
+  // do not change: multi-abi APKs intentionally share the same version code
+  UNIVERSAL(0),
+  ARM(0),
+  INTEL(0),
+
+  ARMEABI_V7A(1),
+  ARM64_V8A(2),
+  X86(3),
+  X64(4);
 
   val minSdk: Int
     get() =
       when (this) {
         ARM64_V8A, X64 -> 21
         else -> Config.MIN_SDK_VERSION
+      }
+
+  val isSingleAbi: Boolean
+    get() =
+      when (this) {
+        UNIVERSAL, ARM -> false
+        else -> true
       }
 
   fun toDisplayName(): String =
@@ -167,10 +180,10 @@ enum class Abi {
       FILTERS.let { abiFilters ->
         abiFilters.filter { abiFilter ->
           when (abiFilter) {
-            "arm64-v8a" -> abi == ARM64_V8A || abi == UNIVERSAL
-            "armeabi-v7a" -> abi == ARMEABI_V7A || abi == UNIVERSAL
-            "x86_64" -> abi == X64
-            "x86" -> abi == X86
+            "arm64-v8a" -> abi == ARM64_V8A || abi == ARM || abi == UNIVERSAL
+            "armeabi-v7a" -> abi == ARMEABI_V7A || abi == ARM || abi == UNIVERSAL
+            "x86_64" -> abi == X64 || abi == INTEL || abi == UNIVERSAL
+            "x86" -> abi == X86 || abi == INTEL || abi == UNIVERSAL
             else -> {
               fatal("Unknown abi argument: $abi")
             }
@@ -180,7 +193,14 @@ enum class Abi {
 
     fun fromFilters(abiFilters: List<String>): Abi =
       if (abiFilters.isEmpty() || abiFilters.size > 1) {
-        UNIVERSAL
+        when (abiFilters.size) {
+          2 if abiFilters.containsAll(listOf("arm64-v8a", "armeabi-v7a")) ->
+            ARM
+          2 if abiFilters.containsAll(listOf("x86", "x86_64")) ->
+            INTEL
+          else ->
+            UNIVERSAL
+        }
       } else {
         fromFilter(abiFilters[0])
       }
@@ -191,7 +211,9 @@ enum class Abi {
         "arm64", "arm64-v8a" -> ARM64_V8A
         "x86" -> X86
         "x64", "x86_64" -> X64
-        "all", "arm", "universal" -> UNIVERSAL
+        "all", "universal" -> UNIVERSAL
+        "arm" -> ARM
+        "intel" -> INTEL
         else -> {
           fatal("Unknown abi filter: $abiFilter")
         }
