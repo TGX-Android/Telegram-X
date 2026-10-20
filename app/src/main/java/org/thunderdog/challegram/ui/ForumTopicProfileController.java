@@ -269,9 +269,19 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     content.addView(materialFrame, new LinearLayout.LayoutParams(-1, Screen.dp(360)));
     scroll.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
       if (b - t != ob - ot) {
-        ViewGroup.LayoutParams params = materialFrame.getLayoutParams();
-        params.height = Math.max(Screen.dp(200), b - t - Screen.dp(56));
-        materialFrame.setLayoutParams(params);
+        // On API 16-17, requesting a child layout during layout leaves ancestors dirty
+        // without scheduling another traversal, blocking later visibility updates.
+        scroll.post(() -> {
+          if (isDestroyed()) {
+            return;
+          }
+          int height = Math.max(Screen.dp(200), scroll.getHeight() - Screen.dp(56));
+          ViewGroup.LayoutParams params = materialFrame.getLayoutParams();
+          if (params.height != height) {
+            params.height = height;
+            materialFrame.setLayoutParams(params);
+          }
+        });
       }
     });
     tdlib.listeners().subscribeToChatUpdates(getChatId(), this);
