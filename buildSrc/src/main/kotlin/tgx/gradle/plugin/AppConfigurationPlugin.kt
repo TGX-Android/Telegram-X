@@ -12,18 +12,25 @@
  */
 package tgx.gradle.plugin
 
+import Abi
 import ApplicationConfig
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.of
+import tgx.gradle.gradleFlag
 import tgx.gradle.source.AppConfigurationSource
 
 abstract class AppConfigurationExtension {
   abstract val config: Property<ApplicationConfig>
   abstract val generateBaselineProfile: Property<Boolean>
   abstract val useLegacyNdk: Property<Boolean>
+  abstract val useLegacyPackaging: Property<Boolean>
+  abstract val enableSplitAbi: Property<Boolean>
+  abstract val abi: Property<String>
+  abstract val abiFilters: ListProperty<String>
 }
 
 @Suppress("UnstableApiUsage")
@@ -44,15 +51,31 @@ open class AppConfigurationPlugin : Plugin<Project> {
     })
 
     ext.generateBaselineProfile.set(
-      project.providers.gradleProperty("generateBaselineProfile").map {
-        it.toBoolean()
-      }.orElse(false)
+      project.gradleFlag("generateBaselineProfile")
+    )
+    ext.useLegacyNdk.set(
+      project.gradleFlag("useLegacyNdk")
+    )
+    ext.useLegacyPackaging.set(
+      project.gradleFlag("useLegacyPackaging")
     )
 
-    ext.useLegacyNdk.set(
-      project.providers.gradleProperty("useLegacyNdk").map {
-        it.toBoolean()
-      }.orElse(false)
+    val abi = project.providers.gradleProperty("abi")
+
+    ext.enableSplitAbi.set(
+      abi.map { it.isEmpty() }.orElse(true)
+    )
+
+    ext.abiFilters.set(
+      project.providers.gradleProperty("android.injected.build.abi").map {
+        it.split(",")
+      }.orElse(
+        abi.map(Abi::toFilters).orElse(Abi.FILTERS).map {
+          it.filter { abi ->
+            abi == "x86" || abi == "armeabi-v7a" || !ext.useLegacyNdk.get()
+          }
+        }
+      )
     )
   }
 }

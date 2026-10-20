@@ -54,7 +54,7 @@ This is the complete source code and the build instructions for the official alt
 
 1. `$ git clone --recursive https://github.com/TGX-Android/Telegram-X tgx`
 2. In case you forgot the `--recursive` flag, `cd` into `tgx` directory and run: `$ git submodule update --init --recursive`
-3. Open project via **[Android Studio](https://developer.android.com/studio/)** or build manually from the command line: `./gradlew assembleLatestUniversalDebug`
+3. Open project via **[Android Studio](https://developer.android.com/studio/)** or build manually from the command line: `./gradlew assembleLatestDebug`
 4. If build fails, follow the instructions provided in the error message.
 
 #### Publishing
