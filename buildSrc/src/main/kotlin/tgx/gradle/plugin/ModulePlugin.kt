@@ -291,16 +291,6 @@ open class ModulePlugin : Plugin<Project> {
               ndkVersion.ndkVersionToMinSdk()
             )
             multiDexEnabled = true
-            if (!enableSplitAbi) {
-              ndk.abiFilters += globalAbiFilters
-              externalNativeBuild.cmake.abiFilters += globalAbiFilters
-            }
-          }
-          splits.abi {
-            isEnable = enableSplitAbi
-            reset()
-            include(*globalAbiFilters.toTypedArray())
-            isUniversalApk = false
           }
 
           sourceSets.configureEach {
