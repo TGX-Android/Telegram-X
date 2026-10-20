@@ -144,13 +144,6 @@ enum class Abi(
   X86(3),
   X64(4);
 
-  val minSdk: Int
-    get() =
-      when (this) {
-        ARM64_V8A, X64 -> 21
-        else -> Config.MIN_SDK_VERSION
-      }
-
   val isSingleAbi: Boolean
     get() =
       when (this) {
