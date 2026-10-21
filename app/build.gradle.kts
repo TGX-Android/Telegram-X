@@ -777,7 +777,15 @@ android {
 
       var baseVersionCode: Int? = null
       var baseVersionName: String? = null
-      var fileName: String? = null
+
+      val buildTypeSuffix = StringBuilder().apply {
+        if (variant.debuggable) {
+          append("-debug")
+        }
+        if (android.buildTypes.getByName(variant.buildType!!).signingConfig == null) {
+          append("-unsigned")
+        }
+      }.toString()
 
       variant.outputs.forEach { output ->
         baseVersionCode = output.versionCode.get()
@@ -788,34 +796,30 @@ android {
         val flavorVersionCode = if (variant.debuggable) {
           0
         } else {
-          sdk * 100 + abi.ordinal
+          sdk * 100 + abi.versionCode
         }
 
-        val extraSuffix = StringBuilder().apply {
-          if (abi != Abi.UNIVERSAL || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
-            append("-${abi.toDisplayName()}")
-          }
-          if (variant.debuggable) {
-            append("-debug")
-          }
-          if (android.buildTypes.getByName(variant.buildType!!).signingConfig == null) {
-            append("-unsigned")
-          }
-        }.toString()
+        val abiSuffix = if (abi.isSingleAbi || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
+          "-${abi.toDisplayName()}"
+        } else {
+          ""
+        }
 
         val modifiedVersionCode = baseVersionCode * 1000 + flavorVersionCode
         output.versionCode.set(modifiedVersionCode)
 
         baseVersionName = output.versionName.get()
-        val modifiedVersionName = "$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$extraSuffix"
+        val modifiedVersionName = "$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$abiSuffix$buildTypeSuffix"
         output.versionName.set(modifiedVersionName)
 
-        fileName = "${config.outputFileNamePrefix}-${modifiedVersionName.replace(Regex("-universal(?=-|$)"), "")}"
+        val cleanVersionName = modifiedVersionName.replace(Regex("-arm(?=-|$)"), "")
+
+        val fileName = "${config.outputFileNamePrefix}-${cleanVersionName}"
         if (output is VariantOutputImpl) {
           output.outputFileName.set("$fileName.apk")
         }
       }
-      require(baseVersionCode != null && baseVersionName != null && fileName != null)
+      require(baseVersionCode != null && baseVersionName != null)
 
       val recaptchaVersion = selectApiFlavor(
         sdkVariant,
@@ -892,7 +896,8 @@ android {
           description = "Creates a copy of mapping.txt with a build name"
           from(variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE))
           into(project.layout.buildDirectory.dir("outputs/mapping/${variant.name}"))
-          rename("mapping.txt", "$fileName.txt")
+          val mappingFileName = "${config.outputFileNamePrefix}-$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$buildTypeSuffix"
+          rename("mapping.txt", "$mappingFileName.txt")
         }
         project.afterEvaluate {
           project.tasks.findByName("assemble$variantName")?.finalizedBy(copyTask)
@@ -913,18 +918,14 @@ if (generateBaselineProfile) {
   }
 
   afterEvaluate {
-    dependencies.add("latestLabReleaseBaselineProfile", project(":baseline-profile"))
+    dependencies.add("latestReleaseBaselineProfile", project(":baseline-profile"))
   }
 }
 
 afterEvaluate {
   val rudimentarySuffix = Regex("(Benchmark)?(NonMinified)?(Release|Debug)$", RegexOption.IGNORE_CASE)
-  // val arguments = Regex("(?<=\\[)[^\\]]+(?=\\])")
   tasks.withType<ExternalNativeBuildTask>().configureEach {
     val variantName = variantName.replace(rudimentarySuffix, "")
-    /*val abiFilters = arguments.find(name)?.groupValues?.get(0)
-      ?.split(",")
-      ?.takeIf { it.isNotEmpty() } ?: Abi.ALL_FILTERS*/
     val buildNativeTask = buildNativeTasks[variantName]
     require(buildNativeTask != null) {
       "Could not find buildNativeTask for $variantName (${this.variantName})"

@@ -12,6 +12,7 @@
  */
 package tgx.gradle
 
+import Abi
 import Sdk
 import SdkVariant
 import com.android.build.api.dsl.BaseFlavor
@@ -105,17 +106,16 @@ fun DependencyHandlerScope.sinceNougatImplementation(
 
 fun findExtraFolders(variant: SdkVariant): Set<String> =
   mutableSetOf<String>().apply {
-    val isLatest = (variant.maxSdk ?: Int.MAX_VALUE) >= 26
-    if (variant.minSdk >= 21 || isLatest) {
+    if (variant.minSdk >= 21) {
       this += "sinceLollipop"
     }
     if (variant.minSdk < 23) {
       this += "preMarshmallow"
     }
-    if (variant.minSdk >= 23 || isLatest) {
+    if (variant.minSdk >= 23) {
       this += "sinceMarshmallow"
     }
-    if (variant.minSdk >= 26 || isLatest) {
+    if (variant.minSdk >= 26 || (variant.maxSdk ?: Int.MAX_VALUE) >= 26) {
       this += "sinceOreo"
     }
     this += "only${variant.flavor.uppercaseFirstChar()}"
@@ -214,9 +214,6 @@ fun DependencyHandlerScope.flavorImplementation(
   }
 }
 
-fun isVariantEnabled(sdkVariant: SdkVariant, isDebug: Boolean): Boolean =
-  true
-
 fun ApplicationAndroidComponentsExtension.disableRudimentaryVariants(
   filter: (SdkVariant) -> Boolean = { _ -> true }
 ) =
@@ -227,7 +224,7 @@ fun ApplicationAndroidComponentsExtension.disableRudimentaryVariants(
     if (sdkVariant.maxSdk != null && !isDebug) {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
-    variantBuilder.enable = isVariantEnabled(sdkVariant, isDebug) && filter(sdkVariant)
+    variantBuilder.enable = filter(sdkVariant)
   }
 
 fun TestAndroidComponentsExtension.disableRudimentaryVariants(
@@ -240,7 +237,7 @@ fun TestAndroidComponentsExtension.disableRudimentaryVariants(
     if (sdkVariant.maxSdk != null && !isDebug) {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
-    variantBuilder.enable = isVariantEnabled(sdkVariant, isDebug) && filter(sdkVariant)
+    variantBuilder.enable = filter(sdkVariant)
   }
 
 fun findHostAbi(): String =
@@ -278,6 +275,36 @@ fun ApplicationVariant.findAbiFilters(ifEmpty: List<String>): List<String> =
     output.findAbiFilters(ifEmpty)
   }.distinct()
 
+fun Project.needEnableSplitAbi(abiFilters: Provider<List<String>>): Provider<Boolean> =
+  providers.gradleProperty("abi")
+    .map { it.isEmpty() }
+    .orElse(true)
+    .zip(abiFilters) { enableSplitAbi, abiFilters ->
+      enableSplitAbi && abiFilters.size > 1
+    }
+
+fun Project.findAbiFilters(useLegacyNdk: Provider<Boolean>): Provider<List<String>> =
+  providers.gradleProperty("abi")
+    .map(Abi::toFilters)
+    .orElse(Abi.FILTERS)
+    .zip(useLegacyNdk) { abiFilters, useLegacyNdk ->
+      abiFilters.filter { abi ->
+        abi == "armeabi-v7a" || abi == "x86" || !useLegacyNdk
+      }
+    }
+    .zip(providers.gradleProperty("android.injected.build.abi").orElse("")) { abiFilters, injectedAbiList ->
+      val injectedAbi = injectedAbiList
+        .split(",")
+        .filter {
+          it in Abi.FILTERS
+        }
+      injectedAbi.firstOrNull {
+        it in abiFilters
+      }?.let {
+        listOf(it)
+      } ?: abiFilters
+    }
+
 fun String.ndkVersionMajor(): Int =
   VersionNumber.parse(this).major
 
@@ -295,6 +322,3 @@ fun Project.gradleFlag(name: String, defaultValue: Boolean = false): Provider<Bo
   providers.gradleProperty(name).map {
     it.toBoolean()
   }.orElse(defaultValue)
-
-fun Project.gradleOption(name: String, defaultValue: String = ""): Provider<String> =
-  providers.gradleProperty(name).orElse(defaultValue)
