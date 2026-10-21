@@ -43,7 +43,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import tgx.td.Td;
 
 /** Two text lines. Topic counters and outgoing delivery are intentionally independent. */
-@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", others = "gpt-5", id = "forum-topics", ref = "PR #1095")
 public final class ForumTopicView extends View {
   private final Tdlib tdlib;
   private final TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -240,17 +240,18 @@ public final class ForumTopicView extends View {
     if (deliveryLabel != 0) {
       status.add(Lang.getString(deliveryLabel));
     }
+    // badgeCounter includes the fallback for pre-24 and unavailable vendor ICU.
     if (topic.unreadCount > 0) {
-      counters.add(Lang.compactNumber(topic.unreadCount));
+      counters.add(Lang.badgeCounter(topic.unreadCount));
     }
     if (topic.unreadMentionCount > 0) {
-      counters.add("@" + Lang.compactNumber(topic.unreadMentionCount));
+      counters.add("@" + Lang.badgeCounter(topic.unreadMentionCount));
     }
     if (topic.unreadReactionCount > 0) {
-      counters.add("♥" + Lang.compactNumber(topic.unreadReactionCount));
+      counters.add("♥" + Lang.badgeCounter(topic.unreadReactionCount));
     }
     if (topic.unreadPollVoteCount > 0) {
-      counters.add("✓" + Lang.compactNumber(topic.unreadPollVoteCount));
+      counters.add("✓" + Lang.badgeCounter(topic.unreadPollVoteCount));
     }
     long nextEmoji = !topic.info.isGeneral && topic.info.icon != null ? topic.info.icon.customEmojiId : 0;
     float size = scaled(20);
