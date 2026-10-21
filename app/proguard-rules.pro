@@ -57,7 +57,7 @@
 
 # == THIRDPARTY ==
 
-# @MadeByLLM("gpt-5")
+# @MadeByLLM("gpt-6-astra")
 # Older Room versions instantiate generated databases reflectively. Their
 # consumer rule keeps the classes, but R8 full mode also needs the constructor.
 -keepclassmembers class * extends androidx.room.RoomDatabase {
