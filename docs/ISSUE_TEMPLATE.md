@@ -19,4 +19,4 @@ The guide below provides the flow for creating a perfect issue report to the Tel
 ## A note on device-specific issues:
 Specific issues you can reproduce on your end can be caused by the device itself and be device-dependent. Such issues do not mean to occur for everyone. Please be patient with those – fixing such issues can be time-consuming. 
 
-Good luck, and thanks for the contribution! 
+Good luck, and thanks for the contribution!
