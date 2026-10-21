@@ -57,6 +57,13 @@
 
 # == THIRDPARTY ==
 
+# @MadeByLLM("gpt-5")
+# Older Room versions instantiate generated databases reflectively. Their
+# consumer rule keeps the classes, but R8 full mode also needs the constructor.
+-keepclassmembers class * extends androidx.room.RoomDatabase {
+  public <init>();
+}
+
 # MP4Parser
 -keep class * implements com.coremedia.iso.boxes.Box { *; }
 
