@@ -547,7 +547,7 @@ android {
 
         // @MadeByLLM("gpt-6-astra")
         if (variant.isLegacy || variant.isLollipop) {
-          proguardFile("proguard-room-constructor.pro")
+          proguardFile("src/preMarshmallow/proguard-rules.pro")
         }
 
         if (selectedMinSdk > Sdk.VARIANTS[Sdk.LEGACY]!!.minSdk) {
