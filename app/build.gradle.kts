@@ -545,11 +545,6 @@ android {
           proguardFile("proguard-r8-bug-android-4.x-workaround.pro")
         }
 
-        // @MadeByLLM("gpt-6-astra")
-        if (variant.isLegacy || variant.isLollipop) {
-          proguardFile("src/preMarshmallow/proguard-rules.pro")
-        }
-
         if (selectedMinSdk > Sdk.VARIANTS[Sdk.LEGACY]!!.minSdk) {
           lint {
             disable += "ObsoleteSdkInt"
