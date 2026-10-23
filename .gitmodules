@@ -153,3 +153,8 @@
 	url = https://gitlab.freedesktop.org/pixman/pixman.git
 	shallow = true
 	branch = master
+[submodule "libprisma"]
+	path = app/jni/third_party/libprisma
+	url = https://github.com/TelegramMessenger/libprisma
+	shallow = true
+  branch = master
