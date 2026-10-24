@@ -42,22 +42,15 @@ import android.media.MediaScannerConnection;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.opengl.EGL14;
-import android.opengl.EGLConfig;
-import android.opengl.EGLContext;
-import android.opengl.EGLDisplay;
-import android.opengl.EGLSurface;
 import android.opengl.GLES10;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Build;
 import android.os.Environment;
-import android.os.LocaleList;
 import android.os.Parcelable;
 import android.os.PowerManager;
 import android.os.StatFs;
 import android.os.SystemClock;
-import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.BoringLayout;
@@ -957,49 +950,54 @@ public class U {
       return maxTextureSize[0];
     }
 
-    EGLDisplay dpy = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
+    android.opengl.EGLDisplay dpy = android.opengl.EGL14.eglGetDisplay(
+      android.opengl.EGL14.EGL_DEFAULT_DISPLAY
+    );
     int[] vers = new int[2];
-    EGL14.eglInitialize(dpy, vers, 0, vers, 1);
+    android.opengl.EGL14.eglInitialize(dpy, vers, 0, vers, 1);
 
 
     int[] configAttr = {
-      EGL14.EGL_COLOR_BUFFER_TYPE, EGL14.EGL_RGB_BUFFER,
-      EGL14.EGL_LEVEL, 0,
-      EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
-      EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT,
-      EGL14.EGL_NONE
+      android.opengl.EGL14.EGL_COLOR_BUFFER_TYPE, android.opengl.EGL14.EGL_RGB_BUFFER,
+      android.opengl.EGL14.EGL_LEVEL, 0,
+      android.opengl.EGL14.EGL_RENDERABLE_TYPE, android.opengl.EGL14.EGL_OPENGL_ES2_BIT,
+      android.opengl.EGL14.EGL_SURFACE_TYPE, android.opengl.EGL14.EGL_PBUFFER_BIT,
+      android.opengl.EGL14.EGL_NONE
     };
-    EGLConfig[] configs = new EGLConfig[1];
+    android.opengl.EGLConfig[] configs = new android.opengl.EGLConfig[1];
     int[] numConfig = new int[1];
-    EGL14.eglChooseConfig(dpy, configAttr, 0,
+    android.opengl.EGL14.eglChooseConfig(dpy, configAttr, 0,
       configs, 0, 1, numConfig, 0);
     if (numConfig[0] == 0) {
       // TROUBLE! No config found.
       return 0;
     }
-    EGLConfig config = configs[0];
+    android.opengl.EGLConfig config = configs[0];
 
     int[] surfAttr = {
-      EGL14.EGL_WIDTH, 64,
-      EGL14.EGL_HEIGHT, 64,
-      EGL14.EGL_NONE
+      android.opengl.EGL14.EGL_WIDTH, 64,
+      android.opengl.EGL14.EGL_HEIGHT, 64,
+      android.opengl.EGL14.EGL_NONE
     };
-    EGLSurface surf = EGL14.eglCreatePbufferSurface(dpy, config, surfAttr, 0);
+    android.opengl.EGLSurface surf = android.opengl.EGL14.eglCreatePbufferSurface(dpy, config, surfAttr, 0);
 
     int[] ctxAttrib = {
-      EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
-      EGL14.EGL_NONE
+      android.opengl.EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
+      android.opengl.EGL14.EGL_NONE
     };
-    EGLContext ctx = EGL14.eglCreateContext(dpy, config, EGL14.EGL_NO_CONTEXT, ctxAttrib, 0);
+    android.opengl.EGLContext ctx = android.opengl.EGL14.eglCreateContext(dpy, config, android.opengl.EGL14.EGL_NO_CONTEXT, ctxAttrib, 0);
 
-    EGL14.eglMakeCurrent(dpy, surf, surf, ctx);
+    android.opengl.EGL14.eglMakeCurrent(dpy, surf, surf, ctx);
     GLES20.glGetIntegerv(GLES20.GL_MAX_TEXTURE_SIZE, maxTextureSize, 0);
 
-    EGL14.eglMakeCurrent(dpy, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE,
-      EGL14.EGL_NO_CONTEXT);
-    EGL14.eglDestroySurface(dpy, surf);
-    EGL14.eglDestroyContext(dpy, ctx);
-    EGL14.eglTerminate(dpy);
+    android.opengl.EGL14.eglMakeCurrent(dpy,
+      android.opengl.EGL14.EGL_NO_SURFACE,
+      android.opengl.EGL14.EGL_NO_SURFACE,
+      android.opengl.EGL14.EGL_NO_CONTEXT
+    );
+    android.opengl.EGL14.eglDestroySurface(dpy, surf);
+    android.opengl.EGL14.eglDestroyContext(dpy, ctx);
+    android.opengl.EGL14.eglTerminate(dpy);
 
     return maxTextureSize[0];
   }
@@ -1207,20 +1205,20 @@ public class U {
   public static String tryResolveFilePath (final Uri uri) {
     String result = null;
     try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && DocumentsContract.isDocumentUri(UI.getContext(), uri)) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && android.provider.DocumentsContract.isDocumentUri(UI.getContext(), uri)) {
         if (isExternalStorageDocument(uri)) {
-          final String docId = DocumentsContract.getDocumentId(uri);
+          final String docId = android.provider.DocumentsContract.getDocumentId(uri);
           final String[] split = docId.split(":", 2);
           final String type = split[0];
           if ("primary".equalsIgnoreCase(type)) {
             result = Environment.getExternalStorageDirectory() + "/" + split[1];
           }
         } else if (isDownloadsDocument(uri)) {
-          final String id = DocumentsContract.getDocumentId(uri);
+          final String id = android.provider.DocumentsContract.getDocumentId(uri);
           final Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), StringUtils.parseLong(id));
           result = getDataColumn(UI.getContext(), contentUri, null, null);
         } else if (isMediaDocument(uri)) {
-          final String docId = DocumentsContract.getDocumentId(uri);
+          final String docId = android.provider.DocumentsContract.getDocumentId(uri);
           final String[] split = docId.split(":", 2);
           final String type = split[0];
 
@@ -3477,7 +3475,7 @@ public class U {
     if (inputLanguages.isEmpty()) {
       try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-          LocaleList locales = Resources.getSystem().getConfiguration().getLocales();
+          android.os.LocaleList locales = Resources.getSystem().getConfiguration().getLocales();
           for (int i = 0; i < locales.size(); i++) {
             String code = LocaleUtils.toBcp47Language(locales.get(i));
             if (!StringUtils.isEmpty(code) && !inputLanguages.contains(code))
