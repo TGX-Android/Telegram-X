@@ -139,6 +139,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGAudio;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGMessageAccountInfo;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageMedia;
@@ -2902,6 +2903,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       updateCommandButton(0);
       botHelper = null;
     }
+    checkAccountInfoHeader();
 
     liveLocation = new LiveLocationHelper(context, tdlib, chat.id, getMessageTopicId(), liveLocationView, false, this);
     liveLocation.init();
@@ -8206,6 +8208,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
     });
   }
 
+  private TGMessageAccountInfo accountInfoMessage;
+
+  private void checkAccountInfoHeader () {
+    if (!needActionBar() || botHelper != null) {
+      return;
+    }
+    TdApi.Chat chat = tdlib.chat(getChatId());
+    if (chat == null || chat.actionBar == null || chat.actionBar.getConstructor() != TdApi.ChatActionBarReportAddBlock.CONSTRUCTOR) {
+      return;
+    }
+    TdApi.AccountInfo info = ((TdApi.ChatActionBarReportAddBlock) chat.actionBar).accountInfo;
+    if (TGMessageAccountInfo.isEmpty(info)) {
+      return;
+    }
+    if (accountInfoMessage != null && !accountInfoMessage.isDestroyed()) {
+      accountInfoMessage.setAccountInfo(info);
+      return;
+    }
+    accountInfoMessage = new TGMessageAccountInfo(manager, chat.id, info);
+    manager.setHeaderMessage(accountInfoMessage);
+  }
+
   private TopBarView.Item newUnarchiveItem (long chatId) {
     return new TopBarView.Item(R.id.btn_unarchiveChat, R.string.UnarchiveUnmute, v -> {
       tdlib.send(new TdApi.AddChatToList(chatId, new TdApi.ChatListMain()), tdlib.typedOkHandler());
@@ -10788,6 +10812,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     runOnUiThreadOptional(() -> {
       if (getChatId() == chatId) {
         checkActionBar();
+        checkAccountInfoHeader();
       }
     });
   }
@@ -11004,6 +11029,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onUserUpdated (TdApi.User user) {
+    if (chat != null && user != null && TD.getUserId(chat) == user.id) {
+      runOnUiThreadOptional(() -> {
+        if (accountInfoMessage != null && !accountInfoMessage.isDestroyed()) {
+          accountInfoMessage.updateUserInfo();
+        }
+      });
+    }
     if (chat != null && user != null && headerCell != null && TD.getUserId(chat) == user.id) {
       runOnUiThreadOptional(() -> {
         headerCell.setEmojiStatus(user);
@@ -11017,6 +11049,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().post(() -> {
       if (chat != null && TD.getUserId(chat) == userId) {
         updateBottomBar(true);
+        if (accountInfoMessage != null && !accountInfoMessage.isDestroyed()) {
+          accountInfoMessage.updateUserInfo();
+        }
       }
     });
   }
@@ -12190,6 +12225,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // Reopen chat if needed
     if (!inSearchMode && searchMessagesFilterMode) {
       manager.openChat(chat, messageThread, messageTopicId, previewSearchFilter, this, areScheduled, !inPreviewMode && !isInForceTouchMode());
+      checkAccountInfoHeader();
     } else if (inSearchMode && !searchMessagesFilterMode) {
       applyQueryForManagerInFilteredShowMode(getLastMessageSearchQuery());
     }
