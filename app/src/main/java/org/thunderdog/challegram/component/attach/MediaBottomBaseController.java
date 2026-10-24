@@ -89,6 +89,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     return false;
   }
 
+  public boolean allowHd () {
+    return false;
+  }
+
   @Override
   protected final int getHeaderTextColorId () {
     return ColorId.text;

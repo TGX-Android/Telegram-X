@@ -8743,7 +8743,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         @Override
         public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
           ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
-          return onSendMedia(galleryFile, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
+          return onSendMedia(galleryFile, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler, isSendHdEnabled());
         }
 
         @Override
@@ -8752,7 +8752,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           mediaStack.getCurrent().setHasSpoiler(hideMedia);
         }
 
-        private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
+        private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler, boolean isHd) {
           MessagesController m = findOutputController();
           if (m != null) {
             final MediaItem oldItem = forceEditModeOld_arguments != null && forceEditModeOld_arguments.stack != null ?
@@ -8785,7 +8785,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
               }
               return false;
             }
-            return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
+            return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler, isHd);
           }
           return false;
         }
@@ -8940,6 +8940,20 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     if (chat != null && !hasFlag(Args.FLAG_DISALLOW_SEND_BUTTON_HAPTIC_MENU)) {
       tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, () -> true, hapticItems -> {
+        MediaItem currentItem = stack.getCurrent();
+        if (sendDelegate != null && sendDelegate.allowSendHd() && currentItem != null && !currentItem.isVideo()) {
+          hapticItems.add(0,
+            new HapticMenuHelper.MenuItem(R.id.btn_hd, Lang.getString(R.string.SendHd), R.drawable.baseline_hd_24)
+              .setIsCheckbox(true, sendDelegate.isSendHdEnabled())
+              .setOnClickListener((view, parentView, item) -> {
+                if (view.getId() == R.id.btn_hd) {
+                  sendDelegate.onSendHdStateChanged(item.isCheckboxSelected);
+                  return true;
+                }
+                return false;
+              })
+          );
+        }
         if (sendDelegate != null && sendDelegate.allowHideMedia()) {
           hapticItems.add(0,
             new HapticMenuHelper.MenuItem(R.id.btn_spoiler, Lang.getString(R.string.HideMedia), R.drawable.deproko_baseline_whatshot_24)
