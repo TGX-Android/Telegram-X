@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -315,6 +316,11 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       searchButton.setImageResource(R.drawable.baseline_search_24);
       searchButton.setThemeColorId(getHeaderIconColorId());
       headerView.addView(searchButton, FrameLayoutFix.newParams(Screen.dp(56f), LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
+
+      // Decorative preview: its buttons do nothing, so they must not be announced
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        headerView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+      }
 
       return headerView;
     }
