@@ -155,7 +155,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     actionsContainer.setOrientation(LinearLayout.VERTICAL);
     actionsContainer.setLayoutParams(FrameLayoutFix.newParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
-      ViewGroup.LayoutParams.WRAP_CONTENT,
+      useNewLayout ? ViewGroup.LayoutParams.WRAP_CONTENT : ViewGroup.LayoutParams.MATCH_PARENT,
       Lang.gravity() | Gravity.TOP
     ));
     addView(actionsContainer);
