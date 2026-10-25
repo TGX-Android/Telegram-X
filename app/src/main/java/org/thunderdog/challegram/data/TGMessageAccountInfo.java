@@ -124,11 +124,9 @@ public class TGMessageAccountInfo extends TGMessageInfo {
     commonGroupsRequested = true;
     tdlib.send(new TdApi.GetGroupsInCommon(userId, 0, 3), (chats, error) -> {
       if (error == null) {
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            commonGroupsAvatars.setChatIds(chats.chatIds, false);
-            rebuildAndUpdateContent();
-          }
+        runOnUiThreadOptional(() -> {
+          commonGroupsAvatars.setChatIds(chats.chatIds, false);
+          rebuildAndUpdateContent();
         });
       }
     });
