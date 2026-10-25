@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools">
+
+  <application>
+    <activity
+      android:name="tgx.test.BenchmarkActivity"
+      android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+      android:showWhenLocked="true"
+      android:turnScreenOn="true"
+      android:exported="false"
+      tools:targetApi="27" />
+  </application>
+</manifest>

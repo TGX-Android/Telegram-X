@@ -13,14 +13,13 @@
 package tgx.gradle
 
 import Abi
-import AbiVariant
 import Sdk
 import SdkVariant
 import com.android.build.api.dsl.BaseFlavor
 import com.android.build.api.dsl.VariantDimension
-import com.android.build.api.variant.ApplicationAndroidComponentsExtension
-import com.android.build.api.variant.TestAndroidComponentsExtension
+import com.android.build.api.variant.*
 import org.gradle.api.Action
+import org.gradle.api.Project
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderConvertible
@@ -116,7 +115,7 @@ fun findExtraFolders(variant: SdkVariant): Set<String> =
     if (variant.minSdk >= 23) {
       this += "sinceMarshmallow"
     }
-    if (variant.minSdk >= 26) {
+    if (variant.minSdk >= 26 || variant.supportsSdk(26)) {
       this += "sinceOreo"
     }
     this += "only${variant.flavor.uppercaseFirstChar()}"
@@ -136,25 +135,6 @@ fun <T> selectApiFlavor(
     "tens",
     "qrs",
     "latest" -> latest
-    else -> error(variant.flavor)
-  }
-
-fun <T> selectAbiFlavor(
-  variant: AbiVariant,
-  universal: T,
-  arm32: T,
-  arm64: T,
-  x86: T,
-  x64: T,
-  lab: T
-): T =
-  when (variant.flavor) {
-    "universal" -> universal
-    "arm32" -> arm32
-    "arm64" -> arm64
-    "x86" -> x86
-    "x64", "x86_64" -> x64
-    "lab" -> lab
     else -> error(variant.flavor)
   }
 
@@ -234,38 +214,30 @@ fun DependencyHandlerScope.flavorImplementation(
   }
 }
 
-fun isVariantEnabled(sdkVariant: SdkVariant, abiVariant: AbiVariant, isDebug: Boolean): Boolean =
-  sdkVariant.minSdk >= abiVariant.minSdk &&
-  !(abiVariant.flavor == "universal" && sdkVariant.flavor == "legacy")
-
 fun ApplicationAndroidComponentsExtension.disableRudimentaryVariants(
-  filter: (SdkVariant, AbiVariant) -> Boolean = { _, _ -> true }
+  filter: (SdkVariant) -> Boolean = { _ -> true }
 ) =
   beforeVariants { variantBuilder ->
     val sdkFlavor = variantBuilder.productFlavors.first { it.first == "SDK" }.second
     val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
-    val abiFlavor = variantBuilder.productFlavors.first { it.first == "ABI" }.second
-    val abiVariant = Abi.VARIANTS.values.first { it.flavor == abiFlavor }
-    val isDebug = variantBuilder.buildType == "debug"
-    if (sdkVariant.maxSdk != null && !isDebug) {
+    // Only published builds are limited: debug and baseline profile builds must install on any device
+    if (sdkVariant.maxSdk != null && variantBuilder.buildType == "release") {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
-    variantBuilder.enable = isVariantEnabled(sdkVariant, abiVariant, isDebug) && filter(sdkVariant, abiVariant)
+    variantBuilder.enable = filter(sdkVariant)
   }
 
 fun TestAndroidComponentsExtension.disableRudimentaryVariants(
-  filter: (SdkVariant, AbiVariant) -> Boolean = { _, _ -> true }
+  filter: (SdkVariant) -> Boolean = { _ -> true }
 ) =
   beforeVariants { variantBuilder ->
     val sdkFlavor = variantBuilder.productFlavors.first { it.first == "SDK" }.second
     val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
-    val abiFlavor = variantBuilder.productFlavors.first { it.first == "ABI" }.second
-    val abiVariant = Abi.VARIANTS.values.first { it.flavor == abiFlavor }
-    val isDebug = variantBuilder.buildType == "debug"
-    if (sdkVariant.maxSdk != null && !isDebug) {
+    // Only published builds are limited: debug and baseline profile builds must install on any device
+    if (sdkVariant.maxSdk != null && variantBuilder.buildType == "release") {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
-    variantBuilder.enable = isVariantEnabled(sdkVariant, abiVariant, isDebug) && filter(sdkVariant, abiVariant)
+    variantBuilder.enable = filter(sdkVariant)
   }
 
 fun findHostAbi(): String =
@@ -289,21 +261,51 @@ fun findHostTag(): String {
   }
 }
 
-fun String.toAbiFilter(): String = when (this) {
-  "arm64" -> "arm64-v8a"
-  "arm32" -> "armeabi-v7a"
-  "x86" -> "x86"
-  "x64" -> "x86_64"
-  else -> error("Unknown abi variant: $this")
-}
+fun VariantOutput.findAbiFilters(ifEmpty: List<String>): List<String> =
+  this.filters.filter { filter ->
+    filter.filterType == FilterConfiguration.FilterType.ABI
+  }.map {
+    it.identifier
+  }.ifEmpty {
+    ifEmpty
+  }
 
-fun String.toAbiVariant(): String = when (this) {
-  "arm64-v8a" -> "arm64"
-  "armeabi-v7a" -> "arm32"
-  "x86" -> "x86"
-  "x86_64" -> "x64"
-  else -> error("Unknown abi filter: $this")
-}
+fun ApplicationVariant.findAbiFilters(ifEmpty: List<String>): List<String> =
+  this.outputs.flatMap { output ->
+    output.findAbiFilters(ifEmpty)
+  }.distinct()
+
+fun Project.needEnableSplitAbi(abiFilters: Provider<List<String>>): Provider<Boolean> =
+  providers.gradleProperty("abi")
+    .map { it.isEmpty() }
+    .orElse(true)
+    .zip(abiFilters) { enableSplitAbi, abiFilters ->
+      enableSplitAbi && abiFilters.size > 1
+    }
+
+fun Project.findAbiFilters(useLegacyNdk: Provider<Boolean>): Provider<List<String>> =
+  providers.gradleProperty("abi")
+    .map(Abi::toFilters)
+    .orElse(Abi.FILTERS)
+    .zip(useLegacyNdk) { abiFilters, useLegacyNdk ->
+      abiFilters.filter { abi ->
+        abi == "armeabi-v7a" || abi == "x86" || !useLegacyNdk
+      }.ifEmpty {
+        fatal("Legacy NDK supports only 32-bit ABIs, select arm32 or x86 with -Pabi")
+      }
+    }
+    .zip(providers.gradleProperty("android.injected.build.abi").orElse("")) { abiFilters, injectedAbiList ->
+      val injectedAbi = injectedAbiList
+        .split(",")
+        .filter {
+          it in Abi.FILTERS
+        }
+      injectedAbi.firstOrNull {
+        it in abiFilters
+      }?.let {
+        listOf(it)
+      } ?: abiFilters
+    }
 
 fun String.ndkVersionMajor(): Int =
   VersionNumber.parse(this).major
@@ -317,3 +319,8 @@ fun String.ndkVersionToMinSdk(): Int =
       else -> error("Unsupported NDK version: $this")
     }
   }
+
+fun Project.gradleFlag(name: String, defaultValue: Boolean = false): Provider<Boolean> =
+  providers.gradleProperty(name).map {
+    it.toBoolean()
+  }.orElse(defaultValue)

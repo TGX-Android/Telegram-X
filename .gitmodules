@@ -58,6 +58,11 @@
 	url = https://github.com/TGX-Android/jni-utils
 	shallow = true
 	branch = main
+[submodule "vkryl/annotation"]
+	path = vkryl/annotation
+	url = https://github.com/TGX-Android/X-Annotation
+	shallow = true
+	branch = main
 [submodule "vkryl/leveldb"]
 	path = vkryl/leveldb
 	url = https://github.com/TGX-Android/leveldb
@@ -153,3 +158,8 @@
 	url = https://gitlab.freedesktop.org/pixman/pixman.git
 	shallow = true
 	branch = master
+[submodule "libprisma"]
+	path = app/jni/third_party/libprisma
+	url = https://github.com/TelegramMessenger/libprisma
+	shallow = true
+  branch = master

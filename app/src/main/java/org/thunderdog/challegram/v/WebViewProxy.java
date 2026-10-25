@@ -14,8 +14,6 @@
  */
 package org.thunderdog.challegram.v;
 
-import android.webkit.JavascriptInterface;
-
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.GameController;
 import org.thunderdog.challegram.ui.ShareController;
@@ -28,7 +26,7 @@ public final class WebViewProxy {
     this.context = context;
   }
 
-  @JavascriptInterface
+  @android.webkit.JavascriptInterface
   public final void postEvent (final String eventName, final String eventData) {
     UI.post(() -> {
       if (context.getArguments() != null && context.getArgumentsStrict().message != null) {

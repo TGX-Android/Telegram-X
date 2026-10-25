@@ -6,12 +6,14 @@ import groovy.xml.XmlParser
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.ProjectLayout
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.*
 import tgx.gradle.data.Theme
 import tgx.gradle.fatal
 import tgx.gradle.validateDir
 import java.io.Writer
+import javax.inject.Inject
 
 @CacheableTask
 abstract class GenerateThemesTask : DefaultTask() {
@@ -28,6 +30,9 @@ abstract class GenerateThemesTask : DefaultTask() {
 
   @get:OutputDirectory
   abstract val kotlinOutputDir: DirectoryProperty
+
+  @get:Inject
+  abstract val layout: ProjectLayout
 
   @TaskAction
   fun generateThemes () {
@@ -612,7 +617,9 @@ abstract class GenerateThemesTask : DefaultTask() {
         "Theme${className}.kt"
       ) { writer ->
         writer.append("""
-          @file:MadeByGenerator("${className()}", "${theme.file.name}")
+          @file:MadeByGenerator("${className()}", [
+            "${theme.file.relativeTo(layout.settingsDirectory.asFile).invariantSeparatorsPath}"
+          ])
           @file:JvmName("Theme${className}")
           
           package org.thunderdog.challegram.theme.builtin
