@@ -18,13 +18,13 @@ import android.Manifest;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.Handler;
-import android.os.LocaleList;
 import android.os.Looper;
 import android.text.format.DateFormat;
 import android.view.View;
@@ -162,7 +162,7 @@ public class UI {
 
   public static boolean startService (Intent intent, boolean isForeground, boolean forcePermissionRequest, @Nullable CancellationSignal signal) {
     if (isForeground) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.FOREGROUND_SERVICE) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = getUiContext();
         if (activity != null) {
           activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, permissions, grantResults, grantCount) -> {
@@ -179,7 +179,7 @@ public class UI {
         return startServiceImpl(getContext(), intent, true);
       }
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && forcePermissionRequest) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && forcePermissionRequest && ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.FOREGROUND_SERVICE) != PackageManager.PERMISSION_GRANTED) {
       BaseActivity activity = getUiContext();
       if (activity != null) {
         activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, permissions, grantResults, grantCount) -> {
@@ -853,7 +853,7 @@ public class UI {
       try {
         Configuration configuration = Resources.getSystem().getConfiguration();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-          LocaleList locales = configuration.getLocales();
+          android.os.LocaleList locales = configuration.getLocales();
           for (int i = 0; i < locales.size(); i++) {
             String code = LocaleUtils.toBcp47Language(locales.get(i));
             if (!StringUtils.isEmpty(code))

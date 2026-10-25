@@ -5053,6 +5053,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       supergroupId == 1492016544 || supergroupId == 1227585106 || supergroupId == 1116030833;
   }
 
+  public boolean isDeveloper () {
+    if (BuildConfig.DEBUG) {
+      return true;
+    }
+    long myUserId = myUserId();
+    return
+      myUserId == TGX_CREATOR_USER_ID ||
+      myUserId == TDLIB_CREATOR_USER_ID;
+  }
+
   public void getTesterLevel (@NonNull RunnableInt callback) {
     getTesterLevel(callback, false);
   }
@@ -10917,7 +10927,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     final String hashtag;
     if (!BuildConfig.LATEST_FLAVOR) {
-      hashtag = abiFlavor + StringUtils.ucfirst(BuildConfig.FLAVOR_SDK);
+      hashtag = abiFlavor + StringUtils.ucfirst(BuildConfig.FLAVOR);
     } else {
       hashtag = abiFlavor;
     }

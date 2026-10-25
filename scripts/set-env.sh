@@ -35,6 +35,7 @@ case "${PLATFORM}" in
     ;;
 esac
 
+ANDROID_SDK_PATH=$ANDROID_SDK_ROOT
 if [ ! "$IGNORE_SDK" ]; then
   if [[ ! -d ${ANDROID_SDK_ROOT} ]]; then
     if [[ "$1" == "--default-sdk-root" ]]; then
@@ -51,6 +52,11 @@ if [ ! "$IGNORE_SDK" ]; then
     fi
   fi
 
+  if [ "$PLATFORM" = windows ] && [ -n "$ANDROID_SDK_ROOT" ]; then
+    # PATH of MSYS2 separates folders with colons, so it needs POSIX paths
+    ANDROID_SDK_PATH=$(cygpath -u "$ANDROID_SDK_ROOT")
+  fi
+
   CMAKE_VERSION=$(scripts/./read-property.sh version.properties version.cmake)
   if [[ ! "$CMAKE_VERSION" =~ ^[_0-9\.]+$ ]]; then
     echo "${STYLE_ERROR}Invalid CMake version: $CMAKE_VERSION!${STYLE_END}"
@@ -63,7 +69,7 @@ if [ ! "$IGNORE_SDK" ]; then
   test -d "$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION_PRIMARY" || echo -e "${STYLE_WARN}Android NDK $ANDROID_NDK_VERSION_PRIMARY is not installed.${STYLE_END}"
   test -d "$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION_LEGACY" || echo -e "${STYLE_WARN}Android NDK $ANDROID_NDK_VERSION_LEGACY is not installed.${STYLE_END}"
 
-  PATH="$ANDROID_SDK_ROOT/cmake/$CMAKE_VERSION/bin:$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+  PATH="$ANDROID_SDK_PATH/cmake/$CMAKE_VERSION/bin:$ANDROID_SDK_PATH/tools/bin:$ANDROID_SDK_PATH/platform-tools:$PATH"
 
   test -d "$ANDROID_SDK_ROOT" || echo -e "${STYLE_WARN}Android SDK is not installed.${STYLE_END}"
 fi
@@ -91,7 +97,7 @@ export STYLE_INFO
 THIRDPARTY_LIBRARIES="$(pwd)/app/jni/third_party"
 export THIRDPARTY_LIBRARIES
 
-PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$(pwd)/scripts:$(pwd)/scripts/private:$PATH"
+PATH="$ANDROID_SDK_PATH/cmdline-tools/latest/bin:$(pwd)/scripts:$(pwd)/scripts/private:$PATH"
 export PATH
 
 export WIN_PATCH_REQUIRED

@@ -13,6 +13,9 @@ java {
 }
 
 kotlin {
+  sourceSets.named("main") {
+    kotlin.srcDir("../tests/buildSrc/kotlin")
+  }
   compilerOptions {
     allWarningsAsErrors = true
     jvmTarget = JvmTarget.JVM_25
@@ -40,6 +43,7 @@ dependencies {
   implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
 
   compileOnly(gradleApi())
+  implementation(libs.vkryl.annotation)
   implementation(libs.android.gradle.plugin)
   implementation(libs.kotlin.gradle.plugin)
   implementation(libs.okhttp.latest)

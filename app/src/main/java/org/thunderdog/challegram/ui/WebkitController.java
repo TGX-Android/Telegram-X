@@ -23,7 +23,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -96,7 +95,7 @@ public class WebkitController<T> extends ViewController<T> {
           }
 
           @Override
-          public boolean shouldOverrideUrlLoading (WebView view, WebResourceRequest request) {
+          public boolean shouldOverrideUrlLoading (WebView view, android.webkit.WebResourceRequest request) {
             return processSpecial(request.getUrl()) || super.shouldOverrideUrlLoading(view, request);
           }
         });

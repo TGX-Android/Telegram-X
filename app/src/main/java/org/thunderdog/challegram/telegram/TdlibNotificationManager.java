@@ -19,7 +19,6 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.RingtoneManager;
 import android.media.SoundPool;
@@ -1298,7 +1297,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       android.app.NotificationChannel channel = (android.app.NotificationChannel) getSystemChannel(scope, customChatId);
       if (channel != null) {
         Uri sound = channel.getSound();
-        AudioAttributes audioAttributes = channel.getAudioAttributes();
+        android.media.AudioAttributes audioAttributes = channel.getAudioAttributes();
         if (sound == null) {
           return audioAttributes == null ? "" : null;
         } else if (sound.equals(Uri.EMPTY)) {
