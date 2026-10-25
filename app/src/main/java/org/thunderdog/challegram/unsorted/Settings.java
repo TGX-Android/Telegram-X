@@ -574,7 +574,7 @@ public class Settings {
     }
 
     private boolean checkLogSetting (int flag) {
-      if (BuildConfig.LAB_FLAVOR) {
+      if (BuildConfig.TEST_HOOKS_ENABLED) {
         if (flag == FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG) {
           return true;
         }
@@ -839,7 +839,7 @@ public class Settings {
   private Settings () {
     File pmcDir = new File(AppContext.get().getFilesDir(), "pmc");
     boolean didNotExist = !pmcDir.exists();
-    if (Config.ENABLE_BASELINE_PROFILE_HOOKS && didNotExist) {
+    if (Config.ENABLE_TEST_HOOKS && didNotExist) {
       if (SessionSnapshot.restoreSnapshot()) {
         didNotExist = false;
       }

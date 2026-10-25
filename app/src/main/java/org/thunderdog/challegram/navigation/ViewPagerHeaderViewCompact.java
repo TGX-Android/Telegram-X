@@ -43,8 +43,8 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
 
-import me.vkryl.android.animatorx.AnimatorListener;
 import me.vkryl.android.animatorx.FloatAnimator;
+import me.vkryl.android.animatorx.FloatAnimatorListener;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 
@@ -428,9 +428,9 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     if (Math.abs(scrollX) >= threshold && hasUserInteraction) {
       long duration = computeScrollDuration(scrollX, recyclerView.getMeasuredWidth());
 
-      scrollByAnimator = new FloatAnimator(duration, QUINTIC_INTERPOLATOR, 0, new AnimatorListener<>() {
+      scrollByAnimator = new FloatAnimator(duration, QUINTIC_INTERPOLATOR, 0, new FloatAnimatorListener() {
         @Override
-        public void onAnimationUpdate (Float newValue) {
+        public void onValueChange (float newValue) {
           int desiredScrollBy = (int) (finalScrollBy * newValue);
           int scrollBy = (desiredScrollBy - scrolledBy);
           recyclerView.scrollBy(scrollBy, 0);
@@ -438,7 +438,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
         }
 
         @Override
-        public void onAnimationFinish (Float finalValue, boolean byAnimationEnd) {
+        public void onValueChangeFinished (float finalValue, boolean byAnimationEnd) {
           resetUserInteraction();
           scrollByAnimator = null;
         }

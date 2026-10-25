@@ -663,6 +663,7 @@
   <item type="id" name="btn_startMessaging" />
 
   <item type="id" name="startup_marker" />
+  <item type="id" name="screen_marker" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />

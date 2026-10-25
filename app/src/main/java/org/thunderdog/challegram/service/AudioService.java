@@ -22,7 +22,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.media.AudioManager;
-import android.media.MediaMetadata;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -553,16 +552,31 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
       TdApi.Audio audio = ((TdApi.MessageAudio) currentTrack.content).audio;
       android.media.session.MediaSession session = (android.media.session.MediaSession) mediaSession;
-      MediaMetadata.Builder b = new MediaMetadata.Builder();
-      b.putString(MediaMetadata.METADATA_KEY_TITLE, TD.getTitle(audio));
-      b.putString(MediaMetadata.METADATA_KEY_ARTIST, TD.getSubtitle(audio));
+      android.media.MediaMetadata.Builder b = new android.media.MediaMetadata.Builder();
+      b.putString(
+        android.media.MediaMetadata.METADATA_KEY_TITLE,
+        TD.getTitle(audio)
+      );
+      b.putString(
+        android.media.MediaMetadata.METADATA_KEY_ARTIST,
+        TD.getSubtitle(audio)
+      );
       if (playDuration != C.TIME_UNSET && playDuration > 0) {
-        b.putLong(MediaMetadata.METADATA_KEY_DURATION, playDuration);
+        b.putLong(
+          android.media.MediaMetadata.METADATA_KEY_DURATION,
+          playDuration
+        );
       }
       if (currentCover != null) {
-        b.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, currentCover);
+        b.putBitmap(
+          android.media.MediaMetadata.METADATA_KEY_ALBUM_ART,
+          currentCover
+        );
       } else if (Config.USE_OLD_COVER && oldCover != null) {
-        b.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, oldCover);
+        b.putBitmap(
+          android.media.MediaMetadata.METADATA_KEY_ALBUM_ART,
+          oldCover
+        );
       }
       session.setMetadata(b.build());
     }

@@ -14,7 +14,7 @@ done
 
 while IFS='=' read -r key value; do
   if [[ "$key" == "$VAR" ]]; then
-    echo "$value"
+    echo "${value%$'\r'}"
     exit
   fi
 done < "$FILE"
