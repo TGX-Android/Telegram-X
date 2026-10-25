@@ -19,3 +19,5 @@ dependencyResolutionManagement {
 		}
 	}
 }
+
+includeBuild("../vkryl/annotation")

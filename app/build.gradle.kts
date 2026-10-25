@@ -9,18 +9,21 @@ import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
 import tgx.gradle.source.GitInformationSource
 import tgx.gradle.task.*
+import tgx.test.configureTests
 import java.util.*
 
 plugins {
   id("java-toolchain-convention")
   id(libs.plugins.android.application.get().pluginId)
+  id(libs.plugins.androidx.baselineprofile.get().pluginId)
   id("tgx-config")
   id("tgx-module")
 }
 
 val config = tgxConfig.config.get()
-val generateBaselineProfile = tgxConfig.generateBaselineProfile.get()
+val useLegacyPackaging = tgxConfig.useLegacyPackaging.get()
 val useLegacyNdk = tgxConfig.useLegacyNdk.get()
+val globalAbiFilters = tgxConfig.abiFilters.get()
 val appliedNdkVersion = if (useLegacyNdk) {
   config.build.legacyNdkVersion
 } else {
@@ -138,6 +141,9 @@ val validateApiTokens = tasks.register<ValidateApiTokensTask>("validateApiTokens
 val fetchLocalizedStrings = tasks.register<FetchLocalizedStringsTask>("fetchLocalizedStrings") {
   group = "Setup"
   description = "Generates and updates all strings.xml resources based on translations.telegram.org"
+  builtinStringsFile.set(layout.projectDirectory.file(
+    "src/main/other/builtin-strings.txt"
+  ))
   resOutputDir.set(layout.buildDirectory.dir(
     "generated/tgx/locales/res"
   ))
@@ -199,17 +205,12 @@ val patchOpusTask = tasks.register<PatchOpusTask>(
 val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
   (it.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
 }.flatMap { sdkVariant ->
-  val abiVariants = if (sdkVariant.minSdk >= 21) {
-    arrayOf("arm64", "arm32", "x86", "x64")
-  } else {
-    arrayOf("arm32", "x86")
-  }
-  abiVariants.map { abiVariant ->
-    Pair(Pair(sdkVariant.flavor, abiVariant), tasks.register<BuildLibvpxTask>(
-      "buildLibvpx${sdkVariant.flavor.uppercaseFirstChar()}${abiVariant.uppercaseFirstChar()}"
+  globalAbiFilters.map { abiFilter ->
+    Pair(Pair(sdkVariant.flavor, abiFilter), tasks.register<BuildLibvpxTask>(
+      "buildLibvpx[${sdkVariant.flavor},${abiFilter}]"
     ) {
       group = "Setup"
-      description = "Builds libvpx for ${sdkVariant.flavor}, $abiVariant flavor"
+      description = "Builds libvpx for ${sdkVariant.flavor} flavor, abi: $abiFilter"
       // System
       sdkDir.set(File(config.sdkDir))
       msys2Dir.set(msys2Directory(config.msys2Dir))
@@ -230,13 +231,13 @@ val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
         )
       })
       sdkFlavor.set(sdkVariant.flavor)
-      abi.set(abiVariant.toAbiFilter())
+      abi.set(abiFilter)
       // Output
       buildDir.set(layout.buildDirectory.dir(
-        "generated/tgx/libvpx-build/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+        "generated/tgx/libvpx-build/${sdkVariant.flavor}/${abiFilter}"
       ))
       outputDir.set(layout.buildDirectory.dir(
-        "generated/tgx/libvpx/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+        "generated/tgx/libvpx/${sdkVariant.flavor}/${abiFilter}"
       ))
       dependsOn(validateGitSetupTask)
     })
@@ -244,25 +245,20 @@ val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
 }.toMap()
 val buildLibvpxTask = tasks.register("buildLibvpx") {
   group = "Setup"
-  description = "Builds libvpx for all flavors"
+  description = "Builds libvpx for all flavors and abis (${buildLibvpxTasks.size} total)"
   dependsOn(buildLibvpxTasks.values)
 }
 
 val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
   (it.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
 }.flatMap { sdkVariant ->
-  val abiVariants = if (sdkVariant.minSdk >= 21) {
-    arrayOf("arm64", "arm32", "x86", "x64")
-  } else {
-    arrayOf("arm32", "x86")
-  }
-  abiVariants.map { abiVariant ->
-    val key = Pair(sdkVariant.flavor, abiVariant)
+  globalAbiFilters.map { abiFilter ->
+    val key = Pair(sdkVariant.flavor, abiFilter)
     val task = tasks.register<BuildFfmpegTask>(
-      "buildFfmpeg${sdkVariant.flavor.uppercaseFirstChar()}${abiVariant.uppercaseFirstChar()}"
+      "buildFfmpeg[${sdkVariant.flavor},$abiFilter]"
     ) {
       group = "Setup"
-      description = "Builds FFmpeg for ${sdkVariant.flavor}, $abiVariant flavor"
+      description = "Builds FFmpeg for ${sdkVariant.flavor} flavor, abi: $abiFilter"
       // System
       sdkDir.set(File(config.sdkDir))
       msys2Dir.set(msys2Directory(config.msys2Dir))
@@ -281,16 +277,16 @@ val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
         )
       })
       sdkFlavor.set(sdkVariant.flavor)
-      abi.set(abiVariant.toAbiFilter())
+      abi.set(abiFilter)
       libvpxDir.set(layout.buildDirectory.dir(
-        "generated/tgx/libvpx/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+        "generated/tgx/libvpx/${sdkVariant.flavor}/${abiFilter}"
       ))
       // Output
       buildDir.set(layout.buildDirectory.dir(
-        "generated/tgx/ffmpeg-build/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+        "generated/tgx/ffmpeg-build/${sdkVariant.flavor}/${abiFilter}"
       ))
       outputDir.set(layout.buildDirectory.dir(
-        "generated/tgx/ffmpeg/${sdkVariant.flavor}/${abiVariant.toAbiFilter()}"
+        "generated/tgx/ffmpeg/${sdkVariant.flavor}/${abiFilter}"
       ))
       dependsOn(validateGitSetupTask, buildLibvpxTasks[key] ?: error("libvpx task not found for $key"))
     }
@@ -299,7 +295,7 @@ val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
 }.toMap()
 val buildFfmpegTask = tasks.register("buildFfmpeg") {
   group = "Setup"
-  description = "Builds FFmpeg for all flavors"
+  description = "Builds FFmpeg for all flavors and abis (${buildFfmpegTasks.size} total)"
   dependsOn(buildFfmpegTasks.values)
 }
 
@@ -385,6 +381,12 @@ android {
     buildConfigString("LANGUAGE_PACK", Telegram.LANGUAGE_PACK)
 
     buildConfigString("THEME_FILE_EXTENSION", App.THEME_EXTENSION)
+
+    // Migrated from abi flavors
+
+    buildConfigString("NDK_VERSION", ndkVersion)
+    buildConfigBool("SHARED_STL", true)
+    buildConfigBool("WEBP_ENABLED", true)
 
     // Library versions in BuildConfig.java
 
@@ -513,9 +515,9 @@ android {
     resValues = true
   }
 
-  flavorDimensions += arrayOf("SDK", "ABI")
-  androidComponents.disableRudimentaryVariants { sdkVariant, abiVariant ->
-    maxOf(sdkVariant.minSdk, abiVariant.minSdk) >= ndkMinSdkVersion &&
+  flavorDimensions += "SDK"
+  androidComponents.disableRudimentaryVariants { sdkVariant ->
+    sdkVariant.minSdk >= ndkMinSdkVersion &&
     (sdkVariant.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
   }
   productFlavors {
@@ -524,9 +526,6 @@ android {
         dimension = "SDK"
         isDefault = sdkIndex == Sdk.LATEST
 
-        if (generateBaselineProfile && !variant.isLatest) {
-          matchingFallbacks += Sdk.VARIANTS[Sdk.LATEST]!!.flavor
-        }
         Sdk.VARIANTS.forEach { (subSdkIndex, subVariant) ->
           buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", sdkIndex == subSdkIndex)
         }
@@ -618,6 +617,14 @@ android {
 
         var extraProguardFileCount = 0
 
+        findExtraFolders(variant).forEach { folderName ->
+          val proguardFile = project.layout.projectDirectory.file("src/$folderName/proguard-rules.pro").asFile
+          if (proguardFile.exists()) {
+            proguardFile(proguardFile)
+            extraProguardFileCount++
+          }
+        }
+
         arrayOf(
           "exoplayer",
           "common",
@@ -646,32 +653,6 @@ android {
         } else {
           fatal("Unable to find any proguard files for ${variant.flavor} flavor")
         }
-      }
-    }
-
-    Abi.VARIANTS.filter { (abiIndex, variant) ->
-      (generateBaselineProfile || !variant.isTestingLab)
-    }.forEach { (abiIndex, variant) ->
-      create(variant.flavor) {
-        dimension = "ABI"
-        isDefault = abiIndex == 0
-
-        if (generateBaselineProfile && !variant.isTestingLab) {
-          matchingFallbacks += Abi.VARIANTS[Abi.LAB]!!.flavor
-        }
-        Abi.VARIANTS.forEach { (subAbiIndex, subVariant) ->
-          buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", abiIndex == subAbiIndex)
-        }
-
-        ndkVersion = appliedNdkVersion
-        buildConfigString("NDK_VERSION", ndkVersion)
-        buildConfigBool("SHARED_STL", true)
-        buildConfigBool("WEBP_ENABLED", true)
-        if (ndk.abiFilters.isNotEmpty())
-          error(ndk.abiFilters.joinToString())
-        ndk.abiFilters.addAll(variant.filters)
-        externalNativeBuild.ndkBuild.abiFilters(*variant.filters)
-        externalNativeBuild.cmake.abiFilters(*variant.filters)
       }
     }
   }
@@ -711,10 +692,7 @@ android {
     }
 
     onVariants { variant ->
-      val abiFlavor = variant.productFlavors.first { it.first == "ABI" }.second
       val sdkFlavor = variant.productFlavors.first { it.first == "SDK" }.second
-
-      val (abi, abiVariant) = Abi.VARIANTS.entries.first { it.value.flavor == abiFlavor }
       val (sdk, sdkVariant) = Sdk.VARIANTS.entries.first { it.value.flavor == sdkFlavor }
 
       val nativeBuildTasks = mutableListOf<TaskProvider<out Task>>()
@@ -724,10 +702,9 @@ android {
         patchOpusTask
       ))
 
-      abiVariant.filters.filter {
-        sdkVariant.minSdk >= 21 || it == "armeabi-v7a" || it == "x86"
-      }.map {
-        Pair(sdkVariant.flavor, it.toAbiVariant())
+      val abiFilters = variant.findAbiFilters(globalAbiFilters)
+      abiFilters.map {
+        Pair(sdkVariant.flavor, it)
       }.forEach { key ->
         val buildLibvpxTask = buildLibvpxTasks[key] ?: error("libvpx task not found for $key")
         val buildFfmpegTask = buildFfmpegTasks[key] ?: error("ffmpeg task not found for $key")
@@ -735,21 +712,23 @@ android {
         nativeBuildTasks += buildFfmpegTask
       }
 
-      val buildNativeTask = tasks.register<ValidateNativeBuildTask>("buildNativeDependencies${variant.name.uppercaseFirstChar()}") {
+      val buildNativeTask = tasks.register<ValidateNativeBuildTask>(
+        "buildNativeDependencies[${variant.name}][${abiFilters.joinToString(",")}]"
+      ) {
         group = "Setup"
-        description = "Builds native dependencies for ${sdkVariant.flavor}, $abiVariant flavor and validates output"
+        description = "Builds native dependencies for ${sdkVariant.flavor} flavor and validates output"
         jetpackMediaDir.set(layout.buildDirectory.dir(
           "generated/tgx/androidx-media/${sdkVariant.jetpackMediaFlavor}"
         ))
         opusDir.set(layout.buildDirectory.dir(
           "generated/tgx/opus"
         ))
-        libvpxDirs.from(abiVariant.filters.map { abiFilter ->
+        libvpxDirs.from(abiFilters.map { abiFilter ->
           layout.buildDirectory.dir(
             "generated/tgx/libvpx/${sdkVariant.flavor}/$abiFilter"
           )
         })
-        ffmpegDirs.from(abiVariant.filters.map { abiFilter ->
+        ffmpegDirs.from(abiFilters.map { abiFilter ->
           layout.buildDirectory.dir(
             "generated/tgx/ffmpeg/${sdkVariant.flavor}/$abiFilter"
           )
@@ -757,7 +736,7 @@ android {
         dependsOn(*nativeBuildTasks.toTypedArray())
       }
       variant.lifecycleTasks.registerPreBuild(validateGitSetupTask, buildNativeTask)
-      buildNativeTasks["${sdkVariant.flavor}${abiVariant.flavor.uppercaseFirstChar()}"] = buildNativeTask
+      buildNativeTasks[sdkVariant.flavor] = buildNativeTask
 
       variant.sources.res?.apply {
         addGeneratedSourceDirectory(
@@ -782,22 +761,16 @@ android {
         )
       }
 
-      if (!config.isHuaweiBuild && abiVariant.isUniversal) {
+      if (useLegacyPackaging) {
         variant.packaging.dex.useLegacyPackaging = true
         variant.packaging.jniLibs.useLegacyPackaging = true
       }
     }
 
     onVariants { variant ->
-      val abiFlavor = variant.productFlavors.first { it.first == "ABI" }.second
       val sdkFlavor = variant.productFlavors.first { it.first == "SDK" }.second
-
-      val (abi, abiVariant) = Abi.VARIANTS.entries.first { it.value.flavor == abiFlavor }
       val (sdk, sdkVariant) = Sdk.VARIANTS.entries.first { it.value.flavor == sdkFlavor }
 
-      val flavorVersionCode = if (variant.debuggable) 0 else {
-        sdk * 100 + abi
-      }
       val flavorVersionNameSuffix = StringBuilder().apply {
         if (config.extension != "none") {
           append("-${config.extension}")
@@ -805,33 +778,53 @@ android {
         if (!sdkVariant.displayName.isNullOrEmpty()) {
           append("-${sdkVariant.displayName}")
         }
-        if (abiVariant.displayName != "universal" || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
-          append("-${abiVariant.displayName}")
-        }
-        if (variant.debuggable) {
-          append("-debug")
-        }
       }.toString()
 
       var baseVersionCode: Int? = null
       var baseVersionName: String? = null
-      var fileName: String? = null
+
+      val buildTypeSuffix = StringBuilder().apply {
+        if (variant.debuggable) {
+          append("-debug")
+        }
+        if (android.buildTypes.getByName(variant.buildType!!).signingConfig == null) {
+          append("-unsigned")
+        }
+      }.toString()
 
       variant.outputs.forEach { output ->
         baseVersionCode = output.versionCode.get()
+
+        val abiFilters = output.findAbiFilters(globalAbiFilters)
+        val abi = Abi.fromFilters(abiFilters)
+
+        val flavorVersionCode = if (variant.debuggable) {
+          0
+        } else {
+          sdk * 100 + abi.versionCode
+        }
+
+        val abiSuffix = if (abi.isSingleAbi || (config.extension == "none" && sdkVariant.displayName.isNullOrEmpty())) {
+          "-${abi.toDisplayName()}"
+        } else {
+          ""
+        }
+
         val modifiedVersionCode = baseVersionCode * 1000 + flavorVersionCode
         output.versionCode.set(modifiedVersionCode)
 
         baseVersionName = output.versionName.get()
-        val modifiedVersionName = "$baseVersionName.$baseVersionCode$flavorVersionNameSuffix"
+        val modifiedVersionName = "$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$abiSuffix$buildTypeSuffix"
         output.versionName.set(modifiedVersionName)
 
-        fileName = "${config.outputFileNamePrefix}-${modifiedVersionName.replace(Regex("-universal(?=-|$)"), "")}"
+        val cleanVersionName = modifiedVersionName.replace(Regex("-arm(?=-|$)"), "")
+
+        val fileName = "${config.outputFileNamePrefix}-${cleanVersionName}"
         if (output is VariantOutputImpl) {
           output.outputFileName.set("$fileName.apk")
         }
       }
-      require(baseVersionCode != null && baseVersionName != null && fileName != null)
+      require(baseVersionCode != null && baseVersionName != null)
 
       val recaptchaVersion = selectApiFlavor(
         sdkVariant,
@@ -845,8 +838,9 @@ android {
       }
 
       variant.buildConfigFields!!.apply {
-        put("ABI", BuildConfigField(
-          "int", abi, null
+        // Build types added by baseline profile plugin, which only tests use
+        put("TEST_HOOKS_ENABLED", BuildConfigField(
+          "boolean", variant.buildType == "nonMinifiedRelease" || variant.buildType == "benchmarkRelease", null
         ))
         put("RECAPTCHA_VERSION", BuildConfigField(
           "String", "\"$recaptchaVersion\"", null
@@ -860,7 +854,8 @@ android {
 
         var openSslVersionFull = ""
         var openSslReleaseDate = ""
-        val openSslVersionFile = requireFile(project.isolated.rootProject.projectDirectory.file("tdlib/openssl/${ndkVersion}/android-${sdkVariant.minSdk}/${abiVariant.filters.first()}/include/openssl/opensslv.h").asFile)
+        val firstAbi = variant.findAbiFilters(globalAbiFilters).first()
+        val openSslVersionFile = requireFile(project.isolated.rootProject.projectDirectory.file("tdlib/openssl/${ndkVersion}/android-${sdkVariant.minSdk}/${firstAbi}/include/openssl/opensslv.h").asFile)
         openSslVersionFile.bufferedReader().use { reader ->
           val regex = Regex("^# define (OPENSSL_FULL_VERSION_STR|OPENSSL_RELEASE_DATE)\\s*\"([^\"]+)\"$")
           while (true) {
@@ -910,7 +905,8 @@ android {
           description = "Creates a copy of mapping.txt with a build name"
           from(variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE))
           into(project.layout.buildDirectory.dir("outputs/mapping/${variant.name}"))
-          rename("mapping.txt", "$fileName.txt")
+          val mappingFileName = "${config.outputFileNamePrefix}-$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$buildTypeSuffix"
+          rename("mapping.txt", "$mappingFileName.txt")
         }
         project.afterEvaluate {
           project.tasks.findByName("assemble$variantName")?.finalizedBy(copyTask)
@@ -920,24 +916,35 @@ android {
   }
 }
 
-if (generateBaselineProfile) {
-  apply(plugin = libs.plugins.androidx.baselineprofile.get().pluginId)
+configureTests()
 
-  extensions.configure<BaselineProfileConsumerExtension> {
-    mergeIntoMain = true
-    automaticGenerationDuringBuild = false
-    saveInSrc = true
-    warnings.disabledVariants = false
-  }
-
-  afterEvaluate {
-    dependencies.add("latestLabReleaseBaselineProfile", project(":baseline-profile"))
+extensions.configure<BaselineProfileConsumerExtension> {
+  mergeIntoMain = false
+  automaticGenerationDuringBuild = false
+  saveInSrc = true
+  warnings.disabledVariants = false
+  warnings.variantHasNoBaselineProfileDependency = false
+  Sdk.VARIANTS.values.filter {
+    it.usesBaselineProfile
+  }.forEach { variant ->
+    variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
   }
 }
 
+// Plugin merges and copies profiles of all release variants, which would leave empty folders in src for variants without profiles
+val variantsWithoutBaselineProfile = Sdk.VARIANTS.values.filter {
+  !it.usesBaselineProfile
+}.map { "${it.flavor.uppercaseFirstChar()}Release" }
+tasks.named { name ->
+  variantsWithoutBaselineProfile.any { name == "merge${it}BaselineProfile" || name == "copy${it}BaselineProfileIntoSrc" }
+}.configureEach {
+  enabled = false
+}
+
 afterEvaluate {
+  val rudimentarySuffix = Regex("(Benchmark)?(NonMinified)?(Release|Debug)$", RegexOption.IGNORE_CASE)
   tasks.withType<ExternalNativeBuildTask>().configureEach {
-    val variantName = variantName.replace(Regex("(Benchmark)?(NonMinified)?(Release|Debug)$", RegexOption.IGNORE_CASE), "")
+    val variantName = variantName.replace(rudimentarySuffix, "")
     val buildNativeTask = buildNativeTasks[variantName]
     require(buildNativeTask != null) {
       "Could not find buildNativeTask for $variantName (${this.variantName})"
@@ -1003,7 +1010,12 @@ dependencies {
     libs.androidx.exifinterface.latest
   )
   implementation(libs.androidx.biometric)
-  implementation(libs.androidx.palette)
+  flavorImplementation(
+    libs.androidx.palette.legacy,
+    libs.androidx.palette.legacy,
+    libs.androidx.palette.legacy,
+    libs.androidx.palette.latest
+  )
   implementation(libs.androidx.collection)
   implementation(libs.androidx.interpolator)
   // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
@@ -1043,6 +1055,7 @@ dependencies {
   flavorImplementation(
     libs.google.play.services.maps.legacy,
     libs.google.play.services.maps.lollipop,
+    libs.google.play.services.maps.marshmallow,
     libs.google.play.services.maps.latest
   )
   flavorImplementation(
@@ -1156,6 +1169,10 @@ dependencies {
   compileOnly(libs.androidx.room.latest)
   compileOnly(libs.annotations.jsr305)
   compileOnly(libs.annotations.kotlin)
+
+  // Tests: tests/README.md
+  testImplementation(libs.bundles.unit.test)
+  androidTestImplementation(project(":tests:core"))
 }
 
 if (!config.isExperimentalBuild) {

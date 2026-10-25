@@ -4,7 +4,9 @@
 # Location of the SDK. This is only used by Gradle.
 # For customization when using a Version Control System, please read the
 # header note.
-# Use forward slashes in Windows paths, for example E:/AndroidSDK.
+
+# Note for Windows: use \\ or / as file path separator.
+
 # Path to Android SDK
 sdk.dir=
 

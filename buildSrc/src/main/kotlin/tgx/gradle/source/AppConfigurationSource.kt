@@ -111,8 +111,7 @@ abstract class AppConfigurationSource : ValueSource<ApplicationConfig, AppConfig
       forceOptimize =
         properties.getProperty("app.forceoptimize")?.toBoolean() ?: false,
       doNotObfuscate =
-        isExampleBuild ||
-          properties.getProperty("app.dontobfuscate")?.toBoolean() ?: false,
+        properties.getProperty("app.dontobfuscate")?.toBoolean() ?: false,
       telegramApiId =
         apiId,
       telegramApiHash =

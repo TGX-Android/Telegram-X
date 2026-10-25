@@ -21,7 +21,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
@@ -983,7 +982,7 @@ public class Theme {
         new int[][]{StateSet.WILD_CARD},
         new int[]{pressedColor}
       );
-      return new RippleDrawable(colorStateList, defaultDrawable, pressedDrawable);
+      return new android.graphics.drawable.RippleDrawable(colorStateList, defaultDrawable, pressedDrawable);
     } else {
       StateListDrawable stateListDrawable = new StateListDrawable();
       stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, pressedDrawable);
@@ -1006,7 +1005,7 @@ public class Theme {
         new int[][]{StateSet.WILD_CARD},
         new int[]{(color & 0x00ffffff) | 0x19000000}
       );
-      return new RippleDrawable(colorStateList, null, maskDrawable);
+      return new android.graphics.drawable.RippleDrawable(colorStateList, null, maskDrawable);
     } else {
       StateListDrawable stateListDrawable = new StateListDrawable();
       stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, createRoundRectDrawable(Screen.dp(3), (color & 0x00ffffff) | 0x19000000));

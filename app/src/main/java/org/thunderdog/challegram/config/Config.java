@@ -64,7 +64,7 @@ public class Config {
   // The only way around for the sender is to transcode video fully even when there's no need at all.
   public static final boolean TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT = true;
 
-  public static final boolean ENABLE_BASELINE_PROFILE_HOOKS = BuildConfig.LAB_FLAVOR;
+  public static final boolean ENABLE_TEST_HOOKS = BuildConfig.TEST_HOOKS_ENABLED;
 
   public static final boolean ENABLE_DELETE_CALL_HISTORY = BuildConfig.DEBUG;
   public static final boolean ENABLE_NEW_CHAT_ACTION_BAR = BuildConfig.DEBUG;
