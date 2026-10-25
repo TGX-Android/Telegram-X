@@ -58,6 +58,11 @@
 	url = https://github.com/TGX-Android/jni-utils
 	shallow = true
 	branch = main
+[submodule "vkryl/annotation"]
+	path = vkryl/annotation
+	url = https://github.com/TGX-Android/X-Annotation
+	shallow = true
+	branch = main
 [submodule "vkryl/leveldb"]
 	path = vkryl/leveldb
 	url = https://github.com/TGX-Android/leveldb

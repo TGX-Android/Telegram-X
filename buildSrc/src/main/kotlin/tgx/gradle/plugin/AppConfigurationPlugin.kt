@@ -26,7 +26,6 @@ import tgx.gradle.source.AppConfigurationSource
 
 abstract class AppConfigurationExtension {
   abstract val config: Property<ApplicationConfig>
-  abstract val generateBaselineProfile: Property<Boolean>
   abstract val useLegacyNdk: Property<Boolean>
   abstract val useLegacyPackaging: Property<Boolean>
   abstract val enableSplitAbi: Property<Boolean>
@@ -50,13 +49,11 @@ open class AppConfigurationPlugin : Plugin<Project> {
       )
     })
 
-    val generateBaselineProfile = project.gradleFlag("generateBaselineProfile")
     val useLegacyNdk = project.gradleFlag("useLegacyNdk")
     val useLegacyPackaging = project.gradleFlag("useLegacyPackaging")
     val abiFilters = project.findAbiFilters(useLegacyNdk)
     val enableSplitAbi = project.needEnableSplitAbi(abiFilters)
 
-    ext.generateBaselineProfile.set(generateBaselineProfile)
     ext.useLegacyNdk.set(useLegacyNdk)
     ext.useLegacyPackaging.set(useLegacyPackaging)
     ext.enableSplitAbi.set(enableSplitAbi)

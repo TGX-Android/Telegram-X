@@ -1430,7 +1430,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
         if (UI.inTestMode()) {
           makeTestRequest();
         }
-        if (Config.ENABLE_BASELINE_PROFILE_HOOKS) {
+        if (Config.ENABLE_TEST_HOOKS) {
           tdlib.awaitConnection(() -> runOnUiThreadOptional(this::addStartupMarker));
         }
         break;

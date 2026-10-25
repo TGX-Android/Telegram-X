@@ -926,7 +926,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     } catch (Throwable t) {
       Log.e(t);
     }
-    if (Config.ENABLE_BASELINE_PROFILE_HOOKS || tdlib.isDeveloper()) {
+    if (Config.ENABLE_TEST_HOOKS || tdlib.isDeveloper()) {
       InlineResultCommon snapshot = createItem(context, tdlib, KEY_SNAPSHOT, R.drawable.baseline_lock_24, Lang.getString(R.string.SessionSnapshot), Lang.getString(R.string.SessionSnapshotDesc));
       items.add(createItem(snapshot, R.id.btn_folder));
     }

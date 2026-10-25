@@ -447,14 +447,7 @@ Unless working with heavily optimized custom `ViewGroup`, you shall avoid layout
 
 ## 8: Code style
 
-There are few rules that Telegram X tries to follow:
-
-1. Never copy-paste public repositories, use git submodules
-2. Same with libraries: never copy-paste, always add as gradle dependency
-3. Only vector drawables. Viewport for icons (`viewportWidth`, `viewportHeight`) must be 24x24. Desired display size can be controlled by `width` and `height` properties and must be included in the file name suffix. 
-4. Double whitespace as tab symbol
-5. Whitespace before the method's parameters opening brace: `public static void main () { ... }`
-6. Kotlin is OK for new modules outside of `org.thunderdog` (see `me.vkryl` package), as long as it is interoperable with Java code (or it's private)
+See [code style](/docs/CODE_STYLE.md).
 
 ## 9: Unfinished features
 

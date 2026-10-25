@@ -9,17 +9,18 @@ import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
 import tgx.gradle.source.GitInformationSource
 import tgx.gradle.task.*
+import tgx.test.configureTests
 import java.util.*
 
 plugins {
   id("java-toolchain-convention")
   id(libs.plugins.android.application.get().pluginId)
+  id(libs.plugins.androidx.baselineprofile.get().pluginId)
   id("tgx-config")
   id("tgx-module")
 }
 
 val config = tgxConfig.config.get()
-val generateBaselineProfile = tgxConfig.generateBaselineProfile.get()
 val useLegacyPackaging = tgxConfig.useLegacyPackaging.get()
 val useLegacyNdk = tgxConfig.useLegacyNdk.get()
 val globalAbiFilters = tgxConfig.abiFilters.get()
@@ -386,7 +387,6 @@ android {
     buildConfigString("NDK_VERSION", ndkVersion)
     buildConfigBool("SHARED_STL", true)
     buildConfigBool("WEBP_ENABLED", true)
-    buildConfigBool("GENERATING_BASELINE_PROFILE", generateBaselineProfile)
 
     // Library versions in BuildConfig.java
 
@@ -526,9 +526,6 @@ android {
         dimension = "SDK"
         isDefault = sdkIndex == Sdk.LATEST
 
-        if (generateBaselineProfile && !variant.isLatest) {
-          matchingFallbacks += Sdk.VARIANTS[Sdk.LATEST]!!.flavor
-        }
         Sdk.VARIANTS.forEach { (subSdkIndex, subVariant) ->
           buildConfigBool("${subVariant.flavor.uppercase()}_FLAVOR", sdkIndex == subSdkIndex)
         }
@@ -619,6 +616,14 @@ android {
         }
 
         var extraProguardFileCount = 0
+
+        findExtraFolders(variant).forEach { folderName ->
+          val proguardFile = project.layout.projectDirectory.file("src/$folderName/proguard-rules.pro").asFile
+          if (proguardFile.exists()) {
+            proguardFile(proguardFile)
+            extraProguardFileCount++
+          }
+        }
 
         arrayOf(
           "exoplayer",
@@ -833,6 +838,10 @@ android {
       }
 
       variant.buildConfigFields!!.apply {
+        // Build types added by baseline profile plugin, which only tests use
+        put("TEST_HOOKS_ENABLED", BuildConfigField(
+          "boolean", variant.buildType == "nonMinifiedRelease" || variant.buildType == "benchmarkRelease", null
+        ))
         put("RECAPTCHA_VERSION", BuildConfigField(
           "String", "\"$recaptchaVersion\"", null
         ))
@@ -907,19 +916,29 @@ android {
   }
 }
 
-if (generateBaselineProfile) {
-  apply(plugin = libs.plugins.androidx.baselineprofile.get().pluginId)
+configureTests()
 
-  extensions.configure<BaselineProfileConsumerExtension> {
-    mergeIntoMain = true
-    automaticGenerationDuringBuild = false
-    saveInSrc = true
-    warnings.disabledVariants = false
+extensions.configure<BaselineProfileConsumerExtension> {
+  mergeIntoMain = false
+  automaticGenerationDuringBuild = false
+  saveInSrc = true
+  warnings.disabledVariants = false
+  warnings.variantHasNoBaselineProfileDependency = false
+  Sdk.VARIANTS.values.filter {
+    it.usesBaselineProfile
+  }.forEach { variant ->
+    variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
   }
+}
 
-  afterEvaluate {
-    dependencies.add("latestReleaseBaselineProfile", project(":baseline-profile"))
-  }
+// Plugin merges and copies profiles of all release variants, which would leave empty folders in src for variants without profiles
+val variantsWithoutBaselineProfile = Sdk.VARIANTS.values.filter {
+  !it.usesBaselineProfile
+}.map { "${it.flavor.uppercaseFirstChar()}Release" }
+tasks.named { name ->
+  variantsWithoutBaselineProfile.any { name == "merge${it}BaselineProfile" || name == "copy${it}BaselineProfileIntoSrc" }
+}.configureEach {
+  enabled = false
 }
 
 afterEvaluate {
@@ -991,7 +1010,12 @@ dependencies {
     libs.androidx.exifinterface.latest
   )
   implementation(libs.androidx.biometric)
-  implementation(libs.androidx.palette)
+  flavorImplementation(
+    libs.androidx.palette.legacy,
+    libs.androidx.palette.legacy,
+    libs.androidx.palette.legacy,
+    libs.androidx.palette.latest
+  )
   implementation(libs.androidx.collection)
   implementation(libs.androidx.interpolator)
   // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
@@ -1031,6 +1055,7 @@ dependencies {
   flavorImplementation(
     libs.google.play.services.maps.legacy,
     libs.google.play.services.maps.lollipop,
+    libs.google.play.services.maps.marshmallow,
     libs.google.play.services.maps.latest
   )
   flavorImplementation(
@@ -1144,6 +1169,10 @@ dependencies {
   compileOnly(libs.androidx.room.latest)
   compileOnly(libs.annotations.jsr305)
   compileOnly(libs.annotations.kotlin)
+
+  // Tests: tests/README.md
+  testImplementation(libs.bundles.unit.test)
+  androidTestImplementation(project(":tests:core"))
 }
 
 if (!config.isExperimentalBuild) {
