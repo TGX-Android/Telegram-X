@@ -77,6 +77,11 @@ public class BiDiUtils {
         1 << android.icu.lang.UCharacter.DIRECTIONALITY_ARABIC_NUMBER);
 
       for (int i = start; i < end; ) {
+        // Right-to-left classes and Arabic numbers start at U+0590
+        if (text.charAt(i) < 0x0590) {
+          i++;
+          continue;
+        }
         int codePoint = Character.codePointAt(text, i);
         if (((1 << android.icu.lang.UCharacter.getDirection(codePoint)) & RTLMask) != 0) {
           return true;
