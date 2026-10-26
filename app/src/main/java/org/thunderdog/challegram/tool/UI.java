@@ -25,7 +25,6 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.Handler;
-import android.os.LocaleList;
 import android.os.Looper;
 import android.text.format.DateFormat;
 import android.view.View;
@@ -854,7 +853,7 @@ public class UI {
       try {
         Configuration configuration = Resources.getSystem().getConfiguration();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-          LocaleList locales = configuration.getLocales();
+          android.os.LocaleList locales = configuration.getLocales();
           for (int i = 0; i < locales.size(); i++) {
             String code = LocaleUtils.toBcp47Language(locales.get(i));
             if (!StringUtils.isEmpty(code))

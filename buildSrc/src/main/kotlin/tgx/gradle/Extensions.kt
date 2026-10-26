@@ -115,7 +115,7 @@ fun findExtraFolders(variant: SdkVariant): Set<String> =
     if (variant.minSdk >= 23) {
       this += "sinceMarshmallow"
     }
-    if (variant.minSdk >= 26 || (variant.maxSdk ?: Int.MAX_VALUE) >= 26) {
+    if (variant.minSdk >= 26 || variant.supportsSdk(26)) {
       this += "sinceOreo"
     }
     this += "only${variant.flavor.uppercaseFirstChar()}"
@@ -220,8 +220,8 @@ fun ApplicationAndroidComponentsExtension.disableRudimentaryVariants(
   beforeVariants { variantBuilder ->
     val sdkFlavor = variantBuilder.productFlavors.first { it.first == "SDK" }.second
     val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
-    val isDebug = variantBuilder.buildType == "debug"
-    if (sdkVariant.maxSdk != null && !isDebug) {
+    // Only published builds are limited: debug and baseline profile builds must install on any device
+    if (sdkVariant.maxSdk != null && variantBuilder.buildType == "release") {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
     variantBuilder.enable = filter(sdkVariant)
@@ -233,8 +233,8 @@ fun TestAndroidComponentsExtension.disableRudimentaryVariants(
   beforeVariants { variantBuilder ->
     val sdkFlavor = variantBuilder.productFlavors.first { it.first == "SDK" }.second
     val sdkVariant = Sdk.VARIANTS.values.first { it.flavor == sdkFlavor }
-    val isDebug = variantBuilder.buildType == "debug"
-    if (sdkVariant.maxSdk != null && !isDebug) {
+    // Only published builds are limited: debug and baseline profile builds must install on any device
+    if (sdkVariant.maxSdk != null && variantBuilder.buildType == "release") {
       variantBuilder.maxSdk = sdkVariant.maxSdk
     }
     variantBuilder.enable = filter(sdkVariant)
@@ -290,6 +290,8 @@ fun Project.findAbiFilters(useLegacyNdk: Provider<Boolean>): Provider<List<Strin
     .zip(useLegacyNdk) { abiFilters, useLegacyNdk ->
       abiFilters.filter { abi ->
         abi == "armeabi-v7a" || abi == "x86" || !useLegacyNdk
+      }.ifEmpty {
+        fatal("Legacy NDK supports only 32-bit ABIs, select arm32 or x86 with -Pabi")
       }
     }
     .zip(providers.gradleProperty("android.injected.build.abi").orElse("")) { abiFilters, injectedAbiList ->

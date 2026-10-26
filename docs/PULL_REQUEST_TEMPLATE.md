@@ -6,16 +6,16 @@ The guide below provides the flow for creating a perfect pull request to the Tel
 - [ ] **Minimal**. Changes are the smallest and simplest solution to the problem: no new abstractions, options or rewrites it doesn't require (a 2-line fix is better than a 40-line one with the same result; extracting repeated code into a function is fine if it results in smaller or clearer code). Existing components from appropriate modules are reused.
 - [ ] **Self-explanatory**. Code is clear, easy to understand and easy to change on its own: names are descriptive and not abbreviated (`destinationDir`, not `dstDir`). Documentation and comments describe rules, contracts, or when and why to use the code, but never restate what it does.
 - [ ] **Clean**. There are no unnecessary or accidental changes. Code is not duplicated: repeated logic is extracted into a short, well-named function.
-- [ ] **Consistent**. Code follows the existing style of the project and `.editorconfig`. Braces with line breaks are always used, even when optional, except for short or single-expression Kotlin functions, which may use `=`.
-- [ ] **Designed**. UI changes follow the existing design. If there is none, the PR includes before and after screen recordings for each change.
-- [ ] **Compatible**. Changes work down to API 16: classes missing on older versions are never imported and are referenced by their full name only inside version checks, never in fields, method signatures or `catch` clauses outside them. Compatibility dependencies are added only to flavors that need them.
+- [ ] **Consistent**. Code follows the existing style of the project, `.editorconfig` and [code style](https://github.com/TGX-Android/Telegram-X/blob/main/docs/CODE_STYLE.md). Braces with line breaks are always used, even when optional, except for short or single-expression Kotlin functions, which may use `=`.
+- [ ] **Designed**. UI changes follow the existing design. Features and visual bug fixes, e.g. of layout or glitches, include screenshots before and after the change, or screen recordings when the change can't be seen on screenshots, e.g. animations (see [screenshots and recordings](https://github.com/TGX-Android/Telegram-X/blob/main/tests/README.md#screenshots-and-recordings)).
+- [ ] **Compatible**. Changes work down to API 16: classes missing on older versions are never imported and are referenced by their full name only inside version checks, never in fields, method signatures or `catch` clauses outside them (checked by `./gradlew checkMinSdk`, for Android 4.x with `-PuseLegacyNdk=true`). Compatibility dependencies are added only to flavors that need them.
 - [ ] **Graceful**. Features unavailable on older versions are hidden or show the required Android version, with the reason explained in the PR.
 - [ ] **Modern**. Latest APIs are used where available, with deprecated ones only as a fallback for older versions.
 - [ ] **Transparent**. Changes made with the help of LLMs are annotated with `@MadeByLLM` and the exact model used (see its documentation).
 - [ ] **Accountable**. All commits are authored by you, without `Co-authored-by` or other attribution to LLMs: the model used is already credited via `@MadeByLLM`.
 - [ ] **Traceable**. Commit titles fit into 65 characters, and descriptions briefly explain the reason for the change, unless the title already does. Each `id` added to `@MadeByLLM` or `@MadeByHuman` is also included as a `Context-Id: <id>` trailer of that commit.
 - [ ] **Measured**. Optimizations are backed by a benchmark or memory measurement when possible: the PR includes how it was measured and the results before and after.
-- [ ] **Completed**. All changes are properly tested (including manually) and ready to be merged.
+- [ ] **Completed**. All changes are properly tested (including manually) and ready to be merged. The description lists checks with results before and after, affected flavors and what isn't covered (see [tests](https://github.com/TGX-Android/Telegram-X/blob/main/tests/README.md#pull-request-description)).
 - [ ] **Up-To-Date**. Your PR is based on the **latest** commit of the `main` branch.
 
 ## When fixing bugs, make sure your changes are:
@@ -23,6 +23,7 @@ The guide below provides the flow for creating a perfect pull request to the Tel
 - [ ] **Separated**. Different bug fixes are divided into independent PRs.
 - [ ] **Linked**. The issue number is in the title, and the description links the issue.
 - [ ] **Safe**. The fix doesn't risk breaking other screens or specific devices.
+- [ ] **Targeted**. Only affected flavors are changed: code, resources and R8 rules for them are placed in the folder shared by exactly these flavors, e.g. `src/preMarshmallow` for `legacy` and `lollipop` instead of copies in `src/onlyLegacy` and `src/onlyLollipop` (see [flavors](https://github.com/TGX-Android/Telegram-X/blob/main/tests/README.md#flavors)).
 
 ## When adding features, keep them:
 - [ ] **Small**. Small, self-contained improvements are welcome in any part of the app.

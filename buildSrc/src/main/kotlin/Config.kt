@@ -165,7 +165,14 @@ enum class Abi(
       if (abi.isEmpty() || abi == "all") {
         FILTERS
       } else {
-        toFilters(fromFilter(abi))
+        val abiFilters = abi
+          .split(',')
+          .flatMap {
+            toFilters(fromFilter(it.trim()))
+          }
+        FILTERS.filter {
+          it in abiFilters
+        }
       }
 
     fun toFilters(abi: Abi): List<String> =
@@ -236,6 +243,13 @@ data class SdkVariant(
 
   val usesLegacyNdk: Boolean =
     isLegacy
+
+  fun supportsSdk(sdk: Int): Boolean =
+    (maxSdk ?: Int.MAX_VALUE) >= sdk
+
+  // ART uses baseline profiles starting with Android 7.0
+  val usesBaselineProfile: Boolean =
+    supportsSdk(24)
 }
 
 object Sdk {

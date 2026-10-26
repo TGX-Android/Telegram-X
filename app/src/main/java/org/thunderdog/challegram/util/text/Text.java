@@ -2520,8 +2520,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       saveCount = -1;
     }
 
-    for (QuoteBackground quote : quotes) {
-      quote.draw(c, startX, endX, endXBottomPadding, startY);
+    for (int i = 0; i < quotes.size(); i++) {
+      quotes.get(i).draw(c, startX, endX, endXBottomPadding, startY);
     }
 
     lastStartY = startY;

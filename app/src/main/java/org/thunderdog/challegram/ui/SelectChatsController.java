@@ -25,7 +25,6 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
 import android.os.Build;
@@ -1129,7 +1128,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     ShapeDrawable mask = new ShapeDrawable(new OvalShape());
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       mask.setTint(Color.WHITE);
-      crossIconRipple = new RippleDrawable(ColorStateList.valueOf(Theme.RIPPLE_COLOR), /* content */ null, mask);
+      crossIconRipple = new android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(Theme.RIPPLE_COLOR), /* content */ null, mask);
     } else {
       mask.getPaint().setColor(Theme.RIPPLE_COLOR);
       crossIconRipple = Drawables.getColorSelector(null, mask);
