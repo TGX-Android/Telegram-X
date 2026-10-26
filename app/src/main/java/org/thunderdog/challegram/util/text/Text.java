@@ -1607,7 +1607,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       }
       if ((end - start) == spaceCount) {
         fullWidth = spaceSize * spaceCount;
-      } else if (isChild) {
+      } else if (isChild && childWidth[0] > getLineMaxWidth(getLineCount(), this.currentY)) {
+        // Rest of a word that is split by characters again only needs an estimate.
+        // Widths of characters measured one by one don't add up to the width of the word
+        // because of kerning, so the last rest is measured, or next parts overlap its end
         fullWidth = childWidth[0];
       } else {
         fullWidth = BiDiUtils.measureTextRun(bidiEntity, in, start, end, paint);

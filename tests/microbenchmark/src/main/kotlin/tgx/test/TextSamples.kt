@@ -54,6 +54,7 @@ fun url(text: String) = Entity(text, TdApi.TextEntityTypeUrl())
 fun textUrl(text: String, url: String) = Entity(text, TdApi.TextEntityTypeTextUrl(url))
 fun mention(text: String) = Entity(text, TdApi.TextEntityTypeMention())
 fun hashtag(text: String) = Entity(text, TdApi.TextEntityTypeHashtag())
+fun phoneNumber(text: String) = Entity(text, TdApi.TextEntityTypePhoneNumber())
 fun quote(text: String) = Entity(text, TdApi.TextEntityTypeBlockQuote())
 
 private const val LONG_TEXT =
