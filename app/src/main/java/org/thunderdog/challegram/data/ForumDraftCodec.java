@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -99,7 +98,7 @@ public final class ForumDraftCodec {
   }
 
   private static void writeString (DataOutputStream out, String value) throws IOException {
-    byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+    byte[] bytes = value.getBytes("UTF-8");
     out.writeInt(bytes.length);
     out.write(bytes);
   }
@@ -111,6 +110,6 @@ public final class ForumDraftCodec {
     }
     byte[] bytes = new byte[length];
     in.readFully(bytes);
-    return new String(bytes, StandardCharsets.UTF_8);
+    return new String(bytes, "UTF-8");
   }
 }
