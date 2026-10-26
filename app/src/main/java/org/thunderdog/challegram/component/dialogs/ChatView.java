@@ -700,7 +700,8 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     TdlibStatusManager.Helper status = chat.statusHelper();
     TdlibStatusManager.ChatState state = status != null ? status.drawingState() : null;
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    float statusVisibility = state != null && !(chat.isForumRow() && chat.showDraft()) ? state.visibility() : 0f;
+    float statusVisibility = state != null && !(chat.isForumRow() &&
+      chat.showDraft()) ? state.visibility() : 0f;
     // endregion
     float textAlpha = 1f - statusVisibility;
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")

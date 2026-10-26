@@ -454,7 +454,8 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
       }
 
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (standaloneParent == null && (alternateParent == null || !alternateParent.inSearchMode())) {
+      if (standaloneParent == null && (alternateParent == null ||
+        !alternateParent.inSearchMode())) {
       // endregion
         ids.append(R.id.btn_messageSelect);
         icons.append(R.drawable.baseline_playlist_add_check_24);

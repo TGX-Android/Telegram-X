@@ -501,10 +501,22 @@ public class TGMessageMedia extends TGMessage {
       // Bounded width fitting keeps the height cap: receivers crop sources, never stretch.
       wrapper.prepare(ForumMessageLayout.captionMaxWidth(useForumContentWidth(), useBubbles(),
         getRealContentMaxWidth(), mosaicWrapper.getWidth(), getCaptionHorizontalPadding()));
-      int mediaWidth = ForumMessageLayout.expandedMediaWidth(useForumContentWidth() && useBubbles(),
-        mosaicWrapper.getWidth(), wrapper.getWidth(), getCaptionHorizontalPadding(), getRealContentMaxWidth());
+      int mediaWidth = ForumMessageLayout.expandedMediaWidth(
+        useForumContentWidth() && useBubbles(),
+        mosaicWrapper.getWidth(),
+        wrapper.getWidth(),
+        getCaptionHorizontalPadding(),
+        getRealContentMaxWidth()
+      );
       if (mediaWidth > mosaicWrapper.getWidth()) {
-        mosaicWrapper.build(mediaWidth, maxHeight, minWidth, minHeight, MosaicWrapper.MODE_FIT_WIDTH_BOUNDED, false);
+        mosaicWrapper.build(
+          mediaWidth,
+          maxHeight,
+          minWidth,
+          minHeight,
+          MosaicWrapper.MODE_FIT_WIDTH_BOUNDED,
+          false
+        );
       }
       // endregion
     }

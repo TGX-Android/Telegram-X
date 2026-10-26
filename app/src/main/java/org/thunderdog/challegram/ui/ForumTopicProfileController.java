@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.ui;
 
 import android.app.AlertDialog;
@@ -75,8 +87,10 @@ import tgx.td.Td;
 
 /** Topic identity/settings plus existing shared-media pages, not a second group profile. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-public final class ForumTopicProfileController extends ViewController<ForumTopicProfileController.Arguments>
-  implements Menu, ChatListener, MessageListener, NotificationSettingsListener, TdlibCache.SupergroupDataChangeListener, CleanupStartupDelegate {
+public final class ForumTopicProfileController
+  extends ViewController<ForumTopicProfileController.Arguments>
+  implements Menu, ChatListener, MessageListener, NotificationSettingsListener,
+    TdlibCache.SupergroupDataChangeListener, CleanupStartupDelegate {
   public static final class Arguments {
     public final long chatId;
     public final int forumTopicId;
@@ -92,10 +106,20 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     }
   }
 
-  private static final int[] TAB_NAMES = {R.string.TabMedia, R.string.MessageSearchFilterFiles, R.string.TabLinks,
-    R.string.MessageSearchFilterMusic, R.string.ForumProfilePolls, R.string.TabGifs, R.string.TabVoiceMessages};
-  private final ForumTopicMedia.Category[] categories = new ForumTopicMedia.Category[ForumTopicMedia.CATEGORY_COUNT];
-  private final SharedBaseController<?>[] pages = new SharedBaseController<?>[ForumTopicMedia.CATEGORY_COUNT];
+  private static final int[] TAB_NAMES =
+    {
+      R.string.TabMedia,
+      R.string.MessageSearchFilterFiles,
+      R.string.TabLinks,
+      R.string.MessageSearchFilterMusic,
+      R.string.ForumProfilePolls,
+      R.string.TabGifs,
+      R.string.TabVoiceMessages
+    };
+  private final ForumTopicMedia.Category[] categories =
+    new ForumTopicMedia.Category[ForumTopicMedia.CATEGORY_COUNT];
+  private final SharedBaseController<?>[] pages = new SharedBaseController<?
+    >[ForumTopicMedia.CATEGORY_COUNT];
   private final Parcelable[] restoredPageStates = new Parcelable[ForumTopicMedia.CATEGORY_COUNT];
   private final ForumTopicProfileLink profileLink = new ForumTopicProfileLink();
   private List<Integer> visibleTabs = Collections.emptyList();
@@ -123,9 +147,11 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   private ActionView messageButton, muteButton, pinButton;
   private View editButton, moreButton;
   private long renderedEmoji = Long.MIN_VALUE;
-  private static final int MAX_RECENT_CONTENT = 128, MAX_PENDING_CONTENT = 32, MAX_CONTENT_REQUESTS = 2;
+  private static final int MAX_RECENT_CONTENT = 128, MAX_PENDING_CONTENT =
+    32, MAX_CONTENT_REQUESTS = 2;
   private final Map<Long, TdApi.Message> recentContentMessages = new LinkedHashMap<>();
-  private final Map<Long, TdApi.MessageContent> pendingContent = new LinkedHashMap<>(), activeContent = new LinkedHashMap<>();
+  private final Map<Long, TdApi.MessageContent> pendingContent =
+    new LinkedHashMap<>(), activeContent = new LinkedHashMap<>();
   private final Map<Long, Long> recentContentRequests = new LinkedHashMap<>();
   private boolean contentPumpScheduled;
 
@@ -194,17 +220,26 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     scroll.setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
     scroll.setFocusableInTouchMode(true);
     scroll.requestFocus();
-    scroll.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, x, y, oldX, oldY) -> {
-      if (y != oldY) {
-        restoreScrollPending = false;
+    scroll.setOnScrollChangeListener(
+      (NestedScrollView.OnScrollChangeListener) (v, x, y, oldX,
+        oldY) -> {
+        if (y != oldY) {
+          restoreScrollPending = false;
+        }
       }
-    });
+    );
     Views.applyBottomInset(scroll, extraBottomInset);
     scroll.setBackgroundColor(Theme.backgroundColor());
     addThemeBackgroundColorListener(scroll, ColorId.background);
     LinearLayout content = new LinearLayout(context);
     content.setOrientation(LinearLayout.VERTICAL);
-    scroll.addView(content, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    scroll.addView(
+      content,
+      new ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+      )
+    );
     LinearLayout profile = new LinearLayout(context);
     profile.setOrientation(LinearLayout.VERTICAL);
     profile.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -249,9 +284,12 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     actions.setOrientation(LinearLayout.VERTICAL);
     profile.addView(actions, new LinearLayout.LayoutParams(-1, -2));
     LinearLayout row = actionRow();
-    messageButton = button(row, R.string.TabMessages, R.drawable.baseline_chat_bubble_24, this::navigateBack);
-    muteButton = button(row, R.string.Mute, R.drawable.baseline_notifications_off_24, this::toggleMute);
-    pinButton = button(row, R.string.ForumPinTopic, R.drawable.deproko_baseline_pin_24, this::togglePin);
+    messageButton =
+      button(row, R.string.TabMessages, R.drawable.baseline_chat_bubble_24, this::navigateBack);
+    muteButton =
+      button(row, R.string.Mute, R.drawable.baseline_notifications_off_24, this::toggleMute);
+    pinButton =
+      button(row, R.string.ForumPinTopic, R.drawable.deproko_baseline_pin_24, this::togglePin);
     createLinkRow(profile);
     tabScroll = new HorizontalScrollView(context);
     tabScroll.setHorizontalScrollBarEnabled(false);
@@ -267,23 +305,27 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     content.addView(materialState, new LinearLayout.LayoutParams(-1, -2));
     materialFrame = new FrameLayout(context);
     content.addView(materialFrame, new LinearLayout.LayoutParams(-1, Screen.dp(360)));
-    scroll.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-      if (b - t != ob - ot) {
-        // On API 16-17, requesting a child layout during layout leaves ancestors dirty
-        // without scheduling another traversal, blocking later visibility updates.
-        scroll.post(() -> {
-          if (isDestroyed()) {
-            return;
-          }
-          int height = Math.max(Screen.dp(200), scroll.getHeight() - Screen.dp(56));
-          ViewGroup.LayoutParams params = materialFrame.getLayoutParams();
-          if (params.height != height) {
-            params.height = height;
-            materialFrame.setLayoutParams(params);
-          }
-        });
+    scroll.addOnLayoutChangeListener(
+      (v, l, t, r, b, ol, ot, or, ob) -> {
+        if (b - t != ob - ot) {
+          // On API 16-17, requesting a child layout during layout leaves ancestors dirty
+          // without scheduling another traversal, blocking later visibility updates.
+          scroll.post(
+            () -> {
+              if (isDestroyed()) {
+                return;
+              }
+              int height = Math.max(Screen.dp(200), scroll.getHeight() - Screen.dp(56));
+              ViewGroup.LayoutParams params = materialFrame.getLayoutParams();
+              if (params.height != height) {
+                params.height = height;
+                materialFrame.setLayoutParams(params);
+              }
+            }
+          );
+        }
       }
-    });
+    );
     tdlib.listeners().subscribeToChatUpdates(getChatId(), this);
     tdlib.listeners().subscribeToMessageUpdates(getChatId(), this);
     tdlib.listeners().subscribeToSettingsUpdates(this);
@@ -300,30 +342,33 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   }
 
   private void restoreScrollAfterLayout () {
-    scroll.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-      @Override public boolean onPreDraw () {
-        if (restoreScrollPending && !isDestroyed() && !terminal) {
-          if (!ready() || !materialsStarted) {
-            return true;
-          }
-          // Wait for the restored page (or a settled empty/error result), not the loading header.
-          if (restoreTab >= 0 || activeTab < 0) {
-            for (ForumTopicMedia.Category category : categories) {
-              if (category.availability == ForumTopicMedia.Availability.LOADING) {
-                return true;
+    scroll.getViewTreeObserver()
+      .addOnPreDrawListener(
+        new ViewTreeObserver.OnPreDrawListener() {
+        @Override public boolean onPreDraw () {
+          if (restoreScrollPending && !isDestroyed() && !terminal) {
+            if (!ready() || !materialsStarted) {
+              return true;
+            }
+            // Wait for the restored page (or a settled empty/error result), not the loading header.
+            if (restoreTab >= 0 || activeTab < 0) {
+              for (ForumTopicMedia.Category category : categories) {
+                if (category.availability == ForumTopicMedia.Availability.LOADING) {
+                  return true;
+                }
               }
             }
           }
+          scroll.getViewTreeObserver().removeOnPreDrawListener(this);
+          if (restoreScrollPending && !isDestroyed()) {
+            restoreScrollPending = false;
+            scroll.scrollTo(0, restoreScroll);
+            restoreScroll = 0;
+          }
+          return true;
         }
-        scroll.getViewTreeObserver().removeOnPreDrawListener(this);
-        if (restoreScrollPending && !isDestroyed()) {
-          restoreScrollPending = false;
-          scroll.scrollTo(0, restoreScroll);
-          restoreScroll = 0;
-        }
-        return true;
       }
-    });
+      );
   }
 
   private TextView text (float size, int color) {
@@ -367,7 +412,8 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     linkCopy.setColorFilter(Theme.getColor(ColorId.icon));
     addThemeFilterListener(linkCopy, ColorId.icon);
     linkCopy.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-    LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(Screen.dp(24), Screen.dp(24));
+    LinearLayout.LayoutParams iconParams =
+      new LinearLayout.LayoutParams(Screen.dp(24), Screen.dp(24));
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
       iconParams.setMarginStart(Screen.dp(16));
     } else {
@@ -375,20 +421,34 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     }
     linkRow.addView(linkCopy, iconParams);
     linkRow.setOnClickListener(v -> copyLink());
-    linkRow.setAccessibilityDelegate(new View.AccessibilityDelegate() {
-      @Override public void onInitializeAccessibilityNodeInfo (View host, AccessibilityNodeInfo info) {
-        super.onInitializeAccessibilityNodeInfo(host, info);
-        info.setClassName("android.widget.Button");
-        if (host.isEnabled()) {
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            AccessibilityNodeInfoCompat.wrap(info).addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(AccessibilityNodeInfo.ACTION_CLICK,
-              Lang.getString(profileLink.state() == ForumTopicProfileLink.State.READY ? R.string.CopyLink : R.string.FirebaseErrorResolveTryAgain)));
-          } else {
-            info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+    linkRow.setAccessibilityDelegate(
+      new View.AccessibilityDelegate() {
+        @Override public void onInitializeAccessibilityNodeInfo (
+          View host,
+          AccessibilityNodeInfo info
+        ) {
+          super.onInitializeAccessibilityNodeInfo(host, info);
+          info.setClassName("android.widget.Button");
+          if (host.isEnabled()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+              AccessibilityNodeInfoCompat.wrap(info)
+                .addAction(
+                  new AccessibilityNodeInfoCompat
+                  .AccessibilityActionCompat(
+                    AccessibilityNodeInfo.ACTION_CLICK,
+                    Lang.getString(
+                      profileLink.state() == ForumTopicProfileLink.State.READY ?
+                        R.string.CopyLink : R.string.FirebaseErrorResolveTryAgain
+                    )
+                  )
+                );
+            } else {
+              info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
           }
         }
       }
-    });
+    );
     LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
     rowParams.setMargins(Screen.dp(4), Screen.dp(12), Screen.dp(4), Screen.dp(4));
     profile.addView(linkRow, rowParams);
@@ -410,7 +470,8 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     ActionView button = new ActionView(context);
     button.setText(Lang.getString(label));
     button.setIcon(icon);
-    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
+    LinearLayout.LayoutParams params =
+      new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
     params.setMargins(Screen.dp(4), Screen.dp(4), Screen.dp(4), Screen.dp(4));
     row.addView(button, params);
     button.setOnClickListener(v -> action.run());
@@ -435,7 +496,10 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
       setBackground(Theme.fillingSelector(ColorId.filling, 12f));
       setTextColor(Theme.getColor(ColorId.textLink));
       addThemeTextColorListener(this, ColorId.textLink);
-      TextViewCompat.setCompoundDrawableTintList(this, ColorStateList.valueOf(Theme.getColor(ColorId.textLink)));
+      TextViewCompat.setCompoundDrawableTintList(
+        this,
+        ColorStateList.valueOf(Theme.getColor(ColorId.textLink))
+      );
       addThemeCompoundDrawableColorListener(this, ColorId.textLink);
       addThemeInvalidateListener(this);
     }
@@ -474,8 +538,15 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     @Override protected void onDraw (Canvas canvas) {
       super.onDraw(canvas);
       if (isSelected()) {
-        DrawAlgorithms.drawRoundRect(canvas, Screen.dp(1.5f), Screen.dp(12), getHeight() - Screen.dp(3), getWidth() - Screen.dp(12), getHeight(),
-          Paints.fillingPaint(Theme.getColor(ColorId.textLink)));
+        DrawAlgorithms.drawRoundRect(
+          canvas,
+          Screen.dp(1.5f),
+          Screen.dp(12),
+          getHeight() - Screen.dp(3),
+          getWidth() - Screen.dp(12),
+          getHeight(),
+          Paints.fillingPaint(Theme.getColor(ColorId.textLink))
+        );
       }
     }
   }
@@ -485,27 +556,31 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
       subscription.close();
     }
     Object ticket = epoch;
-    subscription = tdlib.topics().observeTopic(key(), (value, error) -> {
-      if (isDestroyed() || epoch != ticket) {
-        return;
+    subscription = tdlib.topics()
+      .observeTopic(
+        key(),
+        (value, error) -> {
+        if (isDestroyed() || epoch != ticket) {
+          return;
+        }
+        topic = value;
+        metadataError = error;
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
+        terminal = ForumTopicContext.isUnavailable(error);
+        returnToTopics = terminal;
+        // endregion
+        render();
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
+        if (returnToTopics) {
+          returnToTopics(8);
+        }
+        // endregion
+        if (ready() && !materialsStarted) {
+          materialsStarted = true;
+          refreshMaterials();
+        }
       }
-      topic = value;
-      metadataError = error;
-      // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
-      terminal = ForumTopicContext.isUnavailable(error);
-      returnToTopics = terminal;
-      // endregion
-      render();
-      // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
-      if (returnToTopics) {
-        returnToTopics(8);
-      }
-      // endregion
-      if (ready() && !materialsStarted) {
-        materialsStarted = true;
-        refreshMaterials();
-      }
-    });
+      );
   }
 
   private void retryMetadata () {
@@ -523,12 +598,18 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   }
 
   private boolean ready () {
-    return !isDestroyed() && !terminal && metadataError == null && topic != null && tdlib.chatAvailable(tdlib.chat(getChatId()));
+    return !isDestroyed() &&
+      !terminal &&
+      metadataError == null &&
+      topic != null &&
+      tdlib.chatAvailable(tdlib.chat(getChatId()));
   }
 
   private boolean canEdit () {
     TdApi.ForumTopic current = currentTopic();
-    return ready() && current != null && ForumTopicPolicy.canEdit(tdlib.chatStatus(getChatId()), current.info);
+    return ready() &&
+      current != null &&
+      ForumTopicPolicy.canEdit(tdlib.chatStatus(getChatId()), current.info);
   }
 
   private boolean canManage () {
@@ -540,7 +621,8 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     if (terminal) {
       return Lang.getString(R.string.ForumTopicUnavailable);
     }
-    return topic != null ? topic.info.name : Lang.getString(metadataError != null ? R.string.ForumTopicTitle : R.string.ForumTopicLoading);
+    return topic != null ? topic.info.name :
+      Lang.getString(metadataError != null ? R.string.ForumTopicTitle : R.string.ForumTopicLoading);
   }
 
   @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics")
@@ -548,21 +630,28 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     if (!returnToTopics || isDestroyed() || !isFocused()) {
       return;
     }
-    ForumTabsNavigation.Result result = ForumTabsNavigation.returnFromUnavailableTopic(this, getForumTopicId(), true);
+    ForumTabsNavigation.Result result =
+      ForumTabsNavigation.returnFromUnavailableTopic(this, getForumTopicId(), true);
     if (result == ForumTabsNavigation.Result.RETRY && retries > 0) {
       Object ticket = epoch;
-      tdlib.ui().postDelayed(() -> {
-        if (epoch == ticket) {
-          returnToTopics(retries - 1);
-        }
-      }, 150);
+      tdlib.ui()
+        .postDelayed(
+          () -> {
+          if (epoch == ticket) {
+            returnToTopics(retries - 1);
+          }
+        },
+          150
+        );
     }
   }
 
   @Override
   @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics")
   public boolean performOnBackPressed (boolean fromTop, boolean commit) {
-    if (returnToTopics && ForumTabsNavigation.returnFromUnavailableTopic(this, getForumTopicId(), commit) == ForumTabsNavigation.Result.RETURNED) {
+    if (returnToTopics &&
+      ForumTabsNavigation.returnFromUnavailableTopic(this, getForumTopicId(), commit) ==
+        ForumTabsNavigation.Result.RETURNED) {
       return true;
     }
     return super.performOnBackPressed(fromTop, commit);
@@ -578,31 +667,64 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     title.setText(profileTitle());
     state.setEnabled(!terminal && metadataError != null && !busy);
     // endregion
-    state.setText(Lang.getString(terminal || topic != null && !tdlib.chatAvailable(tdlib.chat(getChatId())) ? R.string.ForumProfileUnavailable :
-      metadataError != null ? R.string.ForumTopicLoadFailed : topic == null ? R.string.ForumTopicLoading : topic.info.isClosed ? R.string.ForumTopicClosed :
-        topic.info.isGeneral ? R.string.ForumProfileGeneralHint : R.string.ForumTopicTitle));
-    state.setVisibility(available && !topic.info.isClosed && !topic.info.isGeneral ? View.GONE : View.VISIBLE);
+    state.setText(
+      Lang.getString(
+        terminal ||
+          topic != null &&
+            !tdlib.chatAvailable(tdlib.chat(getChatId())) ? R.string.ForumProfileUnavailable :
+          metadataError != null ? R.string.ForumTopicLoadFailed : topic == null ?
+            R.string.ForumTopicLoading : topic.info.isClosed ? R.string.ForumTopicClosed :
+            topic.info.isGeneral ? R.string.ForumProfileGeneralHint : R.string.ForumTopicTitle
+      )
+    );
+    state.setVisibility(
+      available &&
+        !topic.info.isClosed &&
+        !topic.info.isGeneral ? View.GONE : View.VISIBLE
+    );
     actions.setVisibility(available ? View.VISIBLE : View.GONE);
     messageButton.setEnabled(available);
     muteButton.setEnabled(available && !busy && topic.notificationSettings != null);
     pinButton.setEnabled(canManage() && !busy);
     pinButton.setVisibility(canManage() ? View.VISIBLE : View.GONE);
     if (topic != null) {
-      boolean muted = ForumPresentation.isMuted(topic.notificationSettings, tdlib.chatMuteFor(getChatId()) > 0);
+      boolean muted =
+        ForumPresentation.isMuted(topic.notificationSettings, tdlib.chatMuteFor(getChatId()) > 0);
       muteButton.setText(Lang.getString(muted ? R.string.Unmute : R.string.Mute));
-      muteButton.setIcon(muted ? R.drawable.baseline_notifications_24 : R.drawable.baseline_notifications_off_24);
-      pinButton.setText(Lang.getString(topic.isPinned ? R.string.ForumUnpinTopic : R.string.ForumPinTopic));
-      pinButton.setIcon(topic.isPinned ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24);
+      muteButton.setIcon(
+        muted ? R.drawable.baseline_notifications_24 :
+          R.drawable.baseline_notifications_off_24
+      );
+      pinButton.setText(
+        Lang.getString(topic.isPinned ? R.string.ForumUnpinTopic : R.string.ForumPinTopic)
+      );
+      pinButton.setIcon(
+        topic.isPinned ? R.drawable.deproko_baseline_pin_undo_24 :
+          R.drawable.deproko_baseline_pin_24
+      );
       boolean emoji = topic.info.icon.customEmojiId != 0;
       regularIcon.setVisibility(emoji ? View.GONE : View.VISIBLE);
       customIcon.setVisibility(emoji ? View.VISIBLE : View.GONE);
       if (emoji && renderedEmoji != topic.info.icon.customEmojiId) {
         renderedEmoji = topic.info.icon.customEmojiId;
-        TdApi.FormattedText glyph = new TdApi.FormattedText("*", new TdApi.TextEntity[] {new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(renderedEmoji))});
+        TdApi.FormattedText glyph =
+          new TdApi.FormattedText(
+            "*",
+            new TdApi.TextEntity[] {
+              new TdApi.TextEntity(
+                0,
+                1,
+                new TdApi.TextEntityTypeCustomEmoji(renderedEmoji)
+              )
+            }
+          );
         customIcon.setText(glyph.text, TextEntity.valueOf(tdlib, glyph, null), false);
       }
       if (!emoji) {
-        regularIcon.setText(topic.info.isGeneral ? "#" : topic.info.name.isEmpty() ? "" : topic.info.name.substring(0, topic.info.name.offsetByCodePoints(0, 1)));
+        regularIcon.setText(
+          topic.info.isGeneral ? "#" : topic.info.name.isEmpty() ? "" :
+            topic.info.name.substring(0, topic.info.name.offsetByCodePoints(0, 1))
+        );
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.OVAL);
         background.setColor(0xff000000 | topic.info.icon.color);
@@ -641,8 +763,22 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
       return;
     }
     header.addSearchButton(menu, this);
-    header.addButton(menu, R.id.forum_profile_edit, R.drawable.baseline_edit_24, getHeaderIconColorId(), this, Screen.dp(49));
-    header.addButton(menu, R.id.forum_profile_more, R.drawable.baseline_more_vert_24, getHeaderIconColorId(), this, Screen.dp(49));
+    header.addButton(
+      menu,
+      R.id.forum_profile_edit,
+      R.drawable.baseline_edit_24,
+      getHeaderIconColorId(),
+      this,
+      Screen.dp(49)
+    );
+    header.addButton(
+      menu,
+      R.id.forum_profile_more,
+      R.drawable.baseline_more_vert_24,
+      getHeaderIconColorId(),
+      this,
+      Screen.dp(49)
+    );
     editButton = menu.findViewById(R.id.forum_profile_edit);
     moreButton = menu.findViewById(R.id.forum_profile_more);
     editButton.setContentDescription(Lang.getString(R.string.ForumEditTopic));
@@ -701,21 +837,35 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     busy = true;
     render();
     Object ticket = epoch;
-    operation.accept((ok, error) -> {
-      if (isDestroyed() || epoch != ticket) {
-        return;
+    operation.accept(
+      (ok, error) -> {
+        if (isDestroyed() || epoch != ticket) {
+          return;
+        }
+        busy = false;
+        render();
+        if (error != null) {
+          error(error.message);
+        }
       }
-      busy = false;
-      render();
-      if (error != null) {
-        error(error.message);
-      }
-    });
+    );
   }
 
   private void error (String error) {
     if (!isDestroyed()) {
-      showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(getName()).setMessage(error).setPositiveButton(Lang.getString(R.string.OK), null));
+      showAlert(
+        new AlertDialog.Builder(
+          context,
+          Theme.dialogTheme()
+        )
+          .setTitle(getName())
+          .setMessage(error)
+          .setPositiveButton(
+            Lang
+              .getString(R.string.OK),
+            null
+          )
+      );
     }
   }
 
@@ -724,14 +874,25 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     if (current == null || current.notificationSettings == null) {
       return;
     }
-    run(done -> tdlib.topics().actions.setNotifications(key(), ForumTopicNotifications.toggleMute(current.notificationSettings, tdlib.chatMuteFor(getChatId()) > 0), done));
+    run(
+      done ->
+        tdlib.topics().actions.setNotifications(
+          key(),
+          ForumTopicNotifications.toggleMute(
+            current.notificationSettings,
+            tdlib.chatMuteFor(getChatId()) > 0
+          ),
+          done
+        )
+    );
   }
 
   private void copyLink () {
     if (!ready()) {
       return;
     }
-    if (profileLink.matches(getChatId(), getForumTopicId()) && profileLink.state() == ForumTopicProfileLink.State.READY) {
+    if (profileLink.matches(getChatId(), getForumTopicId()) &&
+      profileLink.state() == ForumTopicProfileLink.State.READY) {
       UI.copyText(profileLink.url(), R.string.CopiedLink);
     } else if (profileLink.state() != ForumTopicProfileLink.State.LOADING) {
       loadLink();
@@ -749,42 +910,86 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     Object ticket = epoch;
     renderLink();
     // The existing helper uses read-only GetForumTopicLink with the typed forum topic ID.
-    tdlib.topics().actions.getLink(new TdlibForumTopicManager.Key(request.chatId, request.forumTopicId), (link, error) -> tdlib.ui().post(() -> {
-      if (!acceptLinkResult(ticket, request)) {
-        return;
+    tdlib.topics().actions.getLink(
+      new TdlibForumTopicManager.Key(
+        request.chatId,
+        request.forumTopicId
+      ),
+      (link, error) -> tdlib.ui()
+        .post(
+          () -> {
+        if (!acceptLinkResult(ticket, request)) {
+          return;
+        }
+        if (profileLink.complete(
+          request,
+          error == null &&
+            link != null ? link.link : null,
+          error == null &&
+            link != null &&
+            link.isPublic
+        )) {
+          renderLink();
+        }
       }
-      if (profileLink.complete(request, error == null && link != null ? link.link : null, error == null && link != null && link.isPublic)) {
-        renderLink();
-      }
-    }));
-    tdlib.ui().postDelayed(() -> {
-      if (acceptLinkResult(ticket, request) && profileLink.complete(request, null, false)) {
-        renderLink();
-      }
-    }, 15000);
+        )
+    );
+    tdlib.ui()
+      .postDelayed(
+        () -> {
+        if (acceptLinkResult(ticket, request) && profileLink.complete(request, null, false)) {
+          renderLink();
+        }
+      },
+        15000
+      );
   }
 
   private boolean acceptLinkResult (Object ticket, ForumTopicProfileLink.Request request) {
-    return !isDestroyed() && !terminal && epoch == ticket && getChatId() == request.chatId && getForumTopicId() == request.forumTopicId;
+    return !isDestroyed() &&
+      !terminal &&
+      epoch == ticket &&
+      getChatId() == request.chatId &&
+      getForumTopicId() == request.forumTopicId;
   }
 
   private void renderLink () {
     if (linkRow == null) {
       return;
     }
-    boolean unavailable = terminal || metadataError != null || !tdlib.chatAvailable(tdlib.chat(getChatId()));
-    boolean hasLink = !unavailable && profileLink.matches(getChatId(), getForumTopicId()) && profileLink.state() == ForumTopicProfileLink.State.READY;
+    boolean unavailable = terminal ||
+      metadataError != null ||
+      !tdlib.chatAvailable(tdlib.chat(getChatId()));
+    boolean hasLink = !unavailable &&
+      profileLink.matches(getChatId(), getForumTopicId()) &&
+      profileLink.state() == ForumTopicProfileLink.State.READY;
     boolean failed = unavailable || profileLink.state() == ForumTopicProfileLink.State.UNAVAILABLE;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-      linkRow.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+      linkRow.setLayoutDirection(
+        Lang.rtl() ? View.LAYOUT_DIRECTION_RTL :
+          View.LAYOUT_DIRECTION_LTR
+      );
       linkText.setTextDirection(hasLink ? View.TEXT_DIRECTION_LTR : View.TEXT_DIRECTION_INHERIT);
     }
-    linkText.setText(hasLink ? profileLink.displayUrl() : Lang.getString(failed ? R.string.NoLinkInfo : R.string.LoadingInformation));
-    linkLabel.setText(Lang.getString(failed && ready() ? R.string.FirebaseErrorResolveTryAgain :
-      hasLink && !profileLink.isPublic() ? R.string.ForumProfileTopicLink : R.string.InviteLink));
+    linkText.setText(
+      hasLink ? profileLink.displayUrl() :
+        Lang.getString(failed ? R.string.NoLinkInfo : R.string.LoadingInformation)
+    );
+    linkLabel.setText(
+      Lang.getString(
+        failed && ready() ? R.string.FirebaseErrorResolveTryAgain :
+          hasLink && !profileLink.isPublic() ? R.string.ForumProfileTopicLink : R.string.InviteLink
+      )
+    );
     linkCopy.setVisibility(hasLink ? View.VISIBLE : View.GONE);
     linkRow.setEnabled(ready() && (hasLink || failed));
-    linkRow.setContentDescription(Lang.getString(R.string.ForumProfileSettingValue, linkLabel.getText(), linkText.getText()));
+    linkRow.setContentDescription(
+      Lang.getString(
+        R.string.ForumProfileSettingValue,
+        linkLabel.getText(),
+        linkText.getText()
+      )
+    );
     linkHint.setText(Lang.getString(R.string.ForumProfileLinkHint));
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
       linkHint.setLayoutDirection(linkRow.getLayoutDirection());
@@ -796,23 +1001,25 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     if (!canManage()) {
       return;
     }
-    withPins(topics -> {
-      TdApi.ForumTopic current = currentTopic();
-      if (current == null || !canManage()) {
-        return;
-      }
-      int count = 0;
-      for (TdApi.ForumTopic value : topics) {
-        if (value.isPinned) {
-          count++;
+    withPins(
+      topics -> {
+        TdApi.ForumTopic current = currentTopic();
+        if (current == null || !canManage()) {
+          return;
         }
+        int count = 0;
+        for (TdApi.ForumTopic value : topics) {
+          if (value.isPinned) {
+            count++;
+          }
+        }
+        if (!current.isPinned && count >= tdlib.options().pinnedForumTopicCountMax) {
+          error(Lang.getString(R.string.ForumPinLimit, tdlib.options().pinnedForumTopicCountMax));
+          return;
+        }
+        run(done -> tdlib.topics().actions.setPinned(key(), !current.isPinned, done));
       }
-      if (!current.isPinned && count >= tdlib.options().pinnedForumTopicCountMax) {
-        error(Lang.getString(R.string.ForumPinLimit, tdlib.options().pinnedForumTopicCountMax));
-        return;
-      }
-      run(done -> tdlib.topics().actions.setPinned(key(), !current.isPinned, done));
-    });
+    );
   }
 
   private void closePins () {
@@ -829,50 +1036,66 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     busy = true;
     render();
     Object ticket = epoch;
-    pinsSession = tdlib.topics().openList(getChatId(), "", snapshot -> {
-      if (isDestroyed() || ticket != epoch || pinsSession == null) {
-        return;
-      }
-      if (snapshot.error != null) {
-        closePins();
-        busy = false;
-        render();
-        error(snapshot.error.message);
-      } else if (snapshot.initialized && !snapshot.refreshing && !snapshot.stale) {
-        if (!ForumTopicPolicy.completePinnedPrefix(snapshot.topics, snapshot.endReached)) {
-          pinsSession.loadMore();
+    pinsSession = tdlib.topics()
+      .openList(
+        getChatId(),
+        "",
+        snapshot -> {
+        if (isDestroyed() || ticket != epoch || pinsSession == null) {
           return;
         }
-        closePins();
-        busy = false;
-        render();
-        if (canManage()) {
-          action.accept(snapshot.topics);
+        if (snapshot.error != null) {
+          closePins();
+          busy = false;
+          render();
+          error(snapshot.error.message);
+        } else if (snapshot.initialized && !snapshot.refreshing && !snapshot.stale) {
+          if (!ForumTopicPolicy.completePinnedPrefix(snapshot.topics, snapshot.endReached)) {
+            pinsSession.loadMore();
+            return;
+          }
+          closePins();
+          busy = false;
+          render();
+          if (canManage()) {
+            action.accept(snapshot.topics);
+          }
         }
       }
-    });
+      );
     pinsSession.refresh();
     ForumTopicStore.ListSession requested = pinsSession;
-    tdlib.ui().postDelayed(() -> {
-      if (!isDestroyed() && epoch == ticket && requested == pinsSession) {
-        closePins();
-        busy = false;
-        render();
-        error(Lang.getString(R.string.ForumTopicLoadFailed));
-      }
-    }, 15000);
+    tdlib.ui()
+      .postDelayed(
+        () -> {
+        if (!isDestroyed() && epoch == ticket && requested == pinsSession) {
+          closePins();
+          busy = false;
+          render();
+          error(Lang.getString(R.string.ForumTopicLoadFailed));
+        }
+      },
+        15000
+      );
   }
 
   private void movePin (int direction) {
-    withPins(topics -> {
-      int[] ids = ForumTopicPolicy.movePin(topics, getForumTopicId(), direction);
-      if (ids != null && canManage()) {
-        run(done -> tdlib.topics().actions.setPinnedOrder(getChatId(), ids, done));
+    withPins(
+      topics -> {
+        int[] ids = ForumTopicPolicy.movePin(topics, getForumTopicId(), direction);
+        if (ids != null && canManage()) {
+          run(done -> tdlib.topics().actions.setPinnedOrder(getChatId(), ids, done));
+        }
       }
-    });
+    );
   }
 
-  private static void add (List<String> labels, List<Runnable> actions, int label, Runnable action) {
+  private static void add (
+    List<String> labels,
+    List<Runnable> actions,
+    int label,
+    Runnable action
+  ) {
     labels.add(Lang.getString(label));
     actions.add(action);
   }
@@ -888,12 +1111,18 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     List<String> labels = new ArrayList<>();
     List<Runnable> actions = new ArrayList<>();
     if (canEdit()) {
-      add(labels, actions, current.info.isClosed ? R.string.ForumReopenTopic : R.string.ForumCloseTopic, () -> {
+      add(
+        labels,
+        actions,
+        current.info.isClosed ? R.string.ForumReopenTopic :
+          R.string.ForumCloseTopic,
+        () -> {
         TdApi.ForumTopic fresh = currentTopic();
         if (fresh != null && canEdit()) {
           run(done -> tdlib.topics().actions.setClosed(key(), !fresh.info.isClosed, done));
         }
-      });
+      }
+      );
     }
     if (current.isPinned && canManage()) {
       if (ForumTopicPolicy.movePin(pins, getForumTopicId(), -1) != null) {
@@ -903,57 +1132,114 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
         add(labels, actions, R.string.ForumMovePinDown, () -> movePin(1));
       }
     }
-    add(labels, actions, R.string.ForumNotifications, () -> {
-      ForumTopicNotificationController controller = new ForumTopicNotificationController(context, tdlib);
-      controller.setArguments(getArgumentsStrict());
-      navigateTo(controller);
-    });
+    add(
+      labels,
+      actions,
+      R.string.ForumNotifications,
+      () -> {
+        ForumTopicNotificationController controller =
+          new ForumTopicNotificationController(context, tdlib);
+        controller.setArguments(getArgumentsStrict());
+        navigateTo(controller);
+      }
+    );
     add(labels, actions, R.string.ForumShowAllMessages, () -> topicUi.setViewMode(false));
     add(labels, actions, R.string.ForumShowTopics, () -> topicUi.setViewMode(true));
-    if (!current.info.isGeneral && ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), current.info)) {
+    if (!current.info.isGeneral &&
+      ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), current.info)) {
       add(labels, actions, R.string.ForumDeleteTopic, this::deleteTopic);
     }
     if (ForumTopicPolicy.isMember(tdlib.chatStatus(getChatId()))) {
-      add(labels, actions, R.string.LeaveMegaMenu, () -> {
-        if (ForumTopicPolicy.isMember(tdlib.chatStatus(getChatId()))) {
-          tdlib.ui().processLeaveButton(this, getChatList(), getChatId(), R.id.btn_removeChatFromList, () -> tdlib.ui().exitToChatScreen(this, getChatId()));
+      add(
+        labels,
+        actions,
+        R.string.LeaveMegaMenu,
+        () -> {
+          if (ForumTopicPolicy.isMember(tdlib.chatStatus(getChatId()))) {
+            tdlib.ui()
+              .processLeaveButton(
+                this,
+                getChatList(),
+                getChatId(),
+                R.id.btn_removeChatFromList,
+                () -> tdlib.ui().exitToChatScreen(this, getChatId())
+              );
+          }
         }
-      });
+      );
     }
     if (canDeleteGroup()) {
       add(labels, actions, R.string.ForumProfileDeleteGroup, this::deleteGroup);
     }
-    showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(current.info.name).setItems(labels.toArray(new String[0]),
-      (dialog, which) -> {
-        if (ready() && !busy) {
-          actions.get(which).run();
-        }
-      }).setNegativeButton(Lang.getString(R.string.Cancel), null));
+    showAlert(
+      new AlertDialog.Builder(
+        context,
+        Theme.dialogTheme()
+      )
+        .setTitle(current.info.name)
+        .setItems(
+          labels.toArray(new String[0]),
+          (dialog, which) -> {
+            if (ready() && !busy) {
+              actions.get(which).run();
+            }
+          }
+        )
+        .setNegativeButton(Lang.getString(R.string.Cancel), null)
+    );
   }
 
   private void deleteTopic () {
     TdApi.ForumTopic current = currentTopic();
-    if (current == null || current.info.isGeneral || !ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), current.info)) {
+    if (current == null ||
+      current.info.isGeneral ||
+      !ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), current.info)) {
       return;
     }
-    showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(Lang.getString(R.string.ForumDeleteTopic))
-      .setMessage(Lang.getString(R.string.ForumProfileDeleteTopicConfirm, current.info.name, tdlib.chatTitle(getChatId())))
-      .setNegativeButton(Lang.getString(R.string.Cancel), null).setPositiveButton(Lang.getString(R.string.Delete), (dialog, which) -> {
-        TdApi.ForumTopic fresh = currentTopic();
-        // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
-        if (fresh != null && !fresh.info.isGeneral && ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), fresh.info)) {
-          Object ticket = epoch;
-          run(done -> tdlib.topics().actions.delete(key(), (ok, error) -> {
-            done.onResult(ok, error);
-            if (error == null && !isDestroyed() && epoch == ticket) {
-              terminal = returnToTopics = true;
-              render();
-              returnToTopics(8);
+    showAlert(
+      new AlertDialog.Builder(
+        context,
+        Theme.dialogTheme()
+      )
+        .setTitle(Lang.getString(R.string.ForumDeleteTopic))
+        .setMessage(
+          Lang.getString(
+            R.string.ForumProfileDeleteTopicConfirm,
+            current.info.name,
+            tdlib.chatTitle(getChatId())
+          )
+        )
+        .setNegativeButton(
+          Lang.getString(R.string.Cancel),
+          null
+        )
+        .setPositiveButton(
+          Lang.getString(R.string.Delete),
+          (dialog, which) -> {
+            TdApi.ForumTopic fresh = currentTopic();
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
+            if (fresh != null &&
+              !fresh.info.isGeneral &&
+              ForumTopicPolicy.canOfferDelete(tdlib.chatStatus(getChatId()), fresh.info)) {
+              Object ticket = epoch;
+              run(
+                done -> tdlib.topics().actions.delete(
+                  key(),
+                  (ok, error) -> {
+                    done.onResult(ok, error);
+                    if (error == null && !isDestroyed() && epoch == ticket) {
+                      terminal = returnToTopics = true;
+                      render();
+                      returnToTopics(8);
+                    }
+                  }
+                )
+              );
             }
-          }));
-        }
-        // endregion
-      }));
+            // endregion
+          }
+        )
+    );
   }
 
   private boolean canDeleteGroup () {
@@ -965,25 +1251,66 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     if (!canDeleteGroup()) {
       return;
     }
-    showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(Lang.getString(R.string.ForumProfileDeleteGroup))
-      .setMessage(Lang.getString(R.string.ForumProfileDeleteGroupConfirm, tdlib.chatTitle(getChatId())))
-      .setNegativeButton(Lang.getString(R.string.Cancel), null).setPositiveButton(Lang.getString(R.string.Delete), (dialog, which) -> {
-        if (!canDeleteGroup()) {
-          return;
-        }
-        showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(tdlib.chatTitle(getChatId())).setMessage(Lang.getString(R.string.DestroyGroupHint))
-          .setNegativeButton(Lang.getString(R.string.Cancel), null).setPositiveButton(Lang.getString(R.string.ForumProfileDeleteGroup), (lastDialog, lastWhich) -> {
-            if (!canDeleteGroup() || busy) {
+    showAlert(
+      new AlertDialog.Builder(
+        context,
+        Theme.dialogTheme()
+      )
+        .setTitle(Lang.getString(R.string.ForumProfileDeleteGroup))
+        .setMessage(
+          Lang.getString(
+            R.string.ForumProfileDeleteGroupConfirm,
+            tdlib.chatTitle(getChatId())
+          )
+        )
+        .setNegativeButton(
+          Lang.getString(R.string.Cancel),
+          null
+        )
+        .setPositiveButton(
+          Lang.getString(R.string.Delete),
+          (dialog, which) -> {
+            if (!canDeleteGroup()) {
               return;
             }
-            run(done -> tdlib.send(new TdApi.DeleteChat(getChatId()), (ok, error) -> tdlib.ui().post(() -> {
-              done.onResult(ok, error);
-              if (error == null && !isDestroyed()) {
-                tdlib.ui().exitToChatScreen(this, getChatId());
+            showAlert(
+              new AlertDialog.Builder(
+                context,
+                Theme.dialogTheme()
+              )
+                .setTitle(tdlib.chatTitle(getChatId()))
+                .setMessage(Lang.getString( R .string.DestroyGroupHint ))
+                .setNegativeButton(
+                  Lang.getString(R.string.Cancel),
+                  null
+                )
+                .setPositiveButton(
+                  Lang.getString(R.string.ForumProfileDeleteGroup),
+                  (lastDialog, lastWhich) -> {
+                if (!canDeleteGroup() || busy) {
+                  return;
+                }
+                run(
+                  done ->
+                    tdlib.send(
+                      new TdApi.DeleteChat(getChatId()),
+                      (ok, error) -> tdlib.ui()
+                        .post(
+                          () -> {
+                        done.onResult(ok, error);
+                        if (error == null && !isDestroyed()) {
+                          tdlib.ui().exitToChatScreen(this, getChatId());
+                        }
+                      }
+                        )
+                    )
+                );
               }
-            })));
-          }));
-      }));
+                )
+            );
+          }
+        )
+    );
   }
 
   private void refreshMaterials () {
@@ -1000,53 +1327,97 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     ForumTopicMedia.Category category = categories[index];
     int ticket = category.begin();
     Object lifecycle = epoch;
-    tdlib.send(new TdApi.GetChatMessageCount(getChatId(), getTopicId(), ForumTopicMedia.filter(index), false), (count, error) -> tdlib.ui().post(() -> {
-      if (isDestroyed() || epoch != lifecycle) {
-        return;
+    tdlib.send(
+      new TdApi.GetChatMessageCount(
+        getChatId(),
+        getTopicId(),
+        ForumTopicMedia.filter(index),
+        false
+      ),
+      (count, error) -> tdlib.ui()
+        .post(
+          () -> {
+        if (isDestroyed() || epoch != lifecycle) {
+          return;
+        }
+        category.count(ticket, count != null ? count.count : -1, error);
       }
-      category.count(ticket, count != null ? count.count : -1, error);
-    }));
+        )
+    );
     probeCategory(index, ticket, lifecycle, 0, true);
-    tdlib.ui().postDelayed(() -> {
-      if (!isDestroyed() && epoch == lifecycle && category.availability == ForumTopicMedia.Availability.LOADING &&
-          category.confirm(ticket, false, new TdApi.Error(408, "Material availability request timed out"))) {
-        renderTabs();
-      }
-    }, 15000);
+    tdlib.ui()
+      .postDelayed(
+        () -> {
+        if (!isDestroyed() &&
+          epoch == lifecycle &&
+          category.availability == ForumTopicMedia.Availability.LOADING &&
+          category.confirm(
+              ticket,
+              false,
+              new TdApi.Error(408, "Material availability request timed out")
+            )) {
+          renderTabs();
+        }
+      },
+        15000
+      );
   }
 
-  private void probeCategory (int index, int ticket, Object lifecycle, long offset, boolean mayRetry) {
+  private void probeCategory (
+    int index,
+    int ticket,
+    Object lifecycle,
+    long offset,
+    boolean mayRetry
+  ) {
     ForumTopicMedia.Category category = categories[index];
     // At most two one-message pages. A partial/unknown result is not a reason to scan history.
-    tdlib.send(new TdApi.SearchChatMessages(getChatId(), getTopicId(), "", null, offset, 0, 1, ForumTopicMedia.filter(index)), (messages, error) -> tdlib.ui().post(() -> {
-      if (isDestroyed() || epoch != lifecycle || !category.isCurrent(ticket)) {
-        return;
-      }
-      boolean found = false;
-      if (messages != null) {
-        for (TdApi.Message message : messages.messages) {
-          if (ForumTopicMedia.matches(getChatId(), getTopicId(), message) && ProfileController.filterMediaMessage(message) && Td.matchesFilter(message, ForumTopicMedia.filter(index))) {
-            found = true;
-            break;
-          }
-        }
-      }
-      if (error == null && messages != null && !found) {
-        if (messages.nextFromMessageId != 0 && messages.nextFromMessageId != offset && mayRetry) {
-          probeCategory(index, ticket, lifecycle, messages.nextFromMessageId, false);
+    tdlib.send(
+      new TdApi.SearchChatMessages(
+        getChatId(),
+        getTopicId(),
+        "",
+        null,
+        offset,
+        0,
+        1,
+        ForumTopicMedia.filter(index)
+      ),
+      (messages, error) -> tdlib.ui()
+        .post(
+          () -> {
+        if (isDestroyed() || epoch != lifecycle || !category.isCurrent(ticket)) {
           return;
         }
-        if (messages.totalCount < 0 || messages.nextFromMessageId != 0) {
-          if (category.unknown(ticket)) {
-            renderTabs();
+        boolean found = false;
+        if (messages != null) {
+          for (TdApi.Message message : messages.messages) {
+            if (ForumTopicMedia.matches(getChatId(), getTopicId(), message) &&
+              ProfileController.filterMediaMessage(message) &&
+              Td.matchesFilter(message, ForumTopicMedia.filter(index))) {
+              found = true;
+              break;
+            }
           }
-          return;
+        }
+        if (error == null && messages != null && !found) {
+          if (messages.nextFromMessageId != 0 && messages.nextFromMessageId != offset && mayRetry) {
+            probeCategory(index, ticket, lifecycle, messages.nextFromMessageId, false);
+            return;
+          }
+          if (messages.totalCount < 0 || messages.nextFromMessageId != 0) {
+            if (category.unknown(ticket)) {
+              renderTabs();
+            }
+            return;
+          }
+        }
+        if (category.confirm(ticket, found, error)) {
+          renderTabs();
         }
       }
-      if (category.confirm(ticket, found, error)) {
-        renderTabs();
-      }
-    }));
+        )
+    );
   }
 
   private void renderTabs () {
@@ -1075,12 +1446,20 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     boolean loading = false, failed = false, unknown = false;
     for (ForumTopicMedia.Category category : categories) {
       loading |= category.availability == ForumTopicMedia.Availability.LOADING;
-      failed |= category.error != null || category.availability == ForumTopicMedia.Availability.ERROR;
+      failed |= category.error != null ||
+        category.availability == ForumTopicMedia.Availability.ERROR;
       unknown |= category.availability == ForumTopicMedia.Availability.UNKNOWN;
     }
     materialState.setVisibility(visible.isEmpty() || failed || unknown ? View.VISIBLE : View.GONE);
-    materialState.setText(Lang.getString(failed ? tdlib.isConnected() ? R.string.ForumProfileMediaRetry : R.string.ForumProfileMediaOffline :
-      loading ? R.string.ForumProfileMediaLoading : unknown ? R.string.ForumProfileMediaUnknown : R.string.ForumProfileMediaEmpty));
+    materialState.setText(
+      Lang.getString(
+        failed ? tdlib.isConnected() ?
+          R.string.ForumProfileMediaRetry : R.string.ForumProfileMediaOffline :
+          loading ? R.string.ForumProfileMediaLoading : unknown ?
+            R.string.ForumProfileMediaUnknown :
+            R.string.ForumProfileMediaEmpty
+      )
+    );
     materialFrame.setVisibility(visible.isEmpty() ? View.GONE : View.VISIBLE);
     if (selected != activeTab || selected >= 0 && materialFrame.getChildCount() == 0) {
       selectTab(selected);
@@ -1145,13 +1524,17 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     }
     refreshScheduled = true;
     Object ticket = epoch;
-    tdlib.ui().postDelayed(() -> {
-      if (isDestroyed() || ticket != epoch) {
-        return;
-      }
-      refreshScheduled = false;
-      refreshMaterials();
-    }, 400);
+    tdlib.ui()
+      .postDelayed(
+        () -> {
+        if (isDestroyed() || ticket != epoch) {
+          return;
+        }
+        refreshScheduled = false;
+        refreshMaterials();
+      },
+        400
+      );
   }
 
   @Override public void onNewMessage (TdApi.Message message) {
@@ -1159,57 +1542,69 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
       return;
     }
     Object ticket = epoch;
-    tdlib.ui().post(() -> {
-      if (isDestroyed() || epoch != ticket || !ready()) {
-        return;
-      }
-      rememberContentMessage(message);
-      if (!ForumTopicMedia.matches(getChatId(), getTopicId(), message) || !ProfileController.filterMediaMessage(message)) {
-        return;
-      }
-      for (int i = 0; i < categories.length; i++) {
-        if (Td.matchesFilter(message, ForumTopicMedia.filter(i))) {
-          categories[i].arrived();
+    tdlib.ui()
+      .post(
+        () -> {
+        if (isDestroyed() || epoch != ticket || !ready()) {
+          return;
         }
+        rememberContentMessage(message);
+        if (!ForumTopicMedia.matches(getChatId(), getTopicId(), message) ||
+          !ProfileController.filterMediaMessage(message)) {
+          return;
+        }
+        for (int i = 0; i < categories.length; i++) {
+          if (Td.matchesFilter(message, ForumTopicMedia.filter(i))) {
+            categories[i].arrived();
+          }
+        }
+        renderTabs();
       }
-      renderTabs();
-    });
+      );
   }
 
   @Override public void onMessageSendSucceeded (TdApi.Message message, long oldMessageId) {
     onNewMessage(message);
   }
 
-  @Override public void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent content) {
+  @Override public void onMessageContentChanged (
+    long chatId,
+    long messageId,
+    TdApi.MessageContent content
+  ) {
     if (chatId != getChatId()) {
       return;
     }
     Object ticket = epoch;
-    tdlib.ui().post(() -> {
-      if (isDestroyed() || epoch != ticket || !ready()) {
-        return;
+    tdlib.ui()
+      .post(
+        () -> {
+        if (isDestroyed() || epoch != ticket || !ready()) {
+          return;
+        }
+        TdApi.Message cached = recentContentMessages.get(messageId);
+        if (cached != null) {
+          onCachedContentChanged(cached, content);
+          return;
+        }
+        if (activeContent.containsKey(messageId)) {
+          activeContent.put(messageId, content);
+          return;
+        }
+        Long lastRequest = recentContentRequests.get(messageId);
+        if (lastRequest != null && SystemClock.uptimeMillis() - lastRequest < 5000) {
+          return;
+        }
+        if (!pendingContent.containsKey(messageId) &&
+          pendingContent.size() >= MAX_PENDING_CONTENT) {
+          // Overflow becomes one debounced, typed availability refresh, never a history scan.
+          scheduleMaterialsRefresh();
+          return;
+        }
+        pendingContent.put(messageId, content);
+        scheduleContentPump();
       }
-      TdApi.Message cached = recentContentMessages.get(messageId);
-      if (cached != null) {
-        onCachedContentChanged(cached, content);
-        return;
-      }
-      if (activeContent.containsKey(messageId)) {
-        activeContent.put(messageId, content);
-        return;
-      }
-      Long lastRequest = recentContentRequests.get(messageId);
-      if (lastRequest != null && SystemClock.uptimeMillis() - lastRequest < 5000) {
-        return;
-      }
-      if (!pendingContent.containsKey(messageId) && pendingContent.size() >= MAX_PENDING_CONTENT) {
-        // Overflow becomes one debounced, typed availability refresh, never a history scan.
-        scheduleMaterialsRefresh();
-        return;
-      }
-      pendingContent.put(messageId, content);
-      scheduleContentPump();
-    });
+      );
   }
 
   private void rememberContentMessage (TdApi.Message message) {
@@ -1219,7 +1614,9 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
       recentContentMessages.remove(recentContentMessages.keySet().iterator().next());
     }
   }
-  /** UI-thread seam: embedded pages can supply membership/metadata before replacing a cached row. */
+  /**
+   * UI-thread seam: embedded pages can supply membership/metadata before replacing a cached row.
+   */
   void onCachedContentChanged (TdApi.Message message, TdApi.MessageContent content) {
     if (!ready() || message.chatId != getChatId()) {
       return;
@@ -1243,44 +1640,58 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   }
 
   private void scheduleContentPump () {
-    if (contentPumpScheduled || pendingContent.isEmpty() || activeContent.size() >= MAX_CONTENT_REQUESTS || !ready()) {
+    if (contentPumpScheduled ||
+      pendingContent.isEmpty() ||
+      activeContent.size() >= MAX_CONTENT_REQUESTS ||
+      !ready()) {
       return;
     }
     contentPumpScheduled = true;
     Object ticket = epoch;
-    tdlib.ui().postDelayed(() -> {
-      if (isDestroyed() || epoch != ticket) {
-        return;
-      }
-      contentPumpScheduled = false;
-      if (!ready()) {
-        pendingContent.clear();
-        return;
-      }
-      while (!pendingContent.isEmpty() && activeContent.size() < MAX_CONTENT_REQUESTS) {
-        long messageId = pendingContent.keySet().iterator().next();
-        activeContent.put(messageId, pendingContent.remove(messageId));
-        recentContentRequests.remove(messageId);
-        recentContentRequests.put(messageId, SystemClock.uptimeMillis());
-        if (recentContentRequests.size() > MAX_RECENT_CONTENT) {
-          recentContentRequests.remove(recentContentRequests.keySet().iterator().next());
+    tdlib.ui()
+      .postDelayed(
+        () -> {
+        if (isDestroyed() || epoch != ticket) {
+          return;
         }
-        tdlib.send(new TdApi.GetMessage(getChatId(), messageId), (message, error) -> tdlib.ui().post(() -> {
-          if (isDestroyed() || epoch != ticket) {
-            return;
+        contentPumpScheduled = false;
+        if (!ready()) {
+          pendingContent.clear();
+          return;
+        }
+        while (!pendingContent.isEmpty() && activeContent.size() < MAX_CONTENT_REQUESTS) {
+          long messageId = pendingContent.keySet().iterator().next();
+          activeContent.put(messageId, pendingContent.remove(messageId));
+          recentContentRequests.remove(messageId);
+          recentContentRequests.put(messageId, SystemClock.uptimeMillis());
+          if (recentContentRequests.size() > MAX_RECENT_CONTENT) {
+            recentContentRequests.remove(recentContentRequests.keySet().iterator().next());
           }
-          TdApi.MessageContent latest = activeContent.remove(messageId);
-          if (ready() && latest != null) {
-            if (error == null && message != null) {
-              onCachedContentChanged(message, latest);
-            } else {
-              scheduleMaterialsRefresh();
-            }
-          }
-          scheduleContentPump();
-        }));
-      }
-    }, 200);
+          tdlib.send(
+            new TdApi.GetMessage(getChatId(), messageId),
+            (message, error) ->
+              tdlib.ui()
+                .post(
+                  () -> {
+                if (isDestroyed() || epoch != ticket) {
+                  return;
+                }
+                TdApi.MessageContent latest = activeContent.remove(messageId);
+                if (ready() && latest != null) {
+                  if (error == null && message != null) {
+                    onCachedContentChanged(message, latest);
+                  } else {
+                    scheduleMaterialsRefresh();
+                  }
+                }
+                scheduleContentPump();
+              }
+                )
+          );
+        }
+      },
+        200
+      );
   }
 
   @Override public void onMessagesDeleted (long chatId, long[] ids) {
@@ -1288,20 +1699,23 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
       return;
     }
     Object ticket = epoch;
-    tdlib.ui().post(() -> {
-      if (isDestroyed() || epoch != ticket) {
-        return;
-      }
-      for (long id : ids) {
-        recentContentMessages.remove(id);
-        pendingContent.remove(id);
-        // Retain the slot until its callback arrives, but never resurrect a deleted row.
-        if (activeContent.containsKey(id)) {
-          activeContent.put(id, null);
+    tdlib.ui()
+      .post(
+        () -> {
+        if (isDestroyed() || epoch != ticket) {
+          return;
         }
+        for (long id : ids) {
+          recentContentMessages.remove(id);
+          pendingContent.remove(id);
+          // Retain the slot until its callback arrives, but never resurrect a deleted row.
+          if (activeContent.containsKey(id)) {
+            activeContent.put(id, null);
+          }
+        }
+        scheduleMaterialsRefresh();
       }
-      scheduleMaterialsRefresh();
-    });
+      );
   }
 
   @Override public void onChatTitleChanged (long chatId, String title) {
@@ -1316,13 +1730,19 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     runOnUiThreadOptional(this::render);
   }
 
-  @Override public void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) {
+  @Override public void onNotificationSettingsChanged (
+    long chatId,
+    TdApi.ChatNotificationSettings settings
+  ) {
     if (chatId == getChatId()) {
       runOnUiThreadOptional(this::render);
     }
   }
 
-  @Override public void onNotificationSettingsChanged (TdApi.NotificationSettingsScope scope, TdApi.ScopeNotificationSettings settings) {
+  @Override public void onNotificationSettingsChanged (
+    TdApi.NotificationSettingsScope scope,
+    TdApi.ScopeNotificationSettings settings
+  ) {
     if (Td.matchesScope(tdlib.chatType(getChatId()), scope)) {
       runOnUiThreadOptional(this::render);
     }
@@ -1363,23 +1783,40 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
   public static void saveArguments (Bundle out, String prefix, Arguments args) {
     out.putLong(prefix + "forum_profile_chat", args.chatId);
     out.putInt(prefix + "forum_profile_topic", args.forumTopicId);
-    out.putString(prefix + "forum_profile_list", args.chatList != null ? TD.makeChatListKey(args.chatList) : "");
+    out.putString(
+      prefix + "forum_profile_list",
+      args.chatList != null ?
+        TD.makeChatListKey(args.chatList) : ""
+    );
   }
 
   @Nullable public static Arguments restoreArguments (Bundle in, String prefix) {
     long chatId = in.getLong(prefix + "forum_profile_chat");
     int topicId = in.getInt(prefix + "forum_profile_topic");
-    return chatId != 0 && topicId > 0 ? new Arguments(chatId, topicId, TD.chatListFromKey(in.getString(prefix + "forum_profile_list"))) : null;
+    return chatId != 0 &&
+      topicId > 0 ?
+        new Arguments(
+          chatId,
+          topicId,
+          TD.chatListFromKey(in.getString(prefix + "forum_profile_list"))
+        ) : null;
   }
 
   @Override public boolean saveInstanceState (Bundle out, String prefix) {
     super.saveInstanceState(out, prefix);
     saveArguments(out, prefix, getArgumentsStrict());
     out.putInt(prefix + "forum_profile_tab", activeTab);
-    out.putInt(prefix + "forum_profile_scroll", scroll != null && !restoreScrollPending ? scroll.getScrollY() : restoreScroll);
+    out.putInt(
+      prefix + "forum_profile_scroll",
+      scroll != null &&
+        !restoreScrollPending ? scroll.getScrollY() : restoreScroll
+    );
     out.putString(prefix + "forum_profile_query", query);
     for (int i = 0; i < pages.length; i++) {
-      Parcelable state = pages[i] != null && pages[i].getRecyclerView() != null ? pages[i].getRecyclerView().getLayoutManager().onSaveInstanceState() : restoredPageStates[i];
+      Parcelable state = pages[i] != null &&
+        pages[i].getRecyclerView() != null ?
+          pages[i].getRecyclerView().getLayoutManager().onSaveInstanceState() :
+            restoredPageStates[i];
       if (state != null) {
         out.putParcelable(prefix + "forum_profile_page_" + i, state);
       }
@@ -1410,32 +1847,35 @@ public final class ForumTopicProfileController extends ViewController<ForumTopic
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics")
     returnToTopics = false;
     // endregion
-    tdlib.ui().post(() -> {
-      if (isDestroyed()) {
-        return;
-      }
-      if (subscription != null) {
-        subscription.close();
-        subscription = null;
-      }
-      profileLink.invalidate();
-      clearContentUpdates();
-      closePins();
-      for (ForumTopicMedia.Category category : categories) {
-        category.invalidate();
-      }
-      for (int i = 0; i < pages.length; i++) {
-        if (pages[i] != null) {
-          pages[i].destroy();
-          pages[i] = null;
+    tdlib.ui()
+      .post(
+        () -> {
+        if (isDestroyed()) {
+          return;
         }
+        if (subscription != null) {
+          subscription.close();
+          subscription = null;
+        }
+        profileLink.invalidate();
+        clearContentUpdates();
+        closePins();
+        for (ForumTopicMedia.Category category : categories) {
+          category.invalidate();
+        }
+        for (int i = 0; i < pages.length; i++) {
+          if (pages[i] != null) {
+            pages[i].destroy();
+            pages[i] = null;
+          }
+        }
+        materialFrame.removeAllViews();
+        topic = null;
+        terminal = true;
+        busy = false;
+        render();
       }
-      materialFrame.removeAllViews();
-      topic = null;
-      terminal = true;
-      busy = false;
-      render();
-    });
+      );
   }
 
   @Override public void onPerformRestart () {

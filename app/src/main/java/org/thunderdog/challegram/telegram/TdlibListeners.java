@@ -396,14 +396,22 @@ public class TdlibListeners {
 
   @AnyThread
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public void subscribeToForumTopicUpdates (long chatId, int forumTopicId, ForumTopicInfoListener listener) {
+  public void subscribeToForumTopicUpdates (
+    long chatId,
+    int forumTopicId,
+    ForumTopicInfoListener listener
+  ) {
     specificForumTopicListeners.add(uniqueForumTopicKey(chatId, forumTopicId), listener);
   // endregion
   }
 
   @AnyThread
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public void unsubscribeFromForumTopicUpdates (long chatId, int forumTopicId, ForumTopicInfoListener listener) {
+  public void unsubscribeFromForumTopicUpdates (
+    long chatId,
+    int forumTopicId,
+    ForumTopicInfoListener listener
+  ) {
     specificForumTopicListeners.remove(uniqueForumTopicKey(chatId, forumTopicId), listener);
   // endregion
   }

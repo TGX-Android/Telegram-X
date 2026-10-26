@@ -754,10 +754,34 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
       // source; preserve the inter-cell gutters and cap the total album height.
       int boundedHeight = Math.min(layoutHeight, mosaicHeight);
       for (MosaicItemInfo info : itemInfos) {
-        int left = (info.position & POSITION_LEFT) != 0 ? 0 : fitCellEdge(info.x, mosaicWidth, layoutWidth, spacing, false);
-        int right = (info.position & POSITION_RIGHT) != 0 ? layoutWidth : fitCellEdge(info.x + info.width, mosaicWidth, layoutWidth, spacing, true);
-        int top = (info.position & POSITION_TOP) != 0 ? 0 : fitCellEdge(info.y, mosaicHeight, boundedHeight, spacing, false);
-        int bottom = (info.position & POSITION_BOTTOM) != 0 ? boundedHeight : fitCellEdge(info.y + info.height, mosaicHeight, boundedHeight, spacing, true);
+        int left = (info.position & POSITION_LEFT) != 0 ? 0 : fitCellEdge(
+          info.x,
+          mosaicWidth,
+          layoutWidth,
+          spacing,
+          false
+        );
+        int right = (info.position & POSITION_RIGHT) != 0 ? layoutWidth : fitCellEdge(
+          info.x + info.width,
+          mosaicWidth,
+          layoutWidth,
+          spacing,
+          true
+        );
+        int top = (info.position & POSITION_TOP) != 0 ? 0 : fitCellEdge(
+          info.y,
+          mosaicHeight,
+          boundedHeight,
+          spacing,
+          false
+        );
+        int bottom = (info.position & POSITION_BOTTOM) != 0 ? boundedHeight : fitCellEdge(
+          info.y + info.height,
+          mosaicHeight,
+          boundedHeight,
+          spacing,
+          true
+        );
         info.x = left;
         info.y = top;
         info.width = Math.max(1, right - left);
@@ -778,7 +802,13 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   }
 
-  private static int fitCellEdge (int edge, int sourceSize, int targetSize, float spacing, boolean end) {
+  private static int fitCellEdge (
+    int edge,
+    int sourceSize,
+    int targetSize,
+    float spacing,
+    boolean end
+  ) {
     float halfGap = spacing * .5f * (end ? 1f : -1f);
     return Math.round((edge + halfGap) * targetSize / sourceSize - halfGap);
   // endregion

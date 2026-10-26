@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.widget;
 
 /** Pure, widget-local geometry. The host owns the full-width header and composer. */
@@ -77,25 +89,39 @@ public final class ForumTopicsTabsLayout {
   }
 
   /** The placement button has priority even when an IME or a tiny host leaves no tab space. */
-  public static Parts partition (int width, int height, int touchSize, boolean side, boolean rtl, boolean showState) {
+  public static Parts partition (
+    int width,
+    int height,
+    int touchSize,
+    boolean side,
+    boolean rtl,
+    boolean showState
+  ) {
     width = Math.max(0, width);
     height = Math.max(0, height);
     touchSize = Math.max(0, touchSize);
     if (side) {
       int button = Math.min(height, touchSize);
       int state = showState ? Math.min(height - button, touchSize) : 0;
-      return new Parts(new Bounds(0, 0, width, height - button - state),
+      return new Parts(
+        new Bounds(0, 0, width, height - button - state),
         new Bounds(0, height - button - state, width, height - button),
-        new Bounds(0, height - button, width, height));
+        new Bounds(0, height - button, width, height)
+      );
     }
     int button = Math.min(width, touchSize);
     int state = showState ? Math.min(width - button, touchSize) : 0;
     if (rtl) {
-      return new Parts(new Bounds(button + state, 0, width, height),
-        new Bounds(button, 0, button + state, height), new Bounds(0, 0, button, height));
+      return new Parts(
+        new Bounds(button + state, 0, width, height),
+        new Bounds(button, 0, button + state, height),
+        new Bounds(0, 0, button, height)
+      );
     }
-    return new Parts(new Bounds(0, 0, width - button - state, height),
+    return new Parts(
+      new Bounds(0, 0, width - button - state, height),
       new Bounds(width - button - state, 0, width - button, height),
-      new Bounds(width - button, 0, width, height));
+      new Bounds(width - button, 0, width, height)
+    );
   }
 }

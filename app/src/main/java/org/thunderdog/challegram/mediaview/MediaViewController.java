@@ -1913,9 +1913,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (topicId != null) {
           tdlib.ui().openChat(this, item.getSourceChatId(), new TdlibUi.ChatOpenParameters()
-            .messageTopic(topicId).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId())).ensureHighlightAvailable().keepStack());
+            .messageTopic(topicId)
+            .highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()))
+            .ensureHighlightAvailable()
+            .keepStack());
         } else {
-          tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
+          tdlib.ui().openMessage(
+            this,
+            item.getSourceChatId(),
+            new MessageId(item.getSourceChatId(), item.getSourceMessageId()),
+            null
+          );
         }
         // endregion
       }
@@ -2379,7 +2387,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     List<TdApi.Message> list = new ArrayList<>(messages.messages.length);
     for (TdApi.Message message : messages.messages) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (message.chatId == chatId && Td.matchesTopic(message.topicId, topicId) && !Td.isSecret(message.content)) {
+      if (message.chatId == chatId && Td.matchesTopic(message.topicId, topicId) &&
+        !Td.isSecret(message.content)) {
       // endregion
         list.add(message);
       }

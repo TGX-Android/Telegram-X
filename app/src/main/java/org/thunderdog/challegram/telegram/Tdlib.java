@@ -2210,72 +2210,92 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     int count = TdConstants.MAX_MESSAGE_GROUP_SIZE - album.size() + 1;
     if (!endFound.get()) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      client().send(ForumHistory.request(oldestMessage.chatId, oldestMessage.topicId, oldestMessage.id, 0, count, onlyLocal), result -> {
-      // endregion
-        switch (result.getConstructor()) {
-          case TdApi.Messages.CONSTRUCTOR: {
-            TdApi.Message[] messages = ((TdApi.Messages) result).messages;
-            for (TdApi.Message message : messages) {
-              if (message.id >= oldestMessage.id)
-                continue;
-              // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-              if (!ForumHistory.sameAlbum(oldestMessage, message)) {
-              // endregion
-                endFound.set(true);
-                break;
+      client().send(
+        ForumHistory.request(
+          oldestMessage.chatId,
+          oldestMessage.topicId,
+          oldestMessage.id,
+          0,
+          count,
+          onlyLocal
+        ),
+        result -> {
+        // endregion
+          switch (result.getConstructor()) {
+            case TdApi.Messages.CONSTRUCTOR: {
+              TdApi.Message[] messages = ((TdApi.Messages) result).messages;
+              for (TdApi.Message message : messages) {
+                if (message.id >= oldestMessage.id)
+                  continue;
+                // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+                if (!ForumHistory.sameAlbum(oldestMessage, message)) {
+                // endregion
+                  endFound.set(true);
+                  break;
+                }
+                olderMessages.add(message);
               }
-              olderMessages.add(message);
+              if (olderMessages.isEmpty() && !onlyLocal) {
+                endFound.set(true);
+              }
+              break;
             }
-            if (olderMessages.isEmpty() && !onlyLocal) {
-              endFound.set(true);
+            case TdApi.Error.CONSTRUCTOR: {
+              Log.i("Failed to fetch part of an album: %s", TD.toErrorString(result));
+              break;
             }
-            break;
           }
-          case TdApi.Error.CONSTRUCTOR: {
-            Log.i("Failed to fetch part of an album: %s", TD.toErrorString(result));
-            break;
+          if (requestCount.decrementAndGet() == 0) {
+            after.run();
           }
         }
-        if (requestCount.decrementAndGet() == 0) {
-          after.run();
-        }
-      });
+      );
     }
     if (!startFound.get()) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      client().send(ForumHistory.request(newestMessage.chatId, newestMessage.topicId, newestMessage.id, -count, count + 1, onlyLocal), result -> {
-      // endregion
-        switch (result.getConstructor()) {
-          case TdApi.Messages.CONSTRUCTOR: {
-            TdApi.Message[] messages = ((TdApi.Messages) result).messages;
-            for (int i = messages.length - 1; i >= 0; i--) {
-              TdApi.Message message = messages[i];
-              if (message.id <= newestMessage.id) {
-                continue;
+      client().send(
+        ForumHistory.request(
+          newestMessage.chatId,
+          newestMessage.topicId,
+          newestMessage.id,
+          -count,
+          count + 1,
+          onlyLocal
+        ),
+        result -> {
+        // endregion
+          switch (result.getConstructor()) {
+            case TdApi.Messages.CONSTRUCTOR: {
+              TdApi.Message[] messages = ((TdApi.Messages) result).messages;
+              for (int i = messages.length - 1; i >= 0; i--) {
+                TdApi.Message message = messages[i];
+                if (message.id <= newestMessage.id) {
+                  continue;
+                }
+                // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+                if (!ForumHistory.sameAlbum(newestMessage, message)) {
+                // endregion
+                  startFound.set(true);
+                  break;
+                }
+                newerMessages.add(message);
               }
-              // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-              if (!ForumHistory.sameAlbum(newestMessage, message)) {
-              // endregion
+              Collections.reverse(newerMessages);
+              if (newerMessages.isEmpty() && !onlyLocal) {
                 startFound.set(true);
-                break;
               }
-              newerMessages.add(message);
+              break;
             }
-            Collections.reverse(newerMessages);
-            if (newerMessages.isEmpty() && !onlyLocal) {
-              startFound.set(true);
+            case TdApi.Error.CONSTRUCTOR: {
+              Log.i("Failed to fetch part of an album: %s", TD.toErrorString(result));
+              break;
             }
-            break;
           }
-          case TdApi.Error.CONSTRUCTOR: {
-            Log.i("Failed to fetch part of an album: %s", TD.toErrorString(result));
-            break;
+          if (requestCount.decrementAndGet() == 0) {
+            after.run();
           }
         }
-        if (requestCount.decrementAndGet() == 0) {
-          after.run();
-        }
-      });
+      );
     }
   }
 
@@ -5826,10 +5846,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public void readNotificationMessages (long chatId, long[] messageIds, ResultHandler<TdApi.Ok> handler) {
+  public void readNotificationMessages (
+    long chatId,
+    long[] messageIds,
+    ResultHandler<TdApi.Ok> handler
+  ) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     if (!ChatId.isSupergroup(chatId) || supergroup != null && !supergroup.isForum) {
-      send(new TdApi.ViewMessages(chatId, messageIds, new TdApi.MessageSourceNotification(), true), handler);
+      send(
+        new TdApi.ViewMessages(chatId, messageIds, new TdApi.MessageSourceNotification(), true),
+        handler
+      );
       return;
     }
     // Push-only and restored notifications may not carry topics. Resolve every message instead
@@ -5839,7 +5866,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         handler.onResult(null, error);
         return;
       }
-      List<TdApi.ViewMessages> requests = ForumNotificationReadScope.messageRequests(chatId, messageIds, messages.messages);
+      List<TdApi.ViewMessages> requests = ForumNotificationReadScope.messageRequests(
+        chatId,
+        messageIds,
+        messages.messages
+      );
       if (requests == null) {
         handler.onResult(null, new TdApi.Error(404, Lang.getString(R.string.MessageNotFound)));
         return;

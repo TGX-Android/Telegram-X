@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
@@ -51,7 +63,10 @@ import java.util.List;
 
 /** Owns a cancellable list session; no forum identifiers are encoded as generic threads. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-public final class ForumTopicsController extends RecyclerViewController<ForumTopicsController.Arguments> implements ChatListener, CleanupStartupDelegate, NotificationSettingsListener, TdlibCache.SupergroupDataChangeListener {
+public final class ForumTopicsController
+  extends RecyclerViewController<ForumTopicsController.Arguments>
+  implements ChatListener, CleanupStartupDelegate, NotificationSettingsListener,
+      TdlibCache.SupergroupDataChangeListener {
   public static final class Arguments {
     public final long chatId;
     public final TdApi.ChatList chatList;
@@ -126,7 +141,12 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
 
   private void updateCreateButton () {
     if (createButton != null) {
-      createButton.setVisibility(topicUi != null && topicUi.canCreate() && (selection == null || selection.isEmpty()) && !inSearchMode() ? View.VISIBLE : View.GONE);
+      createButton.setVisibility(
+        topicUi != null &&
+          topicUi.canCreate() &&
+          (selection == null || selection.isEmpty()) &&
+          !inSearchMode() ? View.VISIBLE : View.GONE
+      );
       createButton.setContentDescription(Lang.getString(R.string.ForumCreateTopic));
       FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) createButton.getLayoutParams();
       params.gravity = Gravity.BOTTOM | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT);
@@ -139,20 +159,35 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
   @Override protected View onCreateView (Context context) {
     FrameLayout content = (FrameLayout) super.onCreateView(context);
     createButton = new CircleButton(context);
-    createButton.init(R.drawable.baseline_add_24, 56, 4, ColorId.circleButtonRegular, ColorId.circleButtonRegularIcon);
+    createButton.init(
+      R.drawable.baseline_add_24,
+      56,
+      4,
+      ColorId.circleButtonRegular,
+      ColorId.circleButtonRegularIcon
+    );
     createButton.setFocusable(true);
-    createButton.setOnClickListener(v -> {
-      if (topicUi.canCreate() && !topicUi.isBusy()) {
-        topicUi.openEditor(0);
+    createButton.setOnClickListener(
+      v -> {
+        if (topicUi.canCreate() && !topicUi.isBusy()) {
+          topicUi.openEditor(0);
+        }
       }
-    });
-    content.addView(createButton, new FrameLayout.LayoutParams(Screen.dp(64), Screen.dp(64), Gravity.BOTTOM | Gravity.RIGHT));
+    );
+    content.addView(
+      createButton,
+      new FrameLayout.LayoutParams(Screen.dp(64), Screen.dp(64), Gravity.BOTTOM | Gravity.RIGHT)
+    );
     addThemeInvalidateListener(createButton);
     updateCreateButton();
     return content;
   }
 
-  @Override protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+  @Override protected void onBottomInsetChanged (
+    int extraBottomInset,
+    int extraBottomInsetWithoutIme,
+    boolean isImeInset
+  ) {
     super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
     updateCreateButton();
   }
@@ -180,16 +215,21 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     topicUi = new ForumTopicUi(this, getChatId());
     adapter = new TopicAdapter();
     recyclerView.setAdapter(adapter);
-    recyclerView.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-      if (right-left != oldRight-oldLeft && headerView != null && inSelectMode()) {
-        headerView.updateCustomButtons(this, R.id.menu_forumSelection);
+    recyclerView.addOnLayoutChangeListener(
+      (view, left, top, right, bottom, oldLeft, oldTop,
+        oldRight, oldBottom) -> {
+        if (right-left != oldRight-oldLeft && headerView != null && inSelectMode()) {
+          headerView.updateCustomButtons(this, R.id.menu_forumSelection);
+        }
       }
-    });
-    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-      @Override public void onScrolled (@NonNull RecyclerView view, int dx, int dy) {
-        loadMoreIfNeeded();
+    );
+    recyclerView.addOnScrollListener(
+      new RecyclerView.OnScrollListener() {
+        @Override public void onScrolled (@NonNull RecyclerView view, int dx, int dy) {
+          loadMoreIfNeeded();
+        }
       }
-    });
+    );
     tdlib.listeners().subscribeToChatUpdates(getChatId(), this);
     tdlib.listeners().subscribeToSettingsUpdates(this);
     tdlib.listeners().addCleanupListener(this);
@@ -216,26 +256,45 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     Object epoch = sessionEpoch;
     snapshot = tdlib.topics().cachedList(getChatId(), query);
     adapter.update(snapshot);
-    session = tdlib.topics().openList(getChatId(), query, value -> {
-      if (isDestroyed() || sessionEpoch != epoch || !query.equals(value.key.query)) {
-        return;
+    session = tdlib.topics()
+      .openList(
+        getChatId(),
+        query,
+        value -> {
+        if (isDestroyed() || sessionEpoch != epoch || !query.equals(value.key.query)) {
+          return;
+        }
+        snapshot = value;
+        adapter.update(value);
+        if (restorePosition >= 0 &&
+          !value.topics.isEmpty() &&
+          (restorePosition < value.topics.size() || value.endReached)) {
+          ((LinearLayoutManager) getRecyclerView().getLayoutManager())
+            .scrollToPositionWithOffset(
+              Math.min(restorePosition, value.topics.size()-1),
+              restoreOffset
+            );
+          restorePosition = -1;
+        }
+        getRecyclerView().post(this::loadMoreIfNeeded);
       }
-      snapshot = value;
-      adapter.update(value);
-      if (restorePosition >= 0 && !value.topics.isEmpty() && (restorePosition < value.topics.size() || value.endReached)) {
-        ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(Math.min(restorePosition, value.topics.size()-1), restoreOffset);
-        restorePosition = -1;
-      }
-      getRecyclerView().post(this::loadMoreIfNeeded);
-    });
+      );
   }
 
   private void loadMoreIfNeeded () {
-    if (session == null || snapshot == null || snapshot.error != null || snapshot.endReached || snapshot.loadingInitial || snapshot.loadingMore || snapshot.refreshing) {
+    if (session == null ||
+      snapshot == null ||
+      snapshot.error != null ||
+      snapshot.endReached ||
+      snapshot.loadingInitial ||
+      snapshot.loadingMore ||
+      snapshot.refreshing) {
       return;
     }
     LinearLayoutManager manager = (LinearLayoutManager) getRecyclerView().getLayoutManager();
-    if (manager != null && (restorePosition >= adapter.topics.size() || manager.findLastVisibleItemPosition() >= adapter.topics.size()-6)) {
+    if (manager != null &&
+      (restorePosition >= adapter.topics.size() ||
+        manager.findLastVisibleItemPosition() >= adapter.topics.size()-6)) {
       session.loadMore();
     }
   }
@@ -301,14 +360,49 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
   @Override public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_forumTopics) {
       header.addSearchButton(menu, this);
-      header.addButton(menu, R.id.menu_forumActions, R.drawable.baseline_more_vert_24, getHeaderIconColorId(), this, Screen.dp(49));
+      header.addButton(
+        menu,
+        R.id.menu_forumActions,
+        R.drawable.baseline_more_vert_24,
+        getHeaderIconColorId(),
+        this,
+        Screen.dp(49)
+      );
     } else if (id == R.id.menu_clear) {
       header.addClearButton(menu, this);
     } else if (id == R.id.menu_forumSelection) {
-      header.addButton(menu, R.id.menu_btn_pinUnpin, R.drawable.deproko_baseline_pin_24, getSelectHeaderIconColorId(), this, Screen.dp(48));
-      header.addButton(menu, R.id.menu_btn_muteUnmute, R.drawable.baseline_notifications_off_24, getSelectHeaderIconColorId(), this, Screen.dp(48));
-      header.addButton(menu, R.id.menu_btn_delete, R.drawable.baseline_delete_24, getSelectHeaderIconColorId(), this, Screen.dp(48));
-      header.addButton(menu, R.id.menu_btn_more, R.drawable.baseline_more_vert_24, getSelectHeaderIconColorId(), this, Screen.dp(48));
+      header.addButton(
+        menu,
+        R.id.menu_btn_pinUnpin,
+        R.drawable.deproko_baseline_pin_24,
+        getSelectHeaderIconColorId(),
+        this,
+        Screen.dp(48)
+      );
+      header.addButton(
+        menu,
+        R.id.menu_btn_muteUnmute,
+        R.drawable.baseline_notifications_off_24,
+        getSelectHeaderIconColorId(),
+        this,
+        Screen.dp(48)
+      );
+      header.addButton(
+        menu,
+        R.id.menu_btn_delete,
+        R.drawable.baseline_delete_24,
+        getSelectHeaderIconColorId(),
+        this,
+        Screen.dp(48)
+      );
+      header.addButton(
+        menu,
+        R.id.menu_btn_more,
+        R.drawable.baseline_more_vert_24,
+        getSelectHeaderIconColorId(),
+        this,
+        Screen.dp(48)
+      );
       updateCustomMenu(id, menu);
     }
   }
@@ -319,11 +413,13 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     } else if (id == R.id.menu_btn_clear) {
       clearSearchInput();
     } else if (id == R.id.menu_forumActions) {
-      topicUi.showListMenu(() -> {
-        if (session != null) {
-          session.refresh();
+      topicUi.showListMenu(
+        () -> {
+          if (session != null) {
+            session.refresh();
+          }
         }
-      });
+      );
     } else if (id == R.id.menu_btn_more) {
       showSelectionMenu();
     } else if (id == R.id.menu_btn_pinUnpin) {
@@ -331,7 +427,10 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     } else if (id == R.id.menu_btn_muteUnmute) {
       runSelectionAction(selectionActions().contains(Action.MUTE) ? Action.MUTE : Action.UNMUTE);
     } else if (id == R.id.menu_btn_delete) {
-      runSelectionAction(selectionActions().contains(Action.CLEAR_GENERAL) ? Action.CLEAR_GENERAL : Action.DELETE);
+      runSelectionAction(
+        selectionActions().contains(Action.CLEAR_GENERAL) ? Action.CLEAR_GENERAL :
+          Action.DELETE
+      );
     }
   }
 
@@ -340,15 +439,24 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
       return EnumSet.noneOf(Action.class);
     }
     ForumTopicStore.Snapshot pins = tdlib.topics().cachedList(getChatId(), "");
-    boolean complete = pins.initialized && !pins.stale && pins.error == null && ForumTopicPolicy.completePinnedPrefix(pins.topics, pins.endReached);
+    boolean complete = pins.initialized &&
+      !pins.stale &&
+      pins.error == null &&
+      ForumTopicPolicy.completePinnedPrefix(pins.topics, pins.endReached);
     int count = 0;
     for (TdApi.ForumTopic t : pins.topics) {
       if (t.isPinned) {
         count++;
       }
     }
-    return ForumTopicSelection.intersection(selection.topics(), tdlib.chatStatus(getChatId()), tdlib.chatMuteFor(getChatId()) > 0,
-      complete, count, tdlib.options().pinnedForumTopicCountMax);
+    return ForumTopicSelection.intersection(
+      selection.topics(),
+      tdlib.chatStatus(getChatId()),
+      tdlib.chatMuteFor(getChatId()) > 0,
+      complete,
+      count,
+      tdlib.options().pinnedForumTopicCountMax
+    );
   }
 
   @Override protected void updateCustomMenu (int menuId, LinearLayout menu) {
@@ -363,14 +471,26 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     if (width <= 0) {
       width = Screen.dp(context().getResources().getConfiguration().screenWidthDp);
     }
-    int slots = ForumTopicSelection.primaryActionSlots(width / context().getResources().getDisplayMetrics().density,
-      context().getResources().getConfiguration().fontScale);
-    Action[] direct = {available.contains(Action.PIN) ? Action.PIN : Action.UNPIN,
+    int slots =
+      ForumTopicSelection.primaryActionSlots(
+        width /
+          context().getResources().getDisplayMetrics().density,
+        context().getResources().getConfiguration().fontScale
+      );
+    Action[] direct = {
+      available.contains(Action.PIN) ? Action.PIN : Action.UNPIN,
       available.contains(Action.MUTE) ? Action.MUTE : Action.UNMUTE,
-      available.contains(Action.CLEAR_GENERAL) ? Action.CLEAR_GENERAL : Action.DELETE};
+      available.contains(Action.CLEAR_GENERAL) ? Action.CLEAR_GENERAL : Action.DELETE
+    };
     int[] ids = {R.id.menu_btn_pinUnpin, R.id.menu_btn_muteUnmute, R.id.menu_btn_delete};
-    int[] icons = {direct[0] == Action.PIN ? R.drawable.deproko_baseline_pin_24 : R.drawable.deproko_baseline_pin_undo_24,
-      direct[1] == Action.MUTE ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24, R.drawable.baseline_delete_24};
+    int[] icons =
+      {
+        direct[0] == Action.PIN ? R.drawable.deproko_baseline_pin_24 :
+          R.drawable.deproko_baseline_pin_undo_24,
+        direct[1] == Action.MUTE ? R.drawable.baseline_notifications_off_24 :
+          R.drawable.baseline_notifications_24,
+        R.drawable.baseline_delete_24
+      };
     for (int i = 0; i < direct.length; i++) {
       View button = menu.findViewById(ids[i]);
       boolean show = available.contains(direct[i]) && slots > 0;
@@ -389,7 +509,13 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     }
     View more = menu.findViewById(R.id.menu_btn_more);
     if (more != null) {
-      more.setVisibility(ForumTopicActionPresentation.overflowActions(available, headerActions).isEmpty() ? View.GONE : View.VISIBLE);
+      more.setVisibility(
+        ForumTopicActionPresentation.overflowActions(
+          available,
+          headerActions
+        )
+          .isEmpty() ? View.GONE : View.VISIBLE
+      );
       more.setEnabled(topicUi == null || !topicUi.isBusy());
       more.setContentDescription(Lang.getString(R.string.ForumSelectionActions));
     }
@@ -399,7 +525,8 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     if (topicUi.isBusy() || selection == null || selection.isEmpty()) {
       return;
     }
-    EnumSet<Action> available = ForumTopicActionPresentation.overflowActions(selectionActions(), headerActions);
+    EnumSet<Action> available =
+      ForumTopicActionPresentation.overflowActions(selectionActions(), headerActions);
     // Permissions/state may change between rendering the ellipsis and tapping it.
     if (available.isEmpty()) {
       updateSelectionHeader();
@@ -410,7 +537,12 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     for (int i = 0; i < labels.length; i++) {
       labels[i] = Lang.getString(ForumTopicUi.actionLabel(actions.get(i)));
     }
-    android.app.AlertDialog.Builder dialog = new android.app.AlertDialog.Builder(context(), Theme.dialogTheme()).setTitle(Lang.getString(R.string.ForumSelectionActions));
+    android.app.AlertDialog.Builder dialog =
+      new android.app.AlertDialog.Builder(
+        context(),
+        Theme.dialogTheme()
+      )
+        .setTitle(Lang.getString(R.string.ForumSelectionActions));
     dialog.setItems(labels, (d, which) -> runSelectionAction(actions.get(which)));
     showAlert(dialog.setNegativeButton(Lang.getString(R.string.Cancel), null));
   }
@@ -424,15 +556,19 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
       targets.add(new ForumTopicActions.BatchTarget(t.info.forumTopicId, t.info.name));
     }
     // ForumTopicUi guards the confirmation/start interval and duplicate submissions.
-    topicUi.runBatch(action, targets, result -> {
-      // A full success exits selection silently; failed/uncertain targets remain selected.
-      for (ForumTopicActions.BatchOutcome outcome : result.outcomes) {
-        if (outcome.getSuccessful()) {
-          removeSelected(outcome.target.topicId);
+    topicUi.runBatch(
+      action,
+      targets,
+      result -> {
+        // A full success exits selection silently; failed/uncertain targets remain selected.
+        for (ForumTopicActions.BatchOutcome outcome : result.outcomes) {
+          if (outcome.getSuccessful()) {
+            removeSelected(outcome.target.topicId);
+          }
         }
+        updateSelectionHeader();
       }
-      updateSelectionHeader();
-    });
+    );
   }
 
   private void toggleSelection (TdApi.ForumTopic topic) {
@@ -444,7 +580,19 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     } else if (selection.add(topic)) {
       observeSelected(topic.info.forumTopicId);
     } else {
-      showAlert(new android.app.AlertDialog.Builder(context(), Theme.dialogTheme()).setMessage(Lang.getString(R.string.ForumSelectionLimit, ForumTopicSelection.MAX_SELECTED)).setPositiveButton(Lang.getString(R.string.OK), null));
+      showAlert(
+        new android.app.AlertDialog.Builder(
+          context(),
+          Theme.dialogTheme()
+        )
+          .setMessage(
+            Lang.getString(
+              R.string.ForumSelectionLimit,
+              ForumTopicSelection.MAX_SELECTED
+            )
+          )
+          .setPositiveButton(Lang.getString(R.string.OK), null)
+      );
     }
     updateSelectionHeader();
   }
@@ -453,17 +601,28 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     if (selectedObservers.containsKey(id)) {
       return;
     }
-    selectedObservers.put(id, tdlib.topics().observeTopic(new TdlibForumTopicManager.Key(getChatId(), id), (topic, error) -> {
-      if (isDestroyed() || selection == null || !selection.contains(id)) {
-        return;
+    selectedObservers.put(
+      id,
+      tdlib.topics()
+        .observeTopic(
+          new TdlibForumTopicManager.Key(getChatId(), id),
+          (topic, error) ->
+          {
+        if (isDestroyed() || selection == null || !selection.contains(id)) {
+          return;
+        }
+        if (topic != null) {
+          selection.add(topic);
+        } else if (error != null &&
+          (error.code == 404 ||
+            "TOPIC_NOT_FOUND".equals(error.message) ||
+            "TOPIC_DELETED".equals(error.message))) {
+          removeSelected(id);
+        }
+        updateSelectionHeader();
       }
-      if (topic != null) {
-        selection.add(topic);
-      } else if (error != null && (error.code == 404 || "TOPIC_NOT_FOUND".equals(error.message) || "TOPIC_DELETED".equals(error.message))) {
-        removeSelected(id);
-      }
-      updateSelectionHeader();
-    }));
+        )
+    );
   }
 
   private void removeSelected (int id) {
@@ -476,7 +635,10 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     }
   }
 
-  /** Rail calls this before saving a per-chat snapshot; rotation does not call it. Query is retained. */
+  /**
+   * Rail calls this before saving a per-chat snapshot; rotation does not call it. Query is
+   * retained.
+   */
   public void clearTopicSelection () {
     selectionFromSearch = false;
     restoredSelection = null;
@@ -499,11 +661,14 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     boolean reopenSearch = selectionFromSearch;
     clearTopicSelection();
     if (reopenSearch && getRecyclerView() != null) {
-      getRecyclerView().post(() -> {
-        if (!isDestroyed() && isFocused()) {
-          openSearchMode();
+      getRecyclerView()
+        .post(
+          () -> {
+          if (!isDestroyed() && isFocused()) {
+            openSearchMode();
+          }
         }
-      });
+        );
     }
   }
 
@@ -563,18 +728,26 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
       if (view instanceof ForumTopicView) {
         ForumTopicView row = (ForumTopicView) view;
         if (row.getTopic() != null) {
-          row.setSelection(selection != null && !selection.isEmpty(), selection != null && selection.contains(row.getTopic().info.forumTopicId), true);
+          row.setSelection(
+            selection != null &&
+              !selection.isEmpty(),
+            selection != null &&
+              selection.contains(row.getTopic().info.forumTopicId),
+            true
+          );
         }
       }
     }
   }
 
   @Override public void onChatTitleChanged (long chatId, String title) {
-    runOnUiThreadOptional(() -> {
-      if (chatHeader != null) {
-        chatHeader.setChat(tdlib, tdlib.chat(getChatId()), null);
+    runOnUiThreadOptional(
+      () -> {
+        if (chatHeader != null) {
+          chatHeader.setChat(tdlib, tdlib.chat(getChatId()), null);
+        }
       }
-    });
+    );
   }
 
   @Override public void onChatPhotoChanged (long chatId, TdApi.ChatPhotoInfo photo) {
@@ -587,12 +760,14 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
 
   @Override public void onSupergroupUpdated (TdApi.Supergroup supergroup) {
     if (supergroup.id == supergroupId) {
-      runOnUiThreadOptional(() -> {
-        if (chatHeader != null) {
-          chatHeader.setChat(tdlib, tdlib.chat(getChatId()), null);
+      runOnUiThreadOptional(
+        () -> {
+          if (chatHeader != null) {
+            chatHeader.setChat(tdlib, tdlib.chat(getChatId()), null);
+          }
+          updateSelectionHeader();
         }
-        updateSelectionHeader();
-      });
+      );
     }
   }
 
@@ -602,13 +777,19 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     }
   }
 
-  @Override public void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) {
+  @Override public void onNotificationSettingsChanged (
+    long chatId,
+    TdApi.ChatNotificationSettings settings
+  ) {
     if (chatId == getChatId()) {
       runOnUiThreadOptional(this::rebindRows);
     }
   }
 
-  @Override public void onNotificationSettingsChanged (TdApi.NotificationSettingsScope scope, TdApi.ScopeNotificationSettings settings) {
+  @Override public void onNotificationSettingsChanged (
+    TdApi.NotificationSettingsScope scope,
+    TdApi.ScopeNotificationSettings settings
+  ) {
     if (tgx.td.Td.matchesScope(tdlib.chatType(getChatId()), scope)) {
       runOnUiThreadOptional(this::rebindRows);
     }
@@ -642,20 +823,23 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
 
   @Override public void onPerformUserCleanup () {
     Object epoch = lifecycleEpoch = new Object();
-    tdlib.ui().post(() -> {
-      if (isDestroyed() || lifecycleEpoch != epoch) {
-        return;
+    tdlib.ui()
+      .post(
+        () -> {
+        if (isDestroyed() || lifecycleEpoch != epoch) {
+          return;
+        }
+        closeSession();
+        snapshot = null;
+        clearTopicSelection();
+        if (topicUi != null) {
+          topicUi.cancelPendingActions();
+        }
+        if (adapter != null) {
+          adapter.update(null);
+        }
       }
-      closeSession();
-      snapshot = null;
-      clearTopicSelection();
-      if (topicUi != null) {
-        topicUi.cancelPendingActions();
-      }
-      if (adapter != null) {
-        adapter.update(null);
-      }
-    });
+      );
   }
 
   @Override public void onPerformRestart () {
@@ -664,11 +848,14 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
 
   @Override public void onPerformStartup (boolean afterRestart) {
     Object epoch = lifecycleEpoch = new Object();
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && lifecycleEpoch == epoch && adapter != null) {
-        openSession();
+    tdlib.ui()
+      .post(
+        () -> {
+        if (!isDestroyed() && lifecycleEpoch == epoch && adapter != null) {
+          openSession();
+        }
       }
-    });
+      );
   }
 
   @Override public void destroy () {
@@ -702,7 +889,11 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
   @Override public boolean saveInstanceState (Bundle out, String prefix) {
     super.saveInstanceState(out, prefix);
     out.putLong(prefix+"forum_chat", getChatId());
-    out.putString(prefix+"forum_list", getArgumentsStrict().chatList != null ? TD.makeChatListKey(getArgumentsStrict().chatList) : "");
+    out.putString(
+      prefix+"forum_list",
+      getArgumentsStrict().chatList != null ?
+        TD.makeChatListKey(getArgumentsStrict().chatList) : ""
+    );
     out.putString(prefix+"forum_query", query);
     out.putInt(prefix+"forum_selection_account", tdlib.id());
     java.util.LinkedHashSet<Integer> savedSelection = new java.util.LinkedHashSet<>();
@@ -716,7 +907,10 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
         savedSelection.add(id);
       }
     }
-    out.putIntArray(prefix+"forum_selection", savedSelection.stream().mapToInt(Integer::intValue).toArray());
+    out.putIntArray(
+      prefix+"forum_selection",
+      savedSelection.stream().mapToInt(Integer::intValue).toArray()
+    );
     return true;
   }
 
@@ -767,14 +961,16 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
         if (restoredSelection != null && value != null && value.initialized) {
           ArrayList<Integer> remaining = new ArrayList<>();
           for (int id : restoredSelection) {
-            TdlibForumTopicManager.Entry entry = tdlib.topics().find(new TdlibForumTopicManager.Key(getChatId(), id));
+            TdlibForumTopicManager.Entry entry =
+              tdlib.topics().find(new TdlibForumTopicManager.Key(getChatId(), id));
             if (entry != null && entry.value != null && selection.add(entry.value)) {
               observeSelected(id);
             } else if (!value.endReached) {
               remaining.add(id);
             }
           }
-          restoredSelection = remaining.isEmpty() ? null : remaining.stream().mapToInt(Integer::intValue).toArray();
+          restoredSelection = remaining.isEmpty() ? null :
+            remaining.stream().mapToInt(Integer::intValue).toArray();
         }
         updateSelectionHeader();
       }
@@ -784,24 +980,40 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
       View view;
       if (type == 0) {
         ForumTopicView row = new ForumTopicView(parent.getContext(), tdlib);
-        row.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        row.setOnClickListener(v -> {
-          TdApi.ForumTopic topic = row.getTopic();
-          if (topic != null && selection != null && !selection.isEmpty()) {
-            toggleSelection(topic);
-            return;
+        row.setLayoutParams(
+          new RecyclerView.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+          )
+        );
+        row.setOnClickListener(
+          v -> {
+            TdApi.ForumTopic topic = row.getTopic();
+            if (topic != null && selection != null && !selection.isEmpty()) {
+              toggleSelection(topic);
+              return;
+            }
+            if (topic != null && !context().isNavigationBusy()) {
+              tdlib.ui()
+                .openChat(
+                  ForumTopicsController.this,
+                  getChatId(),
+                  new TdlibUi.ChatOpenParameters().chatList(getArgumentsStrict().chatList)
+                    .messageTopic(new TdApi.MessageTopicForum(topic.info.forumTopicId))
+                    .keepStack()
+                );
+            }
           }
-          if (topic != null && !context().isNavigationBusy()) {
-            tdlib.ui().openChat(ForumTopicsController.this, getChatId(), new TdlibUi.ChatOpenParameters().chatList(getArgumentsStrict().chatList).messageTopic(new TdApi.MessageTopicForum(topic.info.forumTopicId)).keepStack());
+        );
+        row.setOnLongClickListener(
+          v -> {
+            if (row.getTopic() == null) {
+              return false;
+            }
+            toggleSelection(row.getTopic());
+            return true;
           }
-        });
-        row.setOnLongClickListener(v -> {
-          if (row.getTopic() == null) {
-            return false;
-          }
-          toggleSelection(row.getTopic());
-          return true;
-        });
+        );
         view = row;
       } else {
         TextView footer = new TextView(parent.getContext());
@@ -809,13 +1021,20 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
         footer.setTextSize(14);
         // The Create button must never cover the last selectable row, including an empty footer.
         footer.setPadding(Screen.dp(20), Screen.dp(24), Screen.dp(20), Screen.dp(88));
-        footer.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        footer.setLayoutParams(
+          new RecyclerView.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+          )
+        );
         addThemeTextColorListener(footer, ColorId.textLight);
-        footer.setOnClickListener(v -> {
-          if (session != null) {
-            session.retry();
+        footer.setOnClickListener(
+          v -> {
+            if (session != null) {
+              session.retry();
+            }
           }
-        });
+        );
         view = footer;
       }
       addThemeInvalidateListener(view);
@@ -826,20 +1045,42 @@ public final class ForumTopicsController extends RecyclerViewController<ForumTop
     @Override public void onBindViewHolder (RecyclerView.ViewHolder holder, int position) {
       if (holder.itemView instanceof ForumTopicView) {
         ((ForumTopicView) holder.itemView).setTopic(topics.get(position));
-        ((ForumTopicView) holder.itemView).setSelection(selection != null && !selection.isEmpty(), selection != null && selection.contains(topics.get(position).info.forumTopicId), false);
+        ((ForumTopicView) holder.itemView).setSelection(
+          selection != null &&
+            !selection.isEmpty(),
+          selection != null &&
+            selection.contains(topics.get(position).info.forumTopicId),
+          false
+        );
       } else {
         TextView footer = (TextView) holder.itemView;
-        int text = snapshot == null || snapshot.loadingInitial || snapshot.loadingMore || snapshot.refreshing ? R.string.ForumTopicsLoading :
-          snapshot.error != null ? R.string.ForumTopicsLoadFailed : topics.isEmpty() ? R.string.ForumTopicsEmpty : snapshot.stale ? R.string.ForumTopicsStale : 0;
+        int text = snapshot == null ||
+          snapshot.loadingInitial ||
+          snapshot.loadingMore ||
+          snapshot.refreshing ? R.string.ForumTopicsLoading :
+          snapshot.error != null ? R.string.ForumTopicsLoadFailed : topics.isEmpty() ?
+            R.string.ForumTopicsEmpty : snapshot.stale ? R.string.ForumTopicsStale : 0;
         footer.setText(text != 0 ? Lang.getString(text) : "");
         footer.setTextColor(Theme.textDecentColor());
         footer.setEnabled(snapshot != null && (snapshot.error != null || snapshot.stale));
       }
     }
 
-    @Override public void onBindViewHolder (RecyclerView.ViewHolder holder, int position, List<Object> payloads) {
-      if (payloads.contains(ForumTopicListDiff.SELECTION_PAYLOAD) && holder.itemView instanceof ForumTopicView && payloads.size() == 1) {
-        ((ForumTopicView) holder.itemView).setSelection(selection != null && !selection.isEmpty(), selection != null && selection.contains(topics.get(position).info.forumTopicId), true);
+    @Override public void onBindViewHolder (
+      RecyclerView.ViewHolder holder,
+      int position,
+      List<Object> payloads
+    ) {
+      if (payloads.contains(ForumTopicListDiff.SELECTION_PAYLOAD) &&
+        holder.itemView instanceof ForumTopicView &&
+        payloads.size() == 1) {
+        ((ForumTopicView) holder.itemView).setSelection(
+          selection != null &&
+            !selection.isEmpty(),
+          selection != null &&
+            selection.contains(topics.get(position).info.forumTopicId),
+          true
+        );
       } else {
         onBindViewHolder(holder, position);
       }

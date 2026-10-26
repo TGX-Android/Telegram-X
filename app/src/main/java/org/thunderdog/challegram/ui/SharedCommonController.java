@@ -48,7 +48,11 @@ import tgx.td.MessageId;
 import tgx.td.Td;
 
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-public class SharedCommonController extends SharedBaseController<InlineResult<?>> implements View.OnClickListener, TGPlayerController.TrackChangeListener, TGPlayerController.PlayListBuilder, PollListener {
+public class SharedCommonController extends SharedBaseController<InlineResult<?>> implements
+  View.OnClickListener,
+  TGPlayerController.TrackChangeListener,
+  TGPlayerController.PlayListBuilder,
+  PollListener {
 // endregion
   public SharedCommonController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -177,7 +181,12 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
           if (topicId != null) {
             openScopedMessage(result.getMessage());
           } else {
-            tdlib.ui().openMessage(this, chatId, new MessageId(chatId, result.getQueryId()), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+            tdlib.ui().openMessage(
+              this,
+              chatId,
+              new MessageId(chatId, result.getQueryId()),
+              new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v))
+            );
           }
           // endregion
           break;
@@ -215,7 +224,8 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
         }
       }
       result = new InlineResultMultiline(context, tdlib, message, poll);
-    } else if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterUrl.CONSTRUCTOR) {
+    } else if (filter != null &&
+      filter.getConstructor() == TdApi.SearchMessagesFilterUrl.CONSTRUCTOR) {
     // endregion
       result = new InlineResultMultiline(context, tdlib, message);
     } else {
@@ -270,18 +280,26 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
       collectPollMessages(searchData, poll.id, ids);
       for (Map.Entry<Long, TdApi.MessagePoll> entry : ids.entrySet()) {
         TdApi.MessagePoll old = entry.getValue();
-        editMessage(entry.getKey(), new TdApi.MessagePoll(poll, old.description, old.media, old.canAddOption));
+        editMessage(
+          entry.getKey(),
+          new TdApi.MessagePoll(poll, old.description, old.media, old.canAddOption)
+        );
       }
     });
   }
 
-  private static void collectPollMessages (ArrayList<InlineResult<?>> items, long pollId, Map<Long, TdApi.MessagePoll> ids) {
+  private static void collectPollMessages (
+    ArrayList<InlineResult<?>> items,
+    long pollId,
+    Map<Long, TdApi.MessagePoll> ids
+  ) {
     if (items == null) {
       return;
     }
     for (InlineResult<?> item : items) {
       TdApi.Message message = item.getMessage();
-      if (message != null && message.content instanceof TdApi.MessagePoll && ((TdApi.MessagePoll) message.content).poll.id == pollId) {
+      if (message != null && message.content instanceof TdApi.MessagePoll &&
+        ((TdApi.MessagePoll) message.content).poll.id == pollId) {
         ids.put(message.id, (TdApi.MessagePoll) message.content);
       }
     }
@@ -381,7 +399,10 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
     }
 
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    return new TGPlayerController.PlayList(out, foundIndex).setPlayListFlags(TGPlayerController.PLAYLIST_FLAG_REVERSE).setSearchQuery(query).setTopicId(topicId);
+    return new TGPlayerController.PlayList(out, foundIndex)
+      .setPlayListFlags(TGPlayerController.PLAYLIST_FLAG_REVERSE)
+      .setSearchQuery(query)
+      .setTopicId(topicId);
     // endregion
   }
 

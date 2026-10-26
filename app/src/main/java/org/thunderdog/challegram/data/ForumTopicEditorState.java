@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.data;
 
 import java.io.Serializable;
@@ -25,7 +37,13 @@ public final class ForumTopicEditorState {
   private int completedTopicId;
   private boolean completionConsumed;
 
-  private ForumTopicEditorState (boolean creating, boolean general, String name, int color, long emoji) {
+  private ForumTopicEditorState (
+    boolean creating,
+    boolean general,
+    String name,
+    int color,
+    long emoji
+  ) {
     this.creating = creating;
     this.general = general;
     this.originalName = name;
@@ -111,7 +129,9 @@ public final class ForumTopicEditorState {
   }
 
   public boolean hasChanges () {
-    return !submittedName().equals(originalName.trim()) || color != originalColor || emoji != originalEmoji;
+    return !submittedName().equals(originalName.trim()) ||
+      color != originalColor ||
+      emoji != originalEmoji;
   }
 
   /** The caller uses ForumTopicPolicy.allowedIcon against the current account/default set. */
@@ -139,7 +159,9 @@ public final class ForumTopicEditorState {
   }
 
   public boolean canSubmit (boolean available, boolean iconAllowed, boolean defaultsLoaded) {
-    return editable() && hasChanges() && validate(available, iconAllowed, defaultsLoaded) == Error.NONE;
+    return editable() &&
+      hasChanges() &&
+      validate(available, iconAllowed, defaultsLoaded) == Error.NONE;
   }
 
   public boolean beginSubmit (boolean available, boolean iconAllowed, boolean defaultsLoaded) {
@@ -192,7 +214,11 @@ public final class ForumTopicEditorState {
   }
 
   public boolean matchesCandidate (String name, int color, long emoji, boolean outgoing) {
-    return phase == Phase.UNKNOWN && outgoing && submittedName().equals(name) && this.color == color && this.emoji == emoji;
+    return phase == Phase.UNKNOWN &&
+      outgoing &&
+      submittedName().equals(name) &&
+      this.color == color &&
+      this.emoji == emoji;
   }
 
   public Snapshot snapshot () {
@@ -200,12 +226,20 @@ public final class ForumTopicEditorState {
   }
 
   public static ForumTopicEditorState restore (Snapshot saved) {
-    ForumTopicEditorState state = new ForumTopicEditorState(saved.creating, saved.general, saved.originalName, saved.originalColor, saved.originalEmoji);
+    ForumTopicEditorState state =
+      new ForumTopicEditorState(
+        saved.creating,
+        saved.general,
+        saved.originalName,
+        saved.originalColor,
+        saved.originalEmoji
+      );
     state.name = saved.name;
     state.color = saved.color;
     state.emoji = saved.emoji;
     // A callback belongs to the old controller. Create must be reconciled, never replayed.
-    state.phase = saved.phase == Phase.PENDING ? (saved.creating ? Phase.UNKNOWN : Phase.READY) : saved.phase;
+    state.phase = saved.phase == Phase.PENDING ? (saved.creating ? Phase.UNKNOWN : Phase.READY) :
+      saved.phase;
     state.serverError = saved.serverError;
     state.completedTopicId = saved.completedTopicId;
     state.completionConsumed = saved.completionConsumed;

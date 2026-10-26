@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.data;
 
 import org.drinkless.tdlib.TdApi;
@@ -17,19 +29,31 @@ public final class ForumPresentation {
       case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
         return R.string.ForumTopicUpdated;
       case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
-        return ((TdApi.MessageForumTopicIsClosedToggled) content).isClosed ? R.string.ForumTopicClosed : R.string.ForumTopicReopened;
+        return ((TdApi.MessageForumTopicIsClosedToggled) content).isClosed ?
+          R.string.ForumTopicClosed : R.string.ForumTopicReopened;
       case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
-        return ((TdApi.MessageForumTopicIsHiddenToggled) content).isHidden ? R.string.ForumGeneralHidden : R.string.ForumGeneralShown;
+        return ((TdApi.MessageForumTopicIsHiddenToggled) content).isHidden ?
+          R.string.ForumGeneralHidden : R.string.ForumGeneralShown;
       default:
         return 0;
     }
   }
 
-  public static boolean showTopicButton (TdApi.MessageTopic message, TdApi.MessageTopic viewed, boolean thread, boolean scheduled, boolean preview) {
+  public static boolean showTopicButton (
+    TdApi.MessageTopic message,
+    TdApi.MessageTopic viewed,
+    boolean thread,
+    boolean scheduled,
+    boolean preview
+  ) {
     return ForumHistory.isForum(message) && viewed == null && !thread && !scheduled && !preview;
   }
 
-  public static TdApi.MessageTopic composerTopic (long chatId, TdApi.MessageTopic viewed, TdApi.Message reply) {
+  public static TdApi.MessageTopic composerTopic (
+    long chatId,
+    TdApi.MessageTopic viewed,
+    TdApi.Message reply
+  ) {
     return ForumHistory.outgoingTopic(viewed, ForumNavigation.forumTopic(chatId, reply));
   }
 
@@ -38,14 +62,27 @@ public final class ForumPresentation {
   }
 
   public static TdApi.Function<TdApi.Ok> readMentions (long chatId, TdApi.MessageTopic topic) {
-    return ForumHistory.isForum(topic) ? new TdApi.ReadAllForumTopicMentions(chatId, ((TdApi.MessageTopicForum) topic).forumTopicId) : new TdApi.ReadAllChatMentions(chatId);
+    return ForumHistory.isForum(topic) ?
+      new TdApi.ReadAllForumTopicMentions(chatId, ((TdApi.MessageTopicForum) topic).forumTopicId) :
+        new TdApi.ReadAllChatMentions(chatId);
   }
 
   public static TdApi.Function<TdApi.Ok> readReactions (long chatId, TdApi.MessageTopic topic) {
-    return ForumHistory.isForum(topic) ? new TdApi.ReadAllForumTopicReactions(chatId, ((TdApi.MessageTopicForum) topic).forumTopicId) : new TdApi.ReadAllChatReactions(chatId);
+    return ForumHistory.isForum(topic) ?
+      new TdApi.ReadAllForumTopicReactions(chatId, ((TdApi.MessageTopicForum) topic).forumTopicId) :
+        new TdApi.ReadAllChatReactions(chatId);
   }
 
   public static TdApi.SearchChatMessages unreadPollVotes (long chatId, int topicId) {
-    return new TdApi.SearchChatMessages(chatId, new TdApi.MessageTopicForum(topicId), "", null, 0, 0, 1, new TdApi.SearchMessagesFilterUnreadPollVote());
+    return new TdApi.SearchChatMessages(
+      chatId,
+      new TdApi.MessageTopicForum(topicId),
+      "",
+      null,
+      0,
+      0,
+      1,
+      new TdApi.SearchMessagesFilterUnreadPollVote()
+    );
   }
 }

@@ -59,21 +59,33 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 
   /** Read-only poll summary; tapping opens the original scoped message and its native poll UI. */
-  public InlineResultMultiline (BaseActivity context, Tdlib tdlib, TdApi.Message message, TdApi.Poll poll) {
+  public InlineResultMultiline (
+    BaseActivity context,
+    Tdlib tdlib,
+    TdApi.Message message,
+    TdApi.Poll poll
+  ) {
     super(context, tdlib, TYPE_ARTICLE, null, null);
     setMessage(message);
     title = poll.question.text;
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "L10N-01")
-    StringBuilder summary = new StringBuilder(Lang.getString(R.string.format_forumPollSummary,
-      Lang.getString(poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen),
-      Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount)));
+    StringBuilder summary = new StringBuilder(Lang.getString(
+      R.string.format_forumPollSummary,
+      Lang.getString(
+        poll.isClosed ? R.string.ForumProfilePollClosed : R.string.ForumProfilePollOpen
+      ),
+      Lang.getString(R.string.ForumProfilePollVoters, poll.totalVoterCount)
+    ));
     // endregion
     for (TdApi.PollOption option : poll.options) {
       summary.append('\n').append(option.text.text);
     }
     description = summary.toString();
-    avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS,
-      new AvatarPlaceholder.Metadata(tdlib.accentColorForString(title), TD.getLetters(title)), null);
+    avatarPlaceholder = new AvatarPlaceholder(
+      AVATAR_PLACEHOLDER_RADIUS,
+      new AvatarPlaceholder.Metadata(tdlib.accentColorForString(title), TD.getLetters(title)),
+      null
+    );
     layoutInternal(Screen.currentWidth());
   }
 // endregion

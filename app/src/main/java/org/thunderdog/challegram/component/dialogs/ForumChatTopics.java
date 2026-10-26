@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.component.dialogs;
 
 import android.graphics.Canvas;
@@ -27,7 +39,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** One visible chat row. Owns rendering/subscriptions, never owns forum records or issues requests from draw. */
+/**
+ * One visible chat row. Owns rendering/subscriptions, never owns forum records or issues requests
+ * from draw.
+ */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 final class ForumChatTopics {
   private final ChatView view;
@@ -116,16 +131,24 @@ final class ForumChatTopics {
     }
     if (attached && session == null) {
       final int ticket = generation;
-      session = tdlib.topics().openPreview(chat.getChatId(), snapshot -> {
-        if (ticket == generation && attached && session != null) {
-          refresh();
+      session = tdlib.topics()
+        .openPreview(
+          chat.getChatId(),
+          snapshot -> {
+          if (ticket == generation && attached && session != null) {
+            refresh();
+          }
         }
-      });
-      unreadSubscription = tdlib.topics().observeUnread(chat.getChatId(), count -> {
-        if (ticket == generation && attached) {
-          chat.updateForumUnread();
+        );
+      unreadSubscription = tdlib.topics()
+        .observeUnread(
+          chat.getChatId(),
+          count -> {
+          if (ticket == generation && attached) {
+            chat.updateForumUnread();
+          }
         }
-      });
+        );
     }
     refresh();
   }
@@ -136,9 +159,13 @@ final class ForumChatTopics {
     }
     refreshing = true;
     try {
-      ForumTopicStore.Snapshot snapshot = session != null ? session.getSnapshot() : tdlib.topics().cachedList(chat.getChatId(), "");
+      ForumTopicStore.Snapshot snapshot = session != null ? session.getSnapshot() :
+        tdlib.topics().cachedList(chat.getChatId(), "");
       boolean unavailable = ForumChatPreview.inaccessible(snapshot.error);
-      chat.updateForumDraft(unavailable ? null : ForumChatPreview.latestDraft(chat.getChatId(), snapshot.topics));
+      chat.updateForumDraft(
+        unavailable ? null :
+          ForumChatPreview.latestDraft(chat.getChatId(), snapshot.topics)
+      );
       int id = unavailable ? 0 : chat.getPreviewTopicId();
       if (attached && id != leadingId) {
         if (leadingSubscription != null) {
@@ -149,18 +176,29 @@ final class ForumChatTopics {
         leadingError = null;
         if (id != 0) {
           final int ticket = generation;
-          leadingSubscription = tdlib.topics().observeTopic(new TdlibForumTopicManager.Key(chat.getChatId(), id), (topic, error) -> {
-            if (ticket == generation && attached && leadingId == id) {
-              leadingError = error;
-              refresh();
+          leadingSubscription =
+            tdlib.topics()
+              .observeTopic(
+                new TdlibForumTopicManager.Key(chat.getChatId(), id),
+                (topic, error) -> {
+              if (ticket == generation && attached && leadingId == id) {
+                leadingError = error;
+                refresh();
+              }
             }
-          });
+              );
         }
       }
-      TdlibForumTopicManager.Entry leading = id != 0 ? tdlib.topics().find(new TdlibForumTopicManager.Key(chat.getChatId(), id)) : null;
+      TdlibForumTopicManager.Entry leading = id != 0 ?
+        tdlib.topics().find(new TdlibForumTopicManager.Key(chat.getChatId(), id)) : null;
       List<ForumChatPreview.Item> next = unavailable ? Collections.emptyList() :
-        ForumChatPreview.select(chat.getChatId(), id, snapshot.topics,
-          leading != null ? leading.value : null, ForumChatPreview.inaccessible(leadingError));
+        ForumChatPreview.select(
+          chat.getChatId(),
+          id,
+          snapshot.topics,
+          leading != null ? leading.value : null,
+          ForumChatPreview.inaccessible(leadingError)
+        );
       if (!items.equals(next)) {
         items = next;
         layoutDirty = true;
@@ -179,7 +217,11 @@ final class ForumChatTopics {
   void layout (int width, int mode) {
     String language = Lang.packId();
     int counterWidth = chat != null ? chat.getPreviewCounterWidth() : 0;
-    if (!layoutDirty && this.width == width && this.mode == mode && this.counterWidth == counterWidth && language.equals(this.language)) {
+    if (!layoutDirty &&
+      this.width == width &&
+      this.mode == mode &&
+      this.counterWidth == counterWidth &&
+      language.equals(this.language)) {
       return;
     }
     layoutDirty = false;
@@ -201,14 +243,26 @@ final class ForumChatTopics {
     if (chat == null || !chat.canShowForumPreview()) {
       return;
     }
-    int available = Math.max(0, width - ChatView.getLeftPadding(mode) - ChatView.getRightPadding() - counterWidth);
+    int available =
+      Math.max(
+        0,
+        width - ChatView.getLeftPadding(mode) - ChatView.getRightPadding() - counterWidth
+      );
     float size = mode == Settings.CHAT_MODE_3LINE_BIG ? 16 : 15;
     if (available <= 0) {
       return;
     }
     if (items.isEmpty()) {
-      placeholder = new Text.Builder(Lang.getString(R.string.ForumChatTopics), available, Paints.robotoStyleProvider(size), TextColorSets.Regular.LIGHT)
-        .singleLine().allBold(false).build();
+      placeholder =
+        new Text.Builder(
+          Lang.getString(R.string.ForumChatTopics),
+          available,
+          Paints.robotoStyleProvider(size),
+          TextColorSets.Regular.LIGHT
+        )
+          .singleLine()
+          .allBold(false)
+          .build();
       return;
     }
     int x = 0;
@@ -220,17 +274,38 @@ final class ForumChatTopics {
       }
       offsets.add(x);
       String name = item.name.isEmpty() ? Lang.getString(R.string.ForumTopicTitle) : item.name;
-      Text label = new Text.Builder(name, nameWidth, Paints.robotoStyleProvider(size), TextColorSets.Regular.LIGHT)
-        .singleLine().ignoreNewLines().noClickable().build();
+      Text label =
+        new Text.Builder(
+          name,
+          nameWidth,
+          Paints.robotoStyleProvider(size),
+          TextColorSets.Regular.LIGHT
+        )
+          .singleLine()
+          .ignoreNewLines()
+          .noClickable()
+          .build();
       labels.add(label);
-      initials.add(item.general ? "#" : item.name.isEmpty() ? "·" : item.name.substring(0, item.name.offsetByCodePoints(0, 1)));
+      initials.add(
+        item.general ? "#" : item.name.isEmpty() ? "·" :
+          item.name.substring(0, item.name.offsetByCodePoints(0, 1))
+      );
       Text emoji = null;
       if (item.customEmojiId != 0) {
         final int slot = icons.size();
-        TdApi.FormattedText value = new TdApi.FormattedText("*", new TdApi.TextEntity[] {
-          new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(item.customEmojiId))
-        });
-        emoji = new Text.Builder(tdlib, value, null, iconWidth * 2, Paints.robotoStyleProvider(size), TextColorSets.WHITE,
+        TdApi.FormattedText value = new TdApi.FormattedText(
+          "*",
+          new TdApi.TextEntity[] {
+            new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(item.customEmojiId))
+          }
+        );
+        emoji = new Text.Builder(
+          tdlib,
+          value,
+          null,
+          iconWidth * 2,
+          Paints.robotoStyleProvider(size),
+          TextColorSets.WHITE,
           (text, media) -> {
             // Text.equals compares only the source string ("*" for every icon).
             // Use identity, including after a row is rebound, to keep emoji slots isolated.
@@ -238,7 +313,11 @@ final class ForumChatTopics {
               text.requestMedia(receiver, slot * 16L, 16);
               view.invalidate();
             }
-          }).singleLine().noClickable().build();
+          }
+        )
+          .singleLine()
+          .noClickable()
+          .build();
       }
       icons.add(emoji);
       if (emoji != null) {
@@ -267,10 +346,25 @@ final class ForumChatTopics {
       float iconX = rtl ? width - logicalX - iconSize : logicalX;
       float iconY = top + (lineHeight() - iconSize) / 2f;
       if (emoji != null) {
-        emoji.draw(c, Math.round(iconX + (iconSize - emoji.getWidth()) / 2f), Math.round(iconY + (iconSize - emoji.getHeight()) / 2f), null, 1f, receiver);
+        emoji.draw(
+          c,
+          Math.round(iconX + (iconSize - emoji.getWidth()) / 2f),
+          Math.round(iconY + (iconSize - emoji.getHeight()) / 2f),
+          null,
+          1f,
+          receiver
+        );
       } else {
         paint.setColor(0xff000000 | item.color);
-        DrawAlgorithms.drawRoundRect(c, Screen.dp(5), iconX, iconY, iconX + iconSize, iconY + iconSize - Screen.dp(2), paint);
+        DrawAlgorithms.drawRoundRect(
+          c,
+          Screen.dp(5),
+          iconX,
+          iconY,
+          iconX + iconSize,
+          iconY + iconSize - Screen.dp(2),
+          paint
+        );
         tail.reset();
         tail.moveTo(iconX + Screen.dp(2), iconY + iconSize - Screen.dp(5));
         tail.lineTo(iconX + Screen.dp(2), iconY + iconSize);
@@ -281,7 +375,12 @@ final class ForumChatTopics {
         paint.setTypeface(Fonts.getRobotoMedium());
         paint.setTextSize(Screen.dp(10));
         paint.setTextAlign(Paint.Align.CENTER);
-        c.drawText(initials.get(i), iconX + iconSize / 2, iconY + (iconSize - Screen.dp(2) - paint.ascent() - paint.descent()) / 2, paint);
+        c.drawText(
+          initials.get(i),
+          iconX + iconSize / 2,
+          iconY + (iconSize - Screen.dp(2) - paint.ascent() - paint.descent()) / 2,
+          paint
+        );
       }
       int textX = logicalX + Math.round(iconSize) + Screen.dp(4);
       if (rtl) {

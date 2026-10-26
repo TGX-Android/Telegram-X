@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.NonNull;
@@ -158,9 +170,19 @@ public final class ForumTopicStore {
     public final @Nullable TdApi.Error error;
     public final Cursor nextCursor;
 
-    public Snapshot (ListKey key, List<TdApi.ForumTopic> topics, int approximateTotalCount, boolean initialized,
-                     boolean loadingInitial, boolean loadingMore, boolean refreshing, boolean endReached,
-                     boolean stale, @Nullable TdApi.Error error, Cursor nextCursor) {
+    public Snapshot (
+      ListKey key,
+      List<TdApi.ForumTopic> topics,
+      int approximateTotalCount,
+      boolean initialized,
+      boolean loadingInitial,
+      boolean loadingMore,
+      boolean refreshing,
+      boolean endReached,
+      boolean stale,
+      @Nullable TdApi.Error error,
+      Cursor nextCursor
+    ) {
       this.key = key;
       this.topics = topics;
       this.approximateTotalCount = approximateTotalCount;
@@ -209,62 +231,72 @@ public final class ForumTopicStore {
     }
 
     public void setQuery (String query) {
-      onOwner(() -> {
-        if (live() && !key.query.equals(normalizeQuery(query))) {
-          detach(this);
-          key = new ListKey(key.chatId, normalizeQuery(query));
-          attach(this);
+      onOwner(
+        () -> {
+          if (live() && !key.query.equals(normalizeQuery(query))) {
+            detach(this);
+            key = new ListKey(key.chatId, normalizeQuery(query));
+            attach(this);
+          }
         }
-      });
+      );
     }
 
     public void refresh () {
-      onOwner(() -> {
-        if (live()) {
-          ForumTopicStore.this.refresh(state(key));
+      onOwner(
+        () -> {
+          if (live()) {
+            ForumTopicStore.this.refresh(state(key));
+          }
         }
-      });
+      );
     }
 
     public void loadMore () {
-      onOwner(() -> {
-        if (live()) {
-          ForumTopicStore.this.loadMore(state(key));
+      onOwner(
+        () -> {
+          if (live()) {
+            ForumTopicStore.this.loadMore(state(key));
+          }
         }
-      });
+      );
     }
 
     public void retry () {
-      onOwner(() -> {
-        if (live()) {
-          ListState state = state(key);
-          if (state.error != null && state.error.code == PAGINATION_ERROR) {
-            ForumTopicStore.this.refresh(state);
-          } else if (state.error != null) {
-            requestPage(state, state.retryKind);
-          } else {
-            List<Key> failed = new ArrayList<>();
-            for (Map.Entry<Key, Record> entry : records.entrySet()) {
-              if (entry.getKey().chatId == key.chatId && entry.getValue().error != null) {
-                failed.add(entry.getKey());
+      onOwner(
+        () -> {
+          if (live()) {
+            ListState state = state(key);
+            if (state.error != null && state.error.code == PAGINATION_ERROR) {
+              ForumTopicStore.this.refresh(state);
+            } else if (state.error != null) {
+              requestPage(state, state.retryKind);
+            } else {
+              List<Key> failed = new ArrayList<>();
+              for (Map.Entry<Key, Record> entry : records.entrySet()) {
+                if (entry.getKey().chatId == key.chatId && entry.getValue().error != null) {
+                  failed.add(entry.getKey());
+                }
               }
+              for (Key failedKey : failed) {
+                queueTopic(failedKey);
+              }
+              ForumTopicStore.this.refresh(state);
             }
-            for (Key failedKey : failed) {
-              queueTopic(failedKey);
-            }
-            ForumTopicStore.this.refresh(state);
           }
         }
-      });
+      );
     }
 
     @Override
     public void close () {
       disposed = true; // Also cancels UI callbacks that are already queued.
-      onOwner(() -> {
-        detach(this);
-        trim();
-      });
+      onOwner(
+        () -> {
+          detach(this);
+          trim();
+        }
+      );
     }
 
     boolean live () {
@@ -281,11 +313,13 @@ public final class ForumTopicStore {
         invalidated = true;
       }
       long ticket = ++delivery;
-      backend.publish(() -> {
-        if (!disposed && delivery == ticket) {
-          observer.onSnapshot(value);
+      backend.publish(
+        () -> {
+          if (!disposed && delivery == ticket) {
+            observer.onSnapshot(value);
+          }
         }
-      });
+      );
     }
   }
 
@@ -304,25 +338,29 @@ public final class ForumTopicStore {
     @Override
     public void close () {
       closed = true;
-      onOwner(() -> {
-        Set<TopicSubscription> observers = topicObservers.get(key);
-        if (observers != null) {
-          observers.remove(this);
-          if (observers.isEmpty()) {
-            topicObservers.remove(key);
+      onOwner(
+        () -> {
+          Set<TopicSubscription> observers = topicObservers.get(key);
+          if (observers != null) {
+            observers.remove(this);
+            if (observers.isEmpty()) {
+              topicObservers.remove(key);
+            }
           }
+          trim();
         }
-        trim();
-      });
+      );
     }
 
     void deliver (@Nullable TdApi.ForumTopic value, @Nullable TdApi.Error error) {
       long ticket = ++delivery;
-      backend.publish(() -> {
-        if (!closed && context == epoch && delivery == ticket) {
-          observer.onTopic(value, error);
+      backend.publish(
+        () -> {
+          if (!closed && context == epoch && delivery == ticket) {
+            observer.onTopic(value, error);
+          }
         }
-      });
+      );
     }
   }
 
@@ -425,7 +463,12 @@ public final class ForumTopicStore {
     this(backend, pageSize, maxCachedTopics, 8);
   }
 
-  public ForumTopicStore (Backend backend, int pageSize, int maxCachedTopics, int maxInactiveLists) {
+  public ForumTopicStore (
+    Backend backend,
+    int pageSize,
+    int maxCachedTopics,
+    int maxInactiveLists
+  ) {
     if (pageSize < 1 || pageSize > 100 || maxCachedTopics <= 0 || maxInactiveLists < 0) {
       throw new IllegalArgumentException();
     }
@@ -437,13 +480,15 @@ public final class ForumTopicStore {
 
   private void onOwner (Runnable action) {
     long context = epoch;
-    backend.execute(() -> {
-      synchronized (this) {
-        if (context == epoch) {
-          action.run();
+    backend.execute(
+      () -> {
+        synchronized (this) {
+          if (context == epoch) {
+            action.run();
+          }
         }
       }
-    });
+    );
   }
 
   public synchronized @Nullable TdApi.ForumTopic cachedTopic (Key key) {
@@ -461,59 +506,80 @@ public final class ForumTopicStore {
     if (chatId == 0) {
       throw new IllegalArgumentException();
     }
-    ListSession session = new ListSession(new ListKey(chatId, normalizeQuery(query)), observer, false);
-    onOwner(() -> {
-      if (session.live()) {
-        attach(session);
+    ListSession session =
+      new ListSession(new ListKey(chatId, normalizeQuery(query)), observer, false);
+    onOwner(
+      () -> {
+        if (session.live()) {
+          attach(session);
+        }
       }
-    });
+    );
     return session;
   }
 
-  /** Visible chat rows need only a bounded first-page projection. Fast scrolls do not start requests. */
+  /**
+   * Visible chat rows need only a bounded first-page projection. Fast scrolls do not start
+   * requests.
+   */
   public @NonNull ListSession openPreview (long chatId, ListObserver observer) {
     if (chatId == 0) {
       throw new IllegalArgumentException();
     }
     ListSession session = new ListSession(new ListKey(chatId, ""), observer, true);
-    backend.schedule(PREVIEW_ATTACH_DELAY_MS, () -> onOwner(() -> {
-      if (session.live()) {
-        attach(session);
-      }
-    }));
+    backend.schedule(
+      PREVIEW_ATTACH_DELAY_MS,
+      () -> onOwner(
+        () -> {
+          if (session.live()) {
+            attach(session);
+          }
+        }
+      )
+    );
     return session;
   }
 
   public @NonNull TopicSubscription observeTopic (Key key, TopicObserver observer) {
     TopicSubscription subscription = new TopicSubscription(key, observer);
-    onOwner(() -> {
-      if (!subscription.closed) {
-        Set<TopicSubscription> observers = topicObservers.get(key);
-        if (observers == null) {
-          observers = new LinkedHashSet<>();
-          topicObservers.put(key, observers);
-        }
-        observers.add(subscription);
-        Record record = records.get(key);
-        if (record != null && record.value != null) {
-          subscription.deliver(record.value, null);
-        }
-        if (record == null || record.value == null || record.error != null || record.mutationStamp != 0 || record.dirtyStamp > record.fullStamp) {
-          queueTopic(key);
+    onOwner(
+      () -> {
+        if (!subscription.closed) {
+          Set<TopicSubscription> observers = topicObservers.get(key);
+          if (observers == null) {
+            observers = new LinkedHashSet<>();
+            topicObservers.put(key, observers);
+          }
+          observers.add(subscription);
+          Record record = records.get(key);
+          if (record != null && record.value != null) {
+            subscription.deliver(record.value, null);
+          }
+          if (record == null ||
+            record.value == null ||
+            record.error != null ||
+            record.mutationStamp != 0 ||
+            record.dirtyStamp > record.fullStamp) {
+            queueTopic(key);
+          }
         }
       }
-    });
+    );
     return subscription;
   }
 
   public void retryTopic (Key key) {
-    onOwner(() -> {
-      invalidate(key);
-      drainTopics();
-    });
+    onOwner(
+      () -> {
+        invalidate(key);
+        drainTopics();
+      }
+    );
   }
 
-  /** Reset on both logout and client restart; callbacks from the old epoch cannot refill the cache. */
+  /**
+   * Reset on both logout and client restart; callbacks from the old epoch cannot refill the cache.
+   */
   public synchronized void reset () {
     epoch++;
     reconciliationScheduled = false;
@@ -587,12 +653,19 @@ public final class ForumTopicStore {
     state.sessions.add(session);
     trimPreview(state);
     session.deliver(snapshot(state));
-    if (!session.previewOnly && state.previewTruncated && state.request != null && state.request.kind == Load.MORE) {
+    if (!session.previewOnly &&
+      state.previewTruncated &&
+      state.request != null &&
+      state.request.kind == Load.MORE) {
       refresh(state); // A pending next page cannot repair an earlier, trimmed prefix.
     } else if (state.request == null) {
       if (!state.initialized) {
         requestPage(state, Load.INITIAL);
-      } else if (state.stale || !session.previewOnly && state.previewTruncated || wasInactive && (!session.previewOnly || !state.previewFresh)) {
+      } else if (state.stale ||
+        !session.previewOnly &&
+          state.previewTruncated ||
+        wasInactive &&
+          (!session.previewOnly || !state.previewFresh)) {
         refresh(state);
       }
     }
@@ -601,7 +674,9 @@ public final class ForumTopicStore {
     }
     List<Key> mutations = new ArrayList<>();
     for (Map.Entry<Key, Record> entry : records.entrySet()) {
-      if (entry.getKey().chatId == session.key.chatId && entry.getValue().mutationStamp != 0 && interested(entry.getKey())) {
+      if (entry.getKey().chatId == session.key.chatId &&
+        entry.getValue().mutationStamp != 0 &&
+        interested(entry.getKey())) {
         mutations.add(entry.getKey());
       }
     }
@@ -650,9 +725,25 @@ public final class ForumTopicStore {
     state.dirty = false;
     state.retryKind = kind;
     emit(state);
-    backend.send(new TdApi.GetForumTopics(state.key.chatId, state.key.query, cursor.date, cursor.messageId, cursor.topicId, pageSize),
-      result -> onOwner(() -> finishPage(state, request, result)));
-    backend.schedule(REQUEST_TIMEOUT_MS, () -> onOwner(() -> finishPage(state, request, new TdApi.Error(408, "Forum topics request timed out"))));
+    backend.send(
+      new TdApi.GetForumTopics(
+        state.key.chatId,
+        state.key.query,
+        cursor.date,
+        cursor.messageId,
+        cursor.topicId,
+        pageSize
+      ),
+      result -> onOwner(() -> finishPage(state, request, result))
+    );
+    backend.schedule(
+      REQUEST_TIMEOUT_MS,
+      () ->
+        onOwner(
+          () ->
+            finishPage(state, request, new TdApi.Error(408, "Forum topics request timed out"))
+        )
+    );
   }
 
   private void finishPage (ListState state, PageRequest request, TdApi.Object response) {
@@ -670,11 +761,18 @@ public final class ForumTopicStore {
       }
       return;
     }
-    TdApi.ForumTopics result = response instanceof TdApi.ForumTopics ? (TdApi.ForumTopics) response : null;
-    boolean invalid = result == null || result.topics == null || result.nextOffsetDate < 0 || result.nextOffsetForumTopicId < 0;
+    TdApi.ForumTopics result = response instanceof TdApi.ForumTopics ?
+      (TdApi.ForumTopics) response : null;
+    boolean invalid = result == null ||
+      result.topics == null ||
+      result.nextOffsetDate < 0 ||
+      result.nextOffsetForumTopicId < 0;
     if (!invalid) {
       for (TdApi.ForumTopic topic : result.topics) {
-        if (topic == null || topic.info == null || topic.info.chatId != state.key.chatId || topic.info.forumTopicId <= 0) {
+        if (topic == null ||
+          topic.info == null ||
+          topic.info.chatId != state.key.chatId ||
+          topic.info.forumTopicId <= 0) {
           invalid = true;
           break;
         }
@@ -696,7 +794,11 @@ public final class ForumTopicStore {
       Iterator<Key> iterator = state.ids.iterator();
       while (iterator.hasNext()) {
         Record record = records.get(iterator.next());
-        if (record == null || Math.max(Math.max(record.infoStamp, record.updateStamp), Math.max(record.dirtyStamp, record.fullStamp)) <= request.stamp) {
+        if (record == null ||
+          Math.max(
+            Math.max(record.infoStamp, record.updateStamp),
+            Math.max(record.dirtyStamp, record.fullStamp)
+          ) <= request.stamp) {
           iterator.remove();
         }
       }
@@ -724,24 +826,37 @@ public final class ForumTopicStore {
         }
       }
     }
-    Cursor next = new Cursor(result.nextOffsetDate, result.nextOffsetMessageId, result.nextOffsetForumTopicId);
+    Cursor next =
+      new Cursor(result.nextOffsetDate, result.nextOffsetMessageId, result.nextOffsetForumTopicId);
     state.totalCount = Math.max(0, result.totalCount);
     state.initialized = true;
     state.previewFresh = true;
     state.previewStamp = request.stamp;
-    backend.schedule(PREVIEW_CACHE_MS, () -> onOwner(() -> {
-      if (lists.get(state.key) == state && state.previewStamp == request.stamp) {
-        state.previewFresh = false;
-      }
-    }));
+    backend.schedule(
+      PREVIEW_CACHE_MS,
+      () -> onOwner(
+        () -> {
+          if (lists.get(state.key) == state && state.previewStamp == request.stamp) {
+            state.previewFresh = false;
+          }
+        }
+      )
+    );
     state.endReached = result.topics.length == 0 && next.isEmpty();
     // TDLib may return an overlapping page (notably hidden General) before EOF.
     // Cursor progress, not the number of newly inserted rows, allows the next page.
     // Bound consecutive overlap to keep a changing, broken cursor from looping forever.
-    state.overlapPages = request.kind == Load.MORE && result.topics.length != 0 && previousIds.containsAll(state.ids) ? state.overlapPages + 1 : 0;
-    if (!state.endReached && (next.isEmpty() || next.equals(request.cursor) || !state.seenCursors.add(next) ||
+    state.overlapPages = request.kind == Load.MORE &&
+      result.topics.length != 0 &&
+      previousIds.containsAll(state.ids) ? state.overlapPages + 1 : 0;
+    if (!state.endReached &&
+      (next.isEmpty() || next.equals(request.cursor) || !state.seenCursors.add(next) ||
         state.overlapPages > MAX_OVERLAP_PAGES || result.topics.length == 0)) {
-      state.error = new TdApi.Error(PAGINATION_ERROR, "Forum topic pagination made no progress; refresh to retry");
+      state.error =
+        new TdApi.Error(
+          PAGINATION_ERROR,
+          "Forum topic pagination made no progress; refresh to retry"
+        );
     }
     if (!next.isEmpty()) {
       state.cursor = next;
@@ -789,15 +904,16 @@ public final class ForumTopicStore {
     for (ListState state : chatLists(key.chatId)) {
       state.topicErrors.remove(key);
       if (key.equals(state.previewDraftKey)) {
-        // A page in any list may resolve the draft. Publish the full value before dropping interest.
+        // A page in any list may resolve the draft. Publish the full value before dropping
+        // interest.
         state.ids.add(key);
         setPreviewDraftInterest(state, null);
       }
     }
     record.fullStamp = stamp;
     if (record.mutationStamp == 0 && record.eventStamp <= stamp &&
-        (record.infoStamp <= stamp || sameInfo(incoming.info, record.info)) &&
-        (record.updateStamp <= stamp || sameUpdate(incoming, record.update))) {
+      (record.infoStamp <= stamp || sameInfo(incoming.info, record.info)) &&
+      (record.updateStamp <= stamp || sameUpdate(incoming, record.update))) {
       record.dirtyStamp = Math.min(record.dirtyStamp, stamp);
       pendingTopics.remove(key);
     }
@@ -809,124 +925,147 @@ public final class ForumTopicStore {
   }
 
   public void updateInfo (TdApi.ForumTopicInfo info) {
-    onOwner(() -> {
-      Key key = new Key(info.chatId, info.forumTopicId);
-      Record previous = records.get(key);
-      TdApi.ForumTopicInfo previousInfo = previous != null && previous.value != null ? previous.value.info : null;
-      if (previousInfo == null) {
-        previous = records.get(key);
-        previousInfo = previous != null ? previous.info : null;
+    onOwner(
+      () -> {
+        Key key = new Key(info.chatId, info.forumTopicId);
+        Record previous = records.get(key);
+        TdApi.ForumTopicInfo previousInfo = previous != null &&
+          previous.value != null ? previous.value.info : null;
+        if (previousInfo == null) {
+          previous = records.get(key);
+          previousInfo = previous != null ? previous.info : null;
+        }
+        if (sameInfo(previousInfo, info)) {
+          return;
+        }
+        invalidateSearch(info.chatId);
+        if (!records.containsKey(key) && !interested(key)) {
+          scheduleReconciliation();
+          return;
+        }
+        Record record = record(key);
+        record.infoStamp = ++sequence;
+        record.info = info;
+        if (record.value != null) {
+          record.value = copy(record.value, info);
+        }
+        record.dirtyStamp = sequence;
+        notifyTopic(key, record);
+        invalidate(key, false);
       }
-      if (sameInfo(previousInfo, info)) {
-        return;
-      }
-      invalidateSearch(info.chatId);
-      if (!records.containsKey(key) && !interested(key)) {
-        scheduleReconciliation();
-        return;
-      }
-      Record record = record(key);
-      record.infoStamp = ++sequence;
-      record.info = info;
-      if (record.value != null) {
-        record.value = copy(record.value, info);
-      }
-      record.dirtyStamp = sequence;
-      notifyTopic(key, record);
-      invalidate(key, false);
-    });
+    );
   }
 
   public void updateTopic (TdApi.UpdateForumTopic update) {
-    onOwner(() -> {
-      Key key = new Key(update.chatId, update.forumTopicId);
-      TdApi.DraftMessage draft = update.draftMessage;
-      // A remote draft can arrive before either topic metadata or its list page. Keep only the
-      // newest pending draft interested per visible preview, using the existing bounded hydrator.
-      for (ListState state : lists.values()) {
-        if (state.key.chatId != key.chatId || !state.key.query.isEmpty()) {
-          continue;
-        }
-        // Clear even offscreen; resolved or cleared drafts must not leave a date threshold behind.
-        if (key.equals(state.previewDraftKey) && (!ForumChatPreview.hasTextDraft(draft) || cachedTopic(key) != null)) {
-          setPreviewDraftInterest(state, null);
-        }
-        if (hasLivePreview(state) && cachedTopic(key) == null && draft != null && ForumChatPreview.hasTextDraft(draft) &&
-            (key.equals(state.previewDraftKey) || draft.date >= state.previewDraftDate)) {
-          setPreviewDraftInterest(state, key, draft.date);
-        }
-      }
-      if (!records.containsKey(key) && !interested(key)) {
-        return;
-      }
-      if (sameUpdate(cachedTopic(key), update)) {
-        return;
-      }
-      Record record = record(key);
-      boolean pinChanged = record.value != null && record.value.isPinned != update.isPinned;
-      record.updateStamp = ++sequence;
-      record.update = update;
-      if (record.value != null) {
-        record.value = applyUpdate(record.value, update);
-      }
-      if (ForumChatPreview.hasTextDraft(update.draftMessage) && record.value != null) {
-        List<ListState> previews = new ArrayList<>();
+    onOwner(
+      () -> {
+        Key key = new Key(update.chatId, update.forumTopicId);
+        TdApi.DraftMessage draft = update.draftMessage;
+        // A remote draft can arrive before either topic metadata or its list page. Keep only the
+        // newest pending draft interested per visible preview, using the existing bounded hydrator.
         for (ListState state : lists.values()) {
-          if (state.key.chatId == key.chatId && state.key.query.isEmpty() && hasLivePreview(state)) {
-            previews.add(state);
+          if (state.key.chatId != key.chatId || !state.key.query.isEmpty()) {
+            continue;
+          }
+          // Clear even offscreen; resolved or cleared drafts must not leave a date threshold
+          // behind.
+          if (key.equals(state.previewDraftKey) &&
+            (!ForumChatPreview.hasTextDraft(draft) || cachedTopic(key) != null)) {
+            setPreviewDraftInterest(state, null);
+          }
+          if (hasLivePreview(state) &&
+            cachedTopic(key) == null &&
+            draft != null &&
+            ForumChatPreview.hasTextDraft(draft) &&
+            (key.equals(state.previewDraftKey) || draft.date >= state.previewDraftDate)) {
+            setPreviewDraftInterest(state, key, draft.date);
           }
         }
-        for (ListState state : previews) {
-          state.ids.add(key);
-          trimPreview(state);
+        if (!records.containsKey(key) && !interested(key)) {
+          return;
         }
+        if (sameUpdate(cachedTopic(key), update)) {
+          return;
+        }
+        Record record = record(key);
+        boolean pinChanged = record.value != null && record.value.isPinned != update.isPinned;
+        record.updateStamp = ++sequence;
+        record.update = update;
+        if (record.value != null) {
+          record.value = applyUpdate(record.value, update);
+        }
+        if (ForumChatPreview.hasTextDraft(update.draftMessage) && record.value != null) {
+          List<ListState> previews = new ArrayList<>();
+          for (ListState state : lists.values()) {
+            if (state.key.chatId == key.chatId &&
+              state.key.query.isEmpty() &&
+              hasLivePreview(state)) {
+              previews.add(state);
+            }
+          }
+          for (ListState state : previews) {
+            state.ids.add(key);
+            trimPreview(state);
+          }
+        }
+        // This update doesn't contain order, lastMessage or unreadCount.
+        notifyTopic(key, record);
+        invalidate(key, false);
+        // A pin event has no position. Reconcile the list, including changes from another client.
+        if (pinChanged) {
+          invalidateChatImpl(key.chatId);
+        }
+        trim();
       }
-      // This update doesn't contain order, lastMessage or unreadCount.
-      notifyTopic(key, record);
-      invalidate(key, false);
-      // A pin event has no position. Reconcile the list, including changes from another client.
-      if (pinChanged) {
-        invalidateChatImpl(key.chatId);
-      }
-      trim();
-    });
+    );
   }
 
   public void onMessage (TdApi.Message message) {
-    onOwner(() -> {
-      if (message.topicId instanceof TdApi.MessageTopicForum && message.schedulingState == null) {
-        Key key = new Key(message.chatId, ((TdApi.MessageTopicForum) message.topicId).forumTopicId);
-        boolean known = records.containsKey(key) || topicObservers.containsKey(key);
-        if (known) {
-          invalidate(key);
-        }
-        if (!known || !interested(key)) {
-          invalidateChatImpl(message.chatId); // Discover a burst of unseen topics with one list refresh.
+    onOwner(
+      () -> {
+        if (message.topicId instanceof TdApi.MessageTopicForum && message.schedulingState == null) {
+          Key key = new Key(
+            message.chatId,
+            ((TdApi.MessageTopicForum) message.topicId).forumTopicId
+          );
+          boolean known = records.containsKey(key) || topicObservers.containsKey(key);
+          if (known) {
+            invalidate(key);
+          }
+          if (!known || !interested(key)) {
+            // Discover a burst of unseen topics with one list refresh.
+            invalidateChatImpl(message.chatId);
+          }
         }
       }
-    });
+    );
   }
 
   public void onMessageChanged (long chatId, long[] messageIds) {
-    onOwner(() -> {
-      Set<Long> ids = new HashSet<>();
-      for (long id : messageIds) {
-        ids.add(id);
-      }
-      List<Key> keys = new ArrayList<>();
-      for (Map.Entry<Key, Record> entry : records.entrySet()) {
-        TdApi.ForumTopic topic = entry.getValue().value;
-        if (entry.getKey().chatId == chatId && topic != null && topic.lastMessage != null && ids.contains(topic.lastMessage.id)) {
-          keys.add(entry.getKey());
+    onOwner(
+      () -> {
+        Set<Long> ids = new HashSet<>();
+        for (long id : messageIds) {
+          ids.add(id);
+        }
+        List<Key> keys = new ArrayList<>();
+        for (Map.Entry<Key, Record> entry : records.entrySet()) {
+          TdApi.ForumTopic topic = entry.getValue().value;
+          if (entry.getKey().chatId == chatId &&
+            topic != null &&
+            topic.lastMessage != null &&
+            ids.contains(topic.lastMessage.id)) {
+            keys.add(entry.getKey());
+          }
+        }
+        for (Key key : keys) {
+          invalidate(key);
+        }
+        if (keys.size() < ids.size()) {
+          invalidateChatImpl(chatId);
         }
       }
-      for (Key key : keys) {
-        invalidate(key);
-      }
-      if (keys.size() < ids.size()) {
-        invalidateChatImpl(chatId);
-      }
-    });
+    );
   }
 
   public void invalidateChat (long chatId) {
@@ -934,36 +1073,41 @@ public final class ForumTopicStore {
   }
 
   public void onConnectionRestored () {
-    onOwner(() -> {
-      List<ListState> stale = new ArrayList<>();
-      for (ListState state : new ArrayList<>(lists.values())) {
-        if (state.stale && state.request == null && hasLiveSession(state)) {
-          stale.add(state);
+    onOwner(
+      () -> {
+        List<ListState> stale = new ArrayList<>();
+        for (ListState state : new ArrayList<>(lists.values())) {
+          if (state.stale && state.request == null && hasLiveSession(state)) {
+            stale.add(state);
+          }
+        }
+        for (ListState state : stale) {
+          refresh(state);
+        }
+        List<Key> drafts = new ArrayList<>();
+        for (ListState state : lists.values()) {
+          if (hasLivePreview(state) && state.previewDraftKey != null) {
+            drafts.add(state.previewDraftKey);
+          }
+        }
+        for (Key key : drafts) {
+          queueTopic(key);
+        }
+        List<Key> staleTopics = new ArrayList<>();
+        for (Key key : topicObservers.keySet()) {
+          Record record = records.get(key);
+          if (record == null ||
+            record.error != null ||
+            record.mutationStamp != 0 ||
+            record.dirtyStamp > record.fullStamp) {
+            staleTopics.add(key);
+          }
+        }
+        for (Key key : staleTopics) {
+          queueTopic(key);
         }
       }
-      for (ListState state : stale) {
-        refresh(state);
-      }
-      List<Key> drafts = new ArrayList<>();
-      for (ListState state : lists.values()) {
-        if (hasLivePreview(state) && state.previewDraftKey != null) {
-          drafts.add(state.previewDraftKey);
-        }
-      }
-      for (Key key : drafts) {
-        queueTopic(key);
-      }
-      List<Key> staleTopics = new ArrayList<>();
-      for (Key key : topicObservers.keySet()) {
-        Record record = records.get(key);
-        if (record == null || record.error != null || record.mutationStamp != 0 || record.dirtyStamp > record.fullStamp) {
-          staleTopics.add(key);
-        }
-      }
-      for (Key key : staleTopics) {
-        queueTopic(key);
-      }
-    });
+    );
   }
 
   private void invalidateChatImpl (long chatId) {
@@ -1032,9 +1176,13 @@ public final class ForumTopicStore {
       }
     }
     for (ListState state : lists.values()) {
-      if (state.key.chatId == key.chatId && (state.key.query.isEmpty() || state.ids.contains(key))) {
+      if (state.key.chatId == key.chatId &&
+        (state.key.query.isEmpty() || state.ids.contains(key))) {
         for (ListSession session : state.sessions) {
-          if (session.live() && (!session.previewOnly || state.ids.contains(key) || key.equals(state.previewDraftKey))) {
+          if (session.live() &&
+            (!session.previewOnly ||
+              state.ids.contains(key) ||
+              key.equals(state.previewDraftKey))) {
             return true;
           }
         }
@@ -1068,18 +1216,23 @@ public final class ForumTopicStore {
     }
     reconciliationScheduled = true;
     long context = epoch;
-    backend.schedule(RECONCILE_DELAY_MS, () -> onOwner(() -> {
-      if (context != epoch) {
-        return;
-      }
-      reconciliationScheduled = false;
-      for (ListState state : new ArrayList<>(lists.values())) {
-        if (state.dirty && state.request == null && hasLiveSession(state)) {
-          refresh(state);
+    backend.schedule(
+      RECONCILE_DELAY_MS,
+      () -> onOwner(
+        () -> {
+          if (context != epoch) {
+            return;
+          }
+          reconciliationScheduled = false;
+          for (ListState state : new ArrayList<>(lists.values())) {
+            if (state.dirty && state.request == null && hasLiveSession(state)) {
+              refresh(state);
+            }
+          }
+          drainTopics();
         }
-      }
-      drainTopics();
-    }));
+      )
+    );
   }
 
   private void drainTopics () {
@@ -1095,14 +1248,21 @@ public final class ForumTopicStore {
         continue;
       }
       Record record = records.get(key);
-      if (record != null && record.value != null && record.error == null && record.mutationStamp == 0 && record.dirtyStamp <= record.fullStamp) {
+      if (record != null &&
+        record.value != null &&
+        record.error == null &&
+        record.mutationStamp == 0 &&
+        record.dirtyStamp <= record.fullStamp) {
         iterator.remove();
         continue;
       }
-      if ((record == null || record.value == null) && (record == null || record.mutationStamp == 0)) {
+      if ((record == null || record.value == null) &&
+        (record == null || record.mutationStamp == 0)) {
         boolean pendingList = false;
         for (ListState state : lists.values()) {
-          if (state.key.chatId == key.chatId && state.key.query.isEmpty() && state.request != null) {
+          if (state.key.chatId == key.chatId &&
+            state.key.query.isEmpty() &&
+            state.request != null) {
             pendingList = true;
             break;
           }
@@ -1119,8 +1279,19 @@ public final class ForumTopicStore {
     for (Map.Entry<Key, TopicRequest> entry : requests.entrySet()) {
       Key key = entry.getKey();
       TopicRequest request = entry.getValue();
-      backend.send(new TdApi.GetForumTopic(key.chatId, key.forumTopicId), result -> onOwner(() -> finishTopic(key, request, result)));
-      backend.schedule(REQUEST_TIMEOUT_MS, () -> onOwner(() -> finishTopic(key, request, new TdApi.Error(408, "Forum topic request timed out"))));
+      backend.send(
+        new TdApi.GetForumTopic(key.chatId, key.forumTopicId),
+        result ->
+          onOwner(() -> finishTopic(key, request, result))
+      );
+      backend.schedule(
+        REQUEST_TIMEOUT_MS,
+        () ->
+          onOwner(
+            () ->
+              finishTopic(key, request, new TdApi.Error(408, "Forum topic request timed out"))
+          )
+      );
     }
   }
 
@@ -1132,7 +1303,10 @@ public final class ForumTopicStore {
     Record record = record(key);
     boolean afterMutation = record.mutationStamp != 0 && request.stamp > record.mutationStamp;
     TdApi.ForumTopic topic = result instanceof TdApi.ForumTopic ? (TdApi.ForumTopic) result : null;
-    if (topic != null && topic.info != null && topic.info.chatId == key.chatId && topic.info.forumTopicId == key.forumTopicId) {
+    if (topic != null &&
+      topic.info != null &&
+      topic.info.chatId == key.chatId &&
+      topic.info.forumTopicId == key.forumTopicId) {
       // A superseded response has not reconciled the mutation. Keep its required read
       // queued even if a newer (but cached) page made dirtyStamp <= fullStamp.
       // TDLib can emit metadata from an overlapping older page after this read
@@ -1140,14 +1314,16 @@ public final class ForumTopicStore {
       // reconciled the write unless it agrees with them (or started after them).
       // Otherwise a following cached page could consume the remaining dirty work.
       if (afterMutation && request.stamp >= Math.max(record.fullStamp, record.removedStamp) &&
-          record.eventStamp <= request.stamp &&
-          (record.infoStamp <= request.stamp || sameInfo(topic.info, record.info)) &&
-          (record.updateStamp <= request.stamp || sameUpdate(topic, record.update))) {
+        record.eventStamp <= request.stamp &&
+        (record.infoStamp <= request.stamp || sameInfo(topic.info, record.info)) &&
+        (record.updateStamp <= request.stamp || sameUpdate(topic, record.update))) {
         record.mutationStamp = 0;
       }
       if (merge(key, topic, request.stamp)) {
         for (ListState state : lists.values()) {
-          if (state.key.chatId == key.chatId && state.key.query.isEmpty() && hasLiveSession(state)) {
+          if (state.key.chatId == key.chatId &&
+            state.key.query.isEmpty() &&
+            hasLiveSession(state)) {
             state.ids.add(key);
           }
         }
@@ -1160,7 +1336,8 @@ public final class ForumTopicStore {
         queueTopic(key);
       }
     } else {
-      TdApi.Error error = result instanceof TdApi.Error ? (TdApi.Error) result : new TdApi.Error(502, "Invalid forum topic response");
+      TdApi.Error error = result instanceof TdApi.Error ? (TdApi.Error) result :
+        new TdApi.Error(502, "Invalid forum topic response");
       // One failed/timed-out attempt ends the forced read. Expose the error and leave
       // retries to a new event, reconnect or explicit retry, not an automatic loop.
       if (afterMutation) {
@@ -1168,7 +1345,9 @@ public final class ForumTopicStore {
       }
       if (afterMutation || request.stamp >= record.fullStamp) {
         record.error = error;
-        boolean removed = error.code == 404 && Math.max(Math.max(record.infoStamp, record.updateStamp), record.dirtyStamp) <= request.stamp;
+        boolean removed = error.code == 404 &&
+          Math.max(Math.max(record.infoStamp, record.updateStamp), record.dirtyStamp) <=
+            request.stamp;
         if (removed) {
           record.value = null;
           record.fullStamp = request.stamp;
@@ -1191,7 +1370,9 @@ public final class ForumTopicStore {
         notifyTopic(key, record);
       }
       // A genuinely newer event still needs reconciliation; an ordinary error never retries itself.
-      if ((record.mutationStamp != 0 || record.dirtyStamp > Math.max(request.stamp, record.fullStamp)) && interested(key)) {
+      if ((record.mutationStamp != 0 ||
+        record.dirtyStamp > Math.max(request.stamp, record.fullStamp)) &&
+        interested(key)) {
         queueTopic(key);
       } else {
         pendingTopics.remove(key);
@@ -1224,11 +1405,17 @@ public final class ForumTopicStore {
   }
 
   private void updateStaleness (ListState state) {
-    boolean stale = !state.initialized || state.dirty || state.error != null || !state.topicErrors.isEmpty();
+    boolean stale = !state.initialized ||
+      state.dirty ||
+      state.error != null ||
+      !state.topicErrors.isEmpty();
     if (!stale) {
       for (Key key : state.ids) {
         Record record = records.get(key);
-        if (record != null && (record.error != null || record.mutationStamp != 0 || record.dirtyStamp > record.fullStamp)) {
+        if (record != null &&
+          (record.error != null ||
+            record.mutationStamp != 0 ||
+            record.dirtyStamp > record.fullStamp)) {
           stale = true;
           break;
         }
@@ -1272,26 +1459,41 @@ public final class ForumTopicStore {
         }
       }
     }
-    topics.sort((a, b) -> {
-      int result = Boolean.compare(b.isPinned, a.isPinned);
-      if (result == 0) {
-        result = Integer.compare(pinRank(state, a), pinRank(state, b));
+    topics.sort(
+      (a, b) -> {
+        int result = Boolean.compare(b.isPinned, a.isPinned);
+        if (result == 0) {
+          result = Integer.compare(pinRank(state, a), pinRank(state, b));
+        }
+        if (result == 0) {
+          result = Long.compare(b.order, a.order);
+        }
+        if (result == 0) {
+          result = Integer.compare(a.info.forumTopicId, b.info.forumTopicId);
+        }
+        return result;
       }
-      if (result == 0) {
-        result = Long.compare(b.order, a.order);
-      }
-      if (result == 0) {
-        result = Integer.compare(a.info.forumTopicId, b.info.forumTopicId);
-      }
-      return result;
-    });
+    );
     TdApi.Error error = state.error;
     if (error == null && !state.topicErrors.isEmpty()) {
       error = state.topicErrors.values().iterator().next();
     }
-    return new Snapshot(state.key, Collections.unmodifiableList(topics), state.totalCount, state.initialized,
-      state.request != null && state.request.kind == Load.INITIAL, state.request != null && state.request.kind == Load.MORE,
-      state.request != null && state.request.kind == Load.REFRESH, state.endReached, state.stale, error, state.cursor);
+    return new Snapshot(
+      state.key,
+      Collections.unmodifiableList(topics),
+      state.totalCount,
+      state.initialized,
+      state.request != null &&
+        state.request.kind == Load.INITIAL,
+      state.request != null &&
+        state.request.kind == Load.MORE,
+      state.request != null &&
+        state.request.kind == Load.REFRESH,
+      state.endReached,
+      state.stale,
+      error,
+      state.cursor
+    );
   }
 
   private static int pinRank (ListState state, TdApi.ForumTopic topic) {
@@ -1420,7 +1622,10 @@ public final class ForumTopicStore {
           }
         }
       }
-      if (!retained.contains(key) && !topicRequests.containsKey(key) && !topicObservers.containsKey(key) && !protectedRemoval) {
+      if (!retained.contains(key) &&
+        !topicRequests.containsKey(key) &&
+        !topicObservers.containsKey(key) &&
+        !protectedRemoval) {
         iterator.remove();
       }
     }
@@ -1431,82 +1636,113 @@ public final class ForumTopicStore {
   }
 
   /** A mutation is sent once. Timeout is an uncertain outcome, never an automatic retry. */
-  void perform (TdApi.Function<?> request, long chatId, @Nullable Key key, int expectedConstructor, boolean changesState, OperationCallback callback) {
-    onOwner(() -> {
-      long context = epoch;
-      TdApi.GetForumTopic topicRead = !changesState && request instanceof TdApi.GetForumTopic ? (TdApi.GetForumTopic) request : null;
-      long readStamp = topicRead != null ? ++sequence : 0;
-      class Completion {
-        boolean finished;
+  void perform (
+    TdApi.Function<?
+      > request,
+    long chatId,
+    @Nullable Key key,
+    int expectedConstructor,
+    boolean changesState,
+    OperationCallback callback
+  ) {
+    onOwner(
+      () -> {
+        long context = epoch;
+        TdApi.GetForumTopic topicRead = !changesState &&
+          request instanceof TdApi.GetForumTopic ? (TdApi.GetForumTopic) request : null;
+        long readStamp = topicRead != null ? ++sequence : 0;
+        class Completion {
+          boolean finished;
 
-        void complete (TdApi.Object result) {
-          if (finished || context != epoch) {
-            return;
-          }
-          finished = true;
-          TdApi.Error error = result instanceof TdApi.Error ? (TdApi.Error) result :
-            result.getConstructor() != expectedConstructor ? new TdApi.Error(502, "Unexpected forum operation response") : null;
-          if (error == null && changesState) {
-            if (result instanceof TdApi.ForumTopicInfo) {
-              updateInfo((TdApi.ForumTopicInfo) result);
+          void complete (TdApi.Object result) {
+            if (finished || context != epoch) {
+              return;
             }
-            if (key != null) {
-              // Prevent an older full fetch from undoing an operation that just succeeded.
-              if (records.containsKey(key) || interested(key)) {
-                Record record = record(key);
-                record.mutationStamp = ++sequence;
-                record.fullStamp = record.mutationStamp;
+            finished = true;
+            TdApi.Error error = result instanceof TdApi.Error ? (TdApi.Error) result :
+              result.getConstructor() != expectedConstructor ?
+                new TdApi.Error(502, "Unexpected forum operation response") : null;
+            if (error == null && changesState) {
+              if (result instanceof TdApi.ForumTopicInfo) {
+                updateInfo((TdApi.ForumTopicInfo) result);
               }
-              invalidate(key);
+              if (key != null) {
+                // Prevent an older full fetch from undoing an operation that just succeeded.
+                if (records.containsKey(key) || interested(key)) {
+                  Record record = record(key);
+                  record.mutationStamp = ++sequence;
+                  record.fullStamp = record.mutationStamp;
+                }
+                invalidate(key);
+              }
+              invalidateChatImpl(chatId);
             }
-            invalidateChatImpl(chatId);
-          }
-          TdApi.ForumTopic topic = result instanceof TdApi.ForumTopic ? (TdApi.ForumTopic) result : null;
-          if (error == null && topicRead != null && topic != null && topic.info != null &&
-              topic.info.chatId == topicRead.chatId && topic.info.forumTopicId == topicRead.forumTopicId) {
-            Key readKey = new Key(topicRead.chatId, topicRead.forumTopicId);
-            // A batch can finish without a write when this read already has the desired state.
-            // Reconcile that authoritative value, but never let a pre-write read undo the write.
-            if (records.containsKey(readKey) || interested(readKey)) {
-              TdApi.ForumTopic previous = cachedTopic(readKey);
-              TdApi.ForumTopicInfo previousInfo = previous != null ? previous.info : null;
-              if (merge(readKey, topic, readStamp)) {
-                List<ListState> active = new ArrayList<>();
-                for (ListState state : lists.values()) {
-                  if (state.key.chatId == readKey.chatId && state.key.query.isEmpty() && hasLiveSession(state)) {
-                    active.add(state);
+            TdApi.ForumTopic topic = result instanceof TdApi.ForumTopic ?
+              (TdApi.ForumTopic) result :
+              null;
+            if (error == null && topicRead != null && topic != null && topic.info != null &&
+              topic.info.chatId == topicRead.chatId &&
+              topic.info.forumTopicId == topicRead.forumTopicId) {
+              Key readKey = new Key(topicRead.chatId, topicRead.forumTopicId);
+              // A batch can finish without a write when this read already has the desired state.
+              // Reconcile that authoritative value, but never let a pre-write read undo the write.
+              if (records.containsKey(readKey) || interested(readKey)) {
+                TdApi.ForumTopic previous = cachedTopic(readKey);
+                TdApi.ForumTopicInfo previousInfo = previous != null ? previous.info : null;
+                if (merge(readKey, topic, readStamp)) {
+                  List<ListState> active = new ArrayList<>();
+                  for (ListState state : lists.values()) {
+                    if (state.key.chatId == readKey.chatId &&
+                      state.key.query.isEmpty() &&
+                      hasLiveSession(state)) {
+                      active.add(state);
+                    }
+                  }
+                  for (ListState state : active) {
+                    state.ids.add(readKey);
+                  }
+                  TdApi.ForumTopic value = cachedTopic(readKey);
+                  if (!sameInfo(previousInfo, value != null ? value.info : null)) {
+                    invalidateSearch(readKey.chatId);
                   }
                 }
-                for (ListState state : active) {
-                  state.ids.add(readKey);
+                for (ListState state : chatLists(readKey.chatId)) {
+                  trimPreview(state);
+                  updateStaleness(state);
                 }
-                TdApi.ForumTopic value = cachedTopic(readKey);
-                if (!sameInfo(previousInfo, value != null ? value.info : null)) {
-                  invalidateSearch(readKey.chatId);
+                emitChat(readKey.chatId);
+                trim();
+                if (needsReconciliation()) {
+                  scheduleReconciliation();
                 }
-              }
-              for (ListState state : chatLists(readKey.chatId)) {
-                trimPreview(state);
-                updateStaleness(state);
-              }
-              emitChat(readKey.chatId);
-              trim();
-              if (needsReconciliation()) {
-                scheduleReconciliation();
               }
             }
+            backend.publish(
+              () -> {
+                if (context == epoch) {
+                  callback.onResult(error == null ? result : null, error);
+                }
+              }
+            );
           }
-          backend.publish(() -> {
-            if (context == epoch) {
-              callback.onResult(error == null ? result : null, error);
-            }
-          });
         }
+        Completion completion = new Completion();
+        backend.send(request, result -> onOwner(() -> completion.complete(result)));
+        backend.schedule(
+          REQUEST_TIMEOUT_MS,
+          () ->
+            onOwner(
+              () ->
+                completion.complete(
+                  new TdApi.Error(
+                    408,
+                    "Forum operation timed out; refresh before retrying"
+                  )
+                )
+            )
+        );
       }
-      Completion completion = new Completion();
-      backend.send(request, result -> onOwner(() -> completion.complete(result)));
-      backend.schedule(REQUEST_TIMEOUT_MS, () -> onOwner(() -> completion.complete(new TdApi.Error(408, "Forum operation timed out; refresh before retrying"))));
-    });
+    );
   }
 
   public static final long PREVIEW_ATTACH_DELAY_MS = 150L;
@@ -1535,46 +1771,111 @@ public final class ForumTopicStore {
     return Character.isWhitespace(value) || Character.isSpaceChar(value);
   }
 
-  private static boolean sameInfo (@Nullable TdApi.ForumTopicInfo a, @Nullable TdApi.ForumTopicInfo b) {
+  private static boolean sameInfo (
+    @Nullable TdApi.ForumTopicInfo a,
+    @Nullable TdApi.ForumTopicInfo b
+  ) {
     return a == b || a != null && b != null &&
-      a.chatId == b.chatId && a.forumTopicId == b.forumTopicId && (a.name == b.name || a.name != null && a.name.equals(b.name)) &&
-      (a.icon == b.icon || a.icon != null && b.icon != null && a.icon.color == b.icon.color && a.icon.customEmojiId == b.icon.customEmojiId) &&
-      a.creationDate == b.creationDate && Td.equalsTo(a.creatorId, b.creatorId) && a.isGeneral == b.isGeneral &&
-      a.isOutgoing == b.isOutgoing && a.isClosed == b.isClosed && a.isHidden == b.isHidden && a.isNameImplicit == b.isNameImplicit;
+      a.chatId == b.chatId &&
+      a.forumTopicId == b.forumTopicId &&
+      (a.name == b.name || a.name != null && a.name.equals(b.name)) &&
+      (a.icon == b.icon ||
+        a.icon != null &&
+          b.icon != null &&
+          a.icon.color == b.icon.color &&
+          a.icon.customEmojiId == b.icon.customEmojiId) &&
+      a.creationDate == b.creationDate &&
+      Td.equalsTo(a.creatorId, b.creatorId) &&
+      a.isGeneral == b.isGeneral &&
+      a.isOutgoing == b.isOutgoing &&
+      a.isClosed == b.isClosed &&
+      a.isHidden == b.isHidden &&
+      a.isNameImplicit == b.isNameImplicit;
   }
 
-  private static boolean sameSettings (@Nullable TdApi.ChatNotificationSettings a, @Nullable TdApi.ChatNotificationSettings b) {
+  private static boolean sameSettings (
+    @Nullable TdApi.ChatNotificationSettings a,
+    @Nullable TdApi.ChatNotificationSettings b
+  ) {
     return a == b || a != null && b != null &&
-      a.useDefaultMuteFor == b.useDefaultMuteFor && a.muteFor == b.muteFor && a.useDefaultSound == b.useDefaultSound && a.soundId == b.soundId &&
-      a.useDefaultShowPreview == b.useDefaultShowPreview && a.showPreview == b.showPreview && a.useDefaultMuteStories == b.useDefaultMuteStories &&
-      a.muteStories == b.muteStories && a.useDefaultStorySound == b.useDefaultStorySound && a.storySoundId == b.storySoundId &&
-      a.useDefaultShowStoryPoster == b.useDefaultShowStoryPoster && a.showStoryPoster == b.showStoryPoster &&
-      a.useDefaultDisablePinnedMessageNotifications == b.useDefaultDisablePinnedMessageNotifications &&
-      a.disablePinnedMessageNotifications == b.disablePinnedMessageNotifications && a.useDefaultDisableMentionNotifications == b.useDefaultDisableMentionNotifications &&
+      a.useDefaultMuteFor == b.useDefaultMuteFor &&
+      a.muteFor == b.muteFor &&
+      a.useDefaultSound == b.useDefaultSound &&
+      a.soundId == b.soundId &&
+      a.useDefaultShowPreview == b.useDefaultShowPreview &&
+      a.showPreview == b.showPreview &&
+      a.useDefaultMuteStories == b.useDefaultMuteStories &&
+      a.muteStories == b.muteStories &&
+      a.useDefaultStorySound == b.useDefaultStorySound &&
+      a.storySoundId == b.storySoundId &&
+      a.useDefaultShowStoryPoster == b.useDefaultShowStoryPoster &&
+      a.showStoryPoster == b.showStoryPoster &&
+      a.useDefaultDisablePinnedMessageNotifications ==
+        b.useDefaultDisablePinnedMessageNotifications &&
+      a.disablePinnedMessageNotifications == b.disablePinnedMessageNotifications &&
+      a.useDefaultDisableMentionNotifications == b.useDefaultDisableMentionNotifications &&
       a.disableMentionNotifications == b.disableMentionNotifications;
   }
 
-  private static boolean sameDraft (@Nullable TdApi.DraftMessage a, @Nullable TdApi.DraftMessage b) {
+  private static boolean sameDraft (
+    @Nullable TdApi.DraftMessage a,
+    @Nullable TdApi.DraftMessage b
+  ) {
     return a == b || a != null && b != null && a.date == b.date && a.effectId == b.effectId &&
-      Td.equalsTo(a.replyTo, b.replyTo) && Td.equalsTo(a.content, b.content) && a.suggestedPostInfo == b.suggestedPostInfo;
+      Td.equalsTo(a.replyTo, b.replyTo) &&
+      Td.equalsTo(a.content, b.content) &&
+      a.suggestedPostInfo == b.suggestedPostInfo;
   }
 
-  private static boolean sameUpdate (@Nullable TdApi.ForumTopic topic, @Nullable TdApi.UpdateForumTopic update) {
+  private static boolean sameUpdate (
+    @Nullable TdApi.ForumTopic topic,
+    @Nullable TdApi.UpdateForumTopic update
+  ) {
     return topic != null && update != null &&
-      topic.isPinned == update.isPinned && topic.lastReadInboxMessageId == update.lastReadInboxMessageId && topic.lastReadOutboxMessageId == update.lastReadOutboxMessageId &&
-      topic.unreadMentionCount == update.unreadMentionCount && topic.unreadReactionCount == update.unreadReactionCount && topic.unreadPollVoteCount == update.unreadPollVoteCount &&
-      sameSettings(topic.notificationSettings, update.notificationSettings) && sameDraft(topic.draftMessage, update.draftMessage);
+      topic.isPinned == update.isPinned &&
+      topic.lastReadInboxMessageId == update.lastReadInboxMessageId &&
+      topic.lastReadOutboxMessageId == update.lastReadOutboxMessageId &&
+      topic.unreadMentionCount == update.unreadMentionCount &&
+      topic.unreadReactionCount == update.unreadReactionCount &&
+      topic.unreadPollVoteCount == update.unreadPollVoteCount &&
+      sameSettings(topic.notificationSettings, update.notificationSettings) &&
+      sameDraft(topic.draftMessage, update.draftMessage);
   }
 
   private static TdApi.ForumTopic copy (TdApi.ForumTopic topic, TdApi.ForumTopicInfo info) {
-    return new TdApi.ForumTopic(info, topic.lastMessage, topic.order, topic.isPinned, topic.unreadCount,
-      topic.lastReadInboxMessageId, topic.lastReadOutboxMessageId, topic.unreadMentionCount,
-      topic.unreadReactionCount, topic.unreadPollVoteCount, topic.notificationSettings, topic.draftMessage);
+    return new TdApi.ForumTopic(
+      info,
+      topic.lastMessage,
+      topic.order,
+      topic.isPinned,
+      topic.unreadCount,
+      topic.lastReadInboxMessageId,
+      topic.lastReadOutboxMessageId,
+      topic.unreadMentionCount,
+      topic.unreadReactionCount,
+      topic.unreadPollVoteCount,
+      topic.notificationSettings,
+      topic.draftMessage
+    );
   }
 
-  private static TdApi.ForumTopic applyUpdate (TdApi.ForumTopic topic, TdApi.UpdateForumTopic update) {
-    return new TdApi.ForumTopic(topic.info, topic.lastMessage, topic.order, update.isPinned, topic.unreadCount,
-      update.lastReadInboxMessageId, update.lastReadOutboxMessageId, update.unreadMentionCount,
-      update.unreadReactionCount, update.unreadPollVoteCount, update.notificationSettings, update.draftMessage);
+  private static TdApi.ForumTopic applyUpdate (
+    TdApi.ForumTopic topic,
+    TdApi.UpdateForumTopic update
+  ) {
+    return new TdApi.ForumTopic(
+      topic.info,
+      topic.lastMessage,
+      topic.order,
+      update.isPinned,
+      topic.unreadCount,
+      update.lastReadInboxMessageId,
+      update.lastReadOutboxMessageId,
+      update.unreadMentionCount,
+      update.unreadReactionCount,
+      update.unreadPollVoteCount,
+      update.notificationSettings,
+      update.draftMessage
+    );
   }
 }

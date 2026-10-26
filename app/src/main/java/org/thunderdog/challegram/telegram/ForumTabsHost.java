@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.telegram;
 
 import android.os.Bundle;
@@ -7,7 +19,9 @@ import org.thunderdog.challegram.data.ForumTabsState;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 
-/** One list lease shared only by successive histories in one navigation slot. No second topic cache. */
+/**
+ * One list lease shared only by successive histories in one navigation slot. No second topic cache.
+ */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 public final class ForumTabsHost implements CleanupStartupDelegate {
   public final Tdlib tdlib;
@@ -42,15 +56,20 @@ public final class ForumTabsHost implements CleanupStartupDelegate {
   }
 
   private void open () {
-    session = tdlib.topics().openList(chatId, "", value -> {
-      if (disposed || dataCleared) {
-        return;
+    session = tdlib.topics()
+      .openList(
+        chatId,
+        "",
+        value -> {
+        if (disposed || dataCleared) {
+          return;
+        }
+        snapshot = value;
+        for (Runnable observer : new ArrayList<>(observers)) {
+          observer.run();
+        }
       }
-      snapshot = value;
-      for (Runnable observer : new ArrayList<>(observers)) {
-        observer.run();
-      }
-    });
+      );
   }
 
   public void detach (Runnable observer) {
@@ -93,14 +112,17 @@ public final class ForumTabsHost implements CleanupStartupDelegate {
 
   @Override public void onPerformUserCleanup () {
     dataCleared = true;
-    tdlib.ui().post(() -> {
-      if (session != null) {
-        session.close();
+    tdlib.ui()
+      .post(
+        () -> {
+        if (session != null) {
+          session.close();
+        }
+        session = null;
+        panelState = null;
+        state = ForumTabsState.defaultState();
       }
-      session = null;
-      panelState = null;
-      state = ForumTabsState.defaultState();
-    });
+      );
   }
 
   @Override public void onPerformRestart () {
@@ -109,15 +131,18 @@ public final class ForumTabsHost implements CleanupStartupDelegate {
 
   @Override public void onPerformStartup (boolean afterRestart) {
     if (afterRestart || restartPending) {
-      tdlib.ui().post(() -> {
-        restartPending = false;
-        if (!disposed && !dataCleared) {
-          if (session != null) {
-            session.close();
+      tdlib.ui()
+        .post(
+          () -> {
+          restartPending = false;
+          if (!disposed && !dataCleared) {
+            if (session != null) {
+              session.close();
+            }
+            open();
           }
-          open();
         }
-      });
+        );
     }
   }
 }

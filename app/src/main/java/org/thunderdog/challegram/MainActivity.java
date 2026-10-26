@@ -787,7 +787,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       long messageId = intent.getLongExtra("message_id", 0);
       if (accountId != TdlibAccount.NO_ID && chatId != 0) {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        openMessagesController(accountId, chatId, messageId, intent.getExtras() != null ? Td.restoreMessageTopic(intent.getExtras(), "topic_id") : null);
+        openMessagesController(
+          accountId,
+          chatId,
+          messageId,
+          intent.getExtras() != null ? Td.restoreMessageTopic(intent.getExtras(), "topic_id") : null
+        );
         // endregion
         return true;
       } else {
@@ -1414,7 +1419,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  private void openMessagesController (int accountId, long chatId, long specificMessageId, @Nullable TdApi.MessageTopic topicId) {
+  private void openMessagesController (
+    int accountId,
+    long chatId,
+    long specificMessageId,
+    @Nullable TdApi.MessageTopic topicId
+  ) {
   // endregion
     final Tdlib tdlib = TdlibManager.instanceForAccountId(accountId).account(accountId).tdlib();
     tdlib.awaitInitialization(() -> {
@@ -1422,7 +1432,9 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       handler.post(() -> {
         final TdlibContext context = new TdlibContext(this, tdlib);
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        final TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().messageTopic(topicId).onDone(tdlib::decrementUiReferenceCount);
+        final TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters()
+          .messageTopic(topicId)
+          .onDone(tdlib::decrementUiReferenceCount);
         // endregion
         if (specificMessageId != 0)
           params.highlightMessage(new MessageId(chatId, specificMessageId));

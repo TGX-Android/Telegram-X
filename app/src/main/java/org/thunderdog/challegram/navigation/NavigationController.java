@@ -574,7 +574,8 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   /** Replace one history atomically, preserving the caller's Back destination. UI thread only. */
   public boolean replaceCurrent (ViewController<?> expected, ViewController<?> replacement) {
-    if (!UI.inUiThread() || isAnimating() || getStack().isLocked() || getStack().getCurrent() != expected || expected.isDestroyed()) {
+    if (!UI.inUiThread() || isAnimating() || getStack().isLocked() ||
+      getStack().getCurrent() != expected || expected.isDestroyed()) {
       return false;
     }
     replacement.getValue();
@@ -781,7 +782,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   public void prepareFactorAnimation (ViewController<?> left, ViewController<?> right, boolean forward, int direction, @PredictiveGesture int predictiveGestureMode) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     // Legacy swipe Back also respects reduced motion for the forum transition.
-    if (direction == TRANSLATION_HORIZONTAL && right instanceof org.thunderdog.challegram.ui.ForumTopicsController && Settings.instance().needReduceMotion()) {
+    if (direction == TRANSLATION_HORIZONTAL &&
+      right instanceof org.thunderdog.challegram.ui.ForumTopicsController &&
+      Settings.instance().needReduceMotion()) {
       direction = TRANSLATION_FADE;
     }
     // endregion
@@ -1179,7 +1182,10 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       }, timeout);
     } else {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      Runnable start = () -> AnimatorUtils.startAnimator(forward ? right.getValue() : left.getValue(), animator);
+      Runnable start = () -> AnimatorUtils.startAnimator(
+        forward ? right.getValue() : left.getValue(),
+        animator
+      );
       if (forumTransition) {
         forumContainer.startTransitionWhenReady(start);
       } else {
@@ -1512,7 +1518,12 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       // Predictive Back from the opposite edge needs the full exit distance. Ordinary
       // forum motion subtracts the leading margin, without changing gesture coordinates.
       float translation = needRtl() == Lang.rtl() ?
-        org.thunderdog.challegram.data.ForumRailLayout.topicTranslation((int) currentWidth, forumContainer.transitionRailWidth(), progress, needRtl()) :
+        org.thunderdog.challegram.data.ForumRailLayout.topicTranslation(
+          (int) currentWidth,
+          forumContainer.transitionRailWidth(),
+          progress,
+          needRtl()
+        ) :
         currentWidth * factor * (needRtl() ? -1f : 1f);
       rightWrap.setTranslationX(translation);
       currentRight.onTranslationChanged(translation);

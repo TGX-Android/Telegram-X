@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.data;
 
 import androidx.annotation.Nullable;
@@ -84,7 +96,9 @@ public final class ForumTopicContext {
   }
 
   public static boolean canGoUnread (@Nullable TdApi.ForumTopic topic) {
-    return topic != null && topic.unreadCount > 0 && topic.lastReadInboxMessageId != MessageId.MAX_VALID_ID;
+    return topic != null &&
+      topic.unreadCount > 0 &&
+      topic.lastReadInboxMessageId != MessageId.MAX_VALID_ID;
   }
 
   public boolean canSend (@Nullable TdApi.ChatMemberStatus status, boolean supergroup) {
@@ -95,6 +109,7 @@ public final class ForumTopicContext {
       return true;
     }
     return status instanceof TdApi.ChatMemberStatusCreator ||
-      status instanceof TdApi.ChatMemberStatusAdministrator && ((TdApi.ChatMemberStatusAdministrator) status).rights.canManageTopics;
+      status instanceof TdApi.ChatMemberStatusAdministrator &&
+        ((TdApi.ChatMemberStatusAdministrator) status).rights.canManageTopics;
   }
 }

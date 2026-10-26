@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.navigation;
 
 import android.graphics.Canvas;
@@ -48,7 +60,14 @@ public final class ForumRailTransition {
     private final Drawing drawing;
     private final Visibility visibility;
 
-    public Avatar (long chatId, float x, float y, float radius, Drawing drawing, Visibility visibility) {
+    public Avatar (
+      long chatId,
+      float x,
+      float y,
+      float radius,
+      Drawing drawing,
+      Visibility visibility
+    ) {
       this.chatId = chatId;
       this.x = x;
       this.y = y;
@@ -58,18 +77,41 @@ public final class ForumRailTransition {
     }
 
     /** Drawing uses the view's existing coordinates; receiver bounds are never mutated. */
-    public static Avatar capture (long id, ViewGroup host, View view, float cx, float cy, float radius,
-                                  Drawing drawing, Visibility visibility) {
+    public static Avatar capture (
+      long id,
+      ViewGroup host,
+      View view,
+      float cx,
+      float cy,
+      float radius,
+      Drawing drawing,
+      Visibility visibility
+    ) {
       Rect position = new Rect(0, 0, view.getWidth(), view.getHeight());
       host.offsetDescendantRectToMyCoords(view, position);
-      return new Avatar(id, position.left + cx, position.top + cy, radius, (canvas, decorations) -> {
-        canvas.scale(1f / radius, 1f / radius);
-        canvas.translate(-cx, -cy);
-        drawing.draw(canvas, decorations);
-      }, visibility);
+      return new Avatar(
+        id,
+        position.left + cx,
+        position.top + cy,
+        radius,
+        (canvas, decorations) ->
+          {
+          canvas.scale(1f / radius, 1f / radius);
+          canvas.translate(-cx, -cy);
+          drawing.draw(canvas, decorations);
+        },
+        visibility
+      );
     }
 
-    private void draw (Canvas canvas, float x, float y, float radius, float alpha, float decorations) {
+    private void draw (
+      Canvas canvas,
+      float x,
+      float y,
+      float radius,
+      float alpha,
+      float decorations
+    ) {
       if (alpha <= 0f || radius <= 0f) {
         return;
       }
@@ -77,7 +119,15 @@ public final class ForumRailTransition {
       canvas.translate(x, y);
       canvas.scale(radius, radius);
       if (alpha < 1f) {
-        Views.saveLayerAlpha(canvas, -2f, -2f, 2f, 2f, Math.round(255f * alpha), Canvas.ALL_SAVE_FLAG);
+        Views.saveLayerAlpha(
+          canvas,
+          -2f,
+          -2f,
+          2f,
+          2f,
+          Math.round(255f * alpha),
+          Canvas.ALL_SAVE_FLAG
+        );
       }
       drawing.draw(canvas, decorations);
       canvas.restoreToCount(save);

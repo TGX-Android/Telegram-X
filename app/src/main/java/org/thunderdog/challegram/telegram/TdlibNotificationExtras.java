@@ -124,7 +124,19 @@ public class TdlibNotificationExtras {
       return null;
     }
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    return new TdlibNotificationExtras(accountId, category, chatId, topicId, maxNotificationId, notificationGroupId, needReply, mentions, messageIds, userIds, readForumTopicIds);
+    return new TdlibNotificationExtras(
+      accountId,
+      category,
+      chatId,
+      topicId,
+      maxNotificationId,
+      notificationGroupId,
+      needReply,
+      mentions,
+      messageIds,
+      userIds,
+      readForumTopicIds
+    );
     // endregion
   }
 
@@ -145,7 +157,19 @@ public class TdlibNotificationExtras {
   // endregion
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  private TdlibNotificationExtras (int accountId, int category, long chatId, TdApi.MessageTopic topicId, int maxNotificationId, int notificationGroupId, boolean needReply, boolean areMentions, long[] messageIds, long[] userIds, int[] readForumTopicIds) {
+  private TdlibNotificationExtras (
+    int accountId,
+    int category,
+    long chatId,
+    TdApi.MessageTopic topicId,
+    int maxNotificationId,
+    int notificationGroupId,
+    boolean needReply,
+    boolean areMentions,
+    long[] messageIds,
+    long[] userIds,
+    int[] readForumTopicIds
+  ) {
   // endregion
     this.accountId = accountId;
     this.category = category;
@@ -175,7 +199,10 @@ public class TdlibNotificationExtras {
     intent.putExtra("message_ids", messageIds);
     intent.putExtra("user_ids", userIds);
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    intent.putExtra("read_forum_topic_ids", group.isMention() ? group.getMentionReadForumTopicIds() : null);
+    intent.putExtra(
+      "read_forum_topic_ids",
+      group.isMention() ? group.getMentionReadForumTopicIds() : null
+    );
     // endregion
   }
 
@@ -228,8 +255,13 @@ public class TdlibNotificationExtras {
     boolean needToast = tdlib.notifications().isUnknownGroup(notificationGroupId);
     if (areMentions) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      List<TdApi.Function<TdApi.Ok>> requests = ForumNotificationReadScope.requests(chatId, readForumTopicIds);
-      ForumNotificationReadScope.Completion completion = new ForumNotificationReadScope.Completion(requests.size());
+      List<TdApi.Function<TdApi.Ok>> requests = ForumNotificationReadScope.requests(
+        chatId,
+        readForumTopicIds
+      );
+      ForumNotificationReadScope.Completion completion = new ForumNotificationReadScope.Completion(
+        requests.size()
+      );
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       AtomicInteger remaining = new AtomicInteger(requests.size());
       // endregion

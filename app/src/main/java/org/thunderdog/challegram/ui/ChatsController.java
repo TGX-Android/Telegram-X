@@ -890,10 +890,12 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   /** Adapter decorations/archive are not part of the folder projection shown by the forum rail. */
   public int getForumRailPosition () {
-    if (chatsView == null || adapter == null || !(chatsView.getLayoutManager() instanceof LinearLayoutManager)) {
+    if (chatsView == null || adapter == null ||
+      !(chatsView.getLayoutManager() instanceof LinearLayoutManager)) {
       return 0;
     }
-    int position = ((LinearLayoutManager) chatsView.getLayoutManager()).findFirstVisibleItemPosition();
+    int position =
+      ((LinearLayoutManager) chatsView.getLayoutManager()).findFirstVisibleItemPosition();
     int chatIndex = adapter.getChatIndexByItemPosition(position);
     return Math.max(0, chatIndex - (adapter.hasArchive() ? 1 : 0));
   }
@@ -914,7 +916,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         continue;
       }
       ChatView row = (ChatView) child;
-      if (row.getChatId() == 0 || child.getBottom() <= chatsView.getPaddingTop() || child.getTop() >= chatsView.getHeight()) {
+      if (row.getChatId() == 0 || child.getBottom() <= chatsView.getPaddingTop() ||
+        child.getTop() >= chatsView.getHeight()) {
         continue;
       }
       org.thunderdog.challegram.loader.Receiver avatar = row.getAvatarReceiver();
@@ -953,7 +956,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
       // Include ancestor clipping (e.g. the folder pager), not just the row's layout bounds.
       if (child.getGlobalVisibleRect(bounds) && bounds.bottom > hostLocation[1] + headerBottom &&
-          bounds.top < hostLocation[1] + host.getHeight()) {
+        bounds.top < hostLocation[1] + host.getHeight()) {
         return (ChatView) child;
       }
     }
@@ -1125,7 +1128,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
 
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      int totalScrollBy = chatItemHeight * firstVisiblePosition + adapter.getChatHeightDeltaBefore(firstVisiblePosition);
+      int totalScrollBy = chatItemHeight * firstVisiblePosition + adapter.getChatHeightDeltaBefore(
+        firstVisiblePosition
+      );
       // endregion
       int separatorItemCount = firstVisiblePosition;
       int chatsCount = adapter.getChatCount();
@@ -1171,7 +1176,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     int chatsCount = adapter.getChatCount();
 
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    int totalScrollBy = chatHeight * chatsCount + adapter.getChatHeightDeltaBefore(adapter.getItemCount());
+    int totalScrollBy = chatHeight * chatsCount + adapter.getChatHeightDeltaBefore(
+      adapter.getItemCount()
+    );
     // endregion
     int separatorItemCount = chatsCount;
 
@@ -2228,11 +2235,20 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     Object shareItem = pickerDelegate != null ? pickerDelegate.getShareItem() : null;
     TdlibUi.ChatOpenParameters params;
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (pickerDelegate == null && (chat.viewAsTopics || tdlib.hasForumTabs(chat.id)) && tdlib.isForum(chat.id)) {
+    if (pickerDelegate == null && (chat.viewAsTopics || tdlib.hasForumTabs(
+      chat.id
+    )) && tdlib.isForum(chat.id)) {
       // A group-wide unread/scroll anchor must not turn a plain forum tap into a message jump.
       params = new TdlibUi.ChatOpenParameters();
-    } else if ((highlightMode = MessagesManager.getAnchorHighlightMode(tdlib.id(), chat, null)) != MessagesManager.HIGHLIGHT_MODE_NONE) {
-      params = new TdlibUi.ChatOpenParameters().shareItem(shareItem).restoreAnchor(highlightMode, MessagesManager.getAnchorMessageId(tdlib.id(), chat, null, highlightMode));
+    } else if ((highlightMode = MessagesManager.getAnchorHighlightMode(
+      tdlib.id(),
+      chat,
+      null
+    )) != MessagesManager.HIGHLIGHT_MODE_NONE) {
+      params = new TdlibUi.ChatOpenParameters().shareItem(shareItem).restoreAnchor(
+        highlightMode,
+        MessagesManager.getAnchorMessageId(tdlib.id(), chat, null, highlightMode)
+      );
     // endregion
     } else {
       params = new TdlibUi.ChatOpenParameters().shareItem(shareItem);

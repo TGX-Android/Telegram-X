@@ -141,7 +141,12 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
     int stackSize = navigation.getStackSize();
     if (navigation.swipeNavigationEnabled() && stackSize > 0 && c != null){
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode()) && c.canSlideBackFrom(navigation, navigation.contentTouchX(x, y), y)) {
+      if (c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() &&
+        !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode()) && c.canSlideBackFrom(
+        navigation,
+        navigation.contentTouchX(x, y),
+        y
+      )) {
       // endregion
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
           RootFrameLayout rootFrameLayout = UI.getContext(navigation.getContext()).getRootView();

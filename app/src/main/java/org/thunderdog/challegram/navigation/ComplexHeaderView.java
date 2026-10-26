@@ -314,7 +314,11 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
 
   protected void drawAvatar (Canvas c) {
     if (receiver.needPlaceholder()) {
-      receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), Theme.headerPlaceholderColor());
+      receiver.drawPlaceholderRounded(
+        c,
+        receiver.getDisplayRadius(),
+        Theme.headerPlaceholderColor()
+      );
     }
     receiver.draw(c);
   // endregion

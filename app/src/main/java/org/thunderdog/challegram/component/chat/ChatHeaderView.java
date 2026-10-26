@@ -151,7 +151,12 @@ public class ChatHeaderView extends ComplexHeaderView {
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public void setForumTopic (TdApi.Chat chat, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.ForumTopic topic, @Nullable String restriction) {
+  public void setForumTopic (
+    TdApi.Chat chat,
+    @Nullable TdApi.MessageTopic topicId,
+    @Nullable TdApi.ForumTopic topic,
+    @Nullable String restriction
+  ) {
     isForumTopic = ForumHistory.isForum(topicId);
     setNoExpand(isForumTopic);
     TdApi.ForumTopicIcon icon = topic != null ? topic.info.icon : null;
@@ -168,29 +173,58 @@ public class ChatHeaderView extends ComplexHeaderView {
     if (!isForumTopic) {
       return;
     }
-    setShowMute(org.thunderdog.challegram.data.ForumPresentation.isMuted(topic != null ? topic.notificationSettings : null, tdlib.chatNeedsMuteIcon(chat)));
+    setShowMute(
+      org.thunderdog.challegram.data.ForumPresentation.isMuted(
+        topic != null ? topic.notificationSettings : null,
+        tdlib.chatNeedsMuteIcon(chat)
+      )
+    );
     String title = topic != null ? topic.info.name : Lang.getString(R.string.ForumTopicTitle);
-    topicLetter = topic != null && topic.info.isGeneral || title.isEmpty() ? "#" : title.substring(0, title.offsetByCodePoints(0, 1));
+    topicLetter = topic != null && topic.info.isGeneral || title.isEmpty() ? "#" : title.substring(
+      0,
+      title.offsetByCodePoints(0, 1)
+    );
     setEmojiStatus(null);
     setShowVerify(false);
     setShowScam(false);
     setShowFake(false);
     setShowLock(false);
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "C2-L10N-02")
-    CharSequence subtitle = !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : restriction != null ? restriction :
-      topic != null && topic.info.isClosed ? Lang.getString(R.string.format_forumClosedTopicSubtitle, chat.title, Lang.getString(R.string.ForumTopicClosed)) : chat.title;
+    CharSequence subtitle = !StringUtils.isEmpty(
+      forcedSubtitle
+    ) ? forcedSubtitle : restriction != null ? restriction :
+      topic != null && topic.info.isClosed ? Lang.getString(
+        R.string.format_forumClosedTopicSubtitle,
+        chat.title,
+        Lang.getString(R.string.ForumTopicClosed)
+      ) : chat.title;
     // endregion
     setText(title, subtitle);
     setExpandedSubtitle(null);
     attachChatStatus(chat.id, topicId);
     if (customEmojiId != 0 && customTopicEmoji == null) {
-      TdApi.FormattedText emoji = new TdApi.FormattedText("*", new TdApi.TextEntity[] {new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(customEmojiId))});
-      customTopicEmoji = new Text.Builder(tdlib, emoji, null, Screen.dp(60), Paints.robotoStyleProvider(30), TextColorSets.WHITE, (text, media) -> {
-        if (text == customTopicEmoji) {
-          text.requestMedia(topicEmojiReceiver);
-          invalidate();
+      TdApi.FormattedText emoji = new TdApi.FormattedText(
+        "*",
+        new TdApi.TextEntity[] {new TdApi.TextEntity(
+          0,
+          1,
+          new TdApi.TextEntityTypeCustomEmoji(customEmojiId)
+        )}
+      );
+      customTopicEmoji = new Text.Builder(
+        tdlib,
+        emoji,
+        null,
+        Screen.dp(60),
+        Paints.robotoStyleProvider(30),
+        TextColorSets.WHITE,
+        (text, media) -> {
+          if (text == customTopicEmoji) {
+            text.requestMedia(topicEmojiReceiver);
+            invalidate();
+          }
         }
-      }).singleLine().build();
+      ).singleLine().build();
       customTopicEmoji.requestMedia(topicEmojiReceiver);
     }
     invalidate();
@@ -205,12 +239,27 @@ public class ChatHeaderView extends ComplexHeaderView {
     AvatarReceiver avatar = getAvatarReceiver();
     float cx = avatar.centerX(), cy = avatar.centerY();
     if (customTopicEmoji != null) {
-      customTopicEmoji.draw(c, (int) (cx - customTopicEmoji.getWidth() / 2f), (int) (cy - customTopicEmoji.getHeight() / 2f), null, 1f, topicEmojiReceiver);
+      customTopicEmoji.draw(
+        c,
+        (int) (cx - customTopicEmoji.getWidth() / 2f),
+        (int) (cy - customTopicEmoji.getHeight() / 2f),
+        null,
+        1f,
+        topicEmojiReceiver
+      );
       return;
     }
     float radius = Screen.dp(19);
     topicPaint.setColor(0xff000000 | (topicIcon != null ? topicIcon.color : 0x6fb9f0));
-    DrawAlgorithms.drawRoundRect(c, Screen.dp(12), cx - radius, cy - radius, cx + radius, cy + radius - Screen.dp(3), topicPaint);
+    DrawAlgorithms.drawRoundRect(
+      c,
+      Screen.dp(12),
+      cx - radius,
+      cy - radius,
+      cx + radius,
+      cy + radius - Screen.dp(3),
+      topicPaint
+    );
     topicTail.reset();
     topicTail.moveTo(cx - radius + Screen.dp(3), cy + radius - Screen.dp(9));
     topicTail.lineTo(cx - radius + Screen.dp(3), cy + radius + Screen.dp(2));
@@ -221,7 +270,12 @@ public class ChatHeaderView extends ComplexHeaderView {
     topicPaint.setTextSize(Screen.dp(21));
     topicPaint.setTypeface(Fonts.getRobotoMedium());
     topicPaint.setTextAlign(Paint.Align.CENTER);
-    c.drawText(topicLetter, cx, cy - Screen.dp(2) - (topicPaint.ascent() + topicPaint.descent()) / 2, topicPaint);
+    c.drawText(
+      topicLetter,
+      cx,
+      cy - Screen.dp(2) - (topicPaint.ascent() + topicPaint.descent()) / 2,
+      topicPaint
+    );
   }
 
   @Override protected void onAttachedToWindow () {

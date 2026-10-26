@@ -105,10 +105,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   }
 
   private void hideUnknownNotification (NotificationManagerCompat manager, String tag, int notificationId, boolean isSummary, TdlibNotificationExtras extras) {
-    manager.cancel(
-      tag,
-      notificationId
-    );
+    manager.cancel(tag, notificationId);
   }
 
   @AnyThread
@@ -539,27 +536,41 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
 
   public boolean needPreview (@NonNull TdlibNotificationGroup group) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    return allowNotificationPreview() && tdlib.notifications().isShowPreviewEnabled(group.getChatId(), group.isMention());
+    return allowNotificationPreview() && tdlib.notifications().isShowPreviewEnabled(
+      group.getChatId(),
+      group.isMention()
+    );
     // endregion
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public boolean needPreview (@NonNull TdlibNotificationGroup group, @Nullable TdlibNotification notification) {
-    return notification != null && allowNotificationPreview() && notification.allowContentPreview() &&
+  public boolean needPreview (
+    @NonNull TdlibNotificationGroup group,
+    @Nullable TdlibNotification notification
+  ) {
+    return notification != null && allowNotificationPreview() &&
+      notification.allowContentPreview() &&
       (notification.isForumMessage() || needPreview(group));
   }
   // endregion
 
   public boolean needContentPreview (@NonNull TdlibNotificationGroup group) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    return allowNotificationPreview() && tdlib.notifications().needContentPreview(group.getChatId(), group.isMention());
+    return allowNotificationPreview() && tdlib.notifications().needContentPreview(
+      group.getChatId(),
+      group.isMention()
+    );
     // endregion
   }
 
   public boolean needContentPreview (@NonNull TdlibNotificationGroup group, @Nullable TdlibNotification notification) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     return notification != null && allowNotificationPreview() &&
-      tdlib.notifications().needContentPreview(group.getChatId(), group.isMention(), notification.isForumMessage() ? notification.allowContentPreview() : null) &&
+      tdlib.notifications().needContentPreview(
+        group.getChatId(),
+        group.isMention(),
+        notification.isForumMessage() ? notification.allowContentPreview() : null
+      ) &&
       notification.needContentPreview();
     // endregion
   }

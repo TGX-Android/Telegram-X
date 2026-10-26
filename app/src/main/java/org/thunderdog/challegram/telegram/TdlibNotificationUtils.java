@@ -233,8 +233,18 @@ public class TdlibNotificationUtils {
     return newIntent(accountId, forLocalChatId, specificMessageId, null);
   }
 
-  static PendingIntent newIntent (int accountId, long forLocalChatId, long specificMessageId, @Nullable TdApi.MessageTopic topic) {
-    return PendingIntent.getActivity(UI.getContext(), 0, newCoreIntent(accountId, forLocalChatId, specificMessageId, topic), PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(true));
+  static PendingIntent newIntent (
+    int accountId,
+    long forLocalChatId,
+    long specificMessageId,
+    @Nullable TdApi.MessageTopic topic
+  ) {
+    return PendingIntent.getActivity(
+      UI.getContext(),
+      0,
+      newCoreIntent(accountId, forLocalChatId, specificMessageId, topic),
+      PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(true)
+    );
     // endregion
   }
 
@@ -243,8 +253,17 @@ public class TdlibNotificationUtils {
     return newCoreIntent(accountId, forLocalChatId, specificMessageId, null);
   }
 
-  static Intent newCoreIntent (int accountId, long forLocalChatId, long specificMessageId, @Nullable TdApi.MessageTopic topic) {
-    Intent intent = forLocalChatId != 0 ? Intents.valueOfLocalChatId(accountId, forLocalChatId, specificMessageId) : Intents.valueOfMain(accountId);
+  static Intent newCoreIntent (
+    int accountId,
+    long forLocalChatId,
+    long specificMessageId,
+    @Nullable TdApi.MessageTopic topic
+  ) {
+    Intent intent = forLocalChatId != 0 ? Intents.valueOfLocalChatId(
+      accountId,
+      forLocalChatId,
+      specificMessageId
+    ) : Intents.valueOfMain(accountId);
     Td.put(intent, "topic_id", topic);
     return intent;
     // endregion

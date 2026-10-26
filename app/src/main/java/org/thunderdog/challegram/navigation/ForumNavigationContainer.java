@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
@@ -41,7 +53,9 @@ import me.vkryl.android.widget.FrameLayoutFix;
  * Keeping the rail behind the stack also lets Back reveal it without resizing either screen.
  */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-public final class ForumNavigationContainer extends FrameLayoutFix implements NavigationStack.ChangeListener {
+public final class ForumNavigationContainer
+  extends FrameLayoutFix
+  implements NavigationStack.ChangeListener {
   private final NavigationController navigation;
   private final View content;
   private ChatRailView rail;
@@ -65,14 +79,21 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     super(context);
     this.navigation = navigation;
     this.content = content;
-    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    setLayoutParams(
+      FrameLayoutFix.newParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.MATCH_PARENT
+      )
+    );
     addView(content);
     navigation.getStack().addChangeListener(this);
   }
 
   public void enable (Tdlib account, @Nullable TdApi.ChatList chatList) {
     TdApi.ChatList requested = chatList != null ? chatList : resolveSource(account);
-    if (tdlib != account || source == null || !TD.makeChatListKey(source).equals(TD.makeChatListKey(requested))) {
+    if (tdlib != account ||
+      source == null ||
+      !TD.makeChatListKey(source).equals(TD.makeChatListKey(requested))) {
       closeSession();
       tdlib = account;
       source = requested;
@@ -87,25 +108,37 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
           continue;
         }
         ChatsController chats = item instanceof ChatsController ? (ChatsController) item :
-          item instanceof MainController ? ((MainController) item).getCurrentChatsController() : null;
-        if (chats != null && TD.makeChatListKey(chats.chatList()).equals(TD.makeChatListKey(source))) {
+          item instanceof MainController ? ((MainController) item).getCurrentChatsController() :
+            null;
+        if (chats != null &&
+          TD.makeChatListKey(chats.chatList()).equals(TD.makeChatListKey(source))) {
           ChatView anchor = chats.getForumRailAnchor(this, headerBottom());
-          rail.restoreScrollAnchor(anchor != null ? anchor.getChatId() : 0, chats.getForumRailPosition(),
-            chats.getForumRailAnchorOffset(this, headerBottom(), anchor));
+          rail.restoreScrollAnchor(
+            anchor != null ? anchor.getChatId() :
+              0,
+            chats.getForumRailPosition(),
+            chats.getForumRailAnchorOffset(this, headerBottom(), anchor)
+          );
           break;
         }
       }
-      addView(rail, 0, FrameLayoutFix.newParams(Screen.dp(64), ViewGroup.LayoutParams.MATCH_PARENT));
+      addView(
+        rail,
+        0,
+        FrameLayoutFix.newParams(Screen.dp(64), ViewGroup.LayoutParams.MATCH_PARENT)
+      );
       final Tdlib boundAccount = tdlib;
       cleanupListener = new CleanupStartupDelegate() {
         private void clear () {
-          post(() -> {
-            if (tdlib != boundAccount) {
-              return;
+          post(
+            () -> {
+              if (tdlib != boundAccount) {
+                return;
+              }
+              closeSession();
+              requestLayout();
             }
-            closeSession();
-            requestLayout();
-          });
+          );
         }
 
         @Override public void onPerformUserCleanup () {
@@ -176,13 +209,23 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
 
   private void openChat (long chatId) {
     ViewController<?> current = navigation.getCurrentStackItem();
-    if (!session || switching || navigation.isAnimating() || current == null || current.tdlib() != tdlib || current.getChatId() == chatId) {
+    if (!session ||
+      switching ||
+      navigation.isAnimating() ||
+      current == null ||
+      current.tdlib() != tdlib ||
+      current.getChatId() == chatId) {
       return;
     }
     rememberTopics();
     current.hideSoftwareKeyboard();
     switching = true;
-    tdlib.ui().openChat(current, chatId, new TdlibUi.ChatOpenParameters().chatList(source).onDone(() -> switching = false));
+    tdlib.ui()
+      .openChat(
+        current,
+        chatId,
+        new TdlibUi.ChatOpenParameters().chatList(source).onDone(() -> switching = false)
+      );
   }
 
   @Override public void onStackChanged (NavigationStack stack) {
@@ -211,7 +254,10 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     if (current instanceof ForumTopicsController) {
       ForumTopicsController topics = (ForumTopicsController) current;
       enable(topics.tdlib(), topics.getArgumentsStrict().chatList);
-    } else if (current instanceof MessagesController && current.getChatId() != 0 && current.tdlib().isForum(current.getChatId()) && !current.tdlib().hasForumTabs(current.getChatId())) {
+    } else if (current instanceof MessagesController &&
+      current.getChatId() != 0 &&
+      current.tdlib().isForum(current.getChatId()) &&
+      !current.tdlib().hasForumTabs(current.getChatId())) {
       enable(current.tdlib(), ((MessagesController) current).chatList());
     }
     if (session && current.tdlib() != tdlib) {
@@ -263,9 +309,19 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     requestLayout();
   }
 
-  boolean beginTransition (ViewController<?> left, ViewController<?> right, boolean morph, float progress) {
+  boolean beginTransition (
+    ViewController<?> left,
+    ViewController<?
+      > right,
+    boolean morph,
+    float progress
+  ) {
     endTransition();
-    if (!session || rail == null || !(right instanceof ForumTopicsController) || left.tdlib() != tdlib || right.tdlib() != tdlib) {
+    if (!session ||
+      rail == null ||
+      !(right instanceof ForumTopicsController) ||
+      left.tdlib() != tdlib ||
+      right.tdlib() != tdlib) {
       return false;
     }
     ChatsController chats = left instanceof ChatsController ? (ChatsController) left :
@@ -279,7 +335,8 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     transitionMainAlpha = transitionMain.getAlpha();
     transitionMainClip = ViewCompat.getClipBounds(transitionMain);
     // Before API 18 clipping is unavailable: use the same-progress fade without capturing avatars.
-    // Navigation draws the opaque topic body after the source, so it still covers the fading source.
+    // Navigation draws the opaque topic body after the source, so it still covers the fading
+    // source.
     allowAvatarMorph = morph && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
     setTransitionProgress(progress);
     // Interactive Back may not run startTransitionWhenReady. Capture existing layout now,
@@ -316,9 +373,20 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     if (avatarMorph == null || transitionMain == null) {
       return;
     }
-    int edge = Math.round(ForumRailLayout.interpolate(getWidth(), transitionRailWidth(), transitionProgress));
-    transitionClip.set(Lang.rtl() ? getWidth() - edge : 0, 0,
-      Lang.rtl() ? getWidth() : edge, transitionMain.getHeight());
+    int edge =
+      Math.round(
+        ForumRailLayout.interpolate(
+          getWidth(),
+          transitionRailWidth(),
+          transitionProgress
+        )
+      );
+    transitionClip.set(
+      Lang.rtl() ? getWidth() - edge : 0,
+      0,
+      Lang.rtl() ? getWidth() : edge,
+      transitionMain.getHeight()
+    );
     if (transitionMainClip != null && !transitionClip.intersect(transitionMainClip)) {
       transitionClip.setEmpty();
     }
@@ -333,23 +401,27 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     }
     final View owner = transitionMain;
     final long deadline = SystemClock.uptimeMillis() + 80;
-    postOnAnimation(new Runnable() {
-      @Override public void run () {
-        if (destroyed) {
-          return;
-        }
-        if (transitionMain == owner) {
-          captureTransition();
-        }
-        if (transitionMain != owner || avatarMorph != null || SystemClock.uptimeMillis() >= deadline) {
-          // Bound the wait to local presentation readiness, never a network response.
-          allowAvatarMorph = false;
-          start.run();
-        } else {
-          postOnAnimation(this);
+    postOnAnimation(
+      new Runnable() {
+        @Override public void run () {
+          if (destroyed) {
+            return;
+          }
+          if (transitionMain == owner) {
+            captureTransition();
+          }
+          if (transitionMain != owner ||
+            avatarMorph != null ||
+            SystemClock.uptimeMillis() >= deadline) {
+            // Bound the wait to local presentation readiness, never a network response.
+            allowAvatarMorph = false;
+            start.run();
+          } else {
+            postOnAnimation(this);
+          }
         }
       }
-    });
+    );
   }
 
   void onControllerViewRemoved (View view) {
@@ -406,8 +478,13 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
 
   @Override protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
     if (child == rail && avatarMorph != null) {
-      canvas.drawRect(child.getLeft(), headerBottom(), child.getRight(), getHeight() - bottomInset,
-        Paints.fillingPaint(Theme.fillingColor()));
+      canvas.drawRect(
+        child.getLeft(),
+        headerBottom(),
+        child.getRight(),
+        getHeight() - bottomInset,
+        Paints.fillingPaint(Theme.fillingColor())
+      );
       return true;
     }
     return super.drawChild(canvas, child, drawingTime);
@@ -415,14 +492,26 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
 
   @Override protected void dispatchDraw (Canvas canvas) {
     if (transitionMain != null) {
-      canvas.drawRect(0, headerBottom(), getWidth(), getHeight() - bottomInset, Paints.fillingPaint(Theme.fillingColor()));
+      canvas.drawRect(
+        0,
+        headerBottom(),
+        getWidth(),
+        getHeight() - bottomInset,
+        Paints.fillingPaint(Theme.fillingColor())
+      );
     }
     super.dispatchDraw(canvas);
     if (avatarMorph != null && transitionTopics != null) {
       int save = canvas.save();
       float edge = Lang.rtl() ? transitionTopics.getRight() + transitionTopics.getTranslationX() :
         transitionTopics.getLeft() + transitionTopics.getTranslationX();
-      canvas.clipRect(Lang.rtl() ? edge : 0f, headerBottom(), Lang.rtl() ? getWidth() : edge, getHeight() - bottomInset);
+      canvas.clipRect(
+        Lang.rtl() ? edge : 0f,
+        headerBottom(),
+        Lang.rtl() ? getWidth() :
+          edge,
+        getHeight() - bottomInset
+      );
       avatarMorph.draw(canvas, transitionProgress);
       canvas.restoreToCount(save);
     }
@@ -434,11 +523,20 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
 
   private int headerBottom () {
     HeaderView header = navigation.getHeaderView();
-    return header != null ? Math.round(header.getCurrentHeight()) + HeaderView.getTopOffset() : HeaderView.getSize(true);
+    return header != null ? Math.round(header.getCurrentHeight()) + HeaderView.getTopOffset() :
+      HeaderView.getSize(true);
   }
 
   public boolean isRailTouch (float x, float y) {
-    return ForumRailLayout.hitRail(getWidth(), occupiedWidth(), x, y, headerBottom(), getHeight() - bottomInset, Lang.rtl());
+    return ForumRailLayout.hitRail(
+      getWidth(),
+      occupiedWidth(),
+      x,
+      y,
+      headerBottom(),
+      getHeight() - bottomInset,
+      Lang.rtl()
+    );
   }
 
   public float contentX (float x, float y) {
@@ -479,9 +577,15 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     }
     if (rail != null) {
       rail.setInsets(headerBottom(), bottomInset);
-      rail.measure(MeasureSpec.makeMeasureSpec(railWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+      rail.measure(
+        MeasureSpec.makeMeasureSpec(railWidth, MeasureSpec.EXACTLY),
+        MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+      );
     }
-    content.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+    content.measure(
+      MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+      MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+    );
     setMeasuredDimension(width, height);
   }
 
@@ -514,7 +618,10 @@ public final class ForumNavigationContainer extends FrameLayoutFix implements Na
     if (in.containsKey("forum_rail_list") && in.getInt("forum_rail_account", -1) == account.id()) {
       enable(account, TD.chatListFromKey(in.getString("forum_rail_list")));
       if (rail != null) {
-        rail.restoreScrollPosition(in.getInt("forum_rail_position", 0), in.getInt("forum_rail_offset", 0));
+        rail.restoreScrollPosition(
+          in.getInt("forum_rail_position", 0),
+          in.getInt("forum_rail_offset", 0)
+        );
       }
     }
   }

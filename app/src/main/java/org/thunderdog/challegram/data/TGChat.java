@@ -317,7 +317,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   }
 
   public boolean canShowForumPreview () {
-    return forum && !tdlib.hasPasscode(chat) && StringUtils.isEmpty(Lang.getRestrictionText(tdlib.chatRestriction(chat)));
+    return forum && !tdlib.hasPasscode(chat) &&
+      StringUtils.isEmpty(Lang.getRestrictionText(tdlib.chatRestriction(chat)));
   }
 
   public @Nullable TdApi.Message getPreviewMessage () {
@@ -337,11 +338,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
   private @Nullable TdApi.DraftMessage getPreviewDraft () {
     TdApi.DraftMessage chatDraft = chat != null ? chat.draftMessage : null;
-    return forum && forumDraft != null && (!ForumChatPreview.hasTextDraft(chatDraft) || forumDraft.date >= chatDraft.date) ? forumDraft : chatDraft;
+    return forum && forumDraft != null && (!ForumChatPreview.hasTextDraft(
+      chatDraft
+    ) || forumDraft.date >= chatDraft.date) ? forumDraft : chatDraft;
   }
 
   public int getPreviewTopicId () {
-    return showDraft() && forumDraft != null && getPreviewDraft() == forumDraft ? forumDraftTopicId :
+    return showDraft() && forumDraft != null &&
+      getPreviewDraft() == forumDraft ? forumDraftTopicId :
       ForumChatPreview.topicId(getChatId(), getPreviewMessage());
   }
 
@@ -497,7 +501,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       TdApi.Message oldMessage = chat.lastMessage;
       chat.lastMessage = message;
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if ((oldMessage == null && message == null) || (!forum && oldMessage != null && message != null && oldMessage.id == message.id)) {
+      if ((oldMessage == null && message == null) || (!forum && oldMessage != null &&
+        message != null && oldMessage.id == message.id)) {
         // endregion
         return false;
       }
@@ -817,7 +822,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     // TODO rich message
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     TdApi.DraftMessage draft = getPreviewDraft();
-    return !isArchive() && (forum || chat.unreadCount == 0) && draft != null && draft.content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR;
+    return !isArchive() && (forum || chat.unreadCount == 0) && draft != null &&
+      draft.content.getConstructor() == TdApi.DraftMessageContentText.CONSTRUCTOR;
     // endregion
   }
 
@@ -888,7 +894,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     reactionsCounter.setCount(hasReactions ? Tdlib.CHAT_MARKED_AS_UNREAD : 0, !notificationsEnabled(), allowAnimation && needAnimateChanges());
     mentionCounter.setCount(hasMentions ? Tdlib.CHAT_MARKED_AS_UNREAD : 0, false, allowAnimation && needAnimateChanges());
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    counter.setCount(!forum && hasMentions && unreadCount == 1 ? 0 : unreadCount, !notificationsEnabled(), allowAnimation && needAnimateChanges());
+    counter.setCount(
+      !forum && hasMentions && unreadCount == 1 ? 0 : unreadCount,
+      !notificationsEnabled(),
+      allowAnimation && needAnimateChanges()
+    );
     // endregion
   }
 
@@ -1118,7 +1128,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         }
       } else {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        int date = showDraft() ? getPreviewDraft().date : chat.lastMessage != null ? chat.lastMessage.date : 0;
+        int date = showDraft() ? getPreviewDraft()
+          .date : chat.lastMessage != null ? chat.lastMessage.date : 0;
         // endregion
         time = date != 0 ? Lang.timeOrDateShort(date, TimeUnit.SECONDS) : "";
       }
@@ -1242,7 +1253,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     int avail = currentWidth - ChatView.getLeftPadding(listMode) - ChatView.getRightPadding() - (lastCounterAddWidth = getCounterAddWidth());
     textLeft = ChatView.getLeftPadding(listMode);
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if ((flags & FLAG_HAS_PREFIX) != 0 && prefix != null && (forum || listMode == Settings.CHAT_MODE_2LINE)) {
+    if ((flags & FLAG_HAS_PREFIX) != 0 && prefix != null && (forum ||
+      listMode == Settings.CHAT_MODE_2LINE)) {
     // endregion
       int prefixWidth = prefix.getWidth();
       avail -= prefixWidth;
@@ -1316,7 +1328,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         flags |= FLAG_CONTENT_STRING;
       } else if (chat.lastMessage != null && !Td.isProximityAlertTriggered(chat.lastMessage.content)) {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        prefix = (forum || listMode == Settings.CHAT_MODE_2LINE) && Td.getMessageAuthorId(chat.lastMessage) == chat.lastMessage.chatId && StringUtils.isEmpty(chat.lastMessage.authorSignature) ?
+        prefix = (forum || listMode == Settings.CHAT_MODE_2LINE) && Td.getMessageAuthorId(
+          chat.lastMessage
+        ) == chat.lastMessage.chatId && StringUtils.isEmpty(chat.lastMessage.authorSignature) ?
         // endregion
           Lang.getString(R.string.FromAnonymous) :
           // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
@@ -1330,7 +1344,15 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         int avail;
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         if (forum) {
-          avail = Math.min(Screen.dp(120), Math.max(0, (currentWidth - ChatView.getLeftPadding(listMode) - ChatView.getRightPadding() - getCounterAddWidth()) / 2));
+          avail = Math.min(
+            Screen.dp(120),
+            Math.max(
+              0,
+              (currentWidth - ChatView.getLeftPadding(
+                listMode
+              ) - ChatView.getRightPadding() - getCounterAddWidth()) / 2
+            )
+          );
         } else if (listMode != Settings.CHAT_MODE_2LINE) {
         // endregion
           avail = currentWidth - ChatView.getLeftPadding(listMode) - ChatView.getRightPadding() - getCounterAddWidth();
@@ -1669,7 +1691,13 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       int iconWidth = statusHelper.actionIconWidth();
       if (avail > 0) {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        Text.Builder b = new Text.Builder(chatActionText, avail, getTextStyleProvider(listMode), TextColorSets.Regular.LIGHT).maxLineCount(forum || listMode == Settings.CHAT_MODE_2LINE ? 1 : 2);
+        Text.Builder b = new Text.Builder(
+          chatActionText,
+          avail,
+          getTextStyleProvider(listMode),
+          TextColorSets.Regular.LIGHT
+        )
+          .maxLineCount(forum || listMode == Settings.CHAT_MODE_2LINE ? 1 : 2);
         // endregion
         if (iconWidth > 0) {
           b.lineMarginProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? iconWidth : 0);

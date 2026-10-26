@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.Nullable;
@@ -31,70 +43,200 @@ public final class ForumTopicActions {
     this.store = store;
   }
 
-  private <T extends TdApi.Object> void send (TdApi.Function<T> request, long chatId, @Nullable Key key, int constructor, Callback<T> callback) {
+  private <T
+    extends TdApi.Object> void send (
+      TdApi.Function<T> request,
+      long chatId,
+      @Nullable Key key,
+      int constructor,
+      Callback<T> callback
+    ) {
     send(request, chatId, key, constructor, callback, true);
   }
 
   @SuppressWarnings("unchecked")
-  private <T extends TdApi.Object> void send (TdApi.Function<T> request, long chatId, @Nullable Key key, int constructor, Callback<T> callback, boolean changesState) {
-    store.perform(request, chatId, key, constructor, changesState, (value, error) -> callback.onResult((T) value, error));
+  private <T
+    extends TdApi.Object> void send (
+      TdApi.Function<T> request,
+      long chatId,
+      @Nullable Key key,
+      int constructor,
+      Callback<T> callback,
+      boolean changesState
+    ) {
+    store.perform(
+      request,
+      chatId,
+      key,
+      constructor,
+      changesState,
+      (value, error) ->
+        callback.onResult((T) value, error)
+    );
   }
 
-  public void create (long chatId, String name, boolean isNameImplicit, TdApi.ForumTopicIcon icon, Callback<TdApi.ForumTopicInfo> callback) {
-    send(new TdApi.CreateForumTopic(chatId, name, isNameImplicit, icon), chatId, null, TdApi.ForumTopicInfo.CONSTRUCTOR, callback);
+  public void create (
+    long chatId,
+    String name,
+    boolean isNameImplicit,
+    TdApi.ForumTopicIcon icon,
+    Callback<TdApi.ForumTopicInfo> callback
+  ) {
+    send(
+      new TdApi.CreateForumTopic(chatId, name, isNameImplicit, icon),
+      chatId,
+      null,
+      TdApi.ForumTopicInfo.CONSTRUCTOR,
+      callback
+    );
   }
 
-  public void edit (Key key, String name, boolean editIconCustomEmoji, long customEmojiId, Callback<TdApi.Ok> callback) {
-    send(new TdApi.EditForumTopic(key.chatId, key.forumTopicId, name, editIconCustomEmoji, customEmojiId), key.chatId, key, TdApi.Ok.CONSTRUCTOR, callback);
+  public void edit (
+    Key key,
+    String name,
+    boolean editIconCustomEmoji,
+    long customEmojiId,
+    Callback<TdApi.Ok> callback
+  ) {
+    send(
+      new TdApi.EditForumTopic(
+        key.chatId,
+        key.forumTopicId,
+        name,
+        editIconCustomEmoji,
+        customEmojiId
+      ),
+      key.chatId,
+      key,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public void setClosed (Key key, boolean closed, Callback<TdApi.Ok> callback) {
-    send(new TdApi.ToggleForumTopicIsClosed(key.chatId, key.forumTopicId, closed), key.chatId, key, TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.ToggleForumTopicIsClosed(key.chatId, key.forumTopicId, closed),
+      key.chatId,
+      key,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public void setGeneralHidden (long chatId, boolean hidden, Callback<TdApi.Ok> callback) {
-    send(new TdApi.ToggleGeneralForumTopicIsHidden(chatId, hidden), chatId, new Key(chatId, 1), TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.ToggleGeneralForumTopicIsHidden(chatId, hidden),
+      chatId,
+      new Key(chatId, 1),
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public void setPinned (Key key, boolean pinned, Callback<TdApi.Ok> callback) {
-    send(new TdApi.ToggleForumTopicIsPinned(key.chatId, key.forumTopicId, pinned), key.chatId, key, TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.ToggleForumTopicIsPinned(key.chatId, key.forumTopicId, pinned),
+      key.chatId,
+      key,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public void setPinnedOrder (long chatId, int[] topicIds, Callback<TdApi.Ok> callback) {
-    send(new TdApi.SetPinnedForumTopics(chatId, topicIds.clone()), chatId, null, TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.SetPinnedForumTopics(chatId, topicIds.clone()),
+      chatId,
+      null,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   // TDLib decides whether the topic disappears or only its history is cleared (notably General).
   public void delete (Key key, Callback<TdApi.Ok> callback) {
-    send(new TdApi.DeleteForumTopic(key.chatId, key.forumTopicId), key.chatId, key, TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.DeleteForumTopic(key.chatId, key.forumTopicId),
+      key.chatId,
+      key,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
-  public void setNotifications (Key key, TdApi.ChatNotificationSettings settings, Callback<TdApi.Ok> callback) {
-    send(new TdApi.SetForumTopicNotificationSettings(key.chatId, key.forumTopicId, settings), key.chatId, key, TdApi.Ok.CONSTRUCTOR, callback);
+  public void setNotifications (
+    Key key,
+    TdApi.ChatNotificationSettings settings,
+    Callback<TdApi.Ok> callback
+  ) {
+    send(
+      new TdApi.SetForumTopicNotificationSettings(key.chatId, key.forumTopicId, settings),
+      key.chatId,
+      key,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public void readAllMentions (Key key, Callback<TdApi.Ok> callback) {
-    send(new TdApi.ReadAllForumTopicMentions(key.chatId, key.forumTopicId), key.chatId, key, TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.ReadAllForumTopicMentions(key.chatId, key.forumTopicId),
+      key.chatId,
+      key,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public void readAllReactions (Key key, Callback<TdApi.Ok> callback) {
-    send(new TdApi.ReadAllForumTopicReactions(key.chatId, key.forumTopicId), key.chatId, key, TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.ReadAllForumTopicReactions(key.chatId, key.forumTopicId),
+      key.chatId,
+      key,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public void readAllPollVotes (Key key, Callback<TdApi.Ok> callback) {
-    send(new TdApi.ReadAllForumTopicPollVotes(key.chatId, key.forumTopicId), key.chatId, key, TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.ReadAllForumTopicPollVotes(key.chatId, key.forumTopicId),
+      key.chatId,
+      key,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public void unpinAllMessages (Key key, Callback<TdApi.Ok> callback) {
-    send(new TdApi.UnpinAllForumTopicMessages(key.chatId, key.forumTopicId), key.chatId, key, TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.UnpinAllForumTopicMessages(key.chatId, key.forumTopicId),
+      key.chatId,
+      key,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public void getLink (Key key, Callback<TdApi.MessageLink> callback) {
-    send(new TdApi.GetForumTopicLink(key.chatId, key.forumTopicId), key.chatId, key, TdApi.MessageLink.CONSTRUCTOR, callback, false);
+    send(
+      new TdApi.GetForumTopicLink(key.chatId, key.forumTopicId),
+      key.chatId,
+      key,
+      TdApi.MessageLink.CONSTRUCTOR,
+      callback,
+      false
+    );
   }
 
   public void setViewAsTopics (long chatId, boolean viewAsTopics, Callback<TdApi.Ok> callback) {
-    send(new TdApi.ToggleChatViewAsTopics(chatId, viewAsTopics), chatId, null, TdApi.Ok.CONSTRUCTOR, callback);
+    send(
+      new TdApi.ToggleChatViewAsTopics(chatId, viewAsTopics),
+      chatId,
+      null,
+      TdApi.Ok.CONSTRUCTOR,
+      callback
+    );
   }
 
   public static final class BatchTarget {
@@ -165,8 +307,17 @@ public final class ForumTopicActions {
 
   private @Nullable Batch activeBatch;
 
-  /** One account-wide runner, at most 100 targets, one request in flight. Never auto-retries a write. */
-  public @Nullable Batch startBatch (long chatId, long selfUserId, Action action, List<BatchTarget> targets, BatchCallback callback) {
+  /**
+   * One account-wide runner, at most 100 targets, one request in flight. Never auto-retries a
+   * write.
+   */
+  public @Nullable Batch startBatch (
+    long chatId,
+    long selfUserId,
+    Action action,
+    List<BatchTarget> targets,
+    BatchCallback callback
+  ) {
     if (activeBatch != null) {
       return null;
     }
@@ -191,7 +342,13 @@ public final class ForumTopicActions {
     private final HashSet<Integer> alreadyDeleted = new HashSet<>();
     private final ArrayList<BatchOutcome> outcomes = new ArrayList<>();
 
-    Batch (long chatId, long selfUserId, Action action, List<BatchTarget> targets, BatchCallback callback) {
+    Batch (
+      long chatId,
+      long selfUserId,
+      Action action,
+      List<BatchTarget> targets,
+      BatchCallback callback
+    ) {
       this.chatId = chatId;
       this.selfUserId = selfUserId;
       this.action = action;
@@ -236,22 +393,41 @@ public final class ForumTopicActions {
       callback.onComplete(new BatchResult(action, outcomes));
     }
 
-    private <T extends TdApi.Object> void read (TdApi.Function<T> request, int constructor, Callback<T> block) {
+    private <T
+      extends TdApi.Object> void read (
+        TdApi.Function<T> request,
+        int constructor,
+        Callback<T> block
+      ) {
       if (!live()) {
         return;
       }
-      send(request, chatId, null, constructor, (value, error) -> {
-        if (live()) {
-          block.onResult(value, error);
-        }
-      }, false);
+      send(
+        request,
+        chatId,
+        null,
+        constructor,
+        (value, error) -> {
+          if (live()) {
+            block.onResult(value, error);
+          }
+        },
+        false
+      );
     }
 
     private void rights (ErrorCallback done) {
-      read(new TdApi.GetChatMember(chatId, new TdApi.MessageSenderUser(selfUserId)), TdApi.ChatMember.CONSTRUCTOR, (member, error) -> {
+      read(
+        new TdApi.GetChatMember(chatId, new TdApi.MessageSenderUser(selfUserId)),
+        TdApi.ChatMember.CONSTRUCTOR,
+        (member, error) -> {
         status = member != null ? member.status : null;
-        done.onResult(error != null ? error : !ForumTopicPolicy.isMember(status) ? unavailable() : null);
-      });
+        done.onResult(
+          error != null ? error : !ForumTopicPolicy.isMember(status) ? unavailable() :
+            null
+        );
+      }
+      );
     }
 
     private void muteDefault (ErrorCallback done) {
@@ -259,26 +435,37 @@ public final class ForumTopicActions {
         done.onResult(null);
         return;
       }
-      read(new TdApi.GetChat(chatId), TdApi.Chat.CONSTRUCTOR, (chat, error) -> {
-        if (error != null) {
-          done.onResult(error);
-          return;
-        }
-        TdApi.ChatNotificationSettings settings = chat != null ? chat.notificationSettings : null;
-        if (settings == null) {
-          done.onResult(unavailable());
-          return;
-        }
-        if (!settings.useDefaultMuteFor) {
-          groupMuted = settings.muteFor > 0;
-          done.onResult(null);
-        } else {
-          read(new TdApi.GetScopeNotificationSettings(new TdApi.NotificationSettingsScopeGroupChats()), TdApi.ScopeNotificationSettings.CONSTRUCTOR, (scope, failure) -> {
+      read(
+        new TdApi.GetChat(chatId),
+        TdApi.Chat.CONSTRUCTOR,
+        (chat, error) -> {
+          if (error != null) {
+            done.onResult(error);
+            return;
+          }
+          TdApi.ChatNotificationSettings settings = chat != null ? chat.notificationSettings : null;
+          if (settings == null) {
+            done.onResult(unavailable());
+            return;
+          }
+          if (!settings.useDefaultMuteFor) {
+            groupMuted = settings.muteFor > 0;
+            done.onResult(null);
+          } else {
+            read(
+              new TdApi.GetScopeNotificationSettings(
+                new TdApi
+                  .NotificationSettingsScopeGroupChats()
+              ),
+              TdApi.ScopeNotificationSettings.CONSTRUCTOR,
+              (scope, failure) -> {
             groupMuted = scope != null && scope.muteFor > 0;
             done.onResult(failure);
-          });
+          }
+            );
+          }
         }
-      });
+      );
     }
 
     void start () {
@@ -290,25 +477,35 @@ public final class ForumTopicActions {
         }
         ids.add(target.topicId);
       }
-      if (chatId == 0 || selfUserId == 0 || targets.isEmpty() || targets.size() > ForumTopicSelection.MAX_SELECTED ||
-          invalidTarget || ids.size() != targets.size() || action == Action.CLEAR_GENERAL && targets.size() != 1) {
+      if (chatId == 0 ||
+        selfUserId == 0 ||
+        targets.isEmpty() ||
+        targets.size() > ForumTopicSelection.MAX_SELECTED ||
+        invalidTarget ||
+        ids.size() != targets.size() ||
+        action == Action.CLEAR_GENERAL &&
+          targets.size() != 1) {
         failAll(unavailable());
         return;
       }
       callback.onProgress(0, targets.size());
-      rights(error -> {
-        if (error != null) {
-          failAll(error);
-        } else {
-          muteDefault(failure -> {
-            if (failure != null) {
-              failAll(failure);
-            } else {
-              preflight(0);
-            }
-          });
+      rights(
+        error -> {
+          if (error != null) {
+            failAll(error);
+          } else {
+            muteDefault(
+              failure -> {
+                if (failure != null) {
+                  failAll(failure);
+                } else {
+                  preflight(0);
+                }
+              }
+            );
+          }
         }
-      });
+      );
     }
 
     private List<Integer> remainingIds (int start) {
@@ -327,55 +524,97 @@ public final class ForumTopicActions {
         if (!preflightErrors.isEmpty()) {
           for (BatchTarget target : targets) {
             TdApi.Error error = preflightErrors.get(target.topicId);
-            outcomes.add(new BatchOutcome(target, error != null ? error : new TdApi.Error(BATCH_PREFLIGHT_ABORTED, "Not sent because another selected topic failed preflight")));
+            outcomes.add(
+              new BatchOutcome(
+                target,
+                error != null ? error :
+                  new TdApi.Error(
+                    BATCH_PREFLIGHT_ABORTED,
+                    "Not sent because another selected topic failed preflight"
+                  )
+              )
+            );
           }
           finish();
           return;
         }
         if (action == Action.PIN || action == Action.UNPIN) {
-          checkPins(remainingIds(0), error -> {
-            if (error != null) {
-              failAll(error);
-            } else {
-              next();
+          checkPins(
+            remainingIds(0),
+            error -> {
+              if (error != null) {
+                failAll(error);
+              } else {
+                next();
+              }
             }
-          });
+          );
         } else {
           next();
         }
         return;
       }
       BatchTarget target = targets.get(index);
-      read(new TdApi.GetForumTopic(chatId, target.topicId), TdApi.ForumTopic.CONSTRUCTOR, (topic, error) -> {
+      read(
+        new TdApi.GetForumTopic(chatId, target.topicId),
+        TdApi.ForumTopic.CONSTRUCTOR,
+        (topic, error) -> {
         if (target.retrying && action == Action.DELETE && error != null && error.code == 404) {
           alreadyDeleted.add(target.topicId);
         } else if (error != null) {
           preflightErrors.put(target.topicId, error);
-        } else if (topic == null || topic.info.chatId != chatId || topic.info.forumTopicId != target.topicId ||
-            !ForumTopicSelection.allowed(action, topic, status) || !target.retrying && !ForumTopicSelection.applicable(action, topic, groupMuted)) {
+        } else if (topic == null ||
+          topic.info.chatId != chatId ||
+          topic.info.forumTopicId != target.topicId ||
+          !ForumTopicSelection.allowed(action, topic, status) ||
+          !target.retrying &&
+            !ForumTopicSelection.applicable(action, topic, groupMuted)) {
           preflightErrors.put(target.topicId, unavailable());
         }
         preflight(index + 1);
-      });
+      }
+      );
     }
 
     /** Full server prefix, not a cached search result; cursor- and page-bounded. */
     private void checkPins (List<Integer> remaining, ErrorCallback done) {
-      read(new TdApi.GetOption("pinned_forum_topic_count_max"), TdApi.OptionValueInteger.CONSTRUCTOR, (option, error) -> {
+      read(
+        new TdApi.GetOption("pinned_forum_topic_count_max"),
+        TdApi.OptionValueInteger.CONSTRUCTOR,
+        (option, error) -> {
         if (error != null) {
           done.onResult(error);
           return;
         }
-        pinLimit = option instanceof TdApi.OptionValueInteger ? (int) Math.max(0, Math.min(Integer.MAX_VALUE, ((TdApi.OptionValueInteger) option).value)) : 0;
+        pinLimit = option instanceof TdApi.OptionValueInteger ?
+          (int) Math.max(
+            0,
+            Math.min(Integer.MAX_VALUE, ((TdApi.OptionValueInteger) option).value)
+          ) : 0;
         Set<Integer> pinned = new HashSet<>();
         Set<ForumTopicStore.Cursor> cursors = new HashSet<>();
         class Prefix {
           void page (ForumTopicStore.Cursor cursor, int pages) {
             if (pages >= MAX_PIN_PAGES || !cursors.add(cursor)) {
-              done.onResult(new TdApi.Error(BATCH_PIN_PREFIX, "Unable to verify the full pinned topic order"));
+              done.onResult(
+                new TdApi.Error(
+                  BATCH_PIN_PREFIX,
+                  "Unable to verify the full pinned topic order"
+                )
+              );
               return;
             }
-            read(new TdApi.GetForumTopics(chatId, "", cursor.date, cursor.messageId, cursor.topicId, 100), TdApi.ForumTopics.CONSTRUCTOR, (result, failure) -> {
+            read(
+              new TdApi.GetForumTopics(
+                chatId,
+                "",
+                cursor.date,
+                cursor.messageId,
+                cursor.topicId,
+                100
+              ),
+              TdApi.ForumTopics.CONSTRUCTOR,
+              (result, failure) -> {
               if (failure != null || result == null) {
                 done.onResult(failure != null ? failure : unavailable());
                 return;
@@ -392,7 +631,12 @@ public final class ForumTopicActions {
                   reachedUnpinned = true;
                 }
               }
-              ForumTopicStore.Cursor next = new ForumTopicStore.Cursor(result.nextOffsetDate, result.nextOffsetMessageId, result.nextOffsetForumTopicId);
+              ForumTopicStore.Cursor next =
+                new ForumTopicStore.Cursor(
+                  result.nextOffsetDate,
+                  result.nextOffsetMessageId,
+                  result.nextOffsetForumTopicId
+                );
               if (reachedUnpinned || next.isEmpty()) {
                 int needed = 0;
                 for (int id : remaining) {
@@ -400,15 +644,21 @@ public final class ForumTopicActions {
                     needed++;
                   }
                 }
-                done.onResult(action == Action.PIN && (long) pinned.size() + needed > pinLimit ? new TdApi.Error(BATCH_PIN_LIMIT, "Pinned topic limit exceeded") : null);
+                done.onResult(
+                  action == Action.PIN &&
+                    (long) pinned.size() + needed > pinLimit ?
+                      new TdApi.Error(BATCH_PIN_LIMIT, "Pinned topic limit exceeded") : null
+                );
               } else {
                 page(next, pages + 1);
               }
-            });
+            }
+            );
           }
         }
         new Prefix().page(new ForumTopicStore.Cursor(), 0);
-      });
+      }
+      );
     }
 
     private void next () {
@@ -424,45 +674,60 @@ public final class ForumTopicActions {
         record(target, null);
         return;
       }
-      // Permissions and states can change during a long batch; refresh immediately before each write.
-      rights(error -> {
-        if (error != null) {
-          record(target, error);
-          return;
-        }
-        muteDefault(failure -> {
-          if (failure != null) {
-            record(target, failure);
+      // Permissions and states can change during a long batch; refresh immediately before each
+      // write.
+      rights(
+        error -> {
+          if (error != null) {
+            record(target, error);
             return;
           }
-          read(new TdApi.GetForumTopic(chatId, target.topicId), TdApi.ForumTopic.CONSTRUCTOR, (topic, problem) -> {
-            if (problem != null) {
-              record(target, problem);
-              return;
-            }
-            if (topic == null || topic.info.chatId != chatId || topic.info.forumTopicId != target.topicId || !ForumTopicSelection.allowed(action, topic, status)) {
-              record(target, unavailable());
-              return;
-            }
-            // Another client may already have applied this exact non-destructive direction.
-            if (!ForumTopicSelection.applicable(action, topic, groupMuted)) {
-              record(target, null);
-              return;
-            }
-            if (action == Action.PIN || action == Action.UNPIN) {
-              checkPins(remainingIds(outcomes.size()), pinError -> {
-                if (pinError != null) {
-                  failAll(pinError);
+          muteDefault(
+            failure -> {
+              if (failure != null) {
+                record(target, failure);
+                return;
+              }
+              read(
+                new TdApi.GetForumTopic(chatId, target.topicId),
+                TdApi.ForumTopic.CONSTRUCTOR,
+                (topic, problem) -> {
+                if (problem != null) {
+                  record(target, problem);
+                  return;
+                }
+                if (topic == null ||
+                  topic.info.chatId != chatId ||
+                  topic.info.forumTopicId != target.topicId ||
+                  !ForumTopicSelection.allowed(action, topic, status)) {
+                  record(target, unavailable());
+                  return;
+                }
+                // Another client may already have applied this exact non-destructive direction.
+                if (!ForumTopicSelection.applicable(action, topic, groupMuted)) {
+                  record(target, null);
+                  return;
+                }
+                if (action == Action.PIN || action == Action.UNPIN) {
+                  checkPins(
+                    remainingIds(outcomes.size()),
+                    pinError -> {
+                      if (pinError != null) {
+                        failAll(pinError);
+                      } else {
+                        apply(target, topic);
+                      }
+                    }
+                  );
                 } else {
                   apply(target, topic);
                 }
-              });
-            } else {
-              apply(target, topic);
+              }
+              );
             }
-          });
-        });
-      });
+          );
+        }
+      );
     }
 
     private void apply (BatchTarget target, TdApi.ForumTopic topic) {
@@ -470,11 +735,25 @@ public final class ForumTopicActions {
         return;
       }
       Key key = new Key(chatId, target.topicId);
-      Callback<TdApi.Ok> done = (value, error) -> record(target, error,
-        action.isDestructive() && error != null && (error.code == 408 || error.code >= 500 || error.code == 0));
+      Callback<TdApi.Ok> done = (value, error) -> record(
+        target,
+        error,
+        action.isDestructive() &&
+          error != null &&
+          (error.code == 408 || error.code >= 500 || error.code == 0)
+      );
       switch (action) {
         case PIN: case UNPIN: setPinned(key, action == Action.PIN, done); break;
-        case MUTE: case UNMUTE: setNotifications(key, ForumTopicPolicy.notifications(topic.notificationSettings, false, action == Action.MUTE ? Integer.MAX_VALUE : 0), done); break;
+        case MUTE: case UNMUTE:
+          setNotifications(
+            key,
+            ForumTopicPolicy.notifications(
+              topic.notificationSettings,
+              false,
+              action == Action.MUTE ? Integer.MAX_VALUE : 0
+            ),
+            done
+          ); break;
         case CLOSE: case OPEN: setClosed(key, action == Action.CLOSE, done); break;
         case DELETE: case CLEAR_GENERAL: delete(key, done); break;
         case READ_MENTIONS: readAllMentions(key, done); break;

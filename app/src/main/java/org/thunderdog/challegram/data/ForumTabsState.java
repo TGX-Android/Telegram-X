@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.data;
 
 import androidx.annotation.Nullable;
@@ -32,7 +44,12 @@ public final class ForumTabsState {
   /** TOP -> START -> BOTTOM -> START -> TOP, retaining the selected topic. */
   public ForumTabsState cyclePlacement () {
     if (placement == START) {
-      return new ForumTabsState(nextHorizontal, nextHorizontal == TOP ? BOTTOM : TOP, selectedTopicId);
+      return new ForumTabsState(
+        nextHorizontal,
+        nextHorizontal == TOP ? BOTTOM :
+          TOP,
+        selectedTopicId
+      );
     }
     return new ForumTabsState(START, nextHorizontal, selectedTopicId);
   }
@@ -51,7 +68,13 @@ public final class ForumTabsState {
 
   /** Version 1: [version, placement, next horizontal placement, topic ID or -1]. */
   public int[] encode () {
-    return new int[] {VERSION, placement, nextHorizontal, selectedTopicId != null ? selectedTopicId : UNSET_TOPIC};
+    return new int[] {
+      VERSION,
+      placement,
+      nextHorizontal,
+      selectedTopicId != null ?
+        selectedTopicId : UNSET_TOPIC
+    };
   }
 
   /** Missing, unknown-version, truncated or inconsistent records fall back to the default. */
@@ -63,9 +86,9 @@ public final class ForumTabsState {
     int nextHorizontal = encoded[2];
     int topicId = encoded[3];
     if ((placement != TOP && placement != START && placement != BOTTOM) ||
-        (nextHorizontal != TOP && nextHorizontal != BOTTOM) ||
-        (placement == TOP && nextHorizontal != BOTTOM) ||
-        (placement == BOTTOM && nextHorizontal != TOP) || topicId < UNSET_TOPIC) {
+      (nextHorizontal != TOP && nextHorizontal != BOTTOM) ||
+      (placement == TOP && nextHorizontal != BOTTOM) ||
+      (placement == BOTTOM && nextHorizontal != TOP) || topicId < UNSET_TOPIC) {
       return defaultState();
     }
     return new ForumTabsState(placement, nextHorizontal, topicId == UNSET_TOPIC ? null : topicId);

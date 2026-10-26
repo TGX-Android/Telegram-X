@@ -225,19 +225,32 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       if (ChatId.isSupergroup(extras.chatId) && !ForumHistory.isForum(extras.topicId)) {
         // Push-only notifications have no topic field in this TDLib schema. Resolve the
         // reply target; failure is safer than silently sending to General.
-        tdlib.send(new TdApi.GetMessage(extras.chatId, extras.messageIds[extras.messageIds.length-1]), (message, error) -> {
-          TdApi.MessageTopic topic = ForumNavigation.replyTopic(extras.chatId, extras.topicId, message);
-          TdApi.Supergroup supergroup = tdlib.chatToSupergroup(extras.chatId);
-          if (topic == null && (supergroup == null || supergroup.isForum)) {
-            UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
-            if (onDone != null) {
-              onDone.run();
+        tdlib.send(
+          new TdApi.GetMessage(extras.chatId, extras.messageIds[extras.messageIds.length-1]),
+          (message, error) -> {
+            TdApi.MessageTopic topic = ForumNavigation.replyTopic(
+              extras.chatId,
+              extras.topicId,
+              message
+            );
+            TdApi.Supergroup supergroup = tdlib.chatToSupergroup(extras.chatId);
+            if (topic == null && (supergroup == null || supergroup.isForum)) {
+              UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
+              if (onDone != null) {
+                onDone.run();
+              }
+            } else {
+              sendExternalReply(
+                tdlib,
+                text,
+                extras,
+                topic != null ? topic : extras.topicId,
+                onDone
+              );
+        // endregion
             }
-          } else {
-            sendExternalReply(tdlib, text, extras, topic != null ? topic : extras.topicId, onDone);
-      // endregion
           }
-        });
+        );
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
       } else {
         sendExternalReply(tdlib, text, extras, extras.topicId, onDone);
@@ -245,49 +258,72 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }, null);
   }
 
-  private static void sendExternalReply (Tdlib tdlib, CharSequence text, TdlibNotificationExtras extras, TdApi.MessageTopic topic, Runnable onDone) {
+  private static void sendExternalReply (
+    Tdlib tdlib,
+    CharSequence text,
+    TdlibNotificationExtras extras,
+    TdApi.MessageTopic topic,
+    Runnable onDone
+  ) {
     TdApi.InputMessageReplyTo replyTo;
     if (extras.needReply) {
       long messageId = extras.messageIds[extras.messageIds.length - 1];
       if (extras.forceExternalReply) {
-        replyTo = new TdApi.InputMessageReplyToExternalMessage(extras.chatId, messageId, null, 0, "");
+        replyTo = new TdApi.InputMessageReplyToExternalMessage(
+          extras.chatId,
+          messageId,
+          null,
+          0,
+          ""
+        );
       } else {
         replyTo = new TdApi.InputMessageReplyToMessage(messageId, null, 0, "");
       }
     } else {
       replyTo = null;
     }
-    tdlib.sendMessage(extras.chatId, topic, replyTo, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
-      if (sendingMessage == null) {
-        UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
-        if (onDone != null) {
-          onDone.run();
-        }
-        return;
-      }
-      tdlib.awaitMessageSent(sendingMessage, () -> {
-        if (ForumHistory.isForum(topic)) {
-          // A chat-wide notification group may include other topics; don't mark them read.
-          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-          tdlib.readNotificationMessages(extras.chatId, new long[] {extras.messageIds[extras.messageIds.length-1]}, (ok, error) -> {
-            if (error != null) {
-              UI.showError(error);
-            }
-            if (onDone != null) {
-              onDone.run();
-            }
-          });
+    tdlib.sendMessage(
+      extras.chatId,
+      topic,
+      replyTo,
+      Td.newSendOptions(),
+      new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false),
+      sendingMessage -> {
+        if (sendingMessage == null) {
+          UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
+          if (onDone != null) {
+            onDone.run();
+          }
           return;
-          // endregion
-        } else {
-          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-          extras.read(tdlib, onDone);
-          // endregion
         }
-      // endregion
-      });
-    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    });
+        tdlib.awaitMessageSent(sendingMessage, () -> {
+          if (ForumHistory.isForum(topic)) {
+            // A chat-wide notification group may include other topics; don't mark them read.
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            tdlib.readNotificationMessages(
+              extras.chatId,
+              new long[] {extras.messageIds[extras.messageIds.length-1]},
+              (ok, error) -> {
+                if (error != null) {
+                  UI.showError(error);
+                }
+                if (onDone != null) {
+                  onDone.run();
+                }
+              }
+            );
+            return;
+            // endregion
+          } else {
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            extras.read(tdlib, onDone);
+            // endregion
+          }
+        // endregion
+        });
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+      }
+    );
     // endregion
   }
 

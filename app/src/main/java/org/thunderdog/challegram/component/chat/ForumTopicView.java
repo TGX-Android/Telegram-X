@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.component.chat;
 
 import android.animation.ValueAnimator;
@@ -43,7 +55,13 @@ import me.vkryl.android.animator.FactorAnimator;
 import tgx.td.Td;
 
 /** Two text lines. Topic counters and outgoing delivery are intentionally independent. */
-@me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", others = "gpt-5", id = "forum-topics", ref = "PR #1095")
+@me.vkryl.annotation.MadeByLLM(
+  value = "gpt-6-astra",
+  others = "gpt-5",
+  id = "forum-topics",
+  ref =
+    "PR #1095"
+)
 public final class ForumTopicView extends View {
   private final Tdlib tdlib;
   private final TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -103,12 +121,22 @@ public final class ForumTopicView extends View {
     selectionMode = mode;
     setSelected(selected);
     float target = mode ? 1f : 0f;
-    if (animate && !Settings.instance().needReduceMotion() && (Build.VERSION.SDK_INT < 26 || ValueAnimator.areAnimatorsEnabled()) && ViewCompat.isAttachedToWindow(this) && selectionFactor != target) {
+    if (animate &&
+      !Settings.instance().needReduceMotion() &&
+      (Build.VERSION.SDK_INT < 26 || ValueAnimator.areAnimatorsEnabled()) &&
+      ViewCompat.isAttachedToWindow(this) &&
+      selectionFactor != target) {
       if (selectionAnimator == null) {
-        selectionAnimator = new FactorAnimator(0, (id, factor, fraction, animator) -> {
-          selectionFactor = factor;
-          invalidate();
-        }, AnimatorUtils.ACCELERATE_DECELERATE_INTERPOLATOR, 180L, selectionFactor);
+        selectionAnimator = new FactorAnimator(
+          0,
+          (id, factor, fraction, animator) -> {
+            selectionFactor = factor;
+            invalidate();
+          },
+          AnimatorUtils.ACCELERATE_DECELERATE_INTERPOLATOR,
+          180L,
+          selectionFactor
+        );
       }
       selectionAnimator.animateTo(target);
     } else {
@@ -139,17 +167,28 @@ public final class ForumTopicView extends View {
       counterWidth = Math.max(counterWidth, paint.measureText(label) + Screen.dp(10));
     }
     float available = Math.max(Screen.dp(48), (width - Screen.dp(selectionMode ? 72 : 32)) * .52f);
-    counterColumns = counters.isEmpty() ? 1 : Math.max(1, Math.min(counters.size(), (int) (available / (counterWidth + Screen.dp(3)))));
+    counterColumns = counters.isEmpty() ? 1 :
+      Math.max(1, Math.min(counters.size(), (int) (available / (counterWidth + Screen.dp(3)))));
     firstHeight = Math.max(scaled(24), Screen.dp(24));
     setPaint(12, Theme.textDecentColor(), false);
-    float timeAndDelivery = paint.measureText(time) + Screen.dp(time.isEmpty() ? 0 : 4) + Screen.dp(delivery != null ? 18 : 0);
-    wrapStates = !stateIcons.isEmpty() && timeAndDelivery + Screen.dp(18 * stateIcons.size()) > available;
+    float timeAndDelivery =
+      paint.measureText(time) + Screen.dp(time.isEmpty() ? 0 : 4) +
+        Screen.dp(delivery != null ? 18 : 0);
+    wrapStates = !stateIcons.isEmpty() &&
+      timeAndDelivery + Screen.dp(18 * stateIcons.size()) > available;
     if (wrapStates) {
       firstHeight = Math.max(firstHeight, scaled(14) + Screen.dp(20));
     }
-    secondHeight = Math.max(scaled(22), (float) Math.ceil((double) counters.size() / counterColumns) * (scaled(16) + Screen.dp(3)));
+    secondHeight =
+      Math.max(
+        scaled(22),
+        (float) Math.ceil((double) counters.size() / counterColumns) * (scaled(16) + Screen.dp(3))
+      );
     prepareText(width, timeAndDelivery);
-    setMeasuredDimension(width, Math.max(Screen.dp(64), (int) (Screen.dp(18) + firstHeight + secondHeight)));
+    setMeasuredDimension(
+      width,
+      Math.max(Screen.dp(64), (int) (Screen.dp(18) + firstHeight + secondHeight))
+    );
   }
 
   private void prepareText (int width, float timeAndDelivery) {
@@ -160,33 +199,58 @@ public final class ForumTopicView extends View {
     // Prepare for the destination width once; the selection animator only moves/clips it.
     float start = Screen.dp(selectionMode ? 50 : 14), end = width - Screen.dp(14);
     float statesWidth = Screen.dp(18 * stateIcons.size());
-    float trailing = end - (wrapStates ? Math.max(timeAndDelivery, statesWidth) : timeAndDelivery + statesWidth);
+    float trailing =
+      end - (wrapStates ? Math.max(timeAndDelivery, statesWidth) : timeAndDelivery + statesWidth);
     setPaint(17, Theme.textAccentColor(), true);
-    titleLine = TextUtils.ellipsize(topic.info.name.replace('\n', ' '), paint,
-      Math.max(0, trailing - Screen.dp(12) - start - scaled(20)), TextUtils.TruncateAt.END).toString();
-    float countersWidth = counters.isEmpty() ? 0 : counterColumns * (counterWidth + Screen.dp(3)) + Screen.dp(6);
+    titleLine = TextUtils.ellipsize(
+      topic.info.name.replace('\n', ' '),
+      paint,
+      Math.max(0, trailing - Screen.dp(12) - start - scaled(20)),
+      TextUtils.TruncateAt.END
+    )
+      .toString();
+    float countersWidth = counters.isEmpty() ? 0 :
+      counterColumns * (counterWidth + Screen.dp(3)) + Screen.dp(6);
     setPaint(14, Theme.textDecentColor(), false);
-    previewLine = TextUtils.ellipsize(preview.replace('\n', ' '), paint,
-      Math.max(0, end - countersWidth - start), TextUtils.TruncateAt.END).toString();
+    previewLine = TextUtils.ellipsize(
+      preview.replace('\n', ' '),
+      paint,
+      Math.max(0, end - countersWidth - start),
+      TextUtils.TruncateAt.END
+    )
+      .toString();
   }
 
   public void setTopic (TdApi.ForumTopic topic) {
     this.topic = topic;
     String name = topic.info.name;
-    iconInitial = topic.info.isGeneral || name.isEmpty() ? "#" : name.substring(0, name.offsetByCodePoints(0, 1));
+    iconInitial = topic.info.isGeneral ||
+      name.isEmpty() ? "#" : name.substring(0, name.offsetByCodePoints(0, 1));
     receiver.setAnimationDisabled(Settings.instance().needReduceMotion());
-    TdlibSettingsManager.LocalForumDraft local = tdlib.settings().getLocalForumDraft(topic.info.chatId, topic.info.forumTopicId);
+    TdlibSettingsManager.LocalForumDraft local =
+      tdlib.settings().getLocalForumDraft(topic.info.chatId, topic.info.forumTopicId);
     TdApi.DraftMessage draft = local != null ? local.draft : topic.draftMessage;
     hasDraft = draft != null && draft.content instanceof TdApi.DraftMessageContentText;
     TdApi.Message message = topic.lastMessage;
     if (hasDraft) {
-      preview = Lang.getString(R.string.format_forumPreview, Lang.getString(R.string.Draft), ((TdApi.DraftMessageContentText) draft.content).text.text);
+      preview = Lang.getString(
+        R.string.format_forumPreview,
+        Lang.getString(R.string.Draft),
+        ((TdApi.DraftMessageContentText) draft.content).text.text
+      );
     } else if (message != null) {
-      ContentPreview content = ContentPreview.getChatListPreview(tdlib, topic.info.chatId, message, false);
+      ContentPreview content =
+        ContentPreview.getChatListPreview(tdlib, topic.info.chatId, message, false);
       preview = content.buildText(false);
       if (!content.hideAuthor) {
-        String author = message.isOutgoing ? Lang.getString(Td.getSenderId(message) == message.chatId ? R.string.FromYouAnonymous : R.string.FromYou) :
-          Td.getMessageAuthorId(message) == message.chatId && TextUtils.isEmpty(message.authorSignature) ? Lang.getString(R.string.FromAnonymous) : tdlib.senderName(message, false, true);
+        String author = message.isOutgoing ?
+          Lang.getString(
+            Td.getSenderId(message) == message.chatId ? R.string.FromYouAnonymous :
+              R.string.FromYou
+          ) :
+          Td.getMessageAuthorId(message) == message.chatId &&
+            TextUtils.isEmpty(message.authorSignature) ? Lang.getString(R.string.FromAnonymous) :
+              tdlib.senderName(message, false, true);
         if (!TextUtils.isEmpty(author)) {
           preview = Lang.getString(R.string.format_forumPreview, author, preview);
         }
@@ -194,7 +258,8 @@ public final class ForumTopicView extends View {
     } else {
       preview = Lang.getString(R.string.NoMessages);
     }
-    time = message != null && message.date != 0 ? Lang.timeOrDateShort(message.date, TimeUnit.SECONDS) : "";
+    time = message != null &&
+      message.date != 0 ? Lang.timeOrDateShort(message.date, TimeUnit.SECONDS) : "";
     delivery = null;
     deliveryColor = ColorId.iconLight;
     int deliveryLabel = 0;
@@ -232,7 +297,10 @@ public final class ForumTopicView extends View {
       status.add(Lang.getString(R.string.ForumHidden));
       stateIcons.add(hidden);
     }
-    muted = ForumPresentation.isMuted(topic.notificationSettings, tdlib.chatMuteFor(topic.info.chatId) > 0);
+    muted = ForumPresentation.isMuted(
+      topic.notificationSettings,
+      tdlib.chatMuteFor(topic.info.chatId) > 0
+    );
     if (muted) {
       status.add(Lang.getString(R.string.ForumNotificationsMuted));
       stateIcons.add(mute);
@@ -253,25 +321,64 @@ public final class ForumTopicView extends View {
     if (topic.unreadPollVoteCount > 0) {
       counters.add("✓" + Lang.badgeCounter(topic.unreadPollVoteCount));
     }
-    long nextEmoji = !topic.info.isGeneral && topic.info.icon != null ? topic.info.icon.customEmojiId : 0;
+    long nextEmoji = !topic.info.isGeneral &&
+      topic.info.icon != null ? topic.info.icon.customEmojiId : 0;
     float size = scaled(20);
     if (emojiId != nextEmoji || emojiSize != size) {
       clearEmoji();
       emojiId = nextEmoji;
       emojiSize = size;
       if (emojiId != 0) {
-        TdApi.FormattedText emoji = new TdApi.FormattedText("*", new TdApi.TextEntity[] {new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(emojiId))});
-        customEmoji = new Text.Builder(tdlib, emoji, null, (int) size * 2, Paints.robotoStyleProvider(20 * Math.max(1f, getResources().getConfiguration().fontScale)), TextColorSets.WHITE, (text, media) -> {
-          if (text == customEmoji) {
-            text.requestMedia(receiver);
-            invalidate();
-          }
-        }).singleLine().build();
+        TdApi.FormattedText emoji =
+          new TdApi.FormattedText(
+            "*",
+            new TdApi.TextEntity[] {
+              new TdApi.TextEntity(
+                0,
+                1,
+                new TdApi.TextEntityTypeCustomEmoji(emojiId)
+              )
+            }
+          );
+        customEmoji =
+          new Text.Builder(
+            tdlib,
+            emoji,
+            null,
+            (int) size * 2,
+            Paints.robotoStyleProvider(
+              20 *
+                Math.max(1f, getResources().getConfiguration().fontScale)
+            ),
+            TextColorSets.WHITE,
+            (text, media) -> {
+      if (text == customEmoji) {
+        text.requestMedia(receiver);
+        invalidate();
+      }
+    }
+          )
+            .singleLine()
+            .build();
         customEmoji.requestMedia(receiver);
       }
     }
-    setContentDescription(Lang.getString(R.string.ForumTopicAccessibility, topic.info.name, time, TextUtils.join(Lang.getConcatSeparator(), status), preview,
-      Lang.getString(R.string.ForumUnreadCounts, topic.unreadCount, topic.unreadMentionCount, topic.unreadReactionCount, topic.unreadPollVoteCount)));
+    setContentDescription(
+      Lang.getString(
+        R.string.ForumTopicAccessibility,
+        topic.info.name,
+        time,
+        TextUtils.join(Lang.getConcatSeparator(), status),
+        preview,
+        Lang.getString(
+          R.string.ForumUnreadCounts,
+          topic.unreadCount,
+          topic.unreadMentionCount,
+          topic.unreadReactionCount,
+          topic.unreadPollVoteCount
+        )
+      )
+    );
     requestLayout();
     invalidate();
   }
@@ -288,7 +395,17 @@ public final class ForumTopicView extends View {
     return rtl ? getWidth() - logical : logical;
   }
 
-  private void text (Canvas c, String value, float start, float end, float cy, float size, int color, boolean medium, boolean rtl) {
+  private void text (
+    Canvas c,
+    String value,
+    float start,
+    float end,
+    float cy,
+    float size,
+    int color,
+    boolean medium,
+    boolean rtl
+  ) {
     if (end <= start) {
       return;
     }
@@ -300,7 +417,15 @@ public final class ForumTopicView extends View {
     c.restoreToCount(save);
   }
 
-  private void icon (Canvas c, Drawable icon, float start, float cy, float size, int colorId, boolean rtl) {
+  private void icon (
+    Canvas c,
+    Drawable icon,
+    float start,
+    float cy,
+    float size,
+    int colorId,
+    boolean rtl
+  ) {
     int save = c.save();
     c.translate(rtl ? getWidth() - start - size : start, cy - size / 2);
     c.scale(size / icon.getMinimumWidth(), size / icon.getMinimumHeight());
@@ -313,7 +438,10 @@ public final class ForumTopicView extends View {
     if (customEmoji != null) {
       int save = c.save();
       c.translate(cx - size / 2, cy - size / 2);
-      c.scale(size / Math.max(1, customEmoji.getWidth()), size / Math.max(1, customEmoji.getHeight()));
+      c.scale(
+        size / Math.max(1, customEmoji.getWidth()),
+        size / Math.max(1, customEmoji.getHeight())
+      );
       customEmoji.draw(c, 0, 0, null, 1f, receiver);
       c.restoreToCount(save);
     } else {
@@ -380,24 +508,64 @@ public final class ForumTopicView extends View {
     }
     trailing = Math.min(trailing, statesStart);
     topicIcon(c, start, cy1, rtl);
-    text(c, titleLine, start+scaled(20)+Screen.dp(6), trailing-Screen.dp(6), cy1, 17, Theme.textAccentColor(), true, rtl);
+    text(
+      c,
+      titleLine,
+      start+scaled(20)+Screen.dp(6),
+      trailing-Screen.dp(6),
+      cy1,
+      17,
+      Theme.textAccentColor(),
+      true,
+      rtl
+    );
     float countersWidth = counters.isEmpty() ? 0 : counterColumns * (counterWidth+Screen.dp(3));
-    text(c, previewLine, start, end-countersWidth-Screen.dp(counters.isEmpty() ? 0 : 6), cy2, 14,
-      hasDraft ? Theme.textRedColor() : Theme.textDecentColor(), false, rtl);
+    text(
+      c,
+      previewLine,
+      start,
+      end-countersWidth-Screen.dp(counters.isEmpty() ? 0 : 6),
+      cy2,
+      14,
+      hasDraft ? Theme.textRedColor() : Theme.textDecentColor(),
+      false,
+      rtl
+    );
     float chipHeight = scaled(16), gap = Screen.dp(3);
     int rows = (counters.size()+counterColumns-1)/counterColumns;
     float top = cy2-(rows*(chipHeight+gap)-gap)/2;
     for (int i = 0; i < counters.size(); i++) {
-      float logical = end-counterWidth-(i%counterColumns)*(counterWidth+gap), left = rtl ? getWidth()-logical-counterWidth : logical;
+      float logical = end-counterWidth-(i%counterColumns)*(counterWidth+gap), left = rtl ?
+        getWidth()-logical-counterWidth : logical;
       float y = top+(i/counterColumns)*(chipHeight+gap);
       paint.setColor(muted ? Theme.badgeMutedColor() : Theme.badgeColor());
-      DrawAlgorithms.drawRoundRect(c, chipHeight/2, left, y, left+counterWidth, y+chipHeight, paint);
+      DrawAlgorithms.drawRoundRect(
+        c,
+        chipHeight/2,
+        left,
+        y,
+        left+counterWidth,
+        y+chipHeight,
+        paint
+      );
       setPaint(11, Theme.badgeTextColor(), true);
       paint.setTextAlign(Paint.Align.CENTER);
-      c.drawText(counters.get(i), left+counterWidth/2, y+chipHeight/2-(paint.ascent()+paint.descent())/2, paint);
+      c.drawText(
+        counters.get(i),
+        left+counterWidth/2,
+        y+chipHeight/2-(paint.ascent()+paint.descent())/2,
+        paint
+      );
     }
     paint.setColor(Theme.separatorColor());
-    c.drawRect(rtl ? 0 : start, getHeight()-1, rtl ? getWidth()-start : getWidth(), getHeight(), paint);
+    c.drawRect(
+      rtl ? 0 : start,
+      getHeight()-1,
+      rtl ? getWidth()-start :
+        getWidth(),
+      getHeight(),
+      paint
+    );
   }
 
   private void clearEmoji () {

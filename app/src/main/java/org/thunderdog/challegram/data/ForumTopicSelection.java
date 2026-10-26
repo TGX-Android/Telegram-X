@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.data;
 
 import org.drinkless.tdlib.TdApi;
@@ -13,7 +25,8 @@ import java.util.List;
 public final class ForumTopicSelection {
   public static final int MAX_SELECTED = 100;
   public enum Action {
-    PIN, UNPIN, MUTE, UNMUTE, CLOSE, OPEN, DELETE, CLEAR_GENERAL, READ_MENTIONS, READ_REACTIONS, READ_POLL_VOTES;
+    PIN, UNPIN, MUTE, UNMUTE, CLOSE, OPEN, DELETE, CLEAR_GENERAL, READ_MENTIONS, READ_REACTIONS,
+      READ_POLL_VOTES;
     public boolean isDestructive () {
       return this == DELETE || this == CLEAR_GENERAL;
     }
@@ -62,8 +75,11 @@ public final class ForumTopicSelection {
   }
 
   public boolean add (TdApi.ForumTopic topic) {
-    if (topic == null || topic.info == null || topic.info.chatId != chatId || topic.info.forumTopicId <= 0 ||
-        !contains(topic.info.forumTopicId) && size() >= MAX_SELECTED) {
+    if (topic == null ||
+      topic.info == null ||
+      topic.info.chatId != chatId ||
+      topic.info.forumTopicId <= 0 ||
+      !contains(topic.info.forumTopicId) && size() >= MAX_SELECTED) {
       return false;
     }
     selected.put(topic.info.forumTopicId, topic);
@@ -116,12 +132,22 @@ public final class ForumTopicSelection {
   }
 
   public static boolean effectiveMute (TdApi.ForumTopic topic, boolean groupMuted) {
-    return topic.notificationSettings == null || topic.notificationSettings.useDefaultMuteFor ? groupMuted : topic.notificationSettings.muteFor > 0;
+    return topic.notificationSettings == null ||
+      topic.notificationSettings.useDefaultMuteFor ? groupMuted :
+        topic.notificationSettings.muteFor > 0;
   }
 
-  /** Unknown/incomplete pins suppress Pin, never estimate capacity from a search or partial list. */
-  public static EnumSet<Action> intersection (List<TdApi.ForumTopic> topics, TdApi.ChatMemberStatus status,
-                                            boolean groupMuted, boolean completePins, int pinnedCount, int pinLimit) {
+  /**
+   * Unknown/incomplete pins suppress Pin, never estimate capacity from a search or partial list.
+   */
+  public static EnumSet<Action> intersection (
+    List<TdApi.ForumTopic> topics,
+    TdApi.ChatMemberStatus status,
+    boolean groupMuted,
+    boolean completePins,
+    int pinnedCount,
+    int pinLimit
+  ) {
     EnumSet<Action> result = EnumSet.noneOf(Action.class);
     if (topics.isEmpty() || topics.size() > MAX_SELECTED) {
       return result;
@@ -129,11 +155,14 @@ public final class ForumTopicSelection {
     long chatId = topics.get(0).info.chatId;
     for (Action action : Action.values()) {
       boolean common = action != Action.CLEAR_GENERAL || topics.size() == 1;
-      if (action == Action.PIN && (!completePins || pinLimit < 0 || (long) pinnedCount + topics.size() > pinLimit)) {
+      if (action == Action.PIN &&
+        (!completePins || pinLimit < 0 || (long) pinnedCount + topics.size() > pinLimit)) {
         common = false;
       }
       for (TdApi.ForumTopic topic : topics) {
-        if (topic.info.chatId != chatId || !allowed(action, topic, status) || !applicable(action, topic, groupMuted)) {
+        if (topic.info.chatId != chatId ||
+          !allowed(action, topic, status) ||
+          !applicable(action, topic, groupMuted)) {
           common = false;
           break;
         }

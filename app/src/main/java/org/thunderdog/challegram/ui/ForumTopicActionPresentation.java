@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.ui;
 
 import androidx.annotation.Nullable;
@@ -27,7 +39,11 @@ final class ForumTopicActionPresentation {
     final boolean uncertain;
     final List<ForumTopicActions.BatchTarget> retryTargets;
 
-    private BatchFailure (@Nullable TdApi.Error error, boolean uncertain, List<ForumTopicActions.BatchTarget> retryTargets) {
+    private BatchFailure (
+      @Nullable TdApi.Error error,
+      boolean uncertain,
+      List<ForumTopicActions.BatchTarget> retryTargets
+    ) {
       this.error = error;
       this.uncertain = uncertain;
       this.retryTargets = retryTargets;
@@ -58,11 +74,14 @@ final class ForumTopicActionPresentation {
         differentErrors = true;
       }
     }
-    return failed ? new BatchFailure(differentErrors ? null : cause, uncertain, result.failedTargets()) : null;
+    return failed ?
+      new BatchFailure(differentErrors ? null : cause, uncertain, result.failedTargets()) : null;
   }
 
   /** TD's raw fallback is diagnostic text, not a suitable user-facing batch error. */
   static String readableError (TdApi.Error error, @Nullable String translated, String fallback) {
-    return translated == null || translated.trim().isEmpty() || translated.equals("#" + error.code + ": " + error.message) ? fallback : translated;
+    return translated == null ||
+      translated.trim().isEmpty() ||
+      translated.equals("#" + error.code + ": " + error.message) ? fallback : translated;
   }
 }

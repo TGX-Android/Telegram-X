@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.data;
 
 import androidx.annotation.Nullable;
@@ -29,7 +41,8 @@ public final class ForumChatPreview {
     private Item (int id, @Nullable TdApi.ForumTopicInfo info) {
       this.id = id;
       this.name = info != null ? info.name : "";
-      this.color = info != null && info.icon != null ? info.icon.color : ForumTopicPolicy.ICON_COLORS[0];
+      this.color = info != null &&
+        info.icon != null ? info.icon.color : ForumTopicPolicy.ICON_COLORS[0];
       this.customEmojiId = info != null && info.icon != null ? info.icon.customEmojiId : 0;
       this.general = info != null && info.isGeneral;
     }
@@ -49,14 +62,23 @@ public final class ForumChatPreview {
   }
 
   public static int topicId (long chatId, @Nullable TdApi.Message message) {
-    return message != null && message.chatId == chatId && message.topicId instanceof TdApi.MessageTopicForum ?
+    return message != null &&
+      message.chatId == chatId &&
+      message.topicId instanceof TdApi.MessageTopicForum ?
       ((TdApi.MessageTopicForum) message.topicId).forumTopicId : 0;
   }
 
   /** Order by actual last-message activity, never by pin rank or the topic creation date. */
   public static final Comparator<TdApi.ForumTopic> RECENT_FIRST =
-    Comparator.comparingInt((TdApi.ForumTopic t) -> t.lastMessage != null ? t.lastMessage.date : 0).reversed()
-      .thenComparing(Comparator.comparingLong((TdApi.ForumTopic t) -> t.lastMessage != null ? t.lastMessage.id : 0).reversed())
+    Comparator.comparingInt((TdApi.ForumTopic t) -> t.lastMessage != null ? t.lastMessage.date : 0)
+      .reversed()
+      .thenComparing(
+        Comparator.comparingLong(
+          (TdApi.ForumTopic t) -> t.lastMessage != null ?
+            t.lastMessage.id : 0
+        )
+          .reversed()
+      )
       .thenComparingInt(t -> t.info.forumTopicId);
 
   public static boolean hasTextDraft (@Nullable TdApi.DraftMessage draft) {
@@ -65,16 +87,30 @@ public final class ForumChatPreview {
       !((TdApi.DraftMessageContentText) draft.content).text.text.isEmpty();
   }
 
-  /** Keep drafts in the bounded projection too, without changing the activity order of its message labels. */
+  /**
+   * Keep drafts in the bounded projection too, without changing the activity order of its message
+   * labels.
+   */
   public static final Comparator<TdApi.ForumTopic> CACHE_FIRST =
-    Comparator.comparingInt((TdApi.ForumTopic t) -> Math.max(t.lastMessage != null ? t.lastMessage.date : 0,
-      hasTextDraft(t.draftMessage) ? t.draftMessage.date : 0)).reversed().thenComparing(RECENT_FIRST);
+    Comparator.comparingInt(
+      (TdApi.ForumTopic t) ->
+        Math.max(
+          t.lastMessage != null ? t.lastMessage.date : 0,
+          hasTextDraft(t.draftMessage) ? t.draftMessage.date :
+            0
+        )
+    )
+      .reversed()
+      .thenComparing(RECENT_FIRST);
 
-  public static @Nullable TdApi.ForumTopic latestDraft (long chatId, List<TdApi.ForumTopic> topics) {
+  public static @Nullable TdApi.ForumTopic latestDraft (
+    long chatId,
+    List<TdApi.ForumTopic> topics
+  ) {
     TdApi.ForumTopic newest = null;
     for (TdApi.ForumTopic topic : topics) {
       if (available(chatId, topic) && hasTextDraft(topic.draftMessage) &&
-          (newest == null || topic.draftMessage.date > newest.draftMessage.date)) {
+        (newest == null || topic.draftMessage.date > newest.draftMessage.date)) {
         newest = topic;
       }
     }
@@ -82,7 +118,10 @@ public final class ForumChatPreview {
   }
 
   private static boolean available (long chatId, @Nullable TdApi.ForumTopic topic) {
-    return topic != null && topic.info != null && topic.info.chatId == chatId && topic.info.forumTopicId > 0 &&
+    return topic != null &&
+      topic.info != null &&
+      topic.info.chatId == chatId &&
+      topic.info.forumTopicId > 0 &&
       !topic.info.isHidden;
   }
 
@@ -95,13 +134,23 @@ public final class ForumChatPreview {
       "TOPIC_DELETED".equals(error.message);
   }
 
-  public static List<Item> select (long chatId, @Nullable TdApi.Message message, List<TdApi.ForumTopic> topics,
-                                  @Nullable TdApi.ForumTopic leadingTopic, boolean leadingUnavailable) {
+  public static List<Item> select (
+    long chatId,
+    @Nullable TdApi.Message message,
+    List<TdApi.ForumTopic> topics,
+    @Nullable TdApi.ForumTopic leadingTopic,
+    boolean leadingUnavailable
+  ) {
     return select(chatId, topicId(chatId, message), topics, leadingTopic, leadingUnavailable);
   }
 
-  public static List<Item> select (long chatId, int firstId, List<TdApi.ForumTopic> topics,
-                                  @Nullable TdApi.ForumTopic leadingTopic, boolean leadingUnavailable) {
+  public static List<Item> select (
+    long chatId,
+    int firstId,
+    List<TdApi.ForumTopic> topics,
+    @Nullable TdApi.ForumTopic leadingTopic,
+    boolean leadingUnavailable
+  ) {
     LinkedHashMap<Integer, TdApi.ForumTopic> candidates = new LinkedHashMap<>();
     for (TdApi.ForumTopic topic : topics) {
       if (available(chatId, topic)) {
@@ -111,16 +160,23 @@ public final class ForumChatPreview {
     if (available(chatId, leadingTopic) && leadingTopic.info.forumTopicId == firstId) {
       candidates.put(firstId, leadingTopic);
     }
-    boolean hiddenLeading = leadingTopic != null && leadingTopic.info != null && leadingTopic.info.forumTopicId == firstId && leadingTopic.info.isHidden;
+    boolean hiddenLeading = leadingTopic != null &&
+      leadingTopic.info != null &&
+      leadingTopic.info.forumTopicId == firstId &&
+      leadingTopic.info.isHidden;
     for (TdApi.ForumTopic topic : topics) {
-      if (topic.info != null && topic.info.chatId == chatId && topic.info.forumTopicId == firstId && topic.info.isHidden) {
+      if (topic.info != null &&
+        topic.info.chatId == chatId &&
+        topic.info.forumTopicId == firstId &&
+        topic.info.isHidden) {
         hiddenLeading = true;
       }
     }
     ArrayList<Item> result = new ArrayList<>(LIMIT);
     if (firstId > 0 && !leadingUnavailable && !hiddenLeading) {
       TdApi.ForumTopic first = candidates.remove(firstId);
-      // Reserve the correct leading topic while its metadata loads; never label the message with another topic.
+      // Reserve the correct leading topic while its metadata loads; never label the message with
+      // another topic.
       result.add(new Item(firstId, first != null ? first.info : null));
     } else {
       candidates.remove(firstId);
@@ -132,7 +188,7 @@ public final class ForumChatPreview {
         break;
       }
       if (topic.lastMessage != null && topic.lastMessage.schedulingState == null &&
-          topicId(chatId, topic.lastMessage) == topic.info.forumTopicId) {
+        topicId(chatId, topic.lastMessage) == topic.info.forumTopicId) {
         result.add(new Item(topic.info.forumTopicId, topic.info));
       }
     }

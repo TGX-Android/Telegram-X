@@ -344,7 +344,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     // Actions address the latest notification; its topic may override the group's preview setting.
-    final boolean needPreview = lastNotification.isForumMessage() ? helper.needPreview(group, lastNotification) : helper.needPreview(group);
+    final boolean needPreview = lastNotification.isForumMessage() ? helper.needPreview(
+      group,
+      lastNotification
+    ) : helper.needPreview(group);
     // endregion
     final boolean needReply = !Passcode.instance().isLocked() && needPreview && (!isSummary || Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) && !isChannel && tdlib.canSendBasicMessage(chat) && !group.isOnlyScheduled();
     final boolean needReplyToMessage = needReply && canReplyTo(group) && (!ChatId.isPrivate(chatId) || (singleNotification != null && chat.unreadCount > 1));
@@ -599,7 +602,12 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final CharSequence tickerText = getTickerText(tdlib, helper, allowPreview, chat, lastNotification, true, group.singleSenderId() != 0, hasCustomText);
 
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), group.findTargetMessageId(), group.getMessageTopicId());
+    final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(
+      tdlib.id(),
+      tdlib.settings().getLocalChatId(chatId),
+      group.findTargetMessageId(),
+      group.getMessageTopicId()
+    );
     // endregion
 
     boolean needGroupLogic = true; // !isSummary || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && settings == null);
@@ -776,7 +784,14 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       .setLongLived(true)
       .setShortLabel(visualChatTitle)
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      .setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId(), group.getMessageTopicId()))
+      .setIntent(
+        TdlibNotificationUtils.newCoreIntent(
+          tdlib.id(),
+          localChatId,
+          group.findTargetMessageId(),
+          group.getMessageTopicId()
+        )
+      )
       // endregion
       .setIcon(chatIcon)
       .build();
@@ -948,7 +963,12 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     long chatId = chat.id;
     boolean isMention = notification.group().isMention();
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && (!Passcode.instance().isLocked() || Passcode.instance().displayNotifications()) && tdlib.notifications().needContentPreview(chatId, isMention, notification.isForumMessage() ? notification.allowContentPreview() : null) && notification.needContentPreview()) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && (!Passcode.instance().isLocked() ||
+      Passcode.instance().displayNotifications()) && tdlib.notifications().needContentPreview(
+      chatId,
+      isMention,
+      notification.isForumMessage() ? notification.allowContentPreview() : null
+    ) && notification.needContentPreview()) {
       // endregion
       final long date = notification.getDate() * 1000l;
       TdlibNotificationMediaFile file = TdlibNotificationMediaFile.newFile(tdlib, chat, notification.getNotificationContent());

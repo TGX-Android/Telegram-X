@@ -337,7 +337,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.requestAllTextMedia(this);
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     setFocusable(message.hasForumTopicButton());
-    setImportantForAccessibility(message.hasForumTopicButton() ? IMPORTANT_FOR_ACCESSIBILITY_YES : IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+    setImportantForAccessibility(
+      message.hasForumTopicButton() ? IMPORTANT_FOR_ACCESSIBILITY_YES
+        : IMPORTANT_FOR_ACCESSIBILITY_AUTO
+    );
     // endregion
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -463,20 +466,25 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     super.onInitializeAccessibilityNodeInfo(info);
     if (msg != null && msg.hasForumTopicButton()) {
       String topic = Lang.getString(R.string.ForumOpenTopicAction, msg.forumTopicLabel());
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !msg.messagesController().inSelectMode()) {
-        AccessibilityNodeInfoCompat.wrap(info).addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(R.id.btn_openForumTopic, topic));
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
+        !msg.messagesController().inSelectMode()) {
+        AccessibilityNodeInfoCompat.wrap(info).addAction(
+          new AccessibilityNodeInfoCompat.AccessibilityActionCompat(R.id.btn_openForumTopic, topic)
+        );
       }
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "C2-L10N-02")
       if (info.getContentDescription() == null) {
         info.setContentDescription(Lang.getString(R.string.format_forumMessageAccessibility, topic,
-          ContentPreview.getChatListPreview(msg.tdlib(), msg.getChatId(), msg.getMessage(), true).buildText(false)));
+          ContentPreview.getChatListPreview(msg.tdlib(), msg.getChatId(), msg.getMessage(), true)
+            .buildText(false)));
       }
       // endregion
     }
   }
 
   @Override public boolean performAccessibilityAction (int action, Bundle arguments) {
-    if (action == R.id.btn_openForumTopic && msg != null && msg.hasForumTopicButton() && !msg.messagesController().inSelectMode()) {
+    if (action == R.id.btn_openForumTopic && msg != null && msg.hasForumTopicButton() &&
+      !msg.messagesController().inSelectMode()) {
       msg.openForumTopic();
       return true;
     }

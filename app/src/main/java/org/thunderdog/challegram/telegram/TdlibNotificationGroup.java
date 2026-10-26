@@ -110,7 +110,9 @@ public class TdlibNotificationGroup implements Iterable<TdlibNotification> {
   public TdApi.MessageTopic getMessageTopicId () {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     TdlibNotification last = lastNotification();
-    TdApi.MessageTopic topic = last != null ? ForumNavigation.notificationTopic(last.getNotificationContent()) : null;
+    TdApi.MessageTopic topic = last != null ? ForumNavigation.notificationTopic(
+      last.getNotificationContent()
+    ) : null;
     return ForumHistory.isForum(topic) ? topic : null;
   }
 

@@ -1198,7 +1198,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   private boolean textChangedSinceChatOpened;
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.DraftMessageContent draft, @Nullable String customInputField, boolean isSilent) {
+  public void setChat (
+    TdApi.Chat chat,
+    @Nullable ThreadInfo messageThread,
+    @Nullable TdApi.DraftMessageContent draft,
+    @Nullable String customInputField,
+    boolean isSilent
+  ) {
   // endregion
     textChangedSinceChatOpened = false;
     updateMessageHint(chat, messageThread, customInputField, isSilent);
@@ -1518,10 +1524,20 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  private boolean canSendImeContent (InputSendContext sendContext, TdApi.InputMessageContent content) {
+  private boolean canSendImeContent (
+    InputSendContext sendContext,
+    TdApi.InputMessageContent content
+  ) {
     MessagesController current = controller;
-    return current != null && sendContext.matches(current, current.tdlib(), current.getArguments(),
-      inputDestroyed || current.isDestroyed(), current.getChatId(), current.getMessageTopicId(), current.areScheduledOnly()) &&
+    return current != null && sendContext.matches(
+      current,
+      current.tdlib(),
+      current.getArguments(),
+      inputDestroyed || current.isDestroyed(),
+      current.getChatId(),
+      current.getMessageTopicId(),
+      current.areScheduledOnly()
+    ) &&
       !current.showForumTopicRestriction(this) &&
       !current.showRestriction(this, tdlib.getRestrictionText(current.getChat(), content));
   }
@@ -1547,8 +1563,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       (inputContentInfo, flags, bundle) -> {
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
         final MessagesController sendController = controller;
-        if (inputDestroyed || sendController == null || sendController.isDestroyed() || sendController.tdlib() != tdlib ||
-            sendController.showForumTopicRestriction(this)) {
+        if (inputDestroyed || sendController == null || sendController.isDestroyed() ||
+          sendController.tdlib() != tdlib ||
+          sendController.showForumTopicRestriction(this)) {
           // endregion
           return false;
         }

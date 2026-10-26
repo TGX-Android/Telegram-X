@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.ui;
 
 import android.app.AlertDialog;
@@ -37,7 +49,9 @@ import tgx.td.ChatId;
 
 /** A topic target is required; no path from this screen sends SetChatNotificationSettings. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-public final class ForumTopicNotificationController extends ViewController<ForumTopicProfileController.Arguments> implements CleanupStartupDelegate, TdlibCache.SupergroupDataChangeListener {
+public final class ForumTopicNotificationController
+  extends ViewController<ForumTopicProfileController.Arguments>
+  implements CleanupStartupDelegate, TdlibCache.SupergroupDataChangeListener {
   private ForumTopicStore.TopicSubscription subscription;
   private TdApi.ForumTopic topic;
   private TdApi.Error failure;
@@ -109,18 +123,36 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     addThemeTextColorListener(status, ColorId.text);
     status.setPadding(pad, pad, pad, pad);
     column.addView(status, new LinearLayout.LayoutParams(-1, -2));
-    status.setOnClickListener(v -> {
-      if (!terminal && !busy) {
-        failure = null;
-        tdlib.topics().retryTopic(key());
-        render();
+    status.setOnClickListener(
+      v -> {
+        if (!terminal && !busy) {
+          failure = null;
+          tdlib.topics().retryTopic(key());
+          render();
+        }
       }
-    });
+    );
     mute = row(R.string.ForumNotifications, this::chooseMute, true);
     sound = row(R.string.ForumProfileSound, this::chooseSound, true);
-    preview = row(R.string.MessagePreview, () -> chooseField(ForumTopicNotifications.Field.PREVIEW), true);
-    pinned = row(R.string.ForumProfilePinnedNotifications, () -> chooseField(ForumTopicNotifications.Field.PINNED), true);
-    mentions = row(R.string.ForumProfileMentionNotifications, () -> chooseField(ForumTopicNotifications.Field.MENTIONS), false);
+    preview = row(
+      R.string.MessagePreview,
+      () ->
+        chooseField(ForumTopicNotifications.Field.PREVIEW),
+      true
+    );
+    pinned = row(
+      R.string.ForumProfilePinnedNotifications,
+      () ->
+        chooseField(ForumTopicNotifications.Field.PINNED),
+      true
+    );
+    mentions =
+      row(
+        R.string.ForumProfileMentionNotifications,
+        () ->
+          chooseField(ForumTopicNotifications.Field.MENTIONS),
+        false
+      );
     hint = new TextView(context);
     hint.setText(Lang.getString(R.string.ForumProfileSettingsHint));
     hint.setTypeface(Fonts.getRobotoRegular());
@@ -130,14 +162,18 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     hint.setTextColor(Theme.textDecentColor());
     addThemeTextColorListener(hint, ColorId.textLight);
     column.addView(hint, new LinearLayout.LayoutParams(-1, -2));
-    subscription = tdlib.topics().observeTopic(key(), (value, error) -> {
-      if (isDestroyed() || terminal) {
-        return;
+    subscription = tdlib.topics()
+      .observeTopic(
+        key(),
+        (value, error) -> {
+        if (isDestroyed() || terminal) {
+          return;
+        }
+        topic = value;
+        failure = error;
+        render();
       }
-      topic = value;
-      failure = error;
-      render();
-    });
+      );
     tdlib.listeners().addCleanupListener(this);
     tdlib.cache().subscribeToSupergroupUpdates(ChatId.toSupergroupId(getChatId()), this);
     render();
@@ -146,12 +182,20 @@ public final class ForumTopicNotificationController extends ViewController<Forum
 
   private SettingRow row (int label, Runnable action, boolean divider) {
     SettingRow view = new SettingRow(context, label, divider);
-    column.addView(view, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-    view.setOnClickListener(v -> {
-      if (ready()) {
-        action.run();
+    column.addView(
+      view,
+      new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+      )
+    );
+    view.setOnClickListener(
+      v -> {
+        if (ready()) {
+          action.run();
+        }
       }
-    });
+    );
     return view;
   }
 
@@ -215,8 +259,13 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     @Override protected void onDraw (Canvas canvas) {
       super.onDraw(canvas);
       if (divider) {
-        canvas.drawRect(getPaddingLeft(), getHeight() - Math.max(1, Screen.dp(.5f)),
-          getWidth() - getPaddingRight(), getHeight(), Paints.fillingPaint(Theme.separatorColor()));
+        canvas.drawRect(
+          getPaddingLeft(),
+          getHeight() - Math.max(1, Screen.dp(.5f)),
+          getWidth() - getPaddingRight(),
+          getHeight(),
+          Paints.fillingPaint(Theme.separatorColor())
+        );
       }
     }
 
@@ -227,18 +276,35 @@ public final class ForumTopicNotificationController extends ViewController<Forum
   }
 
   private boolean ready () {
-    return !isDestroyed() && !terminal && !busy && failure == null && topic != null && topic.notificationSettings != null && tdlib.chatAvailable(tdlib.chat(getChatId()));
+    return !isDestroyed() &&
+      !terminal &&
+      !busy &&
+      failure == null &&
+      topic != null &&
+      topic.notificationSettings != null &&
+      tdlib.chatAvailable(tdlib.chat(getChatId()));
   }
 
   private String state (boolean inherit, boolean enabled) {
-    return Lang.getString(inherit ? R.string.ForumNotificationsDefault : enabled ? R.string.ForumProfileEnabled : R.string.ForumProfileDisabled);
+    return Lang.getString(
+      inherit ? R.string.ForumNotificationsDefault : enabled ?
+        R.string.ForumProfileEnabled : R.string.ForumProfileDisabled
+    );
   }
 
   private void render () {
     if (status == null) {
       return;
     }
-    status.setText(terminal || topic != null && !tdlib.chatAvailable(tdlib.chat(getChatId())) ? Lang.getString(R.string.ForumProfileUnavailable) : busy ? Lang.getString(R.string.ForumSaving) : failure != null ? Lang.getString(R.string.ForumTopicLoadFailed) : topic == null ? Lang.getString(R.string.ForumTopicLoading) : topic.info.name);
+    status.setText(
+      terminal ||
+        topic != null &&
+          !tdlib.chatAvailable(tdlib.chat(getChatId())) ?
+          Lang.getString(R.string.ForumProfileUnavailable) : busy ?
+            Lang.getString(R.string.ForumSaving) : failure != null ?
+              Lang.getString(R.string.ForumTopicLoadFailed) : topic == null ?
+                Lang.getString(R.string.ForumTopicLoading) : topic.info.name
+    );
     for (SettingRow row : new SettingRow[] {mute, sound, preview, pinned, mentions}) {
       row.setEnabled(ready());
     }
@@ -246,19 +312,41 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     if (s == null) {
       return;
     }
-    String muteState = !s.useDefaultMuteFor && s.muteFor > 0 ? (s.muteFor > 366 * 86400 ? Lang.getString(R.string.MuteForever) : Lang.getString(R.string.ForumProfileDuration, Lang.getDuration(s.muteFor))) : state(s.useDefaultMuteFor, s.muteFor == 0);
+    String muteState = !s.useDefaultMuteFor &&
+      s.muteFor > 0 ?
+        (s.muteFor > 366 * 86400 ? Lang.getString(R.string.MuteForever) :
+          Lang.getString(R.string.ForumProfileDuration, Lang.getDuration(s.muteFor))) :
+            state(s.useDefaultMuteFor, s.muteFor == 0);
     mute.setValue(muteState);
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     // Saved sounds selected in another client use the local group fallback. Do not
     // overwrite that server setting unless the user explicitly selects an option.
-    sound.setValue(Lang.getString(s.useDefaultSound || s.soundId != 0 ? R.string.ForumNotificationsDefault : R.string.ForumProfileSilent));
+    sound.setValue(
+      Lang.getString(
+        s.useDefaultSound ||
+          s.soundId != 0 ? R.string.ForumNotificationsDefault : R.string.ForumProfileSilent
+      )
+    );
     // endregion
     preview.setValue(state(s.useDefaultShowPreview, s.showPreview));
-    pinned.setValue(state(s.useDefaultDisablePinnedMessageNotifications, !s.disablePinnedMessageNotifications));
-    mentions.setValue(state(s.useDefaultDisableMentionNotifications, !s.disableMentionNotifications));
+    pinned.setValue(
+      state(
+        s.useDefaultDisablePinnedMessageNotifications,
+        !s.disablePinnedMessageNotifications
+      )
+    );
+    mentions.setValue(
+      state(
+        s.useDefaultDisableMentionNotifications,
+        !s.disableMentionNotifications
+      )
+    );
   }
 
-  private void apply (Function<TdApi.ChatNotificationSettings, TdApi.ChatNotificationSettings> edit) {
+  private void apply (
+    Function<TdApi.ChatNotificationSettings,
+      TdApi.ChatNotificationSettings> edit
+  ) {
     if (!ready()) {
       return;
     }
@@ -269,7 +357,10 @@ public final class ForumTopicNotificationController extends ViewController<Forum
     }
     busy = true;
     render();
-    tdlib.topics().actions.setNotifications(key(), edit.apply(current.value.notificationSettings), (ok, error) -> {
+    tdlib.topics().actions.setNotifications(
+      key(),
+      edit.apply(current.value.notificationSettings),
+      (ok, error) -> {
       if (isDestroyed() || terminal) {
         return;
       }
@@ -278,44 +369,99 @@ public final class ForumTopicNotificationController extends ViewController<Forum
       if (error != null) {
         showError(error);
       }
-    });
+    }
+    );
   }
 
   private void chooseMute () {
-    String[] labels = {Lang.getString(R.string.ForumNotificationsDefault), Lang.getString(R.string.ForumNotificationsOn),
-      Lang.getString(R.string.ForumMuteHour), Lang.getString(R.string.ForumMuteDay), Lang.getString(R.string.MuteForever)};
+    String[] labels =
+      {
+        Lang.getString(R.string.ForumNotificationsDefault),
+        Lang.getString(R.string.ForumNotificationsOn),
+        Lang.getString(R.string.ForumMuteHour),
+        Lang.getString(R.string.ForumMuteDay),
+        Lang.getString(R.string.MuteForever)
+      };
     int[] seconds = {0, 0, 3600, 86400, Integer.MAX_VALUE};
-    showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(getName()).setItems(labels,
-      (dialog, which) -> apply(s -> ForumTopicNotifications.mute(s, which == 0, seconds[which])))
-      .setNegativeButton(Lang.getString(R.string.Cancel), null));
+    showAlert(
+      new AlertDialog.Builder(
+        context,
+        Theme.dialogTheme()
+      )
+        .setTitle(getName())
+        .setItems(
+          labels,
+          (dialog, which) -> apply(s -> ForumTopicNotifications.mute(s, which == 0, seconds[which]))
+        )
+        .setNegativeButton(Lang.getString(R.string.Cancel), null)
+    );
   }
 
   private void chooseField (ForumTopicNotifications.Field field) {
-    String[] labels = {Lang.getString(R.string.ForumNotificationsDefault), Lang.getString(R.string.ForumProfileEnabled), Lang.getString(R.string.ForumProfileDisabled)};
-    showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(getName()).setItems(labels,
-      (dialog, which) -> apply(s -> ForumTopicNotifications.field(s, field, which == 0, which == 1)))
-      .setNegativeButton(Lang.getString(R.string.Cancel), null));
+    String[] labels =
+      {
+        Lang.getString(R.string.ForumNotificationsDefault),
+        Lang.getString(R.string.ForumProfileEnabled),
+        Lang.getString(R.string.ForumProfileDisabled)
+      };
+    showAlert(
+      new AlertDialog.Builder(
+        context,
+        Theme.dialogTheme()
+      )
+        .setTitle(getName())
+        .setItems(
+          labels,
+          (dialog, which) ->
+            apply(s -> ForumTopicNotifications.field(s, field, which == 0, which == 1))
+        )
+        .setNegativeButton(Lang.getString(R.string.Cancel), null)
+    );
   }
 
   @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private void chooseSound () {
-    String[] labels = {Lang.getString(R.string.ForumNotificationsDefault), Lang.getString(R.string.ForumProfileSilent)};
-    showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(Lang.getString(R.string.ForumProfileSound))
-      .setItems(labels, (dialog, which) -> apply(s -> ForumTopicNotifications.sound(s, which == 0, 0)))
-      .setNegativeButton(Lang.getString(R.string.Cancel), null));
+    String[] labels =
+      {
+        Lang.getString(R.string.ForumNotificationsDefault),
+        Lang.getString(R.string.ForumProfileSilent)
+      };
+    showAlert(
+      new AlertDialog.Builder(
+        context,
+        Theme.dialogTheme()
+      )
+        .setTitle(Lang.getString(R.string.ForumProfileSound))
+        .setItems(
+          labels,
+          (dialog, which) ->
+            apply(s -> ForumTopicNotifications.sound(s, which == 0, 0))
+        )
+        .setNegativeButton(Lang.getString(R.string.Cancel), null)
+    );
   }
 
   private void showError (TdApi.Error error) {
-    showAlert(new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(getName())
-      .setMessage(Lang.getString(tdlib.isConnected() ? R.string.LaunchSubtitleFatalError : R.string.prompt_network))
-      .setPositiveButton(Lang.getString(R.string.OK), null));
+    showAlert(
+      new AlertDialog.Builder(context, Theme.dialogTheme()).setTitle(getName())
+        .setMessage(
+          Lang.getString(
+            tdlib.isConnected() ? R.string.LaunchSubtitleFatalError :
+              R.string.prompt_network
+          )
+        )
+        .setPositiveButton(Lang.getString(R.string.OK), null)
+    );
   }
 
   @Override protected void handleLanguagePackEvent (int event, int arg1) {
     super.handleLanguagePackEvent(event, arg1);
     if (column != null) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-        column.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+        column.setLayoutDirection(
+          Lang.rtl() ? View.LAYOUT_DIRECTION_RTL :
+            View.LAYOUT_DIRECTION_LTR
+        );
       }
       hint.setText(Lang.getString(R.string.ForumProfileSettingsHint));
       render();
@@ -329,7 +475,8 @@ public final class ForumTopicNotificationController extends ViewController<Forum
   }
 
   @Override public boolean restoreInstanceState (Bundle in, String prefix) {
-    ForumTopicProfileController.Arguments args = ForumTopicProfileController.restoreArguments(in, prefix);
+    ForumTopicProfileController.Arguments args =
+      ForumTopicProfileController.restoreArguments(in, prefix);
     if (args == null || tdlib.chatSync(args.chatId) == null) {
       return false;
     }
@@ -353,17 +500,20 @@ public final class ForumTopicNotificationController extends ViewController<Forum
 
   @Override public void onPerformUserCleanup () {
     terminal = true;
-    tdlib.ui().post(() -> {
-      if (isDestroyed()) {
-        return;
+    tdlib.ui()
+      .post(
+        () -> {
+        if (isDestroyed()) {
+          return;
+        }
+        if (subscription != null) {
+          subscription.close();
+        }
+        topic = null;
+        busy = false;
+        render();
       }
-      if (subscription != null) {
-        subscription.close();
-      }
-      topic = null;
-      busy = false;
-      render();
-    });
+      );
   }
 
   @Override public void onPerformRestart () {

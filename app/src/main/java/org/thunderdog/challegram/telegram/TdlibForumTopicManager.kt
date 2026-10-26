@@ -12,7 +12,12 @@ import org.thunderdog.challegram.tool.UI
 
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
 /** TDLib/UI-thread adapter for the account's single forum topic store. */
-class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate, MessageListener, ChatListener, ConnectionListener, UI.StateListener {
+class TdlibForumTopicManager(private val tdlib: Tdlib) :
+  CleanupStartupDelegate,
+  MessageListener,
+  ChatListener,
+  ConnectionListener,
+  UI.StateListener {
 // endregion
   data class Key(
     @JvmField val chatId: Long,
@@ -31,8 +36,10 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
   private val backend = object : ForumTopicStore.Backend {
     override fun execute(action: Runnable) = tdlib.executeOnTdlibThread(action)
-    override fun send(request: TdApi.Function<*>, callback: Client.ResultHandler) = tdlib.client().send(request, callback)
-    override fun schedule(delayMs: Long, action: Runnable) = tdlib.runOnTdlibThread(action, delayMs / 1000.0, false)
+    override fun send(request: TdApi.Function<*>, callback: Client.ResultHandler) =
+      tdlib.client().send(request, callback)
+    override fun schedule(delayMs: Long, action: Runnable) =
+      tdlib.runOnTdlibThread(action, delayMs / 1000.0, false)
     override fun publish(action: Runnable) = tdlib.runOnUiThread(action)
   }
   private val store = ForumTopicStore(backend)
@@ -51,15 +58,25 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  fun openList(chatId: Long, query: String, observer: ForumTopicStore.ListObserver) = store.openList(chatId, query, observer)
-  fun openPreview(chatId: Long, observer: ForumTopicStore.ListObserver) = store.openPreview(chatId, observer)
-  fun observeTopic(key: Key, observer: ForumTopicStore.TopicObserver) = store.observeTopic(key, observer)
+  fun openList(chatId: Long, query: String, observer: ForumTopicStore.ListObserver) =
+    store.openList(chatId, query, observer)
+  fun openPreview(chatId: Long, observer: ForumTopicStore.ListObserver) =
+    store.openPreview(chatId, observer)
+  fun observeTopic(key: Key, observer: ForumTopicStore.TopicObserver) =
+    store.observeTopic(key, observer)
   fun cachedList(chatId: Long, query: String) = store.cachedSnapshot(chatId, query)
-  fun find(key: Key): Entry? = store.cachedTopic(key)?.let { Entry(key, it, null) }
+  fun find(key: Key): Entry? = store.cachedTopic(key)?.let {
+    Entry(key, it, null)
+  }
   fun retryTopic(key: Key) = store.retryTopic(key)
-  fun observeUnread(chatId: Long, observer: ForumUnreadCounter.Observer) = unread.observe(chatId, observer)
+  fun observeUnread(chatId: Long, observer: ForumUnreadCounter.Observer) =
+    unread.observe(chatId, observer)
   fun unreadCount(chat: Chat): Int = if (tdlib.isForum(chat.id)) {
-    ForumUnreadCounter.badgeCount(unread.cachedCount(chat.id), chat.unreadCount, chat.isMarkedAsUnread)
+    ForumUnreadCounter.badgeCount(
+      unread.cachedCount(chat.id),
+      chat.unreadCount,
+      chat.isMarkedAsUnread
+    )
   } else if (chat.unreadCount > 0) {
     chat.unreadCount
   } else if (chat.isMarkedAsUnread) {
@@ -69,7 +86,8 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
   }
   // endregion
 
-  // Existing message consumers keep their weak subscriptions; list consumers own closeable sessions.
+  // Existing message consumers keep their weak subscriptions;
+  // list consumers own closeable sessions.
   // Updates now deliver the merged full value through onTopicFound as well.
   interface Observer {
     fun onTopicFound(key: Key, topic: ForumTopic, inPlace: Boolean)
@@ -151,29 +169,82 @@ class TdlibForumTopicManager(private val tdlib: Tdlib) : CleanupStartupDelegate,
     }
   }
   override fun onNewMessage(message: Message) = messageChanged(message)
-  override fun onMessageSendSucceeded(message: Message, oldMessageId: Long) = messageChanged(message)
-  override fun onMessageSendFailed(message: Message, oldMessageId: Long, error: Error) = messageChanged(message)
-  override fun onMessageContentChanged(chatId: Long, messageId: Long, newContent: MessageContent) = changed(chatId, messageId)
-  override fun onMessageEphemeralContentChanged(chatId: Long, messageId: Long, newEphemeralContent: EphemeralMessageContent?) = changed(chatId, messageId)
-  override fun onMessageEdited(chatId: Long, messageId: Long, editDate: Int, replyMarkup: ReplyMarkup?) = changed(chatId, messageId)
-  override fun onMessagePinned(chatId: Long, messageId: Long, isPinned: Boolean) = changed(chatId, messageId)
+  override fun onMessageSendSucceeded(message: Message, oldMessageId: Long) =
+    messageChanged(message)
+  override fun onMessageSendFailed(message: Message, oldMessageId: Long, error: Error) =
+    messageChanged(message)
+  override fun onMessageContentChanged(
+    chatId: Long,
+    messageId: Long,
+    newContent: MessageContent
+  ) =
+    changed(chatId, messageId)
+  override fun onMessageEphemeralContentChanged(
+    chatId: Long,
+    messageId: Long,
+    newEphemeralContent: EphemeralMessageContent?
+  ) =
+    changed(chatId, messageId)
+  override fun onMessageEdited(
+    chatId: Long,
+    messageId: Long,
+    editDate: Int,
+    replyMarkup: ReplyMarkup?
+  ) =
+    changed(chatId, messageId)
+  override fun onMessagePinned(chatId: Long, messageId: Long, isPinned: Boolean) =
+    changed(chatId, messageId)
   override fun onMessageMentionRead(chatId: Long, messageId: Long) = changed(chatId, messageId)
-  override fun onMessageUnreadReactionsChanged(chatId: Long, messageId: Long, unreadReactions: Array<UnreadReaction>?, unreadReactionCount: Int) = changed(chatId, messageId)
-  override fun onMessageUnreadPollVotesChanged(chatId: Long, messageId: Long, hasUnreadPollVote: Boolean, unreadPollVoteCount: Int) = changed(chatId, messageId)
+  override fun onMessageUnreadReactionsChanged(
+    chatId: Long,
+    messageId: Long,
+    unreadReactions: Array<UnreadReaction>?,
+    unreadReactionCount: Int
+  ) =
+    changed(chatId, messageId)
+  override fun onMessageUnreadPollVotesChanged(
+    chatId: Long,
+    messageId: Long,
+    hasUnreadPollVote: Boolean,
+    unreadPollVoteCount: Int
+  ) =
+    changed(chatId, messageId)
   override fun onMessagesDeleted(chatId: Long, messageIds: LongArray) {
     store.onMessageChanged(chatId, messageIds)
     unread.invalidate(chatId)
   }
-  private fun changed(chatId: Long, messageId: Long) = store.onMessageChanged(chatId, longArrayOf(messageId))
+  private fun changed(chatId: Long, messageId: Long) =
+    store.onMessageChanged(chatId, longArrayOf(messageId))
 
-  override fun onChatReadInbox(chatId: Long, lastReadInboxMessageId: Long, unreadCount: Int, availabilityChanged: Boolean) {
+  override fun onChatReadInbox(
+    chatId: Long,
+    lastReadInboxMessageId: Long,
+    unreadCount: Int,
+    availabilityChanged: Boolean
+  ) {
     store.invalidateChat(chatId)
     unread.invalidate(chatId)
   }
-  override fun onChatReadOutbox(chatId: Long, lastReadOutboxMessageId: Long) = store.invalidateChat(chatId)
-  override fun onChatUnreadMentionCount(chatId: Long, unreadMentionCount: Int, availabilityChanged: Boolean) = store.invalidateChat(chatId)
-  override fun onChatUnreadReactionCount(chatId: Long, unreadReactionCount: Int, availabilityChanged: Boolean) = store.invalidateChat(chatId)
-  override fun onChatUnreadPollVoteCount(chatId: Long, unreadMentionCount: Int, availabilityChanged: Boolean) = store.invalidateChat(chatId)
+  override fun onChatReadOutbox(chatId: Long, lastReadOutboxMessageId: Long) =
+    store.invalidateChat(chatId)
+  override fun onChatUnreadMentionCount(
+    chatId: Long,
+    unreadMentionCount: Int,
+    availabilityChanged: Boolean
+  ) =
+    store.invalidateChat(chatId)
+  override fun onChatUnreadReactionCount(
+    chatId: Long,
+    unreadReactionCount: Int,
+    availabilityChanged: Boolean
+  ) =
+    store.invalidateChat(chatId)
+  override fun onChatUnreadPollVoteCount(
+    chatId: Long,
+    unreadMentionCount: Int,
+    availabilityChanged: Boolean
+  ) =
+    store.invalidateChat(chatId)
 
   override fun onConnectionStateChanged(newState: Int, oldState: Int) {
     if (newState == ConnectionState.CONNECTED && oldState != newState) {

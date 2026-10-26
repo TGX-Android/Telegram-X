@@ -125,7 +125,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   /** Rejects stale hosts before touching storage, including the MRU index. */
-  public synchronized boolean putForumTabsState (long chatId, @NonNull ForumTabsState state, long expectedEpoch) {
+  public synchronized boolean putForumTabsState (
+    long chatId,
+    @NonNull ForumTabsState state,
+    long expectedEpoch
+  ) {
     if (expectedEpoch != forumTabsStateEpoch) {
       return false;
     }
@@ -203,7 +207,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
   }
 
-  public synchronized byte[] putLocalForumDraft (long chatId, int topicId, @Nullable TdApi.DraftMessage draft) {
+  public synchronized byte[] putLocalForumDraft (
+    long chatId,
+    int topicId,
+    @Nullable TdApi.DraftMessage draft
+  ) {
     Bundle bundle = new Bundle();
     Td.put(bundle, "draft", draft);
     Map<String, Object> fields = new TreeMap<>();
@@ -401,7 +409,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   private String dismissedMessageKey (long chatId, @Nullable TdApi.MessageTopic topicId) {
-    return key(DISMISS_MESSAGE_PREFIX, tdlib.id()) + chatId + (topicId instanceof TdApi.MessageTopicForum ? "_forum_" + ((TdApi.MessageTopicForum) topicId).forumTopicId : "");
+    return key(
+      DISMISS_MESSAGE_PREFIX,
+      tdlib.id()
+    ) + chatId + (topicId instanceof TdApi.MessageTopicForum
+      ? "_forum_" + ((TdApi.MessageTopicForum) topicId).forumTopicId : "");
   }
 
   public void dismissMessage (long chatId, @Nullable TdApi.MessageTopic topicId, long messageId) {
@@ -430,8 +442,15 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return isMessageDismissed(chatId, null, messageId);
   }
 
-  public boolean isMessageDismissed (long chatId, @Nullable TdApi.MessageTopic topicId, long messageId) {
-    return messageId != 0 && Settings.instance().getLong(dismissedMessageKey(chatId, topicId), 0) >= messageId;
+  public boolean isMessageDismissed (
+    long chatId,
+    @Nullable TdApi.MessageTopic topicId,
+    long messageId
+  ) {
+    return messageId != 0 && Settings.instance().getLong(
+      dismissedMessageKey(chatId, topicId),
+      0
+    ) >= messageId;
     // endregion
   }
 

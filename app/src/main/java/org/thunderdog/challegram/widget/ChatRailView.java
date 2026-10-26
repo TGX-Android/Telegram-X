@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
@@ -39,7 +51,9 @@ import me.vkryl.core.lambda.RunnableLong;
 
 /** A paged projection of the existing account/folder list, not a second chat cache. */
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-public final class ChatRailView extends FrameLayout implements ChatListListener, NotificationSettingsListener {
+public final class ChatRailView
+  extends FrameLayout
+  implements ChatListListener, NotificationSettingsListener {
   private final Tdlib tdlib;
   private final TdlibChatListSlice slice;
   private final RecyclerView list;
@@ -68,44 +82,61 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     list.setClipToPadding(false);
     list.setVerticalScrollBarEnabled(false);
     list.setContentDescription(Lang.getString(R.string.Chats));
-    addView(list, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    addView(
+      list,
+      new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+    );
     updateTheme();
-    list.addOnScrollListener(new RecyclerView.OnScrollListener() {
-      @Override public void onScrolled (@NonNull RecyclerView view, int dx, int dy) {
-        loadMore();
-      }
-    });
-    list.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-      if (restorePosition >= 0) {
-        // Insets/height are unknown when the rail is created. Do not consume its anchor yet.
-        applyScrollPosition();
-        loadMore();
-      } else {
-        list.setAlpha(1f); // Reveal only after the requested position has actually been laid out.
-      }
-    });
-    tdlib.listeners().subscribeToSettingsUpdates(this);
-    slice.initializeList(this, entries -> {
-      ArrayList<Long> ids = new ArrayList<>(entries.size());
-      for (TdlibChatListSlice.Entry entry : entries) {
-        ids.add(entry.chat.id);
-      }
-      dispatch(() -> {
-        int start = chats.size();
-        for (Long id : ids) {
-          if (!chats.contains(id)) {
-            chats.add(id);
-          }
+    list.addOnScrollListener(
+      new RecyclerView.OnScrollListener() {
+        @Override public void onScrolled (@NonNull RecyclerView view, int dx, int dy) {
+          loadMore();
         }
-        adapter.notifyItemRangeInserted(start, chats.size() - start);
-        applyScrollPosition();
-        loadMore();
-      });
-    }, 30, () -> dispatch(() -> {
-      initialized = true;
-      applyScrollPosition();
-      loadMore();
-    }));
+      }
+    );
+    list.addOnLayoutChangeListener(
+      (view, left, top, right, bottom, oldLeft, oldTop, oldRight,
+        oldBottom) -> {
+        if (restorePosition >= 0) {
+          // Insets/height are unknown when the rail is created. Do not consume its anchor yet.
+          applyScrollPosition();
+          loadMore();
+        } else {
+          list.setAlpha(1f); // Reveal only after the requested position has actually been laid out.
+        }
+      }
+    );
+    tdlib.listeners().subscribeToSettingsUpdates(this);
+    slice.initializeList(
+      this,
+      entries -> {
+        ArrayList<Long> ids = new ArrayList<>(entries.size());
+        for (TdlibChatListSlice.Entry entry : entries) {
+          ids.add(entry.chat.id);
+        }
+        dispatch(
+          () -> {
+            int start = chats.size();
+            for (Long id : ids) {
+              if (!chats.contains(id)) {
+                chats.add(id);
+              }
+            }
+            adapter.notifyItemRangeInserted(start, chats.size() - start);
+            applyScrollPosition();
+            loadMore();
+          }
+        );
+      },
+      30,
+      () -> dispatch(
+        () -> {
+          initialized = true;
+          applyScrollPosition();
+          loadMore();
+        }
+      )
+    );
   }
 
   public void setInsets (int top, int bottom) {
@@ -147,16 +178,19 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
   }
 
   private void dispatch (Runnable action) {
-    tdlib.ui().post(() -> {
-      if (destroyed) {
-        return;
+    tdlib.ui()
+      .post(
+        () -> {
+        if (destroyed) {
+          return;
+        }
+        if (transitionPaused) {
+          pendingUpdates.add(action);
+        } else {
+          action.run();
+        }
       }
-      if (transitionPaused) {
-        pendingUpdates.add(action);
-      } else {
-        action.run();
-      }
-    });
+      );
   }
 
   public void setTransitionPaused (boolean paused) {
@@ -180,17 +214,33 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     list.stopScroll();
     for (int i = 0; i < list.getChildCount(); i++) {
       RailRow row = (RailRow) list.getChildAt(i);
-      if (row.chatId == 0 || row.getBottom() <= list.getPaddingTop() || row.getTop() >= list.getHeight() - list.getPaddingBottom()) {
+      if (row.chatId == 0 ||
+        row.getBottom() <= list.getPaddingTop() ||
+        row.getTop() >= list.getHeight() - list.getPaddingBottom()) {
         continue;
       }
-      result.add(ForumRailTransition.Avatar.capture(row.chatId, host, row,
-        row.getWidth() / 2f, row.getHeight() / 2f, row.avatarRadius(), row::drawContents, null));
+      result.add(
+        ForumRailTransition.Avatar.capture(
+          row.chatId,
+          host,
+          row,
+          row.getWidth() / 2f,
+          row.getHeight() / 2f,
+          row.avatarRadius(),
+          row::drawContents,
+          null
+        )
+      );
     }
     return result;
   }
 
   private void loadMore () {
-    if (destroyed || !initialized || loading || !slice.canLoad() || list.getHeight() <= list.getPaddingTop() + list.getPaddingBottom()) {
+    if (destroyed ||
+      !initialized ||
+      loading ||
+      !slice.canLoad() ||
+      list.getHeight() <= list.getPaddingTop() + list.getPaddingBottom()) {
       return;
     }
     if (restorePosition < 0 && layout.findLastVisibleItemPosition() < chats.size() - 6) {
@@ -198,17 +248,23 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     }
     loading = true;
     int previousSize = chats.size();
-    slice.loadMore(30, () -> dispatch(() -> {
-      loading = false;
-      applyScrollPosition();
-      if (chats.size() > previousSize) {
-        loadMore(); // A failed/empty page must not spin on reconnect.
-      }
-    }));
+    slice.loadMore(
+      30,
+      () -> dispatch(
+        () -> {
+          loading = false;
+          applyScrollPosition();
+          if (chats.size() > previousSize) {
+            loadMore(); // A failed/empty page must not spin on reconnect.
+          }
+        }
+      )
+    );
   }
 
   public int scrollPosition () {
-    return restorePosition >= 0 ? restorePosition : Math.max(0, layout.findFirstVisibleItemPosition());
+    return restorePosition >= 0 ? restorePosition :
+      Math.max(0, layout.findFirstVisibleItemPosition());
   }
 
   public int scrollOffset () {
@@ -249,7 +305,14 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
       }
     }
     int viewport = list.getHeight() - list.getPaddingTop() - list.getPaddingBottom();
-    if (ForumRailLayout.canRestoreScroll(chats.size(), restorePosition, restoreOffset, Screen.dp(64), viewport, slice.isEndReached())) {
+    if (ForumRailLayout.canRestoreScroll(
+      chats.size(),
+      restorePosition,
+      restoreOffset,
+      Screen.dp(64),
+      viewport,
+      slice.isEndReached()
+    )) {
       layout.scrollToPositionWithOffset(Math.min(restorePosition, chats.size() - 1), restoreOffset);
       restorePosition = -1;
       restoreChatId = 0;
@@ -267,44 +330,71 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     }
   }
 
-  @Override public void onChatAdded (TdlibChatList source, TdApi.Chat chat, int at, Tdlib.ChatChange change) {
+  @Override public void onChatAdded (
+    TdlibChatList source,
+    TdApi.Chat chat,
+    int at,
+    Tdlib.ChatChange change
+  ) {
     long id = chat.id;
-    dispatch(() -> {
-      if (chats.contains(id)) {
-        changed(id);
-        return;
+    dispatch(
+      () -> {
+        if (chats.contains(id)) {
+          changed(id);
+          return;
+        }
+        int index = Math.min(at, chats.size());
+        chats.add(index, id);
+        adapter.notifyItemInserted(index);
       }
-      int index = Math.min(at, chats.size());
-      chats.add(index, id);
-      adapter.notifyItemInserted(index);
-    });
+    );
   }
 
-  @Override public void onChatRemoved (TdlibChatList source, TdApi.Chat chat, int from, Tdlib.ChatChange change) {
+  @Override public void onChatRemoved (
+    TdlibChatList source,
+    TdApi.Chat chat,
+    int from,
+    Tdlib.ChatChange change
+  ) {
     long id = chat.id;
-    dispatch(() -> {
-      int i = chats.indexOf(id);
-      if (i >= 0) {
-        chats.remove(i);
-        adapter.notifyItemRemoved(i);
+    dispatch(
+      () -> {
+        int i = chats.indexOf(id);
+        if (i >= 0) {
+          chats.remove(i);
+          adapter.notifyItemRemoved(i);
+        }
       }
-    });
+    );
   }
 
-  @Override public void onChatMoved (TdlibChatList source, TdApi.Chat chat, int from, int to, Tdlib.ChatChange change) {
+  @Override public void onChatMoved (
+    TdlibChatList source,
+    TdApi.Chat chat,
+    int from,
+    int to,
+    Tdlib.ChatChange change
+  ) {
     long id = chat.id;
-    dispatch(() -> {
-      int old = chats.indexOf(id);
-      if (old >= 0) {
-        chats.remove(old);
-        int target = Math.min(to, chats.size());
-        chats.add(target, id);
-        adapter.notifyItemMoved(old, target);
+    dispatch(
+      () -> {
+        int old = chats.indexOf(id);
+        if (old >= 0) {
+          chats.remove(old);
+          int target = Math.min(to, chats.size());
+          chats.add(target, id);
+          adapter.notifyItemMoved(old, target);
+        }
       }
-    });
+    );
   }
 
-  @Override public void onChatChanged (TdlibChatList source, TdApi.Chat chat, int at, Tdlib.ChatChange change) {
+  @Override public void onChatChanged (
+    TdlibChatList source,
+    TdApi.Chat chat,
+    int at,
+    Tdlib.ChatChange change
+  ) {
     long id = chat.id;
     dispatch(() -> changed(id));
   }
@@ -314,11 +404,17 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     dispatch(() -> changed(id));
   }
 
-  @Override public void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) {
+  @Override public void onNotificationSettingsChanged (
+    long chatId,
+    TdApi.ChatNotificationSettings settings
+  ) {
     dispatch(() -> changed(chatId));
   }
 
-  @Override public void onNotificationSettingsChanged (TdApi.NotificationSettingsScope scope, TdApi.ScopeNotificationSettings settings) {
+  @Override public void onNotificationSettingsChanged (
+    TdApi.NotificationSettingsScope scope,
+    TdApi.ScopeNotificationSettings settings
+  ) {
     dispatch(() -> adapter.notifyItemRangeChanged(0, chats.size()));
   }
 
@@ -356,7 +452,12 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
     @Override public RecyclerView.ViewHolder onCreateViewHolder (ViewGroup parent, int type) {
       RailRow row = new RailRow(parent.getContext());
       rows.add(row);
-      row.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(64)));
+      row.setLayoutParams(
+        new RecyclerView.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT,
+          Screen.dp(64)
+        )
+      );
       return new RecyclerView.ViewHolder(row) {
       };
     }
@@ -373,7 +474,9 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
   private final class RailRow extends View {
     final AvatarReceiver avatar = new AvatarReceiver(this);
     final Counter counter = new Counter.Builder().textSize(ForumRailBadgeLayout.TEXT_SIZE_DP)
-      .callback(this).outlineColor(ColorId.filling).build();
+      .callback(this)
+      .outlineColor(ColorId.filling)
+      .build();
     final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     long chatId;
     boolean attached;
@@ -381,21 +484,28 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
 
     RailRow (Context context) {
       super(context);
-      avatar.setAvatarRadiusPropertyIds(PropertyId.AVATAR_RADIUS_CHAT_LIST, PropertyId.AVATAR_RADIUS_CHAT_LIST_FORUM);
+      avatar.setAvatarRadiusPropertyIds(
+        PropertyId.AVATAR_RADIUS_CHAT_LIST,
+        PropertyId.AVATAR_RADIUS_CHAT_LIST_FORUM
+      );
       setFocusable(true);
       RippleSupport.setTransparentSelector(this);
-      setOnClickListener(v -> {
-        if (chatId != 0) {
-          openChat.runWithLong(chatId);
+      setOnClickListener(
+        v -> {
+          if (chatId != 0) {
+            openChat.runWithLong(chatId);
+          }
         }
-      });
-      setOnLongClickListener(v -> {
-        if (android.os.Build.VERSION.SDK_INT >= 26) {
-          setTooltipText(tdlib.chatTitle(chatId));
+      );
+      setOnLongClickListener(
+        v -> {
+          if (android.os.Build.VERSION.SDK_INT >= 26) {
+            setTooltipText(tdlib.chatTitle(chatId));
+            return false;
+          }
           return false;
         }
-        return false;
-      });
+      );
       avatar.detach();
     }
 
@@ -423,7 +533,13 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
         description.add(Lang.getString(R.string.ForumRailMuted));
       }
       if (unreadCount > 0) {
-        description.add(Lang.getString(tdlib.isForum(chatId) ? R.string.ForumRailUnreadTopics : R.string.ForumRailUnread, unreadCount));
+        description.add(
+          Lang.getString(
+            tdlib.isForum(chatId) ? R.string.ForumRailUnreadTopics :
+              R.string.ForumRailUnread,
+            unreadCount
+          )
+        );
       }
       setContentDescription(android.text.TextUtils.join(Lang.getConcatSeparator(), description));
       invalidate();
@@ -436,11 +552,15 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
       }
       if (attached && unreadSubscription == null && !tdlib.hasPasscode(chatId)) {
         final long id = chatId;
-        unreadSubscription = tdlib.topics().observeUnread(id, count -> {
-          if (attached && chatId == id) {
-            updateCounter();
+        unreadSubscription = tdlib.topics()
+          .observeUnread(
+            id,
+            count -> {
+            if (attached && chatId == id) {
+              updateCounter();
+            }
           }
-        });
+          );
       }
     }
 
@@ -507,7 +627,15 @@ public final class ChatRailView extends FrameLayout implements ChatListListener,
         avatar.drawPlaceholder(canvas);
       }
       avatar.draw(canvas);
-      ForumRailBadgeLayout.draw(canvas, counter, getWidth(), getHeight(), radius, Lang.rtl(), decorations);
+      ForumRailBadgeLayout.draw(
+        canvas,
+        counter,
+        getWidth(),
+        getHeight(),
+        radius,
+        Lang.rtl(),
+        decorations
+      );
     }
   }
 }

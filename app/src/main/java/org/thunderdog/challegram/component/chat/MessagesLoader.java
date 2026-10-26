@@ -296,7 +296,9 @@ public class MessagesLoader implements Client.ResultHandler {
             TdApi.Messages result = (TdApi.Messages) object;
             messages = result.messages;
             // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-            knownTotalCount = ForumHistory.isForum(topicId) && specialMode == SPECIAL_MODE_SCHEDULED ?
+            knownTotalCount = ForumHistory.isForum(
+              topicId
+            ) && specialMode == SPECIAL_MODE_SCHEDULED ?
               ForumHistory.filter(messages, getChatId(), topicId, true).length : result.totalCount;
             // endregion
             nextSearchOffset = null; nextSearchFromMessageId = 0;
@@ -364,7 +366,12 @@ public class MessagesLoader implements Client.ResultHandler {
         }
 
         // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-        messages = ForumHistory.filter(messages, getChatId(), topicId, specialMode == SPECIAL_MODE_SCHEDULED);
+        messages = ForumHistory.filter(
+          messages,
+          getChatId(),
+          topicId,
+          specialMode == SPECIAL_MODE_SCHEDULED
+        );
         // endregion
         boolean needMoreTop = allowMoreTop;
         boolean needMoreBottom = allowMoreBottom;
@@ -554,7 +561,17 @@ public class MessagesLoader implements Client.ResultHandler {
             Log.i(Log.TAG_MESSAGES_LOADER, "Loading more groupped messages on the top, count: %d, fromMessageId: %d", loadMoreTopCount, oldestMessage.id);
             Log.ensureReturnType(TdApi.GetChatHistory.class, TdApi.Messages.class);
             // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-            tdlib.client().send(ForumHistory.request(messages[0].chatId, topicId, oldestMessage.id, 0, loadMoreTopCount, true), this);
+            tdlib.client().send(
+              ForumHistory.request(
+                messages[0].chatId,
+                topicId,
+                oldestMessage.id,
+                0,
+                loadMoreTopCount,
+                true
+              ),
+              this
+            );
             // endregion
             return;
           } else if (loadMoreBottomCount > 0) {
@@ -563,7 +580,17 @@ public class MessagesLoader implements Client.ResultHandler {
             Log.i(Log.TAG_MESSAGES_LOADER, "Loading more groupped messages on the bottom, count: %d, fromMessageId: %d", loadMoreBottomCount + 1, newestMessage.id);
             Log.ensureReturnType(TdApi.GetChatHistory.class, TdApi.Messages.class);
             // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-            tdlib.client().send(ForumHistory.request(messages[0].chatId, topicId, newestMessage.id, -loadMoreBottomCount, loadMoreBottomCount + 1, true), this);
+            tdlib.client().send(
+              ForumHistory.request(
+                messages[0].chatId,
+                topicId,
+                newestMessage.id,
+                -loadMoreBottomCount,
+                loadMoreBottomCount + 1,
+                true
+              ),
+              this
+            );
             // endregion
             return;
           }
@@ -1123,7 +1150,9 @@ public class MessagesLoader implements Client.ResultHandler {
 
   public void loadFromMessage (MessageId messageId, final int highlightMode, boolean force) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (ForumHistory.isForum(topicId) && messageId.getChatId() != 0 && messageId.getChatId() != getChatId()) {
+    if (ForumHistory.isForum(
+      topicId
+    ) && messageId.getChatId() != 0 && messageId.getChatId() != getChatId()) {
       manager.loadFromStart();
       return;
     }
@@ -1170,7 +1199,10 @@ public class MessagesLoader implements Client.ResultHandler {
       }
 
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      final long sourceChatId = ForumHistory.isForum(topicId) ? getChatId() : fromMessageId.getChatId() != 0 ? fromMessageId.getChatId() : messageThread != null ? messageThread.getChatId() : getChatId();
+      final long sourceChatId = ForumHistory.isForum(
+        topicId
+      ) ? getChatId() : fromMessageId.getChatId() != 0 ? fromMessageId.getChatId()
+        : messageThread != null ? messageThread.getChatId() : getChatId();
       // endregion
 
       isLoading = true;
@@ -1211,7 +1243,14 @@ public class MessagesLoader implements Client.ResultHandler {
           // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
           } else if (ForumHistory.isForum(topicId)) {
             loadingLocal = false;
-            function = ForumHistory.request(sourceChatId, topicId, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, false);
+            function = ForumHistory.request(
+              sourceChatId,
+              topicId,
+              (lastFromMessageId = fromMessageId).getMessageId(),
+              lastOffset = offset,
+              lastLimit = limit,
+              false
+            );
           // endregion
           } else if (messageThread != null) {
             loadingLocal = false;
@@ -1258,7 +1297,15 @@ public class MessagesLoader implements Client.ResultHandler {
       return;
     }
     if (lastFromMessageId != null) {
-      load(lastFromMessageId, lastOffset, lastLimit, loadingMode, false, loadingAllowMoreTop, loadingAllowMoreBottom);
+      load(
+        lastFromMessageId,
+        lastOffset,
+        lastLimit,
+        loadingMode,
+        false,
+        loadingAllowMoreTop,
+        loadingAllowMoreBottom
+      );
     } else {
       manager.loadFromStart();
     }
@@ -1403,7 +1450,8 @@ public class MessagesLoader implements Client.ResultHandler {
       chatId = getChatId();
       lastReadOutboxMessageId = forum != null ? forum.lastReadOutbox() : 0;
       lastReadInboxMessageId = forum != null ? forum.lastReadInbox() : 0;
-      hasUnreadMessages = specialMode != SPECIAL_MODE_SCHEDULED && forum != null && ForumTopicContext.canGoUnread(forum.topic());
+      hasUnreadMessages = specialMode != SPECIAL_MODE_SCHEDULED && forum != null &&
+        ForumTopicContext.canGoUnread(forum.topic());
     } else if (messageThread != null) {
     // endregion
       chatId = messageThread.getChatId();
@@ -1556,7 +1604,9 @@ public class MessagesLoader implements Client.ResultHandler {
         } else if (!unreadFound) {
           if (top != null && top.getBiggestId() >= lastReadInboxMessageId ||
               // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-              ((messageThread != null || ForumHistory.isForum(topicId)) && cur.getBiggestId() > lastReadInboxMessageId)) {
+              ((messageThread != null || ForumHistory.isForum(
+                topicId
+              )) && cur.getBiggestId() > lastReadInboxMessageId)) {
               // endregion
             unreadFound = true;
             if (cur.isOutgoing()) {
@@ -1876,7 +1926,8 @@ public class MessagesLoader implements Client.ResultHandler {
       ForumTopicContext forum = forumContext;
       return forum != null ? forum.lastMessageId() : 0;
     }
-    return messageThread != null ? messageThread.getLastMessageId() : chat != null && chat.lastMessage != null ? chat.lastMessage.id : 0;
+    return messageThread != null ? messageThread.getLastMessageId() : chat != null &&
+      chat.lastMessage != null ? chat.lastMessage.id : 0;
   // endregion
   }
 

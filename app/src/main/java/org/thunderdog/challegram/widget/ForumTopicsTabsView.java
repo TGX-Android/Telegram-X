@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
@@ -61,7 +73,9 @@ import java.util.Set;
  */
 @UiThread
 @me.vkryl.annotation.MadeByLLM(value = "gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalidateListener, Lang.Listener {
+public final class ForumTopicsTabsView
+  extends ViewGroup
+  implements ThemeInvalidateListener, Lang.Listener {
   public interface Listener {
     void onSelectTopic (int topicId);
 
@@ -92,7 +106,8 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
   private int selectedId = Integer.MIN_VALUE;
   private int serverVisibleCount, sourceCount, sourceTail;
   private int requestedCount = -1, requestedTail;
-  private boolean loading, failed, endReached = true, destroyed, attached, revealSelection, retryRequested, hasSnapshot;
+  private boolean loading, failed, endReached =
+    true, destroyed, attached, revealSelection, retryRequested, hasSnapshot;
 
   public ForumTopicsTabsView (ViewController<?> owner, Listener listener) {
     // A constructor-free, null-TDLib presentation owner can use the already supplied app
@@ -120,28 +135,36 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     stateButton.setVisibility(GONE);
     addView(stateButton, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
     placementButton = new PlacementButton(getContext());
-    addView(placementButton, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+    addView(
+      placementButton,
+      new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
+    );
     updatePlacementDescription();
-    list.addOnScrollListener(new RecyclerView.OnScrollListener() {
-      @Override public void onScrolled (@NonNull RecyclerView recycler, int dx, int dy) {
-        scheduleSettle();
-      }
+    list.addOnScrollListener(
+      new RecyclerView.OnScrollListener() {
+        @Override public void onScrolled (@NonNull RecyclerView recycler, int dx, int dy) {
+          scheduleSettle();
+        }
 
-      @Override public void onScrollStateChanged (@NonNull RecyclerView recycler, int state) {
-        if (state == RecyclerView.SCROLL_STATE_DRAGGING) {
-          // An explicit drag wins over a deferred off-page selection/anchor restoration.
-          revealSelection = false;
-          pendingAnchor = null;
+        @Override public void onScrollStateChanged (@NonNull RecyclerView recycler, int state) {
+          if (state == RecyclerView.SCROLL_STATE_DRAGGING) {
+            // An explicit drag wins over a deferred off-page selection/anchor restoration.
+            revealSelection = false;
+            pendingAnchor = null;
+          }
         }
       }
-    });
+    );
     list.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> scheduleSettle());
     owner.addThemeInvalidateListener(this);
     Lang.addLanguageListener(this);
   }
 
   public int recommendedHorizontalHeight () {
-    return ForumTopicsTabsLayout.horizontalHeight(getResources().getDisplayMetrics().density, fontScale());
+    return ForumTopicsTabsLayout.horizontalHeight(
+      getResources().getDisplayMetrics().density,
+      fontScale()
+    );
   }
 
   public int recommendedSideWidth () {
@@ -168,7 +191,9 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       return;
     }
     int savedPlacement = state.getInt("placement", ForumTabsState.TOP);
-    if (savedPlacement != ForumTabsState.TOP && savedPlacement != ForumTabsState.START && savedPlacement != ForumTabsState.BOTTOM) {
+    if (savedPlacement != ForumTabsState.TOP &&
+      savedPlacement != ForumTabsState.START &&
+      savedPlacement != ForumTabsState.BOTTOM) {
       return;
     }
     setPlacement(savedPlacement, state.getInt("nextHorizontal", ForumTabsState.BOTTOM));
@@ -190,7 +215,9 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
 
   private static @Nullable Anchor readAnchor (Bundle state, String key) {
     int[] values = state.getIntArray(key);
-    return values != null && values.length == 3 && values[1] >= 0 ? new Anchor(values[0], values[1], values[2]) : null;
+    return values != null &&
+      values.length == 3 &&
+      values[1] >= 0 ? new Anchor(values[0], values[1], values[2]) : null;
   }
 
   private float fontScale () {
@@ -207,11 +234,13 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
 
   private String string (int resId, Object... args) {
     // Cloud-language and Settings singletons must not be initialized by an account-free view.
-    return owner.tdlib() == null ? getResources().getString(resId, args) : Lang.getString(resId, args);
+    return owner.tdlib() == null ? getResources().getString(resId, args) :
+      Lang.getString(resId, args);
   }
 
   private String label (Item item) {
-    return item.id == 0 ? string(R.string.ForumTabsAll) : item.id == NEW_TOPIC ? string(R.string.ForumEditorNew) : item.name;
+    return item.id == 0 ? string(R.string.ForumTabsAll) : item.id == NEW_TOPIC ?
+      string(R.string.ForumEditorNew) : item.name;
   }
 
   private String unreadBadge (int count) {
@@ -225,10 +254,13 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     if (destroyed) {
       return;
     }
-    if (placement != ForumTabsState.TOP && placement != ForumTabsState.START && placement != ForumTabsState.BOTTOM) {
+    if (placement != ForumTabsState.TOP &&
+      placement != ForumTabsState.START &&
+      placement != ForumTabsState.BOTTOM) {
       throw new IllegalArgumentException("Unknown forum tabs placement");
     }
-    this.nextHorizontal = nextHorizontal == ForumTabsState.TOP ? ForumTabsState.TOP : ForumTabsState.BOTTOM;
+    this.nextHorizontal = nextHorizontal == ForumTabsState.TOP ? ForumTabsState.TOP :
+      ForumTabsState.BOTTOM;
     if (this.placement != placement) {
       list.stopScroll();
       Anchor previous = captureAnchor();
@@ -255,9 +287,15 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
    * only if absent; All stays first and New Topic stays last. No list subscriptions or TDLib
    * requests are made here (custom-emoji media follows the normal per-view Text receiver path).
    */
-  public void setTopics (List<TdApi.ForumTopic> topics, @Nullable TdApi.ForumTopic selectedTopic,
-                         int selectedTopicId, boolean canCreate, boolean loading,
-                         @Nullable TdApi.Error error, boolean endReached) {
+  public void setTopics (
+    List<TdApi.ForumTopic> topics,
+    @Nullable TdApi.ForumTopic selectedTopic,
+    int selectedTopicId,
+    boolean canCreate,
+    boolean loading,
+    @Nullable TdApi.Error error,
+    boolean endReached
+  ) {
     if (destroyed) {
       return;
     }
@@ -284,41 +322,47 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         continue;
       }
       sourceTail = topic.info.forumTopicId;
-      if (topic.info.forumTopicId <= 0 || topic.info.isHidden || !seen.add(topic.info.forumTopicId)) {
+      if (topic.info.forumTopicId <= 0 ||
+        topic.info.isHidden ||
+        !seen.add(topic.info.forumTopicId)) {
         continue;
       }
       next.add(topicItem(topic));
       serverVisibleCount++;
     }
     if (selectedTopic != null && selectedTopic.info != null && selectedTopicId > 0 &&
-        selectedTopic.info.forumTopicId == selectedTopicId && !selectedTopic.info.isHidden && !seen.contains(selectedTopicId)) {
+      selectedTopic.info.forumTopicId == selectedTopicId &&
+      !selectedTopic.info.isHidden &&
+      !seen.contains(selectedTopicId)) {
       next.add(topicItem(selectedTopic));
     }
     if (canCreate) {
       next.add(new Item(NEW_TOPIC, false));
     }
     List<Item> before = adapter.items;
-    DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-      @Override public int getOldListSize () {
-        return before.size();
-      }
+    DiffUtil.DiffResult diff = DiffUtil.calculateDiff(
+      new DiffUtil.Callback() {
+        @Override public int getOldListSize () {
+          return before.size();
+        }
 
-      @Override public int getNewListSize () {
-        return next.size();
-      }
+        @Override public int getNewListSize () {
+          return next.size();
+        }
 
-      @Override public boolean areItemsTheSame (int oldIndex, int newIndex) {
-        return before.get(oldIndex).id == next.get(newIndex).id;
-      }
+        @Override public boolean areItemsTheSame (int oldIndex, int newIndex) {
+          return before.get(oldIndex).id == next.get(newIndex).id;
+        }
 
-      @Override public boolean areContentsTheSame (int oldIndex, int newIndex) {
-        return before.get(oldIndex).sameContent(next.get(newIndex));
-      }
+        @Override public boolean areContentsTheSame (int oldIndex, int newIndex) {
+          return before.get(oldIndex).sameContent(next.get(newIndex));
+        }
 
-      @Override public Object getChangePayload (int oldIndex, int newIndex) {
-        return REBIND;
+        @Override public Object getChangePayload (int oldIndex, int newIndex) {
+          return REBIND;
+        }
       }
-    });
+    );
     boolean changed = before.size() != next.size();
     if (!changed) {
       for (int i = 0; i < before.size(); i++) {
@@ -344,8 +388,15 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
   }
 
   private Item topicItem (TdApi.ForumTopic topic) {
-    return new Item(topic, selectedId == topic.info.forumTopicId,
-      ForumPresentation.isMuted(topic.notificationSettings, owner.tdlib() != null && owner.tdlib().chatMuteFor(topic.info.chatId) > 0));
+    return new Item(
+      topic,
+      selectedId == topic.info.forumTopicId,
+      ForumPresentation.isMuted(
+        topic.notificationSettings,
+        owner.tdlib() != null &&
+          owner.tdlib().chatMuteFor(topic.info.chatId) > 0
+      )
+    );
   }
 
   private void refreshRows () {
@@ -406,8 +457,10 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         pendingAnchor = null;
         View target = layout.findViewByPosition(position);
         boolean visible = target != null && (side()
-          ? layout.getDecoratedTop(target) >= 0 && layout.getDecoratedBottom(target) <= list.getHeight()
-          : layout.getDecoratedLeft(target) >= 0 && layout.getDecoratedRight(target) <= list.getWidth());
+          ? layout.getDecoratedTop(target) >= 0 &&
+            layout.getDecoratedBottom(target) <= list.getHeight()
+          : layout.getDecoratedLeft(target) >= 0 &&
+            layout.getDecoratedRight(target) <= list.getWidth());
         if (!visible) {
           layout.scrollToPositionWithOffset(position, 0);
           scheduleSettle();
@@ -456,14 +509,24 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     int width = resolveSize(side() ? recommendedSideWidth() : Screen.dp(320), widthSpec);
     int height = resolveSize(side() ? Screen.dp(320) : recommendedHorizontalHeight(), heightSpec);
     setMeasuredDimension(width, height);
-    parts = ForumTopicsTabsLayout.partition(width, height, Screen.dp(48), side(), Lang.rtl(), stateButton.getVisibility() == VISIBLE);
+    parts = ForumTopicsTabsLayout.partition(
+      width,
+      height,
+      Screen.dp(48),
+      side(),
+      Lang.rtl(),
+      stateButton.getVisibility() == VISIBLE
+    );
     measurePart(list, parts.tabs);
     measurePart(stateButton, parts.state);
     measurePart(placementButton, parts.placement);
   }
 
   private void measurePart (View view, ForumTopicsTabsLayout.Bounds bounds) {
-    view.measure(MeasureSpec.makeMeasureSpec(bounds.width(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(bounds.height(), MeasureSpec.EXACTLY));
+    view.measure(
+      MeasureSpec.makeMeasureSpec(bounds.width(), MeasureSpec.EXACTLY),
+      MeasureSpec.makeMeasureSpec(bounds.height(), MeasureSpec.EXACTLY)
+    );
   }
 
   @Override protected void onLayout (boolean changed, int l, int t, int r, int b) {
@@ -613,9 +676,18 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     }
 
     boolean sameContent (Item item) {
-      return selected == item.selected && color == item.color && emojiId == item.emojiId && name.equals(item.name) &&
-        unread == item.unread && mentions == item.mentions && reactions == item.reactions && votes == item.votes &&
-        general == item.general && pinned == item.pinned && closed == item.closed && muted == item.muted;
+      return selected == item.selected &&
+        color == item.color &&
+        emojiId == item.emojiId &&
+        name.equals(item.name) &&
+        unread == item.unread &&
+        mentions == item.mentions &&
+        reactions == item.reactions &&
+        votes == item.votes &&
+        general == item.general &&
+        pinned == item.pinned &&
+        closed == item.closed &&
+        muted == item.muted;
     }
   }
 
@@ -645,10 +717,18 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       return id == NEW_TOPIC ? Long.MIN_VALUE : id; // -1 is RecyclerView.NO_ID, not a stable ID.
     }
 
-    @Override public RecyclerView.ViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int type) {
+    @Override public RecyclerView.ViewHolder onCreateViewHolder (
+      @NonNull ViewGroup parent,
+      int type
+    ) {
       TabView row = new TabView(parent.getContext());
       rows.add(row);
-      row.setLayoutParams(new RecyclerView.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+      row.setLayoutParams(
+        new RecyclerView.LayoutParams(
+          LayoutParams.WRAP_CONTENT,
+          LayoutParams.WRAP_CONTENT
+        )
+      );
       return new RecyclerView.ViewHolder(row) {
       };
     }
@@ -657,7 +737,11 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       ((TabView) holder.itemView).bind(items.get(position));
     }
 
-    @Override public void onBindViewHolder (@NonNull RecyclerView.ViewHolder holder, int position, @NonNull List<Object> payloads) {
+    @Override public void onBindViewHolder (
+      @NonNull RecyclerView.ViewHolder holder,
+      int position,
+      @NonNull List<Object> payloads
+    ) {
       onBindViewHolder(holder, position);
     }
 
@@ -699,19 +783,21 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       label.setClickable(false);
       label.setFocusable(false);
       addView(label, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
-      setOnClickListener(v -> {
-        if (destroyed || item == null) {
-          return;
+      setOnClickListener(
+        v -> {
+          if (destroyed || item == null) {
+            return;
+          }
+          if (item.id == NEW_TOPIC) {
+            listener.onNewTopic();
+          } else {
+            // Even clicking the current, partially clipped tab is an explicit visibility request.
+            revealSelection = true;
+            listener.onSelectTopic(item.id);
+            scheduleSettle();
+          }
         }
-        if (item.id == NEW_TOPIC) {
-          listener.onNewTopic();
-        } else {
-          // Even clicking the current, partially clipped tab is an explicit visibility request.
-          revealSelection = true;
-          listener.onSelectTopic(item.id);
-          scheduleSettle();
-        }
-      });
+      );
     }
 
     void bind (Item item) {
@@ -719,21 +805,36 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       String name = item.name.trim();
       iconInitial = name.isEmpty() ? "#" : name.substring(0, name.offsetByCodePoints(0, 1));
       setSelected(item.selected);
-      badge = item.unread > 0 ? unreadBadge(item.unread) : item.mentions > 0 ? "@" : item.reactions > 0 ? "♥" : item.votes > 0 ? "✓" : "";
+      badge = item.unread > 0 ? unreadBadge(item.unread) : item.mentions > 0 ? "@" :
+        item.reactions > 0 ? "♥" : item.votes > 0 ? "✓" : "";
       receiver.setAnimationDisabled(reduceMotion());
       if (emojiId != item.emojiId) {
         clearEmoji();
         emojiId = item.emojiId;
         if (emojiId != 0 && owner.tdlib() != null) {
-          TdApi.FormattedText emoji = new TdApi.FormattedText("*", new TdApi.TextEntity[] {
-            new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(emojiId))
-          });
-          customEmoji = new Text.Builder(owner.tdlib(), emoji, null, Screen.dp(48), Paints.robotoStyleProvider(24), TextColorSets.WHITE, (text, media) -> {
+          TdApi.FormattedText emoji = new TdApi.FormattedText(
+            "*",
+            new TdApi.TextEntity[] {
+              new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(emojiId))
+            }
+          );
+          customEmoji =
+            new Text.Builder(
+              owner.tdlib(),
+              emoji,
+              null,
+              Screen.dp(48),
+              Paints.robotoStyleProvider(24),
+              TextColorSets.WHITE,
+              (text, media) -> {
             if (!destroyed && text == customEmoji) {
               text.requestMedia(receiver);
               invalidate();
             }
-          }).singleLine().build();
+          }
+            )
+              .singleLine()
+              .build();
           customEmoji.requestMedia(receiver);
         }
       }
@@ -749,15 +850,25 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       // 30dp, with one readable line when two no longer fit inside the compact row.
       label.setTextSize(TypedValue.COMPLEX_UNIT_SP, side() ? Math.min(11f, 30f / fontScale()) : 14);
       label.setMaxLines(side() ? 2 : 1);
-      label.setGravity(side() ? Gravity.CENTER : (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+      label.setGravity(
+        side() ? Gravity.CENTER :
+          (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL
+      );
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        label.setTextDirection(Lang.rtl() ? View.TEXT_DIRECTION_FIRST_STRONG_RTL : View.TEXT_DIRECTION_FIRST_STRONG_LTR);
+        label.setTextDirection(
+          Lang.rtl() ? View.TEXT_DIRECTION_FIRST_STRONG_RTL :
+            View.TEXT_DIRECTION_FIRST_STRONG_LTR
+        );
       } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
         // Before API 23 FIRST_STRONG uses the view's layout direction as its fallback.
-        label.setLayoutDirection(Lang.rtl() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+        label.setLayoutDirection(
+          Lang.rtl() ? View.LAYOUT_DIRECTION_RTL :
+            View.LAYOUT_DIRECTION_LTR
+        );
         label.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
       }
-      StringBuilder description = new StringBuilder(item.id == 0 ? string(R.string.ForumTabsAllDescription) : label(item));
+      StringBuilder description =
+        new StringBuilder(item.id == 0 ? string(R.string.ForumTabsAllDescription) : label(item));
       if (item.selected) {
         append(description, R.string.ForumTabsSelected);
       }
@@ -774,7 +885,16 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         append(description, R.string.ForumPinned);
       }
       if (item.unread > 0 || item.mentions > 0 || item.reactions > 0 || item.votes > 0) {
-        description.append(Lang.getConcatSeparator()).append(string(R.string.ForumUnreadCounts, item.unread, item.mentions, item.reactions, item.votes));
+        description.append(Lang.getConcatSeparator())
+          .append(
+            string(
+              R.string.ForumUnreadCounts,
+              item.unread,
+              item.mentions,
+              item.reactions,
+              item.votes
+            )
+          );
       }
       setContentDescription(description);
       if (Build.VERSION.SDK_INT >= 26) {
@@ -789,7 +909,12 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     }
 
     void updateTheme () {
-      label.setTextColor(Theme.getColor(item != null && (item.selected || item.id == NEW_TOPIC) ? ColorId.iconActive : ColorId.text));
+      label.setTextColor(
+        Theme.getColor(
+          item != null &&
+            (item.selected || item.id == NEW_TOPIC) ? ColorId.iconActive : ColorId.text
+        )
+      );
       invalidate();
     }
 
@@ -841,42 +966,74 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     }
 
     @Override protected void onMeasure (int widthSpec, int heightSpec) {
-      int states = item == null ? 0 : (item.pinned ? 1 : 0) + (item.closed ? 1 : 0) + (item.muted ? 1 : 0);
+      int states = item == null ? 0 :
+        (item.pinned ? 1 : 0) + (item.closed ? 1 : 0) + (item.muted ? 1 : 0);
       displayedBadge = side() && item != null && item.unread > 99 ? "99+" : badge;
       badgePaint();
       metadataHeight = Math.max(Screen.dp(14), paint.descent() - paint.ascent() + Screen.dp(3));
-      badgeWidth = displayedBadge.isEmpty() ? 0 : Math.max(metadataHeight, paint.measureText(displayedBadge) + Screen.dp(6));
-      metadataWidth = states * Screen.dp(14) + badgeWidth + (states > 0 && badgeWidth > 0 ? Screen.dp(3) : 0);
+      badgeWidth = displayedBadge.isEmpty() ? 0 :
+        Math.max(metadataHeight, paint.measureText(displayedBadge) + Screen.dp(6));
+      metadataWidth = states * Screen.dp(14) + badgeWidth + (states > 0 &&
+        badgeWidth > 0 ? Screen.dp(3) : 0);
       int width, height;
       if (side()) {
         width = list.getMeasuredWidth() > 0 ? list.getMeasuredWidth() : recommendedSideWidth();
-        height = ForumTopicsTabsLayout.sideRowHeight(getResources().getDisplayMetrics().density, fontScale());
+        height = ForumTopicsTabsLayout.sideRowHeight(
+          getResources().getDisplayMetrics().density,
+          fontScale()
+        );
         labelStart = Screen.dp(4);
         labelEnd = Math.max(labelStart, width - Screen.dp(4));
         labelTop = Screen.dp(32);
         int labelHeight = Math.max(0, height - labelTop - Screen.dp(4));
         label.setMaxLines(labelHeight >= label.getLineHeight() * 2 ? 2 : 1);
         badgeWidth = Math.min(badgeWidth, Math.max(0, width / 2f - Screen.dp(2)));
-        label.measure(MeasureSpec.makeMeasureSpec(labelEnd - labelStart, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(labelHeight, MeasureSpec.EXACTLY));
+        label.measure(
+          MeasureSpec.makeMeasureSpec(labelEnd - labelStart, MeasureSpec.EXACTLY),
+          MeasureSpec.makeMeasureSpec(labelHeight, MeasureSpec.EXACTLY)
+        );
       } else {
-        height = list.getMeasuredHeight() > 0 ? list.getMeasuredHeight() : recommendedHorizontalHeight();
+        height = list.getMeasuredHeight() > 0 ? list.getMeasuredHeight() :
+          recommendedHorizontalHeight();
         // Measure the native label, not an approximate paint advance. In particular All must
         // get its complete localized label after the icon, including TextView/px rounding.
-        label.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        label.measure(
+          MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+          MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+        );
         int leading = Screen.dp(34), trailing = Screen.dp(10);
-        float desired = leading + trailing + label.getMeasuredWidth() + (metadataWidth > 0 ? metadataWidth + Screen.dp(5) : 0);
+        float desired =
+          leading + trailing + label.getMeasuredWidth() +
+            (metadataWidth > 0 ? metadataWidth + Screen.dp(5) : 0);
         int maxWidth = Math.min(Screen.dp(240), Math.max(Screen.dp(48), list.getMeasuredWidth()));
         width = Math.min(maxWidth, Math.max(Screen.dp(48), (int) Math.ceil(desired)));
         int start = Math.min(width, leading);
-        int end = Math.max(start, width - trailing - (int) Math.ceil(metadataWidth) - (metadataWidth > 0 ? Screen.dp(5) : 0));
+        int end = Math.max(
+          start,
+          width - trailing - (int) Math.ceil(metadataWidth) -
+            (metadataWidth > 0 ? Screen.dp(5) : 0)
+        );
         labelStart = Lang.rtl() ? width - end : start;
         labelEnd = Lang.rtl() ? width - start : end;
         int labelHeight = Math.max(0, height - Screen.dp(8));
         labelTop = Screen.dp(4);
-        label.measure(MeasureSpec.makeMeasureSpec(Math.max(0, labelEnd - labelStart), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(labelHeight, MeasureSpec.EXACTLY));
+        label.measure(
+          MeasureSpec.makeMeasureSpec(
+            Math.max(0, labelEnd - labelStart),
+            MeasureSpec.EXACTLY
+          ),
+          MeasureSpec.makeMeasureSpec(labelHeight, MeasureSpec.EXACTLY)
+        );
       }
       badgePaint();
-      displayedBadge = TextUtils.ellipsize(displayedBadge, paint, Math.max(0, badgeWidth - Screen.dp(4)), TextUtils.TruncateAt.END).toString();
+      displayedBadge =
+        TextUtils.ellipsize(
+          displayedBadge,
+          paint,
+          Math.max(0, badgeWidth - Screen.dp(4)),
+          TextUtils.TruncateAt.END
+        )
+          .toString();
       setMeasuredDimension(width, height);
     }
 
@@ -884,7 +1041,14 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       label.layout(labelStart, labelTop, labelEnd, labelTop + label.getMeasuredHeight());
     }
 
-    private void rounded (Canvas c, float left, float top, float right, float bottom, float radius) {
+    private void rounded (
+      Canvas c,
+      float left,
+      float top,
+      float right,
+      float bottom,
+      float radius
+    ) {
       rect.set(left, top, right, bottom);
       c.drawRoundRect(rect, radius, radius, paint);
     }
@@ -898,17 +1062,39 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       if (item.selected) {
         paint.setColor(Theme.getColor(ColorId.iconActive));
         paint.setAlpha(28);
-        rounded(canvas, Screen.dp(3), Screen.dp(4), getWidth() - Screen.dp(3), getHeight() - Screen.dp(4), Screen.dp(10));
+        rounded(
+          canvas,
+          Screen.dp(3),
+          Screen.dp(4),
+          getWidth() - Screen.dp(3),
+          getHeight() - Screen.dp(4),
+          Screen.dp(10)
+        );
         paint.setAlpha(255);
         if (side()) {
           float x = Lang.rtl() ? Screen.dp(2) : getWidth() - Screen.dp(5);
-          rounded(canvas, x, Screen.dp(16), x + Screen.dp(3), getHeight() - Screen.dp(16), Screen.dp(2));
+          rounded(
+            canvas,
+            x,
+            Screen.dp(16),
+            x + Screen.dp(3),
+            getHeight() - Screen.dp(16),
+            Screen.dp(2)
+          );
         } else {
           float y = placement == ForumTabsState.BOTTOM ? Screen.dp(1) : getHeight() - Screen.dp(4);
-          rounded(canvas, Screen.dp(12), y, getWidth() - Screen.dp(12), y + Screen.dp(3), Screen.dp(2));
+          rounded(
+            canvas,
+            Screen.dp(12),
+            y,
+            getWidth() - Screen.dp(12),
+            y + Screen.dp(3),
+            Screen.dp(2)
+          );
         }
       }
-      float iconX = side() ? getWidth() / 2f : Lang.rtl() ? getWidth() - Screen.dp(18) : Screen.dp(18);
+      float iconX = side() ? getWidth() / 2f : Lang.rtl() ? getWidth() - Screen.dp(18) :
+        Screen.dp(18);
       drawTopicIcon(canvas, iconX, side() ? Screen.dp(16) : getHeight() / 2f);
       if (side()) {
         drawSideMetadata(canvas);
@@ -919,13 +1105,23 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         paint.setColor(Theme.getColor(ColorId.iconActive));
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(Screen.dp(2));
-        rounded(canvas, Screen.dp(3), Screen.dp(3), getWidth() - Screen.dp(3), getHeight() - Screen.dp(3), Screen.dp(10));
+        rounded(
+          canvas,
+          Screen.dp(3),
+          Screen.dp(3),
+          getWidth() - Screen.dp(3),
+          getHeight() - Screen.dp(3),
+          Screen.dp(10)
+        );
         paint.setStyle(Paint.Style.FILL);
       }
     }
 
     private int topicIconSize () {
-      return ForumTopicsTabsLayout.topicIconSize(getResources().getDisplayMetrics().density, side());
+      return ForumTopicsTabsLayout.topicIconSize(
+        getResources().getDisplayMetrics().density,
+        side()
+      );
     }
 
     private void drawTopicIcon (Canvas c, float cx, float cy) {
@@ -933,7 +1129,10 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       if (customEmoji != null) {
         int save = c.save();
         c.translate(cx - r, cy - r);
-        c.scale(size / Math.max(1, customEmoji.getWidth()), size / Math.max(1, customEmoji.getHeight()));
+        c.scale(
+          size / Math.max(1, customEmoji.getWidth()),
+          size / Math.max(1, customEmoji.getHeight())
+        );
         customEmoji.draw(c, 0, 0, null, 1f, receiver);
         c.restoreToCount(save);
         return;
@@ -953,15 +1152,46 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         c.drawLine(cx - Screen.dp(5), cy, cx + Screen.dp(5), cy, paint);
         c.drawLine(cx, cy - Screen.dp(5), cx, cy + Screen.dp(5), paint);
       } else if (item.id == 0) {
-        rounded(c, cx - r, cy - r + Screen.dp(2), cx + r - Screen.dp(5), cy + r - Screen.dp(5), Screen.dp(4));
+        rounded(
+          c,
+          cx - r,
+          cy - r + Screen.dp(2),
+          cx + r - Screen.dp(5),
+          cy + r - Screen.dp(5),
+          Screen.dp(4)
+        );
         c.drawLine(cx - Screen.dp(5), cy + r, cx + r, cy + r, paint);
         c.drawLine(cx + r, cy - Screen.dp(5), cx + r, cy + r, paint);
       } else if (item.general) {
         // General has its own hash mark, never a custom emoji or a renamed-topic initial.
-        c.drawLine(cx - Screen.dp(3), cy - Screen.dp(8), cx - Screen.dp(5), cy + Screen.dp(8), paint);
-        c.drawLine(cx + Screen.dp(5), cy - Screen.dp(8), cx + Screen.dp(3), cy + Screen.dp(8), paint);
-        c.drawLine(cx - Screen.dp(8), cy - Screen.dp(3), cx + Screen.dp(8), cy - Screen.dp(3), paint);
-        c.drawLine(cx - Screen.dp(8), cy + Screen.dp(3), cx + Screen.dp(8), cy + Screen.dp(3), paint);
+        c.drawLine(
+          cx - Screen.dp(3),
+          cy - Screen.dp(8),
+          cx - Screen.dp(5),
+          cy + Screen.dp(8),
+          paint
+        );
+        c.drawLine(
+          cx + Screen.dp(5),
+          cy - Screen.dp(8),
+          cx + Screen.dp(3),
+          cy + Screen.dp(8),
+          paint
+        );
+        c.drawLine(
+          cx - Screen.dp(8),
+          cy - Screen.dp(3),
+          cx + Screen.dp(8),
+          cy - Screen.dp(3),
+          paint
+        );
+        c.drawLine(
+          cx - Screen.dp(8),
+          cy + Screen.dp(3),
+          cx + Screen.dp(8),
+          cy + Screen.dp(3),
+          paint
+        );
       } else {
         paint.setStyle(Paint.Style.FILL);
         rounded(c, cx - r, cy - r, cx + r, cy + r - Screen.dp(2), Screen.dp(6));
@@ -1026,17 +1256,32 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
     private void drawBadge (Canvas c, float logical, float cy) {
       float left = Lang.rtl() ? getWidth() - logical - badgeWidth : logical;
       paint.setColor(item.muted ? Theme.badgeMutedColor() : Theme.badgeColor());
-      rounded(c, left, cy - metadataHeight / 2, left + badgeWidth, cy + metadataHeight / 2, metadataHeight / 2);
+      rounded(
+        c,
+        left,
+        cy - metadataHeight / 2,
+        left + badgeWidth,
+        cy + metadataHeight / 2,
+        metadataHeight / 2
+      );
       badgePaint();
       paint.setColor(Theme.badgeTextColor());
-      c.drawText(displayedBadge, left + badgeWidth / 2, cy - (paint.ascent() + paint.descent()) / 2, paint);
+      c.drawText(
+        displayedBadge,
+        left + badgeWidth / 2,
+        cy - (paint.ascent() + paint.descent()) / 2,
+        paint
+      );
     }
 
     private void drawState (Canvas c, Drawable drawable, float logical, float cy, float size) {
       float left = Lang.rtl() ? getWidth() - logical - size : logical;
       int save = c.save();
       c.translate(left, cy - size / 2);
-      c.scale(size / Math.max(1, drawable.getMinimumWidth()), size / Math.max(1, drawable.getMinimumHeight()));
+      c.scale(
+        size / Math.max(1, drawable.getMinimumWidth()),
+        size / Math.max(1, drawable.getMinimumHeight())
+      );
       Drawables.draw(c, drawable, 0, 0, PorterDuffPaint.get(ColorId.iconLight));
       c.restoreToCount(save);
     }
@@ -1048,8 +1293,10 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
 
   private void updatePlacementDescription () {
     int target = nextPlacement();
-    String text = string(target == ForumTabsState.TOP ? R.string.ForumTabsMoveTop :
-      target == ForumTabsState.START ? R.string.ForumTabsMoveStart : R.string.ForumTabsMoveBottom);
+    String text = string(
+      target == ForumTabsState.TOP ? R.string.ForumTabsMoveTop :
+        target == ForumTabsState.START ? R.string.ForumTabsMoveStart : R.string.ForumTabsMoveBottom
+    );
     placementButton.setContentDescription(text);
     if (Build.VERSION.SDK_INT >= 26) {
       placementButton.setTooltipText(text);
@@ -1066,11 +1313,13 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
       setFocusable(true);
       setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
       RippleSupport.setTransparentSelector(this);
-      setOnClickListener(v -> {
-        if (!destroyed) {
-          listener.onCyclePlacement();
+      setOnClickListener(
+        v -> {
+          if (!destroyed) {
+            listener.onCyclePlacement();
+          }
         }
-      });
+      );
     }
 
     @Override public void onInitializeAccessibilityNodeInfo (AccessibilityNodeInfo info) {
@@ -1112,22 +1361,25 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         setAccessibilityLiveRegion(ACCESSIBILITY_LIVE_REGION_POLITE);
       }
       RippleSupport.setTransparentSelector(this);
-      setOnClickListener(v -> {
-        if (destroyed || !failed || loading || retryRequested) {
-          return;
+      setOnClickListener(
+        v -> {
+          if (destroyed || !failed || loading || retryRequested) {
+            return;
+          }
+          retryRequested = true;
+          requestedCount = -1;
+          update();
+          listener.onRetry();
         }
-        retryRequested = true;
-        requestedCount = -1;
-        update();
-        listener.onRetry();
-      });
+      );
     }
 
     void update () {
       boolean canRetry = failed && !loading && !retryRequested;
       setClickable(canRetry);
       setFocusable(canRetry);
-      String description = string(canRetry ? R.string.ForumTopicsLoadFailed : R.string.ForumTopicsLoading);
+      String description =
+        string(canRetry ? R.string.ForumTopicsLoadFailed : R.string.ForumTopicsLoading);
       setContentDescription(description);
       if (Build.VERSION.SDK_INT >= 26) {
         setTooltipText(description);
@@ -1150,7 +1402,10 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         float size = Screen.dp(side() ? 24 : 20);
         int save = c.save();
         c.translate(cx - size / 2, cy - size / 2);
-        c.scale(size / Math.max(1, retry.getMinimumWidth()), size / Math.max(1, retry.getMinimumHeight()));
+        c.scale(
+          size / Math.max(1, retry.getMinimumWidth()),
+          size / Math.max(1, retry.getMinimumHeight())
+        );
         Drawables.draw(c, retry, 0, 0, PorterDuffPaint.get(ColorId.iconNegative));
         c.restoreToCount(save);
       } else {
@@ -1160,7 +1415,14 @@ public final class ForumTopicsTabsView extends ViewGroup implements ThemeInvalid
         paint.setStrokeCap(Paint.Cap.ROUND);
         rect.set(cx - Screen.dp(9), cy - Screen.dp(9), cx + Screen.dp(9), cy + Screen.dp(9));
         boolean animate = !reduceMotion();
-        c.drawArc(rect, animate ? (SystemClock.uptimeMillis() % 1200) * .3f : -90, 260, false, paint);
+        c.drawArc(
+          rect,
+          animate ? (SystemClock.uptimeMillis() % 1200) * .3f :
+            -90,
+          260,
+          false,
+          paint
+        );
         if (animate && attached && isShown()) {
           postInvalidateOnAnimation();
         }

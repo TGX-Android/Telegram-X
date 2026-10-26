@@ -158,7 +158,10 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
 
   public boolean canMergeWith (@Nullable TdlibNotification n) {
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-    if (n != null && notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR && n.notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR && allowContentPreview() && n.allowContentPreview()) {
+    if (n != null &&
+      notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR &&
+      n.notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR &&
+      allowContentPreview() && n.allowContentPreview()) {
       // endregion
       TdApi.Message m = ((TdApi.NotificationTypeNewMessage) notification.type).message;
       TdApi.Message other = ((TdApi.NotificationTypeNewMessage) n.notification.type).message;
@@ -191,11 +194,14 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR:
         return ((TdApi.NotificationTypeNewMessage) notification.type).showPreview;
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR: {
-        TdApi.NotificationTypeNewPushMessage push = (TdApi.NotificationTypeNewPushMessage) notification.type;
-        if (push.content == null || push.content.getConstructor() == TdApi.PushMessageContentHidden.CONSTRUCTOR) {
+        TdApi.NotificationTypeNewPushMessage push =
+          (TdApi.NotificationTypeNewPushMessage) notification.type;
+        if (push.content == null ||
+          push.content.getConstructor() == TdApi.PushMessageContentHidden.CONSTRUCTOR) {
           return false;
         }
-        // Push notifications have neither showPreview nor a topic identifier; their message is not in history yet.
+        // Push notifications have neither showPreview nor a topic identifier;
+        // their message is not in history yet.
         TdApi.Chat chat = tdlib.chat(getChatId());
         if (chat == null) {
           return false;

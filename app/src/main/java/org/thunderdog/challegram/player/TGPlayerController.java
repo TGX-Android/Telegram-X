@@ -1261,10 +1261,19 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   }
 
   // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-  public boolean hasPlayListScope (Tdlib tdlib, long chatId, @Nullable TdApi.MessageTopic topic, @Nullable String query) {
+  public boolean hasPlayListScope (
+    Tdlib tdlib,
+    long chatId,
+    @Nullable TdApi.MessageTopic topic,
+    @Nullable String query
+  ) {
     synchronized (this) {
-      return this.tdlib == tdlib && playlistChatId == chatId && Td.matchesTopic(playlistTopicId, topic) &&
-        Td.matchesTopic(topic, playlistTopicId) && StringUtils.equalsOrBothEmpty(playlistSearchQuery, query);
+      return this.tdlib == tdlib && playlistChatId == chatId && Td.matchesTopic(
+        playlistTopicId,
+        topic
+      ) &&
+        Td.matchesTopic(topic, playlistTopicId) &&
+        StringUtils.equalsOrBothEmpty(playlistSearchQuery, query);
     }
   }
 
@@ -1334,7 +1343,10 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
             for (int i = array.length - 1; i >= 0; i--) {
               TdApi.Message message = array[i];
               // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-              if (message == null || message.chatId != chatId || !Td.matchesTopic(message.topicId, requestedTopic) || !matchesFilter(message.content, contentType)) {
+              if (message == null || message.chatId != chatId || !Td.matchesTopic(
+                message.topicId,
+                requestedTopic
+              ) || !matchesFilter(message.content, contentType)) {
               // endregion
                 continue;
               }
@@ -1620,7 +1632,12 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
     synchronized (this) {
       // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
-      if (this.tdlib == tdlib && this.message != null && this.message.chatId == message.chatId && message.chatId != 0 && Td.matchesTopic(message.topicId, playlistTopicId) && this.message.content.getConstructor() == message.content.getConstructor() && TD.isScheduled(this.message) == TD.isScheduled(message)) {
+      if (this.tdlib == tdlib && this.message != null && this.message.chatId == message.chatId &&
+        message.chatId != 0 && Td.matchesTopic(
+        message.topicId,
+        playlistTopicId
+      ) && this.message.content.getConstructor() == message.content.getConstructor() &&
+        TD.isScheduled(this.message) == TD.isScheduled(message)) {
       // endregion
         if ((messageListStateFlags & LIST_STATE_LOADED_NEW) != 0) {
           int position = messageList.size();

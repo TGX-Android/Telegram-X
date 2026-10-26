@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.data;
 
 /** Geometry shared by measurement, hit testing and the navigation gesture boundary. */
@@ -15,8 +27,14 @@ public final class ForumRailLayout {
   }
 
   /** The body already has a leading rail margin. Gesture distance remains the full viewport. */
-  public static float topicTranslation (int viewportWidth, int railWidth, float openProgress, boolean rtl) {
-    return Math.max(0, viewportWidth - railWidth) * (1f - progress(openProgress)) * (rtl ? -1f : 1f);
+  public static float topicTranslation (
+    int viewportWidth,
+    int railWidth,
+    float openProgress,
+    boolean rtl
+  ) {
+    return Math.max(0, viewportWidth - railWidth) * (1f - progress(openProgress)) *
+      (rtl ? -1f : 1f);
   }
 
   public static int widthDp (float viewportDp) {
@@ -28,7 +46,14 @@ public final class ForumRailLayout {
   }
 
   /** A short initial page must not make LinearLayoutManager fill its end gap above the anchor. */
-  public static boolean canRestoreScroll (int count, int position, int offset, int rowHeight, int viewportHeight, boolean endReached) {
+  public static boolean canRestoreScroll (
+    int count,
+    int position,
+    int offset,
+    int rowHeight,
+    int viewportHeight,
+    boolean endReached
+  ) {
     if (count <= 0 || position < 0 || rowHeight <= 0 || viewportHeight <= 0) {
       return false;
     }
@@ -39,10 +64,21 @@ public final class ForumRailLayout {
   }
 
   public static boolean hitRail (int viewportWidth, int occupied, float x, boolean rtl) {
-    return occupied > 0 && x >= 0 && x < viewportWidth && (rtl ? x >= viewportWidth - occupied : x < occupied);
+    return occupied > 0 &&
+      x >= 0 &&
+      x < viewportWidth &&
+      (rtl ? x >= viewportWidth - occupied : x < occupied);
   }
 
-  public static boolean hitRail (int viewportWidth, int occupied, float x, float y, int headerBottom, int contentBottom, boolean rtl) {
+  public static boolean hitRail (
+    int viewportWidth,
+    int occupied,
+    float x,
+    float y,
+    int headerBottom,
+    int contentBottom,
+    boolean rtl
+  ) {
     return y >= headerBottom && y < contentBottom && hitRail(viewportWidth, occupied, x, rtl);
   }
 

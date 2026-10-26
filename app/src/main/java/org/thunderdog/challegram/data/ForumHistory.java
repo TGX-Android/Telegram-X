@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.data;
 
 import androidx.annotation.Nullable;
@@ -18,20 +30,43 @@ public final class ForumHistory {
     return topicId instanceof TdApi.MessageTopicForum;
   }
 
-  public static TdApi.Function<TdApi.Messages> request (long chatId, @Nullable TdApi.MessageTopic topicId, long fromMessageId, int offset, int limit, boolean onlyLocal) {
+  public static TdApi.Function<TdApi.Messages> request (
+    long chatId,
+    @Nullable TdApi.MessageTopic topicId,
+    long fromMessageId,
+    int offset,
+    int limit,
+    boolean onlyLocal
+  ) {
     if (isForum(topicId)) {
       // Unlike GetChatHistory, the forum API has no local-only mode.
-      return new TdApi.GetForumTopicHistory(chatId, ((TdApi.MessageTopicForum) topicId).forumTopicId, fromMessageId, offset, limit);
+      return new TdApi.GetForumTopicHistory(
+        chatId,
+        ((TdApi.MessageTopicForum) topicId).forumTopicId,
+        fromMessageId,
+        offset,
+        limit
+      );
     }
     return new TdApi.GetChatHistory(chatId, fromMessageId, offset, limit, onlyLocal);
   }
 
-  public static boolean matches (TdApi.Message message, long chatId, @Nullable TdApi.MessageTopic topicId, boolean scheduled) {
+  public static boolean matches (
+    TdApi.Message message,
+    long chatId,
+    @Nullable TdApi.MessageTopic topicId,
+    boolean scheduled
+  ) {
     return message != null && message.chatId == chatId &&
       (message.schedulingState != null) == scheduled && Td.matchesTopic(message.topicId, topicId);
   }
 
-  public static TdApi.Message[] filter (TdApi.Message[] messages, long chatId, @Nullable TdApi.MessageTopic topicId, boolean scheduled) {
+  public static TdApi.Message[] filter (
+    TdApi.Message[] messages,
+    long chatId,
+    @Nullable TdApi.MessageTopic topicId,
+    boolean scheduled
+  ) {
     if (!isForum(topicId)) {
       return messages;
     }
@@ -50,7 +85,10 @@ public final class ForumHistory {
   }
 
   @Nullable
-  public static TdApi.MessageTopic outgoingTopic (@Nullable TdApi.MessageTopic current, @Nullable TdApi.MessageTopic replyTopic) {
+  public static TdApi.MessageTopic outgoingTopic (
+    @Nullable TdApi.MessageTopic current,
+    @Nullable TdApi.MessageTopic replyTopic
+  ) {
     // An external reply must never move a send out of the currently open forum topic.
     return isForum(current) || replyTopic == null ? current : replyTopic;
   }
