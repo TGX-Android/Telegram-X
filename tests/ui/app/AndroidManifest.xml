@@ -3,9 +3,15 @@
   xmlns:android="http://schemas.android.com/apk/res/android">
 
   <application>
-    <!-- Builds with test hooks only: tests and adb start tools inside app process by broadcasts -->
+    <!-- Builds with test hooks only: tests and adb start tools inside app process by broadcasts.
+         DUMP lets only the shell send them, e.g. adb and runShellCommand of tests, not other apps -->
     <receiver
       android:name="tgx.test.NotificationFloodReceiver"
-      android:exported="true" />
+      android:exported="true"
+      android:permission="android.permission.DUMP" />
+    <receiver
+      android:name="tgx.test.AppearanceReceiver"
+      android:exported="true"
+      android:permission="android.permission.DUMP" />
   </application>
 </manifest>

@@ -1,5 +1,6 @@
 package tgx.test
 
+import android.app.ActivityManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -81,6 +82,7 @@ class NotificationFlood(
   private var nextNotificationId = 0
   private var sent = 0
   private var updateCount = 0
+  private var wasCached = false
 
   fun start() {
     current = this
@@ -113,7 +115,7 @@ class NotificationFlood(
     val firstId = (System.currentTimeMillis() / 1000 % 1_000_000_000).toInt()
     nextNotificationId = firstId
     logRetained("before")
-    // TDLib of builds with test hooks has notifications off, so the flood is the first source of them
+    // The flood starts without notifications that TDLib gave before
     send(TdApi.UpdateActiveNotifications(arrayOf()))
     val start = SystemClock.uptimeMillis()
     var nextLog = start
@@ -175,6 +177,15 @@ class NotificationFlood(
     val maps = File("/proc/self/maps").useLines { it.count() }
     val heap = Debug.getNativeHeapAllocatedSize() / 1024
     Log.i(TAG, "sent $sent notifications in $updateCount updates, maps $maps, native heap $heap KB")
+    // The system kills a cached app for binder traffic of notifications ("excessive binder traffic
+    // during cached"), which ends a flood without a crash of the app
+    val state = ActivityManager.RunningAppProcessInfo()
+    ActivityManager.getMyMemoryState(state)
+    val isCached = state.importance >= ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED
+    if (isCached && !wasCached) {
+      Log.w(TAG, "the app is cached, the system may kill it: keep a screen of the app open")
+    }
+    wasCached = isCached
   }
 
   private fun loadChats() {

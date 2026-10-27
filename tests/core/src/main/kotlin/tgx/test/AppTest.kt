@@ -35,6 +35,11 @@ abstract class AppTest(private val authorized: Boolean) {
 
   fun screenshot(name: String) = report.screenshot(name)
 
+  fun recordNativeHeap(name: String, block: () -> Unit) =
+    // Native allocations of the app while block runs, see "Profiles of native memory" in
+    // tests/README.md
+    report.recordNativeHeap(name, block)
+
   /** [animationScale] other than 1 slows animations down, e.g. 5 to see every frame of a glitch */
   fun recordScreen(name: String, animationScale: Float = 1f, block: () -> Unit) =
     report.recordScreen(name) {

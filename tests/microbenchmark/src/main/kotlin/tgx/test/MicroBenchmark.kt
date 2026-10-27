@@ -1,13 +1,10 @@
 package tgx.test
 
-import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Picture
 import android.graphics.RenderNode
 import android.os.Build
-import androidx.benchmark.Outputs
 import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeatedOnMainThread
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,6 +13,7 @@ import org.junit.Rule
 import org.junit.rules.TestName
 import org.junit.runner.RunWith
 import org.thunderdog.challegram.core.Media
+import org.thunderdog.challegram.theme.Theme
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -86,7 +84,8 @@ fun outputDrawing(name: String, width: Int, height: Int, draw: (Canvas) -> Unit)
     draw(canvas)
   }
   waitForBackgroundLoading()
-  bitmap.eraseColor(Color.TRANSPARENT)
+  // Text of the app is drawn on the background of the theme, which viewers of images don't have
+  bitmap.eraseColor(Theme.fillingColor())
   onMainThread {
     draw(canvas)
   }
@@ -98,11 +97,10 @@ fun outputDrawing(name: String, width: Int, height: Int, draw: (Canvas) -> Unit)
 // Gradle replaces other characters in names of files that it copies from device
 private val UNSAFE_FILE_NAME_CHARACTERS = Regex("""[^0-9A-Za-z._-]+""")
 
-// Benchmark library saves results there and deletes other files when it starts
-@SuppressLint("RestrictedApi")
 private fun outputFile(name: String, extension: String): File {
+  // MicroBenchmarkRunner packs outputs into one file, which Gradle copies from device
   val fileName = name.replace(UNSAFE_FILE_NAME_CHARACTERS, "_")
-  return File(Outputs.outputDirectory, "$fileName.output.$extension")
+  return File(outputsDirectory.apply { mkdirs() }, "$fileName.output.$extension")
 }
 
 private fun waitForBackgroundLoading() {

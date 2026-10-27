@@ -13,6 +13,7 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.of
+import org.gradle.kotlin.dsl.register
 import tgx.gradle.source.KeystoreSource
 import java.io.File
 import java.util.Properties
@@ -25,6 +26,21 @@ private const val TEST_MIN_SDK_VERSION = 24
 const val TEST_DEVICE = "emulator"
 
 internal const val SNAPSHOT_PATH = "tests/core/src/main/assets/snapshot.zip"
+
+// -Ptgx.checks=false builds tests without checks of a change, e.g. to measure a commit before it,
+// where they don't compile
+internal val Project.hasChecks: Boolean
+  get() = providers.gradleProperty("tgx.checks")
+    .map {
+      it != "false"
+    }
+    .getOrElse(true)
+
+// Dry runs of microbenchmarks run each test once, without measuring
+private val Project.isDryRun: Boolean
+  get() = providers
+    .gradleProperty("android.testInstrumentationRunnerArguments.androidx.benchmark.dryRunMode.enable")
+    .orNull == "true"
 
 // Libraries of the app that tests inside app process depend on too
 private val APP_LIBRARIES = listOf(
@@ -60,11 +76,15 @@ fun Project.configureTests() {
     // Built-in Kotlin compiles only Kotlin source directories
     sourceSets.getByName("test") {
       kotlin.directories += "../tests/unit/kotlin"
-      kotlin.directories += "../tests/unit/checks"
+      if (hasChecks) {
+        kotlin.directories += "../tests/unit/checks"
+      }
     }
     sourceSets.getByName("androidTest") {
       kotlin.directories += "../tests/integration/kotlin"
-      kotlin.directories += "../tests/integration/checks"
+      if (hasChecks) {
+        kotlin.directories += "../tests/integration/checks"
+      }
       if (hasTestTools) {
         kotlin.directories += "../tests/integration/tools"
       }
@@ -117,7 +137,9 @@ fun Project.configureAppTests(
 
     // Checks of a single change, which are ignored by git
     sourceSets.getByName("main") {
-      kotlin.directories += "checks"
+      if (hasChecks) {
+        kotlin.directories += "checks"
+      }
       if (hasTestTools) {
         kotlin.directories += "tools"
       }
@@ -128,8 +150,9 @@ fun Project.configureAppTests(
     experimentalProperties["android.experimental.self-instrumenting"] = !inAppProcess
     if (inAppProcess) {
       // Microbenchmarks fail when the app isn't fully compiled ahead of time,
-      // benchmark plugin of AndroidX turns on the same
-      experimentalProperties["android.experimental.force-aot-compilation"] = true
+      // benchmark plugin of AndroidX turns on the same. Dry runs measure nothing,
+      // and the compilation takes about a minute before each run
+      experimentalProperties["android.experimental.force-aot-compilation"] = !isDryRun
     }
 
     // Tests inside app process need the key of the app, which is debug key when keystore isn't set
@@ -180,6 +203,12 @@ fun Project.configureAppTests(
         )
       }
     }
+  }
+
+  tasks.register<DescribeHeapProfilesTask>("describeHeapProfiles") {
+    mustRunAfter(tasks.named { it.startsWith("connected") && it.endsWith("AndroidTest") })
+    results.set(layout.buildDirectory.dir("outputs/connected_android_test_additional_output"))
+    traceProcessor.set(providers.gradleProperty("traceProcessor"))
   }
 
   if (inAppProcess) {
