@@ -83,9 +83,8 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   }
 
   private static boolean accept (TdApi.NotificationGroupType type) {
-    if (Config.FORCE_DISABLE_NOTIFICATIONS && !Config.ENABLE_TEST_HOOKS) {
-      // Ignore all notifications in experimental builds. TDLib of builds with test hooks sends none either,
-      // and tests give the app fake ones
+    if (Config.FORCE_DISABLE_NOTIFICATIONS) {
+      // Ignore all notifications in experimental builds
       return false;
     }
     switch (type.getConstructor()) {

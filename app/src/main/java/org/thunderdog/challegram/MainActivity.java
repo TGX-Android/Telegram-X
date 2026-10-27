@@ -542,7 +542,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   }
 
   private void showExperimentalAlert () {
-    if (BuildConfig.EXPERIMENTAL && !BuildConfig.DEBUG) {
+    // Builds of tests are experimental too, and the alert would stop UI tests at launch
+    if (BuildConfig.EXPERIMENTAL && !BuildConfig.DEBUG && !Config.ENABLE_TEST_HOOKS) {
       ViewController<?> c = navigation.getCurrentStackItem();
       if (c != null) {
         c.openAlert(R.string.ExperimentalBuildTitle,
