@@ -159,6 +159,12 @@ private class TestToolsReport(private val root: File, private val serial: String
       "disablesAnimations: @DisableAnimations turns animations off",
       rowsEndWith("SmokeUiCheck#disablesAnimations", "| passes | passes |")
     )
+    if (root.resolve(SNAPSHOT_PATH).exists()) {
+      expect(
+        "NotificationFlood: the app shows its fake notifications like the ones of new messages",
+        rowsEndWith("NotificationFloodCheck#", "| passes | passes |")
+      )
+    }
     expect(
       "Screenshot intro is listed once, before and after",
       mediaListed("SmokeUiCheck.introSwipes.intro")

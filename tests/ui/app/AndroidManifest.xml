@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+  xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <application>
+    <!-- Builds with test hooks only: tests and adb start tools inside app process by broadcasts -->
+    <receiver
+      android:name="tgx.test.NotificationFloodReceiver"
+      android:exported="true" />
+  </application>
+</manifest>

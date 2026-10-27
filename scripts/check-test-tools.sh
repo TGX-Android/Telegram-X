@@ -386,7 +386,7 @@ fi
 step_checks() {
   local ui_filter=(-Pandroid.testInstrumentationRunnerArguments.package=tgx)
   if ! $HAS_SNAPSHOT; then
-    ui_filter+=(-Pandroid.testInstrumentationRunnerArguments.notClass=tgx.test.AuthorizedLaunchTest)
+    ui_filter+=(-Pandroid.testInstrumentationRunnerArguments.notClass=tgx.test.AuthorizedLaunchTest,tgx.smoke.NotificationFloodCheck)
   fi
   animation_scales > "$OUT/scales-before-ui.txt"
   run clear gradle clearCheckResults

@@ -81,6 +81,16 @@ fun Project.configureTests() {
         variant.sources.manifests.addStaticManifestFile("$directory/AndroidManifest.xml")
       }
     }
+    // Tools that UI tests start inside app process, e.g. fake notifications of NotificationFlood
+    for (buildType in listOf("nonMinifiedRelease", "benchmarkRelease")) {
+      onVariants(selector().withBuildType(buildType)) { variant ->
+        if (variant.minSdk.apiLevel >= TEST_MIN_SDK_VERSION) {
+          val directory = "../tests/ui/app"
+          variant.sources.kotlin!!.addStaticSourceDirectory("$directory/kotlin")
+          variant.sources.manifests.addStaticManifestFile("$directory/AndroidManifest.xml")
+        }
+      }
+    }
   }
   runTestsOnDeviceOneAtATime()
 }

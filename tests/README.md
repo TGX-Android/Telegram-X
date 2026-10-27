@@ -269,6 +269,7 @@ class ChatTest : AuthorizedTest() {
 * Helpers are in [`Extensions.kt`](core/src/main/kotlin/tgx/test/Extensions.kt): `findElement`, `waitForElement`, `failIfPresent`, `openUrl`, `runShellCommand` and others. Any `UiDevice` and `UiObject2` methods can be used as well, except `executeShellCommand`: use `runShellCommand` or `androidx.test.shell.Shell` instead.
 * To see ids of elements currently displayed on device: `adb exec-out uiautomator dump /dev/tty`.
 * On Windows MSYS2 and Git Bash convert arguments that look like paths, e.g. `/dev/tty`, to Windows paths. Prepend `MSYS2_ARG_CONV_EXCL='*'` to `adb` commands with paths on device.
+* Notifications of new messages come without a second account and without sending anything from [`NotificationFlood`](ui/app/kotlin/tgx/test/NotificationFlood.kt), which builds of tests have inside app process: it loads incoming messages of chats of the account from their history and gives the app updates of TDLib about notifications with new ids and dates, as if they had just come. TDLib of these builds sends no notifications of its own. A test starts it by a broadcast, e.g. `runShellCommand("am broadcast -n ${getApplicationId()}/tgx.test.NotificationFloodReceiver --ei count 3000 --ei perMinute 3000 --ei chats 5")`, and waits for `done` in logcat of tag `NotificationFlood`, where each second it logs the notifications it sent with the number of mappings and the native heap of the app.
 
 ### Benchmarks
 
