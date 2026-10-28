@@ -748,6 +748,7 @@ public class ContentPreview {
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
       case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
       case TdApi.MessageGroupCall.CONSTRUCTOR:
