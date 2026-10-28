@@ -2394,6 +2394,26 @@ public class U {
     return metadata;
   }
 
+  // Version name of the manifest of the installed APK, read once. A build of all ABIs makes an APK
+  // for each, with its ABI in the version name of its manifest, while all of them share one
+  // BuildConfig with the version name of one of them
+  private static volatile String versionName;
+
+  public static String getVersionName () {
+    String versionName = U.versionName;
+    if (versionName == null) {
+      try {
+        versionName = AppContext.get().getPackageManager()
+          .getPackageInfo(BuildConfig.APPLICATION_ID, 0).versionName;
+      } catch (Throwable ignored) { }
+      if (StringUtils.isEmpty(versionName)) {
+        return BuildConfig.VERSION_NAME;
+      }
+      U.versionName = versionName;
+    }
+    return versionName;
+  }
+
   public static String getApkFingerprint (String algorithm) {
     return getApkFingerprint(algorithm, true);
   }

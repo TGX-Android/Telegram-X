@@ -326,7 +326,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
         String text = Lang.getString(languagePackInfo,
           R.string.email_LoginTooLong_text,
 
-          BuildConfig.VERSION_NAME,
+          U.getVersionName(),
           languagePackInfo.id,
           Lang.getDuration((int) (getTdlib().timeSinceFirstConnectionAttemptMs() / 1000l)) + " (" + networkTypeStr + ")",
           TdlibManager.getSystemLanguageCode(),

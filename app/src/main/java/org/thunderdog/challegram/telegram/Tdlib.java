@@ -523,7 +523,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         BuildConfig.TELEGRAM_API_ID,
         BuildConfig.TELEGRAM_API_HASH,
         null, null, null, // updateParameters
-        BuildConfig.VERSION_NAME
+        U.getVersionName()
       );
     } else {
       this.parameters = new TdApi.SetTdlibParameters(
@@ -536,7 +536,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         BuildConfig.TELEGRAM_API_ID,
         BuildConfig.TELEGRAM_API_HASH,
         null, null, null, // updateParameters
-        BuildConfig.VERSION_NAME
+        U.getVersionName()
       );
     }
 
@@ -4730,7 +4730,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public String emailMetadata () {
     return Lang.getString(R.string.email_metadata,
-      BuildConfig.VERSION_NAME,
+      U.getVersionName(),
       languagePackId,
       TdlibManager.getSystemLanguageCode(),
       TdlibManager.getSystemVersion());
