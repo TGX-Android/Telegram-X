@@ -8,9 +8,13 @@ import android.os.Build
 import android.os.Debug
 import android.os.SystemClock
 import android.util.Log
+import android.util.LruCache
 import org.drinkless.tdlib.TdApi
+import org.thunderdog.challegram.data.TD
 import org.thunderdog.challegram.telegram.Tdlib
 import org.thunderdog.challegram.telegram.TdlibManager
+import org.thunderdog.challegram.telegram.TdlibNotificationUtils
+import tgx.td.fromUserId
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -33,7 +37,9 @@ class NotificationFloodReceiver : BroadcastReceiver() {
       count = intent.getIntExtra("count", 100),
       perMinute = intent.getIntExtra("perMinute", 1000),
       chatCount = intent.getIntExtra("chats", 1),
-      textOnly = intent.getBooleanExtra("textOnly", true)
+      textOnly = intent.getBooleanExtra("textOnly", true),
+      removeAfter = intent.getBooleanExtra("removeAfter", false),
+      muteAfter = intent.getBooleanExtra("muteAfter", false)
     ).start()
   }
 }
@@ -48,13 +54,19 @@ class NotificationFloodReceiver : BroadcastReceiver() {
  * Like TDLib with the options that the app sets, each chat has one group of messages, and a group shows at
  * most [groupSizeMax] notifications: older ones are removed by the update that adds a new one. Delays,
  * merging of updates and limits of the number of groups of TDLib are left out.
+ *
+ * After the flood, [removeAfter] (`--ez removeAfter true`) removes its notifications as TDLib does
+ * when they are read, and [muteAfter] (`--ez muteAfter true`) turns notifications of its chats off
+ * in the app.
  */
 class NotificationFlood(
   private val tdlib: Tdlib,
   private val count: Int,
   private val perMinute: Int,
   private val chatCount: Int,
-  private val textOnly: Boolean
+  private val textOnly: Boolean,
+  private val removeAfter: Boolean,
+  private val muteAfter: Boolean
 ) {
   companion object {
     @Volatile
@@ -134,6 +146,15 @@ class NotificationFlood(
     logProgress()
     // Notifications of the last updates are still being shown
     Thread.sleep(10_000)
+    if (removeAfter) {
+      removeNotifications()
+    }
+    if (muteAfter) {
+      muteChats()
+    }
+    if (removeAfter || muteAfter) {
+      Thread.sleep(2_000)
+    }
     logRetained("after")
     Log.i(TAG, "done")
   }
@@ -176,7 +197,9 @@ class NotificationFlood(
   private fun logProgress() {
     val maps = File("/proc/self/maps").useLines { it.count() }
     val heap = Debug.getNativeHeapAllocatedSize() / 1024
-    Log.i(TAG, "sent $sent notifications in $updateCount updates, maps $maps, native heap $heap KB")
+    val icons = iconsOf()
+    val heapText = "native heap $heap KB"
+    Log.i(TAG, "sent $sent notifications in $updateCount updates, maps $maps, $heapText, $icons")
     // The system kills a cached app for binder traffic of notifications ("excessive binder traffic
     // during cached"), which ends a flood without a crash of the app
     val state = ActivityManager.RunningAppProcessInfo()
@@ -240,27 +263,113 @@ class NotificationFlood(
     return messages
   }
 
-  private fun execute(function: TdApi.Function<*>): TdApi.Object {
-    val latch = CountDownLatch(1)
-    var result: TdApi.Object? = null
-    tdlib.client().send(function) {
-      result = it
-      latch.countDown()
+  private fun execute(function: TdApi.Function<*>): TdApi.Object = execute(tdlib, function)
+
+  private fun removeNotifications() {
+    // Like TDLib when messages are read: each group loses its shown notifications
+    for (group in groups) {
+      val removed = group.shown.toIntArray()
+      group.shown.clear()
+      val type = TdApi.NotificationGroupTypeMessages()
+      send(TdApi.UpdateNotificationGroup(
+        group.id, type, group.chatId, group.chatId, -1, 0, arrayOf(), removed
+      ))
     }
-    check(latch.await(30, TimeUnit.SECONDS)) { "No result of $function" }
-    return result.also {
-      check(it !is TdApi.Error) { "$function failed: $it" }
-    }!!
   }
 
-  private fun copyOf(message: TdApi.Message): TdApi.Message {
-    // Each notification has its own message: TDLib sends a new object for each new message
-    val copy = TdApi.Message()
-    for (field in TdApi.Message::class.java.fields) {
+  private fun muteChats() {
+    // Notifications of the chats are off in the app, also of mentions and pinned messages, as if
+    // the user muted them, while the server keeps the settings of the account
+    for (group in groups) {
+      val settings = copyOf(tdlib.chatStrict(group.chatId).notificationSettings)
+      settings.useDefaultMuteFor = false
+      settings.muteFor = Int.MAX_VALUE
+      settings.useDefaultDisableMentionNotifications = false
+      settings.disableMentionNotifications = true
+      settings.useDefaultDisablePinnedMessageNotifications = false
+      settings.disablePinnedMessageNotifications = true
+      send(TdApi.UpdateChatNotificationSettings(group.chatId, settings))
+    }
+  }
+
+  private fun <T : Any> copyOf(value: T): T {
+    // Each notification has its own message and each change its own settings: TDLib sends a new
+    // object for each of them
+    val copy = value.javaClass.getDeclaredConstructor().newInstance()
+    for (field in value.javaClass.fields) {
       if (!java.lang.reflect.Modifier.isStatic(field.modifiers)) {
-        field.set(copy, field.get(message))
+        field.set(copy, field.get(value))
       }
     }
     return copy
+  }
+}
+
+/**
+ * Icons of notifications that the app keeps: their number, size, and how often notifications found
+ * them made, e.g. `adb shell am broadcast -n org.example.tgx/tgx.test.NotificationIconsReceiver`
+ * logs them with tag `NotificationFlood`
+ */
+class NotificationIconsReceiver : BroadcastReceiver() {
+  override fun onReceive(context: Context, intent: Intent) {
+    Log.i(TAG, iconsOf())
+  }
+}
+
+fun iconsOf(): String {
+  // The cache of the app is private, and only tools read it
+  val icons = TdlibManager.instance().notificationIcons()
+    ?: return "icons 0, 0 KB, hits 0, misses 0, reuse off"
+  val field = icons.javaClass.getDeclaredField("icons").apply { isAccessible = true }
+  val cache = field.get(icons) as LruCache<*, *>
+  val count = cache.snapshot().size
+  val size = cache.size() / 1024
+  return "icons $count, $size KB, hits ${cache.hitCount()}, misses ${cache.missCount()}"
+}
+
+private fun execute(tdlib: Tdlib, function: TdApi.Function<*>): TdApi.Object {
+  val latch = CountDownLatch(1)
+  var result: TdApi.Object? = null
+  tdlib.client().send(function) {
+    result = it
+    latch.countDown()
+  }
+  check(latch.await(30, TimeUnit.SECONDS)) { "No result of $function" }
+  return result.also {
+    check(it !is TdApi.Error) { "$function failed: $it" }
+  }!!
+}
+
+/**
+ * The icon of a call and the icon of a notification of the same private chat, made as
+ * `TGCallService` and notifications make them, e.g.
+ * `adb shell am broadcast -n org.example.tgx/tgx.test.CallIconReceiver` logs with tag
+ * `NotificationFlood` "call icon: same true, icons 1, after the chat 0" for the first private chat
+ * of the main list: whether both are one bitmap, the icons kept, and the icons kept after no
+ * notification of the chat is shown anymore
+ */
+class CallIconReceiver : BroadcastReceiver() {
+  override fun onReceive(context: Context, intent: Intent) {
+    val tdlib = TdlibManager.instance().current()
+    Thread {
+      val chats = execute(tdlib, TdApi.GetChats(TdApi.ChatListMain(), 100)) as TdApi.Chats
+      val chat = chats.chatIds.asSequence()
+        .mapNotNull { tdlib.chat(it) }
+        .firstOrNull { it.type is TdApi.ChatTypePrivate && !tdlib.isSelfChat(it) }
+      if (chat == null) {
+        Log.i(TAG, "call icon: no private chat")
+        return@Thread
+      }
+      val user = tdlib.cache().user((chat.type as TdApi.ChatTypePrivate).userId)!!
+      // A call doesn't wait for the photo, a notification does: both find it loaded
+      user.profilePhoto?.small?.let { execute(tdlib, TdApi.DownloadFile(it.id, 32, 0, 0, true)) }
+      val callIcon = TdlibNotificationUtils.buildLargeIcon(tdlib, fromUserId(user.id),
+        user.profilePhoto?.small, tdlib.cache().userAccentColor(user), TD.getLetters(user), false,
+        true)
+      val messageIcon = TdlibNotificationUtils.buildLargeIcon(tdlib, chat, true)
+      val kept = iconsOf()
+      TdlibManager.instance().notificationIcons()?.retainChats(tdlib.id(), emptySet())
+      Log.i(TAG, "call icon: same ${callIcon === messageIcon}, $kept, after the chat ${iconsOf()}")
+    }.start()
   }
 }

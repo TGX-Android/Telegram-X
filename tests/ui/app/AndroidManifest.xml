@@ -10,6 +10,14 @@
       android:exported="true"
       android:permission="android.permission.DUMP" />
     <receiver
+      android:name="tgx.test.NotificationIconsReceiver"
+      android:exported="true"
+      android:permission="android.permission.DUMP" />
+    <receiver
+      android:name="tgx.test.CallIconReceiver"
+      android:exported="true"
+      android:permission="android.permission.DUMP" />
+    <receiver
       android:name="tgx.test.AppearanceReceiver"
       android:exported="true"
       android:permission="android.permission.DUMP" />
