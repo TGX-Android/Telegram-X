@@ -92,6 +92,7 @@ public class Config {
 
   public static final boolean NOTIFICATION_AUTO_CANCEL = true;
   public static final boolean NOTIFICATION_AUTO_CANCEL_SPECIFIC = true;
+  public static final boolean REUSE_NOTIFICATION_ICONS = true;
   public static final int MAX_RUNNING_TDLIBS = 5;
 
   public static final boolean NEED_LANGUAGE_WORKAROUND = false;

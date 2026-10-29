@@ -846,7 +846,9 @@ public class TGCallService extends Service implements
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       builder.setColor(tdlib.accountColor());
     }
-    Bitmap bitmap = TdlibNotificationUtils.buildLargeIcon(tdlib, user.profilePhoto != null ? user.profilePhoto.small : null, tdlib.cache().userAccentColor(user), TD.getLetters(user), false, true);
+    Bitmap bitmap = TdlibNotificationUtils.buildLargeIcon(tdlib, ChatId.fromUserId(user.id),
+      user.profilePhoto != null ? user.profilePhoto.small : null,
+      tdlib.cache().userAccentColor(user), TD.getLetters(user), false, true);
     if (bitmap != null) {
       builder.setLargeIcon(bitmap);
     }
@@ -972,7 +974,10 @@ public class TGCallService extends Service implements
       builder.setCategory(Notification.CATEGORY_CALL);
       builder.setFullScreenIntent(PendingIntent.getActivity(this, PendingIntent.FLAG_ONE_SHOT, Intents.valueOfCall(), Intents.mutabilityFlags(false)), true);
     }
-    Bitmap bitmap = user != null ? TdlibNotificationUtils.buildLargeIcon(tdlib, user.profilePhoto != null ? user.profilePhoto.small : null, tdlib.cache().userAccentColor(user), TD.getLetters(user), false, true) : null;
+    Bitmap bitmap = user != null ?
+      TdlibNotificationUtils.buildLargeIcon(tdlib, ChatId.fromUserId(user.id),
+      user.profilePhoto != null ? user.profilePhoto.small : null,
+      tdlib.cache().userAccentColor(user), TD.getLetters(user), false, true) : null;
     if (bitmap != null) {
       builder.setLargeIcon(bitmap);
     }
