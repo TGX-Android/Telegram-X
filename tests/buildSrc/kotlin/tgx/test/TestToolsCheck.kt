@@ -35,6 +35,7 @@ fun Project.configureTestToolsCheck() {
   tasks.register<DescribeTestToolsCheckTask>("describeTestToolsCheck") {
     rootDirectory.set(layout.projectDirectory)
     serial.set(providers.environmentVariable("ANDROID_SERIAL"))
+    hasSnapshot.set(snapshotFile.map { true }.orElse(false))
   }
 }
 
@@ -51,10 +52,13 @@ abstract class DescribeTestToolsCheckTask : DefaultTask() {
   @get:Internal
   abstract val serial: Property<String>
 
+  @get:Internal
+  abstract val hasSnapshot: Property<Boolean>
+
   @TaskAction
   fun describe() {
     val root = rootDirectory.get().asFile
-    val report = TestToolsReport(root, serial.orNull).build()
+    val report = TestToolsReport(root, serial.orNull, hasSnapshot.get()).build()
     root.resolve("$OUTPUT_DIRECTORY/report.md").writeText(report)
     logger.lifecycle(report.trimEnd().substringAfterLast('\n'))
   }
@@ -68,7 +72,11 @@ private class TestToolsRun(
   val command: String
 )
 
-private class TestToolsReport(private val root: File, private val serial: String?) {
+private class TestToolsReport(
+  private val root: File,
+  private val serial: String?,
+  private val hasSnapshot: Boolean
+) {
   private val out = root.resolve(OUTPUT_DIRECTORY)
   private val runs = out.resolve("runs.tsv").readLinesOrEmpty()
     .filter { it.isNotEmpty() }
@@ -159,7 +167,7 @@ private class TestToolsReport(private val root: File, private val serial: String
       "disablesAnimations: @DisableAnimations turns animations off",
       rowsEndWith("SmokeUiCheck#disablesAnimations", "| passes | passes |")
     )
-    if (root.resolve(SNAPSHOT_PATH).exists()) {
+    if (hasSnapshot) {
       expect(
         "NotificationFlood: the app shows its fake notifications like the ones of new messages",
         rowsEndWith("NotificationFloodCheck#", "| passes | passes |")
@@ -279,14 +287,14 @@ private class TestToolsReport(private val root: File, private val serial: String
       "introSwipes: FRAME_METRICS and MEMORY_METRICS are measured after the change",
       "introSwipes: passes" in after
     )
-    if (root.resolve(SNAPSHOT_PATH).exists()) {
+    if (hasSnapshot) {
       expect(
         "chatsListScrolls: SCROLL_METRICS and scrollList work",
         "chatsListScrolls: passes" in after
       )
     } else {
       expect(
-        "chatsListScrolls is skipped without snapshot.zip",
+        "chatsListScrolls is skipped without -PsnapshotFile",
         "chatsListScrolls: skipped" in after
       )
     }

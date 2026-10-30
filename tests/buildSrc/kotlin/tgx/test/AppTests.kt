@@ -10,10 +10,13 @@ import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.TestAndroidComponentsExtension
 import org.gradle.api.Project
+import org.gradle.api.file.RegularFile
+import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.of
 import org.gradle.kotlin.dsl.register
+import tgx.gradle.fatal
 import tgx.gradle.source.KeystoreSource
 import java.io.File
 import java.util.Properties
@@ -25,7 +28,21 @@ private const val TEST_MIN_SDK_VERSION = 24
 
 const val TEST_DEVICE = "emulator"
 
-internal const val SNAPSHOT_PATH = "tests/core/src/main/assets/snapshot.zip"
+// Where the snapshot of accounts was kept before -PsnapshotFile, inside the clone
+private const val OLD_SNAPSHOT_PATH = "tests/core/src/main/assets/snapshot.zip"
+
+// Snapshot of accounts that tests start with, outside the clone: -PsnapshotFile=<full path>,
+// see "Session snapshot" in tests/README.md
+internal val Project.snapshotFile: Provider<RegularFile>
+  get() = layout.file(
+    providers.gradleProperty("snapshotFile").map { path ->
+      File(path).also {
+        if (!it.isAbsolute || !it.isFile) {
+          fatal("-PsnapshotFile=$path isn't the full path of a snapshot")
+        }
+      }
+    }
+  )
 
 // -Ptgx.checks=false builds tests without checks of a change, e.g. to measure a commit before it,
 // where they don't compile
@@ -122,11 +139,20 @@ fun Project.configureAppTests(
   inAppProcess: Boolean = false,
   testedVariants: (SdkVariant) -> Boolean = { it.supportsSdk(TEST_MIN_SDK_VERSION) }
 ) {
-  val snapshot = isolated.rootProject.projectDirectory.file(SNAPSHOT_PATH)
+  if (isolated.rootProject.projectDirectory.file(OLD_SNAPSHOT_PATH).asFile.exists()) {
+    fatal(
+      "$OLD_SNAPSHOT_PATH is no longer read: move it out of the clone " +
+        "and pass its full path by -PsnapshotFile"
+    )
+  }
+  val snapshot = snapshotFile
   val snapshotUserIds = providers.fileContents(snapshot).asBytes
     .map { readSnapshotUserIds(it.inputStream()) }
     .orNull
     .orEmpty()
+  val snapshotAsset = tasks.register<SnapshotAssetTask>("linkSnapshotAsset") {
+    this.snapshot.set(snapshot)
+  }
   val appKeystore = if (inAppProcess) findAppKeystore() else null
 
   extensions.configure<TestExtension> {
@@ -202,8 +228,20 @@ fun Project.configureAppTests(
           snapshotUserIds.joinToString(",")
         )
       }
+      if (snapshot.isPresent) {
+        variant.sources.assets?.addGeneratedSourceDirectory(
+          snapshotAsset,
+          SnapshotAssetTask::outputDirectory
+        )
+      }
     }
   }
+  // The build cache would keep copies of the snapshot outside the clone
+  tasks
+    .named { (it.startsWith("merge") || it.startsWith("compress")) && it.endsWith("Assets") }
+    .configureEach {
+      outputs.doNotCacheIf("Assets of tests have the snapshot of accounts") { true }
+    }
 
   tasks.register<DescribeHeapProfilesTask>("describeHeapProfiles") {
     mustRunAfter(tasks.named { it.startsWith("connected") && it.endsWith("AndroidTest") })
@@ -244,8 +282,8 @@ private fun Project.findAppKeystore(): Keystore? {
 }
 
 /**
- * Tests of different modules install the same app,
- * and accounts from snapshot.zip must not be used by several apps at once
+ * Tests of different modules install the same app, a phone runs tests of one build at a time,
+ * and sessions of a snapshot must not be used by several apps at once
  */
 @Suppress("UnstableApiUsage")
 private fun Project.runTestsOnDeviceOneAtATime() {
@@ -254,7 +292,7 @@ private fun Project.runTestsOnDeviceOneAtATime() {
     SnapshotLockService::class.java
   ) {
     maxParallelUsages.set(1)
-    parameters.snapshot.set(isolated.rootProject.projectDirectory.file(SNAPSHOT_PATH))
+    parameters.snapshot.set(snapshotFile.orNull)
     parameters.locksDirectory.set(File(gradle.gradleUserHomeDir, "tgx-test-accounts"))
   }
   val adb = extensions.getByType(AndroidComponentsExtension::class.java).sdkComponents.adb
@@ -274,10 +312,10 @@ private fun Project.runTestsOnDeviceOneAtATime() {
   deviceTests.configureEach {
     usesService(snapshotLock)
     doFirst {
-      snapshotLock.get().lock()
-      if (name.startsWith("connected")) {
-        requireSingleDevice(adb.get().asFile)
-      }
+      // Tests on a phone build nothing, so other builds go on while they run
+      releaseBuildLock()
+      val serial = if (name.startsWith("connected")) requireSingleDevice(adb.get().asFile) else null
+      snapshotLock.get().lock(serial)
     }
   }
 }
