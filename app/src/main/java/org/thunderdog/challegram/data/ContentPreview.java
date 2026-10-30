@@ -896,15 +896,18 @@ public class ContentPreview {
   }
 
   private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument) {
-    return getNotificationPinned(res, type, tdlib, chatId, sender, argument, senderName, false, 0, 0);
+    return getNotificationPinned(res, type, tdlib, chatId, sender, senderName, argument,
+      false, 0, 0);
   }
 
   private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable) {
-    return getNotificationPinned(res, type, tdlib, chatId, sender, argument, senderName, argumentTranslatable, 0, 0);
+    return getNotificationPinned(res, type, tdlib, chatId, sender, senderName, argument,
+      argumentTranslatable, 0, 0);
   }
 
   private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, long arg1, long arg2) {
-    return getNotificationPinned(res, type, tdlib, chatId, sender, argument, senderName, false, arg1, arg2);
+    return getNotificationPinned(res, type, tdlib, chatId, sender, senderName, argument,
+      false, arg1, arg2);
   }
 
   private static ContentPreview getNotificationPinned (int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable, long arg1, long arg2) {
@@ -1095,7 +1098,9 @@ public class ContentPreview {
       case TdApi.PushMessageContentGameScore.CONSTRUCTOR: {
         TdApi.PushMessageContentGameScore score = (TdApi.PushMessageContentGameScore) push.content;
         if (score.isPinned) {
-          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageGameScore.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null); // TODO
+          return getNotificationPinned(R.string.ActionPinnedGameNoName,
+            TdApi.MessageGameScore.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName,
+            null);
         } else {
           String gameTitle = score.title;
           if (!StringUtils.isEmpty(gameTitle))
