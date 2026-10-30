@@ -10,6 +10,9 @@
 # Path to Android SDK
 sdk.dir=
 
+# Path to the home of rustup with Rust of version.rust of version.properties, see scripts/setup-rust.sh
+rust.dir=
+
 # Location of the MSYS2. This is only used on Windows.
 msys2.dir=
 

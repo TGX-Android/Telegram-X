@@ -249,6 +249,86 @@ val buildLibvpxTask = tasks.register("buildLibvpx") {
   dependsOn(buildLibvpxTasks.values)
 }
 
+val buildTlottieTasks = Sdk.VARIANTS.values.filter {
+  (it.usesLegacyNdk == useLegacyNdk ||
+    config.build.primaryNdkVersion == config.build.legacyNdkVersion)
+}.flatMap { sdkVariant ->
+  globalAbiFilters.map { abiFilter ->
+    Pair(Pair(sdkVariant.flavor, abiFilter), tasks.register<BuildTlottieTask>(
+      "buildTlottie[${sdkVariant.flavor},${abiFilter}]"
+    ) {
+      group = "Setup"
+      description = "Builds tlottie for ${sdkVariant.flavor} flavor, abi: $abiFilter"
+      // System
+      sdkDir.set(File(config.sdkDir))
+      msys2Dir.set(msys2Directory(config.msys2Dir))
+      ndkVersion.set(android.ndkVersion)
+      hostTag.set(findHostTag())
+      rustDir.set(File(config.rustDir))
+      rustVersion.set(config.build.rustVersion)
+      // Input
+      inputDir.set(layout.projectDirectory.dir(
+        "jni/third_party/tlottie"
+      ))
+      inputSources.from(inputDir.asFileTree.matching {
+        exclude(
+          ".git",
+          "examples",
+          "tools",
+          "*.md"
+        )
+      })
+      sdkFlavor.set(sdkVariant.flavor)
+      abi.set(abiFilter)
+      // Optimizations guided by the profile of drawing on a device of the ABI, see
+      // generateTlottieProfile
+      val profileFile = layout.projectDirectory.file("jni/tlottie/${abiFilter}.profdata")
+      if (profileFile.asFile.exists()) {
+        profile.set(profileFile)
+        profiles.set(layout.projectDirectory.file("jni/tlottie/profiles.properties"))
+      }
+      // Output
+      buildDir.set(layout.buildDirectory.dir(
+        "generated/tgx/tlottie-build/${abiFilter}"
+      ))
+      outputDir.set(layout.buildDirectory.dir(
+        "generated/tgx/tlottie/${sdkVariant.flavor}/${abiFilter}"
+      ))
+      dependsOn(validateGitSetupTask)
+    })
+  }
+}.toMap()
+
+val buildTlottieTask = tasks.register("buildTlottie") {
+  group = "Setup"
+  description = "Builds tlottie for all flavors and abis (${buildTlottieTasks.size} total)"
+  dependsOn(buildTlottieTasks.values)
+}
+
+// Profiles of drawing of tlottie, made by hand on a device of the ABI after updates of tlottie or
+// Rust, e.g. ANDROID_SERIAL=<device> ./gradlew ":app:generateTlottieProfile[arm64-v8a]"
+// -Ptlottie.samples=<folder with emoji, sticker and effect>. x86 and x86_64 have no device to make
+// them on
+val tlottieSamples = providers.gradleProperty("tlottie.samples").map { File(it) }
+listOf("arm64-v8a", "armeabi-v7a").filter { it in globalAbiFilters }.forEach { abiFilter ->
+  tasks.register<GenerateTlottieProfileTask>("generateTlottieProfile[$abiFilter]") {
+    group = "Setup"
+    description = "Makes the profile of drawing of tlottie for $abiFilter on a connected device"
+    sdkDir.set(File(config.sdkDir))
+    ndkVersion.set(config.build.primaryNdkVersion)
+    hostTag.set(findHostTag())
+    rustDir.set(File(config.rustDir))
+    rustVersion.set(config.build.rustVersion)
+    abi.set(abiFilter)
+    inputDir.set(layout.projectDirectory.dir("jni/third_party/tlottie"))
+    runner.set(layout.projectDirectory.file("jni/tlottie/profile.c"))
+    samples.fileProvider(tlottieSamples)
+    profile.set(layout.projectDirectory.file("jni/tlottie/$abiFilter.profdata"))
+    profiles.set(layout.projectDirectory.file("jni/tlottie/profiles.properties"))
+    buildDir.set(layout.buildDirectory.dir("generated/tgx/tlottie-profile/$abiFilter"))
+  }
+}
+
 val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
   (it.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
 }.flatMap { sdkVariant ->
@@ -590,6 +670,9 @@ android {
             ),
             "FFMPEG_DIR" to layout.buildDirectory.dir(
               "generated/tgx/ffmpeg/${variant.flavor}"
+            ),
+            "TLOTTIE_DIR" to layout.buildDirectory.dir(
+              "generated/tgx/tlottie/${variant.flavor}"
             )
           ).map {
             "-D${it.key}=${it.value.get().asFile.absoluteFile.invariantSeparatorsPath}"
@@ -710,6 +793,7 @@ android {
         val buildFfmpegTask = buildFfmpegTasks[key] ?: error("ffmpeg task not found for $key")
         nativeBuildTasks += buildLibvpxTask
         nativeBuildTasks += buildFfmpegTask
+        nativeBuildTasks += buildTlottieTasks[key] ?: error("tlottie task not found for $key")
       }
 
       val buildNativeTask = tasks.register<ValidateNativeBuildTask>(

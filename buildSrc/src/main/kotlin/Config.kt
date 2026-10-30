@@ -59,7 +59,8 @@ data class BuildVersions(
   val targetSdkVersion: Int,
   val buildToolsVersion: String,
   val legacyNdkVersion: String,
-  val primaryNdkVersion: String
+  val primaryNdkVersion: String,
+  val rustVersion: String
 ) {
   constructor(version: Properties) : this(
     compileSdkVersion =
@@ -71,12 +72,15 @@ data class BuildVersions(
     legacyNdkVersion =
       version.getOrThrow("version.ndk_legacy"),
     primaryNdkVersion =
-      version.getOrThrow("version.ndk_primary")
+      version.getOrThrow("version.ndk_primary"),
+    rustVersion =
+      version.getOrThrow("version.rust")
   )
 }
 
 data class ApplicationConfig(
   val sdkDir: String,
+  val rustDir: String,
   val msys2Dir: String,
 
   val applicationName: String,

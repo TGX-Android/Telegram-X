@@ -76,6 +76,11 @@ abstract class AppConfigurationSource : ValueSource<ApplicationConfig, AppConfig
       }
     }
 
+    // rustup home with the version of Rust of version.properties, see scripts/setup-rust.sh
+    val rustDir = properties.getProperty("rust.dir").orEmpty().ifEmpty {
+      fatal("rust.dir is not set in local.properties, see scripts/setup-rust.sh")
+    }
+
     val msys2Dir = if (isWindowsHost()) {
       properties.getOrThrow("msys2.dir").also {
         if (it.isEmpty()) {
@@ -94,6 +99,8 @@ abstract class AppConfigurationSource : ValueSource<ApplicationConfig, AppConfig
       // local.properties & local.properties.sample
       sdkDir =
         sdkDir,
+      rustDir =
+        rustDir,
       msys2Dir =
         msys2Dir,
       applicationName =

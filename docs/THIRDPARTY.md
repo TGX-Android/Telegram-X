@@ -5,7 +5,7 @@
 
 * [libtgvoip](https://github.com/grishka/libtgvoip) & java layer by the same author: used for VoIP
 
-* [rlottie](https://github.com/TGX-Android/rlottie): fork of [Samsung library](https://github.com/Samsung/rlottie), used for animated stickers
+* [tlottie](https://github.com/dkaraush/tlottie): used for animated stickers and emoji, licensed under MIT
 * [lz4](https://github.com/lz4/lz4): used for storing cached frames of animated stickers
 * [WebP](https://developers.google.com/speed/webp): used for showing static stickers on Android versions below 4.4
 

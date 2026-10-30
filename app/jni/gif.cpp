@@ -19,7 +19,11 @@
 #include <limits>
 #include <string>
 #include <utility>
-#include <rlottie.h>
+#include <tlottie.h>
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/eval.h>
@@ -37,8 +41,9 @@ extern "C" {
 
 #define MAX_GIF_SIZE 920
 #define BITMAP_TARGET_FORMAT AV_PIX_FMT_RGBA
-#define LOTTIE_CACHE_MAGIC 0xf0ebaef1
-#define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef2
+// New values since frames are drawn by tlottie: caches of frames drawn by rlottie are drawn again
+#define LOTTIE_CACHE_MAGIC 0xf0ebaef3
+#define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef4
 
 static const std::string av_make_error_str (int errnum) {
   char errbuf[AV_ERROR_MAX_STRING_SIZE];
@@ -51,7 +56,10 @@ static const std::string av_make_error_str (int errnum) {
 
 struct LottieInfo {
   const std::string path;
-  std::unique_ptr<rlottie::Animation> animation;
+  TLottieInstance *animation = nullptr;
+  // Pixels of a frame for a bitmap of another aspect ratio or stride than the animation
+  uint32_t *frameBuffer = nullptr;
+  size_t frameBufferSize = 0;
   FILE *cacheFile = nullptr;
   uint8_t *cacheBuffer = nullptr;
   size_t cacheBufferSize = 0;
@@ -83,8 +91,58 @@ struct LottieInfo {
     if (cacheBuffer != nullptr) {
       free(cacheBuffer);
     }
+    free(frameBuffer);
+    tlottie_drop(animation);
   }
 };
+
+static bool renderLottieFrame (TLottieInstance *animation, uint32_t frameNo, void *pixels,
+                               const AndroidBitmapInfo &bitmapInfo, uint32_t **buffer,
+                               size_t *bufferSize) {
+  // Draws a frame of the animation into the pixels of a bitmap: scaled to fit it with the aspect
+  // ratio of the animation, centered on transparent pixels, as rlottie drew. tlottie draws into
+  // pixels of the size it's given without a stride, so other bitmaps take the frame from buffer
+  const uint32_t width = bitmapInfo.width;
+  const uint32_t height = bitmapInfo.height;
+  const uint32_t animationWidth = tlottie_width(animation);
+  const uint32_t animationHeight = tlottie_height(animation);
+  uint32_t fitWidth = width, fitHeight = height;
+  if (animationWidth != 0 && animationHeight != 0 &&
+      (uint64_t) width * animationHeight != (uint64_t) height * animationWidth) {
+    const float scale = std::min((float) width / (float) animationWidth,
+                                 (float) height / (float) animationHeight);
+    fitWidth = std::max(1u, (uint32_t) lroundf((float) animationWidth * scale));
+    fitHeight = std::max(1u, (uint32_t) lroundf((float) animationHeight * scale));
+  }
+  if (fitWidth == width && fitHeight == height && bitmapInfo.stride == width * 4) {
+    return tlottie_render(animation, (float) frameNo, width, height, (uint32_t *) pixels,
+                          (size_t) width * height, 1) == TLOTTIE_OK;
+  }
+  const size_t size = (size_t) fitWidth * fitHeight;
+  if (*bufferSize < size) {
+    auto *newBuffer = (uint32_t *) realloc(*buffer, size * sizeof(uint32_t));
+    if (newBuffer == nullptr) {
+      return false;
+    }
+    *buffer = newBuffer;
+    *bufferSize = size;
+  }
+  if (tlottie_render(animation, (float) frameNo, fitWidth, fitHeight, *buffer, size, 1) !=
+      TLOTTIE_OK) {
+    return false;
+  }
+  const uint32_t left = (width - fitWidth) / 2;
+  const uint32_t top = (height - fitHeight) / 2;
+  for (uint32_t y = 0; y < height; y++) {
+    auto *row = (uint32_t *) ((uint8_t *) pixels + (size_t) y * bitmapInfo.stride);
+    memset(row, 0, (size_t) width * sizeof(uint32_t));
+    if (y >= top && y < top + fitHeight) {
+      memcpy(row + left, *buffer + (size_t) (y - top) * fitWidth,
+             (size_t) fitWidth * sizeof(uint32_t));
+    }
+  }
+  return true;
+}
 
 struct VideoInfo {
 
@@ -577,20 +635,28 @@ JNI_FUNC(void, cancelLottieDecoder, jlong ptr) {
 JNI_FUNC(jboolean, decodeLottieFirstFrame, jstring jPath, jstring jsonData, jobject bitmap) {
   std::string json = jni::from_jstring(env, jsonData);
   std::string path = jni::from_jstring(env, jPath);
-  std::unique_ptr<rlottie::Animation> animation = rlottie::Animation::loadFromData(json, path, nullptr);
-  if (animation == nullptr || animation->totalFrame() == 0) {
+  TLottieInstance *animation = tlottie_new_with_options(
+    (const uint8_t *) json.data(), json.size(), TLOTTIE_FITZ_NONE, nullptr, 0, nullptr, 0,
+    TLOTTIE_CHANNEL_RGBA
+  );
+  if (animation == nullptr || tlottie_frame_count(animation) == 0) {
+    tlottie_drop(animation);
     return JNI_FALSE;
   }
   AndroidBitmapInfo bitmapInfo;
   AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
   void *pixels;
   if (AndroidBitmap_lockPixels(env, bitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
+    tlottie_drop(animation);
     return JNI_FALSE;
   }
-  rlottie::Surface surface((uint32_t *) pixels, bitmapInfo.width, bitmapInfo.height, bitmapInfo.stride);
-  animation->renderSync(0, surface, true);
+  uint32_t *buffer = nullptr;
+  size_t bufferSize = 0;
+  const bool rendered = renderLottieFrame(animation, 0, pixels, bitmapInfo, &buffer, &bufferSize);
+  free(buffer);
+  tlottie_drop(animation);
   AndroidBitmap_unlockPixels(env, bitmap);
-  return JNI_TRUE;
+  return rendered ? JNI_TRUE : JNI_FALSE;
 }
 
 JNI_FUNC(jlong, createLottieDecoder, jstring jPath, jstring jsonData, jdoubleArray data, jint fitzpatrickType) {
@@ -616,38 +682,42 @@ JNI_FUNC(jlong, createLottieDecoder, jstring jPath, jstring jsonData, jdoubleArr
     }
   }*/
 
-  rlottie::FitzModifier modifier = rlottie::FitzModifier::None;
+  uint32_t modifier = TLOTTIE_FITZ_NONE;
   switch (fitzpatrickType) {
     case 1:
     case 2:
     case 12:
-      modifier = rlottie::FitzModifier::Type12;
+      modifier = TLOTTIE_FITZ_TYPE_12;
       break;
     case 3:
-      modifier = rlottie::FitzModifier::Type3;
+      modifier = TLOTTIE_FITZ_TYPE_3;
       break;
     case 4:
-      modifier = rlottie::FitzModifier::Type4;
+      modifier = TLOTTIE_FITZ_TYPE_4;
       break;
     case 5:
-      modifier = rlottie::FitzModifier::Type5;
+      modifier = TLOTTIE_FITZ_TYPE_5;
       break;
     case 6:
-      modifier = rlottie::FitzModifier::Type6;
+      modifier = TLOTTIE_FITZ_TYPE_6;
       break;
   }
 
   LottieInfo *info = new LottieInfo(path);
-  info->animation = rlottie::Animation::loadFromData(json, path, nullptr, modifier);
+  info->animation = tlottie_new_with_options(
+    (const uint8_t *) json.data(), json.size(), modifier, nullptr, 0, nullptr, 0,
+    TLOTTIE_CHANNEL_RGBA
+  );
 
   if (info->animation == nullptr) {
     delete info;
     return 0;
   }
 
-  size_t totalFrame = info->animation->totalFrame();
-  double frameRate = info->animation->frameRate();
-  double duration = info->animation->duration();
+  size_t totalFrame = tlottie_frame_count(info->animation);
+  double frameRate = tlottie_frame_rate(info->animation);
+  // From the first frame to the last one, as rlottie gave it
+  double duration = frameRate > 0 && totalFrame > 0 ? (double) (totalFrame - 1) / frameRate : 0;
 
   if (totalFrame == 0) {
     delete info;
@@ -671,8 +741,8 @@ JNI_FUNC(void, getLottieSize, jlong ptr, jintArray data) {
   LottieInfo *info = jni::jlong_to_ptr<LottieInfo *>(ptr);
   jint *dataArr = env->GetIntArrayElements(data, 0);
 
-  size_t width, height;
-  info->animation->size(width, height);
+  size_t width = tlottie_width(info->animation);
+  size_t height = tlottie_height(info->animation);
   dataArr[0] = (jint) width;
   dataArr[1] = (jint) height;
   env->ReleaseIntArrayElements(data, dataArr, 0);
@@ -697,9 +767,9 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
 
   size_t uncompressedSize = bitmapInfo.height * bitmapInfo.stride;
 
-  double frameRate = info->animation->frameRate();
+  double frameRate = tlottie_frame_rate(info->animation);
   bool skipOdd = frameRate == 60.0 && limitFps == JNI_TRUE;
-  uint32_t frameCount = (uint32_t) info->animation->totalFrame();
+  uint32_t frameCount = tlottie_frame_count(info->animation);
   uint32_t maxCompressedFrameSize = 0;
   uint32_t firstFrameSize = 0;
 
@@ -788,8 +858,8 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
         }
       }
       if (compressedSize == 0 && !skipFrame) {
-        rlottie::Surface surface((uint32_t *) pixels, bitmapInfo.width, bitmapInfo.height, bitmapInfo.stride);
-        info->animation->renderSync((size_t) frameNo, surface, true);
+        renderLottieFrame(info->animation, frameNo, pixels, bitmapInfo, &info->frameBuffer,
+                          &info->frameBufferSize);
         //libyuv::ABGRToARGB((uint8_t *) pixels, bitmapInfo.stride, (uint8_t *) pixels, bitmapInfo.stride, bitmapInfo.width, bitmapInfo.height);
         compressedSize = (uint32_t) LZ4_compress_default((const char *) pixels, (char *) compressBuffer, (int) uncompressedSize, (int) compressBound);
       }
@@ -872,7 +942,7 @@ JNI_FUNC(jboolean, getLottieFrame, jlong ptr, jobject bitmap, jlong jFrameNo) {
   bool success = false;
 
   if (info->cacheFile != nullptr) {
-    if (info->nextFrameNo >= info->animation->totalFrame() || frameNo < info->nextFrameNo) {
+    if (info->nextFrameNo >= tlottie_frame_count(info->animation) || frameNo < info->nextFrameNo) {
       fseek(info->cacheFile, info->headerSize, SEEK_SET);
       info->nextFrameNo = 0;
     }
@@ -931,10 +1001,11 @@ JNI_FUNC(jboolean, getLottieFrame, jlong ptr, jobject bitmap, jlong jFrameNo) {
   }
 
   if (!success) {
-    rlottie::Surface surface((uint32_t *) pixels, bitmapInfo.width, bitmapInfo.height, bitmapInfo.stride);
-    info->animation->renderSync((size_t) frameNo, surface, true);
+    renderLottieFrame(info->animation, (uint32_t) frameNo, pixels, bitmapInfo, &info->frameBuffer,
+                      &info->frameBufferSize);
     if (info->cacheFile != nullptr) {
-      logi(TAG_GIF_LOADER, "read frame directly: %d, nextFrameNo:%d, totalFrame:%d", frameNo, info->nextFrameNo, info->animation->totalFrame());
+      logi(TAG_GIF_LOADER, "read frame directly: %d, nextFrameNo:%d, totalFrame:%d", frameNo,
+           info->nextFrameNo, tlottie_frame_count(info->animation));
     }
     // libyuv::ABGRToARGB((uint8_t *) pixels, bitmapInfo.stride, (uint8_t *) pixels, bitmapInfo.stride, bitmapInfo.width, bitmapInfo.height);
   }

@@ -54,7 +54,8 @@ abstract class BuildNativeLibraryTask : DefaultTask() {
     env: Map<String, String>,
     buildDir: File,
     logFile: File,
-    commands: Map<String, Array<String>>
+    commands: Map<String, Array<String>>,
+    inherits: (String) -> Boolean = { true }
   ) {
     for ((key, value) in commands) {
       logFile.outputStream().use { log ->
@@ -63,6 +64,7 @@ abstract class BuildNativeLibraryTask : DefaultTask() {
           errorOutput = log
           isIgnoreExitValue = true
           workingDir = buildDir
+          setEnvironment(environment.filterKeys(inherits))
           environment(env)
           commandLine(*value)
         }.let { result ->

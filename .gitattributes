@@ -9,6 +9,7 @@
 *.mp3 binary
 *.wav binary
 *.jar binary
+*.profdata binary
 
 *.tgx-theme text eol=lf
 *.dic text eol=lf
