@@ -25,5 +25,9 @@
       android:name="tgx.test.SnapshotUpdateReceiver"
       android:exported="true"
       android:permission="android.permission.DUMP" />
+    <receiver
+      android:name="tgx.test.StickerSamplesReceiver"
+      android:exported="true"
+      android:permission="android.permission.DUMP" />
   </application>
 </manifest>
