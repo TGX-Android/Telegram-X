@@ -1986,6 +1986,10 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     __setIntroBgColor(Theme.fillingColor());
 
     N.onSurfaceCreated();
+    // The renderer keeps its page for the whole process, e.g. from an intro of an activity that
+    // the system relaunched, so it takes the page of this intro
+    N.setPage(lastPosition);
+    N.setScrollOffset(calculateActualOffset(lastActualPosition));
   }
 
   private long currentDate = System.currentTimeMillis() - 1000;
