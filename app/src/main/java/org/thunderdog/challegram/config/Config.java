@@ -67,6 +67,7 @@ public class Config {
   public static final boolean ENABLE_TEST_HOOKS = BuildConfig.TEST_HOOKS_ENABLED;
 
   public static final boolean ENABLE_DELETE_CALL_HISTORY = BuildConfig.DEBUG;
+  public static final boolean ENABLE_NEW_CHAT_ACTION_BAR = BuildConfig.DEBUG;
 
   public static final boolean DEBUG_TDLIB_REFERENCES = false;
 
