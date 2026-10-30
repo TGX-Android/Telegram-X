@@ -21,5 +21,9 @@
       android:name="tgx.test.AppearanceReceiver"
       android:exported="true"
       android:permission="android.permission.DUMP" />
+    <receiver
+      android:name="tgx.test.SnapshotUpdateReceiver"
+      android:exported="true"
+      android:permission="android.permission.DUMP" />
   </application>
 </manifest>

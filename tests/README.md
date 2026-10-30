@@ -570,3 +570,11 @@ Sessions from the snapshot must not be used by several apps at once, otherwise T
 A script that runs builds one at a time on the machine can let others build while tests run on a device: when it holds a lock of builds, a folder, it names it by `TGX_BUILD_LOCK` and its process by `TGX_BUILD_LOCK_PID`, written into `pid` in that folder. Tests on a device build nothing, so they remove the folder when they start, if it still has that `pid`.
 
 To create the snapshot, open **Saved Messages** of the test account → attach menu → **Files** → **Session Snapshot** (available in builds with test hooks enabled or in developer mode). The snapshot is sent to the chat: download it and save it outside the clone. Then clear data of the app where the snapshot was created, so it stops using the same sessions. Don't log out instead: it terminates sessions in the snapshot too.
+
+A restored snapshot behaves as an app that wasn't opened for long. To update the snapshot of a device, only when its owner agrees:
+
+```shell
+ANDROID_SERIAL=<serial> ./gradlew :tests:ui:updateSnapshot -Pabi=arm64 -PsnapshotFile=<path> -PsnapshotUpdate=replace
+```
+
+The app starts with the current snapshot and waits until every account is connected and up to date, then makes a new snapshot as **Session Snapshot** does, but keeps it on the device instead of sending it. Gradle pulls it next to the current file, checks that it has the same accounts and replaces the current one by a rename, so that a failed pull leaves it whole. Copies on the device are deleted and the app is cleared, so that it stops using the sessions. `-PsnapshotUpdate=check` does everything but the replacement and deletes the new snapshot.

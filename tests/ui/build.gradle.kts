@@ -1,4 +1,5 @@
 import tgx.test.configureAppTests
+import tgx.test.configureSnapshotUpdate
 
 plugins {
   id("java-toolchain-convention")
@@ -7,6 +8,7 @@ plugins {
 }
 
 configureAppTests("nonMinifiedRelease", "benchmarkRelease")
+configureSnapshotUpdate()
 
 dependencies {
   implementation(project(":tests:core"))
