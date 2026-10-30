@@ -263,9 +263,8 @@ public class ContentPreview {
               case TdApi.TextEntityTypeUrl.CONSTRUCTOR: {
                 if (entity.offset == 0 && (
                   entity.length == messageText.text.text.length() ||
-                  !Td.isTextUrl(entity.type) ||
-                  !StringUtils.isEmptyOrInvisible(Td.substring(messageText.text.text, entity
-                  )))
+                    !Td.isTextUrl(entity.type) ||
+                    !StringUtils.isEmptyOrInvisible(Td.substring(messageText.text.text, entity)))
                 ) {
                   isUrl = true;
                   break;
@@ -387,9 +386,7 @@ public class ContentPreview {
         TdApi.Message pinnedMessage;
         long loadTimeoutMs = additionalMessageLoadTimeoutMs();
         if (pinnedMessageId != 0 && loadTimeoutMs >= 0) {
-          pinnedMessage = tdlib.getMessageLocally(
-            message.chatId, pinnedMessageId, loadTimeoutMs
-          );
+          pinnedMessage = tdlib.getMessageLocally(message.chatId, pinnedMessageId, loadTimeoutMs);
         } else {
           pinnedMessage = null;
         }
@@ -418,10 +415,7 @@ public class ContentPreview {
         TdApi.MessageGameScore score = (TdApi.MessageGameScore) message.content;
         long timeoutMs = additionalMessageLoadTimeoutMs();
         TdApi.Message gameMessage = timeoutMs >= 0 ?
-          tdlib.getMessageLocally(
-            message.chatId, score.gameMessageId,
-            timeoutMs
-          ) : null;
+          tdlib.getMessageLocally(message.chatId, score.gameMessageId, timeoutMs) : null;
         String gameTitle = gameMessage != null && Td.isGame(gameMessage.content) ? TD.getGameName(((TdApi.MessageGame) gameMessage.content).game, false) : null;
         if (!StringUtils.isEmpty(gameTitle)) {
           return new ContentPreview(EMOJI_GAME, 0, Lang.plural(message.isOutgoing ? R.string.game_ActionYouScoredInGame : R.string.game_ActionScoredInGame, score.score, gameTitle), true);
@@ -600,11 +594,7 @@ public class ContentPreview {
         String amount = CurrencyUtils.buildAmount(giftedStars.currency, giftedStars.amount);
         CharSequence text;
         if (giftedStars.receiverUserId == 0 || tdlib.isSelfUserId(giftedStars.receiverUserId)) {
-          text = Lang.pluralBold(
-            R.string.YouReceivedXStars,
-            giftedStars.starCount,
-            amount
-          );
+          text = Lang.pluralBold(R.string.YouReceivedXStars, giftedStars.starCount, amount);
         } else {
           text = Lang.pluralBold(
             R.string.ReceivedXStars,
@@ -723,6 +713,14 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_INVOICE, 0, Lang.getString(R.string.PaymentRefunded, tdlib.senderName(refunded.ownerId), amount), true);
       }
 
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+      case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+      case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
+        return new ContentPreview(null, ForumPresentation.servicePreview(message.content));
+
+      // endregion
       // Handled by getSimpleContentPreview
       case TdApi.MessageLocation.CONSTRUCTOR:
       case TdApi.MessageLiveLocation.CONSTRUCTOR:
@@ -761,10 +759,6 @@ public class ContentPreview {
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
       case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
-      case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
-      case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
-      case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
-      case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
       case TdApi.MessageChecklist.CONSTRUCTOR:

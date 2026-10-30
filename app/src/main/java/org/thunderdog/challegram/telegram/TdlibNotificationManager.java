@@ -1378,11 +1378,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   private static TdApi.ScopeNotificationSettings newDefaults () {
-    return new TdApi.ScopeNotificationSettings(
-      0, 0, true,
-      true, false, 0, true,
-      false, false
-    );
+    return new TdApi.ScopeNotificationSettings(0, 0, true, true, false, 0, true, false, false);
   }
 
   // Ringtone
@@ -1401,7 +1397,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   public void setCustomCallRingtone (long chatId, @Nullable String customRingtone, @Nullable String customRingtoneName, @Nullable String customRingtonePath) {
     if (customRingtone == null) {
-      Settings.instance().edit()
+      Settings.instance()
+        .edit()
         .remove(key(_CUSTOM_CALL_RINGTONE_KEY + chatId))
         .remove(key(_CUSTOM_CALL_RINGTONE_NAME_KEY + chatId))
         .remove(key(_CUSTOM_CALL_RINGTONE_PATH_KEY + chatId))
@@ -1496,8 +1493,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   public boolean setCallRingtone (@Nullable String voiceRingtone, @Nullable String voiceRingtoneName, @Nullable String voiceRingtonePath) {
     if (!StringUtils.equalsOrBothEmpty(voiceRingtone, getCallRingtone()) ||
-        !StringUtils.equalsOrBothEmpty(voiceRingtoneName, getCallRingtoneName()) ||
-        !StringUtils.equalsOrBothEmpty(voiceRingtonePath, getCallRingtonePath())) {
+      !StringUtils.equalsOrBothEmpty(voiceRingtoneName, getCallRingtoneName()) ||
+      !StringUtils.equalsOrBothEmpty(voiceRingtonePath, getCallRingtonePath())) {
       this._callRingtone = voiceRingtone; this.callRingtoneLoaded = true;
       this._callRingtoneName = voiceRingtoneName; this.callRingtoneNameLoaded = true;
       this._callRingtonePath = voiceRingtonePath; this.callRingtonePathLoaded = true;
@@ -1556,7 +1553,6 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       .remove(key(_INAPP_VIBRATE_KEY, accountId))
       .remove(key(_INAPP_SOUNDS_KEY, accountId))
       .remove(key(_INAPP_CHATSOUNDS_KEY, accountId))
-
       .remove(key(_CALL_RINGTONE_KEY, accountId))
       .remove(key(_CALL_RINGTONE_NAME_KEY, accountId))
       .remove(key(_CALL_RINGTONE_PATH_KEY, accountId))
@@ -1734,6 +1730,30 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       return groupSettings.needContentPreview() && settingsForGroupChats != null && settingsForGroupChats.showPreview;
     }
   }
+
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+  public boolean needContentPreview (
+    long chatId,
+    boolean isMention,
+    @Nullable Boolean resolvedShowPreview
+  ) {
+    if (resolvedShowPreview == null) {
+      return needContentPreview(chatId, isMention);
+    }
+    if (!Config.NEED_NOTIFICATION_CONTENT_PREVIEW || !resolvedShowPreview) {
+      return false;
+    }
+    // TDLib resolves forum topic overrides;
+    // only the separate local media preference still applies here.
+    if (ChatId.isUserChat(chatId) || isMention) {
+      return privateSettings.needContentPreview();
+    } else if (tdlib.isChannel(chatId)) {
+      return channelSettings.needContentPreview();
+    } else {
+      return groupSettings.needContentPreview();
+    }
+  }
+  // endregion
 
   // Pinned Messages
 

@@ -242,6 +242,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private long receiverChatId;
     private @Nullable TdApi.MessageTopic topicId;
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    private @Nullable String searchQuery;
+    // endregion
 
     private boolean areOnlyScheduled;
 
@@ -314,6 +317,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       this.topicId = topicId;
       return this;
     }
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+
+    public Args setSearchQuery (@Nullable String query) {
+      this.searchQuery = query;
+      return this;
+    }
+// endregion
 
     public @Nullable TdApi.SearchMessagesFilter filter;
 
@@ -1900,7 +1910,22 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (c instanceof MessagesController && ((MessagesController) c).compareChat(item.getSourceChatId(), topicId)) {
         ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
       } else {
-        tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+        if (topicId != null) {
+          tdlib.ui().openChat(this, item.getSourceChatId(), new TdlibUi.ChatOpenParameters()
+            .messageTopic(topicId)
+            .highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()))
+            .ensureHighlightAvailable()
+            .keepStack());
+        } else {
+          tdlib.ui().openMessage(
+            this,
+            item.getSourceChatId(),
+            new MessageId(item.getSourceChatId(), item.getSourceMessageId()),
+            null
+          );
+        }
+        // endregion
       }
 
       close();
@@ -2249,7 +2274,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           MediaItem item = reverseMode ? stack.lastAvalable() : stack.firstAvailable();
           long initialFromMessageId = item.getSourceMessageId();
           TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
-            chatId, topicId, null, null,
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            chatId, topicId, getArgumentsStrict().searchQuery, null,
+            // endregion
             initialFromMessageId, 0,
             LOAD_COUNT, searchFilter()
           );
@@ -2264,7 +2291,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           MediaItem item = stack.lastAvalable();
           long initialFromMessageId = item.getSourceMessageId();
           TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
-            chatId, topicId, null, null,
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            chatId, topicId, getArgumentsStrict().searchQuery, null,
+            // endregion
             initialFromMessageId, 0,
             LOAD_COUNT_PROFILE, searchFilter()
           );
@@ -2357,7 +2386,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     List<TdApi.Message> list = new ArrayList<>(messages.messages.length);
     for (TdApi.Message message : messages.messages) {
-      if (!Td.isSecret(message.content)) {
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+      if (message.chatId == chatId && Td.matchesTopic(message.topicId, topicId) &&
+        !Td.isSecret(message.content)) {
+      // endregion
         list.add(message);
       }
     }
@@ -2370,7 +2402,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       getArgumentsStrict().noLoadMore = true;
     } else if (addedCount == 0) {
       TdApi.SearchChatMessages retryFunction = new TdApi.SearchChatMessages(
-        chatId, topicId, null, null,
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+        chatId, topicId, getArgumentsStrict().searchQuery, null,
+        // endregion
         messages.nextFromMessageId, 0,
         loadCount, searchFilter()
       );

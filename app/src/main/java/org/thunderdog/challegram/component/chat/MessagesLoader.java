@@ -37,6 +37,11 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TdApiExt;
 import org.thunderdog.challegram.data.ThreadInfo;
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+import org.thunderdog.challegram.data.MessageTopics;
+import org.thunderdog.challegram.data.ForumHistory;
+import org.thunderdog.challegram.data.ForumTopicContext;
+// endregion
 import org.thunderdog.challegram.emoji.EmojiCodes;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
@@ -113,7 +118,9 @@ public class MessagesLoader implements Client.ResultHandler {
   private Tdlib.CancellableResultHandler<TdApi.SponsoredMessages> sponsoredResultHandler;
   private final MessagesSearchManagerMiddleware searchManagerMiddleware;
 
-  private long contextId;
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+  private volatile long contextId;
+  // endregion
 
   private boolean canShowSponsoredMessage (long chatId) {
     return tdlib.isChannel(chatId) && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages();
@@ -148,9 +155,17 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   public void setChat (@Nullable TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.MessageTopic topicId, int mode, TdApi.SearchMessagesFilter filter) {
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    // Invalidate old requests immediately, including while the new topic's
+    // metadata is still loading and no history request has been made yet.
+    reuse();
+    // endregion
     this.chat = chat;
     this.messageThread = messageThread;
-    this.topicId = topicId;
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    this.topicId = MessageTopics.effectiveTopic(messageThread, topicId);
+    this.forumContext = manager.controller().getForumTopicContext();
+    // endregion
     this.specialMode = mode;
     this.searchFilter = filter;
     this.messageSource = newMessageSource();
@@ -220,13 +235,23 @@ public class MessagesLoader implements Client.ResultHandler {
 
   @Nullable
   public TdApi.MessageTopic getMessageTopicId () {
-    return messageThread != null ? messageThread.getMessageTopicId() : null;
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    return topicId;
+    // endregion
   }
 
   @Nullable
   public TdApi.MessageTopic getTopicId () {
     return topicId;
   }
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+
+  private ForumTopicContext forumContext;
+
+  @Nullable public ForumTopicContext getForumTopicContext () {
+    return forumContext;
+  }
+// endregion
 
   @Nullable
   public ThreadInfo getMessageThread () {
@@ -270,7 +295,12 @@ public class MessagesLoader implements Client.ResultHandler {
             }
             TdApi.Messages result = (TdApi.Messages) object;
             messages = result.messages;
-            knownTotalCount = result.totalCount;
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            knownTotalCount = ForumHistory.isForum(
+              topicId
+            ) && specialMode == SPECIAL_MODE_SCHEDULED ?
+              ForumHistory.filter(messages, getChatId(), topicId, true).length : result.totalCount;
+            // endregion
             nextSearchOffset = null; nextSearchFromMessageId = 0;
             break;
           }
@@ -306,6 +336,24 @@ public class MessagesLoader implements Client.ResultHandler {
             break;
           }
           case TdApi.Error.CONSTRUCTOR: {
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            if (ForumHistory.isForum(topicId)) {
+              synchronized (lock) {
+                lastHandler = null;
+                mergeChunk = null;
+                mergeMode = MERGE_MODE_NONE;
+                isLoading = false;
+              }
+              UI.post(() -> {
+                if (contextId != currentContextId) {
+                  return;
+                }
+                manager.onNetworkRequestSent();
+                manager.controller().onForumHistoryError((TdApi.Error) object);
+              });
+              return;
+            }
+            // endregion
             Log.w(Log.TAG_MESSAGES_LOADER, "Received error: %s", TD.toErrorString(object));
             messages = new TdApi.Message[0];
             knownTotalCount = -1;
@@ -317,6 +365,14 @@ public class MessagesLoader implements Client.ResultHandler {
           }
         }
 
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+        messages = ForumHistory.filter(
+          messages,
+          getChatId(),
+          topicId,
+          specialMode == SPECIAL_MODE_SCHEDULED
+        );
+        // endregion
         boolean needMoreTop = allowMoreTop;
         boolean needMoreBottom = allowMoreBottom;
         TdApi.Message[] mergingChunk = mergeChunk;
@@ -504,14 +560,38 @@ public class MessagesLoader implements Client.ResultHandler {
             mergeChunk = messages;
             Log.i(Log.TAG_MESSAGES_LOADER, "Loading more groupped messages on the top, count: %d, fromMessageId: %d", loadMoreTopCount, oldestMessage.id);
             Log.ensureReturnType(TdApi.GetChatHistory.class, TdApi.Messages.class);
-            tdlib.client().send(new TdApi.GetChatHistory(messages[0].chatId, oldestMessage.id, 0, loadMoreTopCount, true), this);
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            tdlib.client().send(
+              ForumHistory.request(
+                messages[0].chatId,
+                topicId,
+                oldestMessage.id,
+                0,
+                loadMoreTopCount,
+                true
+              ),
+              this
+            );
+            // endregion
             return;
           } else if (loadMoreBottomCount > 0) {
             mergeMode = MERGE_MODE_BOTTOM;
             mergeChunk = messages;
             Log.i(Log.TAG_MESSAGES_LOADER, "Loading more groupped messages on the bottom, count: %d, fromMessageId: %d", loadMoreBottomCount + 1, newestMessage.id);
             Log.ensureReturnType(TdApi.GetChatHistory.class, TdApi.Messages.class);
-            tdlib.client().send(new TdApi.GetChatHistory(messages[0].chatId, newestMessage.id, -loadMoreBottomCount, loadMoreBottomCount + 1, true), this);
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            tdlib.client().send(
+              ForumHistory.request(
+                messages[0].chatId,
+                topicId,
+                newestMessage.id,
+                -loadMoreBottomCount,
+                loadMoreBottomCount + 1,
+                true
+              ),
+              this
+            );
+            // endregion
             return;
           }
         }
@@ -1069,6 +1149,14 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   public void loadFromMessage (MessageId messageId, final int highlightMode, boolean force) {
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    if (ForumHistory.isForum(
+      topicId
+    ) && messageId.getChatId() != 0 && messageId.getChatId() != getChatId()) {
+      manager.loadFromStart();
+      return;
+    }
+    // endregion
     reuse();
 
     canLoadTop = canLoadBottom = force;
@@ -1110,7 +1198,12 @@ public class MessagesLoader implements Client.ResultHandler {
         return;
       }
 
-      final long sourceChatId = fromMessageId.getChatId() != 0 ? fromMessageId.getChatId() : messageThread != null ? messageThread.getChatId() : getChatId();
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+      final long sourceChatId = ForumHistory.isForum(
+        topicId
+      ) ? getChatId() : fromMessageId.getChatId() != 0 ? fromMessageId.getChatId()
+        : messageThread != null ? messageThread.getChatId() : getChatId();
+      // endregion
 
       isLoading = true;
 
@@ -1147,6 +1240,18 @@ public class MessagesLoader implements Client.ResultHandler {
             loadingLocal = false;
             Log.ensureReturnType(TdApi.SearchChatMessages.class, TdApi.FoundChatMessages.class);
             function = new TdApi.SearchChatMessages(sourceChatId, topicId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter);
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+          } else if (ForumHistory.isForum(topicId)) {
+            loadingLocal = false;
+            function = ForumHistory.request(
+              sourceChatId,
+              topicId,
+              (lastFromMessageId = fromMessageId).getMessageId(),
+              lastOffset = offset,
+              lastLimit = limit,
+              false
+            );
+          // endregion
           } else if (messageThread != null) {
             loadingLocal = false;
             Log.ensureReturnType(TdApi.GetMessageThreadHistory.class, TdApi.Messages.class);
@@ -1184,6 +1289,27 @@ public class MessagesLoader implements Client.ResultHandler {
 
   public boolean loadMoreInAnyDirection () {
     return loadMore(canLoadTop());
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+  }
+
+  public void retryForumHistory () {
+    if (!ForumHistory.isForum(topicId) || isLoading) {
+      return;
+    }
+    if (lastFromMessageId != null) {
+      load(
+        lastFromMessageId,
+        lastOffset,
+        lastLimit,
+        loadingMode,
+        false,
+        loadingAllowMoreTop,
+        loadingAllowMoreBottom
+      );
+    } else {
+      manager.loadFromStart();
+    }
+  // endregion
   }
 
   public boolean loadMore (boolean fromTop) {
@@ -1318,7 +1444,16 @@ public class MessagesLoader implements Client.ResultHandler {
     final long chatId, lastReadOutboxMessageId, lastReadInboxMessageId;
     final boolean hasUnreadMessages;
     final LongSparseArray<TdApi.ChatAdministrator> chatAdmins = manager.getChatAdmins();
-    if (messageThread != null) {
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    if (ForumHistory.isForum(topicId)) {
+      ForumTopicContext forum = forumContext;
+      chatId = getChatId();
+      lastReadOutboxMessageId = forum != null ? forum.lastReadOutbox() : 0;
+      lastReadInboxMessageId = forum != null ? forum.lastReadInbox() : 0;
+      hasUnreadMessages = specialMode != SPECIAL_MODE_SCHEDULED && forum != null &&
+        ForumTopicContext.canGoUnread(forum.topic());
+    } else if (messageThread != null) {
+    // endregion
       chatId = messageThread.getChatId();
       lastReadOutboxMessageId = messageThread.getLastReadOutboxMessageId();
       lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
@@ -1397,6 +1532,11 @@ public class MessagesLoader implements Client.ResultHandler {
     if (!combineWithMessages.isEmpty()) {
       final boolean bottom = loadingMode == MODE_MORE_BOTTOM;
       UI.post(() -> {
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+        if (contextId != currentContextId) {
+          return;
+        }
+        // endregion
         for (TdApi.Message message : combineWithMessages) {
           if (bottom) {
             bottomMessage.combineWith(message, true);
@@ -1463,7 +1603,11 @@ public class MessagesLoader implements Client.ResultHandler {
           }
         } else if (!unreadFound) {
           if (top != null && top.getBiggestId() >= lastReadInboxMessageId ||
-              (messageThread != null && cur.getBiggestId() > lastReadInboxMessageId)) {
+              // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+              ((messageThread != null || ForumHistory.isForum(
+                topicId
+              )) && cur.getBiggestId() > lastReadInboxMessageId)) {
+              // endregion
             unreadFound = true;
             if (cur.isOutgoing()) {
               lookForInbox = true;
@@ -1600,6 +1744,11 @@ public class MessagesLoader implements Client.ResultHandler {
             Log.i(Log.TAG_MESSAGES_LOADER, "Bottom end reached.");
           }
           UI.post(() -> {
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            if (contextId != currentContextId) {
+              return;
+            }
+            // endregion
             synchronized (lock) {
               isLoading = false;
             }
@@ -1610,9 +1759,17 @@ public class MessagesLoader implements Client.ResultHandler {
         }
 
         if (messages.length > 0) {
-          long lastMessageId = messageThread != null ? messageThread.getLastMessageId() : chat.lastMessage != null ? chat.lastMessage.id : 0;
+          // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+          long lastMessageId = lastMessageId();
+          // endregion
           if (lastMessageId != 0 && lastMessageId == messages[0].id) {
-            UI.post(manager::onBottomEndChecked);
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            UI.post(() -> {
+              if (contextId == currentContextId) {
+                manager.onBottomEndChecked();
+              }
+            });
+            // endregion
           }
         }
 
@@ -1628,6 +1785,11 @@ public class MessagesLoader implements Client.ResultHandler {
             Log.i(Log.TAG_MESSAGES_LOADER, "Top end reached.");
           }
           UI.post(() -> {
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            if (contextId != currentContextId) {
+              return;
+            }
+            // endregion
             synchronized (lock) {
               isLoading = false;
             }
@@ -1720,18 +1882,34 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   private void fetchAlbum (List<TdApi.Message> album) {
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    final long currentContextId = contextId;
+    // endregion
     tdlib.getAlbum(album, true, null, localAlbum -> {
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+      if (contextId != currentContextId) {
+        return;
+      }
+      // endregion
       if (localAlbum.messages.size() != album.size()) {
-        tdlib.ui().post(() ->
-          manager.updateAlbum(album, localAlbum)
-        );
-        // TODO update album
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+        tdlib.ui().post(() -> {
+          if (contextId == currentContextId) {
+            manager.updateAlbum(album, localAlbum);
+          }
+        });
+        // endregion
       }
       if (localAlbum.mayHaveMoreItems()) {
         tdlib.getAlbum(localAlbum.messages, false, localAlbum, remoteAlbum -> {
           if (remoteAlbum.messages.size() != localAlbum.messages.size()) {
-            // TODO update album
-
+            // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+            tdlib.ui().post(() -> {
+              if (contextId == currentContextId) {
+                manager.updateAlbum(localAlbum.messages, remoteAlbum);
+              }
+            });
+            // endregion
           }
         });
       }
@@ -1740,6 +1918,17 @@ public class MessagesLoader implements Client.ResultHandler {
 
   public boolean isSecretChat () {
     return chat != null && chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR;
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+  }
+
+  private long lastMessageId () {
+    if (ForumHistory.isForum(topicId)) {
+      ForumTopicContext forum = forumContext;
+      return forum != null ? forum.lastMessageId() : 0;
+    }
+    return messageThread != null ? messageThread.getLastMessageId() : chat != null &&
+      chat.lastMessage != null ? chat.lastMessage.id : 0;
+  // endregion
   }
 
   public int getKnownTotalMessageCount () {
@@ -1800,7 +1989,14 @@ public class MessagesLoader implements Client.ResultHandler {
       if (specialMode == SPECIAL_MODE_SCHEDULED)
         return true;
       if (getChatId() == messageId.getChatId()) {
-        if (messageThread != null) {
+        // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+        if (ForumHistory.isForum(topicId)) {
+          long last = lastMessageId();
+          if (last != 0 && messageId.getMessageId() >= last) {
+            return true;
+          }
+        } else if (messageThread != null) {
+        // endregion
           if (messageId.getMessageId() >= messageThread.getLastMessageId()) {
             return true;
           }

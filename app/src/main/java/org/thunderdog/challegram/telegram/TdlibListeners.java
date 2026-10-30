@@ -395,13 +395,25 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void subscribeToForumTopicUpdates (long chatId, long messageThreadId, ForumTopicInfoListener listener) {
-    specificForumTopicListeners.add(chatId + "_" + messageThreadId, listener);
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+  public void subscribeToForumTopicUpdates (
+    long chatId,
+    int forumTopicId,
+    ForumTopicInfoListener listener
+  ) {
+    specificForumTopicListeners.add(uniqueForumTopicKey(chatId, forumTopicId), listener);
+  // endregion
   }
 
   @AnyThread
-  public void unsubscribeFromForumTopicUpdates (long chatId, long messageThreadId, ForumTopicInfoListener listener) {
-    specificForumTopicListeners.remove(chatId + "_" + messageThreadId, listener);
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+  public void unsubscribeFromForumTopicUpdates (
+    long chatId,
+    int forumTopicId,
+    ForumTopicInfoListener listener
+  ) {
+    specificForumTopicListeners.remove(uniqueForumTopicKey(chatId, forumTopicId), listener);
+  // endregion
   }
 
   @AnyThread
@@ -1333,7 +1345,9 @@ public class TdlibListeners {
 
   void updateForumTopic (TdApi.UpdateForumTopic update) {
     runForumUpdate(update.chatId, update.forumTopicId, listener ->
-      listener.onForumTopicUpdated(update.chatId, update.forumTopicId, update.isPinned, update.lastReadInboxMessageId, update.lastReadOutboxMessageId, update.notificationSettings)
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+      listener.onForumTopicUpdated(update)
+      // endregion
     );
   }
 
