@@ -16,6 +16,9 @@ kotlin {
   sourceSets.named("main") {
     kotlin.srcDir("../tests/buildSrc/kotlin")
   }
+  sourceSets.named("test") {
+    kotlin.srcDir("../tests/buildSrc/checks")
+  }
   compilerOptions {
     allWarningsAsErrors = true
     jvmTarget = JvmTarget.JVM_25
@@ -50,6 +53,7 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.jgit)
   implementation(libs.jgit.lfs)
+  testImplementation(libs.bundles.unit.test)
 }
 
 apply(from = "${rootDir.parentFile}/properties.gradle.kts")

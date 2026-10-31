@@ -47,6 +47,7 @@ Tests are kept in the repository and guard behavior that must keep working after
 | UI | `tests/ui/src/main/kotlin` | `tests/ui/checks` |
 | Benchmarks | `tests/benchmark/src/main/kotlin` | `tests/benchmark/checks` |
 | Microbenchmarks | `tests/microbenchmark/src/main/kotlin` | `tests/microbenchmark/checks` |
+| Build, `buildSrc` | — | `tests/buildSrc/checks` |
 
 * A check is moved to tests only when it guards a core user flow or a contract other code relies on, which changes elsewhere can break unnoticed, and it's fast and gives the same result on every run. A test that fails randomly is worse than none. Everything else stays a check, however useful it was for the change.
 * Helpers that checks need are added to `tests/core`, so that next checks stay small.
@@ -539,6 +540,7 @@ git checkout <branch> -- tests && git switch <branch> && git submodule update --
 | Benchmarks | `./gradlew :tests:benchmark:emulatorLatestBenchmarkReleaseAndroidTest -Pabi=arm64` |
 | Microbenchmarks | `./gradlew :tests:microbenchmark:connectedLatestNonMinifiedReleaseAndroidTest -Pabi=arm64` |
 | Baseline profiles | `./gradlew :app:generateBaselineProfile -Pabi=arm64` |
+| Checks of the build | `./gradlew -p buildSrc test` |
 
 Tests on device replace installed app and clear its data, so they must never run on a device with Telegram X used for real accounts. Tests requested together, e.g. integration and UI tests, run one after another. Device is selected by task name:
 
