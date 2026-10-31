@@ -22,7 +22,10 @@ import org.gradle.kotlin.dsl.register
 import org.gradle.work.DisableCachingByDefault
 import tgx.gradle.fatal
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import java.util.zip.ZipFile
 import javax.imageio.ImageIO
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -43,19 +46,34 @@ fun Project.configureBenchmarkComparison() {
   val connectedTests = tasks.named {
     it.startsWith("connected") && it.endsWith("AndroidTest")
   }
+  // Commands that neither save nor compare results keep their runs too
+  val keepResults = tasks.register<KeepBenchmarksTask>("keepBenchmarkResults") {
+    this.results.set(results)
+    this.savedResults.set(savedResults)
+  }
+  connectedTests.configureEach {
+    finalizedBy(keepResults)
+  }
   tasks.register<SaveBenchmarksTask>("saveBenchmarkResults") {
-    mustRunAfter(connectedTests)
+    mustRunAfter(connectedTests, keepResults)
     this.results.set(results)
     this.savedResults.set(savedResults)
   }
   tasks.register<CompareBenchmarksTask>("compareBenchmarkResults") {
-    mustRunAfter(connectedTests)
+    mustRunAfter(connectedTests, keepResults)
     rootDirectory.set(isolated.rootProject.projectDirectory)
     before.set(savedResults)
     after.set(results)
     targetMetric.set(providers.gradleProperty("metric"))
     control.set(providers.gradleProperty("control"))
     implementation.set(providers.gradleProperty("implementation"))
+    acrossThermalStatus.set(
+      providers.gradleProperty("acrossThermalStatus")
+        .map {
+          it != "false"
+        }
+        .orElse(false)
+    )
     failOnRegression.set(
       providers.gradleProperty("failOnRegression")
         .map {
@@ -65,19 +83,57 @@ fun Project.configureBenchmarkComparison() {
     )
   }
   tasks.register<DescribeBenchmarksTask>("describeBenchmarkResults") {
-    mustRunAfter(connectedTests)
+    mustRunAfter(connectedTests, keepResults)
     rootDirectory.set(isolated.rootProject.projectDirectory)
     this.results.set(results)
     control.set(providers.gradleProperty("control"))
   }
   tasks.register<DescribeProfilesTask>("describeBenchmarkProfiles") {
-    mustRunAfter(connectedTests)
+    mustRunAfter(connectedTests, keepResults)
     this.results.set(results)
     benchmark.set(providers.gradleProperty("benchmark"))
   }
 }
 
-/** Saves results of the last run to compare with, together with earlier runs of the same build */
+/** Keeps results of the last run with earlier runs, see [SavedRuns] */
+@DisableCachingByDefault(because = "Copies files")
+abstract class KeepBenchmarksTask : DefaultTask() {
+  @get:Internal
+  abstract val results: DirectoryProperty
+
+  @get:Internal
+  abstract val savedResults: DirectoryProperty
+
+  @TaskAction
+  fun keep() {
+    val directory = results.get().asFile
+    unpackOutputs(directory)
+    // Tests can fail before they save anything
+    if (directory.walk().any { it.name == RUN_INFO }) {
+      val runs = SavedRuns(savedResults.get().asFile)
+      runs.add(directory)
+      runs.keep()
+    }
+  }
+}
+
+// MicroBenchmarkRunner packs outputs of tests into one file, so that Gradle copies them fast
+private const val OUTPUTS_FILE = "outputs.zip"
+
+private fun unpackOutputs(directory: File) {
+  for (packed in directory.walk().filter { it.name == OUTPUTS_FILE }.toList()) {
+    ZipFile(packed).use { zip ->
+      for (entry in zip.entries()) {
+        zip.getInputStream(entry).use { input ->
+          packed.resolveSibling(File(entry.name).name).outputStream().use(input::copyTo)
+        }
+      }
+    }
+    packed.delete()
+  }
+}
+
+/** Makes the build of the last run the one to compare with, together with its earlier runs */
 @DisableCachingByDefault(because = "Copies files")
 abstract class SaveBenchmarksTask : DefaultTask() {
   @get:InputDirectory
@@ -91,9 +147,15 @@ abstract class SaveBenchmarksTask : DefaultTask() {
   fun save() {
     val runs = SavedRuns(savedResults.get().asFile)
     val run = runs.add(results.get().asFile)
+    if (!run.isMeasured) {
+      fatal(
+        "The last run has no measurements, e.g. a dry run or a run of checks only, " +
+          "so it can't be compared with: save results of a run of benchmarks"
+      )
+    }
     runs.saveBaseline(run.build)
-    runs.keep(run.build)
-    logger.quiet("Saved runs of the same build: ${runs.of(run.build).size}")
+    runs.keep()
+    logger.quiet("Saved runs of the same build: ${runs.of(run.build).count { it.isMeasured }}")
   }
 }
 
@@ -141,6 +203,14 @@ abstract class CompareBenchmarksTask : DefaultTask() {
   @get:Optional
   abstract val implementation: Property<String>
 
+  /**
+   * Without saved runs in the thermal status of the last run, times relative to [control] are
+   * compared with runs in another status, only to look at: such comparisons of the same build show
+   * false clear changes of several percent more often
+   */
+  @get:Input
+  abstract val acrossThermalStatus: Property<Boolean>
+
   /** Task fails when a metric is higher or an output changed */
   @get:Input
   abstract val failOnRegression: Property<Boolean>
@@ -161,18 +231,52 @@ abstract class CompareBenchmarksTask : DefaultTask() {
     val baseline = savedRuns.baseline
       ?: fatal("No saved results, saveBenchmarkResults saves results of the last run")
     val current = savedRuns.add(after.get().asFile)
-    savedRuns.keep(baseline, current.build)
+    savedRuns.keep()
     // A run of the saved build, e.g. without changes, is compared with its earlier runs
-    val savedBefore = savedRuns.of(baseline).filter {
-      it.id != current.id
+    val runsOfBaseline = savedRuns.of(baseline).filter {
+      it.id != current.id && (it.isMeasured || it.hasOutputs)
     }
-    val savedAfter = if (current.build == baseline) listOf(current) else savedRuns.of(current.build)
-    if (savedBefore.isEmpty()) {
+    if (runsOfBaseline.isEmpty()) {
       fatal("Only results of the last run are saved, run tests again to compare with them")
+    }
+    val runsOfCurrent =
+      if (current.build == baseline) listOf(current) else savedRuns.of(current.build)
+    // Device in another state measures other times, and on another screen draws other outputs,
+    // so only runs in the state of the last run are joined
+    val savedAfter = runsOfCurrent.filter { it.state == current.state }
+    // Without runs in the same status, the base is taken in another one only when asked
+    val savedBefore = runsOfBaseline.filter { it.state == current.state }.ifEmpty {
+      runsOfBaseline
+        .filter {
+          acrossThermalStatus.get() && control != null && it.screen == current.screen
+        }
+        .groupBy { it.thermal }
+        .values
+        .maxByOrNull { it.size }
+        .orEmpty()
+    }
+    val leftOut = (runsOfBaseline - savedBefore.toSet()) + (runsOfCurrent - savedAfter.toSet())
+    if (leftOut.isNotEmpty()) {
+      logger.quiet("Left out runs in another state:")
+      for (run in leftOut) {
+        val of = if (run.build == baseline) "before" else "after"
+        logger.quiet("  $of, ${run.startTime}: ${run.state}")
+      }
+    }
+    if (savedBefore.isEmpty()) {
+      fatal(
+        "No saved runs in the state of the last run, ${current.state}: save results again in it. " +
+          "-PacrossThermalStatus with -Pcontrol compares times relative to control with runs " +
+          "in another thermal status, only to look at, not to decide"
+      )
     }
     val before = loadRuns(savedBefore)
     val after = loadRuns(savedAfter)
-    val outputsBefore = loadOutputs(savedBefore.last().directory).filterValues(::isComparedOutput)
+    // Runs of checks only have no outputs
+    val outputsBefore = savedBefore.lastOrNull { it.hasOutputs }
+      ?.let { loadOutputs(it.directory) }
+      .orEmpty()
+      .filterValues(::isComparedOutput)
     val outputsAfter = loadOutputs(current.directory).filterValues(::isComparedOutput)
     val compared = after.values
       .filter {
@@ -188,9 +292,20 @@ abstract class CompareBenchmarksTask : DefaultTask() {
       "Runs: ${savedBefore.size} before, ${savedAfter.size} after, " +
         "runs of the same build are joined"
     )
-    val runsInOrder = (savedBefore + savedAfter).sortedBy { it.id }
-    describeRuns("Screen", "results and outputs", runsInOrder.mapNotNull { it.screen })
-    describeRuns("Thermal status", "results", runsInOrder.mapNotNull { it.thermal })
+    current.screen?.let {
+      logger.quiet("Screen: $it")
+    }
+    val thermalBefore = savedBefore.first().thermal
+    if (thermalBefore == current.thermal) {
+      current.thermal?.let {
+        logger.quiet("Thermal status: $it")
+      }
+    } else {
+      logger.quiet(
+        "Thermal status: $thermalBefore before, ${current.thermal} after, times are relative to " +
+          "$control, only to look at: decide by runs in one status"
+      )
+    }
 
     val metrics = compared.flatMap {
       it.metrics.keys.intersect(before.getValue(it.key).metrics.keys)
@@ -362,21 +477,6 @@ abstract class CompareBenchmarksTask : DefaultTask() {
     val regressions = changes["higher"].orEmpty().size
     if (failOnRegression.get() && (regressions > 0 || changedOutputs.isNotEmpty())) {
       fatal("$regressions metrics are higher, ${changedOutputs.size} outputs changed")
-    }
-  }
-
-  // States of device that change results, e.g. screen or thermal status
-  private fun describeRuns(name: String, changed: String, values: List<String>) {
-    val distinct = values.distinct()
-    if (distinct.size > 1) {
-      logger.quiet(
-        "$name changed between runs, $changed differ because of it too: " +
-          distinct.joinToString(" -> ")
-      )
-    } else {
-      distinct.firstOrNull()?.let {
-        logger.quiet("$name: $it")
-      }
     }
   }
 }
@@ -577,6 +677,9 @@ private const val RUN_INFO = "run.txt"
 // More runs narrow intervals, but the earliest ones may be measured in other conditions
 private const val RUNS_OF_BUILD = 5
 
+// Builds measured recently besides the one to compare with, e.g. a change and a dry run of the next
+private const val LATEST_BUILDS = 3
+
 /** Results of one run, without method traces */
 private class SavedRun(val directory: File) {
   private val info = File(directory, RUN_INFO).readLines().associate {
@@ -592,9 +695,27 @@ private class SavedRun(val directory: File) {
 
   /** The highest thermal status of device during the run, e.g. none or light */
   val thermal: String? = info["thermal"]
+
+  val state: String
+    get() = listOfNotNull(thermal?.let { "thermal status $it" }, screen).joinToString()
+
+  val startTime: String
+    get() = SimpleDateFormat("d MMM HH:mm", Locale.ROOT).format(Date(id))
+
+  /** Dry runs and runs of checks only have no measurements */
+  val isMeasured: Boolean by lazy {
+    info["dryRun"] != "true" && loadResults(directory).any { it.metrics.isNotEmpty() }
+  }
+
+  val hasOutputs: Boolean by lazy {
+    directory.walk().any { OUTPUT_FILE.matches(it.name) }
+  }
 }
 
-/** Runs of the build to compare with and of the last compared build */
+/**
+ * Runs of the build to compare with and of the latest builds,
+ * so that a run of another build, e.g. a dry run, doesn't remove runs of the change
+ */
 private class SavedRuns(private val directory: File) {
   private val baselineFile = File(directory, "baseline.txt")
   private val runsDirectory = File(directory, "runs")
@@ -634,8 +755,8 @@ private class SavedRuns(private val directory: File) {
     return SavedRun(run)
   }
 
-  /** Removes runs of other builds and the earliest runs, as well as files of older versions */
-  fun keep(vararg builds: String) {
+  fun keep() {
+    // Removes runs of other builds and the earliest runs, as well as files of older versions
     directory.listFiles().orEmpty()
       .filter {
         it != baselineFile && it != runsDirectory
@@ -643,8 +764,12 @@ private class SavedRuns(private val directory: File) {
       .forEach {
         it.deleteRecursively()
       }
-    for ((build, runs) in all().groupBy { it.build }) {
-      val removed = if (build in builds) runs.dropLast(RUNS_OF_BUILD) else runs
+    val builds = all().groupBy { it.build }
+    val latest = builds.keys
+      .sortedByDescending { builds.getValue(it).last().id }
+      .take(LATEST_BUILDS)
+    for ((build, runs) in builds) {
+      val removed = if (build == baseline || build in latest) runs.dropLast(RUNS_OF_BUILD) else runs
       removed.forEach {
         it.directory.deleteRecursively()
       }

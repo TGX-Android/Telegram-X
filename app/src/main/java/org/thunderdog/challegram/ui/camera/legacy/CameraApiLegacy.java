@@ -704,6 +704,7 @@ public class CameraApiLegacy extends CameraApi implements Camera.PreviewCallback
       throw new IllegalStateException("!isCameraActive");
     }
 
+    final int frameRate = getVideoFrameRate(camera.getParameters());
     camera.unlock();
 
     videoRecorder = new MediaRecorder();
@@ -716,7 +717,7 @@ public class CameraApiLegacy extends CameraApi implements Camera.PreviewCallback
     }
     videoRecorder.setOutputFile(videoFile.getAbsolutePath());
     videoRecorder.setMaxFileSize(ByteUnit.GIB.toBytes(1));
-    videoRecorder.setVideoFrameRate(30);
+    videoRecorder.setVideoFrameRate(frameRate);
     videoRecorder.setMaxDuration(0);
     videoRecorder.setVideoEncodingBitRate(900000 * 2);
     //videoRecorder.setAudioEncodingBitRate(32000);
@@ -755,6 +756,27 @@ public class CameraApiLegacy extends CameraApi implements Camera.PreviewCallback
     }
 
     return manager.getOutputFile(true);
+  }
+
+  private static final int VIDEO_FRAME_RATE = 30;
+
+  private static int getVideoFrameRate (Camera.Parameters parameters) {
+    // MediaRecorder fails to start with a frame rate that the camera doesn't support,
+    // e.g. 30 on a camera of 24: the closest supported one below 30 is taken instead,
+    // or above it when there's none
+    final List<Integer> frameRates = parameters.getSupportedPreviewFrameRates();
+    if (frameRates == null || frameRates.isEmpty() || frameRates.contains(VIDEO_FRAME_RATE)) {
+      return VIDEO_FRAME_RATE;
+    }
+    int below = 0, above = Integer.MAX_VALUE;
+    for (int frameRate : frameRates) {
+      if (frameRate < VIDEO_FRAME_RATE) {
+        below = Math.max(below, frameRate);
+      } else {
+        above = Math.min(above, frameRate);
+      }
+    }
+    return below != 0 ? below : above;
   }
 
   private static int getHighCamcorderProfile () {

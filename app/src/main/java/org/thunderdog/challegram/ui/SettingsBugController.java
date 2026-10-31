@@ -172,7 +172,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     }
     switch (section) {
       case Section.MAIN:
-        return BuildConfig.VERSION_NAME;
+        return U.getVersionName();
       case Section.UTILITIES:
         return Lang.getString(R.string.TestMode);
       case Section.PUSH:

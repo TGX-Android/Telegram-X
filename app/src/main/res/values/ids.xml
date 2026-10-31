@@ -269,6 +269,7 @@
   <item type="id" name="msg_list" />
   <item type="id" name="msg_bottomShadow" />
   <item type="id" name="msg_bottomReply" />
+  <item type="id" name="msg_topBar" />
 
   <item type="id" name="emoji" />
   <item type="id" name="emoji_recent" />
