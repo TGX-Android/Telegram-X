@@ -62,6 +62,7 @@ Tests are kept in the repository and guard behavior that must keep working after
 ./gradlew describeCheckResults
 ```
 
+* `-Ptgx.checks=false` builds tests without `checks` folders, e.g. to measure a commit before the change, where checks of the change don't compile.
 * The table lists checks and tests from the repository that don't pass before or after, other tests are counted. `—` means the check didn't run, e.g. before the change for checks of new code.
 * Checks are pushed to `checks/<branch>`, a branch with one commit on top of the pull request branch, deleted after the pull request is merged or closed. Screenshots and recordings shown in the description are added next to the checks and linked from this branch. The command keeps checks in the working tree and doesn't change the pull request branch:
 
@@ -266,9 +267,19 @@ class ChatTest : AuthorizedTest() {
 * `screenshot("name")` saves screenshot to test results, e.g. to check how new UI looks. `recordScreen("name") { }` saves video of the block, e.g. for pull requests with new UI, see [Screenshots and recordings](#screenshots-and-recordings).
 * Animations are on, because some bugs are visible only with them. Tests that don't need them can be annotated with `@DisableAnimations`, as well as their classes.
 * Elements are found by view id: `R.id.chats_list` is `"chats_list"`. To make a new view reachable, declare id in `app/src/main/res/values/ids.xml` and assign it with `setId`.
-* Helpers are in [`Extensions.kt`](core/src/main/kotlin/tgx/test/Extensions.kt): `findElement`, `waitForElement`, `failIfPresent`, `openUrl`, `runShellCommand` and others. Any `UiDevice` and `UiObject2` methods can be used as well, except `executeShellCommand`: use `runShellCommand` or `androidx.test.shell.Shell` instead.
+* Helpers are in [`Extensions.kt`](core/src/main/kotlin/tgx/test/Extensions.kt): `findElement`, `waitForElement`, `failIfPresent`, `openUrl`, `runShellCommand` and others. Helpers of chats are in [`Chats.kt`](ui/src/main/kotlin/tgx/test/Chats.kt): `openSavedMessages`, the only chat where tests send messages, `sendMessage`, `lastMessages`, `visibleTopOfChat` below bars of the chat, e.g. of a pinned message, `openMessageMenu` by a tap at the time of a message, `setAppearance(AppTheme.NIGHT_BLUE, bubbles = false)`, which sets the theme and the chat style without screens of settings, and `textCopiedBy { }`, which returns what the block copied. Any `UiDevice` and `UiObject2` methods can be used as well, except `executeShellCommand`: use `runShellCommand` or `androidx.test.shell.Shell` instead.
 * To see ids of elements currently displayed on device: `adb exec-out uiautomator dump /dev/tty`.
 * On Windows MSYS2 and Git Bash convert arguments that look like paths, e.g. `/dev/tty`, to Windows paths. Prepend `MSYS2_ARG_CONV_EXCL='*'` to `adb` commands with paths on device.
+* Notifications of new messages come without a second account and without sending anything from [`NotificationFlood`](ui/app/kotlin/tgx/test/NotificationFlood.kt), which builds of tests have inside app process: it loads incoming messages of chats of the account from their history and gives the app updates of TDLib about notifications with new ids and dates, as if they had just come. Builds of tests get notifications from TDLib like release builds, and the flood starts without them. A test starts it by a broadcast, e.g. `runShellCommand("am broadcast -n ${getApplicationId()}/tgx.test.NotificationFloodReceiver --ei count 3000 --ei perMinute 3000 --ei chats 5")`, and waits for `done` in logcat of tag `NotificationFlood`, where each second it logs the notifications it sent with the number of mappings and the native heap of the app. When the system caches the app in background, which ends a long flood by "excessive binder traffic during cached", it warns `the app is cached`. After the flood `--ez removeAfter true` removes its notifications as TDLib does when they are read, and `--ez muteAfter true` turns notifications of its chats off in the app. Each second it also logs the icons of notifications that the app keeps, which `tgx.test.NotificationIconsReceiver` logs on demand.
+
+#### Profiles of native memory
+
+`recordNativeHeap("name") { }` records native allocations of the app while the block runs by heapprofd of Perfetto, sampled every 4 KB and dumped every 30 s, and saves the trace to test results as `<Class>.<test>.name.heapprofd.perfetto-trace`. Builds of tests are profileable by shell, and Perfetto reads the config only from `/data/misc/perfetto-configs`, where the test puts it. `describeHeapProfiles` prints memory allocated and freed during the profile, and the call sites that allocated the most, with the memory of each that wasn't freed at the end, from the code that allocates to its callers. It needs [trace processor](#analyzing-traces) in `PATH` or `-PtraceProcessor=<path>`:
+
+```shell
+./gradlew :tests:ui:connectedLatestNonMinifiedReleaseAndroidTest :tests:ui:describeHeapProfiles -Pabi=arm64 -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.<Check>
+```
+
 
 ### Benchmarks
 
@@ -305,7 +316,7 @@ Results are saved in `build/outputs/connected_android_test_additional_output` of
 ./gradlew :tests:benchmark:compareBenchmarkResults
 ```
 
-`saveBenchmarkResults` keeps results in `build/benchmark-results` of the module until `clean`, microbenchmarks also join results of runs of the same build, see [Optimizing code](#optimizing-code). `compareBenchmarkResults` shows the change of medians of each metric with 95% confidence interval of the shift between iterations, e.g. `-1.2% (-2.0%..-0.4%) lower`, and ends with a summary of clear changes. When the interval includes zero, the change is smaller than measurements can tell: more iterations narrow the interval, 4 times more make it 2 times narrower, and microbenchmarks measure code more precisely. Sampled metrics, e.g. frame durations, are compared by their percentiles. The output is included in the pull request. Tasks that read results run after tests requested in the same command, e.g. `./gradlew :tests:benchmark:connectedLatestBenchmarkReleaseAndroidTest :tests:benchmark:compareBenchmarkResults`.
+`saveBenchmarkResults` keeps results in `build/benchmark-results` of the module until `clean`. Microbenchmarks keep every run there, also of commands that neither save nor compare results, join runs of the same build, and don't save a run without measurements, e.g. a dry run or a run of checks only, as results to compare with, see [Optimizing code](#optimizing-code). `compareBenchmarkResults` shows the change of medians of each metric with 95% confidence interval of the shift between iterations, e.g. `-1.2% (-2.0%..-0.4%) lower`, and ends with a summary of clear changes. When the interval includes zero, the change is smaller than measurements can tell: more iterations narrow the interval, 4 times more make it 2 times narrower, and microbenchmarks measure code more precisely. Sampled metrics, e.g. frame durations, are compared by their percentiles. The output is included in the pull request. Tasks that read results run after tests requested in the same command, e.g. `./gradlew :tests:benchmark:connectedLatestBenchmarkReleaseAndroidTest :tests:benchmark:compareBenchmarkResults`.
 
 * Among many metrics some change clearly by chance, so intervals are widened for the number of metrics. A change that targets one metric names it, e.g. `-Pmetric=frameDurationCpuMsP90`: its intervals are widened only for the number of benchmarks that have it, so it's measured precisely, while other metrics show only clear regressions.
 * Device heats up while benchmarks run, so the next run may be slower without any change. Run benchmarks before and after the change with the same pause, e.g. let the device cool down for a few minutes.
@@ -472,8 +483,8 @@ class TextVariants(sample: TextSample) : TextSampleBenchmark(sample) {
 ```
 
 * Each run is saved with the build it ran, a checksum of the app, tests and arguments of the benchmark library, and runs of the same build, up to 5, are joined: repeating the command narrows intervals, 4 runs before and 4 after make them 2 times narrower than one and one. The first line shows the number of runs, e.g. `Runs: 2 before, 1 after`. The run of the build of saved results, e.g. without changes, is compared with its earlier runs.
-* `Screen:` shows screen of runs, which sizes of texts depend on. When it changes, e.g. on foldable device, results and outputs change too.
-* `Thermal status:` shows the highest thermal status of device in runs, e.g. `none` or `light`. Throttled device runs code slower, differently for each test, so when the status changes between runs, results differ more than the control shows: let device cool down and measure again.
+* Runs are joined only when they ran in the same state of the device as the last run: the same screen, which sizes of texts depend on, e.g. on a foldable device, and the same thermal status, the highest during the run, e.g. `none` or `light`. Runs in another state are listed after `Left out runs in another state`. `Screen:` and `Thermal status:` show the state.
+* Throttled device runs code slower, differently for each test. When saved results have no runs in the thermal status of the last run, the comparison fails with `No saved runs in the state of the last run`, and results are saved again in the current status. `-PacrossThermalStatus` with `-Pcontrol` compares times relative to the control with runs in another status instead, e.g. `Thermal status: light before, none after, times are relative to BoringOrStaticLayout, only to look at: decide by runs in one status`. Such comparisons are only to look at: of the same build, 36 metrics of `TextSuite`, 3 of 5 comparisons across statuses showed a false clear change, up to 9 %, and 1 of 4 in one status. Decisions, e.g. by the decision rule of a task, are made by comparisons in one status.
 * `-Pimplementation` compares only the target implementation.
 * `-Pcontrol` measures changes of times relative to the control: when device becomes 5% slower while it heats up, the control is 5% slower too, and the target is compared as if device didn't change. Times of the same code also differ between runs by a few percent, differently for each test, so intervals include the spread of changes of the control between its tests, shown in the first lines: one pair of runs clearly shows only changes several times larger than it.
 * `-Pmetric=timeNs` measures the target metric more precisely, see [Comparing results](#comparing-results).
@@ -496,8 +507,26 @@ Outputs: 1 same
 Faster checks:
 
 * `-Pandroid.testInstrumentationRunnerArguments.tests_regex=TextBenchmarks#draw_` runs tests whose `class#method` matches the regular expression, e.g. drawing of all inputs, `'-Pandroid.testInstrumentationRunnerArguments.class=tgx.test.TextBenchmarks#draw_Text[text=short]'` runs one test.
-* `-Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.dryRunMode.enable=true` runs each measured block once, in seconds: it checks that measurements work and saves outputs, which `compareBenchmarkResults` compares without measurements.
+* `-Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.dryRunMode.enable=true` runs each measured block once: it checks that measurements work and saves outputs, which `compareBenchmarkResults` compares without measurements. `TextSuite` runs in 10 s and the command takes about 30 s with the app built, 2 min with a build of changed code. Dry runs don't compile the app ahead of time, which takes a minute, and outputs are packed into one file at the end of a run, because Gradle copies outputs during the run by a command of `adb` for each file, which took 10 minutes for 500 outputs.
 * `Text` is optimized with `-Pandroid.testInstrumentationRunnerArguments.class=tgx.test.TextSuite -Pimplementation=Text -Pcontrol=BoringOrStaticLayout`, the suite also checks its drawing and sizes on more texts and options.
+
+An earlier commit, e.g. the one a pull request is based on, is measured again by the current tests when tests changed since then: its saved runs measured other samples, and their drawings had no background. Both builds run in the same clone, so that their runs are saved together in `tests/microbenchmark/build/benchmark-results`:
+
+```shell
+# The earlier app with the current tests
+git switch --detach <commit> && git submodule update --recursive
+git checkout <branch> -- tests
+# A dry run, 2 minutes with the build: the tests run on the earlier code and draw its outputs
+./gradlew -q :tests:microbenchmark:connectedLatestNonMinifiedReleaseAndroidTest -Pabi=arm64 -Ptgx.checks=false -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.TextSuite -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.dryRunMode.enable=true
+./gradlew -q :tests:microbenchmark:connectedLatestNonMinifiedReleaseAndroidTest :tests:microbenchmark:saveBenchmarkResults -Pabi=arm64 -Ptgx.checks=false -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.TextSuite
+# Back to the branch, the runs stay
+git checkout <branch> -- tests && git switch <branch> && git submodule update --recursive
+./gradlew -q :tests:microbenchmark:connectedLatestNonMinifiedReleaseAndroidTest :tests:microbenchmark:compareBenchmarkResults -Pabi=arm64 -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.TextSuite -Pimplementation=Text -Pcontrol=BoringOrStaticLayout
+```
+
+* `-Ptgx.checks=false` builds tests without `checks`, which use code of the change.
+* Tests that use other code the earlier commit doesn't have, e.g. a benchmark of a new class or a helper that waits for its work, don't compile there. They are deleted or reduced before the runs of the earlier commit, and `git checkout <branch> -- tests` restores them: only metrics and outputs that both runs have are compared.
+* The dry run checks in about 2 minutes with the build of the earlier app that the tests work, before measured runs of 5 minutes each. Outputs before come from the measured run, drawn by the same tests as after, with the same background.
 
 ## Running tests
 
@@ -527,13 +556,25 @@ Tests on device replace installed app and clear its data, so they must never run
 
 ## Test accounts
 
-* Tests and checks run on production servers of Telegram with real test accounts. Messages can be sent only to **Saved Messages** or to the users authorized in `snapshot.zip`, and groups and channels created by them can include only these users. Their ids are returned by `getSnapshotUserIds()`: when there is only one, messages are sent only to **Saved Messages**.
+* Tests and checks run on production servers of Telegram with real test accounts. Messages can be sent only to **Saved Messages** or to the users authorized in the [snapshot](#session-snapshot), and groups and channels created by them can include only these users. Their ids are returned by `getSnapshotUserIds()`: when there is only one, messages are sent only to **Saved Messages**.
 * Be careful with TDLib requests that load data over network: don't send them in loops or more often than a user could. Requests answered locally are not limited.
 
 ### Session snapshot
 
-Authorized tests restore sessions from `tests/core/src/main/assets/snapshot.zip`. It is ignored by git and must never be committed: it gives access to the accounts. Use dedicated test accounts. Snapshot includes all accounts added to the app, so several accounts can be authorized to test interaction between them: messages, groups, channels, notifications.
+Authorized tests restore sessions from a snapshot of accounts, a zip file outside the clone that the build takes by its full path: `-PsnapshotFile=<path>`, e.g. `./gradlew :tests:ui:connectedLatestNonMinifiedReleaseAndroidTest -PsnapshotFile=$HOME/tgx-snapshots/pixel.zip`. Without it, authorized tests fail. The snapshot gives access to the accounts: keep it out of repositories and don't make copies of it. Use dedicated test accounts. Snapshot includes all accounts added to the app, so several accounts can be authorized to test interaction between them: messages, groups, channels, notifications.
 
-Sessions from the snapshot must not be used by several apps at once, otherwise Telegram may terminate them as leaked. That's why build runs tests on device one at a time and only on one device, and fails when another Gradle build on the machine is already running tests with the same accounts. Builds with snapshots of other accounts can run tests at the same time.
+The build adds the snapshot to assets of test APKs by a link and keeps their assets out of the build cache, so that the sessions stay only in the snapshot and in the build folders of the clone. `tests/core/src/main/assets/snapshot.zip`, where the snapshot was kept before, is no longer read: a build that finds it there fails.
 
-To create the snapshot, open **Saved Messages** of the test account → attach menu → **Files** → **Session Snapshot** (available in builds with test hooks enabled or in developer mode). The snapshot is sent to the chat: download it and save as `tests/core/src/main/assets/snapshot.zip`. Then clear data of the app where the snapshot was created, so it stops using the same sessions. Don't log out instead: it terminates sessions in the snapshot too.
+Sessions from the snapshot must not be used by several apps at once, otherwise Telegram may terminate them as leaked. Each device can have its own snapshot of the same accounts: a snapshot made in another app has other sessions, so devices run tests at the same time, each with its own snapshot. A build runs tests on one device only, and waits while another Gradle build on the machine runs tests on the same device or with the same snapshot, found by its path.
+
+A script that runs builds one at a time on the machine can let others build while tests run on a device: when it holds a lock of builds, a folder, it names it by `TGX_BUILD_LOCK` and its process by `TGX_BUILD_LOCK_PID`, written into `pid` in that folder. Tests on a device build nothing, so they remove the folder when they start, if it still has that `pid`.
+
+To create the snapshot, open **Saved Messages** of the test account → attach menu → **Files** → **Session Snapshot** (available in builds with test hooks enabled or in developer mode). The snapshot is sent to the chat: download it and save it outside the clone. Then clear data of the app where the snapshot was created, so it stops using the same sessions. Don't log out instead: it terminates sessions in the snapshot too.
+
+A restored snapshot behaves as an app that wasn't opened for long. To update the snapshot of a device, only when its owner agrees:
+
+```shell
+ANDROID_SERIAL=<serial> ./gradlew :tests:ui:updateSnapshot -Pabi=arm64 -PsnapshotFile=<path> -PsnapshotUpdate=replace
+```
+
+The app starts with the current snapshot and waits until every account is connected and up to date, then makes a new snapshot as **Session Snapshot** does, but keeps it on the device instead of sending it. Gradle pulls it next to the current file, checks that it has the same accounts and replaces the current one by a rename, so that a failed pull leaves it whole. Copies on the device are deleted and the app is cleared, so that it stops using the sessions. `-PsnapshotUpdate=check` does everything but the replacement and deletes the new snapshot.

@@ -786,6 +786,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     clearMedia();
     maxPartHeight = currentWidth = currentX = currentY = paragraphCount = 0;
     lastPart = null;
+    layoutPaint = null;
+    layoutPaintEntity = null;
     textFlags &= ~(
       FLAG_FULL_RTL |
       FLAG_ELLIPSIZED |
@@ -1057,14 +1059,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
   private static int indexOfParagraphSeparator (String in, int start) {
     final int length = in.length();
-    for (int index = start; index < length; ) {
-      final int codePoint = in.codePointAt(index);
-      if (Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR) {
+    for (int index = start; index < length; index++) {
+      // All characters of Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR
+      final char c = in.charAt(index);
+      if (c == '\n' || c == '\r' || (c >= 0x1C && c <= 0x1E) || c == 0x85 || c == 0x2029) {
         return index;
       }
-
-      final int size = Character.charCount(codePoint);
-      index += size;
     }
     return -1;
   }
@@ -1115,7 +1115,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       if (codePoint == '\n' && !BitwiseUtils.hasFlag(textFlags, FLAG_IGNORE_NEWLINES)) {
         break;
       }
-      boolean isSpace = size == 1 && (codePoint == '\n' || Character.getType(codePoint) == Character.SPACE_SEPARATOR);
+      // The only ASCII character of SPACE_SEPARATOR type is space
+      boolean isSpace = codePoint < 0x80 ?
+        codePoint == ' ' || codePoint == '\n' :
+        size == 1 && Character.getType(codePoint) == Character.SPACE_SEPARATOR;
       if (first) {
         first = false;
         lastIsSpace = isSpace;
@@ -1190,10 +1193,23 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   private int emojiSize;
   private TextEntity emojiEntity;
 
+  private TextPaint layoutPaint;
+  private TextEntity layoutPaintEntity;
+
+  // Paint of entity and size of its emoji, prepared once for each entity of the text,
+  // because preparing paint converts units of its text size
+  private TextPaint getLayoutPaint (@Nullable TextEntity entity) {
+    if (layoutPaint == null || layoutPaintEntity != entity) {
+      layoutPaint = getTextPaint(entity);
+      layoutPaintEntity = entity;
+      Paint.FontMetricsInt fontMetricsInt = Paints.getFontMetricsInt(layoutPaint);
+      emojiSize = Math.abs(fontMetricsInt.descent - fontMetricsInt.ascent) + Screen.dp(2f);
+    }
+    return layoutPaint;
+  }
+
   private void processTextOrEmoji (final String in, final int start, final int end, final ArrayList<TextPart> out, final Emoji.Callback emojiCallback, final @Nullable TextEntity entity) {
-    TextPaint paint = getTextPaint(entity);
-    Paint.FontMetricsInt fontMetricsInt = Paints.getFontMetricsInt(paint);
-    emojiSize = Math.abs(fontMetricsInt.descent - fontMetricsInt.ascent) + Screen.dp(2f);
+    getLayoutPaint(entity);
 
     if (in.endsWith("wtftest")) {
       in.toString();
@@ -1221,7 +1237,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     emojiStart = start;
     emojiEntity = entity;
 
-    Emoji.instance().replaceEmoji(in, start, end, this, emojiCallback);
+    if (mayContainEmoji(in, start, end)) {
+      Emoji.instance().replaceEmoji(in, start, end, this, emojiCallback);
+    }
 
     if (emojiStart < end) {
       processPartSplitty(in, emojiStart, end, out, entity, false);
@@ -1298,6 +1316,19 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   }
 
   // Utils
+
+  // Emoji.replaceEmoji finds emoji only by these characters
+  private static boolean mayContainEmoji (String in, int start, int end) {
+    for (int i = start; i < end; i++) {
+      char c = in.charAt(i);
+      if (c == 0x00A9 || c == 0x00AE ||
+        (c >= 0x203C && c <= 0x3299) ||
+        (c >= 0xD83C && c <= 0xD83E)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   private static boolean hasSpaceSeparators (String in, int start, int end) {
     for (int i = start; i < end;) {
@@ -1458,6 +1489,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     int nextSplitSearch = -1;
 
     for (int i = searchStart; i < end; ) {
+      // ASCII letters and digits are neither splitters nor need fill
+      char c = in.charAt(i);
+      if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
+        i++;
+        continue;
+      }
       int codePoint = in.codePointAt(i);
       int charCount = Character.charCount(codePoint);
       int codePointType = Character.getType(codePoint);
@@ -1584,7 +1621,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     int futureEnd = -1;
     float futureWidth;
 
-    final Paint paint = getTextPaint(entity);
+    final Paint paint = getLayoutPaint(entity);
     final float spaceSize = makeSpaceSize(paint);
     // TODO optimize https://fonts.google.com/specimen/Roboto+Mono
     final boolean isMonospace = false; // (entity != null && entity.isMonospace());
@@ -1607,7 +1644,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       }
       if ((end - start) == spaceCount) {
         fullWidth = spaceSize * spaceCount;
-      } else if (isChild) {
+      } else if (isChild && childWidth[0] > getLineMaxWidth(getLineCount(), this.currentY)) {
+        // Rest of a word that is split by characters again only needs an estimate.
+        // Widths of characters measured one by one don't add up to the width of the word
+        // because of kerning, so the last rest is measured, or next parts overlap its end
         fullWidth = childWidth[0];
       } else {
         fullWidth = BiDiUtils.measureTextRun(bidiEntity, in, start, end, paint);

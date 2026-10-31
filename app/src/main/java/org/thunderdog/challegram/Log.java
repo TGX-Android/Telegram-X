@@ -638,7 +638,7 @@ public class Log {
               osArch,
 
               // Related to Application Build
-              BuildConfig.VERSION_NAME,
+              U.getVersionName(),
               BuildConfig.ORIGINAL_VERSION_CODE,
 
               // Related to Android version
@@ -690,7 +690,7 @@ public class Log {
     return String.format(
       Locale.US,
       "App: %s\nSDK: %d (%s)\nManufacturer: %s\nModel: %s\nBrand: %s\nDisplay: %s\nProduct: %s\nFingerprint: %s\nScreen: %dx%d (%f)\n",
-      BuildConfig.VERSION_NAME,
+      U.getVersionName(),
 
       Build.VERSION.SDK_INT,
       SdkVersion.getPrettyName(),

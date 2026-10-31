@@ -311,6 +311,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private final ManagerHandler handler = new ManagerHandler(this);
   private final LiveLocationManager liveLocationManager = new LiveLocationManager(this);
   private final TdlibNotificationManager.NotificationQueue notificationQueue = new TdlibNotificationManager.NotificationQueue("NotificationQueue", this);
+  private final NotificationIcons notificationIcons =
+    Config.REUSE_NOTIFICATION_ICONS ? new NotificationIcons(4 * 1024 * 1024) : null;
   private final CallManager calls = new CallManager(this);
   private final Settings.ProxyChangeListener proxyChangeListener = new Settings.ProxyChangeListener() {
     @Override
@@ -505,6 +507,17 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   TdlibNotificationManager.NotificationQueue notificationQueue () {
     return notificationQueue;
+  }
+
+  public NotificationIcons notificationIcons () {
+    return notificationIcons;
+  }
+
+  public static void trimMemory (int level) {
+    final TdlibManager manager = instance;
+    if (manager != null && manager.notificationIcons != null) {
+      manager.notificationIcons.trimMemory(level);
+    }
   }
 
   private void load (int specificAccountId, boolean forceService) {

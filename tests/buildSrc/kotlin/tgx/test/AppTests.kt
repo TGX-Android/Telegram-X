@@ -10,9 +10,13 @@ import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.TestAndroidComponentsExtension
 import org.gradle.api.Project
+import org.gradle.api.file.RegularFile
+import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.of
+import org.gradle.kotlin.dsl.register
+import tgx.gradle.fatal
 import tgx.gradle.source.KeystoreSource
 import java.io.File
 import java.util.Properties
@@ -24,7 +28,36 @@ private const val TEST_MIN_SDK_VERSION = 24
 
 const val TEST_DEVICE = "emulator"
 
-internal const val SNAPSHOT_PATH = "tests/core/src/main/assets/snapshot.zip"
+// Where the snapshot of accounts was kept before -PsnapshotFile, inside the clone
+private const val OLD_SNAPSHOT_PATH = "tests/core/src/main/assets/snapshot.zip"
+
+// Snapshot of accounts that tests start with, outside the clone: -PsnapshotFile=<full path>,
+// see "Session snapshot" in tests/README.md
+internal val Project.snapshotFile: Provider<RegularFile>
+  get() = layout.file(
+    providers.gradleProperty("snapshotFile").map { path ->
+      File(path).also {
+        if (!it.isAbsolute || !it.isFile) {
+          fatal("-PsnapshotFile=$path isn't the full path of a snapshot")
+        }
+      }
+    }
+  )
+
+// -Ptgx.checks=false builds tests without checks of a change, e.g. to measure a commit before it,
+// where they don't compile
+internal val Project.hasChecks: Boolean
+  get() = providers.gradleProperty("tgx.checks")
+    .map {
+      it != "false"
+    }
+    .getOrElse(true)
+
+// Dry runs of microbenchmarks run each test once, without measuring
+private val Project.isDryRun: Boolean
+  get() = providers
+    .gradleProperty("android.testInstrumentationRunnerArguments.androidx.benchmark.dryRunMode.enable")
+    .orNull == "true"
 
 // Libraries of the app that tests inside app process depend on too
 private val APP_LIBRARIES = listOf(
@@ -60,11 +93,15 @@ fun Project.configureTests() {
     // Built-in Kotlin compiles only Kotlin source directories
     sourceSets.getByName("test") {
       kotlin.directories += "../tests/unit/kotlin"
-      kotlin.directories += "../tests/unit/checks"
+      if (hasChecks) {
+        kotlin.directories += "../tests/unit/checks"
+      }
     }
     sourceSets.getByName("androidTest") {
       kotlin.directories += "../tests/integration/kotlin"
-      kotlin.directories += "../tests/integration/checks"
+      if (hasChecks) {
+        kotlin.directories += "../tests/integration/checks"
+      }
       if (hasTestTools) {
         kotlin.directories += "../tests/integration/tools"
       }
@@ -81,6 +118,16 @@ fun Project.configureTests() {
         variant.sources.manifests.addStaticManifestFile("$directory/AndroidManifest.xml")
       }
     }
+    // Tools that UI tests start inside app process, e.g. fake notifications of NotificationFlood
+    for (buildType in listOf("nonMinifiedRelease", "benchmarkRelease")) {
+      onVariants(selector().withBuildType(buildType)) { variant ->
+        if (variant.minSdk.apiLevel >= TEST_MIN_SDK_VERSION) {
+          val directory = "../tests/ui/app"
+          variant.sources.kotlin!!.addStaticSourceDirectory("$directory/kotlin")
+          variant.sources.manifests.addStaticManifestFile("$directory/AndroidManifest.xml")
+        }
+      }
+    }
   }
   runTestsOnDeviceOneAtATime()
 }
@@ -92,11 +139,20 @@ fun Project.configureAppTests(
   inAppProcess: Boolean = false,
   testedVariants: (SdkVariant) -> Boolean = { it.supportsSdk(TEST_MIN_SDK_VERSION) }
 ) {
-  val snapshot = isolated.rootProject.projectDirectory.file(SNAPSHOT_PATH)
+  if (isolated.rootProject.projectDirectory.file(OLD_SNAPSHOT_PATH).asFile.exists()) {
+    fatal(
+      "$OLD_SNAPSHOT_PATH is no longer read: move it out of the clone " +
+        "and pass its full path by -PsnapshotFile"
+    )
+  }
+  val snapshot = snapshotFile
   val snapshotUserIds = providers.fileContents(snapshot).asBytes
     .map { readSnapshotUserIds(it.inputStream()) }
     .orNull
     .orEmpty()
+  val snapshotAsset = tasks.register<SnapshotAssetTask>("linkSnapshotAsset") {
+    this.snapshot.set(snapshot)
+  }
   val appKeystore = if (inAppProcess) findAppKeystore() else null
 
   extensions.configure<TestExtension> {
@@ -107,7 +163,9 @@ fun Project.configureAppTests(
 
     // Checks of a single change, which are ignored by git
     sourceSets.getByName("main") {
-      kotlin.directories += "checks"
+      if (hasChecks) {
+        kotlin.directories += "checks"
+      }
       if (hasTestTools) {
         kotlin.directories += "tools"
       }
@@ -118,8 +176,9 @@ fun Project.configureAppTests(
     experimentalProperties["android.experimental.self-instrumenting"] = !inAppProcess
     if (inAppProcess) {
       // Microbenchmarks fail when the app isn't fully compiled ahead of time,
-      // benchmark plugin of AndroidX turns on the same
-      experimentalProperties["android.experimental.force-aot-compilation"] = true
+      // benchmark plugin of AndroidX turns on the same. Dry runs measure nothing,
+      // and the compilation takes about a minute before each run
+      experimentalProperties["android.experimental.force-aot-compilation"] = !isDryRun
     }
 
     // Tests inside app process need the key of the app, which is debug key when keystore isn't set
@@ -169,7 +228,25 @@ fun Project.configureAppTests(
           snapshotUserIds.joinToString(",")
         )
       }
+      if (snapshot.isPresent) {
+        variant.sources.assets?.addGeneratedSourceDirectory(
+          snapshotAsset,
+          SnapshotAssetTask::outputDirectory
+        )
+      }
     }
+  }
+  // The build cache would keep copies of the snapshot outside the clone
+  tasks
+    .named { (it.startsWith("merge") || it.startsWith("compress")) && it.endsWith("Assets") }
+    .configureEach {
+      outputs.doNotCacheIf("Assets of tests have the snapshot of accounts") { true }
+    }
+
+  tasks.register<DescribeHeapProfilesTask>("describeHeapProfiles") {
+    mustRunAfter(tasks.named { it.startsWith("connected") && it.endsWith("AndroidTest") })
+    results.set(layout.buildDirectory.dir("outputs/connected_android_test_additional_output"))
+    traceProcessor.set(providers.gradleProperty("traceProcessor"))
   }
 
   if (inAppProcess) {
@@ -205,8 +282,8 @@ private fun Project.findAppKeystore(): Keystore? {
 }
 
 /**
- * Tests of different modules install the same app,
- * and accounts from snapshot.zip must not be used by several apps at once
+ * Tests of different modules install the same app, a phone runs tests of one build at a time,
+ * and sessions of a snapshot must not be used by several apps at once
  */
 @Suppress("UnstableApiUsage")
 private fun Project.runTestsOnDeviceOneAtATime() {
@@ -215,7 +292,7 @@ private fun Project.runTestsOnDeviceOneAtATime() {
     SnapshotLockService::class.java
   ) {
     maxParallelUsages.set(1)
-    parameters.snapshot.set(isolated.rootProject.projectDirectory.file(SNAPSHOT_PATH))
+    parameters.snapshot.set(snapshotFile.orNull)
     parameters.locksDirectory.set(File(gradle.gradleUserHomeDir, "tgx-test-accounts"))
   }
   val adb = extensions.getByType(AndroidComponentsExtension::class.java).sdkComponents.adb
@@ -235,10 +312,10 @@ private fun Project.runTestsOnDeviceOneAtATime() {
   deviceTests.configureEach {
     usesService(snapshotLock)
     doFirst {
-      snapshotLock.get().lock()
-      if (name.startsWith("connected")) {
-        requireSingleDevice(adb.get().asFile)
-      }
+      // Tests on a phone build nothing, so other builds go on while they run
+      releaseBuildLock()
+      val serial = if (name.startsWith("connected")) requireSingleDevice(adb.get().asFile) else null
+      snapshotLock.get().lock(serial)
     }
   }
 }

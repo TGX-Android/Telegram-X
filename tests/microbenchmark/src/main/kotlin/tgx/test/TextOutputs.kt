@@ -26,7 +26,14 @@ private val MORE_TEXT_SAMPLES = listOf(
     "\nAnswer after the quote"
   ),
   TextSample("codeWord", code(MONOSPACE_WORD)),
-  TextSample("preWord", pre(MONOSPACE_WORD))
+  TextSample("preWord", pre(MONOSPACE_WORD)),
+  TextSample(
+    "phoneAfterMinus",
+    "Receive error [Error : 0 : Receive invalid user identifier], while parsing push payload " +
+      """{"loc_key":"READ_STORIES","loc_args":[],"custom":{"from_id":"-""",
+    phoneNumber("1005031786"),
+    """","max_id":"70"}"""
+  )
 )
 
 class TextOptions(private val name: String, val apply: Text.Builder.(text: String) -> Unit) {
