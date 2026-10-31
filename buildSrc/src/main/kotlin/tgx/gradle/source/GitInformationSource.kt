@@ -44,8 +44,8 @@ abstract class GitInformationSource : ValueSource<GitInformation, GitInformation
         ?: error("The build needs a remote of git with an address, ${dir.absolutePath} has none")
     }
 
-    private fun cleanRemoteUrl(remoteUrl: String): String {
-      val match = Regex("^(?:(https?|ssh)://)?(?:git@)?([a-zA-Z.0-9]+(?::\\d+)?)[/:]([a-zA-Z.0-9\\-_][a-zA-Z.0-9\\-_/]*)(?:\\.git)?$").matchEntire(remoteUrl)
+    internal fun cleanRemoteUrl(remoteUrl: String): String {
+      val match = Regex("^(?:(https?|ssh)://)?(?:git@)?([a-zA-Z.0-9]+(?::\\d+)?)[/:]([a-zA-Z.0-9\\-_][a-zA-Z.0-9\\-_/]*?)(?:\\.git)?$").matchEntire(remoteUrl)
       require(match != null && match.groupValues.size == 4) {
         "Failed to parse URL: $remoteUrl"
       }
