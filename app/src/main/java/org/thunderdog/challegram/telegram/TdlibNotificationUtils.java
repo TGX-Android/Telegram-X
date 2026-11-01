@@ -18,6 +18,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -65,9 +66,10 @@ public class TdlibNotificationUtils {
 
   public static Bitmap buildLargeIcon (Tdlib tdlib, TdApi.Chat chat, boolean allowDownload) {
     if (tdlib.isSelfChat(chat)) {
-      return buildSelfIcon(tdlib);
+      return buildSelfIcon(tdlib, chat.id);
     } else {
-      return buildLargeIcon(tdlib, chat.photo != null ? chat.photo.small : null, tdlib.chatAccentColor(chat), tdlib.chatLetters(chat), true, allowDownload);
+      return buildLargeIcon(tdlib, chat.id, chat.photo != null ? chat.photo.small : null,
+        tdlib.chatAccentColor(chat), tdlib.chatLetters(chat), true, allowDownload);
     }
   }
 
@@ -77,8 +79,14 @@ public class TdlibNotificationUtils {
     return Screen.dp(52f, MAX_DENSITY);
   }
 
-  public static Bitmap buildSelfIcon (Tdlib tdlib) {
-    Bitmap bitmap = null;
+  public static Bitmap buildSelfIcon (Tdlib tdlib, long chatId) {
+    final int size = iconSize();
+    final int color = Theme.getColor(ColorId.avatarSavedMessages, tdlib.settings().globalTheme());
+    final String key = "self_" + size + "_" + color;
+    Bitmap bitmap = cachedIcon(tdlib, chatId, key);
+    if (bitmap != null) {
+      return bitmap;
+    }
     synchronized (TdlibNotificationUtils.class) {
       if (fillingPaint == null) {
         fillingPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
@@ -100,11 +108,8 @@ public class TdlibNotificationUtils {
       lettersPaintFake.setTextSize(Screen.dp(20f, MAX_DENSITY));
 
       try {
-        int size = iconSize();
         Bitmap createdBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(createdBitmap);
-
-        final int color = Theme.getColor(ColorId.avatarSavedMessages, tdlib.settings().globalTheme());
 
         bitmapPaint.setColor(color);
         if (Device.ROUND_NOTIFICAITON_IMAGE) {
@@ -125,8 +130,8 @@ public class TdlibNotificationUtils {
           c.restore();
         }
 
-        bitmap = createdBitmap;
         U.recycle(c);
+        bitmap = cacheIcon(tdlib, chatId, key, createdBitmap);
       } catch (Throwable t) {
         Log.e(Log.TAG_FCM, "Cannot build large icon", t);
       }
@@ -135,39 +140,59 @@ public class TdlibNotificationUtils {
     return bitmap;
   }
 
-  public static Bitmap buildLargeIcon (Tdlib tdlib, TdApi.File rawFile, TdlibAccentColor accentColor, Letters letters, boolean allowSyncDownload, boolean allowDownload) {
-    Bitmap avatarBitmap = null;
+  public static Bitmap buildLargeIcon (Tdlib tdlib, long chatId, TdApi.File rawFile,
+    TdlibAccentColor accentColor, Letters letters, boolean allowSyncDownload,
+    boolean allowDownload) {
+    boolean fileLoaded = false;
     if (rawFile != null) {
       tdlib.files().syncFile(rawFile, null, 500);
-      boolean fileLoaded = TD.isFileLoadedAndExists(rawFile);
+      fileLoaded = TD.isFileLoadedAndExists(rawFile);
       if (!fileLoaded && allowSyncDownload && allowDownload) {
         tdlib.files().downloadFileSync(rawFile, TdlibFilesManager.PRIORITY_NOTIFICATION_AVATAR, 1000, null, null, null);
         fileLoaded = TD.isFileLoadedAndExists(rawFile);
       }
-      if (fileLoaded) {
-        ImageFile file = new ImageFile(tdlib, rawFile);
-        file.setSize(iconSize());
-        avatarBitmap = ImageCache.instance().getBitmap(file);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && avatarBitmap != null) {
-          if (avatarBitmap.getConfig() == Bitmap.Config.HARDWARE) {
-            avatarBitmap = null;
-          }
-        }
-        if (avatarBitmap == null) {
-          try {
-            avatarBitmap = ImageReader.decodeFile(rawFile.local.path, null);
-          } catch (Throwable t) {
-            Log.e(Log.TAG_FCM, "Cannot get local file for large icon, building placeholder...", t);
-          }
-        }
-      } else if (allowDownload) {
+      if (!fileLoaded && allowDownload) {
         if (!Config.DEBUG_DISABLE_DOWNLOAD) {
           tdlib.client().send(new TdApi.DownloadFile(rawFile.id, TdlibFilesManager.PRIORITY_NOTIFICATION_MEDIA, 0, 0, false), tdlib.silentHandler());
         }
       }
     }
 
-    Bitmap bitmap = null;
+    final int size = iconSize();
+    final @ThemeId int themeId = tdlib.settings().globalTheme();
+    final int color = Theme.toColorInt(accentColor.getPrimaryComplexColor(), themeId);
+    final int lettersColor = Theme.toColorInt(accentColor.getPrimaryContentComplexColor(), themeId);
+    final String key = fileLoaded ?
+      "avatar_" + rawFile.id + "_" + size + "_" + color :
+      "letters_" + letters.text + "_" + letters.needFakeBold + "_" + size + "_" + color + "_" +
+        lettersColor;
+    Bitmap bitmap = cachedIcon(tdlib, chatId, key);
+    if (bitmap != null) {
+      return bitmap;
+    }
+
+    Bitmap avatarBitmap = null;
+    if (fileLoaded) {
+      ImageFile file = new ImageFile(tdlib, rawFile);
+      file.setSize(size);
+      avatarBitmap = ImageCache.instance().getBitmap(file);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && avatarBitmap != null) {
+        if (avatarBitmap.getConfig() == Bitmap.Config.HARDWARE) {
+          avatarBitmap = null;
+        }
+      }
+      if (avatarBitmap == null) {
+        try {
+          BitmapFactory.Options opts = ImageReader.getImageSize(rawFile.local.path);
+          opts.inSampleSize = ImageReader.calculateInSampleSize(opts, size, size);
+          opts.inJustDecodeBounds = false;
+          avatarBitmap = ImageReader.decodeFile(rawFile.local.path, opts);
+        } catch (Throwable t) {
+          Log.e(Log.TAG_FCM, "Cannot get local file for large icon, building placeholder...", t);
+        }
+      }
+    }
+
     synchronized (TdlibNotificationUtils.class) {
       if (fillingPaint == null) {
         fillingPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
@@ -189,13 +214,8 @@ public class TdlibNotificationUtils {
       lettersPaintFake.setTextSize(Screen.dp(20f, MAX_DENSITY));
 
       try {
-        int size = iconSize();
         Bitmap createdBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(createdBitmap);
-
-        long complexColor = accentColor.getPrimaryComplexColor();
-        final @ThemeId int themeId = tdlib.settings().globalTheme();
-        final int color = Theme.toColorInt(complexColor, themeId);
 
         bitmapPaint.setColor(color);
         if (Device.ROUND_NOTIFICAITON_IMAGE) {
@@ -206,8 +226,6 @@ public class TdlibNotificationUtils {
         }
 
         if (avatarBitmap == null) {
-          final long lettersComplexColor = accentColor.getPrimaryContentComplexColor();
-          final int lettersColor = Theme.toColorInt(lettersComplexColor, themeId);
           final Paint paint = letters.needFakeBold ? lettersPaintFake : lettersPaint;
           paint.setColor(lettersColor);
           c.drawText(letters.text, size / 2f - U.measureText(letters.text, letters.needFakeBold ? lettersPaintFake : lettersPaint) / 2, size / 2f + Screen.dp(8f, MAX_DENSITY), paint);
@@ -218,14 +236,29 @@ public class TdlibNotificationUtils {
           c.drawBitmap(avatarBitmap, size / 2f - avatarBitmap.getWidth() / 2f, size / 2f - avatarBitmap.getHeight() / 2f, bitmapPaint);
           c.restore();
         }
-        bitmap = createdBitmap;
         U.recycle(c);
+        // An avatar that wasn't decoded isn't kept: it may decode next time
+        bitmap = fileLoaded && avatarBitmap == null ? createdBitmap :
+          cacheIcon(tdlib, chatId, key, createdBitmap);
       } catch (Throwable t) {
         Log.e(Log.TAG_FCM, "Cannot build large icon", t);
       }
     }
 
     return bitmap;
+  }
+
+  @Nullable
+  private static Bitmap cachedIcon (Tdlib tdlib, long chatId, String key) {
+    return Config.REUSE_NOTIFICATION_ICONS ?
+      tdlib.context().notificationIcons().get(tdlib.id(), chatId, key) : null;
+  }
+
+  private static Bitmap cacheIcon (Tdlib tdlib, long chatId, String key, Bitmap createdBitmap) {
+    if (!Config.REUSE_NOTIFICATION_ICONS) {
+      return createdBitmap;
+    }
+    return tdlib.context().notificationIcons().put(tdlib.id(), chatId, key, createdBitmap);
   }
 
   static PendingIntent newIntent (int accountId, long forLocalChatId, long specificMessageId) {

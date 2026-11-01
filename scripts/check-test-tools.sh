@@ -3,13 +3,16 @@
 # animations and scrolling, screenshots and recordings, check results before and after a change,
 # benchmarks and their comparison, microbenchmarks and minSdk check. Checks and benchmarks run on
 # connected test device, never on device with Telegram X, which may have real accounts.
-# Smoke checks are in tests/<module>/tools.
+# Smoke checks are in tests/<module>/tools. Checks of a change in tests/<module>/checks aren't
+# built, so that the result depends only on the tools.
 # describeTestToolsCheck task writes report to build/test-tools-check/report.md, where home path
 # and device serial are replaced. Report notes when connection to the device was lost,
 # which fails tests regardless of code.
 #
-# Usage: scripts/check-test-tools.sh [-y] [checks] [benchmark] [minsdk]
-# Without steps runs all of them, -y skips confirmation.
+# Usage: scripts/check-test-tools.sh [-y] [-PsnapshotFile=<path>] [checks] [benchmark] [minsdk]
+# Without steps runs all of them, -y skips confirmation. -PsnapshotFile is the snapshot of accounts
+# of the device, see "Session snapshot" in tests/README.md: without it, tests with accounts are
+# skipped.
 
 # Keeps computer awake during long builds and tests
 if [ -z "$TGX_AWAKE" ]; then
@@ -32,9 +35,11 @@ fail() {
 
 ASSUME_YES=false
 STEPS=""
+SNAPSHOT_FILE=""
 for arg in "$@"; do
   case $arg in
     -y) ASSUME_YES=true ;;
+    -PsnapshotFile=*) SNAPSHOT_FILE=${arg#-PsnapshotFile=} ;;
     checks|benchmark|minsdk) STEPS="${STEPS:+$STEPS }$arg" ;;
     *) fail "Unknown argument: $arg. Steps: checks, benchmark, minsdk" ;;
   esac
@@ -70,7 +75,8 @@ anonymize() {
 }
 
 gradle() {
-  ./gradlew --console=plain --continue -Ptgx.testTools "$@"
+  ./gradlew --console=plain --continue -Ptgx.testTools -Ptgx.checks=false \
+    ${SNAPSHOT_FILE:+"-PsnapshotFile=$SNAPSHOT_FILE"} "$@"
 }
 
 run() {
@@ -236,7 +242,7 @@ cleanup() {
 FLAVOR=Latest
 ABI=arm64
 HAS_SNAPSHOT=false
-if [ -f tests/core/src/main/assets/snapshot.zip ]; then
+if [ -n "$SNAPSHOT_FILE" ]; then
   HAS_SNAPSHOT=true
 fi
 NEEDS_DEVICE=false
@@ -315,7 +321,7 @@ fi
 echo "Steps: $STEPS"
 if $NEEDS_DEVICE; then
   echo "Device: $MODEL, Android $RELEASE (API $SDK_INT), $ABI, flavor $FLAVOR," \
-    "app.id $APP_ID, snapshot.zip: $HAS_SNAPSHOT"
+    "app.id $APP_ID, snapshot: $HAS_SNAPSHOT"
   echo -e "${STYLE_WARN}The script:
 - installs builds of $APP_ID and test apps on $MODEL, clears their data
   and removes them after tests, also when the script is interrupted;
@@ -364,7 +370,7 @@ trap 'exit 130' INT TERM
   )"
   if $NEEDS_DEVICE; then
     echo "- Device: $MODEL, Android $RELEASE (API $SDK_INT), $ABI, flavor $FLAVOR," \
-      "snapshot.zip: $HAS_SNAPSHOT"
+      "snapshot: $HAS_SNAPSHOT"
     echo "- Animation scales before tests: $(animation_scales)"
   fi
 } > "$OUT/header.md"
@@ -386,7 +392,7 @@ fi
 step_checks() {
   local ui_filter=(-Pandroid.testInstrumentationRunnerArguments.package=tgx)
   if ! $HAS_SNAPSHOT; then
-    ui_filter+=(-Pandroid.testInstrumentationRunnerArguments.notClass=tgx.test.AuthorizedLaunchTest)
+    ui_filter+=(-Pandroid.testInstrumentationRunnerArguments.notClass=tgx.test.AuthorizedLaunchTest,tgx.smoke.NotificationFloodCheck)
   fi
   animation_scales > "$OUT/scales-before-ui.txt"
   run clear gradle clearCheckResults

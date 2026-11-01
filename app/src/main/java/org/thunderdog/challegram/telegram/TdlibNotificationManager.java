@@ -2027,6 +2027,9 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @Override
   public void onPerformUserCleanup () {
     resetNotificationSettings(true);
+    if (Config.REUSE_NOTIFICATION_ICONS) {
+      tdlib.context().notificationIcons().releaseAccount(tdlib.id());
+    }
   }
 
   @Override
@@ -2155,7 +2158,20 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     boolean defaultShowPreview = defaultShowPreview(chatId);
     boolean hadPreview = oldNotificationSettings.useDefaultShowPreview ? defaultShowPreview : oldNotificationSettings.showPreview;
     boolean hasPreview = update.notificationSettings.useDefaultShowPreview ? defaultShowPreview : update.notificationSettings.showPreview;
-    if (hadPreview != hasPreview) {
+    // Icons of the chat leave when it can't notify anymore, see TdlibNotificationHelper.retainIcons
+    final TdApi.ChatNotificationSettings settings = update.notificationSettings;
+    final boolean isSwitched = Config.REUSE_NOTIFICATION_ICONS && (
+      settings.useDefaultMuteFor != oldNotificationSettings.useDefaultMuteFor ||
+      (settings.muteFor == 0) != (oldNotificationSettings.muteFor == 0) ||
+      settings.useDefaultDisableMentionNotifications !=
+        oldNotificationSettings.useDefaultDisableMentionNotifications ||
+      settings.disableMentionNotifications != oldNotificationSettings.disableMentionNotifications ||
+      settings.useDefaultDisablePinnedMessageNotifications !=
+        oldNotificationSettings.useDefaultDisablePinnedMessageNotifications ||
+      settings.disablePinnedMessageNotifications !=
+        oldNotificationSettings.disablePinnedMessageNotifications
+    );
+    if (hadPreview != hasPreview || isSwitched) {
       onUpdateNotifications(update.chatId);
     }
   }
@@ -2166,6 +2182,12 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     TdApi.ScopeNotificationSettings settings = update.notificationSettings;
     TdApi.ScopeNotificationSettings existingSettings = getScopeNotificationSettings(scope);
     boolean previewToggled = existingSettings != null && existingSettings.showPreview != settings.showPreview;
+    final boolean isSwitched = Config.REUSE_NOTIFICATION_ICONS && existingSettings != null && (
+      (existingSettings.muteFor == 0) != (settings.muteFor == 0) ||
+      existingSettings.disableMentionNotifications != settings.disableMentionNotifications ||
+      existingSettings.disablePinnedMessageNotifications !=
+        settings.disablePinnedMessageNotifications
+    );
     switch (scope.getConstructor()) {
       case TdApi.NotificationSettingsScopePrivateChats.CONSTRUCTOR:
         settingsForPrivateChats = settings;
@@ -2179,7 +2201,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       default:
         throw new RuntimeException();
     }
-    if (previewToggled) {
+    if (previewToggled || isSwitched) {
       onUpdateNotifications(scope);
     }
   }

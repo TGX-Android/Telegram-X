@@ -828,6 +828,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     params.addRule(RelativeLayout.ALIGN_TOP, R.id.msg_bottom);
 
     topBar = new CollapseListView(context);
+    topBar.setId(R.id.msg_topBar);
     topBar.setLayoutParams(params);
     topBar.setTotalHeightChangeListener(listView -> onMessagesFrameChanged());
 
