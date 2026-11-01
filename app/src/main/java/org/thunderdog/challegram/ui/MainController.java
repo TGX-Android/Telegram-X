@@ -2303,7 +2303,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return messageCaption != null;
   }
 
-  private static @Nullable TdApi.InputFileGenerated getGeneratedPhotoFile (TdApi.InputMessageContent content) {
+  private static @Nullable TdApi.InputFileGenerated getGeneratedPhotoFile (
+    TdApi.InputMessageContent content
+  ) {
     if (content.getConstructor() == TdApi.InputMessagePhoto.CONSTRUCTOR) {
       TdApi.InputFile file = ((TdApi.InputMessagePhoto) content).photo.photo;
       if (file.getConstructor() == TdApi.InputFileGenerated.CONSTRUCTOR) {
@@ -2353,8 +2355,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
             for (TdApi.InputMessageContent content : contents) {
               TdApi.InputFileGenerated file = getGeneratedPhotoFile(content);
               if (file != null) {
-                String conversion = PhotoGenerationInfo.editResolutionLimit(file.conversion, PhotoGenerationInfo.SIZE_LIMIT_HD);
-                ((TdApi.InputMessagePhoto) content).photo.photo = new TdApi.InputFileGenerated(file.originalPath, conversion, 0);
+                String conversion = PhotoGenerationInfo.editResolutionLimit(
+                  file.conversion, PhotoGenerationInfo.SIZE_LIMIT_HD
+                );
+                ((TdApi.InputMessagePhoto) content).photo.photo = new TdApi.InputFileGenerated(
+                  file.originalPath, conversion, file.expectedSize
+                );
               }
             }
           }

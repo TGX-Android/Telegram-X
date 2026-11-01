@@ -10363,10 +10363,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions modifiedSendOptions, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
-    return sendPhotosAndVideosCompressed(files, needGroupMedia, modifiedSendOptions, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler, false);
+    return sendPhotosAndVideosCompressed(
+      files, needGroupMedia, modifiedSendOptions, disableMarkdown, asFiles,
+      showCaptionAboveMedia, hasSpoiler, false
+    );
   }
 
-  public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions modifiedSendOptions, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler, boolean isHd) {
+  public boolean sendPhotosAndVideosCompressed (
+    final ImageGalleryFile[] files,
+    final boolean needGroupMedia,
+    final TdApi.MessageSendOptions modifiedSendOptions,
+    boolean disableMarkdown,
+    boolean asFiles,
+    boolean showCaptionAboveMedia,
+    boolean hasSpoiler,
+    boolean isHd
+  ) {
     if (files == null || files.length == 0) {
       return false;
     }
@@ -10432,8 +10444,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(new TdApi.InputVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo)), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
           }
         } else {
-          final boolean isFiltered = file.getFiltersState() != null && !file.getFiltersState().isEmpty();
-          final int sizeLimit = isHd && !isFiltered ? PhotoGenerationInfo.SIZE_LIMIT_HD : PhotoGenerationInfo.SIZE_LIMIT;
+          final int sizeLimit = PhotoGenerationInfo.sizeLimit(file, isHd);
           int[] size = new int[2];
           file.getOutputSize(size, sizeLimit);
 

@@ -1214,7 +1214,9 @@ public class ShareController extends TelegramViewController<ShareController.Args
       if (customDelegate != null && customDelegate.allowSendHd()) {
         if (items == null)
           items = new ArrayList<>();
-        items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_hd, Lang.getString(R.string.SendHd), R.drawable.baseline_hd_24)
+        items.add(0, new HapticMenuHelper.MenuItem(
+          R.id.btn_hd, Lang.getString(R.string.SendHd), R.drawable.baseline_hd_24
+        )
           .setIsCheckbox(true, customDelegate.isSendHdEnabled())
           .setOnClickListener((itemView, parentView, item) -> {
             if (itemView.getId() == R.id.btn_hd) {

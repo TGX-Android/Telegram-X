@@ -18,12 +18,13 @@ import android.os.Build;
 
 import androidx.annotation.CallSuper;
 
+import org.thunderdog.challegram.unsorted.Settings;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class MediaSpoilerSendDelegate implements MediaSendDelegate {
   private final AtomicBoolean showCaptionAboveMedia = new AtomicBoolean();
   private final AtomicBoolean hideMedia = new AtomicBoolean();
-  private final AtomicBoolean sendHd = new AtomicBoolean();
 
   @Override
   public final boolean allowHideMedia () {
@@ -48,12 +49,12 @@ public abstract class MediaSpoilerSendDelegate implements MediaSendDelegate {
 
   @Override
   public boolean isSendHdEnabled () {
-    return allowSendHd() && sendHd.get();
+    return allowSendHd() && Settings.instance().getNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS);
   }
 
   @Override
   public void onSendHdStateChanged (boolean sendHd) {
-    this.sendHd.set(sendHd);
+    Settings.instance().setNewSetting(Settings.SETTING_FLAG_SEND_HD_PHOTOS, sendHd);
   }
 
   @Override

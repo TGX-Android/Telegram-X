@@ -51,6 +51,7 @@ import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
+import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.ImageVideoThumbFile;
 import org.thunderdog.challegram.loader.Receiver;
@@ -502,7 +503,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   // Photo
 
   private static final float MAX_HEIGHT_FACTOR = 1.7f;
-  public static final int MAX_BITMAP_SIZE = 1024;
+  public static final int MAX_BITMAP_SIZE = ImageReader.LARGE_IMAGE_LIMIT;
 
   public static boolean applyMaxSize (ImageFile file, TdApi.PhotoSize size) {
     return applyMaxSize(file, size.width, size.height);

@@ -8941,9 +8941,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (chat != null && !hasFlag(Args.FLAG_DISALLOW_SEND_BUTTON_HAPTIC_MENU)) {
       tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, () -> true, hapticItems -> {
         MediaItem currentItem = stack.getCurrent();
-        if (sendDelegate != null && sendDelegate.allowSendHd() && currentItem != null && !currentItem.isVideo()) {
+        if (
+          sendDelegate != null && sendDelegate.allowSendHd() &&
+          currentItem != null && !currentItem.isVideo()
+        ) {
           hapticItems.add(0,
-            new HapticMenuHelper.MenuItem(R.id.btn_hd, Lang.getString(R.string.SendHd), R.drawable.baseline_hd_24)
+            new HapticMenuHelper.MenuItem(
+              R.id.btn_hd, Lang.getString(R.string.SendHd), R.drawable.baseline_hd_24
+            )
               .setIsCheckbox(true, sendDelegate.isSendHdEnabled())
               .setOnClickListener((view, parentView, item) -> {
                 if (view.getId() == R.id.btn_hd) {

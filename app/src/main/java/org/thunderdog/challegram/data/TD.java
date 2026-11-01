@@ -116,8 +116,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.android.html.HtmlEncoder;
 import me.vkryl.android.html.HtmlParser;
@@ -4245,46 +4246,61 @@ public class TD {
     }
     for (DownloadedFile file : files) {
       if (file.fullSizeFile != null) {
-        new Thread(() -> {
-          downloadFullSizeFiles(files);
-          saveFilesImpl(context, files);
-        }, "SaveFullSizeFiles").start();
+        downloadFullSizeFiles(files, () -> saveFilesImpl(context, files));
         return;
       }
     }
     saveFilesImpl(context, files);
   }
 
-  @WorkerThread
-  private static void downloadFullSizeFiles (List<DownloadedFile> files) {
+  private static void downloadFullSizeFiles (List<DownloadedFile> files, Runnable onComplete) {
     List<DownloadedFile> pending = new ArrayList<>();
     for (DownloadedFile file : files) {
       TdApi.File fullSizeFile = file.fullSizeFile;
-      if (fullSizeFile != null && fullSizeFile.local.canBeDownloaded && !TD.isFileLoadedAndExists(fullSizeFile)) {
+      if (
+        fullSizeFile != null &&
+        fullSizeFile.local.canBeDownloaded &&
+        !TD.isFileLoadedAndExists(fullSizeFile)
+      ) {
         pending.add(file);
       }
     }
     if (pending.isEmpty()) {
+      onComplete.run();
       return;
     }
-    CountDownLatch latch = new CountDownLatch(pending.size());
+    AtomicInteger remaining = new AtomicInteger(pending.size());
+    AtomicBoolean isFinished = new AtomicBoolean();
+    Runnable finish = () -> {
+      if (!isFinished.compareAndSet(false, true)) {
+        return;
+      }
+      for (DownloadedFile file : pending) {
+        if (!TD.isFileLoaded(file.fullSizeFile)) {
+          file.tdlib.send(
+            new TdApi.CancelDownloadFile(file.fullSizeFile.id, false),
+            file.tdlib.typedOkHandler()
+          );
+        }
+      }
+      onComplete.run();
+    };
     for (DownloadedFile file : pending) {
       TdApi.File fullSizeFile = file.fullSizeFile;
-      file.tdlib.client().send(new TdApi.DownloadFile(fullSizeFile.id, TdlibFilesManager.PRIORITY_USER_REQUEST_DOWNLOAD, 0, 0, true), result -> {
+      file.tdlib.client().send(new TdApi.DownloadFile(
+        fullSizeFile.id,
+        TdlibFilesManager.PRIORITY_USER_REQUEST_DOWNLOAD,
+        0, 0, true
+      ), result -> {
         if (result.getConstructor() == TdApi.File.CONSTRUCTOR) {
           Td.copyTo((TdApi.File) result, fullSizeFile);
         }
-        latch.countDown();
+        if (remaining.decrementAndGet() == 0) {
+          finish.run();
+        }
       });
     }
-    try {
-      latch.await(1, TimeUnit.MINUTES);
-    } catch (InterruptedException ignored) { }
-    for (DownloadedFile file : pending) {
-      if (!TD.isFileLoaded(file.fullSizeFile)) {
-        file.tdlib.send(new TdApi.CancelDownloadFile(file.fullSizeFile.id, false), file.tdlib.typedOkHandler());
-      }
-    }
+    Background.instance().post(finish, (int) TimeUnit.MINUTES.toMillis(1));
   }
 
   private static void saveFilesImpl (BaseActivity context, List<DownloadedFile> files) {
@@ -6343,9 +6359,9 @@ public class TD {
         content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(new TdApi.InputVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo)), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
       }
     } else {
-      final boolean isFiltered = file.getFiltersState() != null && !file.getFiltersState().isEmpty();
-      final int resolutionLimit = isFiltered ? 0 : PhotoGenerationInfo.preferredResolutionLimit();
-      final int sizeLimit = resolutionLimit != 0 ? resolutionLimit : PhotoGenerationInfo.SIZE_LIMIT;
+      final int sizeLimit = PhotoGenerationInfo.sizeLimit(
+        file, PhotoGenerationInfo.preferredResolutionLimit() != 0
+      );
       int[] size = new int[2];
       file.getOutputSize(size, sizeLimit);
 

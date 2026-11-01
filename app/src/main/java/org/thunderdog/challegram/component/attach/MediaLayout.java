@@ -1579,7 +1579,9 @@ public class MediaLayout extends FrameLayoutFix implements
       hdMediaView.setScaleType(ImageView.ScaleType.CENTER);
       hdMediaView.setAlpha(allowHd ? 1f : 0f);
       updateHdMediaView();
-      hdMediaView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
+      hdMediaView.setLayoutParams(FrameLayoutFix.newParams(
+        Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT
+      ));
       bottomBar.addView(hdMediaView);
 
       params = FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT);
@@ -1665,7 +1667,10 @@ public class MediaLayout extends FrameLayoutFix implements
 
   private void updateAllowHd () {
     MediaBottomBaseController<?> c = getCurrentController();
-    setAllowHd(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && target != null && c != null && c.allowHd() && selectionHasPhotos);
+    setAllowHd(
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+      target != null && c != null && c.allowHd() && selectionHasPhotos
+    );
   }
 
   private void setAllowHd (boolean allowHd) {

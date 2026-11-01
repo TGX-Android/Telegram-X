@@ -33,7 +33,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.filegen.TdlibFileGenerationManager;
 import org.thunderdog.challegram.loader.svg.SvgRender;
 import org.thunderdog.challegram.support.Mp3Support;
@@ -51,6 +50,8 @@ import java.nio.channels.FileChannel;
 import me.vkryl.core.StringUtils;
 
 public class ImageReader {
+  public static final int LARGE_IMAGE_LIMIT = 1024;
+
   private static ImageReader instance;
 
   public static ImageReader instance () {
@@ -245,13 +246,10 @@ public class ImageReader {
       if (limitSize != 0) {
         opts.inSampleSize = calculateInSampleSize(opts, limitSize, limitSize);
       }
-      if (limitSize >= MediaWrapper.MAX_BITMAP_SIZE) {
-        int maxSide = Math.max(opts.outWidth, opts.outHeight);
-        int sampleSize = 1;
-        while (maxSide / sampleSize > limitSize * 3 / 2) {
-          sampleSize *= 2;
-        }
-        opts.inSampleSize = sampleSize;
+      if (limitSize >= LARGE_IMAGE_LIMIT) {
+        opts.inSampleSize = calculateLargeImageSampleSize(
+          Math.max(opts.outWidth, opts.outHeight), limitSize
+        );
       }
     }
 
@@ -616,6 +614,15 @@ public class ImageReader {
     }
 
     listener.onImageLoaded(bitmap != null, bitmap);
+  }
+
+  private static int calculateLargeImageSampleSize (int maxSide, int limitSize) {
+    final int maxDecodedSide = limitSize + limitSize / 2;
+    int sampleSize = 1;
+    while (maxSide / sampleSize > maxDecodedSide) {
+      sampleSize *= 2;
+    }
+    return sampleSize;
   }
 
   public static int calculateInSampleSize (int width, int height, int reqWidth, int reqHeight) {

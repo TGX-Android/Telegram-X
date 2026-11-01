@@ -297,7 +297,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         }
       }
       TdApi.PhotoSize biggestSize = Td.findBiggest(photo.sizes);
-      if (biggestSize != null && targetSize != null && biggestSize.photo.id != targetSize.photo.id && (biggestSize.photo.local.canBeDownloaded || TD.isFileLoadedAndExists(biggestSize.photo))) {
+      if (
+        biggestSize != null && targetSize != null &&
+        biggestSize.photo.id != targetSize.photo.id &&
+        (biggestSize.photo.local.canBeDownloaded || TD.isFileLoadedAndExists(biggestSize.photo))
+      ) {
         previewSize = targetSize;
         targetSize = biggestSize;
       }
