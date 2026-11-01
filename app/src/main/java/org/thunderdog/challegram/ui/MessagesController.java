@@ -11320,6 +11320,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (chat == null) {
       return;
     }
+    manager.updateDateSeparators();
     manager.updateTimeFormat();
     if (headerCell != null) {
       headerCell.setChat(tdlib, chat, messageThread);

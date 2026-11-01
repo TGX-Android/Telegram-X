@@ -5336,6 +5336,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
+  public int getMergeFlags () {
+    return flags & (MESSAGE_FLAG_IS_BOTTOM | MESSAGE_FLAG_HAS_OLDER_MESSAGE |
+      MESSAGE_FLAG_BELOW_HEADER | FLAG_MERGE_FORWARD | FLAG_MERGE_BOTTOM | FLAG_HEADER_ENABLED |
+      FLAG_SHOW_TICKS | FLAG_SHOW_BADGE | FLAG_SHOW_DATE | FLAG_EXTRA_PADDING);
+  }
+
   public boolean isForward () {
     return msg.forwardInfo != null;
   }

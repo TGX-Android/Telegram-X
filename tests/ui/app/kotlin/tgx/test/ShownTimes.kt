@@ -26,7 +26,8 @@ private const val TAG = "ShownTimes"
  * `ShownTimes` the numbers of chats of the list and messages of the open chat seen on the screen
  * and of those whose time is old, and of changes of the time format that the app heard since the
  * first broadcast, as `chats 9, old 0, messages 12, old 0, changes 0`, then each old one as
- * `old <shown> instead of <now>`
+ * `old <shown> instead of <now>`. With `--es action merges` it logs each message of the open chat
+ * on the screen as `message <id> top <y> merge <flags> <index> date <date above it or null>`
  */
 class ShownTimesReceiver : BroadcastReceiver() {
   companion object {
@@ -35,6 +36,12 @@ class ShownTimesReceiver : BroadcastReceiver() {
   }
 
   override fun onReceive(context: Context, intent: Intent) {
+    if (intent.getStringExtra("action") == "merges") {
+      UI.post {
+        UI.getUiContext()?.window?.decorView?.let { logMerges(it) }
+      }
+      return
+    }
     UI.post {
       if (counter == null) {
         counter = object : DateChangeListener {
@@ -74,6 +81,25 @@ class ShownTimesReceiver : BroadcastReceiver() {
     if (view is ViewGroup) {
       for (i in 0 until view.childCount) {
         collect(view.getChildAt(i), chats, messages)
+      }
+    }
+  }
+
+  private fun logMerges(view: View) {
+    if (view is MessageView) {
+      val message = view.message ?: return
+      val location = IntArray(2).also { view.getLocationOnScreen(it) }
+      val date = TGMessage::class.java.getDeclaredField("date").apply { isAccessible = true }
+      Log.i(
+        TAG,
+        "message ${message.id} top ${location[1]} merge ${message.mergeFlags} " +
+          "${message.mergeIndex} date ${if (message.hasDate()) date.get(message) else null}"
+      )
+      return
+    }
+    if (view is ViewGroup) {
+      for (i in 0 until view.childCount) {
+        logMerges(view.getChildAt(i))
       }
     }
   }

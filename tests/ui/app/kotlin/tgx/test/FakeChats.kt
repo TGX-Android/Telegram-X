@@ -382,8 +382,9 @@ class FakeChats private constructor(private val tdlib: Tdlib) : Client.Intercept
 /**
  * Made-up chats driven by broadcasts of tests, e.g.
  * `adb shell am broadcast -n org.example.tgx/tgx.test.FakeChatReceiver --es action chats`:
- * `chats` makes a chat of each kind with a message, logged as `chat <kind> <id>`, `open` with
- * `--el chat <id>` opens a chat
+ * `chats` makes a chat of each kind with a message, logged as `chat <kind> <id>`, `dated` with
+ * `--ela dates <seconds>,…` a private chat with a message at each date, logged as
+ * `chat dated <id> messages <ids>`, `open` with `--el chat <id>` opens a chat
  */
 class FakeChatReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
@@ -408,6 +409,16 @@ class FakeChatReceiver : BroadcastReceiver() {
           fake.addMessage(chat.id, TdApi.MessageText(text, null, null), outgoing = false)
           Log.i(TAG, "chat $kind ${chat.id}")
         }
+      }
+      "dated" -> {
+        val chat = fake.addPrivateChat(fake.addUser("Dana", "Moss", 1))
+        val ids = (intent.getLongArrayExtra("dates") ?: longArrayOf()).map { date ->
+          val text = TdApi.FormattedText("A message at $date", arrayOf())
+          fake.addMessage(
+            chat.id, TdApi.MessageText(text, null, null), outgoing = false, date = date.toInt()
+          ).id
+        }
+        Log.i(TAG, "chat dated ${chat.id} messages ${ids.joinToString(",")}")
       }
       "open" -> {
         val chatId = intent.getLongExtra("chat", 0)
