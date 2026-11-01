@@ -3757,7 +3757,7 @@ public class TD {
         // TODO rich message
         break;
       default:
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_cc875c63();
         break;
     }
     return false;
@@ -5566,7 +5566,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_cc875c63();
         break;
     }
     return false;

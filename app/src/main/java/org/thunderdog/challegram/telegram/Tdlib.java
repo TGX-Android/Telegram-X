@@ -4833,7 +4833,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_cc875c63();
         break;
     }
 
@@ -4917,7 +4917,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_f7758f8b();
+      Td.assertMessageContent_cc875c63();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -7613,7 +7613,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
       default: {
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_cc875c63();
         break;
       }
     }
@@ -10561,6 +10561,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateTonWalletState.CONSTRUCTOR:
       case TdApi.UpdateTonWalletTonConnectSession.CONSTRUCTOR:
       case TdApi.UpdateTonWalletTonConnectSessionDisconnectRequired.CONSTRUCTOR:
+      case TdApi.UpdateWebProxyCarrierOpened.CONSTRUCTOR:
+      case TdApi.UpdateWebProxyCarrierData.CONSTRUCTOR:
+      case TdApi.UpdateWebProxyCarrierClosed.CONSTRUCTOR:
         break;
 
       // for bots only.
@@ -10592,7 +10595,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_c11d0a6d();
+        Td.assertUpdate_2a2bec96();
         throw Td.unsupported(update);
       }
     }
@@ -11619,11 +11622,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
         case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
         case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
+        case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
           // None of these messages ever passed to this method,
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_f7758f8b();
+          Td.assertMessageContent_cc875c63();
           throw Td.unsupported(message.content);
       }
     }
