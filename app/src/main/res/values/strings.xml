@@ -5892,7 +5892,7 @@
 
   <string name="JoinRequestChannelAdminNotice">%1$s is an admin of %2$s, a channel you requested to join. %3$s</string>
   <string name="JoinRequestGroupAdminNotice">%1$s is an admin of %2$s, a group you requested to join. %3$s</string>
-  <string name="ChatActionBarJoinRequestLearnMore">Learn more</string>
+  <string name="ChatActionBarLearnMore">Learn more</string>
   <string name="IUnderstand">I understand</string>
   <string name="JoinRequestGroupAdminTitle">Chat with group\'s admin</string>
   <string name="JoinRequestChannelAdminTitle">Chat with channel\'s admin</string>
@@ -5909,8 +5909,7 @@
   <string name="JoinRequestDate_yesterday">yesterday at %1$s</string>
   <string name="JoinRequestDate_weekday">on %1$s at %2$s</string>
   <string name="JoinRequestDate_date">on %1$s at %2$s</string>
-  <string name="ChatActionBarEmojiStatusNotice">**%1$s** is using %2$s as a custom emoji status next to their name. **%3$s**</string>
-  <string name="ChatActionBarEmojiStatusLearnMore">Learn more</string>
+  <string name="ChatActionBarEmojiStatusNotice">%1$s is using %2$s as a custom emoji status next to their name. %3$s</string>
 
   <string name="DeactivatedBot">deactivated bot</string>
 

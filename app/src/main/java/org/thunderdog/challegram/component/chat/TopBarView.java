@@ -183,6 +183,11 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     topDismissButton.setScaleType(ImageView.ScaleType.CENTER);
     topDismissButton.setColorFilter(Theme.iconColor());
     topDismissButton.setImageResource(R.drawable.baseline_close_18);
+    topDismissButton.setLayoutParams(FrameLayoutFix.newParams(
+      Screen.dp(DISMISS_SIZE_DP),
+      ViewGroup.LayoutParams.MATCH_PARENT,
+      Lang.gravity() | Gravity.TOP
+    ));
     topDismissButton.setBackgroundResource(R.drawable.bg_btn_header);
     Views.setClickable(topDismissButton);
     topDismissButton.setVisibility(View.INVISIBLE);
@@ -217,6 +222,12 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     return Math.max(getMeasuredHeight(), Screen.dp(ACTIONS_HEIGHT_DP));
   }
 
+  private boolean noticeVisible;
+
+  public int getNoticeInset () {
+    return noticeVisible ? getVisualHeight() : 0;
+  }
+
   public void setItems (Item... items) {
     clearItems();
 
@@ -235,11 +246,10 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     // Notices, icons and right-side dismiss are only supported by the new layout
     showDismissRight &= useNewLayout;
     hasNotice &= useNewLayout;
+    noticeVisible = hasNotice;
 
     boolean dismissInNotice = showDismissRight && actionCount == 0;
     int actionsHeight = Screen.dp(ACTIONS_HEIGHT_DP);
-    actionsList.getLayoutParams().height = useNewLayout ?
-      actionsHeight : ViewGroup.LayoutParams.MATCH_PARENT;
     int dismissSpace = showDismissRight && actionCount > 0 ?
       Screen.dp(DISMISS_SIZE_DP) : 0;
     int startPadding = useNewLayout ? Screen.dp(CONTENT_HORIZONTAL_PADDING_DP) : 0;

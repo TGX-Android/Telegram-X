@@ -221,7 +221,6 @@ import org.thunderdog.challegram.ui.camera.CameraAccessImageView;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
-import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.Permissions;
@@ -729,6 +728,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     messagesView.setController(this);
     messagesView.setHasFixedSize(true);
     messagesView.setLayoutManager(messagesManager);
+    messagesView.setClipToPadding(false);
     messagesView.setLayoutParams(params);
     Views.setScrollBarPosition(messagesView);
     if (Config.HARDWARE_MESSAGES_LIST) {
@@ -872,6 +872,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                                           oldLeft, oldTop, oldRight, oldBottom) -> {
       if (bottom - top != oldBottom - oldTop) {
         topBar.notifyItemHeightChanged(actionItem);
+        updateActionBarNoticeInset();
       }
     });
 
@@ -8238,33 +8239,44 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     String name = tdlib.cache().userFirstName(user.id);
-    String learnMoreText = Lang.getString(R.string.ChatActionBarEmojiStatusLearnMore);
+    actionBarEmojiStatusId = customEmojiId;
+    FormattedText emoji = FormattedText.customEmoji(
+      tdlib, Config.CHAT_ACTION_BAR_EMOJI_STATUS_FALLBACK, customEmojiId
+    );
+    FormattedText learnMore = new FormattedText(
+      Lang.getString(R.string.ChatActionBarLearnMore)
+    ).allClickable(this, new ClickableSpan() {
+      @Override
+      public void onClick (@NonNull View widget) {
+        tdlib.ui().openUrl(MessagesController.this, EMOJI_STATUS_INFO_URL, null);
+      }
+    }, true, null);
     CharSequence text = Lang.getString(
       R.string.ChatActionBarEmojiStatusNotice,
-      (target, start, end, index, needFakeBold) -> index == 1 ?
-        TD.toDisplaySpan(new TdApi.TextEntityTypeCustomEmoji(customEmojiId)) :
-        index == 2 ? TD.toDisplaySpan(new TdApi.TextEntityTypeTextUrl(EMOJI_STATUS_INFO_URL)) :
-        null,
-      Lang.escapeMarkdown(name), EmojiStatusHelper.EMOJI,
-      Lang.escapeMarkdown(learnMoreText)
+      (target, argStart, argEnd, argIndex, needFakeBold) ->
+        argIndex == 1 ? emoji : argIndex == 2 ? learnMore : Lang.newBoldSpan(needFakeBold),
+      name, emoji, learnMore
     );
-    TdApi.FormattedText formattedText = TD.toFormattedText(text, false);
-    TD.parseMarkdownWithEntities(formattedText);
-    FormattedText notice = FormattedText.valueOf(
-      this, formattedText, new TdlibUi.UrlOpenParameters().controller(this)
-    );
-    items.add(new TopBarView.Item(notice).setShowDismissRight());
+    items.add(new TopBarView.Item(FormattedText.valueOf(text, tdlib, null)).setShowDismissRight());
   }
 
-  private TopBarView.Item newJoinRequestItem (TdApi.ChatActionBarJoinRequest joinRequest, long chatId) {
-    FormattedText learnMore = new FormattedText(Lang.getString(R.string.ChatActionBarJoinRequestLearnMore)).allClickable(this, new ClickableSpan() {
+  private TopBarView.Item newJoinRequestItem (
+    TdApi.ChatActionBarJoinRequest joinRequest,
+    long chatId
+  ) {
+    FormattedText learnMore = new FormattedText(
+      Lang.getString(R.string.ChatActionBarLearnMore)
+    ).allClickable(this, new ClickableSpan() {
       @Override
       public void onClick (@NonNull View widget) {
         showJoinRequestInfo(joinRequest);
       }
     }, true, null);
-    CharSequence text = Lang.getString(joinRequest.isChannel ? R.string.JoinRequestChannelAdminNotice : R.string.JoinRequestGroupAdminNotice,
-      (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 2 ? learnMore : Lang.newBoldSpan(needFakeBold),
+    CharSequence text = Lang.getString(
+      joinRequest.isChannel ?
+        R.string.JoinRequestChannelAdminNotice : R.string.JoinRequestGroupAdminNotice,
+      (target, argStart, argEnd, argIndex, needFakeBold) ->
+        argIndex == 2 ? learnMore : Lang.newBoldSpan(needFakeBold),
       tdlib.cache().userFirstName(tdlib.chatUserId(chatId)), joinRequest.title, learnMore
     );
     return new TopBarView.Item(FormattedText.valueOf(text, tdlib, null))
@@ -8274,9 +8286,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void showJoinRequestInfo (TdApi.ChatActionBarJoinRequest joinRequest) {
     AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
-    b.setTitle(Lang.getString(joinRequest.isChannel ? R.string.JoinRequestChannelAdminTitle : R.string.JoinRequestGroupAdminTitle));
+    b.setTitle(Lang.getString(
+      joinRequest.isChannel ?
+        R.string.JoinRequestChannelAdminTitle : R.string.JoinRequestGroupAdminTitle
+    ));
     if (joinRequest.requestDate > 0) {
-      String date = Lang.getRelativeDate(joinRequest.requestDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, false, 0, R.string.JoinRequestDate, false);
+      String date = Lang.getRelativeDate(
+        joinRequest.requestDate, TimeUnit.SECONDS,
+        tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
+        false, 0, R.string.JoinRequestDate, false
+      );
       b.setMessage(Lang.getStringBold(R.string.JoinRequestAdminInfo, joinRequest.title, date));
     } else {
       b.setMessage(Lang.getStringBold(R.string.JoinRequestAdminInfoNoDate, joinRequest.title));
@@ -8479,6 +8498,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
       actionView.setItems(items.toArray(new TopBarView.Item[0]));
     }
     topBar.setItemVisible(actionItem, !items.isEmpty(), isFocused());
+    actionBarShown = !items.isEmpty();
+    updateActionBarNoticeInset();
+  }
+
+  private boolean actionBarShown;
+
+  private void updateActionBarNoticeInset () {
+    int inset = actionBarShown ? actionView.getNoticeInset() : 0;
+    if (messagesView.getPaddingTop() != inset) {
+      Views.setPaddingTop(messagesView, inset);
+    }
   }
 
   // Callback shit
