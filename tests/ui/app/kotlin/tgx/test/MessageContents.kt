@@ -984,6 +984,7 @@ private fun giftMessage(
     false, // isSaved
     false, // isPrepaidUpgrade
     isReceiver, // canBeUpgraded
+    false, // canBeDeleted
     false, // wasConverted
     false, // wasUpgraded
     false, // wasRefunded
@@ -1011,6 +1012,7 @@ private fun upgradedGift(sticker: TdApi.Sticker, ownerId: Long) =
     "", // ownerAddress
     "", // ownerName
     "", // giftAddress
+    false, // canBeTonWalletCardBackground
     TdApi.UpgradedGiftModel(
       "Golden Paw",
       sticker,
