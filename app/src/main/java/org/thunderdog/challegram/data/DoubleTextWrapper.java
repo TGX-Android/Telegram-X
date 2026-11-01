@@ -34,6 +34,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
+import org.thunderdog.challegram.telegram.DateManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.theme.ColorId;
@@ -83,6 +84,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
 
   private CharSequence subtitle;
   private Text trimmedSubtitle;
+  private int timeFormatVersion;
 
   private AvatarPlaceholder avatarPlaceholder;
   private EmojiStatusHelper.EmojiStatusDrawable emojiStatusDrawable;
@@ -298,6 +300,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   public void updateSubtitle () {
+    timeFormatVersion = DateManager.timeFormatVersion();
     CharSequence description = needFullDescription ? TD.getMemberDescription(new TdlibContext(null, tdlib), memberInfo, false) : null;
     if (!StringUtils.isEmpty(description)) {
       setSubtitle(description);
@@ -589,6 +592,9 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   public <T extends View & DrawableProvider> void draw (T view, Receiver receiver, Canvas c, ComplexReceiver emojiStatusReceiver) {
+    if (userId != 0 && timeFormatVersion != DateManager.timeFormatVersion()) {
+      updateSubtitle();
+    }
     int left = Screen.dp(72f);
     int viewWidth = view.getMeasuredWidth();
 

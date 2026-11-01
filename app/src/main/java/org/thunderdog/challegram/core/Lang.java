@@ -2251,10 +2251,15 @@ public class Lang {
     return -1;
   }
 
+  // A relative date is a duration, e.g. "5 minutes ago", from 5 minutes ahead to 4 hours ago, and
+  // a time or a date otherwise
+  private static final long RELATIVE_DURATION_FROM_SECONDS = -5 * 60;
+  private static final int RELATIVE_DURATION_HOURS = 4;
+
   public static String getRelativeDate (long unixTime, TimeUnit unit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds, @StringRes int res, boolean approximate) {
     if (allowDuration) {
       long difference = fromUnit.toSeconds(fromUnixTime) - unit.toSeconds(unixTime);
-      if (difference >= -5 * 60) {
+      if (difference >= RELATIVE_DURATION_FROM_SECONDS) {
         if (difference < justNowSeconds)
           return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.NOW));
         if (difference < 60)
@@ -2263,7 +2268,7 @@ public class Lang {
         if (difference < 60)
           return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.MINUTES), (int) difference);
         difference /= 60;
-        if (difference < 4)
+        if (difference < RELATIVE_DURATION_HOURS)
           return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.HOURS), (int) difference);
       }
     }
@@ -2312,6 +2317,23 @@ public class Lang {
       }
       return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.DATE), date, time);
     }
+  }
+
+  public static boolean isRelativeDateFormatted (
+    long unixTime,
+    TimeUnit unit,
+    long fromUnixTime,
+    TimeUnit fromUnit,
+    boolean allowDuration
+  ) {
+    // Whether getRelativeDate shows a time or a date, which follow the time zone and the format,
+    // rather than "just now" or a duration, e.g. "5 minutes ago"
+    if (allowDuration) {
+      long difference = fromUnit.toSeconds(fromUnixTime) - unit.toSeconds(unixTime);
+      return difference < RELATIVE_DURATION_FROM_SECONDS ||
+        difference >= TimeUnit.HOURS.toSeconds(RELATIVE_DURATION_HOURS);
+    }
+    return true;
   }
 
   public static long getNextRelativeDateUpdateMs (long unixTime, TimeUnit unit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds) {

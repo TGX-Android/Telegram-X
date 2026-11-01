@@ -39,6 +39,7 @@ import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
@@ -99,6 +100,16 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private @Nullable AvatarReceiver avatarReceiver;
   private @Nullable SenderTextView senderTextView;
   private @Nullable TextView dateTextView;
+  private int date;
+
+  private final DateChangeListener dateChangeListener = new DateChangeListener() {
+    @Override
+    public void onTimeFormatChanged () {
+      if (dateTextView != null) {
+        dateTextView.setText(Lang.dateYearShortTime(date, TimeUnit.SECONDS));
+      }
+    }
+  };
   private boolean isProtected;
 
   private TranslationControllerV2 (Context context, Tdlib tdlib, Wrapper parent) {
@@ -114,6 +125,12 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   @Override
   public boolean supportsBottomInset () {
     return true;
+  }
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    tdlib.context().dateManager().removeListener(dateChangeListener);
   }
 
   @Override
@@ -214,7 +231,9 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
         dateTextView.setTextColor(Theme.getColor(ColorId.textLight));
         dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         dateTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
-        dateTextView.setText(Lang.dateYearShortTime(forwardTime > 0 ? forwardTime : message.getComparingDate(), TimeUnit.SECONDS));
+        date = forwardTime > 0 ? forwardTime : message.getComparingDate();
+        dateTextView.setText(Lang.dateYearShortTime(date, TimeUnit.SECONDS));
+        tdlib.context().dateManager().addListener(dateChangeListener);
         dateTextView.setMaxLines(1);
         linearLayout.addView(dateTextView, LayoutHelper.createLinear(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, Gravity.RIGHT | Gravity.CENTER_VERTICAL, Screen.dp(12), 0, 0, 0));
       }

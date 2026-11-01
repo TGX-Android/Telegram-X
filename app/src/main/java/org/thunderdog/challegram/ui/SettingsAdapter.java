@@ -60,10 +60,12 @@ import org.thunderdog.challegram.mediaview.paint.ColorPaletteView;
 import org.thunderdog.challegram.mediaview.paint.widget.ColorToneView;
 import org.thunderdog.challegram.navigation.DrawerItemView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
@@ -216,14 +218,33 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     this.noEmptyProgress = true;
   }
 
+  private final DateChangeListener dateChangeListener = new DateChangeListener() {
+    @Override
+    public void onTimeFormatChanged () {
+      updateAllValuedSettings();
+      updateAllSessions();
+      for (RecyclerView parentView : parentViews) {
+        for (int i = 0; i < parentView.getChildCount(); i++) {
+          parentView.getChildAt(i).invalidate();
+        }
+      }
+    }
+  };
+
   @Override
   public void onAttachedToRecyclerView (RecyclerView recyclerView) {
+    if (parentViews.isEmpty()) {
+      TdlibManager.instance().dateManager().addListener(dateChangeListener);
+    }
     parentViews.add(recyclerView);
   }
 
   @Override
   public void onDetachedFromRecyclerView (RecyclerView recyclerView) {
     parentViews.remove(recyclerView);
+    if (parentViews.isEmpty()) {
+      TdlibManager.instance().dateManager().removeListener(dateChangeListener);
+    }
   }
 
   public void setInnerOnScrollListener (@Nullable RecyclerView.OnScrollListener innerOnScrollListener) {

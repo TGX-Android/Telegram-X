@@ -25,6 +25,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
@@ -42,7 +43,8 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 
 @SuppressLint("NonConstantResourceId")
-public class EditSessionController extends EditBaseController<EditSessionController.Args> implements View.OnClickListener {
+public class EditSessionController extends EditBaseController<EditSessionController.Args>
+  implements View.OnClickListener, DateChangeListener {
   private DoubleHeaderView headerCell;
   private SettingsAdapter adapter;
 
@@ -149,6 +151,29 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     return R.id.controller_editSession;
   }
 
+  private void updateHeaderSubtitle () {
+    headerCell.setSubtitle(Lang.getRelativeDate(
+      session.lastActiveDate, TimeUnit.SECONDS,
+      tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
+      true, 60, R.string.session_LastActive, false
+    ));
+  }
+
+  @Override
+  public void onTimeFormatChanged () {
+    if (headerCell != null) {
+      updateHeaderSubtitle();
+    }
+  }
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    if (headerCell != null) {
+      tdlib.context().dateManager().removeListener(this);
+    }
+  }
+
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     if (!session.isPasswordPending && !session.isCurrent) {
@@ -156,11 +181,8 @@ public class EditSessionController extends EditBaseController<EditSessionControl
       headerCell.setThemedTextColor(this);
       headerCell.initWithMargin(Screen.dp(49f), true);
       headerCell.setTitle(R.string.SessionDetails);
-      headerCell.setSubtitle(Lang.getRelativeDate(
-        session.lastActiveDate, TimeUnit.SECONDS,
-        tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
-        true, 60, R.string.session_LastActive, false
-      ));
+      updateHeaderSubtitle();
+      tdlib.context().dateManager().addListener(this);
     }
 
     setDoneIcon(R.drawable.baseline_check_24);
@@ -187,8 +209,10 @@ public class EditSessionController extends EditBaseController<EditSessionControl
         } else if (itemId == R.id.btn_sessionIp) {
           view.setData(R.string.SessionIP);
         } else if (itemId == R.id.btn_sessionFirstLogin) {
+          view.setName(Lang.getTimestamp(session.logInDate, TimeUnit.SECONDS));
           view.setData(session.isPasswordPending ? R.string.SessionAttempt : R.string.SessionFirstLogin);
         } else if (itemId == R.id.btn_sessionLastLogin) {
+          view.setName(Lang.getTimestamp(session.lastActiveDate, TimeUnit.SECONDS));
           view.setData(R.string.SessionLastLogin);
         } else if (itemId == R.id.btn_sessionLogout) {
           view.setData((session.isCurrent || session.isPasswordPending) ? null : Lang.getReverseRelativeDateBold(

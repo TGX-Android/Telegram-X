@@ -829,6 +829,11 @@ public class CallListController extends RecyclerViewController<Void> implements
   }
 
   @Override
+  public void onTimeFormatChanged () {
+    buildSections();
+  }
+
+  @Override
   public void onMessageSendSucceeded (final TdApi.Message message, long oldMessageId) {
     if (filter(message)) {
       tdlib.ui().post(() -> {

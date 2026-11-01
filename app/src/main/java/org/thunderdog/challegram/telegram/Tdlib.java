@@ -1364,6 +1364,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     updateUtcTimeOffset();
   }
 
+  @Override
+  public void onTimeFormatChanged () {
+    cache().onTimeFormatChanged();
+  }
+
   private boolean isOptimizing;
 
   public boolean isOptimizing () {

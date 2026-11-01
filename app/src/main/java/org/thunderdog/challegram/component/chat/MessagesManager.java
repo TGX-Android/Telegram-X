@@ -1806,6 +1806,23 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public void updateTimeFormat () {
+    ArrayList<TGMessage> items = adapter.getItems();
+    if (items != null) {
+      for (TGMessage m : items) {
+        if (m.updateLocale()) {
+          int height = m.getHeight();
+          m.rebuildLayout();
+          if (height != m.getHeight() && !useBubbles()) {
+            m.requestLayout();
+          } else {
+            m.invalidate();
+          }
+        }
+      }
+    }
+  }
+
   public void onUpdateTextSize () {
     ArrayList<TGMessage> items = adapter.getItems();
     if (items != null) {

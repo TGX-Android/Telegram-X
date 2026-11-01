@@ -1497,7 +1497,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     // Log.e("%s", Strings.getHexColor(U.compositeColor(Theme.headerColor(), Theme.getColor(ColorId.statusBar)), false));
     tdlib.contacts().makeSilentPermissionCheck(this);
     tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
-    tdlib.context().dateManager().checkCurrentDate();
+    tdlib.context().dateManager().checkDateAndTimeFormat();
     UI.startNotificationService();
     TemporaryNotification.hide(this);
   }
