@@ -249,6 +249,19 @@ fun Project.configureAppTests(
     traceProcessor.set(providers.gradleProperty("traceProcessor"))
   }
 
+  val messageTypesBase = layout.buildDirectory.dir("message-types-base")
+  tasks.register<SaveMessageTypesTask>("saveMessageTypes") {
+    mustRunAfter(tasks.named { it.startsWith("connected") && it.endsWith("AndroidTest") })
+    results.set(layout.buildDirectory.dir("outputs/connected_android_test_additional_output"))
+    base.set(messageTypesBase)
+  }
+  tasks.register<CompareMessageTypesTask>("compareMessageTypes") {
+    mustRunAfter(tasks.named { it.startsWith("connected") && it.endsWith("AndroidTest") })
+    results.set(layout.buildDirectory.dir("outputs/connected_android_test_additional_output"))
+    base.set(messageTypesBase)
+    rootDirectory.set(isolated.rootProject.projectDirectory)
+  }
+
   if (inAppProcess) {
     // App process loads classes of the test APK before classes of the app,
     // so their other versions would replace ones the app is built with

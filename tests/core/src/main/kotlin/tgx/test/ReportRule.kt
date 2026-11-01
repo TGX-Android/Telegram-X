@@ -1,6 +1,7 @@
 package tgx.test
 
 import android.app.UiAutomation
+import android.graphics.Bitmap
 import android.os.ParcelFileDescriptor
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.ResultsReporter
@@ -44,6 +45,13 @@ class ReportRule(private val device: UiDevice) : TestRule {
 
   fun screenshot(name: String) {
     device.takeScreenshot(newFile("$name.png", name))
+  }
+
+  fun image(name: String, bitmap: Bitmap) {
+    // An image that the test made, e.g. parts of screenshots put together, in PNG at its own size
+    newFile("$name.png", name).outputStream().use {
+      bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+    }
   }
 
   // UiAutomation runs commands asynchronously and gives binary output, unlike runShellCommand

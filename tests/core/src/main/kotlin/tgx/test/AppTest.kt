@@ -35,6 +35,8 @@ abstract class AppTest(private val authorized: Boolean) {
 
   fun screenshot(name: String) = report.screenshot(name)
 
+  fun image(name: String, bitmap: android.graphics.Bitmap) = report.image(name, bitmap)
+
   fun recordNativeHeap(name: String, block: () -> Unit) =
     // Native allocations of the app while block runs, see "Profiles of native memory" in
     // tests/README.md

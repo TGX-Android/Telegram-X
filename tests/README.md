@@ -282,6 +282,20 @@ class ChatTest : AuthorizedTest() {
 ./gradlew :tests:ui:connectedLatestNonMinifiedReleaseAndroidTest :tests:ui:describeHeapProfiles -Pabi=arm64 -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.<Check>
 ```
 
+#### Images of types of messages
+
+Chats that only the app knows come from [`FakeChats`](ui/app/kotlin/tgx/test/FakeChats.kt) inside the app process of builds of tests: made-up users, private and secret chats, groups and channels, sent to the app by updates of TDLib, while the interceptor of the client of TDLib answers queries of the app about them. [`MessageContents.kt`](ui/app/kotlin/tgx/test/MessageContents.kt) has a sample of every type of `MessageContent` that a client receives, with its directions and kinds of chats, and [`PushContents.kt`](ui/app/kotlin/tgx/test/PushContents.kt) one of every `PushMessageContent`. Media of samples are real files of the account, found by type in its messages, so they load as in real chats; images with them show data of the account.
+
+`MessageTypesImages` saves for each sample in each direction the chat in the list, the message in the chat and its notification, drawn in the app from the views of the system without opening the shade, and for each push its notification before and after the message replaces it; it fails when the app crashes or logs an exception. Messages are dated 10:00 of the day, so images of two runs differ only by changes of the app. `saveMessageTypes` keeps the images of a run as the base, e.g. of the commit a branch starts from, and `compareMessageTypes` lists types whose images changed since, with paths of the images before and after:
+
+```shell
+./gradlew :tests:ui:connectedLatestNonMinifiedReleaseAndroidTest :tests:ui:saveMessageTypes -Pabi=arm64 -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.MessageTypesImages -Pandroid.testInstrumentationRunnerArguments.messageTypes=true
+# With the change
+./gradlew :tests:ui:connectedLatestNonMinifiedReleaseAndroidTest :tests:ui:compareMessageTypes -Pabi=arm64 -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.MessageTypesImages -Pandroid.testInstrumentationRunnerArguments.messageTypes=true
+```
+
+Images are made in Blue and Night Black, in all themes with `-Pandroid.testInstrumentationRunnerArguments.messageTypes.themes=all`. `-Pandroid.testInstrumentationRunnerArguments.messageTypes.filter=MessageText+PushMessageContentText` makes images only of types whose names contain one of the parts, e.g. the types that a change touches; parts are joined by `+`, since the runner of tests splits arguments at commas.
+
 
 ### Benchmarks
 
