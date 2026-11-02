@@ -44,6 +44,7 @@ import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.BaseThread;
+import org.thunderdog.challegram.core.SerialQueue;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.Recorder;
@@ -319,40 +320,53 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return accountId != 0 ? "account" + accountId + "_" + key : key;
   }
 
-  public static class NotificationQueue extends BaseThread {
+  public static class NotificationQueue implements SerialQueue.Callback {
     private final TdlibManager context;
+    private final SerialQueue queue;
 
     public NotificationQueue (String name, TdlibManager context) {
-      super(name);
       this.context = context;
+      this.queue = SerialQueue.create(name, Thread.NORM_PRIORITY, this);
     }
 
     public void init () {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        sendMessage(Message.obtain(getHandler(), CLEANUP_CHANNELS), 0);
+        send(CLEANUP_CHANNELS, null);
       }
     }
 
+    public void send (int what, @Nullable Object obj) {
+      queue.send(what, 0, 0, obj);
+    }
+
+    public void send (int what, int arg1, int arg2, @Nullable Object obj) {
+      queue.send(what, arg1, arg2, obj);
+    }
+
+    public void post (@NonNull Runnable work, long delayMillis) {
+      queue.post(work, delayMillis);
+    }
+
+    public boolean isCurrentThread () {
+      return queue.isCurrentThread();
+    }
+
     @Override
-    protected void process (Message msg) {
-      switch (msg.what) {
+    public void handle (int what, int arg1, int arg2, @Nullable Object object) {
+      switch (what) {
         case CLEANUP_CHANNELS: {
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             TdlibNotificationChannelGroup.cleanupChannelGroups(context);
           }
           break;
         }
-        case PLAY_SOUND: {
-          ((TdlibNotificationManager) msg.obj).playSound(msg.arg1, msg.arg2);
-          break;
-        }
         case REBUILD_NOTIFICATION: {
-          ((TdlibNotificationManager) msg.obj).rebuildNotification();
+          ((TdlibNotificationManager) object).rebuildNotification();
           break;
         }
         case ENSURE_CHANNELS: {
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Tdlib tdlib = ((TdlibNotificationManager) msg.obj).tdlib;
+            Tdlib tdlib = ((TdlibNotificationManager) object).tdlib;
             TdlibNotificationChannelGroup.cleanupChannelGroups(context);
             try {
               tdlib.notifications().createChannels();
@@ -365,92 +379,95 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
           break;
         }
         case ON_UPDATE_NOTIFICATION_CHANNELS: {
-          ((TdlibNotificationManager) msg.obj).onUpdateNotificationChannels(BitwiseUtils.mergeLong(msg.arg1, msg.arg2));
+          long accountUserId = BitwiseUtils.mergeLong(arg1, arg2);
+          ((TdlibNotificationManager) object).onUpdateNotificationChannels(accountUserId);
           break;
         }
         case ON_UPDATE_ACTIVE_NOTIFICATIONS: {
-          Object[] obj = (Object[]) msg.obj;
+          Object[] obj = (Object[]) object;
           ((TdlibNotificationManager) obj[0]).processActiveNotifications((TdApi.UpdateActiveNotifications) obj[1]);
           obj[0] = obj[1] = null;
           break;
         }
         /*case ON_UPDATE_HAVE_PENDING_NOTIFICATIONS: {
-          Object[] obj = (Object[]) msg.obj;
+          Object[] obj = (Object[]) object;
           ((TdlibNotificationManager) obj[0]).processHavePendingNotifications((TdApi.UpdateHavePendingNotifications) obj[1]);
           obj[0] = obj[1] = null;
           break;
         }*/
         case ON_UPDATE_NOTIFICATION_GROUP: {
-          Object[] obj = (Object[]) msg.obj;
+          Object[] obj = (Object[]) object;
           ((TdlibNotificationManager) obj[0]).processNotificationGroup((TdApi.UpdateNotificationGroup) obj[1]);
           obj[0] = obj[1] = null;
           break;
         }
         case ON_UPDATE_NOTIFICATION: {
-          Object[] obj = (Object[]) msg.obj;
+          Object[] obj = (Object[]) object;
           ((TdlibNotificationManager) obj[0]).processNotification((TdApi.UpdateNotification) obj[1]);
           obj[0] = obj[1] = null;
           break;
         }
         case ON_HIDE_ALL_NOTIFICATIONS: {
-          ((TdlibNotificationManager) msg.obj).onHideAllImpl(msg.arg1);
+          ((TdlibNotificationManager) object).onHideAllImpl(arg1);
           break;
         }
         case ON_HIDE_NOTIFICATION: {
-          Object[] obj = (Object[]) msg.obj;
+          Object[] obj = (Object[]) object;
           ((TdlibNotificationManager) obj[0]).onHideImpl((TdlibNotificationExtras) obj[1]);
           obj[0] = obj[1] = null;
           break;
         }
         case ON_REBUILD_NOTIFICATIONS: {
-          Object[] obj = (Object[]) msg.obj;
+          Object[] obj = (Object[]) object;
           ((TdlibNotificationManager) obj[0]).rebuildNotificationsImpl((TdApi.NotificationSettingsScope) obj[1]);
           obj[0] = obj[1] = null;
           break;
         }
         case ON_REBUILD_NOTIFICATIONS_SPECIFIC: {
-          ((TdlibNotificationManager) msg.obj).rebuildNotificationsImpl(BitwiseUtils.mergeLong(msg.arg1, msg.arg2));
+          long chatId = BitwiseUtils.mergeLong(arg1, arg2);
+          ((TdlibNotificationManager) object).rebuildNotificationsImpl(chatId);
           break;
         }
         case ON_CHAT_OPENED: {
-          ((TdlibNotificationManager) msg.obj).onChatOpenedImpl(BitwiseUtils.mergeLong(msg.arg1, msg.arg2));
+          ((TdlibNotificationManager) object).onChatOpenedImpl(BitwiseUtils.mergeLong(arg1, arg2));
           break;
         }
         case ON_DROP_NOTIFICATION_DATA: {
-          ((TdlibNotificationManager) msg.obj).onDropNotificationDataImpl(msg.arg1 == 1);
+          ((TdlibNotificationManager) object).onDropNotificationDataImpl(arg1 == 1);
           break;
         }
         case RELEASE_REFERENCE: {
-          ((TdlibNotificationManager) msg.obj).tdlib.decrementNotificationReferenceCount();
+          ((TdlibNotificationManager) object).tdlib.decrementNotificationReferenceCount();
           break;
         }
         case RELEASE_REFERENCE_WITH_TASK: {
-          Object[] data = (Object[]) msg.obj;
+          Object[] data = (Object[]) object;
           ((Runnable) data[1]).run();
           ((TdlibNotificationManager) data[0]).tdlib.decrementNotificationReferenceCount();
           data[0] = data[1] = null;
           break;
         }
         case ON_UPDATE_MY_USER_ID: {
-          ((TdlibNotificationManager) msg.obj).onUpdateMyUserIdImpl(BitwiseUtils.mergeLong(msg.arg1, msg.arg2));
+          long myUserId = BitwiseUtils.mergeLong(arg1, arg2);
+          ((TdlibNotificationManager) object).onUpdateMyUserIdImpl(myUserId);
           break;
         }
         case ON_UPDATE_MY_USER: {
-          Object[] data = (Object[]) msg.obj;
+          Object[] data = (Object[]) object;
           ((TdlibNotificationManager) data[0]).onUpdateMyUserImpl((TdApi.User) data[1]);
           data[0] = data[1] = null;
           break;
         }
         case ON_REBUILD_NOTIFICATION_GROUP: {
-          ((TdlibNotificationManager) msg.obj).rebuildNotificationGroupImpl(msg.arg1);
+          ((TdlibNotificationManager) object).rebuildNotificationGroupImpl(arg1);
           break;
         }
         case ON_RESTART: {
-          ((TdlibNotificationManager) msg.obj).onRestartImpl();
+          ((TdlibNotificationManager) object).onRestartImpl();
           break;
         }
         case REMOVE_NOTIFICATIONS: {
-          Object[] data = (Object[]) msg.obj;
+          Object[] data = (Object[]) object;
           ((TdlibNotificationManager) data[0]).removeNotificationGroupImpl((TdlibNotificationExtras) data[1]);
           data[0] = data[1] = null;
           break;
@@ -1950,13 +1967,34 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   private final SparseIntArray loadedSounds;
   private final SparseIntArray sounds;
 
+  private static BaseThread soundThread;
+
+  private static BaseThread soundThread () {
+    // Sounds keep a Looper of their own, which SoundPool takes for its callbacks
+    synchronized (TdlibNotificationManager.class) {
+      if (soundThread == null) {
+        soundThread = new BaseThread("NotificationSounds") {
+          @Override
+          protected void process (Message msg) {
+            ((TdlibNotificationManager) msg.obj).playSound(msg.arg1, msg.arg2);
+          }
+        };
+      }
+      return soundThread;
+    }
+  }
+
   @SuppressWarnings("deprecation")
   private void playSound (@RawRes int soundResource, int delayAfter) {
     if (audioManager() == null || Recorder.instance().isRecording()) {
       return;
     }
-    if (Thread.currentThread() != queue) {
-      queue.sendMessage(Message.obtain(queue.getHandler(), PLAY_SOUND, soundResource, delayAfter, this), 0);
+    BaseThread soundThread = soundThread();
+    if (Thread.currentThread() != soundThread) {
+      soundThread.sendMessage(
+        Message.obtain(soundThread.getHandler(), PLAY_SOUND, soundResource, delayAfter, this),
+        0
+      );
       return;
     }
     long ms = System.currentTimeMillis();
@@ -2020,7 +2058,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @Override
   public void onPerformStartup (boolean isAfterRestart) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      sendLockedMessage(Message.obtain(queue.getHandler(), ENSURE_CHANNELS, this), null);
+      sendLocked(null, ENSURE_CHANNELS, this);
     }
   }
 
@@ -2034,7 +2072,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   @Override
   public void onPerformRestart () {
-    queue.sendMessage(Message.obtain(queue.getHandler(), ON_RESTART, this), 0);
+    queue.send(ON_RESTART, this);
   }
 
   @Override
@@ -2049,9 +2087,25 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
-  private void sendLockedMessage (Message message, @Nullable Runnable after) {
+  private void sendLocked (@Nullable Runnable after, int what, @Nullable Object obj) {
+    sendLocked(after, what, 0, 0, obj);
+  }
+
+  private void sendLocked (int what, long value) {
+    int first = BitwiseUtils.splitLongToFirstInt(value);
+    int second = BitwiseUtils.splitLongToSecondInt(value);
+    sendLocked(null, what, first, second, this);
+  }
+
+  private void sendLocked (
+    @Nullable Runnable after,
+    int what,
+    int arg1,
+    int arg2,
+    @Nullable Object obj
+  ) {
     tdlib.incrementNotificationReferenceCount();
-    queue.sendMessage(message, 0);
+    queue.send(what, arg1, arg2, obj);
     releaseTdlibReference(after);
   }
 
@@ -2063,8 +2117,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   @AnyThread
   public void onUpdateNotificationChannels (long accountUserId) {
-    if (Thread.currentThread() != queue) {
-      sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_CHANNELS, BitwiseUtils.splitLongToFirstInt(accountUserId), BitwiseUtils.splitLongToSecondInt(accountUserId), this), null);
+    if (!queue.isCurrentThread()) {
+      sendLocked(ON_UPDATE_NOTIFICATION_CHANNELS, accountUserId);
     } else {
       resetNotificationGroupImpl(accountUserId);
     }
@@ -2103,8 +2157,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
    * */
   @AnyThread
   private void rebuildNotification () {
-    if (Thread.currentThread() != queue) {
-      sendLockedMessage(Message.obtain(queue.getHandler(), REBUILD_NOTIFICATION, this), null);
+    if (!queue.isCurrentThread()) {
+      sendLocked(null, REBUILD_NOTIFICATION, this);
     } else {
       rebuildNotificationImpl();
     }
@@ -2211,15 +2265,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @TdlibThread
   void releaseTdlibReference (@Nullable Runnable after) {
     if (after != null) {
-      queue.sendMessage(Message.obtain(queue.getHandler(), RELEASE_REFERENCE_WITH_TASK, new Object[] {this, after}), 0);
+      queue.send(RELEASE_REFERENCE_WITH_TASK, new Object[] {this, after});
     } else {
-      queue.sendMessage(Message.obtain(queue.getHandler(), RELEASE_REFERENCE, this), 0);
+      queue.send(RELEASE_REFERENCE, this);
     }
   }
 
   @TdlibThread
   void onUpdateActiveNotifications (TdApi.UpdateActiveNotifications update, @Nullable Runnable after) {
-    sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_ACTIVE_NOTIFICATIONS, new Object[] {this, update}), after);
+    sendLocked(after, ON_UPDATE_ACTIVE_NOTIFICATIONS, new Object[] {this, update});
   }
 
   @TdlibThread
@@ -2231,36 +2285,36 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         if (result != PushProcessor.ShowStatus.NOT_SHOWN) {
           FetchNotificationService.stopForegroundTask(context, -1, tdlib.accountId());
         }
-        sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
+        sendLocked(null, ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update});
       }, 1500L);
       return;
     }
-    sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update}), null);
+    sendLocked(null, ON_UPDATE_NOTIFICATION_GROUP, new Object[] {this, update});
   }
 
   @TdlibThread
   void onUpdateNotification (TdApi.UpdateNotification update) {
-    sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION, new Object[] {this, update}), null);
+    sendLocked(null, ON_UPDATE_NOTIFICATION, new Object[] {this, update});
   }
 
   @TdlibThread
   void onUpdateMyUserId (long myUserId) {
-    sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_MY_USER_ID, BitwiseUtils.splitLongToFirstInt(myUserId), BitwiseUtils.splitLongToSecondInt(myUserId), this), null);
+    sendLocked(ON_UPDATE_MY_USER_ID, myUserId);
   }
 
   @TdlibThread
   void onUpdateMyUser (@Nullable TdApi.User user) {
-    sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_MY_USER, new Object[] {this, user}), null);
+    sendLocked(null, ON_UPDATE_MY_USER, new Object[] {this, user});
   }
 
   @AnyThread
   public void onHideAll (int category) {
-    queue.sendMessage(Message.obtain(queue.getHandler(), ON_HIDE_ALL_NOTIFICATIONS, category, 0, this), 0);
+    queue.send(ON_HIDE_ALL_NOTIFICATIONS, category, 0, this);
   }
 
   @AnyThread
   public void removeNotificationGroup (TdlibNotificationExtras extras) {
-    queue.sendMessage(Message.obtain(queue.getHandler(), REMOVE_NOTIFICATIONS, new Object[] {this, extras}), 0);
+    queue.send(REMOVE_NOTIFICATIONS, new Object[] {this, extras});
   }
 
   @AnyThread
@@ -2274,29 +2328,29 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   @AnyThread
   public void onHide (TdlibNotificationExtras extras) {
-    sendLockedMessage(Message.obtain(queue.getHandler(), ON_HIDE_NOTIFICATION, new Object[] {this, extras}), null);
+    sendLocked(null, ON_HIDE_NOTIFICATION, new Object[] {this, extras});
   }
 
   @AnyThread
   public void onChatOpened (long chatId) {
     if (ChatId.isSecret(chatId)) {
-      sendLockedMessage(Message.obtain(queue.getHandler(), ON_CHAT_OPENED, BitwiseUtils.splitLongToFirstInt(chatId), BitwiseUtils.splitLongToSecondInt(chatId), this), null);
+      sendLocked(ON_CHAT_OPENED, chatId);
     }
   }
 
   @AnyThread
   public void onUpdateNotifications (TdApi.NotificationSettingsScope scope) {
-    sendLockedMessage(Message.obtain(queue.getHandler(), ON_REBUILD_NOTIFICATIONS, new Object[] {this, scope}), null);
+    sendLocked(null, ON_REBUILD_NOTIFICATIONS, new Object[] {this, scope});
   }
 
   @AnyThread
   public void onUpdateNotifications (long chatId) {
-    sendLockedMessage(Message.obtain(queue.getHandler(), ON_REBUILD_NOTIFICATIONS_SPECIFIC, BitwiseUtils.splitLongToFirstInt(chatId), BitwiseUtils.splitLongToSecondInt(chatId), this), null);
+    sendLocked(ON_REBUILD_NOTIFICATIONS_SPECIFIC, chatId);
   }
 
   @AnyThread
   public void onDropNotificationData (boolean hideAll) {
-    queue.sendMessage(Message.obtain(queue.getHandler(), ON_DROP_NOTIFICATION_DATA, hideAll ? 1 : 0, 0, this), 0);
+    queue.send(ON_DROP_NOTIFICATION_DATA, hideAll ? 1 : 0, 0, this);
   }
 
   // Impl
