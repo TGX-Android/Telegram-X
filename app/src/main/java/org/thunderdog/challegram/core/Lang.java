@@ -598,12 +598,16 @@ public class Lang {
   }
 
   public static String formatNumber (long n) {
+    return fixNumber(formatCached(KEY_PREFIX_NUMBER, n, Lang::newNumberFormat));
+  }
+
+  private static java.text.Format newNumberFormat () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        return fixNumber(android.icu.text.NumberFormat.getInstance(dateFormatLocale()).format(n));
+        return android.icu.text.NumberFormat.getInstance(dateFormatLocale());
       } catch (Throwable ignored) { }
     }
-    return fixNumber(java.text.NumberFormat.getInstance(dateFormatLocale()).format(n));
+    return java.text.NumberFormat.getInstance(dateFormatLocale());
   }
 
   public static String compactNumber (long n) {
@@ -615,10 +619,11 @@ public class Lang {
     return null;
   }
 
-  // Kept for each kind and locale, since making a formatter takes longer than formatting a date;
-  // made again after a change of the time zone or of 12 or 24 hours, which formatters take when
-  // they're made
+  // Kept for each kind and locale, since making a formatter takes longer than formatting a date or
+  // a number; made again after a change of the time zone or of 12 or 24 hours, which formatters
+  // take when they're made
   private static final HashMap<String, java.text.Format> dateFormats = new HashMap<>();
+  private static final String KEY_PREFIX_NUMBER = "number";
   private static final String KEY_PREFIX_PATTERN = "pattern ";
   private static final String KEY_PREFIX_ICU_DATE = "icu date ";
   private static final String KEY_PREFIX_DATE = "date ";
@@ -635,6 +640,14 @@ public class Lang {
     long timeInMillis,
     Future<java.text.Format> newFormat
   ) {
+    return formatCached(kind, DateUtils.dateInstance(timeInMillis), newFormat);
+  }
+
+  private static String formatCached (
+    String kind,
+    Object value,
+    Future<java.text.Format> newFormat
+  ) {
     final String key = kind + '|' + dateFormatLocale();
     synchronized (dateFormats) {
       java.text.Format format = dateFormats.get(key);
@@ -642,7 +655,7 @@ public class Lang {
         format = newFormat.getValue();
         dateFormats.put(key, format);
       }
-      return format.format(DateUtils.dateInstance(timeInMillis));
+      return format.format(value);
     }
   }
 

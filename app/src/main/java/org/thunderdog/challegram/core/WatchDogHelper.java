@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.core;
 
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -62,6 +63,16 @@ public class WatchDogHelper extends BroadcastReceiver {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
       if (ConnectivityManager.ACTION_RESTRICT_BACKGROUND_CHANGED.equals(action)) {
         watchDog.letsHelpDoge();
+        return;
+      }
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      if (NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED.equals(action) ||
+        NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED.equals(action) ||
+        NotificationManager.ACTION_NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED.equals(action)) {
+        // Notifications turned off from the shade don't pause the activity
+        TdlibManager.instance().global().notifyResolvableProblemAvailabilityMightHaveChanged();
         return;
       }
     }

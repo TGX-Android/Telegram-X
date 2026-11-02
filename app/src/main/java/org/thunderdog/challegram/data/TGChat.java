@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.data;
 
+import android.view.Choreographer;
 import android.view.Gravity;
 import android.view.View;
 
@@ -95,6 +96,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
   private int flags, listMode;
 
+  private static final int CHANGE_COUNTER = 1;
+  private static final int CHANGE_TIME = 1 << 1;
+  private static final int CHANGE_TEXT = 1 << 2;
+  private static final int CHANGE_TITLE = 1 << 3;
+  private int pendingChanges;
+  private boolean isChangeFramePosted;
+  private @Nullable Choreographer.FrameCallback changeFrame;
+
   private final ViewController<?> context;
   private final Tdlib tdlib;
   @Nullable
@@ -115,6 +124,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   private @Nullable EmojiStatusHelper.EmojiStatusDrawable emojiStatusDrawable;
 
   private String time;
+  private int timeDate = Integer.MIN_VALUE;
   private int timeWidth;
 
   private Text prefix;
@@ -430,13 +440,45 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       chat.lastMessage = message;
       if ((oldMessage == null && message == null) || (oldMessage != null && message != null && oldMessage.id == message.id))
         return false;
-      setCounter(true);
-      setTime();
-      setText();
-      layoutTitle(false);
+      postChanges(CHANGE_COUNTER | CHANGE_TIME | CHANGE_TEXT | CHANGE_TITLE);
       return true;
     }
     return false;
+  }
+
+  private void postChanges (int changes) {
+    pendingChanges |= changes;
+    if ((flags & FLAG_ATTACHED) == 0 || isChangeFramePosted) {
+      return;
+    }
+    if (changeFrame == null) {
+      changeFrame = frameTimeNanos -> {
+        isChangeFramePosted = false;
+        if ((flags & FLAG_ATTACHED) != 0) {
+          applyChanges();
+          currentViews.invalidate();
+        }
+      };
+    }
+    isChangeFramePosted = true;
+    Choreographer.getInstance().postFrameCallback(changeFrame);
+  }
+
+  private void applyChanges () {
+    final int changes = pendingChanges;
+    pendingChanges = 0;
+    if ((changes & CHANGE_COUNTER) != 0) {
+      setCounter(true);
+    }
+    if ((changes & CHANGE_TIME) != 0) {
+      setTime();
+    }
+    if ((changes & CHANGE_TEXT) != 0) {
+      setText();
+    }
+    if ((changes & CHANGE_TITLE) != 0) {
+      layoutTitle(false);
+    }
   }
 
   public boolean updateChatPermissions (long chatId, TdApi.ChatPermissions permissions) {
@@ -611,10 +653,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       chat.lastReadInboxMessageId = lastReadInboxMessageId;
       chat.unreadCount = unreadCount;
       boolean newShowDraft = showDraft();
-      setCounter(true);
-      if (showDraft != newShowDraft) {
-        setText();
-      }
+      postChanges(CHANGE_COUNTER | (showDraft != newShowDraft ? CHANGE_TEXT : 0));
       return true;
     }
     return false;
@@ -1020,11 +1059,13 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   public boolean setTime () {
     String time;
     if (isArchive()) {
+      timeDate = Integer.MIN_VALUE;
       int maxDate = archive.maxDate();
       time = maxDate != 0 ? Lang.timeOrDateShort(maxDate, TimeUnit.SECONDS) : "";
     } else {
       TdApi.ChatSource source = getSource();
       if (source != null) {
+        timeDate = Integer.MIN_VALUE;
         switch (source.getConstructor()) {
           case TdApi.ChatSourceMtprotoProxy.CONSTRUCTOR:
             time = Lang.getString(R.string.ProxySponsor);
@@ -1040,7 +1081,12 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         }
       } else {
         int date = chat.draftMessage != null && showDraft() ? chat.draftMessage.date : chat.lastMessage != null ? chat.lastMessage.date : 0;
-        time = date != 0 ? Lang.timeOrDateShort(date, TimeUnit.SECONDS) : "";
+        if (date != timeDate || this.time == null) {
+          time = date != 0 ? Lang.timeOrDateShort(date, TimeUnit.SECONDS) : "";
+          timeDate = date;
+        } else {
+          time = this.time;
+        }
       }
     }
     boolean changed = !time.equals(this.time);
@@ -1066,12 +1112,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   }
 
   public void updateDate () {
+    timeDate = Integer.MIN_VALUE;
     if (setTime()) {
       layoutTitle(false);
     }
   }
 
   public void updateLocale (boolean forceText) {
+    timeDate = Integer.MIN_VALUE;
     setTime();
     setCounter(true);
     if (forceText || (flags & FLAG_CONTENT_STRING) != 0 || (flags & FLAG_TEXT_DRAFT) != 0) {
@@ -1524,6 +1572,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   private final TdlibStatusManager.Helper statusHelper;
 
   public void attachToView (View view) {
+    if (pendingChanges != 0) {
+      applyChanges();
+    }
     if (currentViews.attachToView(view)) {
       setViewAttached(true);
     }
