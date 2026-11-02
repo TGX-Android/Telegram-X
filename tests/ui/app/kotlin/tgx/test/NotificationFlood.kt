@@ -16,6 +16,7 @@ import org.thunderdog.challegram.telegram.TdlibManager
 import org.thunderdog.challegram.telegram.TdlibNotificationUtils
 import tgx.td.fromUserId
 import java.io.File
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -24,7 +25,11 @@ private const val TAG = "NotificationFlood"
 /**
  * Starts or stops [NotificationFlood] in the app process, e.g.
  * `adb shell am broadcast -n org.example.tgx/tgx.test.NotificationFloodReceiver --ei count 3000 --ei perMinute 3000`
- * with `--ei chats 5` for several chats or `--ez textOnly false` for messages of all kinds; `--ez stop true` stops it
+ * with `--ei chats 5` for several chats, `--ez textOnly false` for messages of all kinds or
+ * `--ez local true` for messages that TDLib adds itself, with `--ez savedMessages true` to Saved
+ * Messages; `--es chatType supergroup` takes chats of one type, `--ez oneSender true` gives all
+ * messages of a chat to one sender, `--ei retainedEvery 30` logs the retained native heap each 30
+ * seconds, `--ez muted true` takes muted chats too; `--ez stop true` stops it
  */
 class NotificationFloodReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
@@ -39,7 +44,13 @@ class NotificationFloodReceiver : BroadcastReceiver() {
       chatCount = intent.getIntExtra("chats", 1),
       textOnly = intent.getBooleanExtra("textOnly", true),
       removeAfter = intent.getBooleanExtra("removeAfter", false),
-      muteAfter = intent.getBooleanExtra("muteAfter", false)
+      muteAfter = intent.getBooleanExtra("muteAfter", false),
+      local = intent.getBooleanExtra("local", false),
+      savedMessages = intent.getBooleanExtra("savedMessages", false),
+      chatType = intent.getStringExtra("chatType"),
+      oneSender = intent.getBooleanExtra("oneSender", false),
+      retainedEvery = intent.getIntExtra("retainedEvery", 0),
+      muted = intent.getBooleanExtra("muted", false)
     ).start()
   }
 }
@@ -58,6 +69,19 @@ class NotificationFloodReceiver : BroadcastReceiver() {
  * After the flood, [removeAfter] (`--ez removeAfter true`) removes its notifications as TDLib does
  * when they are read, and [muteAfter] (`--ez muteAfter true`) turns notifications of its chats off
  * in the app.
+ *
+ * With [local], TDLib itself adds the messages as local ones from their senders, so that the app
+ * gets all updates of a new message through the queue of results of TDLib, and notifications of
+ * them from TDLib with its delays and merging. Each second it also logs how long results of TDLib
+ * wait in that queue. With [savedMessages] the messages go to Saved Messages, which has no
+ * notifications, e.g. to measure the work of the app on new messages of a chat that is open.
+ *
+ * [chatType] takes only chats of that type: `private`, `basicGroup`, `supergroup` or `channel`.
+ * With [oneSender] all messages of a chat come from the sender of its newest loaded message, e.g. a
+ * flood of one user in a group. With [retainedEvery] the native heap after garbage collection is
+ * logged every that many seconds, which pauses the flood for the time of the collection.
+ * With [muted], chats with notifications off are taken too, e.g. a muted group, where new messages
+ * update the chat list and unread counters without notifications.
  */
 class NotificationFlood(
   private val tdlib: Tdlib,
@@ -66,7 +90,13 @@ class NotificationFlood(
   private val chatCount: Int,
   private val textOnly: Boolean,
   private val removeAfter: Boolean,
-  private val muteAfter: Boolean
+  private val muteAfter: Boolean,
+  private val local: Boolean,
+  private val savedMessages: Boolean,
+  private val chatType: String?,
+  private val oneSender: Boolean,
+  private val retainedEvery: Int,
+  private val muted: Boolean
 ) {
   companion object {
     @Volatile
@@ -83,7 +113,13 @@ class NotificationFlood(
   @Volatile
   private var isStopped = false
 
-  private class Group(val id: Int, val chatId: Long, val messages: List<TdApi.Message>) {
+  private class Group(
+    val id: Int,
+    val chatId: Long,
+    val messages: List<TdApi.Message>,
+    // Sender of all messages of the group, or null for the senders of the loaded messages
+    val sender: TdApi.MessageSender?
+  ) {
     var totalCount = 0
     var nextMessageId = messages.maxOf { it.id }
     // Ids of notifications that the app shows, oldest first
@@ -95,6 +131,13 @@ class NotificationFlood(
   private var sent = 0
   private var updateCount = 0
   private var wasCached = false
+  @Volatile
+  private var failedCount = 0
+
+  // Times when markers were sent to TDLib, oldest first, and how long the last returned one waited
+  private val markers = ConcurrentLinkedQueue<Long>()
+  @Volatile
+  private var markerDelay = 0L
 
   fun start() {
     current = this
@@ -127,20 +170,31 @@ class NotificationFlood(
     val firstId = (System.currentTimeMillis() / 1000 % 1_000_000_000).toInt()
     nextNotificationId = firstId
     logRetained("before")
-    // The flood starts without notifications that TDLib gave before
-    send(TdApi.UpdateActiveNotifications(arrayOf()))
+    if (!local) {
+      // The flood starts without notifications that TDLib gave before
+      send(TdApi.UpdateActiveNotifications(arrayOf()))
+    }
     val start = SystemClock.uptimeMillis()
     var nextLog = start
+    var nextRetained = start + retainedEvery * 1000L
     while (!isStopped && sent < count) {
       val wait = start + sent * 60_000L / perMinute - SystemClock.uptimeMillis()
       if (wait > 0) {
         Thread.sleep(wait)
       }
-      notify(groups[sent % groups.size])
+      if (local) {
+        addLocalMessage(groups[sent % groups.size])
+      } else {
+        notify(groups[sent % groups.size])
+      }
       sent++
       if (SystemClock.uptimeMillis() >= nextLog) {
         logProgress()
         nextLog += 1000
+      }
+      if (retainedEvery > 0 && SystemClock.uptimeMillis() >= nextRetained) {
+        logRetained("at ${(SystemClock.uptimeMillis() - start) / 1000} s")
+        nextRetained += retainedEvery * 1000L
       }
     }
     logProgress()
@@ -167,6 +221,7 @@ class NotificationFlood(
     group.nextMessageId += 1L shl 20
     message.id = group.nextMessageId
     message.date = date
+    group.sender?.let { message.senderId = it }
     val type = TdApi.NotificationTypeNewMessage(message, true)
     val notification = TdApi.Notification(nextNotificationId++, date, false, type)
     val removed = if (group.shown.size == groupSizeMax) intArrayOf(group.shown.removeFirst()) else intArrayOf()
@@ -176,6 +231,23 @@ class NotificationFlood(
       group.id, TdApi.NotificationGroupTypeMessages(), group.chatId, group.chatId, -1,
       group.totalCount, arrayOf(notification), removed
     ))
+  }
+
+  private fun addLocalMessage(group: Group) {
+    // A message that has just come from the sender of a loaded one: TDLib adds it and sends the app
+    // its updates and notification
+    val message = group.messages[group.totalCount % group.messages.size]
+    group.totalCount++
+    val text = (message.content as? TdApi.MessageText)?.text
+      ?: TdApi.FormattedText("Message", arrayOf())
+    val content = TdApi.InputMessageText(text, null, false)
+    val sender = group.sender ?: message.senderId
+    val function = TdApi.AddLocalMessage(group.chatId, sender, null, false, content)
+    tdlib.client().send(function) {
+      if (it is TdApi.Error && failedCount++ == 0) {
+        Log.e(TAG, "AddLocalMessage failed: $it")
+      }
+    }
   }
 
   private fun send(update: TdApi.Update) {
@@ -197,9 +269,18 @@ class NotificationFlood(
   private fun logProgress() {
     val maps = File("/proc/self/maps").useLines { it.count() }
     val heap = Debug.getNativeHeapAllocatedSize() / 1024
+    // Results of TDLib wait in its queue while the thread of TDLib of the app handles earlier ones
+    val now = SystemClock.uptimeMillis()
+    val delay = markers.peek()?.let { now - it } ?: markerDelay
+    markers.add(now)
+    tdlib.client().send(TdApi.SetAlarm(0.0)) {
+      markers.poll()?.let { markerDelay = SystemClock.uptimeMillis() - it }
+    }
+    val sentBy = if (local) "$sent local messages, $failedCount failed" else "$updateCount updates"
+    val wait = "results of TDLib wait $delay ms"
     val icons = iconsOf()
-    val heapText = "native heap $heap KB"
-    Log.i(TAG, "sent $sent notifications in $updateCount updates, maps $maps, $heapText, $icons")
+    val memory = "maps $maps, native heap $heap KB"
+    Log.i(TAG, "sent $sent notifications in $sentBy, $memory, $wait, $icons")
     // The system kills a cached app for binder traffic of notifications ("excessive binder traffic
     // during cached"), which ends a flood without a crash of the app
     val state = ActivityManager.RunningAppProcessInfo()
@@ -215,27 +296,49 @@ class NotificationFlood(
     // Chats with notifications on and incoming messages, from the top of the main chat list
     val chats = execute(TdApi.GetChats(TdApi.ChatListMain(), 100)) as TdApi.Chats
     var groupId = (System.currentTimeMillis() / 1000 % 1_000_000_000).toInt()
+    if (savedMessages) {
+      val chatId = tdlib.selfChatId()
+      val messages = loadMessages(chatId, incomingOnly = false)
+      val sender = messages.firstOrNull()?.senderId?.takeIf { oneSender }
+      groups.add(Group(groupId, chatId, messages, sender))
+      return
+    }
     for (chatId in chats.chatIds) {
       if (groups.size == chatCount) {
         break
       }
-      if (!tdlib.chatNotificationsEnabled(chatId)) {
+      val isOfType = chatType == null || typeOf(tdlib.chat(chatId)) == chatType
+      // TDLib adds local messages only where the account can send them
+      val canAdd = !local || tdlib.canSendBasicMessage(chatId)
+      if (!(muted || tdlib.chatNotificationsEnabled(chatId)) || !isOfType || !canAdd) {
         continue
       }
       val messages = loadMessages(chatId)
       if (messages.isNotEmpty()) {
-        groups.add(Group(groupId++, chatId, messages))
+        val sender = messages[0].senderId.takeIf { oneSender }
+        groups.add(Group(groupId++, chatId, messages, sender))
         // Kinds of chats tell which code shows their notifications, e.g. icons of senders of groups
         val chat = tdlib.chat(chatId)
         val type = chat?.type?.javaClass?.simpleName
-        val senderCount = messages.map { it.senderId.toString() }.distinct().size
+        val senders = messages.map { it.senderId.toString() }.distinct().size
+        val senderCount = if (oneSender) 1 else senders
         val hasPhoto = chat?.photo != null
-        Log.i(TAG, "chat ${groups.size}: $type, photo $hasPhoto, ${messages.size} messages from $senderCount senders")
+        val isMuted = !tdlib.chatNotificationsEnabled(chatId)
+        val content = "${messages.size} messages from $senderCount senders"
+        Log.i(TAG, "chat ${groups.size}: $type, photo $hasPhoto, muted $isMuted, $content")
       }
     }
   }
 
-  private fun loadMessages(chatId: Long): List<TdApi.Message> {
+  private fun typeOf(chat: TdApi.Chat?): String? = when (val type = chat?.type) {
+    is TdApi.ChatTypePrivate -> "private"
+    is TdApi.ChatTypeBasicGroup -> "basicGroup"
+    is TdApi.ChatTypeSupergroup -> if (type.isChannel) "channel" else "supergroup"
+    is TdApi.ChatTypeSecret -> "secret"
+    else -> null
+  }
+
+  private fun loadMessages(chatId: Long, incomingOnly: Boolean = true): List<TdApi.Message> {
     // Up to [count] incoming messages, from the cache first, then from the server at the pace of
     // scrolling
     val messages = ArrayList<TdApi.Message>()
@@ -256,7 +359,7 @@ class NotificationFlood(
         Thread.sleep(HISTORY_REQUEST_INTERVAL_MS)
       }
       history.messages.filterTo(messages) {
-        !it.isOutgoing && (!textOnly || it.content is TdApi.MessageText)
+        (!incomingOnly || !it.isOutgoing) && (!textOnly || it.content is TdApi.MessageText)
       }
       fromMessageId = history.messages.last().id
     }
