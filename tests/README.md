@@ -571,6 +571,23 @@ Tests on device replace installed app and clear its data, so they must never run
 * When a test in separate process fails, screenshot, UI hierarchy and app crashes at that moment are saved as `<Class>.<test>.failure.png`, `<Class>.<test>.failure.xml` and `<Class>.<test>.crash.txt`, screenshots taken by test as `<Class>.<test>.<name>.png`. Gradle copies them to `build/outputs` of the module: `find tests/ui/build/outputs -name 'ChatTest.*'`.
 * After changes in `tests/core` or `tests/buildSrc`, `scripts/check-test-tools.sh` checks test tools: helpers of drawing, animations and scrolling, screenshots and recordings, check results before and after a change, benchmarks and their comparison, microbenchmarks, their outputs, comparison and method traces, `checkMinSdk`. Checks and benchmarks run on connected test device, `minsdk` step doesn't need it. Steps are selected by arguments, e.g. `scripts/check-test-tools.sh checks`. Its smoke checks are in `tests/<module>/tools`, which are compiled only with `-Ptgx.testTools`. The script runs Gradle and works with the device, `describeTestToolsCheck` task checks results and writes `build/test-tools-check/report.md`. It runs on macOS, Ubuntu and Windows in MSYS2 (UCRT64).
 
+### Android older than 7.0
+
+Tests of `tests/` need Android 7.0, API 24. On older phones, e.g. 4.2 of a weak test phone, `legacy` is measured by adb with its build with test hooks, minified like a release, made by `build.sh`:
+
+```shell
+tests/legacy/build.sh legacy -Pabi=arm32 -PuseLegacyNdk=true
+ANDROID_SERIAL=<device> tests/legacy/install.sh <apk> <snapshot.zip>
+ANDROID_SERIAL=<device> tests/legacy/start.sh 10 <output folder>
+ANDROID_SERIAL=<device> tests/legacy/scroll.sh 10 <output folder>
+```
+
+* `build.sh` builds the flavor given with test hooks and the marks of the start of `start-marks.patch`, which it applies to the clone for the time of the build and takes back after: the marks stay out of the code of the app, so that no release has them, and a mark added for a measurement goes into the patch. It prints the path of the APK.
+* `install.sh` installs the build and restores the snapshot of accounts at its first start, then deletes the copy of the snapshot on the phone.
+* `start.sh` measures cold and warm starts by `am start -W`, cold ones also by marks of `StartMarks` of the patch, which builds of `build.sh` log with tag `StartMarks` along the start once for each process: `Application`, the steps of `AppState`, `MainActivity.onCreate`, `first draw`, `chats shown` and `ready`, each with milliseconds since the previous mark and since the first one. It writes `starts.tsv` and the medians.
+* `scroll.sh` makes flings of the same length on the chat list and times each frame: on Android 4.1–4.3 by `debug.hwui.profile`, which it sets back after, and the times that `dumpsys gfxinfo` prints and clears, from Android 6.0 on by `framestats`. It writes `flings.tsv` and the totals: frames, their mean, 90th percentile, longest one and frames over one refresh, `BUDGET=16.67` ms by default. The same scripts measure a recent phone, e.g. `latest` built with `-Pabi=arm64`, to compare a change on both, with `BUDGET` of its refresh rate and the coordinates of its list.
+* Android 4.2 has no sections of traces of apps, API 18, and no `screenrecord`, 4.4; `atrace` there only traces the kernel, e.g. `-s` scheduling. A step that takes long gets marks inside it, by `startMark("name")` in `start-marks.patch`.
+
 ## Test accounts
 
 * Tests and checks run on production servers of Telegram with real test accounts. Messages can be sent only to **Saved Messages** or to the users authorized in the [snapshot](#session-snapshot), and groups and channels created by them can include only these users. Their ids are returned by `getSnapshotUserIds()`: when there is only one, messages are sent only to **Saved Messages**.
