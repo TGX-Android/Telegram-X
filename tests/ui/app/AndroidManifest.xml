@@ -37,5 +37,9 @@
       android:name="tgx.test.MessageTypesReceiver"
       android:exported="true"
       android:permission="android.permission.DUMP" />
+    <receiver
+      android:name="tgx.test.PasscodeReceiver"
+      android:exported="true"
+      android:permission="android.permission.DUMP" />
   </application>
 </manifest>
