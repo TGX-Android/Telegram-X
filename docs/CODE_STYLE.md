@@ -173,6 +173,23 @@ private fun Project.findAppKeystore(): Keystore? {
 * New files in `app` start with the license header, copied from a neighbouring file.
 * Build code in `buildSrc` and `tests/buildSrc` fails with `fatal(message)` of `tgx.gradle`.
 * Drawing, animations and scrolling don't allocate objects or request layout on frames, see [tests](/tests/README.md#drawing-and-animations).
+* A check of `Build.VERSION.SDK_INT` with both branches tests the newer version first, with the code since that version in `if` and the code before it in `else`:
+
+  ```java
+  // Don't
+  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+    // pre-KitKat code
+  } else {
+    // since KitKat code
+  }
+
+  // Do
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+    // since KitKat code
+  } else {
+    // pre-KitKat code
+  }
+  ```
 
 ## Resources
 
