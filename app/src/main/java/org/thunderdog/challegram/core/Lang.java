@@ -754,7 +754,13 @@ public class Lang {
     }
   }
 
-  private static String systemTime (long timeInMillis, int style, String fallbackPattern) {
+  private static String systemTime (
+    long timeInMillis,
+    int style,
+    String fallbackPattern12,
+    String fallbackPattern24
+  ) {
+    // Reading whether the system uses 12 hours takes long, so only the fallback reads it
     try {
       /*String language = dateFormatLocale().getLanguage();
       if (language.equals(Locale.getDefault().getLanguage())) {
@@ -771,11 +777,17 @@ public class Lang {
       }*/
       return java.text.DateFormat.getTimeInstance(translateStyle(style, false), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
     } catch (Throwable ignored) {
-      return dateFormat(fallbackPattern, timeInMillis);
+      return dateFormat(UI.needAmPm() ? fallbackPattern12 : fallbackPattern24, timeInMillis);
     }
   }
 
-  private static String systemDateTime (long timeInMillis, int dateStyle, int timeStyle, String fallbackPattern) {
+  private static String systemDateTime (
+    long timeInMillis,
+    int dateStyle,
+    int timeStyle,
+    String fallbackPattern12,
+    String fallbackPattern24
+  ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
         return android.icu.text.DateFormat.getDateTimeInstance(translateStyle(dateStyle, true), translateStyle(timeStyle, true), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
@@ -784,7 +796,7 @@ public class Lang {
     try {
       return java.text.DateFormat.getDateTimeInstance(translateStyle(dateStyle, false), translateStyle(timeStyle, false), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
     } catch (Throwable ignored) {
-      return dateFormat(fallbackPattern, timeInMillis);
+      return dateFormat(UI.needAmPm() ? fallbackPattern12 : fallbackPattern24, timeInMillis);
     }
   }
 
@@ -2000,7 +2012,7 @@ public class Lang {
   }
   public static String time (long unixTime, TimeUnit unit) {
     long timeMs = unit.toMillis(unixTime);
-    return systemTime(timeMs, STYLE_SHORT, UI.needAmPm() ? "h:mm a" : "H:mm");
+    return systemTime(timeMs, STYLE_SHORT, "h:mm a", "H:mm");
   }
 
   public static String hour (long unixTime, TimeUnit unit) {
@@ -2026,7 +2038,13 @@ public class Lang {
 
   public static String dateYearShortTime (long unixTime, TimeUnit unit) {
     long timeMs = unit.toMillis(unixTime);
-    return systemDateTime(timeMs, STYLE_MEDIUM, STYLE_SHORT, UI.needAmPm() ? "d MMM ''yy h:mm a" : "d MMM ''yy H:mm");
+    return systemDateTime(
+      timeMs,
+      STYLE_MEDIUM,
+      STYLE_SHORT,
+      "d MMM ''yy h:mm a",
+      "d MMM ''yy H:mm"
+    );
   }
 
   private static String dateFull (long unixTime, TimeUnit unit) {
@@ -2574,7 +2592,13 @@ public class Lang {
   public static String getTimestamp (long time, TimeUnit unit) {
     long unixTime = unit.toMillis(time);
     if (!Settings.instance().forceArabicNumbers()) {
-      return systemDateTime(unixTime, STYLE_SHORT, STYLE_SHORT, UI.needAmPm() ? "dd.MM.yyyy h:mm a" : "dd.MM.yyyy H:mm");
+      return systemDateTime(
+        unixTime,
+        STYLE_SHORT,
+        STYLE_SHORT,
+        "dd.MM.yyyy h:mm a",
+        "dd.MM.yyyy H:mm"
+      );
     }
     Calendar target = DateUtils.calendarInstance(unixTime);
     int day = target.get(Calendar.DAY_OF_MONTH);
