@@ -29,6 +29,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.inputmethod.EditorInfo;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -1006,7 +1007,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
       tooltipInfo = null;
     }
     if (mode == Passcode.MODE_PASSWORD && isFocused()) {
-      UI.showKeyboardDelayed(passwordView);
+      showKeyboardWithWindowFocus();
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       if (swirlView != null) {
@@ -1128,6 +1129,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         boolean isStrong = needStrongBiometrics();
         String title = Passcode.getActionName(Passcode.MODE_BIOMETRICS, passcodeView.getState(), false, BitwiseUtils.optional(Passcode.BIOMETRICS_OPTION_ONLY_STRONG, isStrong));
         String cancel = Lang.getString(R.string.CancelBiometrics);
+        showKeyboardOnFocus = false;
         if (mode == Passcode.MODE_PASSWORD) {
           // The prompt takes the input of the window, and the system shows a keyboard left under
           // it again when the window gets it back
@@ -1138,6 +1140,45 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         BiometricAuthentication.cancelAuthentication();
       }
       isBiometricAuthenticationActive = needBiometricsAuthentication;
+    }
+  }
+
+  private boolean showKeyboardOnFocus;
+
+  private void showKeyboardWithWindowFocus () {
+    passwordView.requestFocus();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 &&
+      !passwordView.hasWindowFocus()) {
+      if (!showKeyboardOnFocus) {
+        showKeyboardOnFocus = true;
+        passwordView.getViewTreeObserver().addOnWindowFocusChangeListener(
+          new KeyboardOnFocus(this)
+        );
+      }
+    } else {
+      UI.showKeyboardDelayed(passwordView);
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+  private static final class KeyboardOnFocus
+    implements ViewTreeObserver.OnWindowFocusChangeListener {
+    private final PasscodeController controller;
+
+    KeyboardOnFocus (PasscodeController controller) {
+      this.controller = controller;
+    }
+
+    @Override
+    public void onWindowFocusChanged (boolean hasFocus) {
+      if (!hasFocus) {
+        return;
+      }
+      controller.passwordView.getViewTreeObserver().removeOnWindowFocusChangeListener(this);
+      if (controller.showKeyboardOnFocus) {
+        controller.showKeyboardOnFocus = false;
+        UI.showKeyboardDelayed(controller.passwordView);
+      }
     }
   }
 
