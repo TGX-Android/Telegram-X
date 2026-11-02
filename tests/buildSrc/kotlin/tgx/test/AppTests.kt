@@ -93,12 +93,15 @@ fun Project.configureTests() {
     // Built-in Kotlin compiles only Kotlin source directories
     sourceSets.getByName("test") {
       kotlin.directories += "../tests/unit/kotlin"
+      // Suites that run both on the JVM and on the device, e.g. against implementations of Android
+      kotlin.directories += "../tests/shared/kotlin"
       if (hasChecks) {
         kotlin.directories += "../tests/unit/checks"
       }
     }
     sourceSets.getByName("androidTest") {
       kotlin.directories += "../tests/integration/kotlin"
+      kotlin.directories += "../tests/shared/kotlin"
       if (hasChecks) {
         kotlin.directories += "../tests/integration/checks"
       }
