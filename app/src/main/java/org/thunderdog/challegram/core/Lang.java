@@ -64,6 +64,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -79,6 +80,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Future;
 import me.vkryl.core.reference.ReferenceList;
 import tgx.td.ChatId;
 import tgx.td.MediaType;
@@ -613,15 +615,56 @@ public class Lang {
     return null;
   }
 
-  private static String dateFormat (String pattern, long timeInMillis) {
+  // Kept for each kind and locale, since making a formatter takes longer than formatting a date;
+  // made again after a change of the time zone or of 12 or 24 hours, which formatters take when
+  // they're made
+  private static final HashMap<String, java.text.Format> dateFormats = new HashMap<>();
+  private static final String KEY_PREFIX_PATTERN = "pattern ";
+  private static final String KEY_PREFIX_ICU_DATE = "icu date ";
+  private static final String KEY_PREFIX_DATE = "date ";
+  private static final String KEY_PREFIX_TIME = "time ";
+  private static final String KEY_PREFIX_ICU_DATE_TIME = "icu date time ";
+  private static final String KEY_PREFIX_DATE_TIME = "date time ";
+  private static final String KEY_PREFIX_ICU_DATE_WITHOUT_YEAR = "icu date without year ";
+  private static final String KEY_PREFIX_DATE_WITHOUT_YEAR = "date without year ";
+  private static final String KEY_PREFIX_ICU_DATE_WITHOUT_DAY = "icu date without day ";
+  private static final String KEY_PREFIX_DATE_WITHOUT_DAY = "date without day ";
+
+  private static String formatDate (
+    String kind,
+    long timeInMillis,
+    Future<java.text.Format> newFormat
+  ) {
+    final String key = kind + '|' + dateFormatLocale();
+    synchronized (dateFormats) {
+      java.text.Format format = dateFormats.get(key);
+      if (format == null) {
+        format = newFormat.getValue();
+        dateFormats.put(key, format);
+      }
+      return format.format(DateUtils.dateInstance(timeInMillis));
+    }
+  }
+
+  public static void clearDateFormats () {
+    synchronized (dateFormats) {
+      dateFormats.clear();
+    }
+  }
+
+  private static java.text.Format newDateFormat (String pattern) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        return new android.icu.text.SimpleDateFormat(pattern, dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+        return new android.icu.text.SimpleDateFormat(pattern, dateFormatLocale());
       } catch (ExceptionInInitializerError e) {
         Log.e("Vendor i18n implementation bug in SimpleDateFormat", e);
       }
     }
-    return new java.text.SimpleDateFormat(pattern, dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+    return new java.text.SimpleDateFormat(pattern, dateFormatLocale());
+  }
+
+  private static String dateFormat (String pattern, long timeInMillis) {
+    return formatDate(KEY_PREFIX_PATTERN + pattern, timeInMillis, () -> newDateFormat(pattern));
   }
 
   private static boolean isSpecifier (char c) {
@@ -744,11 +787,18 @@ public class Lang {
   private static String systemDate (long timeInMillis, int style, String fallbackPattern) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        return android.icu.text.DateFormat.getDateInstance(translateStyle(style, true), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+        return formatDate(KEY_PREFIX_ICU_DATE + style, timeInMillis, () ->
+          android.icu.text.DateFormat.getDateInstance(
+            translateStyle(style, true),
+            dateFormatLocale()
+          )
+        );
       } catch (Throwable ignored) { }
     }
     try {
-      return java.text.DateFormat.getDateInstance(translateStyle(style, false), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+      return formatDate(KEY_PREFIX_DATE + style, timeInMillis, () ->
+        java.text.DateFormat.getDateInstance(translateStyle(style, false), dateFormatLocale())
+      );
     } catch (Throwable ignored) {
       return dateFormat(fallbackPattern, timeInMillis);
     }
@@ -775,7 +825,9 @@ public class Lang {
           return android.icu.text.DateFormat.getTimeInstance(translateStyle(style, true), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
         } catch (Throwable ignored) { }
       }*/
-      return java.text.DateFormat.getTimeInstance(translateStyle(style, false), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+      return formatDate(KEY_PREFIX_TIME + style, timeInMillis, () ->
+        java.text.DateFormat.getTimeInstance(translateStyle(style, false), dateFormatLocale())
+      );
     } catch (Throwable ignored) {
       return dateFormat(UI.needAmPm() ? fallbackPattern12 : fallbackPattern24, timeInMillis);
     }
@@ -790,11 +842,24 @@ public class Lang {
   ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        return android.icu.text.DateFormat.getDateTimeInstance(translateStyle(dateStyle, true), translateStyle(timeStyle, true), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+        final String key = KEY_PREFIX_ICU_DATE_TIME + dateStyle + " " + timeStyle;
+        return formatDate(key, timeInMillis, () ->
+          android.icu.text.DateFormat.getDateTimeInstance(
+            translateStyle(dateStyle, true),
+            translateStyle(timeStyle, true),
+            dateFormatLocale()
+          )
+        );
       } catch (Throwable ignored) { }
     }
     try {
-      return java.text.DateFormat.getDateTimeInstance(translateStyle(dateStyle, false), translateStyle(timeStyle, false), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+      return formatDate(KEY_PREFIX_DATE_TIME + dateStyle + " " + timeStyle, timeInMillis, () ->
+        java.text.DateFormat.getDateTimeInstance(
+          translateStyle(dateStyle, false),
+          translateStyle(timeStyle, false),
+          dateFormatLocale()
+        )
+      );
     } catch (Throwable ignored) {
       return dateFormat(UI.needAmPm() ? fallbackPattern12 : fallbackPattern24, timeInMillis);
     }
@@ -803,13 +868,19 @@ public class Lang {
   private static String systemDateWithoutYear (long timeInMillis, int style, String fallbackPattern) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        String pattern = ((android.icu.text.SimpleDateFormat) android.icu.text.DateFormat.getDateInstance(translateStyle(style, true), dateFormatLocale())).toPattern();
-        return dateFormat(patternWithoutYear(pattern), timeInMillis);
+        return formatDate(KEY_PREFIX_ICU_DATE_WITHOUT_YEAR + style, timeInMillis, () -> {
+          String pattern = ((android.icu.text.SimpleDateFormat) android.icu.text.DateFormat
+            .getDateInstance(translateStyle(style, true), dateFormatLocale())).toPattern();
+          return newDateFormat(patternWithoutYear(pattern));
+        });
       } catch (Throwable ignored) { }
     }
     try {
-      String pattern = ((java.text.SimpleDateFormat) java.text.DateFormat.getDateInstance(translateStyle(style, false), dateFormatLocale())).toPattern();
-      return dateFormat(patternWithoutYear(pattern), timeInMillis);
+      return formatDate(KEY_PREFIX_DATE_WITHOUT_YEAR + style, timeInMillis, () -> {
+        String pattern = ((java.text.SimpleDateFormat) java.text.DateFormat
+          .getDateInstance(translateStyle(style, false), dateFormatLocale())).toPattern();
+        return newDateFormat(patternWithoutYear(pattern));
+      });
     } catch (Throwable ignored) {
       return dateFormat(fallbackPattern, timeInMillis);
     }
@@ -818,13 +889,19 @@ public class Lang {
   private static String systemDateWithoutDay (long timeInMillis, int style, String fallbackPattern) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        String pattern = ((android.icu.text.SimpleDateFormat) android.icu.text.DateFormat.getDateInstance(translateStyle(style, true), dateFormatLocale())).toPattern();
-        return dateFormat(patternWithoutDay(pattern), timeInMillis);
+        return formatDate(KEY_PREFIX_ICU_DATE_WITHOUT_DAY + style, timeInMillis, () -> {
+          String pattern = ((android.icu.text.SimpleDateFormat) android.icu.text.DateFormat
+            .getDateInstance(translateStyle(style, true), dateFormatLocale())).toPattern();
+          return newDateFormat(patternWithoutDay(pattern));
+        });
       } catch (Throwable ignored) { }
     }
     try {
-      String pattern = ((java.text.SimpleDateFormat) java.text.DateFormat.getDateInstance(translateStyle(style, false), dateFormatLocale())).toPattern();
-      return dateFormat(patternWithoutDay(pattern), timeInMillis);
+      return formatDate(KEY_PREFIX_DATE_WITHOUT_DAY + style, timeInMillis, () -> {
+        String pattern = ((java.text.SimpleDateFormat) java.text.DateFormat
+          .getDateInstance(translateStyle(style, false), dateFormatLocale())).toPattern();
+        return newDateFormat(patternWithoutDay(pattern));
+      });
     } catch (Throwable ignored) {
       return dateFormat(fallbackPattern, timeInMillis);
     }

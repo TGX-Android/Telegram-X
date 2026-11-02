@@ -15,6 +15,8 @@ import org.thunderdog.challegram.data.TGMessage
 import org.thunderdog.challegram.telegram.DateChangeListener
 import org.thunderdog.challegram.telegram.TdlibManager
 import org.thunderdog.challegram.tool.UI
+import org.thunderdog.challegram.util.text.FormattedText
+import org.thunderdog.challegram.widget.BetterChatView
 import java.util.concurrent.TimeUnit
 
 private const val TAG = "ShownTimes"
@@ -27,7 +29,10 @@ private const val TAG = "ShownTimes"
  * and of those whose time is old, and of changes of the time format that the app heard since the
  * first broadcast, as `chats 9, old 0, messages 12, old 0, changes 0`, then each old one as
  * `old <shown> instead of <now>`. With `--es action merges` it logs each message of the open chat
- * on the screen as `message <id> top <y> merge <flags> <index> date <date above it or null>`
+ * on the screen as `message <id> top <y> merge <flags> <index> date <date above it or null>`; with
+ * `--es action shown` it also logs each time on the screen as `shown <time>`, and each row of
+ * search as `found <time of a found message> | <status of a found chat>`; `--es action word` logs
+ * `word <word>` of a text message of the last 6 hours, the last message of a chat on the screen
  */
 class ShownTimesReceiver : BroadcastReceiver() {
   companion object {
@@ -39,6 +44,12 @@ class ShownTimesReceiver : BroadcastReceiver() {
     if (intent.getStringExtra("action") == "merges") {
       UI.post {
         UI.getUiContext()?.window?.decorView?.let { logMerges(it) }
+      }
+      return
+    }
+    if (intent.getStringExtra("action") == "word") {
+      UI.post {
+        UI.getUiContext()?.window?.decorView?.let { Log.i(TAG, "word ${wordOfToday(it) ?: ""}") }
       }
       return
     }
@@ -63,6 +74,12 @@ class ShownTimesReceiver : BroadcastReceiver() {
       for ((shown, now) in oldChats + oldMessages) {
         Log.i(TAG, "old $shown instead of $now")
       }
+      if (intent.getStringExtra("action") == "shown") {
+        for ((shown, _) in chats + messages) {
+          Log.i(TAG, "shown $shown")
+        }
+        UI.getUiContext()?.window?.decorView?.let { logFound(it) }
+      }
     }
   }
 
@@ -85,6 +102,23 @@ class ShownTimesReceiver : BroadcastReceiver() {
     }
   }
 
+  private fun logFound(view: View) {
+    // Rows of search: the time of a found message and the status of a found chat
+    if (view is BetterChatView) {
+      val time = BetterChatView::class.java.getDeclaredField("time").apply { isAccessible = true }
+      val subtitle = BetterChatView::class.java.getDeclaredField("subtitle")
+        .apply { isAccessible = true }
+      val status = (subtitle.get(view) as? FormattedText)?.text ?: ""
+      Log.i(TAG, "found ${time.get(view) ?: ""} | $status")
+      return
+    }
+    if (view is ViewGroup) {
+      for (i in 0 until view.childCount) {
+        logFound(view.getChildAt(i))
+      }
+    }
+  }
+
   private fun logMerges(view: View) {
     if (view is MessageView) {
       val message = view.message ?: return
@@ -102,6 +136,26 @@ class ShownTimesReceiver : BroadcastReceiver() {
         logMerges(view.getChildAt(i))
       }
     }
+  }
+
+  private fun wordOfToday(view: View): String? {
+    // A word of 4 letters or more of a text message of the last 6 hours, the last message of a
+    // chat on the screen, so that a search finds a message that shows a time
+    if (view is ChatView) {
+      val chat = view.chat ?: return null
+      val tdChat = TGChat::class.java.getDeclaredField("chat").apply { isAccessible = true }
+        .get(chat) as? TdApi.Chat ?: return null
+      val message = tdChat.lastMessage ?: return null
+      val text = (message.content as? TdApi.MessageText)?.text?.text ?: return null
+      val today = System.currentTimeMillis() / 1000 - message.date < 6 * 60 * 60
+      return if (today) Regex("\\p{L}{4,}").find(text)?.value else null
+    }
+    if (view is ViewGroup) {
+      for (i in 0 until view.childCount) {
+        wordOfToday(view.getChildAt(i))?.let { return it }
+      }
+    }
+    return null
   }
 
   private fun timesOf(chat: TGChat): Pair<String, String>? {

@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.AppContext;
 
@@ -122,6 +123,7 @@ public class DateManager {
     if (!this.timeFormat.equals(timeFormat)) {
       this.timeFormat = timeFormat;
       DateUtils.clearCache();
+      Lang.clearDateFormats();
       notifyListeners(DateChangeListener::onTimeFormatChanged);
     }
   }
