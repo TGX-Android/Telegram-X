@@ -11,6 +11,7 @@ import android.util.Log
 import android.util.LruCache
 import org.drinkless.tdlib.TdApi
 import org.thunderdog.challegram.data.TD
+import org.thunderdog.challegram.data.TGChat
 import org.thunderdog.challegram.telegram.Tdlib
 import org.thunderdog.challegram.telegram.TdlibManager
 import org.thunderdog.challegram.telegram.TdlibNotificationUtils
@@ -280,7 +281,9 @@ class NotificationFlood(
     val wait = "results of TDLib wait $delay ms"
     val icons = iconsOf()
     val memory = "maps $maps, native heap $heap KB"
-    Log.i(TAG, "sent $sent notifications in $sentBy, $memory, $wait, $icons")
+    // How long changes of chats waited for their layout in the list, read off the main thread
+    val layout = "layout of chats ${TGChat.takeChangesLag()}"
+    Log.i(TAG, "sent $sent notifications in $sentBy, $memory, $wait, $icons, $layout")
     // The system kills a cached app for binder traffic of notifications ("excessive binder traffic
     // during cached"), which ends a flood without a crash of the app
     val state = ActivityManager.RunningAppProcessInfo()

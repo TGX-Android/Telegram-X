@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.data;
 
+import android.os.SystemClock;
 import android.view.Choreographer;
 import android.view.Gravity;
 import android.view.View;
@@ -25,6 +26,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -91,6 +93,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   private static final int FLAG_SHOW_SCAM = 1 << 15;
   private static final int FLAG_SHOW_FAKE = 1 << 16;
   private static final int FLAG_MESSAGE = 1 << 17;
+  private static final int FLAG_CHANGES_POSTED = 1 << 18;
 
   private static final int ARCHIVE_PREVIEW_LIMIT = 9;
 
@@ -101,8 +104,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   private static final int CHANGE_TEXT = 1 << 2;
   private static final int CHANGE_TITLE = 1 << 3;
   private int pendingChanges;
-  private boolean isChangeFramePosted;
-  private @Nullable Choreographer.FrameCallback changeFrame;
+  private long lastChangesLayoutAt;
+  private static final ArrayList<TGChat> chatsWithChanges = new ArrayList<>();
+  private static boolean isChangesFramePosted;
+  private static final Choreographer.FrameCallback changesFrame =
+    frameTimeNanos -> layoutPostedChanges();
+  // Test hooks: how long changes waited for their layout, for the tools of floods
+  private long changesPendingSince;
+  private static long changesLagMax, changesLagSum, changesLagCount;
 
   private final ViewController<?> context;
   private final Tdlib tdlib;
@@ -447,21 +456,65 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   }
 
   private void postChanges (int changes) {
+    if (Config.ENABLE_TEST_HOOKS && pendingChanges == 0) {
+      changesPendingSince = SystemClock.uptimeMillis();
+    }
     pendingChanges |= changes;
-    if ((flags & FLAG_ATTACHED) == 0 || isChangeFramePosted) {
+    if ((flags & FLAG_ATTACHED) == 0) {
       return;
     }
-    if (changeFrame == null) {
-      changeFrame = frameTimeNanos -> {
-        isChangeFramePosted = false;
-        if ((flags & FLAG_ATTACHED) != 0) {
-          applyChanges();
-          currentViews.invalidate();
-        }
-      };
+    if ((flags & FLAG_CHANGES_POSTED) == 0) {
+      flags |= FLAG_CHANGES_POSTED;
+      chatsWithChanges.add(this);
     }
-    isChangeFramePosted = true;
-    Choreographer.getInstance().postFrameCallback(changeFrame);
+    postChangesFrame();
+  }
+
+  private static void postChangesFrame () {
+    if (isChangesFramePosted || chatsWithChanges.isEmpty()) {
+      return;
+    }
+    final long now = SystemClock.uptimeMillis();
+    long delay = Long.MAX_VALUE;
+    for (int i = 0; i < chatsWithChanges.size(); i++) {
+      final long layoutAt = chatsWithChanges.get(i).lastChangesLayoutAt;
+      delay = Math.min(delay, layoutAt + Config.CHAT_CHANGES_INTERVAL_MS - now);
+    }
+    isChangesFramePosted = true;
+    Choreographer.getInstance().postFrameCallbackDelayed(changesFrame, Math.max(0, delay));
+  }
+
+  private static void layoutPostedChanges () {
+    isChangesFramePosted = false;
+    final long now = SystemClock.uptimeMillis();
+    for (int i = chatsWithChanges.size() - 1; i >= 0; i--) {
+      final TGChat chat = chatsWithChanges.get(i);
+      if ((chat.flags & FLAG_ATTACHED) == 0) {
+        chatsWithChanges.remove(i);
+        chat.flags &= ~FLAG_CHANGES_POSTED;
+      } else if (now >= chat.lastChangesLayoutAt + Config.CHAT_CHANGES_INTERVAL_MS) {
+        chatsWithChanges.remove(i);
+        chat.flags &= ~FLAG_CHANGES_POSTED;
+        if (Config.ENABLE_TEST_HOOKS) {
+          final long lag = now - chat.changesPendingSince;
+          changesLagMax = Math.max(changesLagMax, lag);
+          changesLagSum += lag;
+          changesLagCount++;
+        }
+        chat.applyChanges();
+        chat.lastChangesLayoutAt = now;
+        chat.currentViews.invalidate();
+      }
+    }
+    postChangesFrame();
+  }
+
+  public static String takeChangesLag () {
+    // Test hooks: how long changes of chats waited since the last call
+    final String lag = "max " + changesLagMax + " ms, mean " +
+      (changesLagCount > 0 ? changesLagSum / changesLagCount : 0) + " ms of " + changesLagCount;
+    changesLagMax = changesLagSum = changesLagCount = 0;
+    return lag;
   }
 
   private void applyChanges () {
