@@ -462,8 +462,26 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
     }
   }
 
+  private boolean hasMessageContainer (long messageId) {
+    if (items == null) {
+      return false;
+    }
+    final boolean isOrderedByIds = !manager.needSort();
+    for (TGMessage item : items) {
+      if (item.isDescendantOrSelf(messageId)) {
+        return true;
+      }
+      // Sponsored messages have ids out of the order of the others, and a sorted list, e.g. of
+      // scheduled messages, is ordered by dates
+      if (isOrderedByIds && !item.isSponsoredMessage() && item.getBiggestId() < messageId) {
+        return false;
+      }
+    }
+    return false;
+  }
+
   public boolean addMessageImpl (TGMessage message, boolean top, boolean needScrollToBottom) {
-    if (manager.needRemoveDuplicates() && indexOfMessageContainer(message.getId()) != -1)
+    if (manager.needRemoveDuplicates() && hasMessageContainer(message.getId()))
       return false;
 
     if (manager.needSort() && items != null && !items.isEmpty()) {
