@@ -1924,8 +1924,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
 
     if (!isWasScrollByUser()) {
-      final int unreadBadgeIndex = adapter.indexOfMessageWithUnreadSeparator();
       final int index = adapter.indexOfMessageContainer(messageId);
+      final int lastVisibleIndex = manager.findLastVisibleItemPosition();
+      final int unreadBadgeIndex = index != -1 ?
+        adapter.indexOfMessageWithUnreadSeparator(index, lastVisibleIndex) : -1;
       if (unreadBadgeIndex != -1 && index != -1 && index <= unreadBadgeIndex) {
         View unreadBadgeView = manager.findViewByPosition(unreadBadgeIndex);
         if (unreadBadgeView != null && unreadBadgeView.getTop() <= controller.getTopOffset()) {

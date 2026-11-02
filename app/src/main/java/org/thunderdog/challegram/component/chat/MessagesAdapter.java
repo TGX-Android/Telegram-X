@@ -434,16 +434,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
     return false;
   }
 
-  public int indexOfMessageWithUnreadSeparator () {
+  public int indexOfMessageWithUnreadSeparator (int fromIndex, int toIndex) {
     if (items == null) {
       return -1;
     }
-    int i = 0;
-    for (TGMessage item : items) {
-      if (item.hasUnreadBadge()) {
+    for (int i = Math.max(0, fromIndex); i <= toIndex && i < items.size(); i++) {
+      if (items.get(i).hasUnreadBadge()) {
         return i;
       }
-      i++;
     }
     return -1;
   }
