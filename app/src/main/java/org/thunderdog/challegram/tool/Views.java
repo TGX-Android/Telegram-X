@@ -61,6 +61,7 @@ import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.WebViewHolder;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.AttachDelegate;
+import org.thunderdog.challegram.widget.DateTimeView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.lang.reflect.Field;
@@ -70,6 +71,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableData;
 
 public class Views {
   public static void setClickable (View view) {
@@ -1113,6 +1115,47 @@ public class Views {
       return gravity < 0 ? Gravity.NO_GRAVITY : gravity;
     }
     return Gravity.NO_GRAVITY;
+  }
+
+  public static void updateRows (
+    RecyclerView recyclerView,
+    int start,
+    int end,
+    RunnableData<View> updateVisibleRow
+  ) {
+    // A change of what the rows from start to end show, without the change animations that
+    // notifyItemRangeChanged runs over rows on the screen: those are updated in their views, the
+    // others are bound again when they come back
+    RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
+    LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+    if (adapter == null || manager == null || start >= end) {
+      return;
+    }
+    final int first = manager.findFirstVisibleItemPosition();
+    final int last = manager.findLastVisibleItemPosition();
+    if (first == RecyclerView.NO_POSITION || last < start || first >= end) {
+      adapter.notifyItemRangeChanged(start, end - start);
+      return;
+    }
+    for (int i = Math.max(first, start); i <= Math.min(last, end - 1); i++) {
+      View view = manager.findViewByPosition(i);
+      if (view != null) {
+        updateVisibleRow.runWithData(view);
+        view.invalidate();
+      }
+    }
+    if (first > start) {
+      adapter.notifyItemRangeChanged(start, first - start);
+    }
+    if (last + 1 < end) {
+      adapter.notifyItemRangeChanged(last + 1, end - last - 1);
+    }
+  }
+
+  public static void updateRowTimes (View row) {
+    if (row instanceof DateTimeView) {
+      ((DateTimeView) row).onDateOrTimeChanged();
+    }
   }
 
   public static boolean isFocusedViewVisible (RecyclerView recyclerView, View view) {

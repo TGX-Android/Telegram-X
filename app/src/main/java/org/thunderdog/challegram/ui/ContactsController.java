@@ -1379,8 +1379,8 @@ public class ContactsController extends TelegramViewController<ContactsControlle
 
   @Override
   public void onTimeFormatChanged () {
-    for (int i = 0; i < recyclerView.getChildCount(); i++) {
-      recyclerView.getChildAt(i).invalidate();
+    if (adapter != null) {
+      Views.updateRows(recyclerView, 0, adapter.getItemCount(), Views::updateRowTimes);
     }
   }
 

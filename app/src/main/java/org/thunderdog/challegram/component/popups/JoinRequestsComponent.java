@@ -178,6 +178,16 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
         group.setIconClickListener((v) -> declineRequest(user));
         group.setTextClickListener((v) -> onClick(group));
       }
+
+      @Override
+      protected void updateTimes () {
+        // Rows have only ids, and the times of requests are in the statuses of their users
+        if (joinRequests != null) {
+          for (int i = 0; i < joinRequests.size() && i < joinRequestsTdlib.size(); i++) {
+            joinRequests.get(i).setCustomStatus(requestedSince(joinRequestsTdlib.get(i)));
+          }
+        }
+      }
     };
 
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -277,10 +287,17 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     });
   }
 
+  private static String requestedSince (TdApi.ChatJoinRequest request) {
+    return Lang.getString(
+      R.string.InviteLinkRequestSince,
+      Lang.getMessageTimestamp(request.date, TimeUnit.SECONDS)
+    );
+  }
+
   private static TGUser parseSender (Tdlib tdlib, TdApi.ChatJoinRequest sender, ArrayList<TGUser> senders) {
     TGUser parsedUser = new TGUser(tdlib, tdlib.cache().user(sender.userId));
     parsedUser.setNoBotState();
-    parsedUser.setCustomStatus(Lang.getString(R.string.InviteLinkRequestSince, Lang.getMessageTimestamp(sender.date, TimeUnit.SECONDS)));
+    parsedUser.setCustomStatus(requestedSince(sender));
     parsedUser.setBoundList(senders);
     return parsedUser;
   }

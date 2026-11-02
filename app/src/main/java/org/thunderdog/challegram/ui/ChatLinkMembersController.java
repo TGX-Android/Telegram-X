@@ -31,6 +31,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 
@@ -199,8 +200,8 @@ public class ChatLinkMembersController
     }
     for (int i = 0; i < senders.size(); i++) {
       senders.get(i).setCustomStatus(memberSince(sendersTdlib.get(i)));
-      adapter.updateUserViewByLongId(senders.get(i).getChatId(), false);
     }
+    Views.updateRows(getRecyclerView(), 0, adapter.getItemCount(), Views::updateRowTimes);
   }
 
   private void openRightsScreen (long userId) {

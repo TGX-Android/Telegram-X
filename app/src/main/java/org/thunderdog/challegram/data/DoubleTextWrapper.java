@@ -34,7 +34,6 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
-import org.thunderdog.challegram.telegram.DateManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.theme.ColorId;
@@ -84,7 +83,6 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
 
   private CharSequence subtitle;
   private Text trimmedSubtitle;
-  private int timeFormatVersion;
 
   private AvatarPlaceholder avatarPlaceholder;
   private EmojiStatusHelper.EmojiStatusDrawable emojiStatusDrawable;
@@ -300,10 +298,10 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   public void updateSubtitle () {
-    timeFormatVersion = DateManager.timeFormatVersion();
     CharSequence description = needFullDescription ? TD.getMemberDescription(new TdlibContext(null, tdlib), memberInfo, false) : null;
     if (!StringUtils.isEmpty(description)) {
       setSubtitle(description);
+      hasOwnSubtitle = true;
       return;
     }
     if (userId != 0) {
@@ -323,6 +321,15 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     } else {
       setSubtitle(tdlib.status().chatStatus(chatId));
       setOnline(false);
+    }
+    hasOwnSubtitle = true;
+  }
+
+  public void updateTimes () {
+    // A subtitle that the wrapper made itself has times, e.g. of the last visit of the user or of
+    // a ban of the member, and one set by its owner is the owner's to change
+    if (hasOwnSubtitle) {
+      updateSubtitle();
     }
   }
 
@@ -387,6 +394,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   private CharSequence forcedSubtitle;
+  private boolean hasOwnSubtitle;
 
   public void setForcedSubtitle (CharSequence newSubtitle) {
     this.forcedSubtitle  = newSubtitle;
@@ -395,6 +403,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   public void setSubtitle (CharSequence newSubtitle) {
+    hasOwnSubtitle = false;
     if (!StringUtils.isEmpty(forcedSubtitle)) {
       newSubtitle = forcedSubtitle;
     }
@@ -592,9 +601,6 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   public <T extends View & DrawableProvider> void draw (T view, Receiver receiver, Canvas c, ComplexReceiver emojiStatusReceiver) {
-    if (userId != 0 && timeFormatVersion != DateManager.timeFormatVersion()) {
-      updateSubtitle();
-    }
     int left = Screen.dp(72f);
     int viewWidth = view.getMeasuredWidth();
 

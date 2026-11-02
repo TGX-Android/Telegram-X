@@ -33,7 +33,7 @@ public class DateManager {
             UI.execute(DateManager.this::checkDateAndTimeFormat);
             break;
           case Intent.ACTION_DATE_CHANGED:
-            UI.execute(DateManager.this::checkCurrentDate);
+            UI.execute(DateManager.this::checkDateAndTimeFormat);
             break;
           case Intent.ACTION_TIME_CHANGED:
             // Also sent when 12 or 24 hours change
@@ -41,7 +41,7 @@ public class DateManager {
             UI.execute(DateManager.this::checkDateAndTimeFormat);
             break;
           case Intent.ACTION_LOCALE_CHANGED:
-            UI.execute(DateManager.this::checkTimeFormat);
+            UI.execute(DateManager.this::checkDateAndTimeFormat);
             break;
         }
       }
@@ -117,17 +117,10 @@ public class DateManager {
     return TimeZone.getDefault().getID() + " " + UI.needAmPm() + " " + locale;
   }
 
-  private static int timeFormatVersion;
-
-  public static int timeFormatVersion () {
-    return timeFormatVersion;
-  }
-
   public void checkTimeFormat () {
     String timeFormat = currentTimeFormat();
     if (!this.timeFormat.equals(timeFormat)) {
       this.timeFormat = timeFormat;
-      timeFormatVersion++;
       DateUtils.clearCache();
       notifyListeners(DateChangeListener::onTimeFormatChanged);
     }

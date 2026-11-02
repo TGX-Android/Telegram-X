@@ -53,6 +53,7 @@ import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.InlineResult;
+import org.thunderdog.challegram.data.InlineResultCommon;
 import org.thunderdog.challegram.data.PageBlock;
 import org.thunderdog.challegram.data.PageBlockFile;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
@@ -223,13 +224,25 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     public void onTimeFormatChanged () {
       updateAllValuedSettings();
       updateAllSessions();
-      for (RecyclerView parentView : parentViews) {
-        for (int i = 0; i < parentView.getChildCount(); i++) {
-          parentView.getChildAt(i).invalidate();
+      for (ListItem item : items) {
+        final Object data = item.getData();
+        if (data instanceof DoubleTextWrapper) {
+          ((DoubleTextWrapper) data).updateTimes();
+        } else if (data instanceof InlineResultCommon) {
+          ((InlineResultCommon) data).updateTimes();
         }
+      }
+      updateTimes();
+      for (RecyclerView parentView : parentViews) {
+        Views.updateRows(parentView, 0, getItemCount(), Views::updateRowTimes);
       }
     }
   };
+
+  protected void updateTimes () {
+    // Override: times of models that the owner keeps outside of the rows, e.g. times of requests
+    // that rows of users show as their statuses, or of another list that the rows show later
+  }
 
   @Override
   public void onAttachedToRecyclerView (RecyclerView recyclerView) {
