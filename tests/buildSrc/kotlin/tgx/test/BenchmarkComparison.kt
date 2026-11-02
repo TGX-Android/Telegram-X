@@ -55,7 +55,9 @@ fun Project.configureBenchmarkComparison() {
     finalizedBy(keepResults)
   }
   tasks.register<SaveBenchmarksTask>("saveBenchmarkResults") {
-    mustRunAfter(connectedTests, keepResults)
+    // In one command the comparison reads the base before the save makes the run the new one:
+    // both copy the run into the same folder, so at once they fail
+    mustRunAfter(connectedTests, keepResults, "compareBenchmarkResults")
     this.results.set(results)
     this.savedResults.set(savedResults)
   }
