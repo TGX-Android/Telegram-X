@@ -290,7 +290,7 @@ if $NEEDS_DEVICE; then
   elif [ "$SDK_INT" -ge 29 ]; then
     FLAVOR=Qrs
   elif [ "$SDK_INT" -ge 24 ]; then
-    FLAVOR=Tens
+    FLAVOR=Nop
   else
     fail "UI tests and benchmarks require Android 7.0+, $MODEL has Android $RELEASE"
   fi
