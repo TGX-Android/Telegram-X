@@ -59,6 +59,9 @@ import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ContentFrameLayout;
+// region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+import org.thunderdog.challegram.navigation.ForumRailTransition;
+// endregion
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MoreDelegate;
@@ -884,6 +887,92 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     return chatsView != null && liveLocationHelper != null && liveLocationHelper.isVisible();
   }
 
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+  /** Adapter decorations/archive are not part of the folder projection shown by the forum rail. */
+  public int getForumRailPosition () {
+    if (chatsView == null || adapter == null ||
+      !(chatsView.getLayoutManager() instanceof LinearLayoutManager)) {
+      return 0;
+    }
+    int position =
+      ((LinearLayoutManager) chatsView.getLayoutManager()).findFirstVisibleItemPosition();
+    int chatIndex = adapter.getChatIndexByItemPosition(position);
+    return Math.max(0, chatIndex - (adapter.hasArchive() ? 1 : 0));
+  }
+
+  public Runnable holdForumRailSourceLayout () {
+    return ForumRailTransition.holdSourceLayout(chatsView);
+  }
+
+  public List<ForumRailTransition.Avatar> captureForumRailAvatars (ViewGroup host) {
+    List<ForumRailTransition.Avatar> avatars = new ArrayList<>();
+    if (chatsView == null) {
+      return avatars;
+    }
+    chatsView.stopScroll();
+    for (int i = 0; i < chatsView.getChildCount(); i++) {
+      View child = chatsView.getChildAt(i);
+      if (!(child instanceof ChatView)) {
+        continue;
+      }
+      ChatView row = (ChatView) child;
+      if (row.getChatId() == 0 || child.getBottom() <= chatsView.getPaddingTop() ||
+        child.getTop() >= chatsView.getHeight()) {
+        continue;
+      }
+      org.thunderdog.challegram.loader.Receiver avatar = row.getAvatarReceiver();
+      if (avatar.getWidth() <= 0) {
+        continue;
+      }
+      avatars.add(ForumRailTransition.Avatar.capture(row.getChatId(), host, row,
+        avatar.centerX(), avatar.centerY(), avatar.getWidth() / 2f, (canvas, decorations) -> {
+          if (avatar.needPlaceholder()) {
+            avatar.drawPlaceholder(canvas);
+          }
+          avatar.draw(canvas);
+        }, row::setForumTransitionAvatarHidden));
+    }
+    return avatars;
+  }
+
+  public ChatView getForumRailAnchor (ViewGroup host, int headerBottom) {
+    if (chatsView == null) {
+      return null;
+    }
+    android.view.ViewParent ancestor = chatsView.getParent();
+    while (ancestor != null && ancestor != host) {
+      ancestor = ancestor.getParent();
+    }
+    if (ancestor != host) {
+      return null;
+    }
+    Rect bounds = new Rect();
+    int[] hostLocation = new int[2];
+    host.getLocationOnScreen(hostLocation);
+    for (int i = 0; i < chatsView.getChildCount(); i++) {
+      View child = chatsView.getChildAt(i);
+      if (!(child instanceof ChatView) || ((ChatView) child).getChatId() == 0) {
+        continue;
+      }
+      // Include ancestor clipping (e.g. the folder pager), not just the row's layout bounds.
+      if (child.getGlobalVisibleRect(bounds) && bounds.bottom > hostLocation[1] + headerBottom &&
+        bounds.top < hostLocation[1] + host.getHeight()) {
+        return (ChatView) child;
+      }
+    }
+    return null;
+  }
+
+  public int getForumRailAnchorOffset (ViewGroup host, int headerBottom, ChatView row) {
+    if (row == null || row.getHeight() == 0) {
+      return 0;
+    }
+    Rect bounds = new Rect(0, 0, row.getWidth(), row.getHeight());
+    host.offsetDescendantRectToMyCoords(row, bounds);
+    return Math.round((bounds.top - headerBottom) * (Screen.dp(64) / (float) row.getHeight()));
+  }
+
+  // endregion
   public void onLiveLocationClick (float x, float y) {
     if (needLiveLocationClick() && chatsView != null) {
       RecyclerView.LayoutManager manager = chatsView.getLayoutManager();
@@ -1038,7 +1127,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         return;
       }
 
-      int totalScrollBy = chatItemHeight * firstVisiblePosition;
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+      int totalScrollBy = chatItemHeight * firstVisiblePosition + adapter.getChatHeightDeltaBefore(
+        firstVisiblePosition
+      );
+      // endregion
       int separatorItemCount = firstVisiblePosition;
       int chatsCount = adapter.getChatCount();
 
@@ -1082,7 +1175,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
     int chatsCount = adapter.getChatCount();
 
-    int totalScrollBy = chatHeight * chatsCount;
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    int totalScrollBy = chatHeight * chatsCount + adapter.getChatHeightDeltaBefore(
+      adapter.getItemCount()
+    );
+    // endregion
     int separatorItemCount = chatsCount;
 
     if (adapter.hasArchive() && chatsCount > 1) {
@@ -2137,8 +2234,22 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     int highlightMode;
     Object shareItem = pickerDelegate != null ? pickerDelegate.getShareItem() : null;
     TdlibUi.ChatOpenParameters params;
-    if ((highlightMode = MessagesManager.getAnchorHighlightMode(tdlib.id(), chat, null)) != MessagesManager.HIGHLIGHT_MODE_NONE) {
-      params = new TdlibUi.ChatOpenParameters().shareItem(shareItem).highlightMessage(highlightMode, MessagesManager.getAnchorMessageId(tdlib.id(), chat, null, highlightMode));
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    if (pickerDelegate == null && (chat.viewAsTopics || tdlib.hasForumTabs(
+      chat.id
+    )) && tdlib.isForum(chat.id)) {
+      // A group-wide unread/scroll anchor must not turn a plain forum tap into a message jump.
+      params = new TdlibUi.ChatOpenParameters();
+    } else if ((highlightMode = MessagesManager.getAnchorHighlightMode(
+      tdlib.id(),
+      chat,
+      null
+    )) != MessagesManager.HIGHLIGHT_MODE_NONE) {
+      params = new TdlibUi.ChatOpenParameters().shareItem(shareItem).restoreAnchor(
+        highlightMode,
+        MessagesManager.getAnchorMessageId(tdlib.id(), chat, null, highlightMode)
+      );
+    // endregion
     } else {
       params = new TdlibUi.ChatOpenParameters().shareItem(shareItem);
     }
@@ -2148,6 +2259,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     if (chatList().getConstructor() != TdApi.ChatListMain.CONSTRUCTOR) {
       params.keepStack();
     }
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    params.chatList(chatList());
+    // endregion
     tdlib.ui().openChat(this, chat, params);
   }
 
@@ -3015,6 +3129,13 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onSupergroupUpdated (final TdApi.Supergroup supergroup) {
+    // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+    runOnUiThreadOptional(() -> {
+      if (adapter != null) {
+        adapter.checkChatListMode();
+      }
+    });
+    // endregion
     if (!TD.isMember(supergroup.status)) {
       runOnUiThreadOptional(() -> {
         checkChatSelected(ChatId.fromSupergroupId(supergroup.id));

@@ -70,6 +70,21 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
 
   public ArrayList<TGChat> getChats () {
     return chats;
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+  }
+
+  /**
+   * Forum rows stay three-line even in compact mode;
+   * scroll estimates must use their real heights.
+   */
+  public int getChatHeightDeltaBefore (int itemPosition) {
+    int regularHeight = ChatsViewHolder.measureHeightForType(VIEW_TYPE_CHAT);
+    int delta = 0;
+    for (int i = 0; i < chats.size() && getItemPositionByChatIndex(i) < itemPosition; i++) {
+      delta += ChatView.getViewHeight(chats.get(i).getListMode()) - regularHeight;
+    }
+    return delta;
+  // endregion
   }
 
   public void setTotalRes (@StringRes int totalRes) {
