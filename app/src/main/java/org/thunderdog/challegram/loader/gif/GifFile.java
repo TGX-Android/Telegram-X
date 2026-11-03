@@ -50,6 +50,9 @@ public class GifFile {
   public static final int FLAG_DECODE_LAST_FRAME = 1 << 4;
   public static final int FLAG_HIGH_PRIORITY_FOR_DECODE = 1 << 5;
 
+  private static final String KEY_PREFIX_DEBUG = "debug_";
+  private static final String KEY_PREFIX_UNIQUE_ID = "unique_";
+
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     OptimizationMode.NONE,
@@ -348,6 +351,32 @@ public class GifFile {
 
   public int getFileId () {
     return file.id;
+  }
+
+  private String fileKey;
+
+  public String getFileKey () {
+    if (fileKey == null) {
+      fileKey = toFileKey(tdlib, file);
+    }
+    return fileKey;
+  }
+
+  static String toFileKey (Tdlib tdlib, TdApi.File file) {
+    StringBuilder b = new StringBuilder();
+    if (tdlib != null && tdlib.account().isDebug()) {
+      b.append(KEY_PREFIX_DEBUG);
+    }
+    if (!StringUtils.isEmpty(file.remote.uniqueId)) {
+      b.append(KEY_PREFIX_UNIQUE_ID).append(file.remote.uniqueId);
+    } else {
+      b.append(accountId(tdlib)).append('_').append(file.id);
+    }
+    return b.toString();
+  }
+
+  static int accountId (Tdlib tdlib) {
+    return tdlib != null ? tdlib.accountId() : TdlibAccount.NO_ID;
   }
 
   /*public String getPersistentId () {
