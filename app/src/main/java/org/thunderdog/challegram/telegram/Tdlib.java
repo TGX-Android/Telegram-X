@@ -257,6 +257,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private static final class ClientHolder implements Client.ResultHandler, Client.ExceptionHandler {
     private final Tdlib tdlib;
     private final Client client;
+    private final TdlibWebProxy webProxy;
 
     private final TdlibResourceManager resources, updates;
     private boolean running = true;
@@ -281,6 +282,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       Log.i(Log.TAG_ACCOUNTS, "Creating client #%d", runningClients.incrementAndGet());
       this.tdlib = tdlib;
       this.client = Client.create(this, this, this);
+      this.webProxy = new TdlibWebProxy(client, () -> {
+        TdApi.NetworkType type = tdlib.networkType;
+        if (type != null) {
+          client.send(new TdApi.SetNetworkType(type), ignored -> { });
+        }
+      });
       tdlib.updateParameters(client);
       if (Config.NEED_ONLINE) {
         if (tdlib.isOnline) {
@@ -375,6 +382,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
     public void stop () {
       running = false;
+      webProxy.destroy();
     }
 
     @Override
@@ -6428,7 +6436,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     clientHolder().init();
   }
 
-  private TdApi.NetworkType networkType;
+  private volatile TdApi.NetworkType networkType;
 
   public void setNetworkType (TdApi.NetworkType networkType) {
     this.networkType = networkType;
@@ -8990,6 +8998,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateConnectionState (TdApi.UpdateConnectionState update) {
+    if (BuildConfig.DEBUG) {
+      Log.i(
+        "WebProxy account=%d t=%d connection=%s",
+        id(),
+        SystemClock.elapsedRealtime(),
+        update.state.getClass().getSimpleName()
+      );
+    }
     final int state;
     switch (update.state.getConstructor()) {
       case TdApi.ConnectionStateWaitingForNetwork.CONSTRUCTOR:
@@ -10375,6 +10391,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateConnectionState((TdApi.UpdateConnectionState) update);
         break;
       }
+      case TdApi.UpdateWebProxyCarrierOpened.CONSTRUCTOR:
+        context.webProxy.open(((TdApi.UpdateWebProxyCarrierOpened) update).carrier);
+        break;
+      case TdApi.UpdateWebProxyCarrierData.CONSTRUCTOR: {
+        TdApi.UpdateWebProxyCarrierData data = (TdApi.UpdateWebProxyCarrierData) update;
+        context.webProxy.data(data.carrierId, data.data);
+        break;
+      }
+      case TdApi.UpdateWebProxyCarrierClosed.CONSTRUCTOR:
+        context.webProxy.close(((TdApi.UpdateWebProxyCarrierClosed) update).carrierId);
+        break;
       case TdApi.UpdateOption.CONSTRUCTOR: {
         updateOption(context, (TdApi.UpdateOption) update);
         break;
@@ -10561,9 +10588,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateTonWalletState.CONSTRUCTOR:
       case TdApi.UpdateTonWalletTonConnectSession.CONSTRUCTOR:
       case TdApi.UpdateTonWalletTonConnectSessionDisconnectRequired.CONSTRUCTOR:
-      case TdApi.UpdateWebProxyCarrierOpened.CONSTRUCTOR:
-      case TdApi.UpdateWebProxyCarrierData.CONSTRUCTOR:
-      case TdApi.UpdateWebProxyCarrierClosed.CONSTRUCTOR:
         break;
 
       // for bots only.

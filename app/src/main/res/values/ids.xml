@@ -1435,4 +1435,6 @@
   <item type="id" name="btn_playback_speed_1_2" />
   <item type="id" name="btn_playback_speed_1_5" />
   <item type="id" name="btn_playback_speed_2_0" />
+  <item type="id" name="btn_proxyWeb" />
+  <item type="id" name="edit_proxy_path" />
 </resources>

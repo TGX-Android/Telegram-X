@@ -688,6 +688,7 @@ android {
           }
           val extraFolders = findExtraFolders(variant)
           extraFolders.forEach { folderName ->
+            assets.directories += "src/$folderName/assets"
             kotlin.directories += "src/$folderName/kotlin"
             java.directories += "src/$folderName/java"
             res.directories += "src/$folderName/res"
@@ -1052,6 +1053,7 @@ dependencies {
   // TDLib: https://github.com/tdlib/td/blob/master/CHANGELOG.md
   implementation(project(":tdlib"))
   sinceLollipopImplementation(project(":tgcalls"))
+  sinceLollipopImplementation(libs.androidx.webkit)
   implementation(project(":vkryl:core"))
   implementation(project(":vkryl:leveldb"))
   implementation(project(":vkryl:android"))

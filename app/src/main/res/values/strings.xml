@@ -1867,6 +1867,12 @@
   <string name="AddSocks5Proxy">Add SOCKS5 Proxy</string>
   <string name="AddMtprotoProxy">Add MTPROTO Proxy</string>
   <string name="AddHttpProxy">Add HTTP Proxy</string>
+  <string name="AddWebProxy">Add Web Proxy</string>
+  <string name="WebProxy">Web Proxy</string>
+  <string name="ProxyWeb">WEB %1$s</string>
+  <string name="ProxyPathHint">Path (optional)</string>
+  <string name="WebProxyHint">Connects through an HTTPS relay on port 443. Enter its domain, optional path and secret. Requires an up-to-date Android System WebView. Calls are not supported.</string>
+  <string name="ProxyWebUnsupported">Web proxies require Android 5.0 or later.</string>
   <string name="HttpProxy">HTTP Proxy</string>
   <string name="HttpProxyTransparent">Transparent TCP connection</string>
   <string name="HttpProxyTransparentHint">Enable if server supports transparent TCP connections via HTTP CONNECT method.\n\nWhen supported, it may improve connection speed dramatically. Try changing this option if this proxy doesn\'t work.</string>
