@@ -3219,7 +3219,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         } else {
           showActionDeleteChatButton();
         }
-      } else if (tdlib.isBotChat(chat) && chat.lastMessage == null) {
+      } else if (tdlib.isBotChat(chat) && (chat.lastMessage == null || botStartArgument != null)) {
         showActionBotButton();
       } else {
         CharSequence restrictionStatus = tdlib.getBasicMessageRestrictionText(chat);
@@ -6186,6 +6186,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         Runnable after = () -> {
           if (!isDestroyed() && getChatId() == chatId) {
             tdlib.sendBotStartMessage(tdlib.chatUserId(chatId), chat.id, botStartArgument);
+            botStartArgument = null;
             hideActionButton();
           }
         };
