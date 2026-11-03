@@ -129,6 +129,8 @@ open class ModulePlugin : Plugin<Project> {
               Config.MIN_SDK_VERSION,
               ndkVersion.ndkVersionToMinSdk()
             )
+            // Legacy multidex, which minSdk 16 of legacy needs until AGP 11 drops it
+            @Suppress("DEPRECATION")
             multiDexEnabled = true
             if (!enableSplitAbi) {
               ndk.abiFilters += globalAbiFilters
@@ -199,6 +201,7 @@ open class ModulePlugin : Plugin<Project> {
               ndkVersion.ndkVersionToMinSdk()
             )
             targetSdk = build.targetSdkVersion
+            @Suppress("DEPRECATION")
             multiDexEnabled = true
             if (!enableSplitAbi) {
               ndk.abiFilters += globalAbiFilters
@@ -239,6 +242,7 @@ open class ModulePlugin : Plugin<Project> {
               isJniDebuggable = true
               isMinifyEnabled = false
 
+              @Suppress("DEPRECATION")
               multiDexKeepProguard = requireFile(project.layout.projectDirectory.file("multidex-rules.pro").asFile)
 
               ndk.debugSymbolLevel = "full"
@@ -267,6 +271,7 @@ open class ModulePlugin : Plugin<Project> {
               isMinifyEnabled = !doNotObfuscate
               isShrinkResources = !doNotObfuscate
 
+              @Suppress("DEPRECATION")
               multiDexKeepProguard = requireFile(project.layout.projectDirectory.file("multidex-rules.pro").asFile)
 
               ndk.debugSymbolLevel = "full"
@@ -299,6 +304,7 @@ open class ModulePlugin : Plugin<Project> {
               Config.MIN_SDK_VERSION,
               ndkVersion.ndkVersionToMinSdk()
             )
+            @Suppress("DEPRECATION")
             multiDexEnabled = true
           }
 
