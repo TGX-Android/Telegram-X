@@ -12,7 +12,7 @@
  *
  * File created on 21/10/2026
  */
-function (origin, pathPrefix, bridgeName, nativeName) {
+function (origin, pathPrefix, bridgeName, nativeName, useArrayBuffer) {
   'use strict';
   if (window !== window.top || location.origin !== origin) {
     return;
@@ -105,6 +105,12 @@ function (origin, pathPrefix, bridgeName, nativeName) {
       if (bytes.length > maxBytes) {
         throw new RangeError('Relay message too large');
       }
+      if (useArrayBuffer) {
+        const buffer = bytes.buffer;
+        native.postMessage(bytes.byteOffset === 0 && bytes.byteLength === buffer.byteLength ?
+          buffer : buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+        return;
+      }
       const chunks = [];
       for (let i = 0; i < bytes.length; i += 8192) {
         chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, i + 8192)));
@@ -122,11 +128,18 @@ function (origin, pathPrefix, bridgeName, nativeName) {
   native.onmessage = event => {
     try {
       const value = event.data;
-      if (typeof value !== 'string' || !receiver) {
+      if (!receiver) {
         throw new TypeError();
       }
       let data;
-      if (value[0] === 'b') {
+      if (useArrayBuffer && value instanceof ArrayBuffer) {
+        if (value.byteLength > maxBytes) {
+          throw new RangeError();
+        }
+        data = value;
+      } else if (typeof value !== 'string') {
+        throw new TypeError();
+      } else if (value[0] === 'b') {
         const binary = atob(value.substring(1));
         if (binary.length > maxBytes) {
           throw new RangeError();

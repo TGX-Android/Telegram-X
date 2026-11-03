@@ -109,16 +109,8 @@ final class TdlibWebProxy implements UI.StateListener {
       return;
     }
     trace(0, "ui-state", newState);
-    if (newState != UI.State.RESUMED) {
-      waitingForResume = true;
-      return;
-    }
-    if (waitingForResume) {
+    if (newState == UI.State.RESUMED && waitingForResume) {
       waitingForResume = false;
-      // Background WebViews can retain a carrier whose transport has stopped responding.
-      while (carriers.size() > 0) {
-        carriers.valueAt(0).fail(new TdApi.WebProxyCarrierErrorTerminated());
-      }
       trace(0, "network-recheck", 0);
       onResume.run();
     }
@@ -273,6 +265,7 @@ final class TdlibWebProxy implements UI.StateListener {
     final long createdAt = SystemClock.elapsedRealtime();
     long sentMessages, receivedMessages;
     boolean closed, hasPageMessage, ready, pageStarted;
+    boolean useArrayBuffer;
     final Runnable loadTimeout = () ->
       fail(new TdApi.WebProxyCarrierErrorLoadFailed("Relay load timed out"));
 
@@ -317,6 +310,8 @@ final class TdlibWebProxy implements UI.StateListener {
         return;
       }
       trace(info.id, "webview-create-ms", SystemClock.elapsedRealtime() - createdAt);
+      useArrayBuffer = WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_ARRAY_BUFFER);
+      trace(info.id, "native-binary", useArrayBuffer ? 1 : 0);
       view = new WebView(AppContext.get());
       trace(info.id, "webview-created-ms", SystemClock.elapsedRealtime() - createdAt);
       // Separate from Mini Apps, login pages and other carriers. Delete after destroy.
@@ -446,36 +441,43 @@ final class TdlibWebProxy implements UI.StateListener {
             return;
           }
           try {
-            String value = message.getType() == WebMessageCompat.TYPE_STRING ?
-              message.getData() : null;
-            if (value == null || value.isEmpty() || value.length() > MAX_ENCODED_LENGTH) {
-              fail(new TdApi.WebProxyCarrierErrorTerminated());
-              return;
-            }
-            reply = proxy;
-            if ("r".equals(value)) {
-              handler.removeCallbacks(loadTimeout);
-              trace(info.id, "bridge-ready-ms", SystemClock.elapsedRealtime() - createdAt);
-              ready = true;
-              while (!pending.isEmpty() && !closed) {
-                sendNow(pending.removeFirst());
-              }
-              pendingBytes = 0;
-              return;
-            }
             TdApi.WebProxyCarrierMessage payload;
-            if (value.charAt(0) == 'b') {
-              byte[] bytes = Base64.decode(value.substring(1), Base64.NO_WRAP);
+            if (message.getType() == WebMessageCompat.TYPE_ARRAY_BUFFER && useArrayBuffer) {
+              byte[] bytes = message.getArrayBuffer();
               if (bytes.length > MAX_MESSAGE_BYTES) {
                 throw new IllegalArgumentException();
               }
               payload = new TdApi.WebProxyCarrierMessageBinary(bytes);
-            } else if (value.charAt(0) == 't') {
-              payload = new TdApi.WebProxyCarrierMessageText(value.substring(1));
             } else {
-              fail(new TdApi.WebProxyCarrierErrorTerminated());
-              return;
+              String value = message.getType() == WebMessageCompat.TYPE_STRING ?
+                message.getData() : null;
+              if (value == null || value.isEmpty() || value.length() > MAX_ENCODED_LENGTH) {
+                throw new IllegalArgumentException();
+              }
+              if ("r".equals(value)) {
+                reply = proxy;
+                handler.removeCallbacks(loadTimeout);
+                trace(info.id, "bridge-ready-ms", SystemClock.elapsedRealtime() - createdAt);
+                ready = true;
+                while (!pending.isEmpty() && !closed) {
+                  sendNow(pending.removeFirst());
+                }
+                pendingBytes = 0;
+                return;
+              }
+              if (value.charAt(0) == 'b') {
+                byte[] bytes = Base64.decode(value.substring(1), Base64.NO_WRAP);
+                if (bytes.length > MAX_MESSAGE_BYTES) {
+                  throw new IllegalArgumentException();
+                }
+                payload = new TdApi.WebProxyCarrierMessageBinary(bytes);
+              } else if (value.charAt(0) == 't') {
+                payload = new TdApi.WebProxyCarrierMessageText(value.substring(1));
+              } else {
+                throw new IllegalArgumentException();
+              }
             }
+            reply = proxy;
             if (receivedMessages++ == 0) {
               trace(info.id, "first-page-message-ms", SystemClock.elapsedRealtime() - createdAt);
             }
@@ -489,7 +491,7 @@ final class TdlibWebProxy implements UI.StateListener {
       );
       String script = "(" + bridgeScript + ")(" + JSONObject.quote(info.origin) + "," +
         JSONObject.quote(info.pathPrefix) + "," + JSONObject.quote(info.bridgeObjectName) + "," +
-        JSONObject.quote(NATIVE_BRIDGE) + ");";
+        JSONObject.quote(NATIVE_BRIDGE) + "," + useArrayBuffer + ");";
       WebViewCompat.addDocumentStartJavaScript(view, script, Collections.singleton(info.origin));
       handler.postDelayed(loadTimeout, 30000);
       trace(info.id, "load-url-ms", SystemClock.elapsedRealtime() - createdAt);
@@ -517,7 +519,11 @@ final class TdlibWebProxy implements UI.StateListener {
         if (sentMessages++ == 0) {
           trace(info.id, "first-tdlib-data-ms", SystemClock.elapsedRealtime() - createdAt);
         }
-        reply.postMessage("b" + Base64.encodeToString(data, Base64.NO_WRAP));
+        if (useArrayBuffer) {
+          reply.postMessage(data);
+        } else {
+          reply.postMessage("b" + Base64.encodeToString(data, Base64.NO_WRAP));
+        }
       } catch (Throwable ignored) {
         fail(new TdApi.WebProxyCarrierErrorTerminated());
       }
