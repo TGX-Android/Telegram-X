@@ -284,9 +284,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       this.client = Client.create(this, this, this);
       this.webProxy = new TdlibWebProxy(client, () -> {
         TdApi.NetworkType type = tdlib.networkType;
-        if (type != null) {
-          client.send(new TdApi.SetNetworkType(type), ignored -> { });
-        }
+        // TDLib treats null as Other; even an unknown network must wake paused carriers.
+        client.send(new TdApi.SetNetworkType(type), ignored -> { });
       });
       tdlib.updateParameters(client);
       if (Config.NEED_ONLINE) {
