@@ -45,5 +45,9 @@
       android:name="tgx.test.ShownTimesReceiver"
       android:exported="true"
       android:permission="android.permission.DUMP" />
+    <receiver
+      android:name="tgx.test.VideoFramesReceiver"
+      android:exported="true"
+      android:permission="android.permission.DUMP" />
   </application>
 </manifest>
