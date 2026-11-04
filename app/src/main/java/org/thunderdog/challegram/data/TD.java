@@ -115,6 +115,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import me.vkryl.android.html.HtmlEncoder;
 import me.vkryl.android.html.HtmlParser;
@@ -4773,9 +4775,58 @@ public class TD {
     return encodeResult.tagCount > 0 ? encodeResult.htmlText : null;
   }
 
+  // A mark of <code> inside <pre>, which adds nothing to the block
+  private static class CodeInsidePre { }
+
+  private static @Nullable String getHtmlCodeLanguage (@Nullable String htmlClass) {
+    // "language-kotlin" or "lang-kotlin", as editors and highlighters of code put it
+    if (htmlClass != null) {
+      for (String name : htmlClass.trim().split("\\s+")) {
+        if (name.startsWith("language-") && name.length() > 9) {
+          return name.substring(9);
+        }
+        if (name.startsWith("lang-") && name.length() > 5) {
+          return name.substring(5);
+        }
+      }
+    }
+    return null;
+  }
+
+  private static String keepSpacesOfPre (String htmlText) {
+    // HTML parsers of Android collapse spaces and line breaks also inside <pre>, so its text keeps
+    // them as &nbsp; and <br/>, which blocks of code turn back into spaces
+    Matcher pre = Pattern.compile("(?is)(<pre\\b[^>]*>)(.*?)(</pre>)").matcher(htmlText);
+    StringBuffer out = new StringBuffer();
+    while (pre.find()) {
+      String[] parts = pre.group(2).split("(?=<)|(?<=>)");
+      StringBuilder body = new StringBuilder();
+      for (String part : parts) {
+        if (part.startsWith("<")) {
+          body.append(part);
+        } else {
+          body.append(part.replace("\r\n", "\n").replace("\n", "<br/>").replace(" ", "&nbsp;"));
+        }
+      }
+      pre.appendReplacement(out, Matcher.quoteReplacement(pre.group(1) + body + pre.group(3)));
+    }
+    pre.appendTail(out);
+    return out.toString();
+  }
+
   @Nullable
   public static CharSequence htmlToCharSequence (String htmlText) {
+    htmlText = keepSpacesOfPre(htmlText);
     HtmlParser.Replacer<TdApi.TextEntityType> entityReplacer = (text, start, end, mark) -> {
+      if (Td.isMonospaceTextOrBlock(mark)) {
+        // HtmlEncoder keeps runs of spaces as &nbsp;, which come back as no-break spaces, while
+        // code needs its spaces, e.g. in indents
+        for (int i = start; i < end; i++) {
+          if (text.charAt(i) == '\u00A0') {
+            ((Editable) text).replace(i, i + 1, " ");
+          }
+        }
+      }
       Object span = toSpan(mark);
       if (span != null) {
         text.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -4803,7 +4854,22 @@ public class TD {
         } else if (tag.equalsIgnoreCase("pre")) {
           HtmlParser.start(output, new TdApi.TextEntityTypePre());
         } else if (tag.equalsIgnoreCase("code")) {
-          HtmlParser.start(output, new TdApi.TextEntityTypeCode());
+          TdApi.TextEntityTypePre[] pres =
+            output.getSpans(0, output.length(), TdApi.TextEntityTypePre.class);
+          if (pres != null && pres.length > 0) {
+            // <pre><code class="language-…"> of other apps: one block, with the language if any
+            String language = getHtmlCodeLanguage(attributes.getValue("", "class"));
+            if (language != null) {
+              TdApi.TextEntityTypePre pre = pres[pres.length - 1];
+              int start = output.getSpanStart(pre);
+              output.removeSpan(pre);
+              TdApi.TextEntityTypePreCode preCode = new TdApi.TextEntityTypePreCode(language);
+              output.setSpan(preCode, start, start, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+            }
+            HtmlParser.start(output, new CodeInsidePre());
+          } else {
+            HtmlParser.start(output, new TdApi.TextEntityTypeCode());
+          }
         } else if (tag.equalsIgnoreCase("tg-pre-code")) {
           String language = attributes.getValue("", "data-language");
           HtmlParser.start(output, new TdApi.TextEntityTypePreCode(language != null ? language : ""));
@@ -4814,6 +4880,12 @@ public class TD {
         } else {
           return false;
         }
+        return true;
+      } else if (
+        tag.equalsIgnoreCase("code") &&
+        output.getSpans(0, output.length(), CodeInsidePre.class).length > 0
+      ) {
+        HtmlParser.end(output, CodeInsidePre.class, (text, start, end, mark) -> { });
         return true;
       } else if (
         tag.equalsIgnoreCase("blockquote") ||
@@ -5067,9 +5139,16 @@ public class TD {
       case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
         return new StyleSpan(Typeface.ITALIC);
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypePre.CONSTRUCTOR:
         return Fonts.FORCE_BUILTIN_MONO ? new TypefaceSpan(Fonts.getRobotoMono()) : new TypefaceSpan("monospace");
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypePre.CONSTRUCTOR: {
+        // A block keeps its kind and the language of its code, which a TypefaceSpan would turn into
+        // inline code when the text becomes entities again, e.g. an edited message or a draft
+        Typeface typeface = Fonts.FORCE_BUILTIN_MONO ? Fonts.getRobotoMono() : Typeface.MONOSPACE;
+        CustomTypefaceSpan span = new CustomTypefaceSpan(typeface, 0);
+        span.setTextEntityType(type);
+        return span;
+      }
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
         return new URLSpan(((TdApi.TextEntityTypeTextUrl) type).url);
       case TdApi.TextEntityTypeDateTime.CONSTRUCTOR:
