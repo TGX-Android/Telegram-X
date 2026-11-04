@@ -1010,7 +1010,9 @@ public class TGCallService extends Service implements
     }
 
     int vibrateMode = tdlib.notifications().getCallVibrateMode(ChatId.fromUserId(user.id));
-    if (vibrateMode != TdlibNotificationManager.VIBRATE_MODE_DISABLED) {
+    boolean needVibrate = vibrateMode != TdlibNotificationManager.VIBRATE_MODE_DISABLED;
+    // Like a call of the system, none in silent mode, whatever the vibration of calls is set to
+    if (needVibrate && !tdlib.notifications().isRingerSilent()) {
       vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
       if (vibrator != null) {
         switch (vibrateMode) {

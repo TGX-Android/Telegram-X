@@ -1601,6 +1601,17 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return true;
   }
 
+  public boolean isRingerSilent () {
+    if (audioManager() != null) {
+      try {
+        return audioManager().getRingerMode() == AudioManager.RINGER_MODE_SILENT;
+      } catch (Throwable t) {
+        Log.w(t);
+      }
+    }
+    return false;
+  }
+
   public int getCallVibrateMode (long chatId) {
     int vibrateMode = getCustomCallVibrateModeForChat(chatId);
     boolean silentOnly;
