@@ -807,6 +807,10 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   public void trackNotificationChannelProblem (TdlibNotificationChannelGroup.ChannelCreationFailureException e, long specificChatId) {
+    // Channels of an account that logs out are deleted anyway: nothing for the user to fix
+    if (tdlib.account().isLoggingOut()) {
+      return;
+    }
     trackNotificationProblem(e, NotificationError.FLAG_CHANNELS, specificChatId);
   }
 

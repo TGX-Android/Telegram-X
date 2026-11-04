@@ -32,7 +32,6 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
@@ -477,9 +476,6 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
 
     if (isMe) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        TdlibNotificationChannelGroup.updateGroup(newUser, tdlib.account().isDebug());
-      }
       tdlib.context().onUpdateAccountProfile(tdlib.id(), newUser, !hadUser);
     } else {
       if (isContactChanged) {
@@ -642,18 +638,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       notifyListeners(supergroupsGlobalListeners.iterator(), supergroup);
       notifyListeners(supergroupListeners.iterator(supergroup.id), supergroup);
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && updateMode == UPDATE_MODE_IMPORTANT) {
-      if (chat != null) {
-        try {
-          TdlibNotificationChannelGroup.updateChat(tdlib, myUserId, chat);
-        } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
-          TDLib.Tag.notifications("Unable to update notification channel for supergroup %d:\n%s",
-            update.supergroup.id,
-            Log.toString(e)
-          );
-          tdlib.settings().trackNotificationChannelProblem(e, ChatId.fromSupergroupId(update.supergroup.id));
-        }
-      }
+    if (updateMode == UPDATE_MODE_IMPORTANT && chat != null) {
+      tdlib.notifications().updateChatChannel(chat.id);
     }
   }
 

@@ -61,7 +61,6 @@ import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
-import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
@@ -625,6 +624,16 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   private TdApi.NotificationSettingsScope getScope (ListItem item, TdApi.NotificationSettingsScope defaultScope) {
     TdApi.NotificationSettingsScope scope = getScope(item);
     return scope != null ? scope : defaultScope;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private void openChannelSettings (TdApi.NotificationSettingsScope channelScope) {
+    String channelId = tdlib.notifications().getSystemChannelId(channelScope, customChatId);
+    Intent intent = new Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
+    intent.putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channelId);
+    intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.getPackageName());
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    context().startActivity(intent);
   }
 
   private int getSnoozeViewType () {
@@ -1770,20 +1779,19 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       }).setDismissListener(this));
     } else if (viewId == R.id.btn_notifications_channel || viewId == R.id.btn_customChat_channel) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        String channelId = tdlib.notifications().getSystemChannelId(getScope(item), customChatId);
+        TdApi.NotificationSettingsScope channelScope = getScope(item);
         if (customChatId == 0) {
-          try {
-            tdlib.notifications().createChannels();
-          } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
-            context.tooltipManager().builder(v).icon(R.drawable.baseline_error_24).show(tdlib, Log.toString(e));
-            return;
-          }
+          tdlib.notifications().createChannels(error -> runOnUiThreadOptional(() -> {
+            if (error != null) {
+              context.tooltipManager().builder(v).icon(R.drawable.baseline_error_24)
+                .show(tdlib, Log.toString(error));
+            } else {
+              openChannelSettings(channelScope);
+            }
+          }));
+        } else {
+          openChannelSettings(channelScope);
         }
-        Intent intent = new Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
-        intent.putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channelId);
-        intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.getPackageName());
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context().startActivity(intent);
       }
     } else if (viewId == R.id.btn_notifications_priorityOrImportance || viewId == R.id.btn_customChat_priorityOrImportance) {
       int currentPriorityOrImportance, defaultPriorityOrImportance;
