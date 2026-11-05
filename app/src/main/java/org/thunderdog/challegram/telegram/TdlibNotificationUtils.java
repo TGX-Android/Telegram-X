@@ -54,8 +54,10 @@ import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance;
 import org.thunderdog.challegram.util.DeviceTokenType;
 import org.thunderdog.challegram.util.text.Letters;
 
+import me.vkryl.core.StringUtils;
 import tgx.bridge.DeviceTokenRetriever;
 import tgx.bridge.TokenRetrieverListener;
+import tgx.td.ChatId;
 import tgx.td.Td;
 
 public class TdlibNotificationUtils {
@@ -77,6 +79,13 @@ public class TdlibNotificationUtils {
 
   public static int iconSize () {
     return Screen.dp(52f, MAX_DENSITY);
+  }
+
+  public static String getPersonUri (Tdlib tdlib, TdApi.User user) {
+    return !StringUtils.isEmpty(user.phoneNumber) ?
+      "tel:+" + user.phoneNumber :
+      "tg://user?local_id=" + tdlib.settings().getLocalChatId(ChatId.fromUserId(user.id)) +
+        "&account_id=" + tdlib.id();
   }
 
   public static Bitmap buildSelfIcon (Tdlib tdlib, long chatId) {

@@ -974,10 +974,7 @@ public class TGCallService extends Service implements
       builder.setCategory(Notification.CATEGORY_CALL);
       if (user != null) {
         // Do not disturb lets starred contacts and repeat callers ring
-        String uri = !StringUtils.isEmpty(user.phoneNumber) ?
-          "tel:+" + user.phoneNumber :
-          "tg://user?local_id=" + tdlib.settings().getLocalChatId(ChatId.fromUserId(user.id)) +
-            "&account_id=" + tdlib.id();
+        String uri = TdlibNotificationUtils.getPersonUri(tdlib, user);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
           builder.addPerson(new android.app.Person.Builder()
             .setName(TD.getUserName(user))

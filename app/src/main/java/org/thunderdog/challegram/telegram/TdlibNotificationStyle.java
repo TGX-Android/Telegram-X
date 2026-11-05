@@ -222,8 +222,8 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       builder.setColor(tdlib.accountColor(chatId));
       if (allowPreview && chat != null && chat.type.getConstructor() == TdApi.ChatTypePrivate.CONSTRUCTOR) {
         TdApi.User user = tdlib.chatUser(chat);
-        if (user != null && !StringUtils.isEmpty(user.phoneNumber)) {
-          builder.addPerson("tel:+" + user.phoneNumber);
+        if (user != null) {
+          builder.addPerson(TdlibNotificationUtils.getPersonUri(tdlib, user));
         }
       }
     }
@@ -307,7 +307,6 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     final TdlibNotification lastNotification = group.lastNotification();
 
-    final TdApi.User user = tdlib.chatUser(chat);
     final String chatTitle = tdlib.chatTitle(chat);
     final boolean onlyPinned = group.isOnlyPinned();
     final boolean onlyScheduled = group.isOnlyScheduled();
@@ -670,10 +669,6 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (U.isValidBitmap(bitmap)) {
       builder.setLargeIcon(bitmap);
       hasIcon = true;
-    }
-
-    if (user != null && !StringUtils.isEmpty(user.phoneNumber)) {
-      builder.addPerson('+' + user.phoneNumber);
     }
 
     if (isSummary && settings != null) {
