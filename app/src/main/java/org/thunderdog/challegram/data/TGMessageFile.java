@@ -135,7 +135,7 @@ public class TGMessageFile extends TGMessage {
               }
             })
             .setHighlightText(getHighlightedText(Highlight.Pool.KEY_FILE_CAPTION, caption.text))
-            .addTextFlags(Text.FLAG_BIG_EMOJI)
+            .addTextFlags(Text.FLAG_BIG_EMOJI | Text.FLAG_SELECTABLE)
             .setClickCallback(clickCallback());
           wrapper.setViewProvider(currentViews);
           wrapper.prepare(getContentMaxWidth());
@@ -741,6 +741,34 @@ public class TGMessageFile extends TGMessage {
   }
 
   // Touch
+
+  @Override
+  public @Nullable Text findTextSelection (float x, float y) {
+    x -= getTextSelectionOffsetX();
+    for (int i = 0; i < filesList.size(); i++) {
+      TextWrapper wrapper = filesList.get(i).captionWrapper;
+      Text text = wrapper != null ? wrapper.getCurrent() : null;
+      if (text != null && text.isTextAt(x, y)) {
+        return text;
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public boolean canSelectText (Text text) {
+    if (text == null) {
+      return false;
+    }
+    for (int i = 0; i < filesList.size(); i++) {
+      CaptionedFile file = filesList.get(i);
+      if (file.captionWrapper != null && file.captionWrapper.getCurrent() == text) {
+        TdApi.Message message = getMessage(file.messageId);
+        return message != null && message.canBeSaved && TD.canCopyText(message);
+      }
+    }
+    return false;
+  }
 
   @Override
   public boolean onTouchEvent (MessageView view, MotionEvent e) {
