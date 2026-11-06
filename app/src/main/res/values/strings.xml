@@ -1896,7 +1896,7 @@
   <string name="UseProxyPort">Port</string>
   <string name="ProxySettings">Proxy settings</string>
   <string name="ProxyAutoSwitch">Switch automatically</string>
-  <string name="ProxyAutoSwitchHint">Automatically try different connections when the app takes too long to connect. This may increase the time needed to establish connection on weak networks.</string>
+  <string name="ProxyAutoSwitchHint">Automatically try different connections when the app takes too long to connect. This may increase the time needed to establish connection on weak networks. If no proxy works, the app may connect directly and stop using the proxy.</string>
   <string name="EnableProxyAlertTitle">Are you sure you want to enable this proxy?</string>
   <string name="EnableProxyAlertHint">You can change your proxy server later in Settings &gt; Data and Storage.</string>
   <string name="EnableProxyAlertHintMtproto">This proxy may display a sponsored channel in your chat list. This doesn\'t reveal any of your Telegram traffic.</string>
