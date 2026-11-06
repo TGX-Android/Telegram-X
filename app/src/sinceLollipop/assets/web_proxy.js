@@ -66,16 +66,26 @@ function (origin, pathPrefix, bridgeName, nativeName, useArrayBuffer) {
     "style-src " + origin + pathPrefix + " 'unsafe-inline'; img-src " + origin + pathPrefix +
     "; connect-src " + origin + pathPrefix + ' ' + origin.replace('https:', 'wss:') + pathPrefix +
     "; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
+  // Chromium ignores a CSP meta outside of <head>, so wait until it exists.
   const applyPolicy = () => {
-    if (!document.documentElement) {
+    if (!document.head) {
       return false;
     }
     const meta = document.createElement('meta');
     meta.httpEquiv = 'Content-Security-Policy';
     meta.content = policy;
-    (document.head || document.documentElement).prepend(meta);
+    document.head.prepend(meta);
     return true;
   };
+  // Same-origin frames keep untouched networking APIs, so scripts must not reach into them.
+  for (const frame of [HTMLIFrameElement, HTMLFrameElement, HTMLObjectElement, HTMLEmbedElement]) {
+    for (const name of ['contentWindow', 'contentDocument']) {
+      Object.defineProperty(frame.prototype, name, {get: () => null, configurable: false});
+    }
+  }
+  for (const frame of [HTMLObjectElement, HTMLEmbedElement]) {
+    lock(frame.prototype, 'getSVGDocument', () => null);
+  }
   if (!applyPolicy()) {
     const observer = new MutationObserver(() => {
       if (applyPolicy()) {
