@@ -591,12 +591,17 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     return position != null ? position.source : null;
   }
 
+  private @Nullable ContentPreview actualPreview () {
+    return (pendingChanges & CHANGE_TEXT) == 0 ? currentPreview : null;
+  }
+
   public boolean checkLastMessageId (long messageId) {
     if (chat != null && chat.lastMessage != null && chat.lastMessage.id == messageId) {
       return true;
     }
-    if (currentPreview != null) {
-      Tdlib.Album album = currentPreview.getAlbum();
+    ContentPreview preview = actualPreview();
+    if (preview != null) {
+      Tdlib.Album album = preview.getAlbum();
       if (album != null) {
         for (TdApi.Message message : album.messages) {
           if (message.id == messageId) {
@@ -627,8 +632,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
   public boolean updateMessageContent (long chatId, long messageId, TdApi.MessageContent newContent) {
     if (getChatId() == chatId && chat.lastMessage != null) {
-      if (currentPreview != null) {
-        Tdlib.Album album = currentPreview.getAlbum();
+      ContentPreview preview = actualPreview();
+      if (preview != null) {
+        Tdlib.Album album = preview.getAlbum();
         if (album != null) {
           boolean updatedAlbum = false;
           for (TdApi.Message message : album.messages) {
@@ -643,7 +649,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
             return true;
           }
         }
-        if (currentPreview.updateRelatedMessage(chatId, messageId, newContent, this)) {
+        if (preview.updateRelatedMessage(chatId, messageId, newContent, this)) {
           return true;
         }
       }
@@ -664,8 +670,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         return true;
       }
 
-      if (currentPreview != null) {
-        Tdlib.Album album = currentPreview.getAlbum();
+      ContentPreview preview = actualPreview();
+      if (preview != null) {
+        Tdlib.Album album = preview.getAlbum();
         if (album != null) {
           boolean albumChanged = false;
           for (int index = album.messages.size() - 1; index >= 0; index--) {
@@ -682,7 +689,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
             setContentPreview(ContentPreview.getAlbumPreview(tdlib, chat.lastMessage, album, true));
           }
         }
-        if (currentPreview.belongsToRelatedMessage(chatId, messageIds)) {
+        if (preview.belongsToRelatedMessage(chatId, messageIds)) {
           setText();
           return true;
         }
@@ -1387,6 +1394,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   }
 
   public void setText () {
+    pendingChanges &= ~CHANGE_TEXT;
     flags &= ~FLAG_HAS_PREFIX;
     flags &= ~FLAG_TEXT_DRAFT;
     flags &= ~FLAG_CONTENT_HIDDEN;
@@ -1590,7 +1598,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
   @Override
   public void onContentPreviewChanged (long chatId, long messageId, ContentPreview newPreview, ContentPreview oldPreview) {
     tdlib.ui().post(() -> {
-      if (currentPreview == oldPreview) {
+      if (actualPreview() == oldPreview) {
         setContentPreview(newPreview);
         currentViews.invalidate();
       }
