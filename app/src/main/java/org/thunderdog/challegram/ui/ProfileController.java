@@ -2568,6 +2568,23 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return null;
   }
 
+  private boolean pendingOpenGroupsInCommon;
+
+  public void setOpenGroupsInCommon () {
+    this.pendingOpenGroupsInCommon = true;
+  }
+
+  private void checkPendingGroupsInCommon () {
+    if (!pendingOpenGroupsInCommon || !isFocused()) {
+      return;
+    }
+    SharedChatsController c = getCommonChatsController(SharedChatsController.Mode.GROUPS_IN_COMMON);
+    if (c != null) {
+      pendingOpenGroupsInCommon = false;
+      onPagerItemClick(controllers.indexOf(c));
+    }
+  }
+
   private void checkGroupsInCommon () {
     if (isEditing()) {
       return;
@@ -2583,6 +2600,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         removeControllerTab(existingGroupsController);
       }
     }
+    checkPendingGroupsInCommon();
   }
 
   private void checkPhone () {
@@ -5192,6 +5210,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (!isEditing()) {
       ((ComplexRecyclerView) baseRecyclerView).setFactorLocked(false);
     }
+    checkPendingGroupsInCommon();
   }
 
   @Override
