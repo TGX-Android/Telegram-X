@@ -33,7 +33,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -113,7 +112,6 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     }
   }
 
-  @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
   private void showSystemPicker (boolean forceDownloads) {
     RunnableData<Set<Uri>> callback = uris -> {
       if (uris != null && !uris.isEmpty()) {
@@ -134,6 +132,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         });
       }
     };
+    @SuppressWarnings("InlinedApi")
     final Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
       .addCategory(Intent.CATEGORY_OPENABLE)
       .setType("*/*")
