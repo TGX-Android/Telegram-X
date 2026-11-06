@@ -1272,6 +1272,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     if (specificChat != null) {
       chatPasscode.hash = Passcode.getPasscodeHash(String.valueOf(biometricsId));
       chatPasscode.mode = Passcode.MODE_BIOMETRICS;
+      chatPasscode.setRequireStrongBiometrics(strong);
       tdlib.setPasscode(specificChat, chatPasscode);
     } else {
       Passcode.instance().setBiometrics(biometricsId, strong);
