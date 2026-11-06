@@ -238,7 +238,7 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
     if (id == R.id.menu_clear) {
       header.addClearButton(menu, getSearchHeaderIconColorId(), getBackButtonResource());
     } else if (id == R.id.menu_editLangPack) {
-      header.addButton(menu, R.id.menu_btn_toggle, R.drawable.baseline_check_box_outline_blank_24, ColorId.headerIcon, this, Screen.dp(49f));
+      header.addButton(menu, R.id.menu_btn_toggle, R.drawable.baseline_check_box_outline_blank_24, R.string.ToolsUntranslatedTitle, ColorId.headerIcon, this, Screen.dp(49f));
       header.addSearchButton(menu, this);
     } else {
       super.fillMenuItems(id, header, menu);
