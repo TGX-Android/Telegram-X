@@ -114,7 +114,7 @@ public class DateManager {
   private String timeFormat = currentTimeFormat();
 
   private static String currentTimeFormat () {
-    String locale = Locale.getDefault().toLanguageTag();
+    String locale = Locale.getDefault().toString();
     return TimeZone.getDefault().getID() + " " + UI.needAmPm() + " " + locale;
   }
 
