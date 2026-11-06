@@ -24,6 +24,7 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.emoji.EmojiCodes;
 import org.thunderdog.challegram.theme.ColorId;
 
 import java.util.Locale;
@@ -70,6 +71,8 @@ public class Config {
   public static final long CHAT_CHANGES_INTERVAL_MS = 100;
 
   public static final boolean ENABLE_DELETE_CALL_HISTORY = BuildConfig.DEBUG;
+  public static final boolean ENABLE_NEW_CHAT_ACTION_BAR = BuildConfig.DEBUG;
+  public static final String CHAT_ACTION_BAR_EMOJI_STATUS_FALLBACK = EmojiCodes.THUMBS_UP;
 
   public static final boolean DEBUG_TDLIB_REFERENCES = false;
 
