@@ -4308,7 +4308,7 @@ public class TdlibUi extends Handler {
     StringBuilder desc = new StringBuilder("<b>");
     desc.append(Lang.getString(R.string.UseProxyServer));
     desc.append(":</b> ");
-    desc.append(server);
+    desc.append(TextUtils.htmlEncode(server));
     desc.append("<br/><b>");
     desc.append(Lang.getString(R.string.UseProxyPort));
     desc.append(":</b> ");
