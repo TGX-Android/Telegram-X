@@ -4308,7 +4308,7 @@ public class TdlibUi extends Handler {
     StringBuilder desc = new StringBuilder("<b>");
     desc.append(Lang.getString(R.string.UseProxyServer));
     desc.append(":</b> ");
-    desc.append(server);
+    desc.append(TextUtils.htmlEncode(server));
     desc.append("<br/><b>");
     desc.append(Lang.getString(R.string.UseProxyPort));
     desc.append(":</b> ");
@@ -4353,8 +4353,11 @@ public class TdlibUi extends Handler {
   }
 
   private static boolean isSupportedProxy (@Nullable TdApi.Proxy proxy) {
-    // Web proxies need a relay page in a hidden web view, which the app doesn't have
-    return proxy != null && proxy.type.getConstructor() != TdApi.ProxyTypeWeb.CONSTRUCTOR;
+    if (proxy == null) {
+      return false;
+    }
+    return proxy.type.getConstructor() != TdApi.ProxyTypeWeb.CONSTRUCTOR ||
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
   }
 
   public void openProxyAlert (TdlibDelegate context, @Nullable TdApi.Proxy proxy) {
@@ -4367,6 +4370,15 @@ public class TdlibUi extends Handler {
     }
     String proxyDescription = newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString();
 
+    if (proxy.type.getConstructor() == TdApi.ProxyTypeWeb.CONSTRUCTOR) {
+      StringBuilder description = new StringBuilder(proxyDescription);
+      addProxyField(
+        description,
+        Lang.getString(R.string.ProxyPathHint),
+        TextUtils.htmlEncode(((TdApi.ProxyTypeWeb) proxy.type).path)
+      );
+      proxyDescription = description.toString();
+    }
     final SpannableStringBuilder msg = Strings.buildHtml(proxyDescription);
     msg.insert(0, "\n\n");
     String title = Lang.getString(R.string.EnableProxyAlertTitle);
@@ -4377,6 +4389,9 @@ public class TdlibUi extends Handler {
     if (proxy.type.getConstructor() == TdApi.ProxyTypeMtproto.CONSTRUCTOR) {
       msg.append("\n\n");
       msg.append(Lang.getString(R.string.EnableProxyAlertHintMtproto));
+    }
+    if (proxy.type.getConstructor() == TdApi.ProxyTypeWeb.CONSTRUCTOR) {
+      msg.append("\n\n").append(Lang.getString(R.string.WebProxyHint));
     }
     IntList ids = new IntList(3);
     StringList strings = new StringList(3);
@@ -4562,10 +4577,12 @@ public class TdlibUi extends Handler {
     }
     boolean needInstallTor = needTor && !U.isAppInstalled(U.PACKAGE_TOR);*/
 
+    boolean showWebProxy = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
     boolean showShowQr = tdlib.allowQrLoginCamera();
+    int optionCount = 3 + (showWebProxy ? 1 : 0) + (showShowQr ? 1 : 0);
 
-    IntList ids = new IntList(showShowQr ? 4 : 3);
-    StringList strings = new StringList(showShowQr ? 4 : 3);
+    IntList ids = new IntList(optionCount);
+    StringList strings = new StringList(optionCount);
 
     ids.append(R.id.btn_proxyTelegram);
     ids.append(R.id.btn_proxySocks5);
@@ -4579,6 +4596,11 @@ public class TdlibUi extends Handler {
       strings.append(R.string.MtprotoProxy);
       strings.append(R.string.Socks5Proxy);
       strings.append(R.string.HttpProxy);
+    }
+
+    if (showWebProxy) {
+      ids.append(R.id.btn_proxyWeb);
+      strings.append(needProxyHint ? R.string.AddWebProxy : R.string.WebProxy);
     }
 
     if (showShowQr) {
@@ -4598,6 +4620,10 @@ public class TdlibUi extends Handler {
       } else if (id == R.id.btn_proxyHttp) {
         EditProxyController e = new EditProxyController(context.context(), context.tdlib());
         e.setArguments(new EditProxyController.Args(EditProxyController.MODE_HTTP));
+        c.navigateTo(e);
+      } else if (id == R.id.btn_proxyWeb) {
+        EditProxyController e = new EditProxyController(context.context(), context.tdlib());
+        e.setArguments(new EditProxyController.Args(EditProxyController.MODE_WEB));
         c.navigateTo(e);
       } else if (id == R.id.btn_proxyQr) {
         postDelayed(() -> c.openInAppCamera(new ViewController.CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).optionalMicrophone(true).qrModeSubtitle(R.string.ScanQRFullSubtitleProxy).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> {

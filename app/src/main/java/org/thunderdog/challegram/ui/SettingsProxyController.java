@@ -15,8 +15,10 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -618,7 +620,12 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
       if (proxy.id == effectiveProxyId) {
         showProxyOptions(proxy);
       } else if (proxy.proxy != null) {
-        Settings.instance().addOrUpdateProxy(proxy.proxy, null, true);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP &&
+          proxy.proxy.type.getConstructor() == TdApi.ProxyTypeWeb.CONSTRUCTOR) {
+          UI.showToast(R.string.ProxyWebUnsupported, Toast.LENGTH_SHORT);
+        } else {
+          Settings.instance().addOrUpdateProxy(proxy.proxy, null, true);
+        }
       }
     } else if (viewId == R.id.btn_useProxyForCalls) {
       Settings.instance().setProxySetting(Settings.PROXY_FLAG_USE_FOR_CALLS, adapter.toggleView(v));
