@@ -189,6 +189,7 @@ import org.thunderdog.challegram.player.RoundVideoController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.ListManager;
@@ -297,7 +298,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   Menu, Unlockable, View.OnClickListener,
   ActivityResultHandler, MoreDelegate, CommandKeyboardLayout.Callback, MediaCollectorDelegate, SelectDelegate,
   ReplyBarView.Callback, RaiseHelper.Listener,
-  TGLegacyManager.EmojiLoadListener, ChatHeaderView.Callback,
+  TGLegacyManager.EmojiLoadListener, ChatHeaderView.Callback, DateChangeListener,
   ChatListener, NotificationSettingsListener, EmojiLayout.Listener,
   MessageThreadListener, TdlibSingleUnreadReactionsManager.UnreadSingleReactionListener,
   TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, TdlibCache.SecretChatDataChangeListener,
@@ -1490,6 +1491,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     updateView();
 
     TGLegacyManager.instance().addEmojiListener(this);
+    tdlib.context().dateManager().addListener(this);
 
     if (needTabs()) {
       pagerHeaderView = new ViewPagerHeaderViewCompact(context);
@@ -3217,7 +3219,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         } else {
           showActionDeleteChatButton();
         }
-      } else if (tdlib.isBotChat(chat) && chat.lastMessage == null) {
+      } else if (tdlib.isBotChat(chat) && (chat.lastMessage == null || botStartArgument != null)) {
         showActionBotButton();
       } else {
         CharSequence restrictionStatus = tdlib.getBasicMessageRestrictionText(chat);
@@ -4407,6 +4409,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       tdlib.settings().removeJoinRequestsDismissListener(this);
       TGLegacyManager.instance().removeEmojiListener(this);
+      tdlib.context().dateManager().removeListener(this);
       if (emojiLayout != null) {
         emojiLayout.destroy();
       }
@@ -6183,6 +6186,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         Runnable after = () -> {
           if (!isDestroyed() && getChatId() == chatId) {
             tdlib.sendBotStartMessage(tdlib.chatUserId(chatId), chat.id, botStartArgument);
+            botStartArgument = null;
             hideActionButton();
           }
         };
@@ -11309,6 +11313,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
       ((LinearLayoutManager) wallpapersList.getLayoutManager()).setReverseLayout(Lang.rtl());
       wallpapersList.invalidateItemDecorations();
       ((WallpaperAdapter) wallpapersList.getAdapter()).centerWallpapers(false);
+    }
+  }
+
+  @Override
+  public void onTimeFormatChanged () {
+    if (chat == null) {
+      return;
+    }
+    manager.updateDateSeparators();
+    manager.updateTimeFormat();
+    if (headerCell != null) {
+      headerCell.setChat(tdlib, chat, messageThread);
+      if (messageThread != null) {
+        updateMessageThreadSubtitle();
+      }
     }
   }
 

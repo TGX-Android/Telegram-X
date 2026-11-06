@@ -86,13 +86,13 @@ App is built in flavors for ranges of Android versions. Code, resources, manifes
 | `legacy` | 4.1–4.4W, API 16–20 | `preMarshmallow`, `onlyLegacy` |
 | `lollipop` | 5.0–5.1, API 21–22 | `sinceLollipop`, `preMarshmallow`, `onlyLollipop` |
 | `marshmallow` | 6.0, API 23 | `sinceLollipop`, `sinceMarshmallow`, `onlyMarshmallow` |
-| `tens` | 7.0–9, API 24–28 | `sinceLollipop`, `sinceMarshmallow`, `sinceOreo`, `onlyTens` |
+| `nop` | 7.0–9, API 24–28 | `sinceLollipop`, `sinceMarshmallow`, `sinceOreo`, `onlyNop` |
 | `qrs` | 10–12L, API 29–32 | `sinceLollipop`, `sinceMarshmallow`, `sinceOreo`, `onlyQrs` |
 | `latest` | 13 and newer, API 33+ | `sinceLollipop`, `sinceMarshmallow`, `sinceOreo`, `onlyLatest` |
 
-* `sinceOreo` is added to `tens` too, which also runs on Android 7.x, so code there still compares `Build.VERSION.SDK_INT`.
+* `sinceOreo` is added to `nop` too, which also runs on Android 7.x, so code there still compares `Build.VERSION.SDK_INT`.
 * When no folder matches affected flavors exactly, code in the closest wider folder compares `Build.VERSION.SDK_INT`. A new folder is added to `findExtraFolders` only when several files need it.
-* Checks run on a flavor with its name in the task instead of `Latest`, see [Running tests](#running-tests). Unit checks run on every flavor, e.g. `testLegacyDebugUnitTest`, checks on device only on `tens`, `qrs` and `latest`.
+* Checks run on a flavor with its name in the task instead of `Latest`, see [Running tests](#running-tests). Unit checks run on every flavor, e.g. `testLegacyDebugUnitTest`, checks on device only on `nop`, `qrs` and `latest`.
 * Classes added after `minSdk` of a flavor are used only after version checks. Declarations can't be guarded by them: older Android fails to load or verify classes that mention new classes in supertypes, types of fields, parameters and results of methods, or caught exceptions, e.g. with `NoClassDefFoundError` or `VerifyError` on Android 4.x. `./gradlew checkMinSdk` finds such declarations and imports of new classes in debug variants of all flavors, `check<Variant>MinSdk` in one variant, and lists them in `build/reports/minSdk/<variant>.txt` of the module. It fails only in flavors for Android 4.x, where new classes are referenced by their full name only inside version checks: Dalvik fails to verify whole classes that use them elsewhere, and imports make such uses easy to miss. ART of Android 5.0+ resolves classes only when they are used, so in newer flavors the lists are only for reference. Files of classes annotated with `@RequiresApi` or `@TargetApi` may import them. `legacy` flavor of the app is built and checked only with `-PuseLegacyNdk=true`. Uses of classes and methods annotated with `@RequiresApi`, anonymous classes and calls inside methods are checked by `NewApi` check of lint instead, e.g. `./gradlew :app:lintLegacyDebug -PuseLegacyNdk=true`: without the flag newer NDK raises minSdk of `legacy` flavor. Classes of `java.util` and `java.time` are left to lint too, because core library desugaring adds many of them to older Android.
 
 ## Pull request description
@@ -565,7 +565,7 @@ Tests on device replace installed app and clear its data, so they must never run
 * `-Pabi` limits native libraries to ABIs of devices, separated by commas: `arm64` for phones and emulators on ARM machines, `x64` for emulators on x86 machines, e.g. `-Pabi=arm64,x64` for both. Without it, all ABIs are built.
 * UI tests have two build types. `NonMinifiedRelease` builds faster and is suitable for writing tests. `BenchmarkRelease` is minified with R8 the same way as release builds, use it to check the build before publishing.
 * Benchmarks on emulator fail by default, because results are not representative. To check that they work, add `-Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR`. Real measurements require `connected` device.
-* To test other flavors, replace `Latest` in task name, e.g. with `Tens` (Android 7.0–9).
+* To test other flavors, replace `Latest` in task name, e.g. with `Nop` (Android 7.0–9).
 * Baseline profiles are generated for all variants that use them, on connected device and then on emulator, and saved in `app/src/<variant>/generated/baselineProfiles`.
 * On failure Gradle prints path to report. Results of tests on device, including logcat, are saved in `build/outputs/androidTest-results` of the module.
 * When a test in separate process fails, screenshot, UI hierarchy and app crashes at that moment are saved as `<Class>.<test>.failure.png`, `<Class>.<test>.failure.xml` and `<Class>.<test>.crash.txt`, screenshots taken by test as `<Class>.<test>.<name>.png`. Gradle copies them to `build/outputs` of the module: `find tests/ui/build/outputs -name 'ChatTest.*'`.

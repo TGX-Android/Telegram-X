@@ -41,9 +41,10 @@ extern "C" {
 
 #define MAX_GIF_SIZE 920
 #define BITMAP_TARGET_FORMAT AV_PIX_FMT_RGBA
-// New values since frames are drawn by tlottie: caches of frames drawn by rlottie are drawn again
-#define LOTTIE_CACHE_MAGIC 0xf0ebaef3
-#define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef4
+// Changed with each update that affects cache contents
+// Updates: tlottie, frame-0-fix
+#define LOTTIE_CACHE_MAGIC 0xf0ebaef5
+#define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef6
 
 static const std::string av_make_error_str (int errnum) {
   char errbuf[AV_ERROR_MAX_STRING_SIZE];
@@ -917,6 +918,9 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
     fseek(info->cacheFile, info->headerSize + sizeof(uint32_t) + firstFrameSize, SEEK_SET);
     info->nextFrameNo = 1;
   } else {
+    if (cacheFile != nullptr) {
+      fclose(cacheFile);
+    }
     return 1;
   }
   return 0;

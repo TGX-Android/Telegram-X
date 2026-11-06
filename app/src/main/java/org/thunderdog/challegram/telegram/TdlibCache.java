@@ -32,7 +32,6 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
@@ -47,6 +46,7 @@ import org.thunderdog.challegram.voip.annotation.CallState;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -476,9 +476,6 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
 
     if (isMe) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        TdlibNotificationChannelGroup.updateGroup(newUser, tdlib.account().isDebug());
-      }
       tdlib.context().onUpdateAccountProfile(tdlib.id(), newUser, !hadUser);
     } else {
       if (isContactChanged) {
@@ -641,18 +638,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       notifyListeners(supergroupsGlobalListeners.iterator(), supergroup);
       notifyListeners(supergroupListeners.iterator(supergroup.id), supergroup);
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && updateMode == UPDATE_MODE_IMPORTANT) {
-      if (chat != null) {
-        try {
-          TdlibNotificationChannelGroup.updateChat(tdlib, myUserId, chat);
-        } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
-          TDLib.Tag.notifications("Unable to update notification channel for supergroup %d:\n%s",
-            update.supergroup.id,
-            Log.toString(e)
-          );
-          tdlib.settings().trackNotificationChannelProblem(e, ChatId.fromSupergroupId(update.supergroup.id));
-        }
-      }
+    if (updateMode == UPDATE_MODE_IMPORTANT && chat != null) {
+      tdlib.notifications().updateChatChannel(chat.id);
     }
   }
 
@@ -1796,6 +1783,61 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   private void notifyUserFullListeners (long userId, TdApi.UserFullInfo userFull) {
     notifyListeners(userListeners.iterator(0L), userId, userFull);
     notifyListeners(userListeners.iterator(userId), userId, userFull);
+  }
+
+  @UiThread
+  void onTimeFormatChanged () {
+    // Only users whose last seen shows a time or a date, by listeners of their own ids, never by
+    // the listeners of all users; rows of lists of users format at their bind
+    notifyFormattedStatuses(statusListeners);
+    notifyFormattedStatuses(simpleStatusListeners);
+  }
+
+  private void notifyFormattedStatuses (ReferenceLongMap<UserStatusChangeListener> listeners) {
+    for (long userId : userIdsOf(listeners)) {
+      TdApi.User user = user(userId);
+      if (user != null && isLastSeenFormatted(userId, user)) {
+        notifyUserStatusListeners(listeners.iterator(userId), userId, user.status, true);
+      }
+    }
+  }
+
+  private static long[] userIdsOf (ReferenceLongMap<?> listeners) {
+    // Copied, since listeners can unsubscribe
+    synchronized (listeners.mapUnchecked()) {
+      Set<Long> keys = listeners.keySetUnchecked();
+      if (keys == null) {
+        return new long[0];
+      }
+      long[] userIds = new long[keys.size()];
+      int count = 0;
+      for (long userId : keys) {
+        if (userId != 0) {
+          userIds[count++] = userId;
+        }
+      }
+      return count == userIds.length ? userIds : Arrays.copyOf(userIds, count);
+    }
+  }
+
+  private boolean isLastSeenFormatted (long userId, TdApi.User user) {
+    // As TdlibStatusManager.getPrivateChatSubtitle shows the last seen of a user with a time or a
+    // date, not "online", "recently" or a duration, and not for bots, support or service chats
+    if (userId == 0 || tdlib.isSelfUserId(userId) || user.isSupport ||
+      user.type.getConstructor() != TdApi.UserTypeRegular.CONSTRUCTOR ||
+      tdlib.isServiceNotificationsChat(ChatId.fromUserId(userId)) ||
+      tdlib.isRepliesChat(ChatId.fromUserId(userId)) ||
+      user.status.getConstructor() != TdApi.UserStatusOffline.CONSTRUCTOR) {
+      return false;
+    }
+    int wasOnline = ((TdApi.UserStatusOffline) user.status).wasOnline;
+    return wasOnline > 0 && Lang.isRelativeDateFormatted(
+      wasOnline,
+      TimeUnit.SECONDS,
+      tdlib.currentTimeMillis(),
+      TimeUnit.MILLISECONDS,
+      true
+    );
   }
 
   private void notifyUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {

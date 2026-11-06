@@ -972,6 +972,18 @@ public class TGCallService extends Service implements
       builder.setColor(tdlib.accountColor());
       builder.setVibrate(new long[0]);
       builder.setCategory(Notification.CATEGORY_CALL);
+      if (user != null) {
+        // Do not disturb lets starred contacts and repeat callers ring
+        String uri = TdlibNotificationUtils.getPersonUri(tdlib, user);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+          builder.addPerson(new android.app.Person.Builder()
+            .setName(TD.getUserName(user))
+            .setUri(uri)
+            .build());
+        } else {
+          builder.addPerson(uri);
+        }
+      }
       builder.setFullScreenIntent(PendingIntent.getActivity(this, PendingIntent.FLAG_ONE_SHOT, Intents.valueOfCall(), Intents.mutabilityFlags(false)), true);
     }
     Bitmap bitmap = user != null ?
@@ -1010,7 +1022,9 @@ public class TGCallService extends Service implements
     }
 
     int vibrateMode = tdlib.notifications().getCallVibrateMode(ChatId.fromUserId(user.id));
-    if (vibrateMode != TdlibNotificationManager.VIBRATE_MODE_DISABLED) {
+    boolean needVibrate = vibrateMode != TdlibNotificationManager.VIBRATE_MODE_DISABLED;
+    // Like a call of the system, none in silent mode, whatever the vibration of calls is set to
+    if (needVibrate && !tdlib.notifications().isRingerSilent()) {
       vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
       if (vibrator != null) {
         switch (vibrateMode) {

@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.core;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
@@ -37,6 +38,14 @@ public class WatchDogContext {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
       INTENT_FILTER.addAction(ConnectivityManager.ACTION_RESTRICT_BACKGROUND_CHANGED);
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      INTENT_FILTER.addAction(NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED);
+      INTENT_FILTER.addAction(NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED);
+      INTENT_FILTER.addAction(
+        NotificationManager.ACTION_NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED
+      );
     }
   }
 

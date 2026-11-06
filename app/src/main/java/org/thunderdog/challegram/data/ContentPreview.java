@@ -807,7 +807,7 @@ public class ContentPreview {
           ContentPreview newPreview = getAlbumPreview(tdlib, message, localAlbum, allowContent);
           if (localAlbum.messages.size() == 1) {
             if (newPreview.hasRefresher()) {
-              newPreview.refreshContent(callback);
+              newPreview.refresher.runRefresher(oldContent, callback);
             } else {
               callback.onContentPreviewNotChanged(message.chatId, message.id, oldContent);
             }

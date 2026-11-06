@@ -434,6 +434,12 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     return frameNo;
   }
 
+  @Nullable
+  private static Bitmap getShownFirstFrame (GifState gif) {
+    GifState.Frame frame = gif.getDrawFrame(false);
+    return frame != null && frame.no == 0 ? frame.bitmap : null;
+  }
+
   public boolean seekToStart () {
     if (!seekToStart && lastTimeStamp != 0) {
       seekToStart = true;
@@ -556,7 +562,8 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
                     if (nativePtr == 0)
                       return;
                     // long elapsed = SystemClock.uptimeMillis();
-                    newStatus = N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, true, skipOddFrames);
+                    newStatus = N.createLottieCache(nativePtr, lottieCacheFile.getPath(),
+                      getShownFirstFrame(gif), free.bitmap, true, skipOddFrames);
                     // Log.i("created lottie cache in %dms, skipOdd:%b, resolution:%d", SystemClock.uptimeMillis() - elapsed, skipOddFrames, lottieCacheFileSize);
                   }
                   if (newStatus == 0) {

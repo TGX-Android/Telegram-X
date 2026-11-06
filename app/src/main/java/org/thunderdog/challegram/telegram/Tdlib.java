@@ -1371,6 +1371,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     updateUtcTimeOffset();
   }
 
+  @Override
+  public void onTimeFormatChanged () {
+    cache().onTimeFormatChanged();
+  }
+
   private boolean isOptimizing;
 
   public boolean isOptimizing () {
@@ -5815,11 +5820,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   private boolean setLanguagePackIdImpl (@NonNull String languagePackId, boolean dispatch) {
-    if (!StringUtils.equalsOrBothEmpty(languagePackId, languagePackId)) {
+    if (!StringUtils.equalsOrBothEmpty(this.languagePackId, languagePackId)) {
       this.languagePackId = languagePackId;
+      this.countries = null; // Reset locale-specific names.
       if (dispatch) {
         updateLanguageParameters(client(), false);
-        this.countries = null; // Reset locale-specific names.
       }
       return true;
     }
@@ -8226,20 +8231,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
     listeners.updateChatTitle(update, chat, chatLists);
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      long myUserId = myUserId();
-      if (myUserId != 0) {
-        try {
-          TdlibNotificationChannelGroup.updateChat(this, myUserId, chat);
-        } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
-          TDLib.Tag.notifications("Unable to update notification channel title for chat %d:\n%s",
-            update.chatId,
-            Log.toString(e)
-          );
-          settings().trackNotificationChannelProblem(e, chat.id);
-        }
-      }
-    }
+    notifications().updateChatChannel(chat.id);
   }
 
   @TdlibThread
@@ -8951,9 +8943,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     if (update.file.local.isDownloadingActive || update.file.remote.isUploadingActive) {
       files().onFileProgress(update);
 
-      int fileId = update.file.id;
       if (!ImageLoader.instance().onProgress(this, update.file)) {
-        if (!GifBridge.instance().onProgress(this, fileId, TD.getFileProgress(update.file))) {
+        if (!GifBridge.instance().onProgress(this, update.file, TD.getFileProgress(update.file))) {
           // Nothing?
         }
       }
@@ -10799,7 +10790,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     connectionListeners = new ConditionalExecutor(() -> authorizationStatus() != Status.UNKNOWN && connectionState == ConnectionState.CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
     notificationInitListeners = new ConditionalExecutor(() -> {
       final int status = authorizationStatus();
-      return status == Status.UNAUTHORIZED || (status == Status.READY && haveInitializedNotifications);
+      return status == Status.UNAUTHORIZED || (status == Status.READY && (haveInitializedNotifications || isServiceInstance() || Config.FORCE_DISABLE_NOTIFICATIONS));
     }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationListeners = new ConditionalExecutor(() -> !havePendingNotifications).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationConsistencyListeners = new ConditionalExecutor(() -> false),

@@ -64,6 +64,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -79,6 +80,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Future;
 import me.vkryl.core.reference.ReferenceList;
 import tgx.td.ChatId;
 import tgx.td.MediaType;
@@ -596,12 +598,16 @@ public class Lang {
   }
 
   public static String formatNumber (long n) {
+    return fixNumber(formatCached(KEY_PREFIX_NUMBER, n, Lang::newNumberFormat));
+  }
+
+  private static java.text.Format newNumberFormat () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        return fixNumber(android.icu.text.NumberFormat.getInstance(dateFormatLocale()).format(n));
+        return android.icu.text.NumberFormat.getInstance(dateFormatLocale());
       } catch (Throwable ignored) { }
     }
-    return fixNumber(java.text.NumberFormat.getInstance(dateFormatLocale()).format(n));
+    return java.text.NumberFormat.getInstance(dateFormatLocale());
   }
 
   public static String compactNumber (long n) {
@@ -613,15 +619,65 @@ public class Lang {
     return null;
   }
 
-  private static String dateFormat (String pattern, long timeInMillis) {
+  // Kept for each kind and locale, since making a formatter takes longer than formatting a date or
+  // a number; made again after a change of the time zone or of 12 or 24 hours, which formatters
+  // take when they're made
+  private static final HashMap<String, java.text.Format> dateFormats = new HashMap<>();
+  private static final String KEY_PREFIX_NUMBER = "number";
+  private static final String KEY_PREFIX_PATTERN = "pattern ";
+  private static final String KEY_PREFIX_ICU_DATE = "icu date ";
+  private static final String KEY_PREFIX_DATE = "date ";
+  private static final String KEY_PREFIX_TIME = "time ";
+  private static final String KEY_PREFIX_ICU_DATE_TIME = "icu date time ";
+  private static final String KEY_PREFIX_DATE_TIME = "date time ";
+  private static final String KEY_PREFIX_ICU_DATE_WITHOUT_YEAR = "icu date without year ";
+  private static final String KEY_PREFIX_DATE_WITHOUT_YEAR = "date without year ";
+  private static final String KEY_PREFIX_ICU_DATE_WITHOUT_DAY = "icu date without day ";
+  private static final String KEY_PREFIX_DATE_WITHOUT_DAY = "date without day ";
+
+  private static String formatDate (
+    String kind,
+    long timeInMillis,
+    Future<java.text.Format> newFormat
+  ) {
+    return formatCached(kind, DateUtils.dateInstance(timeInMillis), newFormat);
+  }
+
+  private static String formatCached (
+    String kind,
+    Object value,
+    Future<java.text.Format> newFormat
+  ) {
+    final String key = kind + '|' + dateFormatLocale();
+    synchronized (dateFormats) {
+      java.text.Format format = dateFormats.get(key);
+      if (format == null) {
+        format = newFormat.getValue();
+        dateFormats.put(key, format);
+      }
+      return format.format(value);
+    }
+  }
+
+  public static void clearDateFormats () {
+    synchronized (dateFormats) {
+      dateFormats.clear();
+    }
+  }
+
+  private static java.text.Format newDateFormat (String pattern) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        return new android.icu.text.SimpleDateFormat(pattern, dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+        return new android.icu.text.SimpleDateFormat(pattern, dateFormatLocale());
       } catch (ExceptionInInitializerError e) {
         Log.e("Vendor i18n implementation bug in SimpleDateFormat", e);
       }
     }
-    return new java.text.SimpleDateFormat(pattern, dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+    return new java.text.SimpleDateFormat(pattern, dateFormatLocale());
+  }
+
+  private static String dateFormat (String pattern, long timeInMillis) {
+    return formatDate(KEY_PREFIX_PATTERN + pattern, timeInMillis, () -> newDateFormat(pattern));
   }
 
   private static boolean isSpecifier (char c) {
@@ -744,17 +800,30 @@ public class Lang {
   private static String systemDate (long timeInMillis, int style, String fallbackPattern) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        return android.icu.text.DateFormat.getDateInstance(translateStyle(style, true), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+        return formatDate(KEY_PREFIX_ICU_DATE + style, timeInMillis, () ->
+          android.icu.text.DateFormat.getDateInstance(
+            translateStyle(style, true),
+            dateFormatLocale()
+          )
+        );
       } catch (Throwable ignored) { }
     }
     try {
-      return java.text.DateFormat.getDateInstance(translateStyle(style, false), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+      return formatDate(KEY_PREFIX_DATE + style, timeInMillis, () ->
+        java.text.DateFormat.getDateInstance(translateStyle(style, false), dateFormatLocale())
+      );
     } catch (Throwable ignored) {
       return dateFormat(fallbackPattern, timeInMillis);
     }
   }
 
-  private static String systemTime (long timeInMillis, int style, String fallbackPattern) {
+  private static String systemTime (
+    long timeInMillis,
+    int style,
+    String fallbackPattern12,
+    String fallbackPattern24
+  ) {
+    // Reading whether the system uses 12 hours takes long, so only the fallback reads it
     try {
       /*String language = dateFormatLocale().getLanguage();
       if (language.equals(Locale.getDefault().getLanguage())) {
@@ -769,35 +838,62 @@ public class Lang {
           return android.icu.text.DateFormat.getTimeInstance(translateStyle(style, true), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
         } catch (Throwable ignored) { }
       }*/
-      return java.text.DateFormat.getTimeInstance(translateStyle(style, false), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+      return formatDate(KEY_PREFIX_TIME + style, timeInMillis, () ->
+        java.text.DateFormat.getTimeInstance(translateStyle(style, false), dateFormatLocale())
+      );
     } catch (Throwable ignored) {
-      return dateFormat(fallbackPattern, timeInMillis);
+      return dateFormat(UI.needAmPm() ? fallbackPattern12 : fallbackPattern24, timeInMillis);
     }
   }
 
-  private static String systemDateTime (long timeInMillis, int dateStyle, int timeStyle, String fallbackPattern) {
+  private static String systemDateTime (
+    long timeInMillis,
+    int dateStyle,
+    int timeStyle,
+    String fallbackPattern12,
+    String fallbackPattern24
+  ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        return android.icu.text.DateFormat.getDateTimeInstance(translateStyle(dateStyle, true), translateStyle(timeStyle, true), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+        final String key = KEY_PREFIX_ICU_DATE_TIME + dateStyle + " " + timeStyle;
+        return formatDate(key, timeInMillis, () ->
+          android.icu.text.DateFormat.getDateTimeInstance(
+            translateStyle(dateStyle, true),
+            translateStyle(timeStyle, true),
+            dateFormatLocale()
+          )
+        );
       } catch (Throwable ignored) { }
     }
     try {
-      return java.text.DateFormat.getDateTimeInstance(translateStyle(dateStyle, false), translateStyle(timeStyle, false), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
+      return formatDate(KEY_PREFIX_DATE_TIME + dateStyle + " " + timeStyle, timeInMillis, () ->
+        java.text.DateFormat.getDateTimeInstance(
+          translateStyle(dateStyle, false),
+          translateStyle(timeStyle, false),
+          dateFormatLocale()
+        )
+      );
     } catch (Throwable ignored) {
-      return dateFormat(fallbackPattern, timeInMillis);
+      return dateFormat(UI.needAmPm() ? fallbackPattern12 : fallbackPattern24, timeInMillis);
     }
   }
 
   private static String systemDateWithoutYear (long timeInMillis, int style, String fallbackPattern) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        String pattern = ((android.icu.text.SimpleDateFormat) android.icu.text.DateFormat.getDateInstance(translateStyle(style, true), dateFormatLocale())).toPattern();
-        return dateFormat(patternWithoutYear(pattern), timeInMillis);
+        return formatDate(KEY_PREFIX_ICU_DATE_WITHOUT_YEAR + style, timeInMillis, () -> {
+          String pattern = ((android.icu.text.SimpleDateFormat) android.icu.text.DateFormat
+            .getDateInstance(translateStyle(style, true), dateFormatLocale())).toPattern();
+          return newDateFormat(patternWithoutYear(pattern));
+        });
       } catch (Throwable ignored) { }
     }
     try {
-      String pattern = ((java.text.SimpleDateFormat) java.text.DateFormat.getDateInstance(translateStyle(style, false), dateFormatLocale())).toPattern();
-      return dateFormat(patternWithoutYear(pattern), timeInMillis);
+      return formatDate(KEY_PREFIX_DATE_WITHOUT_YEAR + style, timeInMillis, () -> {
+        String pattern = ((java.text.SimpleDateFormat) java.text.DateFormat
+          .getDateInstance(translateStyle(style, false), dateFormatLocale())).toPattern();
+        return newDateFormat(patternWithoutYear(pattern));
+      });
     } catch (Throwable ignored) {
       return dateFormat(fallbackPattern, timeInMillis);
     }
@@ -806,13 +902,19 @@ public class Lang {
   private static String systemDateWithoutDay (long timeInMillis, int style, String fallbackPattern) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && ALLOW_ICU) {
       try {
-        String pattern = ((android.icu.text.SimpleDateFormat) android.icu.text.DateFormat.getDateInstance(translateStyle(style, true), dateFormatLocale())).toPattern();
-        return dateFormat(patternWithoutDay(pattern), timeInMillis);
+        return formatDate(KEY_PREFIX_ICU_DATE_WITHOUT_DAY + style, timeInMillis, () -> {
+          String pattern = ((android.icu.text.SimpleDateFormat) android.icu.text.DateFormat
+            .getDateInstance(translateStyle(style, true), dateFormatLocale())).toPattern();
+          return newDateFormat(patternWithoutDay(pattern));
+        });
       } catch (Throwable ignored) { }
     }
     try {
-      String pattern = ((java.text.SimpleDateFormat) java.text.DateFormat.getDateInstance(translateStyle(style, false), dateFormatLocale())).toPattern();
-      return dateFormat(patternWithoutDay(pattern), timeInMillis);
+      return formatDate(KEY_PREFIX_DATE_WITHOUT_DAY + style, timeInMillis, () -> {
+        String pattern = ((java.text.SimpleDateFormat) java.text.DateFormat
+          .getDateInstance(translateStyle(style, false), dateFormatLocale())).toPattern();
+        return newDateFormat(patternWithoutDay(pattern));
+      });
     } catch (Throwable ignored) {
       return dateFormat(fallbackPattern, timeInMillis);
     }
@@ -2000,7 +2102,7 @@ public class Lang {
   }
   public static String time (long unixTime, TimeUnit unit) {
     long timeMs = unit.toMillis(unixTime);
-    return systemTime(timeMs, STYLE_SHORT, UI.needAmPm() ? "h:mm a" : "H:mm");
+    return systemTime(timeMs, STYLE_SHORT, "h:mm a", "H:mm");
   }
 
   public static String hour (long unixTime, TimeUnit unit) {
@@ -2026,7 +2128,13 @@ public class Lang {
 
   public static String dateYearShortTime (long unixTime, TimeUnit unit) {
     long timeMs = unit.toMillis(unixTime);
-    return systemDateTime(timeMs, STYLE_MEDIUM, STYLE_SHORT, UI.needAmPm() ? "d MMM ''yy h:mm a" : "d MMM ''yy H:mm");
+    return systemDateTime(
+      timeMs,
+      STYLE_MEDIUM,
+      STYLE_SHORT,
+      "d MMM ''yy h:mm a",
+      "d MMM ''yy H:mm"
+    );
   }
 
   private static String dateFull (long unixTime, TimeUnit unit) {
@@ -2251,10 +2359,15 @@ public class Lang {
     return -1;
   }
 
+  // A relative date is a duration, e.g. "5 minutes ago", from 5 minutes ahead to 4 hours ago, and
+  // a time or a date otherwise
+  private static final long RELATIVE_DURATION_FROM_SECONDS = -5 * 60;
+  private static final int RELATIVE_DURATION_HOURS = 4;
+
   public static String getRelativeDate (long unixTime, TimeUnit unit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds, @StringRes int res, boolean approximate) {
     if (allowDuration) {
       long difference = fromUnit.toSeconds(fromUnixTime) - unit.toSeconds(unixTime);
-      if (difference >= -5 * 60) {
+      if (difference >= RELATIVE_DURATION_FROM_SECONDS) {
         if (difference < justNowSeconds)
           return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.NOW));
         if (difference < 60)
@@ -2263,7 +2376,7 @@ public class Lang {
         if (difference < 60)
           return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.MINUTES), (int) difference);
         difference /= 60;
-        if (difference < 4)
+        if (difference < RELATIVE_DURATION_HOURS)
           return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.HOURS), (int) difference);
       }
     }
@@ -2312,6 +2425,23 @@ public class Lang {
       }
       return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.DATE), date, time);
     }
+  }
+
+  public static boolean isRelativeDateFormatted (
+    long unixTime,
+    TimeUnit unit,
+    long fromUnixTime,
+    TimeUnit fromUnit,
+    boolean allowDuration
+  ) {
+    // Whether getRelativeDate shows a time or a date, which follow the time zone and the format,
+    // rather than "just now" or a duration, e.g. "5 minutes ago"
+    if (allowDuration) {
+      long difference = fromUnit.toSeconds(fromUnixTime) - unit.toSeconds(unixTime);
+      return difference < RELATIVE_DURATION_FROM_SECONDS ||
+        difference >= TimeUnit.HOURS.toSeconds(RELATIVE_DURATION_HOURS);
+    }
+    return true;
   }
 
   public static long getNextRelativeDateUpdateMs (long unixTime, TimeUnit unit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds) {
@@ -2552,7 +2682,13 @@ public class Lang {
   public static String getTimestamp (long time, TimeUnit unit) {
     long unixTime = unit.toMillis(time);
     if (!Settings.instance().forceArabicNumbers()) {
-      return systemDateTime(unixTime, STYLE_SHORT, STYLE_SHORT, UI.needAmPm() ? "dd.MM.yyyy h:mm a" : "dd.MM.yyyy H:mm");
+      return systemDateTime(
+        unixTime,
+        STYLE_SHORT,
+        STYLE_SHORT,
+        "dd.MM.yyyy h:mm a",
+        "dd.MM.yyyy H:mm"
+      );
     }
     Calendar target = DateUtils.calendarInstance(unixTime);
     int day = target.get(Calendar.DAY_OF_MONTH);

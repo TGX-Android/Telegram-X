@@ -66,6 +66,9 @@ public class Config {
 
   public static final boolean ENABLE_TEST_HOOKS = BuildConfig.TEST_HOOKS_ENABLED;
 
+  // How often at most a chat of the chat list layouts changes of its last message and unread count
+  public static final long CHAT_CHANGES_INTERVAL_MS = 100;
+
   public static final boolean ENABLE_DELETE_CALL_HISTORY = BuildConfig.DEBUG;
 
   public static final boolean DEBUG_TDLIB_REFERENCES = false;

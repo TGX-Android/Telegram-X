@@ -191,6 +191,8 @@ private fun Project.findAppKeystore(): Keystore? {
   }
   ```
 
+* Lists don't call `notifyDataSetChanged()`, and a change of what rows show doesn't animate: `notifyItemChanged` and `notifyItemRangeChanged` over visible rows run change animations of the `ItemAnimator`. A visible row that shows the change is updated in its view and invalidated; rows off the screen, also those detached in the cache of `RecyclerView`, get `notifyItemRangeChanged` of their ranges and are bound again when shown. `notifyItemInserted`, `notifyItemRemoved` and `notifyItemMoved` are for changes of the structure of the list.
+
 ## Resources
 
 * Icons are vector drawables only. Their viewport (`viewportWidth`, `viewportHeight`) is 24x24, display size is set by `width` and `height` and is the suffix of the file name, e.g. `baseline_access_time_24.xml`.
