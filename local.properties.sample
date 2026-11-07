@@ -19,6 +19,9 @@ msys2.dir=
 ## Path to the keystore file
 keystore.file=
 
+## Path to a google-services.json used instead of the one in the repository
+google_services.file=
+
 ## Package name
 app.id=org.example.tgx
 

@@ -1723,7 +1723,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       }
       return;
     }
-    if (BuildConfig.EXPERIMENTAL) {
+    if (!BuildConfig.FIREBASE_MESSAGING_ENABLED) {
       setTokenState(TokenState.ERROR, EXPERIMENTAL_BUILD_ERROR, null);
       if (after != null) {
         after.runWithBool(false);

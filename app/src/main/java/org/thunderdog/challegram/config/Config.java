@@ -266,9 +266,9 @@ public class Config {
 
   public static final boolean SHOW_COPY_REPORT_DETAILS_IN_SETTINGS = BuildConfig.EXPERIMENTAL;
 
-  // Builds of tests are experimental too, but get notifications like release builds
   public static final boolean FORCE_DISABLE_NOTIFICATIONS =
-    BuildConfig.EXPERIMENTAL && !BuildConfig.DEBUG && !ENABLE_TEST_HOOKS;
+    BuildConfig.EXPERIMENTAL && !BuildConfig.DEBUG && !ENABLE_TEST_HOOKS &&
+    !BuildConfig.FIREBASE_MESSAGING_ENABLED;
 
   public static final int MINIMUM_CALL_CONTACTS_SUGGESTIONS = 3;
 
