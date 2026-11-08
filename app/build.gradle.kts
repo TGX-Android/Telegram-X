@@ -9,7 +9,6 @@ import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
 import tgx.gradle.source.GitInformationSource
 import tgx.gradle.task.*
-import tgx.test.configureTests
 import java.util.*
 
 plugins {
@@ -1019,7 +1018,10 @@ android {
   }
 }
 
-configureTests()
+val hasTests = rootDir.resolve("tests/.git").exists()
+if (hasTests) {
+  apply(plugin = "tgx-tests-app")
+}
 
 extensions.configure<BaselineProfileConsumerExtension> {
   mergeIntoMain = false
@@ -1027,10 +1029,12 @@ extensions.configure<BaselineProfileConsumerExtension> {
   saveInSrc = true
   warnings.disabledVariants = false
   warnings.variantHasNoBaselineProfileDependency = false
-  Sdk.VARIANTS.values.filter {
-    it.usesBaselineProfile
-  }.forEach { variant ->
-    variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
+  if (hasTests) {
+    Sdk.VARIANTS.values.filter {
+      it.usesBaselineProfile
+    }.forEach { variant ->
+      variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
+    }
   }
 }
 
@@ -1273,9 +1277,10 @@ dependencies {
   compileOnly(libs.annotations.jsr305)
   compileOnly(libs.annotations.kotlin)
 
-  // Tests: tests/README.md
-  testImplementation(libs.bundles.unit.test)
-  androidTestImplementation(project(":tests:core"))
+  if (hasTests) {
+    testImplementation(libs.bundles.unit.test)
+    androidTestImplementation(project(":tests:core"))
+  }
 }
 
 if (!config.isExperimentalBuild) {

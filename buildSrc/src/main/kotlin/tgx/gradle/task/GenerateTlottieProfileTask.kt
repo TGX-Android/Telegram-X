@@ -25,7 +25,7 @@ private const val DEVICE_DIR = "/data/local/tmp/tlottie-profile"
  * see BuildTlottieTask: tlottie built with instrumentation and the same options draws all frames of
  * samples at the sizes of the app on the connected device of ANDROID_SERIAL, see
  * app/jni/tlottie/profile.c. Samples are .tgs files in folders emoji, sticker and effect, e.g.
- * saved by StickerSamples of tests/ui/app, without those that benchmarks measure, so that they
+ * saved by StickerSamples of tests, without those that benchmarks measure, so that they
  * measure the gain on others. Functions of tlottie that change lose the optimizations, so the
  * profile is made again after updates of tlottie and of Rust, and profiles.properties keeps what
  * it was made with. Needs llvm-tools of the version of Rust:
