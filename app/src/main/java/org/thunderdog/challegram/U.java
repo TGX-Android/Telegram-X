@@ -3437,8 +3437,9 @@ public class U {
         }
         android.content.ClipData.Item clipItem = clipData.getItemAt(0);
         if (clipData.getDescription().hasMimeType("text/html")) {
+          // The description may name HTML that the item doesn't have, e.g. a URI of that type
           String htmlText = clipItem.getHtmlText();
-          return TD.htmlToCharSequence(htmlText);
+          return htmlText != null ? TD.htmlToCharSequence(htmlText) : clipItem.getText();
         } else if (clipData.getDescription().hasMimeType("text/plain")) {
           return clipItem.getText();
         }

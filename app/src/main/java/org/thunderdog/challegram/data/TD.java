@@ -116,6 +116,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -4709,7 +4710,7 @@ public class TD {
           "</a>"
         );
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR -> new HtmlTag(
-        "<a href=\"" + Html.escapeHtml(((TdApi.TextEntityTypeTextUrl) entityType).url) + "\">",
+        "<a href=\"" + escapeHtmlAttribute(((TdApi.TextEntityTypeTextUrl) entityType).url) + "\">",
         "</a>"
       );
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR ->
@@ -4730,7 +4731,7 @@ public class TD {
         if (!StringUtils.isEmpty(language)) {
           openTag
             .append("<code class=\"language-")
-            .append(Html.escapeHtml(language))
+            .append(escapeHtmlAttribute(language))
             .append("\">");
         } else {
           openTag.append("<code>");
@@ -4748,6 +4749,7 @@ public class TD {
            TdApi.TextEntityTypeCashtag.CONSTRUCTOR,
            TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR,
            TdApi.TextEntityTypeMention.CONSTRUCTOR,
+           TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR,
            TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR,
            TdApi.TextEntityTypeUrl.CONSTRUCTOR ->
         null;
@@ -4782,16 +4784,183 @@ public class TD {
   }
 
   private static final Pattern PATTERN_TG_USER_ID = Pattern.compile("tg://user\\?id=(\\d+)", Pattern.CASE_INSENSITIVE);
-  private static final Pattern PATTERN_CODE_LANGUAGE = Pattern.compile("(?<=^| )(?:language-|lang)?([a-zA-Z]+)(?= |$)", Pattern.CASE_INSENSITIVE);
+  private static final Pattern PATTERN_CODE_LANGUAGE = Pattern.compile("[a-zA-Z]+");
+  private static final Pattern PATTERN_WHITESPACE = Pattern.compile("\\s+");
+  private static final Pattern PATTERN_PRE = Pattern.compile("(?is)(<pre\\b[^>]*>)(.*?)(</pre>)");
+  private static final Pattern PATTERN_PRE_FIRST_LINE_BREAK =
+    Pattern.compile("^((?:<[^/][^>]*>)*)\\r?\\n");
+  private static final Pattern PATTERN_PRE_LAST_LINE_BREAK =
+    Pattern.compile("\\r?\\n((?:</[^>]+>)*)$");
+  private static final Pattern PATTERN_HTML_TAG_BOUNDARY = Pattern.compile("(?=<)|(?<=>)");
+  private static final Pattern PATTERN_BLOCKQUOTE_START = Pattern.compile("(?i)<blockquote\\b");
+  private static final Pattern PATTERN_BLOCKQUOTE_END = Pattern.compile("(?i)</blockquote\\s*>");
+
+  private static class CodeInsidePre { }
+
+  private static class SpanStyle {
+    final List<TdApi.TextEntityType> types;
+
+    SpanStyle (List<TdApi.TextEntityType> types) {
+      this.types = types;
+    }
+  }
+
+  private static String escapeHtmlAttribute (String value) {
+    return Html.escapeHtml(value).replace("\"", "&quot;");
+  }
+
+  private static boolean isHtmlCodeTag (String tag) {
+    return tag.equalsIgnoreCase("code") || tag.equalsIgnoreCase("tt") ||
+      tag.equalsIgnoreCase("kbd") || tag.equalsIgnoreCase("samp");
+  }
+
+  private static boolean hasHtmlMark (Spanned text, Class<?> kind) {
+    return text.getSpans(0, text.length(), kind).length > 0;
+  }
+
+  private static boolean isHtmlPreOrCodeTag (String tag) {
+    return tag.equalsIgnoreCase("pre") || tag.equalsIgnoreCase("tg-pre") ||
+      tag.equalsIgnoreCase("tg-pre-code") || isHtmlCodeTag(tag);
+  }
+
+  private static boolean hasHtmlClass (@Nullable String htmlClass, String name) {
+    if (htmlClass != null) {
+      for (String className : PATTERN_WHITESPACE.split(htmlClass.trim())) {
+        if (className.equals(name)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private static @Nullable String getHtmlCodeLanguage (@Nullable String htmlClass) {
+    if (htmlClass != null) {
+      for (String name : PATTERN_WHITESPACE.split(htmlClass.trim())) {
+        if (name.startsWith("language-") && name.length() > 9) {
+          return name.substring(9);
+        }
+        if (name.startsWith("lang-") && name.length() > 5) {
+          return name.substring(5);
+        }
+      }
+    }
+    return null;
+  }
+
+  private static @Nullable String getCssValue (@Nullable String style, String property) {
+    String value = null;
+    if (style != null) {
+      for (String declaration : style.split(";")) {
+        int colon = declaration.indexOf(':');
+        if (colon != -1 && declaration.substring(0, colon).trim().equalsIgnoreCase(property)) {
+          value = declaration.substring(colon + 1).replace("!important", "").trim()
+            .toLowerCase(Locale.ROOT);
+        }
+      }
+    }
+    return value;
+  }
+
+  private static boolean isCssBold (@Nullable String fontWeight) {
+    return fontWeight != null && (fontWeight.equals("bold") || fontWeight.equals("bolder") ||
+      StringUtils.parseInt(fontWeight) >= 600);
+  }
+
+  private static boolean isCssNotBold (@Nullable String fontWeight) {
+    if (fontWeight == null) {
+      return false;
+    }
+    int weight = StringUtils.parseInt(fontWeight);
+    return fontWeight.equals("normal") || fontWeight.equals("lighter") ||
+      (weight > 0 && weight < 600);
+  }
+
+  private static boolean hasCssDecoration (@Nullable String style, String decoration) {
+    for (String property : new String[] {"text-decoration", "text-decoration-line"}) {
+      String value = getCssValue(style, property);
+      if (value != null && Arrays.asList(PATTERN_WHITESPACE.split(value)).contains(decoration)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static List<TdApi.TextEntityType> getHtmlSpanTypes (
+    @Nullable String style,
+    @Nullable String htmlClass
+  ) {
+    // Not code by a monospace font, as browsers copy the font of every text
+    List<TdApi.TextEntityType> types = new ArrayList<>();
+    if (isCssBold(getCssValue(style, "font-weight"))) {
+      types.add(new TdApi.TextEntityTypeBold());
+    }
+    String fontStyle = getCssValue(style, "font-style");
+    if (fontStyle != null && (fontStyle.equals("italic") || fontStyle.startsWith("oblique"))) {
+      types.add(new TdApi.TextEntityTypeItalic());
+    }
+    if (hasCssDecoration(style, "underline")) {
+      types.add(new TdApi.TextEntityTypeUnderline());
+    }
+    if (hasCssDecoration(style, "line-through")) {
+      types.add(new TdApi.TextEntityTypeStrikethrough());
+    }
+    if (hasHtmlClass(htmlClass, "tg-spoiler")) {
+      types.add(new TdApi.TextEntityTypeSpoiler());
+    }
+    return types;
+  }
+
+  private static String keepSpacesOfPre (String htmlText) {
+    // HTML parsers of Android collapse spaces and line breaks also inside <pre>, so its text keeps
+    // them as &nbsp; and <br/>, which blocks of code turn back into spaces. <pre> also becomes
+    // <tg-pre>: TagSoup closes inline tags such as <b> before a block it knows and reopens them
+    // inside it, which splits their spans in two, but keeps them open around unknown tags
+    Matcher pre = PATTERN_PRE.matcher(htmlText);
+    StringBuffer out = new StringBuffer();
+    while (pre.find()) {
+      // A line break right after the start of the block or right before its end, e.g. of code of
+      // markdown, is no line of it, as browsers show it
+      String content = PATTERN_PRE_FIRST_LINE_BREAK.matcher(pre.group(2)).replaceFirst("$1");
+      content = PATTERN_PRE_LAST_LINE_BREAK.matcher(content).replaceFirst("$1");
+      StringBuilder body = new StringBuilder();
+      for (String part : PATTERN_HTML_TAG_BOUNDARY.split(content)) {
+        if (part.startsWith("<")) {
+          body.append(part);
+        } else {
+          body.append(part.replace("\r\n", "\n").replace("\n", "<br/>").replace(" ", "&nbsp;"));
+        }
+      }
+      String block = "<tg-pre" + pre.group(1).substring(4) + body + "</tg-pre>";
+      pre.appendReplacement(out, Matcher.quoteReplacement(block));
+    }
+    pre.appendTail(out);
+    return out.toString();
+  }
 
   @Nullable
   public static CharSequence htmlToCharSequence (String htmlText) {
+    htmlText = keepSpacesOfPre(htmlText);
+    // TagSoup would split spans around a quote as around <pre>, see keepSpacesOfPre
+    htmlText = PATTERN_BLOCKQUOTE_START.matcher(htmlText).replaceAll("<tg-blockquote");
+    htmlText = PATTERN_BLOCKQUOTE_END.matcher(htmlText).replaceAll("</tg-blockquote>");
     HtmlParser.Replacer<TdApi.TextEntityType> entityReplacer = (text, start, end, mark) -> {
+      if (Td.isMonospaceTextOrBlock(mark)) {
+        // Runs of spaces come as &nbsp;, see keepSpacesOfPre and HtmlEncoder, while code needs
+        // spaces, e.g. in indents
+        for (int i = start; i < end; i++) {
+          if (text.charAt(i) == '\u00A0') {
+            ((Editable) text).replace(i, i + 1, " ");
+          }
+        }
+      }
       Object span = toSpan(mark);
       if (span != null) {
         text.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
     };
+    AtomicInteger openCodeTags = new AtomicInteger();
+    AtomicInteger openCodeInsidePre = new AtomicInteger();
     CharSequence result = HtmlParser.fromHtml(htmlText, null, (opening, tag, output, xmlReader, attributes) -> {
       // <tg-emoji emoji-id="ID">...</tg-emoji>
       // <tg-time unix="1647531900">22:45 tomorrow</tg-time>
@@ -4801,9 +4970,17 @@ public class TD {
       // <code>...</code>
       // <pre><code class="language-kotlin">...</code></pre>
       // Supported tags generated by DrKLO/Telegram (https://github.com/DrKLO/Telegram/blob/master/TMessagesProj/src/main/java/org/telegram/messenger/utils/CustomHtml.java):
-      // <animated-emoji data-document-id="ID">...</tg-emoji>
+      // <animated-emoji data-document-id="ID">...</animated-emoji>
       // <pre lang="LANG">...</pre>
+      // Supported tags of the Bot API, browsers and Google Docs:
+      // <tg-spoiler>...</tg-spoiler>, <span class="tg-spoiler">...</span>
+      // <span style="font-weight: 700; font-style: italic; text-decoration: line-through">
+      // <ins>, <kbd>, <samp>, <pre class="language-LANG">, <code class="hljs lang-LANG">
+      // Tags of earlier builds of Telegram X:
+      // <tg-pre-code data-language="LANG">...</tg-pre-code>
+      // <details>...</details>
       if (opening) {
+        String htmlClass = attributes.getValue("", "class");
         if (tag.equalsIgnoreCase("tg-user-mention")) {
           long userId = StringUtils.parseLong(attributes.getValue("", "data-user-id"));
           TdApi.TextEntityTypeMentionName mention = new TdApi.TextEntityTypeMentionName(userId);
@@ -4826,10 +5003,30 @@ public class TD {
           HtmlParser.start(output, dateTime);
         } else if (tag.equalsIgnoreCase("s") || tag.equalsIgnoreCase("del") || tag.equalsIgnoreCase("strike")) {
           HtmlParser.start(output, new TdApi.TextEntityTypeStrikethrough());
-        } else if (tag.equalsIgnoreCase("spoiler")) {
+        } else if (tag.equalsIgnoreCase("spoiler") || tag.equalsIgnoreCase("tg-spoiler")) {
           HtmlParser.start(output, new TdApi.TextEntityTypeSpoiler());
-        } else if (tag.equalsIgnoreCase("pre")) {
+        } else if (tag.equalsIgnoreCase("ins")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeUnderline());
+        } else if (tag.equalsIgnoreCase("span")) {
+          String style = attributes.getValue("", "style");
+          List<TdApi.TextEntityType> types = openCodeTags.get() > 0 ?
+            new ArrayList<>() :
+            getHtmlSpanTypes(style, htmlClass);
+          HtmlParser.start(output, new SpanStyle(types));
+        } else if (tag.equalsIgnoreCase("b") || tag.equalsIgnoreCase("strong")) {
+          // Google Docs puts all the text into <b style="font-weight:normal">
+          return isCssNotBold(getCssValue(attributes.getValue("", "style"), "font-weight"));
+        } else if (tag.equalsIgnoreCase("pre") || tag.equalsIgnoreCase("tg-pre")) {
           String language = attributes.getValue("", "lang"); // Pasting from app6: <pre lang="...">
+          if (language == null) {
+            language = attributes.getValue("", "language");
+          }
+          if (language == null) {
+            language = attributes.getValue("", "lng");
+          }
+          if (language == null) {
+            language = getHtmlCodeLanguage(htmlClass);
+          }
           TdApi.TextEntityType entity;
           if (!StringUtils.isEmpty(language)) {
             entity = new TdApi.TextEntityTypePreCode(language);
@@ -4837,24 +5034,45 @@ public class TD {
             entity = new TdApi.TextEntityTypePre();
           }
           HtmlParser.start(output, entity);
-        } else if (tag.equalsIgnoreCase("code")) {
-          String classAttribute = attributes.getValue("", "class");
-          if (classAttribute != null) {
-            Matcher matcher = PATTERN_CODE_LANGUAGE.matcher(classAttribute);
-            if (matcher.matches()) {
-              String language = matcher.group(1);
-              TdApi.TextEntityType current = HtmlParser.getCurrent(output, TdApi.TextEntityType.class);
-              if (current != null && current.getConstructor() == TdApi.TextEntityTypePre.CONSTRUCTOR) {
-                HtmlParser.start(output, new TdApi.TextEntityTypePreCode(language));
-                return true;
-              }
-            }
+          openCodeTags.incrementAndGet();
+        } else if (tag.equalsIgnoreCase("tg-pre-code")) {
+          String language = attributes.getValue("", "data-language");
+          if (language == null) {
+            language = "";
           }
-          HtmlParser.start(output, new TdApi.TextEntityTypeCode());
-        } else if (tag.equalsIgnoreCase("blockquote")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypePreCode(language));
+          openCodeTags.incrementAndGet();
+        } else if (isHtmlCodeTag(tag)) {
+          String language = getHtmlCodeLanguage(htmlClass);
+          if (language == null && tag.equalsIgnoreCase("code") && htmlClass != null &&
+            !htmlClass.equals("hljs") && PATTERN_CODE_LANGUAGE.matcher(htmlClass).matches()) {
+            // highlight.js adds hljs to code of any language
+            language = htmlClass;
+          }
+          // Any open <pre>, not only one at the end, as whitespace may stand between <pre> and
+          // <code>
+          TdApi.TextEntityTypePre[] pres =
+            output.getSpans(0, output.length(), TdApi.TextEntityTypePre.class);
+          if (language != null && pres.length > 0) {
+            TdApi.TextEntityTypePre pre = pres[pres.length - 1];
+            int start = output.getSpanStart(pre);
+            output.removeSpan(pre);
+            TdApi.TextEntityTypePreCode preCode = new TdApi.TextEntityTypePreCode(language);
+            output.setSpan(preCode, start, start, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+          }
+          if (openCodeTags.get() > 0) {
+            HtmlParser.start(output, new CodeInsidePre());
+            openCodeInsidePre.incrementAndGet();
+          } else {
+            HtmlParser.start(output, new TdApi.TextEntityTypeCode());
+          }
+          openCodeTags.incrementAndGet();
+        } else if (tag.equalsIgnoreCase("tg-blockquote")) {
           boolean isExpandable =
             attributes.getIndex("expandable") != -1 ||
-            attributes.getIndex("collapsed") != -1 /*app6: <blockquote collapsed>*/;
+            attributes.getIndex("collapsed") != -1 ||
+            attributes.getIndex("data-collapsed") != -1 ||
+            hasHtmlClass(htmlClass, "telegram-collapsed-quote");
           TdApi.TextEntityType entity;
           if (isExpandable) {
             entity = new TdApi.TextEntityTypeExpandableBlockQuote();
@@ -4862,21 +5080,43 @@ public class TD {
             entity = new TdApi.TextEntityTypeBlockQuote();
           }
           HtmlParser.start(output, entity);
+        } else if (tag.equalsIgnoreCase("details")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeExpandableBlockQuote());
         } else {
           return false;
         }
+        return true;
+      }
+      if (isHtmlPreOrCodeTag(tag) && openCodeTags.get() > 0) {
+        openCodeTags.decrementAndGet();
+      }
+      if (isHtmlCodeTag(tag) && openCodeInsidePre.get() > 0) {
+        openCodeInsidePre.decrementAndGet();
+        HtmlParser.end(output, CodeInsidePre.class, (text, start, end, mark) -> { });
+        return true;
+      } else if (tag.equalsIgnoreCase("span")) {
+        HtmlParser.end(output, SpanStyle.class, (text, start, end, mark) -> {
+          for (TdApi.TextEntityType type : mark.types) {
+            text.setSpan(toSpan(type), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          }
+        });
         return true;
       } else if (
         tag.equalsIgnoreCase("s") ||
         tag.equalsIgnoreCase("del") ||
         tag.equalsIgnoreCase("strike") ||
         tag.equalsIgnoreCase("spoiler") ||
+        tag.equalsIgnoreCase("tg-spoiler") ||
+        tag.equalsIgnoreCase("ins") ||
         tag.equalsIgnoreCase("tg-user-mention") ||
         tag.equalsIgnoreCase("tg-emoji") ||
-        tag.equalsIgnoreCase("tg-time") ||
-        tag.equalsIgnoreCase("blockquote") ||
-        tag.equalsIgnoreCase("pre") ||
-        tag.equalsIgnoreCase("code")
+        tag.equalsIgnoreCase("animated-emoji") ||
+        // <tg-time> without unix started nothing
+        (tag.equalsIgnoreCase("tg-time") &&
+          hasHtmlMark(output, TdApi.TextEntityTypeDateTime.class)) ||
+        tag.equalsIgnoreCase("tg-blockquote") ||
+        tag.equalsIgnoreCase("details") ||
+        isHtmlPreOrCodeTag(tag)
       ) {
         HtmlParser.end(output, TdApi.TextEntityType.class, entityReplacer);
         return true;
@@ -4887,6 +5127,13 @@ public class TD {
     if (result instanceof Editable editable) {
       replaceLinks(editable);
       mergePreCode(editable);
+      // A line break that Android adds after the last paragraph, or the whitespace after the text,
+      // e.g. of a whole document of a browser
+      int end = editable.length();
+      while (end > 0 && Character.isWhitespace(editable.charAt(end - 1))) {
+        end--;
+      }
+      editable.delete(end, editable.length());
       QuoteSpan.normalizeQuotes(editable);
     }
 
@@ -4987,6 +5234,8 @@ public class TD {
       }
     }
     if (b != null) {
+      // Pre and PreCode on one range, as in the clipboard, are one block of the field
+      mergePreCode(b);
       QuoteSpan.normalizeQuotesWithoutMerge(b);
     }
     return b != null ? SpannableString.valueOf(b) : text.text;
@@ -5136,6 +5385,36 @@ public class TD {
     int
       ALLOW_INTERNAL = 1,
       DISABLE_ANIMATIONS = 1 << 1;
+  }
+
+  private static final String DATE_TIME_URL_PREFIX = CalendarContract.CONTENT_URI + "/time/";
+  private static final long MAX_DATE_TIME_MILLIS =
+    TimeUnit.SECONDS.toMillis(Integer.MAX_VALUE + 1L);
+
+  @Nullable
+  private static TdApi.TextEntityTypeDateTime toDateTime (@Nullable String url) {
+    // A date of the field is a link to the calendar, see toSpan, which must come back as a date
+    return isDateTimeUrl(url) ? toDateTime(Uri.parse(url)) : null;
+  }
+
+  private static boolean isDateTimeUrl (@Nullable String url) {
+    // Without Uri.parse, as it's checked for each span on each change of the field
+    if (url == null || url.length() == DATE_TIME_URL_PREFIX.length() ||
+      !url.startsWith(DATE_TIME_URL_PREFIX)) {
+      return false;
+    }
+    long millis = 0;
+    for (int i = DATE_TIME_URL_PREFIX.length(); i < url.length(); i++) {
+      char c = url.charAt(i);
+      if (c < '0' || c > '9') {
+        return false;
+      }
+      millis = millis * 10 + (c - '0');
+      if (millis >= MAX_DATE_TIME_MILLIS) {
+        return false;
+      }
+    }
+    return millis >= TimeUnit.SECONDS.toMillis(1);
   }
 
   @Nullable
@@ -5335,6 +5614,10 @@ public class TD {
       return new TdApi.TextEntityType[] {((CustomTypefaceSpan) span).getTextEntityType()};
     if (span instanceof URLSpan) {
       String url = ((URLSpan) span).getURL();
+      TdApi.TextEntityTypeDateTime dateTime = toDateTime(url);
+      if (dateTime != null) {
+        return new TdApi.TextEntityType[] {dateTime};
+      }
       if (!Strings.isValidLink(url))
         return null;
       return new TdApi.TextEntityType[]{new TdApi.TextEntityTypeTextUrl(url)};
@@ -5472,8 +5755,10 @@ public class TD {
     }
     if (span instanceof CustomTypefaceSpan)
       return ((CustomTypefaceSpan) span).getTextEntityType() != null;
-    if (span instanceof URLSpan)
-      return Strings.isValidLink(((URLSpan) span).getURL());
+    if (span instanceof URLSpan) {
+      String url = ((URLSpan) span).getURL();
+      return isDateTimeUrl(url) || Strings.isValidLink(url);
+    }
     if (span instanceof StyleSpan) {
       StyleSpan styleSpan = (StyleSpan) span;
       switch (styleSpan.getStyle()) {
