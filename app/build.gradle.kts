@@ -1,7 +1,6 @@
 @file:Suppress("UnstableApiUsage", "AvoidApplyPluginMethod")
 
 import androidx.baselineprofile.gradle.consumer.BaselineProfileConsumerExtension
-import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.impl.VariantOutputImpl
 import com.android.build.gradle.tasks.ExternalNativeBuildTask
@@ -997,22 +996,6 @@ android {
         variant.sources.manifests.addStaticManifestFile(
           "src/google/$folderName/AndroidManifest.xml"
         )
-      }
-
-      if (variant.isMinifyEnabled) {
-        val variantName = variant.name.uppercaseFirstChar()
-        val copyTask = project.tasks.register<Copy>(
-          "copy${variantName}MappingFile"
-        ) {
-          description = "Creates a copy of mapping.txt with a build name"
-          from(variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE))
-          into(project.layout.buildDirectory.dir("outputs/mapping/${variant.name}"))
-          val mappingFileName = "${config.outputFileNamePrefix}-$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$buildTypeSuffix"
-          rename("mapping.txt", "$mappingFileName.txt")
-        }
-        project.afterEvaluate {
-          project.tasks.findByName("assemble$variantName")?.finalizedBy(copyTask)
-        }
       }
     }
   }
