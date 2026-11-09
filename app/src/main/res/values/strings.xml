@@ -1867,6 +1867,12 @@
   <string name="AddSocks5Proxy">Add SOCKS5 Proxy</string>
   <string name="AddMtprotoProxy">Add MTPROTO Proxy</string>
   <string name="AddHttpProxy">Add HTTP Proxy</string>
+  <string name="AddWebProxy">Add Web Proxy</string>
+  <string name="WebProxy">Web Proxy</string>
+  <string name="ProxyWeb">WEB %1$s</string>
+  <string name="ProxyPathHint">Path (optional)</string>
+  <string name="WebProxyHint">Connects through an HTTPS relay on port 443. Enter its domain, optional path and secret. Requires an up-to-date Android System WebView. Calls are not supported.</string>
+  <string name="ProxyWebUnsupported">Web proxies require Android 5.0 or later.</string>
   <string name="HttpProxy">HTTP Proxy</string>
   <string name="HttpProxyTransparent">Transparent TCP connection</string>
   <string name="HttpProxyTransparentHint">Enable if server supports transparent TCP connections via HTTP CONNECT method.\n\nWhen supported, it may improve connection speed dramatically. Try changing this option if this proxy doesn\'t work.</string>
@@ -1890,7 +1896,7 @@
   <string name="UseProxyPort">Port</string>
   <string name="ProxySettings">Proxy settings</string>
   <string name="ProxyAutoSwitch">Switch automatically</string>
-  <string name="ProxyAutoSwitchHint">Automatically try different connections when the app takes too long to connect. This may increase the time needed to establish connection on weak networks.</string>
+  <string name="ProxyAutoSwitchHint">Automatically try different connections when the app takes too long to connect. This may increase the time needed to establish connection on weak networks. If no proxy works, the app may connect directly and stop using the proxy.</string>
   <string name="EnableProxyAlertTitle">Are you sure you want to enable this proxy?</string>
   <string name="EnableProxyAlertHint">You can change your proxy server later in Settings &gt; Data and Storage.</string>
   <string name="EnableProxyAlertHintMtproto">This proxy may display a sponsored channel in your chat list. This doesn\'t reveal any of your Telegram traffic.</string>

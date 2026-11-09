@@ -55,6 +55,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
   public static final int MODE_SOCKS5 = 1;
   public static final int MODE_MTPROTO = 2;
   public static final int MODE_HTTP = 3;
+  public static final int MODE_WEB = 4;
 
   public static class Args {
     public int mode;
@@ -74,6 +75,9 @@ public class EditProxyController extends EditBaseController<EditProxyController.
           break;
         case TdApi.ProxyTypeHttp.CONSTRUCTOR:
           this.mode = MODE_HTTP;
+          break;
+        case TdApi.ProxyTypeWeb.CONSTRUCTOR:
+          this.mode = MODE_WEB;
           break;
         default:
           throw new UnsupportedOperationException(proxy.proxy.toString());
@@ -95,6 +99,8 @@ public class EditProxyController extends EditBaseController<EditProxyController.
         return Lang.getString(R.string.MtprotoProxy);
       case MODE_HTTP:
         return Lang.getString(R.string.HttpProxy);
+      case MODE_WEB:
+        return Lang.getString(R.string.WebProxy);
     }
     return "";
   }
@@ -108,7 +114,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
   private ListItem server, port;
 
   private ListItem username, password;
-  private ListItem secret;
+  private ListItem secret, path;
   private ListItem tcpOnly;
 
   @Override
@@ -122,7 +128,8 @@ public class EditProxyController extends EditBaseController<EditProxyController.
       @Override
       protected void modifyEditText (ListItem item, ViewGroup parent, MaterialEditTextGroup editText) {
         final int itemId = item.getId();
-        if (itemId == R.id.edit_proxy_server) {
+        if (itemId == R.id.edit_proxy_server ||
+          itemId == R.id.edit_proxy_path) {
           editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
           editText.getEditText().setIsPassword(false);
         } else if (itemId == R.id.edit_proxy_port) {
@@ -159,9 +166,25 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     items.add(server = new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_proxy_server, 0, R.string.UseProxyServer)
       .setStringValue(proxy != null ? proxy.server : "")
       .setInputFilters(new InputFilter[]{ new InputFilter.LengthFilter(255) }));
-    items.add((port = new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_proxy_port, 0, R.string.UseProxyPort)
-      .setStringValue(proxy != null ? Integer.toString(proxy.port) : "")
-      .setInputFilters(new InputFilter[] {new InputFilter.LengthFilter(255)})));
+    if (mode == MODE_WEB) {
+      items.add(path = new ListItem(
+        ListItem.TYPE_EDITTEXT_NO_PADDING,
+        R.id.edit_proxy_path,
+        0,
+        R.string.ProxyPathHint
+      )
+        .setStringValue(proxy != null ? ((TdApi.ProxyTypeWeb) proxy.type).path : "")
+        .setInputFilters(new InputFilter[] {new InputFilter.LengthFilter(128)}));
+    } else {
+      items.add((port = new ListItem(
+        ListItem.TYPE_EDITTEXT_NO_PADDING,
+        R.id.edit_proxy_port,
+        0,
+        R.string.UseProxyPort
+      )
+        .setStringValue(proxy != null ? Integer.toString(proxy.port) : "")
+        .setInputFilters(new InputFilter[] {new InputFilter.LengthFilter(255)})));
+    }
     if (mode == MODE_HTTP) {
       items.add((tcpOnly = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.edit_proxy_tcpOnly, 0, R.string.HttpProxyTransparent, R.id.edit_proxy_tcpOnly, false).setBoolValue(proxy != null && !((TdApi.ProxyTypeHttp) proxy.type).httpOnly)));
       baseFillCount++;
@@ -170,6 +193,10 @@ public class EditProxyController extends EditBaseController<EditProxyController.
 
     if (mode == MODE_HTTP) {
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.HttpProxyTransparentHint));
+    }
+
+    if (mode == MODE_WEB) {
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.WebProxyHint));
     }
 
     final int fillIndex, fillCount;
@@ -189,7 +216,14 @@ public class EditProxyController extends EditBaseController<EditProxyController.
         fillCount = 2;
         break;
       }
+      case MODE_WEB:
       case MODE_MTPROTO: {
+        String secretValue = "";
+        if (proxy != null) {
+          secretValue = mode == MODE_WEB
+            ? ((TdApi.ProxyTypeWeb) proxy.type).secret
+            : ((TdApi.ProxyTypeMtproto) proxy.type).secret;
+        }
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ProxyCredentials));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         fillIndex = items.size();
@@ -200,7 +234,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
               return Strings.isHex(c);
             }
           }})
-          .setStringValue(proxy != null ? ((TdApi.ProxyTypeMtproto) proxy.type).secret : null));
+          .setStringValue(secretValue));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         fillCount = 1;
         break;
@@ -217,7 +251,8 @@ public class EditProxyController extends EditBaseController<EditProxyController.
       public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
         ListItem item = (ListItem) view.getTag();
         int itemId = item != null ? item.getId() : 0;
-        if (itemId == R.id.edit_proxy_port ||
+        if (itemId == R.id.edit_proxy_path ||
+          itemId == R.id.edit_proxy_port ||
           itemId == R.id.edit_proxy_password ||
           itemId == R.id.edit_proxy_secret) {
           outRect.bottom = Screen.dp(12f);
@@ -226,7 +261,9 @@ public class EditProxyController extends EditBaseController<EditProxyController.
         }
       }
     });
-    recyclerView.addItemDecoration(new FillingDecoration(recyclerView, this).addRange(2, 2 + baseFillCount).addRange(fillIndex, fillIndex + fillCount));
+    recyclerView.addItemDecoration(new FillingDecoration(recyclerView, this)
+      .addRange(2, 2 + baseFillCount)
+      .addRange(fillIndex, fillIndex + fillCount));
     recyclerView.setAdapter(adapter);
 
     setDoneVisible(false);
@@ -248,7 +285,8 @@ public class EditProxyController extends EditBaseController<EditProxyController.
       id == R.id.edit_proxy_port ||
       id == R.id.edit_proxy_username ||
       id == R.id.edit_proxy_password ||
-      id == R.id.edit_proxy_secret) {
+      id == R.id.edit_proxy_secret ||
+      id == R.id.edit_proxy_path) {
       checkDoneVisibility(id);
     }
   }
@@ -258,8 +296,9 @@ public class EditProxyController extends EditBaseController<EditProxyController.
       adapter.updateEditTextById(id, false, false);
     }
     final String server = this.server.getStringValue().trim();
-    final String port = this.port.getStringValue().trim();
-    setDoneVisible(!server.isEmpty() && !port.isEmpty());
+    final String port = this.port != null ? this.port.getStringValue().trim() : "443";
+    setDoneVisible(!server.isEmpty() && !port.isEmpty() &&
+      (getArgumentsStrict().mode != MODE_WEB || !secret.getStringValue().isEmpty()));
   }
 
   @Override
@@ -307,8 +346,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
           .hideDelayed();
       } else {
         int proxyId = getArgumentsStrict().existingProxy != null ? getArgumentsStrict().existingProxy.id : Settings.PROXY_ID_NONE;
-        // Assuming values passed to AddProxy do not differ from the received TdApi.Proxy object
-        Settings.instance().addOrUpdateProxy(proxy, null, true, proxyId);
+        Settings.instance().addOrUpdateProxy(addedProxy.proxy, null, true, proxyId);
         if (navigationController != null) {
           ViewController<?> c = navigationController.getPreviousStackItem();
           if (c != null && c.getId() != R.id.controller_proxyList) {
@@ -328,7 +366,9 @@ public class EditProxyController extends EditBaseController<EditProxyController.
   @Override
   protected boolean onDoneClick () {
     final String server = this.server.getStringValue().trim();
-    final String portRaw = this.port.getStringValue().trim();
+    final String portRaw = this.port != null
+      ? this.port.getStringValue().trim()
+      : "443";
     final String port = StringUtils.isNumeric(portRaw) ? portRaw : "";
 
     final boolean invalidServer = server.isEmpty();
@@ -348,6 +388,11 @@ public class EditProxyController extends EditBaseController<EditProxyController.
         break;
       case MODE_MTPROTO:
         type = new TdApi.ProxyTypeMtproto(this.secret.getStringValue());
+        break;
+      case MODE_WEB:
+        type = new TdApi.ProxyTypeWeb(
+          this.path.getStringValue().trim(),
+          this.secret.getStringValue().trim());
         break;
       case MODE_HTTP:
         type = new TdApi.ProxyTypeHttp(this.username.getStringValue(), this.password.getStringValue(), !this.tcpOnly.getBoolValue());
