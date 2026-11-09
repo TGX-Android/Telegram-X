@@ -126,6 +126,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDataSource;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
+import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.tool.Fonts;
@@ -2953,10 +2954,85 @@ public class U {
     return pathString;
   }
 
+  public static @Nullable String resolveSharedFilePath (Uri uri) {
+    String path = tryResolveFilePath(Uri.parse(uri.toString()));
+    if (path.startsWith("content://")) {
+      return isInternalUri(Uri.parse(path)) ? null : path;
+    }
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
+    String canonicalPath = getCanonicalPath(path);
+    return canonicalPath == null || isInternalPath(canonicalPath) ? null : canonicalPath;
+  }
+
   public static boolean isInternalUri (Uri uri) {
-    String pathString = normalizeFilePath(uri.getPath());
-    File dir = AppContext.get().getFilesDir();
-    return !StringUtils.isEmpty(pathString) && pathString.startsWith(dir.getPath());
+    Uri parsed = Uri.parse(uri.toString());
+    if ("content".equalsIgnoreCase(parsed.getScheme())) {
+      if (!FileProvider.isOwnUri(parsed)) {
+        return false;
+      }
+      File file = FileProvider.getFileForUri(AppContext.get(), parsed);
+      return file == null || isInternalPath(file.getPath());
+    }
+    return isInternalPath(parsed.getPath());
+  }
+
+  public static boolean isInternalPath (@Nullable String path) {
+    if (StringUtils.isEmpty(path)) {
+      return false;
+    }
+    String canonicalPath = getCanonicalPath(path);
+    if (canonicalPath == null) {
+      return true;
+    }
+    Context context = AppContext.get();
+    if (canonicalPath.startsWith("/proc/") ||
+      isInsideDir(canonicalPath, context.getApplicationInfo().dataDir) ||
+      (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isInsideDir(canonicalPath,
+        context.createDeviceProtectedStorageContext().getDataDir().getPath()))) {
+      return true;
+    }
+    // Shared storage folds case and invisible characters of names, e.g. a zero-width joiner
+    String appDir = foldName("/Android/data/" + context.getPackageName() + "/");
+    if (!foldName(canonicalPath + "/").contains(appDir)) {
+      return false;
+    }
+    File tdlibDir = context.getExternalFilesDir(null);
+    String tdlibPath = tdlibDir != null ? getCanonicalPath(tdlibDir.getPath()) : null;
+    // Android 4.2–4.4 also mounts the external storage at /storage/emulated/legacy
+    String legacyRoot = "/storage/emulated/legacy/";
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 &&
+      Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT && canonicalPath.startsWith(legacyRoot)) {
+      String root = getCanonicalPath(Environment.getExternalStorageDirectory().getPath());
+      if (!StringUtils.isEmpty(root)) {
+        canonicalPath = root + "/" + canonicalPath.substring(legacyRoot.length());
+      }
+    }
+    return StringUtils.isEmpty(tdlibPath) || !isInsideDir(canonicalPath, tdlibPath) ||
+      canonicalPath.length() == tdlibPath.length() ||
+      !TdlibManager.isExternalTdlibFile(canonicalPath.substring(tdlibPath.length() + 1));
+  }
+
+  private static String foldName (String name) {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ?
+      android.icu.text.Normalizer2.getNFKCCasefoldInstance().normalize(name) :
+      name.toLowerCase(Locale.ROOT);
+  }
+
+  public static @Nullable String getCanonicalPath (String path) {
+    try {
+      return new File(path).getCanonicalPath();
+    } catch (IOException e) {
+      return null;
+    }
+  }
+
+  private static boolean isInsideDir (String path, @Nullable String dir) {
+    String dirPath = StringUtils.isEmpty(dir) ? null : getCanonicalPath(dir);
+    return !StringUtils.isEmpty(dirPath) &&
+      path.regionMatches(true, 0, dirPath, 0, dirPath.length()) &&
+      (path.length() == dirPath.length() || path.charAt(dirPath.length()) == File.separatorChar);
   }
 
   public static byte[] decodeQuotedPrintable(final byte[] bytes) {
