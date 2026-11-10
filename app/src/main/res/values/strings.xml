@@ -338,6 +338,7 @@
   <string name="ChatContentFile">File</string>
   <string name="ChatContentPhoto">Photo</string>
   <string name="ChatContentAnimation">GIF</string>
+  <string name="ChatContentWidget">Widget</string>
   <string name="ChatContentProximityM_one">%2$s is now within %1$s meter from %3$s</string>
   <string name="ChatContentProximityM_other">%2$s is now within %1$s meters from %3$s</string>
   <string name="ChatContentProximityKm_one">%2$s is now within %1$s kilometer from %3$s</string>

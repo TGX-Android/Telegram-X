@@ -3761,7 +3761,7 @@ public class TD {
         // TODO rich message
         break;
       default:
-        Td.assertMessageContent_cc875c63();
+        Td.assertMessageContent_37851fea();
         break;
     }
     return false;
@@ -6013,7 +6013,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_cc875c63();
+        Td.assertMessageContent_37851fea();
         break;
     }
     return false;
@@ -6508,9 +6508,11 @@ public class TD {
       case TdApi.InputMessageRichMessage.CONSTRUCTOR:
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
       case TdApi.InputMessageStakeDice.CONSTRUCTOR:
+      case TdApi.InputMessageWidget.CONSTRUCTOR:
+      case TdApi.InputMessageSharedWidget.CONSTRUCTOR:
         return null;
       default:
-        Td.assertInputMessageContent_7c412303();
+        Td.assertInputMessageContent_758b3691();
         throw Td.unsupported(content);
     }
   }
@@ -6548,9 +6550,11 @@ public class TD {
       case TdApi.InputMessageRichMessage.CONSTRUCTOR:
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
       case TdApi.InputMessageStakeDice.CONSTRUCTOR:
+      case TdApi.InputMessageWidget.CONSTRUCTOR:
+      case TdApi.InputMessageSharedWidget.CONSTRUCTOR:
         return null;
       default:
-        Td.assertInputMessageContent_7c412303();
+        Td.assertInputMessageContent_758b3691();
         throw Td.unsupported(content);
     }
   }
@@ -6596,9 +6600,11 @@ public class TD {
       case TdApi.InputMessageRichMessage.CONSTRUCTOR:
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
       case TdApi.InputMessageStakeDice.CONSTRUCTOR:
+      case TdApi.InputMessageWidget.CONSTRUCTOR:
+      case TdApi.InputMessageSharedWidget.CONSTRUCTOR:
         return;
       default:
-        Td.assertInputMessageContent_7c412303();
+        Td.assertInputMessageContent_758b3691();
         throw Td.unsupported(content);
     }
   }
@@ -6635,9 +6641,11 @@ public class TD {
       case TdApi.InputMessageRichMessage.CONSTRUCTOR:
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
       case TdApi.InputMessageStakeDice.CONSTRUCTOR:
+      case TdApi.InputMessageWidget.CONSTRUCTOR:
+      case TdApi.InputMessageSharedWidget.CONSTRUCTOR:
         return null;
       default:
-        Td.assertInputMessageContent_7c412303();
+        Td.assertInputMessageContent_758b3691();
         throw Td.unsupported(content);
     }
   }
