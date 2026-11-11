@@ -26,6 +26,7 @@ import android.widget.Toast;
 import androidx.annotation.IntDef;
 import androidx.annotation.StringRes;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -115,6 +116,11 @@ public final class CallProblems {
       return Type.NONE;
     }
     return problem;
+  }
+
+  public static boolean isOffForDevice (Tdlib tdlib) {
+    TdApi.Session session = tdlib.currentSession();
+    return session != null && !session.canAcceptCalls;
   }
 
   public static boolean isOfNotifications (@Type int problem) {

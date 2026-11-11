@@ -5515,6 +5515,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     });
   }
 
+  public void onSessionCanAcceptCallsChanged (long sessionId, boolean canAcceptCalls) {
+    synchronized (dataLock) {
+      sessionsChangeCount++;
+      if (sessionsInfo != null) {
+        for (TdApi.Session session : sessionsInfo.allSessions) {
+          if (session.id == sessionId) {
+            session.canAcceptCalls = canAcceptCalls;
+            break;
+          }
+        }
+      }
+    }
+    listeners.notifySessionCanAcceptCallsChanged(sessionId, canAcceptCalls);
+  }
+
   public static class SessionsInfo {
     public final TdApi.Session[] allSessions, otherActiveSessions, incompleteLoginAttempts;
     public final TdApi.Session currentSession;
@@ -5582,11 +5597,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   private SessionsInfo sessionsInfo;
+  private int sessionsChangeCount;
 
   @Nullable
   public TdApi.Session currentSession () {
     synchronized (dataLock) {
-      return sessionsInfo.currentSession;
+      return sessionsInfo != null ? sessionsInfo.currentSession : null;
     }
   }
 
@@ -5602,15 +5618,37 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         }
       });
     } else {
+      final int changeCount;
+      synchronized (dataLock) {
+        changeCount = sessionsChangeCount;
+      }
       client().send(new TdApi.GetActiveSessions(), result -> {
         switch (result.getConstructor()) {
           case TdApi.Sessions.CONSTRUCTOR: {
-            TdApi.Sessions sessions = (TdApi.Sessions) result;
+            SessionsInfo fetched = new SessionsInfo((TdApi.Sessions) result);
+            TdApi.Session previous = null;
+            boolean isStale;
             synchronized (dataLock) {
-              this.sessionsInfo = new SessionsInfo(sessions);
+              isStale = changeCount != sessionsChangeCount;
+              if (!isStale) {
+                previous = sessionsInfo != null ? sessionsInfo.currentSession : null;
+                sessionsInfo = fetched;
+              }
+            }
+            if (isStale) {
+              // Asked before a session was changed here, which this answer may not have yet
+              getSessions(false, callback);
+              break;
+            }
+            TdApi.Session current = fetched.currentSession;
+            boolean callsChanged = current != null && (previous != null ?
+              previous.canAcceptCalls != current.canAcceptCalls :
+              !current.canAcceptCalls);
+            if (callsChanged) {
+              listeners.notifySessionCanAcceptCallsChanged(current.id, current.canAcceptCalls);
             }
             if (callback != null) {
-              callback.runWithData(this.sessionsInfo);
+              callback.runWithData(fetched);
             }
             break;
           }

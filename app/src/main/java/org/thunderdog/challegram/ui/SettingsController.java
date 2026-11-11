@@ -340,8 +340,7 @@ public class SettingsController extends ViewController<Void> implements
 
   private @StringRes int getCallErrorDescription () {
     this.problematicCallChatId = 0;
-    TdApi.Session session = sessions != null ? sessions.currentSession : null;
-    if (session != null && !session.canAcceptCalls) {
+    if (CallProblems.isOffForDevice(tdlib)) {
       return R.string.CallProblemOffForDevice;
     }
     @CallProblems.Type int problem = CallProblems.getOfSettings(tdlib);
@@ -828,6 +827,11 @@ public class SettingsController extends ViewController<Void> implements
   @Override
   public void onSessionListChanged (Tdlib tdlib, boolean isWeakGuess) {
     runOnUiThreadOptional(this::loadActiveSessions);
+  }
+
+  @Override
+  public void onSessionCanAcceptCallsChanged (Tdlib tdlib, long sessionId, boolean canAcceptCalls) {
+    runOnUiThreadOptional(() -> checkCallErrors(true));
   }
 
   private boolean loadingActiveSessions;

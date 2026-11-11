@@ -1116,6 +1116,7 @@
   <item type="id" name="btn_calls_ringtone" />
   <item type="id" name="btn_calls_vibrate" />
   <item type="id" name="btn_calls_channel" />
+  <item type="id" name="btn_calls_acceptOnDevice" />
 
   <item type="id" name="btn_previewChat" />
   <item type="id" name="btn_inApp_chatSounds" />

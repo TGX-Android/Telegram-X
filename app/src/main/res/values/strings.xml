@@ -5176,6 +5176,9 @@
   <string name="CallProblemOffForDevice">Off for this device</string>
   <string name="CallProblemFullScreenAction">Allow calls on the lock screen</string>
   <string name="CallProblemBackgroundAction">App Info</string>
+  <string name="CallsOffForDevice">Incoming calls don\'t come to this device, as they\'re turned off for it in Settings — Devices.</string>
+  <string name="CallsOffForDeviceAction">Allow incoming calls for this device</string>
+  <string name="CallsAllowedForDevice">Incoming calls now come to this device</string>
   <string name="CallProblemPermissionGuide">Incoming calls from Telegram don\'t show outside the app: you can see and answer them only when you are using the app, and outside it they may not even ring.\n\nTo enable them:\n• Go to system settings – Apps – Telegram X.\n• Tap Notifications and turn them on.</string>
   <string name="CallProblemBlockedAllGuide">Incoming calls from Telegram don\'t show outside the app: you can see and answer them only when you are using the app, and outside it they may not even ring.\n\nTo enable them:\n• Tap **System Notification Settings**.\n• Turn on **Show Notifications**.</string>
   <string name="CallProblemBlockedAppGuide">Incoming calls from Telegram don\'t show outside the app: you can see and answer them only when you are using the app, and outside it they may not even ring.\n\nTo enable them:\n• Tap **System Notification Settings**.\n• Turn notifications on.</string>

@@ -1129,7 +1129,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         @ColorId int dataColorId = ColorId.NONE;
         boolean hasCallProblem = hasCallProblem(item.getId());
         if (item.getViewType() == ListItem.TYPE_SETTING) {
-          view.setIconColorId(item.getId() == R.id.btn_showAdvanced ? ColorId.iconNegative : ColorId.NONE);
+          boolean isProblem = item.getId() == R.id.btn_showAdvanced ||
+            item.getId() == R.id.btn_calls_acceptOnDevice;
+          view.setIconColorId(isProblem ? ColorId.iconNegative : ColorId.NONE);
           view.setDrawModifier(hasCallProblem ? callChannelProblemModifier : null);
         } else if (item.getViewType() == ListItem.TYPE_VALUED_SETTING) {
           view.setIconColorId(hasCallProblem ? ColorId.iconNegative : ColorId.NONE);
@@ -1678,6 +1680,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
     adapter.setItems(items, hasOptions);
     recyclerView.setAdapter(adapter);
+    checkCallsForDevice(true);
 
     tdlib.listeners().subscribeToSettingsUpdates(this);
     tdlib.settings().addNotificationProblemAvailabilityChangeListener(this);
@@ -1694,6 +1697,84 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   private final DrawModifier callChannelProblemModifier =
     new EndIconModifier(R.drawable.baseline_error_24, ColorId.iconNegative);
+
+  private boolean areCallsOffForDevice;
+  private long currentSessionId;
+  private int sessionsRequestId;
+  private boolean wasFocused, isAcceptingCallsOnDevice;
+
+  private void checkCallsForDevice (boolean allowCached) {
+    if (specificSection != Section.CALLS) {
+      return;
+    }
+    int requestId = ++sessionsRequestId;
+    tdlib.getSessions(allowCached, sessions -> runOnUiThreadOptional(() -> {
+      TdApi.Session session = sessions != null ? sessions.currentSession : null;
+      if (session != null && requestId == sessionsRequestId) {
+        setCallsOffForDevice(session.id, !session.canAcceptCalls);
+      }
+      executeScheduledAnimation();
+    }));
+  }
+
+  @Override
+  public boolean needAsynchronousAnimation () {
+    return specificSection == Section.CALLS && currentSessionId == 0 && !wasFocused;
+  }
+
+  @Override
+  public long getAsynchronousAnimationTimeout (boolean fastAnimation) {
+    return 400l;
+  }
+
+  private void setCallsOffForDevice (long sessionId, boolean areCallsOff) {
+    this.currentSessionId = sessionId;
+    if (this.areCallsOffForDevice == areCallsOff || adapter == null) {
+      return;
+    }
+    this.areCallsOffForDevice = areCallsOff;
+    if (areCallsOff) {
+      List<ListItem> hintItems = Arrays.asList(
+        new ListItem(
+          ListItem.TYPE_SETTING,
+          R.id.btn_calls_acceptOnDevice,
+          R.drawable.baseline_call_24,
+          R.string.CallsOffForDeviceAction
+        ).setTextColorId(ColorId.textNegative),
+        new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+        new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.CallsOffForDevice),
+        new ListItem(ListItem.TYPE_SHADOW_TOP)
+      );
+      adapter.getItems().addAll(0, hintItems);
+      adapter.notifyItemRangeInserted(0, hintItems.size());
+      ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(0, 0);
+    } else {
+      adapter.removeRange(0, 4);
+    }
+  }
+
+  private void acceptCallsOnDevice () {
+    if (isAcceptingCallsOnDevice) {
+      return;
+    }
+    isAcceptingCallsOnDevice = true;
+    long sessionId = currentSessionId;
+    int requestId = ++sessionsRequestId;
+    tdlib.send(new TdApi.ToggleSessionCanAcceptCalls(sessionId, true), (ok, error) -> {
+      if (error == null) {
+        tdlib.onSessionCanAcceptCallsChanged(sessionId, true);
+        UI.showToast(R.string.CallsAllowedForDevice, Toast.LENGTH_SHORT);
+      }
+      runOnUiThreadOptional(() -> {
+        isAcceptingCallsOnDevice = false;
+        if (error != null) {
+          UI.showError(error);
+        } else if (requestId == sessionsRequestId) {
+          setCallsOffForDevice(sessionId, false);
+        }
+      });
+    });
+  }
 
   private boolean hasCallProblem (int itemId) {
     if (itemId == R.id.btn_fullScreenAlerts) {
@@ -2123,6 +2204,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       updateCallSettingsReset();
     } else if (viewId == R.id.btn_resetCallSettings) {
       showResetCallSettingsConfirm();
+    } else if (viewId == R.id.btn_calls_acceptOnDevice) {
+      acceptCallsOnDevice();
     } else if (viewId == R.id.btn_showAdvanced) {
       @TdlibNotificationManager.Status int status;
       if (item == errorButton && callProblem != CallProblems.Type.NONE) {
@@ -2794,11 +2877,14 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         checkInErrorMode();
       }
     }
+    checkCallsForDevice(false);
   }
 
   @Override
   public void onFocus () {
     super.onFocus();
+    wasFocused = true;
+    checkCallsForDevice(false);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       if (oneShot && adapter != null) {
         makeChannelChecks();
