@@ -33,6 +33,7 @@ import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.io.IOException;
@@ -637,6 +638,72 @@ public class TdlibNotificationChannelGroup {
     return versionIndex != -1 ? StringUtils.parseLong(data.substring(versionIndex + 1)) : 0;
   }
 
+  private static long parseCustomChannelChatId (String data) {
+    int versionIndex = data.indexOf('_', CUSTOM_SUFFIX.length());
+    return StringUtils.parseLong(
+      data.substring(CUSTOM_SUFFIX.length(), versionIndex != -1 ? versionIndex : data.length())
+    );
+  }
+
+  public static SettingsNotificationController.Args findSettings (
+    Tdlib tdlib,
+    @NonNull String channelId
+  ) {
+    TdlibNotificationManager notifications = tdlib.notifications();
+    String prefix = makePrefix(tdlib.myUserId(true), notifications.getChannelsGlobalVersion());
+    String data = channelId.startsWith(prefix) ? channelId.substring(prefix.length()) : "";
+    if (isCallChannelId(data)) {
+      return new SettingsNotificationController.Args(
+        SettingsNotificationController.Section.CALLS,
+        parseCallChannelUserChatId(data)
+      );
+    }
+    if (data.startsWith(CUSTOM_SUFFIX)) {
+      return new SettingsNotificationController.Args(parseCustomChannelChatId(data));
+    }
+    if (data.startsWith(PRIVATE_SUFFIX)) {
+      return new SettingsNotificationController.Args(notifications.scopePrivate());
+    }
+    if (data.startsWith(GROUP_SUFFIX)) {
+      return new SettingsNotificationController.Args(notifications.scopeGroup());
+    }
+    if (data.startsWith(CHANNEL_SUFFIX)) {
+      return new SettingsNotificationController.Args(notifications.scopeChannel());
+    }
+    return new SettingsNotificationController.Args(
+      SettingsNotificationController.Section.DEFAULT,
+      0
+    );
+  }
+
+  public static int findAccountId (TdlibManager context, @NonNull String groupId) {
+    boolean isDebug = groupId.startsWith(ACCOUNT_PREFIX_DEBUG);
+    String prefix = isDebug ? ACCOUNT_PREFIX_DEBUG : ACCOUNT_PREFIX;
+    long userId = groupId.startsWith(prefix) ?
+      StringUtils.parseLong(groupId.substring(prefix.length())) : 0;
+    if (userId != 0) {
+      int instanceMode = isDebug ? Tdlib.Mode.DEBUG : Tdlib.Mode.NORMAL;
+      for (TdlibAccount account : context) {
+        if (account.getKnownUserId() == userId && account.tdlibInstanceMode() == instanceMode &&
+          !account.isUnauthorized()) {
+          return account.id;
+        }
+      }
+    }
+    return TdlibAccount.NO_ID;
+  }
+
+  @Nullable
+  public static String findGroupId (@NonNull String channelId) {
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    if (m == null) {
+      return null;
+    }
+    android.app.NotificationChannel channel = m.getNotificationChannel(channelId);
+    return channel != null ? channel.getGroup() : null;
+  }
+
   public static void updateGroup (@NonNull TdApi.User user, boolean isDebug) {
     NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
@@ -696,7 +763,7 @@ public class TdlibNotificationChannelGroup {
             } else if (data.startsWith(CUSTOM_SUFFIX)) {
               int versionIndex = data.indexOf('_', CUSTOM_SUFFIX.length());
               long version = versionIndex != -1 ? StringUtils.parseInt(data.substring(versionIndex + 1)) : 0;
-              long customChatId = StringUtils.parseLong(data.substring(CUSTOM_SUFFIX.length(), versionIndex != -1 ? versionIndex : data.length()));
+              long customChatId = parseCustomChannelChatId(data);
               long currentVersion = tdlib.notifications().getChannelVersion(null, customChatId);
               ok = version == currentVersion;
             }

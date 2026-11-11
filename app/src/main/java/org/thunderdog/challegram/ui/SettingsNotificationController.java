@@ -296,6 +296,13 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     this.specificSection = args.section;
   }
 
+  public boolean compareArguments (Args args) {
+    int scopeConstructor = scope != null ? scope.getConstructor() : 0;
+    int argsScopeConstructor = args.scope != null ? args.scope.getConstructor() : 0;
+    return customChatId == args.chatId && specificSection == args.section &&
+      scopeConstructor == argsScopeConstructor;
+  }
+
   private ArrayList<RingtoneItem> getCallRingtones () {
     if (voiceRingtones == null || voiceRingtones.isEmpty()) {
       voiceRingtones = getRingtones(context(), RingtoneManager.TYPE_RINGTONE, customChatId != 0 ? tdlib.notifications().getCallRingtone() : null);
