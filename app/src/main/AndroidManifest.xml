@@ -347,6 +347,18 @@
 
 
     <activity
+      android:name=".CallActivity"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|locale|layoutDirection|uiMode"
+      android:excludeFromRecents="true"
+      android:launchMode="singleInstance"
+      android:showWhenLocked="true"
+      android:taskAffinity="${applicationId}.call"
+      android:turnScreenOn="true"
+      android:windowSoftInputMode="stateHidden|adjustPan"
+      android:exported="false"
+      tools:targetApi="o_mr1" />
+
+    <activity
       android:name=".ManageSpaceActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|locale|layoutDirection|uiMode"
       android:launchMode="singleTask"

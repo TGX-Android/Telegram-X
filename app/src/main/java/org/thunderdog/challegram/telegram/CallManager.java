@@ -16,6 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -44,6 +45,7 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.unsorted.AppContext;
+import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPServerConfig;
@@ -57,7 +59,7 @@ import java.util.Queue;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.core.reference.ReferenceList;
 
-public class CallManager implements GlobalCallListener {
+public class CallManager implements GlobalCallListener, UI.StateListener {
   public interface CurrentCallListener {
     void onCurrentCallChanged (Tdlib tdlib, @Nullable TdApi.Call call);
   }
@@ -68,6 +70,87 @@ public class CallManager implements GlobalCallListener {
 
   CallManager (TdlibManager context) {
     context.global().addCallListener(this);
+    UI.addStateListener(this);
+  }
+
+  private boolean isWaitingForService;
+  private int callIdWithoutService;
+
+  public boolean isShownWithoutService (Tdlib tdlib, int callId) {
+    return callIdWithoutService == callId && currentCallTdlib != null &&
+      currentCallTdlib.id() == tdlib.id();
+  }
+
+  public boolean isAnotherCallShownWithoutService (Tdlib tdlib, int callId) {
+    return callIdWithoutService != 0 && !isShownWithoutService(tdlib, callId);
+  }
+
+  @Override
+  public void onUiStateChanged (int newState) {
+    if (newState == UI.State.RESUMED) {
+      startServiceIfMissing();
+    }
+  }
+
+  private void startServiceIfMissing () {
+    startServiceIfMissing(false);
+  }
+
+  private void startServiceIfMissing (boolean isAnswered) {
+    // Without its service an answered call hangs on connecting, e.g. after Android refused its
+    // start from background, which it allows while the app is visible
+    if (currentCall == null || currentCallTdlib == null || TD.isFinished(currentCall) ||
+      UI.getUiState() != UI.State.RESUMED || TGCallService.currentInstance() != null) {
+      return;
+    }
+    // Started before the answer, the service would add a second notification to the ringing one
+    if (!isAnswered && !currentCall.isOutgoing &&
+      currentCall.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR &&
+      isShownWithoutService(currentCallTdlib, currentCall.id)) {
+      return;
+    }
+    Log.i(Log.TAG_VOIP, "#%d: starting the missing service of the call", currentCall.id);
+    Intent intent = new Intent(AppContext.get(), TGCallService.class);
+    intent.putExtra(Intents.KEY_ACCOUNT_ID, currentCallTdlib.id());
+    intent.putExtra(Intents.KEY_CALL_ID, currentCall.id);
+    UI.startService(intent, false, true, serviceCancellationSignal);
+  }
+
+  public void cancelIncomingCallWithoutService () {
+    NotificationManager manager =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    manager.cancel(TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION);
+  }
+
+  public void declineCallWithoutService (Tdlib tdlib, int callId) {
+    // In a process started by the broadcast TDLib may not know the call yet
+    if (TGCallService.currentInstance() == null) {
+      TdApi.Call call = tdlib.cache().getCall(callId);
+      if (call == null) {
+        tdlib.client().send(new TdApi.DiscardCall(callId, false, null, 0, false, 0),
+          tdlib.silentHandler());
+      } else if (!call.isOutgoing &&
+        call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
+        hangUp(tdlib, callId);
+      }
+    }
+    cancelIncomingCallWithoutService();
+  }
+
+  public void answerCallWithoutService (Context context, Tdlib tdlib, int callId) {
+    // A call that this process doesn't know, e.g. one of a process now gone, no longer rings
+    TdApi.Call call = tdlib.cache().getCall(callId);
+    if (call == null || call.isOutgoing ||
+      call.state.getConstructor() != TdApi.CallStatePending.CONSTRUCTOR) {
+      cancelIncomingCallWithoutService();
+    } else if (!Passcode.instance().isLockedForIncomingCalls()) {
+      // The tap on the notification lets the service start in foreground from background
+      Intent intent = new Intent(context, TGCallService.class);
+      intent.putExtra(Intents.KEY_ACCOUNT_ID, tdlib.id());
+      intent.putExtra(Intents.KEY_CALL_ID, callId);
+      UI.startService(intent, true, false, null);
+      acceptCall(context, tdlib, callId);
+    }
   }
 
   private Tdlib currentCallTdlib;
@@ -99,20 +182,30 @@ public class CallManager implements GlobalCallListener {
         serviceCancellationSignal.cancel();
         serviceCancellationSignal = null;
       }
+      callIdWithoutService = 0;
       if (call != null) {
         Intent intent = new Intent(AppContext.get(), TGCallService.class);
         intent.putExtra("account_id", tdlib.id());
         intent.putExtra("call_id", call.id);
         serviceCancellationSignal = new CancellationSignal();
-        UI.startService(intent, UI.getUiState() != UI.State.RESUMED, true, serviceCancellationSignal);
+        boolean isStarted = UI.startService(intent, UI.getUiState() != UI.State.RESUMED, true,
+          serviceCancellationSignal);
+        isWaitingForService = !isStarted;
 
         navigateToCallController(currentCallTdlib, currentCall);
+      } else if (isWaitingForService) {
+        isWaitingForService = false;
+        cancelIncomingCallWithoutService();
       }
     } else if (currentCallTdlib.id() != tdlib.id() || currentCall.id != call.id) {
       discardCall(tdlib, call.id, call.isVideo);
     } else {
       currentCallTdlib = tdlib;
       currentCall = call;
+      if (call.state.getConstructor() != TdApi.CallStatePending.CONSTRUCTOR) {
+        cancelIncomingCallWithoutService();
+      }
+      startServiceIfMissing();
     }
   }
 
@@ -208,6 +301,12 @@ public class CallManager implements GlobalCallListener {
       VoIPServerConfig.setConfig(((TdApi.CallStateReady) call.state).config);
     }
     if (TD.isFinished(call)) {
+      // The end of another call leaves the current one, unless it's gone from its account's cache
+      boolean isOtherCall = currentCall != null &&
+        (currentCallTdlib.id() != tdlib.id() || currentCall.id != call.id);
+      if (isOtherCall && currentCallTdlib.cache().getCall(currentCall.id) != null) {
+        return;
+      }
       setCurrentCall(null, null);
 
       Runnable act;
@@ -522,6 +621,7 @@ debugCall id:long debug:string = Ok;
         return;
       }
       Log.v(Log.TAG_VOIP, "#%d: AcceptCall requested", callId);
+      startServiceIfMissing(true);
       tdlib.client().send(new TdApi.AcceptCall(callId, VoIP.getProtocol()), object -> Log.v(Log.TAG_VOIP, "#%d: AcceptCall completed: %s", callId, object));
     }
   }

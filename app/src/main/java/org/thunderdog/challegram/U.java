@@ -487,7 +487,8 @@ public class U {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       switch (notificationId) {
         case TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION:
-        case TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION: {
+        case TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION:
+        case TdlibNotificationManager.ID_FOREGROUND_CALL_START: {
           int knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && (
             Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
@@ -497,7 +498,18 @@ public class U {
             knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
           }
           knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
-          service.startForeground(notificationId, notification, knownType);
+          int microphone = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+          try {
+            service.startForeground(notificationId, notification, knownType);
+          } catch (SecurityException e) {
+            if ((knownType & microphone) == 0) {
+              throw e;
+            }
+            // Android 14+ refuses the microphone to an app that isn't visible, e.g. a call
+            // answered from a watch
+            Log.e("Unable to use the microphone in a foreground service", e);
+            service.startForeground(notificationId, notification, knownType & ~microphone);
+          }
           return;
         }
         case TdlibNotificationManager.ID_FOREGROUND_MUSIC:

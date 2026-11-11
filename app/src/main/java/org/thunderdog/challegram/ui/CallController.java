@@ -40,6 +40,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.CallActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -275,6 +276,10 @@ public class CallController extends ViewController<CallController.Arguments> imp
   private ButtonView muteButtonView, speakerButtonView;
 
   private float lastHeaderFactor;
+
+  public void showWithoutTransition () {
+    applyCustomHeaderAnimations(1f);
+  }
 
   @Override
   protected void applyCustomHeaderAnimations (float factor) {
@@ -828,7 +833,11 @@ public class CallController extends ViewController<CallController.Arguments> imp
         callSettings.setMicMuted(((ButtonView) v).toggleActive());
       }
     } else if (viewId == R.id.btn_openChat) {
-      tdlib.ui().openPrivateChat(this, call.userId, null);
+      if (context() instanceof CallActivity) {
+        ((CallActivity) context()).openApp(true);
+      } else {
+        tdlib.ui().openPrivateChat(this, call.userId, null);
+      }
     } else if (viewId == R.id.btn_speaker) {
       if (!TD.isFinished(call)) {
         if (callSettings == null) {
@@ -865,7 +874,9 @@ public class CallController extends ViewController<CallController.Arguments> imp
   private void closeCall () {
     isClosed = true;
     tdlib.cache().unsubscribeFromCallUpdates(call.id, this);
-    navigateBack();
+    if (!navigateBack() && context() instanceof CallActivity) {
+      context().finish();
+    }
   }
 
   private TdApi.CallState previousCallState;
@@ -1151,6 +1162,13 @@ public class CallController extends ViewController<CallController.Arguments> imp
       oneShot = true;
     }
     tdlib.context().calls().acknowledgeCurrentCall(call.id);
+    TGCallService.checkIncomingNotification();
+  }
+
+  @Override
+  public void onBlur () {
+    super.onBlur();
+    TGCallService.checkIncomingNotification();
   }
 
   @Override
@@ -1180,6 +1198,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     tdlib.cache().unsubscribeFromCallUpdates(call.id, this);
     tdlib.cache().removeUserDataListener(call.userId, this);
     avatarView.performDestroy();
+    TGCallService.checkIncomingNotification();
   }
 
   @Override

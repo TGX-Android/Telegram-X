@@ -93,6 +93,7 @@ import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsPrivacyKeyController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
 import org.thunderdog.challegram.ui.WaitForPremiumController;
+import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.widget.GearView;
@@ -112,6 +113,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
+import tgx.td.ChatId;
 import tgx.td.MessageId;
 import tgx.td.Td;
 
@@ -831,7 +833,9 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     }
 
     if (Intents.ACTION_OPEN_CALL.equals(action)) {
-      openCallController();
+      openCallController(intent.getBooleanExtra(Intents.KEY_OPEN_CHAT, false));
+      if (intent.getBooleanExtra(Intents.KEY_ANSWER_CALL, false)) {
+      }
       return true;
     }
 
@@ -1434,9 +1438,33 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     }
   }
 
-  private void openCallController () {
+  private void answerIncomingCall (Intent intent) {
+    if (Passcode.instance().isLockedForIncomingCalls()) {
+      return;
+    }
+    int accountId = intent.getIntExtra(Intents.KEY_ACCOUNT_ID, TdlibAccount.NO_ID);
+    int callId = intent.getIntExtra(Intents.KEY_CALL_ID, 0);
+    if (accountId == TdlibAccount.NO_ID || callId == 0) {
+      return;
+    }
+    Tdlib tdlib = TdlibManager.getTdlib(accountId);
+    TdApi.Call call = tdlib.cache().getCall(callId);
+    if (call != null && !call.isOutgoing &&
+      call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
+      tdlib.context().calls().acceptCall(this, tdlib, call.id);
+    } else {
+      tdlib.context().calls().cancelIncomingCallWithoutService();
+    }
+  }
+
+  private void openCallController (boolean openChat) {
     TdApi.Call call = TdlibManager.instance().calls().getCurrentCall();
     Tdlib tdlib = TdlibManager.instance().calls().getCurrentCallTdlib();
+
+    if (call != null && openChat) {
+      openMessagesController(tdlib.id(), ChatId.fromUserId(call.userId), 0);
+      return;
+    }
 
     if (call == null) {
       if (navigation.isEmpty()) {

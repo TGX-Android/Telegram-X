@@ -1844,6 +1844,7 @@
   <string name="VoipUseLessData">Less Data for Calls</string>
   <string name="UseLessDataForCallsDesc">Using less data may improve your experience on bad networks, but will slightly decrease audio quality.</string>
   <string name="VoipEndCall">End call</string>
+  <string name="VoipMicrophoneOff">Microphone is off. Open the call to turn it on</string>
   <string name="HangUp">Hang up</string>
   <string name="ChatQuickActions">Swipe actions</string>
   <string name="LoopAnimatedStickers">Loop Animated Stickers</string>
