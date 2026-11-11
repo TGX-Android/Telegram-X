@@ -4181,7 +4181,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean isRepliesChat (long chatId) {
-    return (options.repliesBotChatId != 0 && options.repliesBotChatId == chatId) || (chatId == ChatId.fromUserId(options.repliesBotUserId));
+    return (options.repliesBotChatId != 0 && options.repliesBotChatId == chatId) ||
+      chatId == ChatId.fromUserId(TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID);
   }
 
   public boolean hasMessageThreads (long chatId) {
@@ -6796,10 +6797,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return options.pinnedArchivedChatCountMax;
   }
 
-  public double emojiesAnimatedZoom () {
-    return options.emojiesAnimatedZoom;
-  }
-
   public boolean youtubePipEnabled () {
     if (!options.youtubePipDisabled) return true;
     return AppInstallationUtil.isAppSideLoaded(AppContext.get());
@@ -7068,7 +7065,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean allowQrLoginCamera () {
-    return (options.qrLoginCamera && Config.QR_AVAILABLE);
+    return Config.QR_AVAILABLE;
   }
 
   public long callPacketTimeoutMs () {
