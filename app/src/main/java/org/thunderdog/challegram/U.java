@@ -73,6 +73,7 @@ import android.widget.Toast;
 import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.os.EnvironmentCompat;
 import androidx.exifinterface.media.ExifInterface;
 import androidx.media3.common.C;
@@ -265,6 +266,12 @@ public class U {
   }
 
   public static String getRingtoneName (@NonNull Uri ringtoneUri, @Nullable String fallbackName) {
+    if (ringtoneUri.equals(TdlibNotificationManager.getTelegramCallRingtone())) {
+      return Lang.getString(R.string.RingtoneTelegramCall);
+    }
+    if (ringtoneUri.equals(android.provider.Settings.System.DEFAULT_RINGTONE_URI)) {
+      return Lang.getString(R.string.RingtoneSystemDefault);
+    }
     String[] projection = {MediaStore.MediaColumns.TITLE};
     try {
       try (Cursor cur = UI.getContext().getContentResolver().query(ringtoneUri, projection, null, null, null)) {
@@ -929,17 +936,53 @@ public class U {
     return getNotificationChannel("maybe", R.string.NotificationChannelMaybe);
   }
 
+  public static final String CHANNEL_ID_ONGOING_CALLS = "ongoing_calls";
+
+  public static String getOngoingCallsNotificationChannel () {
+    return getNotificationChannel(
+      CHANNEL_ID_ONGOING_CALLS,
+      R.string.NotificationChannelOngoingCalls
+    );
+  }
+
+  public static final String CHANNEL_ID_INCOMING_CALLS_IN_APP = "incoming_calls_in_app";
+
+  public static String getIncomingCallsInAppNotificationChannel () {
+    String id = CHANNEL_ID_INCOMING_CALLS_IN_APP;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      android.app.NotificationChannel channel = new android.app.NotificationChannel(
+        id,
+        Lang.getString(R.string.NotificationChannelIncomingCallScreen),
+        NotificationManager.IMPORTANCE_HIGH
+      );
+      channel.setSound(null, null);
+      channel.enableVibration(false);
+      createNotificationChannel(channel);
+    }
+    return id;
+  }
+
   public static String getNotificationChannel (String id, int stringRes) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       android.app.NotificationChannel channel = new android.app.NotificationChannel(id, Lang.getString(stringRes), NotificationManager.IMPORTANCE_LOW);
-      NotificationManager manager = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
-      try {
-        manager.createNotificationChannel(channel);
-      } catch (Throwable t) {
-        Log.v("Unable to create notification channel for id: %s", new TdlibNotificationChannelGroup.ChannelCreationFailureException(t), id);
-      }
+      createNotificationChannel(channel);
     }
     return id;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private static void createNotificationChannel (android.app.NotificationChannel channel) {
+    NotificationManager manager =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    try {
+      manager.createNotificationChannel(channel);
+    } catch (Throwable t) {
+      Log.v(
+        "Unable to create notification channel for id: %s",
+        new TdlibNotificationChannelGroup.ChannelCreationFailureException(t),
+        channel.getId()
+      );
+    }
   }
 
   private static Integer maxTextureSize;
