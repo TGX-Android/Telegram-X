@@ -55,11 +55,13 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
+import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.sync.SyncAdapter;
 import org.thunderdog.challegram.telegram.CallProblems;
+import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -73,6 +75,7 @@ import org.thunderdog.challegram.telegram.TelegramCallRingtone;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance;
 import org.thunderdog.challegram.unsorted.Passcode;
@@ -112,7 +115,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   ViewController.SettingsIntDelegate,
   ViewController.SettingsStringDelegate,
   NotificationSettingsListener, TdlibOptionListener, ActivityResultHandler,
-  PopupLayout.DismissListener, MoreDelegate, TdlibSettingsManager.NotificationProblemListener, GlobalTokenStateListener {
+  PopupLayout.DismissListener, MoreDelegate, TdlibSettingsManager.NotificationProblemListener,
+  GlobalTokenStateListener, ChatListener {
   public static class Args {
     public final long chatId;
     public final TdApi.NotificationSettingsScope scope;
@@ -180,8 +184,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   @Override
   public boolean restoreInstanceState (Bundle in, String keyPrefix) {
+    long chatId = in.getLong(keyPrefix + "chat_id", 0);
+    if (chatId != 0 && tdlib.chatSync(chatId) == null) {
+      return false;
+    }
     super.restoreInstanceState(in, keyPrefix);
-    setCustomChatId(in.getLong(keyPrefix + "chat_id", 0));
+    setCustomChatId(chatId);
     setScope(in.getInt(keyPrefix + "scope", 0));
     this.specificSection = in.getInt(keyPrefix + KEY_SECTION, Section.DEFAULT);
     return true;
@@ -905,8 +913,23 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   private TdApi.ArchiveChatListSettings archiveChatListSettings;
 
+  private DoubleHeaderView headerCell;
+
+  @Override
+  public View getCustomHeaderCell () {
+    return headerCell;
+  }
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
+    if (customChatId != 0) {
+      DoubleHeaderView headerCell = new DoubleHeaderView(context);
+      headerCell.setThemedTextColor(this);
+      headerCell.initWithMargin(Screen.dp(49f), true);
+      headerCell.setTitle(getName());
+      headerCell.setSubtitle(tdlib.chatTitle(customChatId));
+      this.headerCell = headerCell;
+    }
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
@@ -1482,6 +1505,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     tdlib.listeners().subscribeToSettingsUpdates(this);
     tdlib.settings().addNotificationProblemAvailabilityChangeListener(this);
     tdlib.context().global().addTokenStateListener(this);
+    if (customChatId != 0) {
+      tdlib.listeners().subscribeToChatUpdates(customChatId, this);
+    }
 
     if (isCommonScreen()) {
       tdlib.listeners().addOptionsListener(this);
@@ -2819,9 +2845,21 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     tdlib.listeners().unsubscribeFromSettingsUpdates(this);
     tdlib.settings().removeNotificationProblemAvailabilityChangeListener(this);
     tdlib.context().global().removeTokenStateListener(this);
+    if (customChatId != 0) {
+      tdlib.listeners().unsubscribeFromChatUpdates(customChatId, this);
+    }
     if (isCommonScreen()) {
       tdlib.listeners().removeOptionListener(this);
     }
+  }
+
+  @Override
+  public void onChatTitleChanged (long chatId, String title) {
+    runOnUiThreadOptional(() -> {
+      if (headerCell != null) {
+        headerCell.setSubtitle(tdlib.chatTitle(chatId));
+      }
+    });
   }
 
   @Override
