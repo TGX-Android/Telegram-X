@@ -2757,6 +2757,19 @@ public class TD {
     return call != null && !call.isOutgoing && call.state.getConstructor() == TdApi.CallStateDiscarded.CONSTRUCTOR && ((TdApi.CallStateDiscarded) call.state).reason.getConstructor() == TdApi.CallDiscardReasonMissed.CONSTRUCTOR;
   }
 
+  public static boolean canRateCall (TdApi.Call call) {
+    // A call ends hung up or disconnected only once answered
+    if (call == null || call.state.getConstructor() != TdApi.CallStateDiscarded.CONSTRUCTOR) {
+      return false;
+    }
+    switch (((TdApi.CallStateDiscarded) call.state).reason.getConstructor()) {
+      case TdApi.CallDiscardReasonHungUp.CONSTRUCTOR:
+      case TdApi.CallDiscardReasonDisconnected.CONSTRUCTOR:
+        return true;
+    }
+    return false;
+  }
+
   public static boolean isFreshMissedCall (@Nullable TdApi.Chat chat, long currentUnixTime) {
     TdApi.Message message = chat != null ? chat.lastMessage : null;
     if (message == null || message.isOutgoing || message.id <= chat.lastReadInboxMessageId ||

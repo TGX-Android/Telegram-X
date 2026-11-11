@@ -58,7 +58,6 @@ import androidx.core.content.ContextCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -554,7 +553,8 @@ public class TGCallService extends Service implements
         sentDebugLog = true;
         tdlib.send(new TdApi.SendCallDebugInformation(new TdApi.InputCallDiscarded(call.id), lastDebugLog.toString()), tdlib.typedOkHandler());
       }
-      if (!sentRating && (((TdApi.CallStateDiscarded) call.state).needRating || BuildConfig.EXPERIMENTAL)) {
+      boolean needRating = ((TdApi.CallStateDiscarded) call.state).needRating;
+      if (!sentRating && TD.canRateCall(call) && needRating) {
         sentRating = true;
         // TODO new feedback pop-up
         startRatingActivity();
@@ -570,7 +570,8 @@ public class TGCallService extends Service implements
   private void startRatingActivity () {
     if (tdlib != null && call != null) {
       try {
-        PendingIntent.getActivity(TGCallService.this, 0, new Intent(TGCallService.this, VoIPFeedbackActivity.class)
+        PendingIntent.getActivity(TGCallService.this, Intents.REQUEST_CODE_CALL_RATING,
+          new Intent(TGCallService.this, VoIPFeedbackActivity.class)
           .setAction("RATE_CALL_" + call.id)
           .putExtra("account_id", tdlib.id())
           .putExtra("call_id", call.id)

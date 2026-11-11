@@ -100,6 +100,7 @@ public class Intents {
   public static final int REQUEST_CODE_CALL_FULL_SCREEN = 2;
   public static final int REQUEST_CODE_CALL_DECLINE = 3;
   public static final int REQUEST_CODE_CALL_END = 4;
+  public static final int REQUEST_CODE_CALL_RATING = 5;
 
   public static final String ACTION_OPEN_LOGS = PACKAGE_NAME + ".OPEN_LOGS";
   public static final String ACTION_OPEN_PLAYER = PACKAGE_NAME + ".OPEN_PLAYER";
