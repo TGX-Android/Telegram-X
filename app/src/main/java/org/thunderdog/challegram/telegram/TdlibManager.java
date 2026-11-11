@@ -1655,6 +1655,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         }
       }
       global().notifyTokenStateChanged(newState, error, fullError);
+      global().notifyResolvableProblemAvailabilityMightHaveChanged();
       if (newState == TokenState.ERROR && !StringUtils.isEmpty(error)) {
         String reportedError = Settings.instance().getReportedPushServiceError();
         if (reportedError == null || !reportedError.equals(error)) {

@@ -657,7 +657,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   private boolean hasRemotePushService () {
-    return DeviceTokenRetrieverInstance.get().isAvailable(AppContext.get());
+    return isHuaweiPushWorking() ||
+      DeviceTokenRetrieverInstance.get().isAvailable(AppContext.get());
+  }
+
+  private boolean isHuaweiPushWorking () {
+    TdlibManager context = tdlib.context();
+    TdApi.DeviceToken token = context.getToken();
+    return token != null && token.getConstructor() == TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR &&
+      context.getTokenState() == TdlibManager.TokenState.OK;
   }
 
   private boolean isSyncDisabledGlobally () {
