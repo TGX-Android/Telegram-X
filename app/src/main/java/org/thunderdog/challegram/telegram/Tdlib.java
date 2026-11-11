@@ -12112,7 +12112,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     ResolvableProblem.CHECK_PASSWORD,
     ResolvableProblem.CHECK_PHONE_NUMBER,
     ResolvableProblem.SET_BIRTHDATE,
-    ResolvableProblem.SET_LOGIN_EMAIL
+    ResolvableProblem.SET_LOGIN_EMAIL,
+    ResolvableProblem.CALLS
   })
   public @interface ResolvableProblem {
     int
@@ -12122,19 +12123,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       CHECK_PASSWORD = 3,
       CHECK_PHONE_NUMBER = 4,
       SET_BIRTHDATE = 5,
-      SET_LOGIN_EMAIL = 6;
+      SET_LOGIN_EMAIL = 6,
+      CALLS = 7;
   }
 
   @ResolvableProblem
   public int findResolvableProblem () {
     final boolean haveNotificationsProblem = notifications().hasLocalNotificationProblem();
+    final boolean haveCallsProblem = CallProblems.get(this) != CallProblems.Type.NONE &&
+      !notifications().areNotificationsBlockedGlobally();
     final TdApi.SuggestedAction singleAction = singleSettingsSuggestion();
     final boolean haveSuggestions = singleAction != null || haveAnySettingsSuggestions();
-    final int totalCount = (singleAction != null ? 1 : haveSuggestions ? 2 : 0) + (haveNotificationsProblem ? 1 : 0);
+    final int totalCount = (singleAction != null ? 1 : haveSuggestions ? 2 : 0) +
+      (haveNotificationsProblem ? 1 : 0) + (haveCallsProblem ? 1 : 0);
     if (totalCount > 1) {
       return ResolvableProblem.MIXED;
     } else if (haveNotificationsProblem) {
       return ResolvableProblem.NOTIFICATIONS;
+    } else if (haveCallsProblem) {
+      return ResolvableProblem.CALLS;
     } else if (singleAction != null) {
       switch (singleAction.getConstructor()) {
         case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:

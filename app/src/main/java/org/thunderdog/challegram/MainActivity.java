@@ -47,6 +47,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.sync.TemporaryNotification;
 import org.thunderdog.challegram.telegram.AccountSwitchReason;
+import org.thunderdog.challegram.telegram.CallProblems;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalCountersListener;
 import org.thunderdog.challegram.telegram.GlobalResolvableProblemListener;
@@ -1564,6 +1565,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
   @Override
   public void onResume () {
+    // Before the drawer and the screens read it on their resume
+    CallProblems.refresh(this);
     super.onResume();
     Log.i("MainActivity.onResume");
     // CallManager can't show a call that came while the app was in background: it opens under

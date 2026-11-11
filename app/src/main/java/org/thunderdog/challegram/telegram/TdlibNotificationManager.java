@@ -1674,6 +1674,17 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
+  public boolean canCallChannelRing (long userChatId) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      Object channel = getSystemCallChannel(userChatId);
+      if (channel != null) {
+        int importance = ((android.app.NotificationChannel) channel).getImportance();
+        return TdlibNotificationChannelGroup.canRing(importance);
+      }
+    }
+    return true;
+  }
+
   @RequiresApi(Build.VERSION_CODES.O)
   public boolean canShowOnCallChannel (String channelId) {
     if (!canPostCallNotifications()) {

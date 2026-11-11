@@ -3569,6 +3569,8 @@
   <string name="OpenCloudChat">Open Cloud Chat</string>
 
   <string name="SystemNotificationSettings">System Notification Settings</string>
+  <string name="FullScreenAlerts">Full screen alerts</string>
+  <string name="FullScreenNotifications">Full-screen notifications</string>
   <string name="RequirePasscodeToAnswerDisabled">Enable Passcode to activate this feature</string>
   <string name="CallSettingsReset">Reset to Default</string>
   <string name="CallSettingsResetConfirm">Would you like to reset call settings to default?</string>
@@ -3696,10 +3698,10 @@
 
   <string name="ResetNotificationsConfirm">Reset all notification settings, including custom notification settings for your contacts, groups and channels?</string>
 
-  <string name="NotificationsGuideBlockedApp">Notifications from Telegram are blocked in system settings. Tap System Notification Settings to unblock them.</string>
-  <string name="NotificationsGuideBlockedCategory">Notifications for the current account are disabled in system settings.\n\nTo enable notifications:\n• Tap System Notification Settings\n• Find the "%1$s" notification category\n• Turn the toggle on to unblock notifications.</string>
-  <string name="NotificationsGuideBlockedAll">Notifications from Telegram are blocked in your device settings.\n\nTo enable notifications:\n• Tap System Notification Settings.\n• Turn on Show Notifications.</string>
-  <string name="NotificationsGuidePermission">Notifications from Telegram are blocked in your system settings.\n\nTo enable notifications:\n• Go to system settings – Applications – Telegram X.\n• Tap Notifications – Allow notifications.</string>
+  <string name="NotificationsGuideBlockedApp2">Notifications from Telegram are blocked in system settings. Incoming calls don\'t show either: they can only ring, and you answer them in the app. Tap System Notification Settings to unblock notifications.</string>
+  <string name="NotificationsGuideBlockedCategory2">Notifications for the current account are disabled in system settings. Incoming calls of this account still ring and show: Telegram X rings them by itself.\n\nTo enable notifications:\n• Tap System Notification Settings\n• Find the "%1$s" notification category\n• Turn the toggle on to unblock notifications.</string>
+  <string name="NotificationsGuideBlockedAll2">Notifications from Telegram are blocked in your device settings. Incoming calls don\'t show either: they can only ring, and you answer them in the app.\n\nTo enable notifications:\n• Tap System Notification Settings.\n• Turn on Show Notifications.</string>
+  <string name="NotificationsGuidePermission2">Notifications from Telegram are blocked in your system settings. Incoming calls don\'t show either: they can only ring, and you answer them in the app.\n\nTo enable notifications:\n• Go to system settings – Applications – Telegram X.\n• Tap Notifications – Allow notifications.</string>
   <string name="NotificationsGuideSyncGlobalOff">You have data sync turned off in system settings. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideSyncAppOff">You have data sync turned off for Telegram X. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideFirebaseUnavailable">Google Play Services are unavailable. Please check you have them installed and up-to-date.\n\nNotifications may arrive with big delays or not arrive at all without them.</string>
@@ -5136,6 +5138,22 @@
   <string name="NotificationsErrorUnselected">Notifications from this account are disabled</string>
   <string name="NotificationsErrorError">Couldn\'t display some notifications</string>
   <string name="NotificationsErrorErrorChat">Couldn\'t display notification from %1$s</string>
+  <string name="CallProblemFullScreen">Calls can\'t show on the lock screen</string>
+  <string name="CallProblemBackground">Calls may not come while the app is closed</string>
+  <string name="CallProblemFullScreenAction">Allow calls on the lock screen</string>
+  <string name="CallProblemBackgroundAction">Open battery settings</string>
+  <string name="CallProblemFullScreenGuide">While the phone is locked, incoming calls come only as a notification: **Telegram X** isn\'t allowed to turn on the screen and show them.</string>
+  <string name="CallProblemFullScreenSteps">Open **Full-screen notifications** and turn on **Allow full-screen notifications from this app** so that you don\'t miss calls while the app is closed.</string>
+  <string name="CallProblemFullScreenStepsSamsung">Open **Full screen alerts** and turn on **Allow permission** so that you don\'t miss calls while the app is closed.</string>
+  <string name="CallProblemBackgroundGuide">Background activity of **Telegram X** is restricted in the battery settings of your phone, so incoming calls may not come while the app is closed.\n\nTap **Open battery settings**, then **Battery**, and lift the background restriction of Telegram X.</string>
+  <string name="CallProblemChannel">Incoming calls are silenced</string>
+  <string name="CallProblemChannelAction">Open settings of incoming calls</string>
+  <string name="CallProblemAppChannel">Incoming calls don\'t pop up</string>
+  <string name="CallProblemOngoingChannel">Calls in progress have no notification</string>
+  <string name="CallProblemOngoingChannelAction">Open settings of ongoing calls</string>
+  <string name="CallProblemOngoingChannelGuide">Notifications of **Ongoing Calls** are turned off in the system settings, so a call in progress has no notification to go back to it or hang up.\n\nTap **Open settings of ongoing calls** and turn them on.</string>
+  <string name="CallProblemAppChannelGuide">Notifications of **Incoming Call Screen** are turned off, kept off the screen or hidden on the lock screen in the system settings, so incoming calls can\'t show over other apps and over the lock screen.\n\nTap **Open settings of incoming calls**, let them pop on screen and show them on the lock screen.</string>
+  <string name="CallProblemChannelGuide">Notifications of **Incoming Calls** of this account are silenced or turned off in the system settings, so incoming calls don\'t ring and don\'t show over the lock screen.\n\nTap **Open settings of incoming calls** and let them make sound and pop on screen.</string>
 
   <string name="TooManySelectedAccounts">At least one account must remain selected.</string>
 

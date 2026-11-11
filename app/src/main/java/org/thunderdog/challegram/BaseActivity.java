@@ -234,6 +234,8 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
           return new ClickBait(0, true);
         case Tdlib.ResolvableProblem.NOTIFICATIONS:
           return new ClickBait(R.drawable.baseline_notification_important_14, true);
+        case Tdlib.ResolvableProblem.CALLS:
+          return new ClickBait(R.drawable.baseline_call_alert_14, true);
         case Tdlib.ResolvableProblem.CHECK_PASSWORD:
           return new ClickBait(R.drawable.baseline_gpp_maybe_14, true);
         case Tdlib.ResolvableProblem.CHECK_PHONE_NUMBER:

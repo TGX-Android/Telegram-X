@@ -480,6 +480,15 @@ public class TdlibNotificationChannelGroup {
     }
   }
 
+  public static boolean canRing (int importance) {
+    return importance >= NotificationManager.IMPORTANCE_HIGH;
+  }
+
+  public static boolean canShowCall (int importance, int lockscreenVisibility) {
+    return importance >= NotificationManager.IMPORTANCE_HIGH &&
+      lockscreenVisibility != Notification.VISIBILITY_SECRET;
+  }
+
   public static int getCallVibrateMode (boolean shouldVibrate, @Nullable long[] vibrationPattern) {
     if (!shouldVibrate) {
       return TdlibNotificationManager.VIBRATE_MODE_DISABLED;

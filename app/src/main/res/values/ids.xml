@@ -626,6 +626,7 @@
   <item type="id" name="btn_proxyHttp" />
   <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
+  <item type="id" name="btn_fullScreenAlerts" />
   <item type="id" name="btn_resetCallSettings" />
   <item type="id" name="btn_resetOtherAccounts" />
   <item type="id" name="btn_autoplayGIFs" />
