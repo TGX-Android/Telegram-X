@@ -1793,6 +1793,14 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           .hideDelayed(true, 3, TimeUnit.SECONDS);
         return;
       }
+      if (Passcode.instance().requireForIncomingCalls()) {
+        PasscodeController passcode = new PasscodeController(context, tdlib);
+        passcode.setPasscodeMode(PasscodeController.MODE_UNLOCK_SETUP);
+        // Its row and Reset to Default follow in onFocus, with the animation of the toggle
+        passcode.setOnUnlocked(() -> Passcode.instance().setRequireForIncomingCalls(false));
+        navigateTo(passcode);
+        return;
+      }
       Passcode.instance().setRequireForIncomingCalls(adapter.toggleView(v));
       updateCallSettingsReset();
     } else if (viewId == R.id.btn_resetCallSettings) {

@@ -194,6 +194,8 @@ public class Config {
   public static final boolean USE_CRASHLYTICS = false;
 
   public static final boolean CALL_FROM_PREVIEW = false;
+  // Android 10 and older: the buttons of a call on the passcode above the keyboard of a password
+  public static final boolean CALL_BUTTONS_ABOVE_KEYBOARD = true;
 
   public static final boolean USE_GROUP_NAMES = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
 

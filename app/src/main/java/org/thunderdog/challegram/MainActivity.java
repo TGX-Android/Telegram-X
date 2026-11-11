@@ -133,6 +133,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
     handler = new Handler(Looper.getMainLooper());
 
+    addPasscodeListener((context, isShowing) -> {
+      if (!isShowing) {
+        openRingingCall();
+      }
+    });
+
     TdlibManager.instance().global().addAccountListener(this);
     TdlibManager.instance().global().addCountersListener(this);
     TdlibManager.instance().global().addResolvableProblemAvailabilityListener(this);
@@ -748,6 +754,17 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
     intent.setAction("");
     setIntent(intent);
+
+    if (Intents.ACTION_OPEN_CALL.equals(action) &&
+      !intent.getBooleanExtra(Intents.KEY_OPEN_CHAT, false)) {
+      // Under the passcode, so that the call is there at once after it; the passcode shows here
+      // already, before onResume, so that the call opens without animation
+      checkPasscode(false);
+      if (isPasscodeShowing()) {
+        openCallController(false);
+        return true;
+      }
+    }
 
     if (isPasscodeShowing()) {
       addPasscodeListener(new PasscodeListener() {
@@ -1466,7 +1483,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       return;
     }
 
-    if (call == null) {
+    // Also a call that ended while the passcode waited
+    if (call == null || TD.isFinished(call)) {
       if (navigation.isEmpty()) {
         initDefault(currentTdlib().id(), false);
       }
@@ -1482,8 +1500,16 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
     CallController controller = new CallController(this, tdlib);
     controller.setArguments(new CallController.Arguments(call));
-
     navigateToSafely(controller);
+  }
+
+  private void openRingingCall () {
+    TdApi.Call call = TdlibManager.instance().calls().getCurrentCall();
+    boolean isRinging = call != null && !call.isOutgoing &&
+      call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR;
+    if (isRinging && !(navigation.getCurrentStackItem() instanceof CallController)) {
+      openCallController(false);
+    }
   }
 
   public void navigateToSafely (@NonNull ViewController<?> c) {
@@ -1540,6 +1566,11 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   public void onResume () {
     super.onResume();
     Log.i("MainActivity.onResume");
+    // CallManager can't show a call that came while the app was in background: it opens under
+    // the passcode, so that it's there at once after it
+    if (isPasscodeShowing()) {
+      openRingingCall();
+    }
     // Log.e("%s", Strings.getHexColor(U.compositeColor(Theme.headerColor(), Theme.getColor(ColorId.statusBar)), false));
     tdlib.contacts().makeSilentPermissionCheck(this);
     tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();

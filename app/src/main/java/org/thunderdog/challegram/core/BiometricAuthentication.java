@@ -147,7 +147,17 @@ public class BiometricAuthentication {
   private static CancellationSignal pendingSignal;
   private static long lastTimestamp;
 
-  public static void authenticate (BaseActivity context, CharSequence title, CharSequence negativeButtonText, boolean strong, Callback callback) {
+  public static CancellationSignal authenticate (
+    BaseActivity context,
+    CharSequence title,
+    CharSequence negativeButtonText,
+    boolean strong,
+    Callback callback
+  ) {
+    // A delayed start of the previous prompt, e.g. of another activity, would run after it's gone
+    if (pendingSignal != null) {
+      pendingSignal.cancel();
+    }
     CancellationSignal signal = new CancellationSignal();
     BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
       .setConfirmationRequired(false)
@@ -170,6 +180,12 @@ public class BiometricAuthentication {
     CancellableRunnable act = new CancellableRunnable() {
       @Override
       public void act () {
+        if (context.isFinishing() || context.getSupportFragmentManager().isDestroyed()) {
+          if (pendingSignal == signal) {
+            pendingSignal = null;
+          }
+          return;
+        }
         lastTimestamp = SystemClock.uptimeMillis();
         prompt.authenticate(info);
       }
@@ -188,12 +204,6 @@ public class BiometricAuthentication {
     } else {
       act.run();
     }
-  }
-
-  public static void cancelAuthentication () {
-    if (pendingSignal != null) {
-      pendingSignal.cancel();
-      pendingSignal = null;
-    }
+    return signal;
   }
 }

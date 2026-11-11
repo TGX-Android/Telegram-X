@@ -72,6 +72,8 @@ import org.thunderdog.challegram.widget.EmojiTextView;
 import org.thunderdog.challegram.widget.TextView;
 import org.thunderdog.challegram.widget.voip.CallControlsLayout;
 
+import java.util.concurrent.TimeUnit;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ScrimUtil;
 import me.vkryl.android.ViewUtils;
@@ -82,6 +84,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import tgx.td.ChatId;
 
 public class CallController extends ViewController<CallController.Arguments> implements TdlibCache.UserDataChangeListener, TdlibCache.CallStateChangeListener, View.OnClickListener, FactorAnimator.Target, Runnable, CallControlsLayout.CallControlCallback, Screen.StatusBarHeightChangeListener {
   private static final boolean DEBUG_FADE_BRANDING = true;
@@ -640,7 +643,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
 
     // Answer controls
 
-    callControlsLayout = new CallControlsLayout(context, this);
+    callControlsLayout = new CallControlsLayout(context);
     Views.setPaddingBottom(callControlsLayout, extraBottomInset);
     callControlsLayout.setCallback(this);
     callControlsLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -714,6 +717,16 @@ public class CallController extends ViewController<CallController.Arguments> imp
     if (!UI.isTablet()) {
       context().setOrientation(BaseActivity.getAndroidOrientationPortrait());
     }
+    // Also once the passcode is entered, before the screens show again
+    if (!isClosed && isMissedUnderPasscode() && !TD.isFreshMissedCall(
+      tdlib.chat(ChatId.fromUserId(call.userId)), tdlib.currentTime(TimeUnit.SECONDS))) {
+      closeCall();
+    }
+  }
+
+  private boolean isMissedUnderPasscode () {
+    return TD.isMissed(call) && context().isPasscodeShowing() &&
+      !(context() instanceof CallActivity);
   }
 
   @Override
@@ -893,7 +906,11 @@ public class CallController extends ViewController<CallController.Arguments> imp
     this.callDuration = 0;
     setCallBarsCount(tdlib.context().calls().getCallBarsCount(tdlib, call.id));
     updateCallStrength();
-    if (TD.isCancelled(call) || TD.isAcceptedOnOtherDevice(call) || TD.isDeclined(call) || (prevIsActive && callEnded) || TD.isMissed(call) || call.state.getConstructor() == TdApi.CallStateHangingUp.CONSTRUCTOR) {
+    if (isMissedUnderPasscode()) {
+      callControlsLayout.setCall(tdlib, call, false);
+    } else if (TD.isCancelled(call) || TD.isAcceptedOnOtherDevice(call) || TD.isDeclined(call) ||
+      (prevIsActive && callEnded) || TD.isMissed(call) ||
+      call.state.getConstructor() == TdApi.CallStateHangingUp.CONSTRUCTOR) {
       closeCall();
     } else {
       callControlsLayout.setCall(tdlib, call, navigationController != null);
@@ -976,7 +993,13 @@ public class CallController extends ViewController<CallController.Arguments> imp
       }
     }
     stateView.setText(Lang.uppercase(str));
-    setButtonsVisible(!TD.isFinished(call) && !(call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR && !call.isOutgoing), isFocused());
+    boolean isEnded = call.state.getConstructor() == TdApi.CallStateDiscarded.CONSTRUCTOR ||
+      call.state.getConstructor() == TdApi.CallStateError.CONSTRUCTOR;
+    boolean isIncoming = call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR &&
+      !call.isOutgoing;
+    setButtonsVisible(isEnded || (!TD.isFinished(call) && !isIncoming), isFocused());
+    muteButtonView.setVisibility(isEnded ? View.INVISIBLE : View.VISIBLE);
+    speakerButtonView.setVisibility(isEnded ? View.INVISIBLE : View.VISIBLE);
     updateEmoji();
     updateFlashing();
     updateCallStrength();

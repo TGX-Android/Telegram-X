@@ -543,21 +543,19 @@ debugCall id:long debug:string = Ok;
     discardCall(tdlib, callId, isVideo);
   }
 
-  public boolean checkRecordPermissions (final Context context, final Tdlib tdlib, final @Nullable TdApi.Call call, final long userId, final @Nullable ViewController<?> makeCallContext) {
+  public boolean checkRecordPermissions (final Context context, final Tdlib tdlib,
+    final @Nullable TdApi.Call call) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       if (AppContext.get().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = UI.getUiContext();
         if (activity != null) {
           activity.requestMicPermissionForCall((code, permissions, grantResults, grantCount) -> {
             if (grantCount == permissions.length) {
-              if (makeCallContext != null) {
-                makeCall(makeCallContext, userId, null, false);
-              } else {
-                if (call != null) {
-                  TdApi.Call updatedCall = tdlib.cache().getCall(call.id);
-                  if (updatedCall != null && updatedCall.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
-                    acceptCall(context, tdlib, call.id);
-                  }
+              if (call != null) {
+                TdApi.Call updatedCall = tdlib.cache().getCall(call.id);
+                if (updatedCall != null &&
+                  updatedCall.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
+                  acceptCall(context, tdlib, call.id);
                 }
               }
             } else {
@@ -704,7 +702,7 @@ debugCall id:long debug:string = Ok;
       // UI.getCurrentStackItem(context);
       return;
     }
-    if (!checkRecordPermissions(context.context(), context.tdlib(), null, userId, null)) {
+    if (!checkRecordPermissions(context.context(), context.tdlib(), null)) {
       return;
     }
     context.context().closeAllMedia(false);
@@ -749,7 +747,7 @@ debugCall id:long debug:string = Ok;
 
   public void acceptCall (Context context, Tdlib tdlib, final int callId) {
     if (checkConnection(context, tdlib)) {
-      if (!checkRecordPermissions(context, tdlib, tdlib.cache().getCall(callId), 0, null)) {
+      if (!checkRecordPermissions(context, tdlib, tdlib.cache().getCall(callId))) {
         return;
       }
       Log.v(Log.TAG_VOIP, "#%d: AcceptCall requested", callId);

@@ -30,6 +30,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -39,6 +40,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
 import androidx.biometric.BiometricPrompt;
+import androidx.core.os.CancellationSignal;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -59,8 +61,10 @@ import org.thunderdog.challegram.navigation.ToggleHeaderView;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.CallManager;
 import org.thunderdog.challegram.telegram.ChatPasscode;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -77,9 +81,11 @@ import org.thunderdog.challegram.util.ToggleDelegate;
 import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.v.EditText;
 import org.thunderdog.challegram.widget.SwirlView;
+import org.thunderdog.challegram.widget.voip.CallControlsLayout;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
+import me.vkryl.android.animatorx.BoolAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
@@ -166,6 +172,24 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     controllerMode = mode;
   }
 
+  private @Nullable Runnable onUnlocked;
+
+  public void setOnUnlocked (Runnable onUnlocked) {
+    this.onUnlocked = onUnlocked;
+  }
+
+  private void onSetupUnlocked () {
+    if (onUnlocked == null) {
+      navigateTo(new PasscodeSetupController(context, tdlib));
+      return;
+    }
+    // Once in front: back is refused while the screen still opens, e.g. after a quick face unlock
+    runOnUiThreadOptional(() -> addOneShotFocusListener(() -> {
+      onUnlocked.run();
+      navigateBack();
+    }));
+  }
+
   private boolean inBiometricsSetup;
   public void setInBiometricsSetup () {
     inBiometricsSetup = true;
@@ -198,7 +222,16 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     contentView = new FrameLayoutFix(context) {
       @Override
       public boolean onInterceptTouchEvent (MotionEvent ev) {
-        return (ev.getAction() == MotionEvent.ACTION_DOWN && !inSetupMode() && Settings.instance().isPasscodeBlocked(mode, makeBruteForceSuffix())) || super.onInterceptTouchEvent(ev);
+        boolean isBlockedTouch = ev.getAction() == MotionEvent.ACTION_DOWN && !inSetupMode() &&
+          !isCallButtonTouched(ev) &&
+          Settings.instance().isPasscodeBlocked(mode, makeBruteForceSuffix());
+        return isBlockedTouch || super.onInterceptTouchEvent(ev);
+      }
+
+      @Override
+      protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        layoutCallControls();
       }
     };
     ViewSupport.setThemedBackground(contentView, ColorId.passcode, this);
@@ -227,6 +260,10 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
       }
     }
     contentView.addView(passcodeView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    if (inGlobalUnlockMode()) {
+      TdlibManager.instance().calls().addCurrentCallListener(callListener);
+      updateIncomingCall(false);
+    }
 
     this.context.addSimpleStateListener(this);
 
@@ -235,6 +272,228 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     }
 
     return contentView;
+  }
+
+  private static @Nullable TdApi.Call findIncomingCall () {
+    Tdlib callTdlib = TdlibManager.instance().calls().getCurrentCallTdlib();
+    int callId = TdlibManager.instance().calls().getCurrentCallId();
+    TdApi.Call call = callTdlib != null ? callTdlib.cache().getCall(callId) : null;
+    boolean isRinging = call != null && !call.isOutgoing &&
+      call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR;
+    return isRinging ? call : null;
+  }
+
+  private @Nullable CallControlsLayout callControlsLayout;
+  private @Nullable TooltipOverlayView.TooltipInfo acceptTooltip;
+  private @Nullable BoolAnimator callVisibility;
+  private float incomingCallFactor;
+  private final CallManager.CurrentCallListener callListener =
+    (tdlib, call) -> runOnUiThreadOptional(() -> updateIncomingCall(true));
+
+  private void updateIncomingCall (boolean animated) {
+    TdApi.Call call = Passcode.instance().requireForIncomingCalls() ? findIncomingCall() : null;
+    setIncomingCall(TdlibManager.instance().calls().getCurrentCallTdlib(), call, animated);
+  }
+
+  private void setIncomingCall (
+    @Nullable Tdlib callTdlib,
+    @Nullable TdApi.Call call,
+    boolean animated
+  ) {
+    boolean isRinging = call != null && callTdlib != null;
+    if (isRinging) {
+      if (callControlsLayout == null) {
+        CallControlsLayout controls = newCallControlsLayout(context());
+        callControlsLayout = controls;
+        contentView.addView(controls);
+        passcodeView.setCallText(Lang.getString(R.string.CallUnlockToAnswer));
+        callVisibility = new BoolAnimator(180L, AnimatorUtils.DECELERATE_INTERPOLATOR, false,
+          (state, factor, stateChanged, prevState) -> {
+            if (stateChanged && state == BoolAnimator.State.FALSE) {
+              controls.setVisibility(View.INVISIBLE);
+            } else if (stateChanged && prevState == BoolAnimator.State.FALSE) {
+              controls.setVisibility(View.VISIBLE);
+            }
+            setIncomingCallFactor(factor);
+          }
+        );
+      }
+      callControlsLayout.setCall(callTdlib, call, animated);
+    }
+    if (callVisibility != null) {
+      callVisibility.changeValue(isRinging, animated);
+    }
+    updateCallSoftInputMode(isRinging);
+  }
+
+  private int savedSoftInputMode = -1;
+
+  private void updateCallSoftInputMode (boolean isRinging) {
+    // Before Android 11 the window takes the keyboard by its mode: a resize lifts the buttons of
+    // the call above the keyboard of a password, a pan leaves them under it
+    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+      return;
+    }
+    boolean needMode = isRinging && mode == Passcode.MODE_PASSWORD;
+    if (needMode && savedSoftInputMode == -1) {
+      savedSoftInputMode = context.getWindow().getAttributes().softInputMode;
+      int adjust = Config.CALL_BUTTONS_ABOVE_KEYBOARD ?
+        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE :
+        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN;
+      UI.setSoftInputMode(context,
+        (savedSoftInputMode & ~WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST) | adjust);
+    } else if (!needMode && savedSoftInputMode != -1) {
+      UI.setSoftInputMode(context, savedSoftInputMode);
+      savedSoftInputMode = -1;
+    }
+  }
+
+  private CallControlsLayout newCallControlsLayout (Context context) {
+    CallControlsLayout controls = new CallControlsLayout(context);
+    controls.setAcceptLocked(true);
+    controls.setCallback(callControlCallback);
+    controls.setAlpha(0f);
+    controls.setVisibility(View.INVISIBLE);
+    controls.setLayoutParams(FrameLayoutFix.newParams(
+      ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+    ));
+    return controls;
+  }
+
+  private final CallControlsLayout.CallControlCallback callControlCallback =
+    new CallControlsLayout.CallControlCallback() {
+      @Override
+      public void onCallAccept (TdApi.Call call) { }
+
+      @Override
+      public void onCallAcceptLocked (View acceptButton) {
+        Tdlib callTdlib = TdlibManager.instance().calls().getCurrentCallTdlib();
+        if (callTdlib != null) {
+          if (acceptTooltip != null) {
+            acceptTooltip.hide(true);
+          }
+          acceptTooltip = context().tooltipManager().builder(acceptButton).show(
+            PasscodeController.this, callTdlib, R.drawable.baseline_lock_24,
+            Lang.getString(R.string.CallUnlockToAnswer));
+        }
+      }
+
+      @Override
+      public void onCallAcceptMoved () {
+        // A hidden one would attach its listeners to the button again, never to be detached
+        if (acceptTooltip != null && acceptTooltip.isVisible()) {
+          acceptTooltip.reposition();
+        }
+      }
+
+      @Override
+      public void onCallDecline (TdApi.Call call, boolean isHangUp) {
+        TdApi.Call ringingCall = findIncomingCall();
+        Tdlib callTdlib = TdlibManager.instance().calls().getCurrentCallTdlib();
+        if (ringingCall != null && ringingCall.id == call.id && callTdlib != null) {
+          callTdlib.context().calls().hangUp(callTdlib, call.id);
+        } else {
+          updateIncomingCall(true);
+        }
+      }
+
+      @Override
+      public void onCallRestart (TdApi.Call call) { }
+
+      @Override
+      public void onCallClose (TdApi.Call call) { }
+    };
+
+  private boolean isCallButtonTouched (MotionEvent ev) {
+    return callControlsLayout != null && callControlsLayout.getVisibility() == View.VISIBLE &&
+      callControlsLayout.isButtonAt(ev.getX(), ev.getY());
+  }
+
+  private float callPinScale = 1f;
+  private int callContentShift, callInputShift, callPatternInset;
+  private boolean isCallInputAside;
+
+  private void layoutCallControls () {
+    // The buttons stay as on the screen of the call: the keypad of a PIN shrinks down to a half,
+    // then the passcode goes up, at most to the status bar; in landscape its input goes apart
+    if (callControlsLayout == null) {
+      return;
+    }
+    boolean isAside = passcodeView.isInputAside();
+    isCallInputAside = isAside;
+    float textBottom = passcodeView.getTop() + passcodeView.getContentBottom();
+    float inputTop = 0f, inputBottom = 0f;
+    boolean isPin = mode == Passcode.MODE_PINCODE && pinLayout != null;
+    if (isPin) {
+      inputTop = pinLayout.getTop();
+      inputBottom = inputTop + pinLayout.getButtonsHeight();
+    } else if (mode == Passcode.MODE_PASSWORD && passwordView != null) {
+      inputTop = passwordView.getTop();
+      inputBottom = passwordView.getBottom();
+    } else if (mode == Passcode.MODE_BIOMETRICS && biometricsView != null) {
+      inputTop = biometricsView.getTop();
+      inputBottom = biometricsView.getBottom();
+    }
+    int buttonsTop = contentView.getMeasuredHeight() -
+      CallControlsLayout.getCallButtonBottomMargin() - CallControlsLayout.getCallButtonSize() -
+      Screen.dp(16f);
+    float inputShortage = inputBottom - buttonsTop;
+    callPinScale = 1f;
+    if (inputShortage > 0f && isPin) {
+      int buttonsHeight = pinLayout.getButtonsHeight();
+      callPinScale = Math.max(.5f, 1f - inputShortage / buttonsHeight);
+      inputShortage -= (1f - callPinScale) * buttonsHeight;
+    }
+    float shortage = textBottom - buttonsTop;
+    if (!isAside) {
+      shortage = Math.max(shortage, inputShortage);
+    }
+    callContentShift = 0;
+    if (shortage >= 1f) {
+      float room = passcodeView.getTop() + passcodeView.getContentTop() - HeaderView.getTopOffset();
+      callContentShift = (int) Math.ceil(Math.min(shortage, Math.max(0f, room)));
+    }
+    callInputShift = 0;
+    if (isAside && inputShortage >= 1f) {
+      float room = inputTop - HeaderView.getTopOffset();
+      callInputShift = (int) Math.ceil(Math.min(inputShortage, Math.max(0f, room)));
+    }
+    callPatternInset = isAside && mode == Passcode.MODE_PATTERN ?
+      Math.max(0, passcodeView.getMeasuredHeight() - buttonsTop - callContentShift) : 0;
+    applyIncomingCallFactor();
+  }
+
+  private void setIncomingCallFactor (float factor) {
+    if (this.incomingCallFactor != factor) {
+      this.incomingCallFactor = factor;
+      applyIncomingCallFactor();
+    }
+  }
+
+  private void applyIncomingCallFactor () {
+    float factor = incomingCallFactor;
+    passcodeView.setCallFactor(factor);
+    if (callControlsLayout != null) {
+      callControlsLayout.setAlpha(factor);
+    }
+    float shift = -callContentShift * factor;
+    float inputShift = isCallInputAside ? -callInputShift * factor : shift;
+    passcodeView.setTranslationY(shift);
+    passcodeView.setPatternBottomInset((int) (callPatternInset * factor));
+    if (pinLayout != null) {
+      float scale = 1f + (callPinScale - 1f) * factor;
+      pinLayout.setPivotX(pinLayout.getWidth() / 2f);
+      pinLayout.setPivotY(0f);
+      pinLayout.setScaleX(scale);
+      pinLayout.setScaleY(scale);
+      pinLayout.setTranslationY(inputShift);
+    }
+    if (passwordView != null) {
+      passwordView.setTranslationY(inputShift);
+    }
+    if (biometricsView != null) {
+      biometricsView.setTranslationY(inputShift);
+    }
   }
 
   public void fadeOut (Animator.AnimatorListener listener) {
@@ -557,7 +816,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
     if (controllerMode != MODE_SETUP) {
       if (controllerMode == MODE_UNLOCK_SETUP && Passcode.instance().compareBiometrics(biometricsId, strong)) {
         biometricsScanCompleted = true;
-        navigateTo(new PasscodeSetupController(context, tdlib));
+        onSetupUnlocked();
       } else {
         if (controllerMode == MODE_UNLOCK && unlockByBiometrics(biometricsId, strong)) {
           biometricsScanCompleted = true;
@@ -742,7 +1001,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         String patternStr = pattern.toString();
         if (controllerMode == MODE_UNLOCK_SETUP && Passcode.instance().comparePattern(patternStr)) {
           Settings.instance().forgetPasscodeErrors(Passcode.MODE_PATTERN, makeBruteForceSuffix());
-          navigateTo(new PasscodeSetupController(context, tdlib));
+          onSetupUnlocked();
         } else if (controllerMode == MODE_UNLOCK && unlockByPattern(patternStr)) {
           Settings.instance().forgetPasscodeErrors(Passcode.MODE_PATTERN, makeBruteForceSuffix());
           UI.unlock(PasscodeController.this);
@@ -791,7 +1050,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         String pincodeStr = pincode.toString();
         if (controllerMode == MODE_UNLOCK_SETUP && Passcode.instance().comparePincode(pincodeStr)) {
           Settings.instance().forgetPasscodeErrors(Passcode.MODE_PINCODE, makeBruteForceSuffix());
-          navigateTo(new PasscodeSetupController(context, tdlib));
+          onSetupUnlocked();
         } else if (controllerMode == MODE_UNLOCK && unlockByPincode(pincodeStr)) {
           Settings.instance().forgetPasscodeErrors(Passcode.MODE_PINCODE, makeBruteForceSuffix());
           UI.unlock(PasscodeController.this);
@@ -845,7 +1104,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
       Background.instance().post(() -> {
         if (controllerMode == MODE_UNLOCK_SETUP && getGesturePassword().compare(gesture, false, PasscodeController.this)) {
           Settings.instance().forgetPasscodeErrors(Passcode.MODE_GESTURE, makeBruteForceSuffix());
-          navigateTo(new PasscodeSetupController(context, tdlib));
+          onSetupUnlocked();
         } else if (controllerMode == MODE_UNLOCK && getGesturePassword().compare(gesture, false, PasscodeController.this)) {
           unlockByGesture();
           Settings.instance().forgetPasscodeErrors(Passcode.MODE_GESTURE, makeBruteForceSuffix());
@@ -880,7 +1139,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         Background.instance().post(() -> {
           if (controllerMode == MODE_UNLOCK_SETUP && Passcode.instance().comparePassword(password)) {
             Settings.instance().forgetPasscodeErrors(Passcode.MODE_PASSWORD, makeBruteForceSuffix());
-            navigateTo(new PasscodeSetupController(context, tdlib));
+            onSetupUnlocked();
           } else if (controllerMode == MODE_UNLOCK && unlockByPassword(password)) {
             Settings.instance().forgetPasscodeErrors(Passcode.MODE_PASSWORD, makeBruteForceSuffix());
             UI.unlock(PasscodeController.this);
@@ -1021,7 +1280,9 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
       if (tooltipInfo != null) {
         tooltipInfo.hideNow();
       }
-      if (isFatal && (controllerMode == MODE_SETUP || controllerMode == MODE_UNLOCK_SETUP)) {
+      boolean isOnlyBiometrics = mode == Passcode.MODE_BIOMETRICS;
+      if (isFatal && (controllerMode == MODE_SETUP ||
+        (controllerMode == MODE_UNLOCK_SETUP && isOnlyBiometrics))) {
         navigateBack();
       } else {
         isBiometricAuthenticationActive = false;
@@ -1106,6 +1367,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
   }
 
   private boolean isBiometricAuthenticationActive;
+  private @Nullable CancellationSignal biometricsSignal;
 
   private boolean needStrongBiometrics () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -1135,9 +1397,11 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
           // it again when the window gets it back
           Keyboard.hide(passwordView);
         }
-        BiometricAuthentication.authenticate(context, title, cancel, isStrong, this);
-      } else {
-        BiometricAuthentication.cancelAuthentication();
+        biometricsSignal =
+          BiometricAuthentication.authenticate(context, title, cancel, isStrong, this);
+      } else if (biometricsSignal != null) {
+        biometricsSignal.cancel();
+        biometricsSignal = null;
       }
       isBiometricAuthenticationActive = needBiometricsAuthentication;
     }
@@ -1195,6 +1459,8 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
   @Override
   public void destroy () {
     setNeedBiometrics(false);
+    updateCallSoftInputMode(false);
+    TdlibManager.instance().calls().removeCurrentCallListener(callListener);
     context.removeSimpleStateListener(this);
     Settings.instance().removePasscodeTickListener(this);
     super.destroy();
