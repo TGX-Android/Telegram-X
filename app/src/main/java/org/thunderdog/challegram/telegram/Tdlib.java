@@ -6940,8 +6940,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return options.animationSearchBotUsername;
   }
 
+  private static final String VENUE_SEARCH_BOT_USERNAME_FALLBACK = "foursquare";
+
   public String getVenueSearchBotUsername () {
-    return options.venueSearchBotUsername;
+    String username = options.venueSearchBotUsername;
+    return StringUtils.isEmpty(username) && !isDebugInstance() ?
+      VENUE_SEARCH_BOT_USERNAME_FALLBACK : username;
   }
 
   public String getPhotoSearchBotUsername () {
