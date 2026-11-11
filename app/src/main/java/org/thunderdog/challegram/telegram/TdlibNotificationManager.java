@@ -34,6 +34,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.StringRes;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
@@ -639,6 +640,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       case Status.DISABLED_SYNC:
       case Status.PUSH_SERVICE_MISSING:
       case Status.PUSH_SERVICE_ERROR:
+      case Status.BACKGROUND_RESTRICTED:
 
       case Status.INTERNAL_ERROR:
         return true;
@@ -677,7 +679,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     Status.INTERNAL_ERROR,
     Status.ACCOUNT_NOT_SELECTED,
     Status.PUSH_SERVICE_ERROR,
-    Status.MISSING_PERMISSION
+    Status.MISSING_PERMISSION,
+    Status.BACKGROUND_RESTRICTED
   })
   public @interface Status {
     int
@@ -690,21 +693,33 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       INTERNAL_ERROR = 6,
       ACCOUNT_NOT_SELECTED = 7,
       PUSH_SERVICE_ERROR = 8,
-      MISSING_PERMISSION = 9;
+      MISSING_PERMISSION = 9,
+      BACKGROUND_RESTRICTED = 10;
   }
 
   public @Status
   int getNotificationBlockStatus () {
+    return getBlockStatus(false);
+  }
+
+  public @Status int getCallBlockStatus () {
+    return getBlockStatus(true);
+  }
+
+  private @Status int getBlockStatus (boolean isCall) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       if (ContextCompat.checkSelfPermission(AppContext.get(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
         return Status.MISSING_PERMISSION;
       }
     }
+    if (!NotificationManagerCompat.from(AppContext.get()).areNotificationsEnabled()) {
+      return Status.BLOCKED_ALL;
+    }
     if (isChannelGroupBlocked()) {
       return Status.BLOCKED_CATEGORY;
     }
-    if (!NotificationManagerCompat.from(AppContext.get()).areNotificationsEnabled()) {
-      return Status.BLOCKED_ALL;
+    if (CallProblems.isBackgroundRestricted(AppContext.get())) {
+      return Status.BACKGROUND_RESTRICTED;
     }
     boolean hasPushServices = hasRemotePushService();
     if (!hasPushServices) {
@@ -715,10 +730,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         return Status.DISABLED_APP_SYNC;
       return Status.PUSH_SERVICE_MISSING;
     }
-    if (tdlib.settings().hasNotificationProblems())
-      return Status.INTERNAL_ERROR;
-    if (!tdlib.account().forceEnableNotifications() && Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS))
-      return Status.ACCOUNT_NOT_SELECTED;
+    if (!isCall) {
+      if (tdlib.settings().hasNotificationProblems()) {
+        return Status.INTERNAL_ERROR;
+      }
+      if (!tdlib.account().forceEnableNotifications() && Settings.instance().checkNotificationFlag(
+        Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS)) {
+        return Status.ACCOUNT_NOT_SELECTED;
+      }
+    }
     if (tdlib.context().getTokenState() == TdlibManager.TokenState.ERROR)
       return Status.PUSH_SERVICE_ERROR;
     return Status.NOT_BLOCKED;
@@ -735,6 +755,54 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   public boolean canPostCallNotifications () {
     return NotificationManagerCompat.from(AppContext.get()).areNotificationsEnabled() &&
       !isChannelGroupBlocked();
+  }
+
+  public @StringRes int getBlockedScopesDescription () {
+    return getBlockedScopesText(false);
+  }
+
+  public @StringRes int getBlockedScopesGuide () {
+    return getBlockedScopesText(true);
+  }
+
+  private @StringRes int getBlockedScopesText (boolean isGuide) {
+    boolean blockedPrivate = areNotificationsBlocked(scopePrivate());
+    boolean blockedGroup = areNotificationsBlocked(scopeGroup());
+    boolean blockedChannel = areNotificationsBlocked(scopeChannel());
+    int scopeCount = (blockedPrivate ? 1 : 0) + (blockedGroup ? 1 : 0) + (blockedChannel ? 1 : 0);
+    if (scopeCount > 1) {
+      return isGuide ?
+        R.string.NotificationsGuideBlockedMixed :
+        R.string.NotificationsErrorBlockedMixed;
+    } else if (blockedPrivate) {
+      return isGuide ?
+        R.string.NotificationsGuideBlockedPrivate :
+        R.string.NotificationsErrorBlockedPrivate;
+    } else if (blockedGroup) {
+      return isGuide ?
+        R.string.NotificationsGuideBlockedGroup :
+        R.string.NotificationsErrorBlockedGroup;
+    } else if (blockedChannel) {
+      return isGuide ?
+        R.string.NotificationsGuideBlockedChannel :
+        R.string.NotificationsErrorBlockedChannel;
+    }
+    return 0;
+  }
+
+  public @Nullable TdApi.NotificationSettingsScope findSingleBlockedScope () {
+    TdApi.NotificationSettingsScope blockedScope = null;
+    for (TdApi.NotificationSettingsScope scope : new TdApi.NotificationSettingsScope[] {
+      scopePrivate(), scopeGroup(), scopeChannel()
+    }) {
+      if (areNotificationsBlocked(scope)) {
+        if (blockedScope != null) {
+          return null;
+        }
+        blockedScope = scope;
+      }
+    }
+    return blockedScope;
   }
 
   public boolean areNotificationsBlocked (TdApi.NotificationSettingsScope scope) {

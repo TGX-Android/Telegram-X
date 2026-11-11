@@ -27,6 +27,7 @@ import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
@@ -676,7 +677,7 @@ public class TdlibNotificationChannelGroup {
       return new SettingsNotificationController.Args(conversationChatId);
     }
     String data = ownChannelId.startsWith(prefix) ? ownChannelId.substring(prefix.length()) : "";
-    if (isCallChannelId(data)) {
+    if (BuildConfig.CALLS_AVAILABLE && isCallChannelId(data)) {
       return new SettingsNotificationController.Args(
         SettingsNotificationController.Section.CALLS,
         parseCallChannelUserChatId(data)

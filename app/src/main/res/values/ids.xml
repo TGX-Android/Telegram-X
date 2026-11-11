@@ -500,6 +500,7 @@
   <item type="id" name="btn_chatSettings" />
   <item type="id" name="btn_devices" />
   <item type="id" name="btn_notificationSettings" />
+  <item type="id" name="btn_callSettings" />
   <item type="id" name="btn_privacySettings" />
   <item type="id" name="btn_languageSettings" />
   <item type="id" name="btn_stickerSettings" />
@@ -1089,7 +1090,6 @@
   <item type="id" name="btn_notifications_priorityOrImportance" />
   <item type="id" name="btn_notifications_led" />
   <item type="id" name="btn_notifications_channel" />
-  <item type="id" name="btn_notifications_calls" />
   <item type="id" name="btn_notifications_includeDismissed" />
 
   <item type="id" name="btn_notificationMode" />

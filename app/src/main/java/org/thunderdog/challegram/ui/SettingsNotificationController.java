@@ -44,6 +44,7 @@ import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -255,7 +256,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   private void setCustomChatId (long chatId) {
     this.customChatId = chatId;
     long callChatId = 0;
-    if (chatId != 0 && ChatId.isUserChat(chatId)) {
+    if (BuildConfig.CALLS_AVAILABLE && chatId != 0 && ChatId.isUserChat(chatId)) {
       long userId = tdlib.chatUserId(chatId);
       if (userId != 0) {
         TdApi.User user = tdlib.cache().user(userId);
@@ -417,14 +418,20 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     return true;
   }
 
-  private boolean inErrorMode;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    NotificationError.NONE, NotificationError.GLOBAL, NotificationError.OTHER
+  })
+  private @interface NotificationError {
+    int NONE = 0, GLOBAL = 1, OTHER = 2;
+  }
+
+  private @NotificationError int notificationError;
   private @CallProblems.Type int callProblem;
+  private int errorBlockItemCount;
   private boolean isSystemRowRemoved;
 
   private @DrawableRes int getErrorIcon (@TdlibNotificationManager.Status int status) {
-    if (callProblem != CallProblems.Type.NONE) {
-      return R.drawable.baseline_call_alert_24;
-    }
     switch (status) {
       case TdlibNotificationManager.Status.DISABLED_APP_SYNC:
       case TdlibNotificationManager.Status.DISABLED_SYNC:
@@ -437,6 +444,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       case TdlibNotificationManager.Status.MISSING_PERMISSION:
       case TdlibNotificationManager.Status.BLOCKED_ALL:
       case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
+      case TdlibNotificationManager.Status.BACKGROUND_RESTRICTED:
       case TdlibNotificationManager.Status.INTERNAL_ERROR:
       case TdlibNotificationManager.Status.NOT_BLOCKED:
         break;
@@ -445,9 +453,6 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   private @StringRes int getErrorText (@TdlibNotificationManager.Status int status) {
-    if (callProblem != CallProblems.Type.NONE) {
-      return CallProblems.getAction(callProblem);
-    }
     switch (status) {
       case TdlibNotificationManager.Status.DISABLED_SYNC:
         return R.string.TurnSyncOnSystem;
@@ -459,36 +464,73 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         return R.string.ShareNotificationError;
       case TdlibNotificationManager.Status.PUSH_SERVICE_ERROR:
         return R.string.FirebaseErrorResolve;
-      case TdlibNotificationManager.Status.MISSING_PERMISSION:
+      case TdlibNotificationManager.Status.BACKGROUND_RESTRICTED:
+        return R.string.CallProblemBackgroundAction;
       case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
+        return R.string.NotificationsAccountTurnOn;
+      case TdlibNotificationManager.Status.NOT_BLOCKED:
+        return R.string.NotificationsUnblockInSystem;
+      case TdlibNotificationManager.Status.MISSING_PERMISSION:
       case TdlibNotificationManager.Status.BLOCKED_ALL:
       case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
-      case TdlibNotificationManager.Status.NOT_BLOCKED:
         break;
     }
     return R.string.SystemNotificationSettings;
   }
 
-  private CharSequence makeErrorDescription (@TdlibNotificationManager.Status int status) {
-    if (callProblem != CallProblems.Type.NONE) {
-      CharSequence guide = Lang.getMarkdownString(this, CallProblems.getGuide(callProblem));
-      int steps = CallProblems.getGuideSteps(callProblem);
-      return steps != 0 ?
-        TextUtils.concat(guide, "\n\n", Lang.getMarkdownString(this, steps)) :
-        guide;
+  private @DrawableRes int getCallErrorIcon () {
+    if (callProblem == CallProblems.Type.PUSH_UNAVAILABLE) {
+      return getErrorIcon(tdlib.notifications().getCallBlockStatus());
     }
-    int guideRes = R.string.NotificationsGuideBlockedApp2;
+    return R.drawable.baseline_call_alert_24;
+  }
+
+  private @StringRes int getCallErrorText () {
+    if (CallProblems.isOfNotifications(callProblem)) {
+      return getErrorText(tdlib.notifications().getCallBlockStatus());
+    }
+    return CallProblems.getAction(callProblem);
+  }
+
+  private CharSequence makeCallErrorDescription () {
+    if (CallProblems.isOfNotifications(callProblem)) {
+      int guideRes = CallProblems.getNotificationsGuide(tdlib);
+      if (guideRes == R.string.CallProblemFirebaseErrorGuide) {
+        return Lang.getMarkdownString(this, guideRes, Lang.boldCreator(),
+          tdlib.context().getTokenError());
+      }
+      return Lang.getMarkdownString(this, guideRes);
+    }
+    CharSequence guide = Lang.getMarkdownString(this, CallProblems.getGuide(callProblem));
+    int steps = CallProblems.getGuideSteps(callProblem);
+    return steps != 0 ?
+      TextUtils.concat(guide, "\n\n", Lang.getMarkdownString(this, steps)) :
+      guide;
+  }
+
+  private CharSequence makeErrorDescription (@TdlibNotificationManager.Status int status) {
+    if (notificationError != NotificationError.GLOBAL) {
+      return Lang.getMarkdownString(this,
+        status == TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED ?
+          R.string.NotificationsGuideUnselected :
+          tdlib.notifications().getBlockedScopesGuide()
+      );
+    }
+    int guideRes = R.string.NotificationsGuideBlockedApp;
     switch (status) {
       case TdlibNotificationManager.Status.MISSING_PERMISSION:
-        guideRes = R.string.NotificationsGuidePermission2;
+        guideRes = R.string.NotificationsGuidePermission;
         break;
       case TdlibNotificationManager.Status.BLOCKED_ALL:
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-          guideRes = R.string.NotificationsGuideBlockedAll2;
+          guideRes = R.string.NotificationsGuideBlockedAll;
         }
         break;
       case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
-        guideRes = R.string.NotificationsGuideBlockedCategory2;
+        guideRes = R.string.NotificationsGuideBlockedCategory;
+        break;
+      case TdlibNotificationManager.Status.BACKGROUND_RESTRICTED:
+        guideRes = R.string.NotificationsGuideBackgroundRestricted;
         break;
       case TdlibNotificationManager.Status.DISABLED_SYNC:
         guideRes = R.string.NotificationsGuideSyncGlobalOff;
@@ -535,7 +577,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         break;
     }
     CharSequence text = Lang.getMarkdownString(this, guideRes);
-    if (guideRes == R.string.NotificationsGuideBlockedCategory2) {
+    if (guideRes == R.string.NotificationsGuideBlockedCategory) {
       String name = tdlib.accountName();
       if (text instanceof String) {
         return Lang.getStringBold(guideRes, name);
@@ -549,68 +591,150 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           return spannable;
         }
       }
-      return Lang.getString(R.string.NotificationsGuideBlockedApp2);
     }
     return text;
   }
 
+  private List<ListItem> newErrorItems () {
+    if (callProblem != CallProblems.Type.NONE) {
+      errorButton = new ListItem(
+        ListItem.TYPE_SETTING,
+        R.id.btn_showAdvanced,
+        getCallErrorIcon(),
+        getCallErrorText()
+      ).setTextColorId(ColorId.textNegative);
+      errorHint = new ListItem(
+        ListItem.TYPE_DESCRIPTION,
+        0,
+        0,
+        makeCallErrorDescription(),
+        false
+      );
+    } else {
+      @TdlibNotificationManager.Status int status =
+        tdlib.notifications().getNotificationBlockStatus();
+      errorButton = new ListItem(
+        ListItem.TYPE_SETTING,
+        R.id.btn_showAdvanced,
+        getErrorIcon(status),
+        getErrorText(status)
+      ).setTextColorId(ColorId.textNegative);
+      errorHint = new ListItem(
+        ListItem.TYPE_DESCRIPTION,
+        0,
+        0,
+        makeErrorDescription(status),
+        false
+      );
+    }
+    List<ListItem> items = new ArrayList<>();
+    items.add(errorButton);
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(errorHint);
+    if (specificSection == Section.CALLS) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    }
+    return items;
+  }
+
+  private void checkCallsInErrorMode () {
+    boolean hadErrors = errorBlockItemCount > 0;
+    boolean hasErrors = findErrors();
+    if (hadErrors == hasErrors) {
+      if (hasErrors) {
+        updateErrorItems();
+      }
+      return;
+    }
+    if (hadErrors) {
+      adapter.removeRange(adapter.indexOfView(errorButton), errorBlockItemCount);
+      errorButton = errorHint = null;
+      errorBlockItemCount = 0;
+    } else {
+      List<ListItem> itemsToAdd = newErrorItems();
+      int index = adapter.indexOfViewById(R.id.btn_calls_vibrate);
+      errorBlockItemCount = itemsToAdd.size();
+      adapter.getItems().addAll(index, itemsToAdd);
+      adapter.notifyItemRangeInserted(index, itemsToAdd.size());
+      ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(0, 0);
+    }
+  }
+
   private void checkInErrorMode () {
-    boolean need = needErrorMode();
-    if (this.inErrorMode != need) {
-      saveRecyclerPosition();
-      if (need) {
-        setSystemRowRemoved(callProblem == CallProblems.Type.NONE);
-
-        int viewType = adapter.getItems().get(0).getViewType();
-
-        @TdlibNotificationManager.Status int status = tdlib.notifications().getNotificationBlockStatus();
-
-        List<ListItem> itemsToAdd = new ArrayList<>();
-        itemsToAdd.add(errorButton = new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, getErrorIcon(status), getErrorText(status)).setTextColorId(ColorId.textNegative));
-        itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-        itemsToAdd.add(errorHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, makeErrorDescription(status), false));
-
-        if (viewType != ListItem.TYPE_HEADER_PADDED) {
-          itemsToAdd.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.NotificationSettings));
-          itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        }
-
-        adapter.getItems().addAll(0, itemsToAdd);
-        adapter.notifyItemRangeInserted(0, itemsToAdd.size());
-        if (viewType == ListItem.TYPE_HEADER_PADDED) {
-          final int index = itemsToAdd.size();
-          adapter.getItems().get(index).setViewType(ListItem.TYPE_HEADER);
-          adapter.notifyItemChanged(index);
-        }
-      } else {
-        boolean keepHeader = notificationModeHint != null;
-        // The block, and without the mode of notifications the header and the shadow after it
-        int removedCount = keepHeader ? 3 : 5;
-        adapter.removeRange(0, removedCount);
-        setSystemRowRemoved(false);
+    if (specificSection == Section.CALLS) {
+      checkCallsInErrorMode();
+      return;
+    }
+    @NotificationError int oldNotificationError = notificationError;
+    boolean hadErrors = errorBlockItemCount > 0;
+    boolean hasErrors = findErrors();
+    if (notificationError == oldNotificationError) {
+      if (hasErrors) {
+        setSystemRowRemoved(notificationError == NotificationError.GLOBAL);
+        updateErrorItems();
+      }
+      return;
+    }
+    saveRecyclerPosition();
+    boolean keepHeader = notificationModeHint != null;
+    if (hadErrors) {
+      int removedCount = hasErrors || keepHeader ? errorBlockItemCount : errorBlockItemCount + 2;
+      adapter.removeRange(0, removedCount);
+      if (!hasErrors) {
         if (keepHeader) {
           adapter.getItems().get(0).setViewType(ListItem.TYPE_HEADER_PADDED);
           adapter.notifyItemChanged(0);
         }
         applySavedRecyclerPosition(removedCount);
       }
-      this.inErrorMode = need;
-      if (need) {
-        ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(0, 0);
+    }
+    if (hasErrors) {
+      List<ListItem> itemsToAdd = newErrorItems();
+      errorBlockItemCount = itemsToAdd.size();
+      if (!hadErrors && !keepHeader) {
+        itemsToAdd.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.NotificationSettings));
+        itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       }
-    } else if (need && (errorHint != null || errorButton != null)) {
-      setSystemRowRemoved(callProblem == CallProblems.Type.NONE);
-      @TdlibNotificationManager.Status int status = tdlib.notifications().getNotificationBlockStatus();
-      if (errorHint != null && errorHint.setStringIfChanged(makeErrorDescription(status))) {
-        adapter.updateValuedSetting(errorHint);
+      adapter.getItems().addAll(0, itemsToAdd);
+      adapter.notifyItemRangeInserted(0, itemsToAdd.size());
+      if (!hadErrors && keepHeader) {
+        final int index = itemsToAdd.size();
+        adapter.getItems().get(index).setViewType(ListItem.TYPE_HEADER);
+        adapter.notifyItemChanged(index);
       }
-      if (errorButton != null) {
-        boolean update = errorButton.setStringIfChanged(getErrorText(status));
-        update = errorButton.setIconRes(getErrorIcon(status)) || update;
-        if (update) {
-          adapter.updateValuedSetting(errorButton);
-        }
-      }
+      ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(0, 0);
+    } else {
+      errorButton = errorHint = null;
+      errorBlockItemCount = 0;
+    }
+    setSystemRowRemoved(notificationError == NotificationError.GLOBAL);
+  }
+
+  private void updateErrorItems () {
+    if (errorButton == null) {
+      return;
+    }
+    CharSequence description;
+    @StringRes int text;
+    @DrawableRes int icon;
+    if (callProblem != CallProblems.Type.NONE) {
+      description = makeCallErrorDescription();
+      text = getCallErrorText();
+      icon = getCallErrorIcon();
+    } else {
+      @TdlibNotificationManager.Status int status =
+        tdlib.notifications().getNotificationBlockStatus();
+      description = makeErrorDescription(status);
+      text = getErrorText(status);
+      icon = getErrorIcon(status);
+    }
+    if (errorHint.setStringIfChanged(description)) {
+      adapter.updateValuedSetting(errorHint);
+    }
+    boolean update = errorButton.setStringIfChanged(text);
+    update = errorButton.setIconRes(icon) || update;
+    if (update) {
+      adapter.updateValuedSetting(errorButton);
     }
   }
 
@@ -641,16 +765,75 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     }
   }
 
-  private boolean needErrorMode () {
+  private boolean findErrors () {
+    notificationError = NotificationError.NONE;
     callProblem = CallProblems.Type.NONE;
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT || !isCommonScreen()) {
+    if (specificSection == Section.CALLS) {
+      callProblem = CallProblems.getOfSettings(tdlib);
+      return callProblem != CallProblems.Type.NONE;
+    }
+    if (!isCommonScreen()) {
       return false;
     }
-    if (tdlib.notifications().areNotificationsBlockedGlobally()) {
-      return true;
+    TdlibNotificationManager notifications = tdlib.notifications();
+    if (notifications.areNotificationsBlockedGlobally()) {
+      notificationError = NotificationError.GLOBAL;
+    } else if (isAccountNotSelected() ||
+      notifications.areNotificationsBlocked(notifications.scopePrivate()) ||
+      notifications.areNotificationsBlocked(notifications.scopeGroup()) ||
+      notifications.areNotificationsBlocked(notifications.scopeChannel())) {
+      notificationError = NotificationError.OTHER;
     }
-    callProblem = CallProblems.get(tdlib);
-    return callProblem != CallProblems.Type.NONE;
+    return notificationError != NotificationError.NONE;
+  }
+
+  private boolean isAccountNotSelected () {
+    return tdlib.notifications().getNotificationBlockStatus() ==
+      TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED;
+  }
+
+  private void fixNotificationError () {
+    TdlibNotificationManager notifications = tdlib.notifications();
+    if (isAccountNotSelected()) {
+      tdlib.context().setForceEnableNotifications(tdlib.id(), true);
+      adapter.updateCheckOptionById(tdlib.id() + 1, true);
+      context.getDrawer().checkSettingsClickBait();
+      updateNotificationModeHint(true);
+      tdlib.context().onUpdateNotifications(null, account -> account.id == tdlib.id());
+      checkInErrorMode();
+      return;
+    }
+    TdApi.NotificationSettingsScope blockedScope = notifications.findSingleBlockedScope();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && blockedScope != null) {
+      openChannelSettings(blockedScope);
+    } else {
+      openSystemNotificationSettings();
+    }
+  }
+
+  private void openSystemNotificationSettings () {
+    Intent intent = new Intent();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      intent.setAction(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+      intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.getPackageName());
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+      intent.putExtra("app_package", context.getPackageName());
+      intent.putExtra("app_uid", context.getApplicationInfo().uid);
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      intent.setAction(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+      intent.addCategory(Intent.CATEGORY_DEFAULT);
+      intent.setData(Uri.parse("package:" + context.getPackageName()));
+    } else {
+      return;
+    }
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    try {
+      context().startActivity(intent);
+    } catch (Throwable t) {
+      Log.e("Unable to launch system activity", t);
+      UI.showToast(R.string.NoAppToOpen, Toast.LENGTH_SHORT);
+    }
   }
 
   private static ArrayList<RingtoneItem> getRingtones (Context context, int type,
@@ -966,13 +1149,6 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           );
           return;
         }
-        if (itemId == R.id.btn_notifications_calls) {
-          item.setIconRes(hasCallProblem ?
-            R.drawable.baseline_call_alert_24 :
-            R.drawable.baseline_call_24
-          );
-          view.setIcon(item.getIconResource());
-        }
         if (itemId == R.id.btn_notifications_preview) {
           view.getToggler().setRadioEnabled(tdlib.notifications().defaultShowPreview(getScope(item)), isUpdate);
         } else if (itemId == R.id.btn_notifications_contentPreview) {
@@ -1114,12 +1290,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           dataColorId = i != -1 ? TdlibNotificationManager.LED_COLORS_IDS[i] : ColorId.NONE;
           view.setData(i != -1 ? TdlibNotificationManager.LED_COLORS_STRINGS[i] : R.string.LedDisabled);
         } else if (itemId == R.id.btn_notifications_sound || itemId == R.id.btn_calls_ringtone ||
-          itemId == R.id.btn_customChat_sound || itemId == R.id.btn_customChat_calls_ringtone ||
-          itemId == R.id.btn_notifications_calls) {
+          itemId == R.id.btn_customChat_sound || itemId == R.id.btn_customChat_calls_ringtone) {
           String sound;
           if (itemId == R.id.btn_notifications_sound) {
             sound = tdlib.notifications().getDefaultSoundName(getScope(item));
-          } else if (itemId == R.id.btn_calls_ringtone || itemId == R.id.btn_notifications_calls) {
+          } else if (itemId == R.id.btn_calls_ringtone) {
             sound = tdlib.notifications().getCallRingtoneName();
             if (sound == null) {
               sound = Lang.getString(R.string.RingtoneTelegramCall);
@@ -1215,6 +1390,10 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           addBadgeCounterItems(items);
           break;
         case Section.CALLS:
+          if (findErrors()) {
+            items.addAll(newErrorItems());
+            errorBlockItemCount = items.size();
+          }
           addCallItems(items);
           break;
         case Section.DEFAULT:
@@ -1370,14 +1549,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         items.add(dismissedHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Settings.instance().checkNotificationFlag(includeFlag) ? R.string.IncludeDismissedHintOff : R.string.IncludeDismissedHintOn));
       } else {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-          if (inErrorMode = needErrorMode()) {
-            @TdlibNotificationManager.Status int status = tdlib.notifications().getNotificationBlockStatus();
-
-            items.add(errorButton = new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, getErrorIcon(status), getErrorText(status)).setTextColorId(ColorId.textNegative));
-            items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-            items.add(errorHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, makeErrorDescription(status), false));
-          }
+        if (findErrors()) {
+          items.addAll(newErrorItems());
+          errorBlockItemCount = items.size();
         }
 
         final int notificationMode = getNotificationMode();
@@ -1422,13 +1596,6 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_notifications_snooze, R.drawable.baseline_group_24, R.string.Groups).setData(tdlib.notifications().scopeGroup()));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_notifications_snooze, R.drawable.baseline_bullhorn_24, R.string.Channels).setData(tdlib.notifications().scopeChannel()));
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(
-          ListItem.TYPE_VALUED_SETTING,
-          R.id.btn_notifications_calls,
-          R.drawable.baseline_call_24,
-          R.string.Calls
-        ));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
         if (!Config.FOREGROUND_SYNC_ALWAYS_ENABLED) {
@@ -1498,7 +1665,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items.add(mergeInfo = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, split ? R.string.NotificationMergeOn : R.string.NotificationMergeOff));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-          if (!inErrorMode || callProblem != CallProblems.Type.NONE) {
+          if (notificationError != NotificationError.GLOBAL) {
             items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
             items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, 0, R.string.SystemNotificationSettings));
             items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -1529,11 +1696,6 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     new EndIconModifier(R.drawable.baseline_error_24, ColorId.iconNegative);
 
   private boolean hasCallProblem (int itemId) {
-    if (itemId == R.id.btn_notifications_calls) {
-      return !tdlib.notifications().canCallChannelRing(0) ||
-        CallProblems.isAppChannelHidden(context) || CallProblems.isOngoingChannelOff(context) ||
-        CallProblems.isFullScreenIntentDenied(context);
-    }
     if (itemId == R.id.btn_fullScreenAlerts) {
       return CallProblems.isFullScreenIntentDenied(context);
     }
@@ -1868,6 +2030,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       }
       updateNotificationModeHint(true);
       tdlib.context().onUpdateNotifications(null, notificationAccount -> notificationAccount.id == selectedAccount.id);
+      checkInErrorMode();
       return;
     }
     if (viewId == R.id.btn_notifications_preview) {
@@ -1916,10 +2079,6 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         c.setArguments(new Args(getScope(item)));
         navigateTo(c);
       }
-    } else if (viewId == R.id.btn_notifications_calls) {
-      SettingsNotificationController c = new SettingsNotificationController(context, tdlib);
-      c.setArguments(new Args(Section.CALLS, 0));
-      navigateTo(c);
     } else if (viewId == R.id.btn_customChat_calls_channel) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         String channelId = tdlib.notifications().ensureCallChannel(callChatId);
@@ -1965,16 +2124,24 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     } else if (viewId == R.id.btn_resetCallSettings) {
       showResetCallSettingsConfirm();
     } else if (viewId == R.id.btn_showAdvanced) {
+      @TdlibNotificationManager.Status int status;
       if (item == errorButton && callProblem != CallProblems.Type.NONE) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-          callProblem == CallProblems.Type.CHANNEL_SILENCED) {
-          openChannelSettings(tdlib.notifications().getSystemCallChannelId(0));
-        } else {
-          CallProblems.openSettings(context, callProblem);
+        if (!CallProblems.isOfNotifications(callProblem)) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            callProblem == CallProblems.Type.CHANNEL_SILENCED) {
+            openChannelSettings(tdlib.notifications().getSystemCallChannelId(0));
+          } else {
+            CallProblems.openSettings(context, callProblem);
+          }
+          return;
         }
+        status = tdlib.notifications().getCallBlockStatus();
+      } else if (item == errorButton && notificationError != NotificationError.GLOBAL) {
+        fixNotificationError();
         return;
+      } else {
+        status = tdlib.notifications().getNotificationBlockStatus();
       }
-      @TdlibNotificationManager.Status int status = tdlib.notifications().getNotificationBlockStatus();
       switch (status) {
         case TdlibNotificationManager.Status.DISABLED_APP_SYNC:
         case TdlibNotificationManager.Status.DISABLED_SYNC: {
@@ -2007,29 +2174,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           Intents.openLink("https://play.google.com/store/apps/details?id=com.google.android.gms");
           break;
         }
+        case TdlibNotificationManager.Status.BACKGROUND_RESTRICTED: {
+          CallProblems.openSettings(context, CallProblems.Type.BACKGROUND_RESTRICTED);
+          break;
+        }
         default: {
-          Intent intent = new Intent();
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            intent.setAction(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-            intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.getPackageName());
-          } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
-            intent.putExtra("app_package", context.getPackageName());
-            intent.putExtra("app_uid", context.getApplicationInfo().uid);
-          } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            intent.setAction(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            intent.addCategory(Intent.CATEGORY_DEFAULT);
-            intent.setData(Uri.parse("package:" + context.getPackageName()));
-          } else {
-            return;
-          }
-          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-          try {
-            context().startActivity(intent);
-          } catch (Throwable t) {
-            Log.e("Unable to launch system activity", t);
-            UI.showToast(R.string.NoAppToOpen, Toast.LENGTH_SHORT);
-          }
+          openSystemNotificationSettings();
           break;
         }
       }
@@ -2060,6 +2210,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             (viewId == R.id.btn_notificationMode_all && enabled) ? NOTIFICATION_MODE_ALL : -1;
       if (updateNotificationMode(oldMode, newMode, false)) {
         tdlib.context().onUpdateAllNotifications();
+        checkInErrorMode();
       }
     } else if (viewId == R.id.btn_showMore) {
       if (getNotificationMode() == NOTIFICATION_MODE_SELECTED && collapsedAccountsCount > 0) {
@@ -2540,8 +2691,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   private static boolean isRingtone (int id) {
     return id == R.id.btn_calls_ringtone || id == R.id.btn_calls_vibrate ||
-      id == R.id.btn_customChat_calls_ringtone || id == R.id.btn_customChat_calls_vibrate ||
-      id == R.id.btn_notifications_calls;
+      id == R.id.btn_customChat_calls_ringtone || id == R.id.btn_customChat_calls_vibrate;
   }
 
   private static ListItem newVibrateOption (int id, int stringRes, int groupId, boolean isChecked) {
@@ -2624,6 +2774,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       }
     }
     adapter.updateAllValuedSettings();
+    checkInErrorMode();
   }
 
   private boolean oneShot;
@@ -2631,8 +2782,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   @Override
   public void onActivityResume () {
     super.onActivityResume();
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && adapter != null) {
-      makeChannelChecks();
+    if (adapter != null) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        makeChannelChecks();
+      } else {
+        checkInErrorMode();
+      }
     }
   }
 
@@ -2947,10 +3102,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         TdApi.NotificationSettingsScope currentScope = this.scope != null ? this.scope : this.customChatId != 0 ? tdlib.notifications().scope(customChatId) : null;
         if (currentScope == null) {
           adapter.updateAllValuedSettingsById(R.id.btn_notifications_snooze);
-          adapter.updateValuedSettingById(R.id.btn_notifications_calls);
           adapter.updateValuedSettingById(R.id.btn_calls_vibrate);
           adapter.updateValuedSettingById(R.id.btn_calls_ringtone);
           adapter.updateValuedSettingById(R.id.btn_calls_channel);
+          if (channelChanged) {
+            checkInErrorMode();
+          }
         } else if (currentScope.getConstructor() == scope.getConstructor()) {
           if (customChatId != 0) {
             invalidateNotificationSettings(customChatId, channelChanged);

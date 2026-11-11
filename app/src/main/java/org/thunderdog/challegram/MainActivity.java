@@ -1552,8 +1552,9 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
         accountId = TdlibNotificationChannelGroup.findAccountId(TdlibManager.instance(), groupId);
       }
     }
-    boolean isAppCallChannel = U.CHANNEL_ID_INCOMING_CALLS_IN_APP.equals(channelId) ||
-      U.CHANNEL_ID_ONGOING_CALLS.equals(channelId);
+    boolean isAppCallChannel = BuildConfig.CALLS_AVAILABLE &&
+      (U.CHANNEL_ID_INCOMING_CALLS_IN_APP.equals(channelId) ||
+        U.CHANNEL_ID_ONGOING_CALLS.equals(channelId));
     if (accountId == TdlibAccount.NO_ID) {
       TdlibAccount currentAccount = TdlibManager.instance().currentAccount();
       if (currentAccount.isUnauthorized()) {
