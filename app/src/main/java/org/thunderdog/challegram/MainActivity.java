@@ -149,6 +149,11 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     reloadTdlib();
 
     tempSavedInstanceState = savedInstanceState;
+    Intent intent = getIntent();
+    if (intent != null && (savedInstanceState != null ||
+      (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0)) {
+      Intents.removeCallBackToken(intent);
+    }
 
     Crash crash = TdlibManager.instance().getRecoveryCrashInfo();
     if (crash != null) {
@@ -897,6 +902,20 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       return false;
     }
 
+    if (action.startsWith(Intents.ACTION_CALL_BACK)) {
+      int accountId = intent.getIntExtra(Intents.KEY_ACCOUNT_ID, TdlibAccount.NO_ID);
+      long userId = intent.getLongExtra(Intents.KEY_USER_ID, 0);
+      if (accountId == TdlibAccount.NO_ID || userId == 0 || !Intents.isCallBackTrusted(intent)) {
+        return false;
+      }
+      if (getActivityState() == UI.State.RESUMED) {
+        callBack(accountId, userId);
+      } else {
+        pendingCallBack = () -> callBack(accountId, userId);
+      }
+      return true;
+    }
+
     // System shit
 
     RunnableData<TdlibAccount> consumer = null;
@@ -1446,6 +1465,15 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   }
 
   private void openMessagesController (int accountId, long chatId, long specificMessageId) {
+    openMessagesController(accountId, chatId, specificMessageId, false);
+  }
+
+  private void openMessagesController (
+    int accountId,
+    long chatId,
+    long specificMessageId,
+    boolean startCall
+  ) {
     final Tdlib tdlib = TdlibManager.instanceForAccountId(accountId).account(accountId).tdlib();
     tdlib.awaitInitialization(() -> {
       tdlib.incrementUiReferenceCount();
@@ -1454,9 +1482,35 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
         final TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().onDone(tdlib::decrementUiReferenceCount);
         if (specificMessageId != 0)
           params.highlightMessage(new MessageId(chatId, specificMessageId));
+        if (startCall) {
+          params.startCall();
+        }
         tdlib.ui().openChat(context, chatId, params);
       });
     });
+  }
+
+  private void callBack (int accountId, long userId) {
+    if (isPasscodeShowing()) {
+      addPasscodeListener(new PasscodeListener() {
+        @Override
+        public void onPasscodeShowing (BaseActivity context, boolean isShowing) {
+          if (!isShowing) {
+            removePasscodeListener(this);
+            callBack(accountId, userId);
+          }
+        }
+      });
+      return;
+    }
+    long chatId = ChatId.fromUserId(userId);
+    ViewController<?> current = navigation.getCurrentStackItem();
+    if (current instanceof MessagesController && current.tdlibId() == accountId &&
+      ((MessagesController) current).compareChat(chatId)) {
+      current.tdlib().context().calls().makeCall(current, userId, null);
+    } else {
+      openMessagesController(accountId, chatId, 0, true);
+    }
   }
 
   private void openPlayerController (int accountId) {
@@ -1578,6 +1632,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   }
 
   private @Nullable Intent pendingAnswerIntent;
+  private @Nullable Runnable pendingCallBack;
 
   private void answerIncomingCall (Intent intent) {
     if (Passcode.instance().isLockedForIncomingCalls()) {
@@ -1696,6 +1751,11 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       Intent intent = pendingAnswerIntent;
       pendingAnswerIntent = null;
       answerIncomingCall(intent);
+    }
+    if (pendingCallBack != null) {
+      Runnable callBack = pendingCallBack;
+      pendingCallBack = null;
+      callBack.run();
     }
     // CallManager can't show a call that came while the app was in background: it opens under
     // the passcode, so that it's there at once after it

@@ -555,6 +555,11 @@ debugCall id:long debug:string = Ok;
 
   public boolean checkRecordPermissions (final Context context, final Tdlib tdlib,
     final @Nullable TdApi.Call call) {
+    return checkRecordPermissions(context, tdlib, call, null);
+  }
+
+  private boolean checkRecordPermissions (final Context context, final Tdlib tdlib,
+    final @Nullable TdApi.Call call, final @Nullable Runnable onOutgoingCallGranted) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       if (AppContext.get().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = UI.getUiContext();
@@ -567,6 +572,8 @@ debugCall id:long debug:string = Ok;
                   updatedCall.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
                   acceptCall(context, tdlib, call.id);
                 }
+              } else if (onOutgoingCallGranted != null) {
+                onOutgoingCallGranted.run();
               }
             } else {
               showAlert(AlertType.MICROPHONE_PERMISSION_MISSING);
@@ -712,7 +719,13 @@ debugCall id:long debug:string = Ok;
       // UI.getCurrentStackItem(context);
       return;
     }
-    if (!checkRecordPermissions(context.context(), context.tdlib(), null)) {
+    final TdApi.UserFullInfo grantedUserFull = userFull;
+    Runnable onGranted = () -> {
+      if (!Passcode.instance().isLocked()) {
+        makeCall(context, userId, grantedUserFull, false);
+      }
+    };
+    if (!checkRecordPermissions(context.context(), context.tdlib(), null, onGranted)) {
       return;
     }
     context.context().closeAllMedia(false);

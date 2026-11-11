@@ -94,6 +94,9 @@ public class Intents {
   public static final String ACTION_END_CALL = PACKAGE_NAME + ".END_CALL";
   public static final String ACTION_DECLINE_CALL = PACKAGE_NAME + ".DECLINE_CALL";
   public static final String ACTION_ANSWER_CALL = PACKAGE_NAME + ".ANSWER_CALL";
+  public static final String ACTION_CALL_BACK = PACKAGE_NAME + ".CALL_BACK";
+  public static final String KEY_USER_ID = "user_id";
+  private static final String KEY_CALL_BACK_TOKEN = "call_back_token";
 
   public static final int REQUEST_CODE_CALL_SCREEN = 0;
   public static final int REQUEST_CODE_CALL_ANSWER = 1;
@@ -101,6 +104,7 @@ public class Intents {
   public static final int REQUEST_CODE_CALL_DECLINE = 3;
   public static final int REQUEST_CODE_CALL_END = 4;
   public static final int REQUEST_CODE_CALL_RATING = 5;
+  public static final int REQUEST_CODE_CALL_BACK = 6;
 
   public static final String ACTION_OPEN_LOGS = PACKAGE_NAME + ".OPEN_LOGS";
   public static final String ACTION_OPEN_PLAYER = PACKAGE_NAME + ".OPEN_PLAYER";
@@ -715,6 +719,28 @@ public class Intents {
     Intent intent = valueOfCall(accountId, callId);
     intent.putExtra(KEY_ANSWER_CALL, true);
     return intent;
+  }
+
+  public static Intent valueOfCallBack (int accountId, long userId) {
+    Intent intent = new Intent(UI.getContext(), MainActivity.class);
+    secureIntent(intent, false);
+    intent.setAction(ACTION_CALL_BACK + "." + accountId + "." + userId);
+    intent.putExtra(KEY_ACCOUNT_ID, accountId);
+    intent.putExtra(KEY_USER_ID, userId);
+    intent.putExtra(KEY_CALL_BACK_TOKEN, callBackToken());
+    return intent;
+  }
+
+  private static long callBackToken () {
+    return org.thunderdog.challegram.unsorted.Settings.instance().getCallBackToken();
+  }
+
+  public static boolean isCallBackTrusted (Intent intent) {
+    return intent.getLongExtra(KEY_CALL_BACK_TOKEN, 0) == callBackToken();
+  }
+
+  public static void removeCallBackToken (Intent intent) {
+    intent.removeExtra(KEY_CALL_BACK_TOKEN);
   }
 
   public static Intent valueOfPlayer (int accountId) {

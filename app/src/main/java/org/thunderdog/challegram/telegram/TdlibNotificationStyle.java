@@ -437,6 +437,24 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       }
     }
 
+    NotificationCompat.Action callBackAction = null;
+    long callBackUserId = hasShownCall(helper, group) ? tdlib.chatUserId(chat) : 0;
+    if (callBackUserId != 0) {
+      PendingIntent pendingIntent = PendingIntent.getActivity(
+        AppContext.get(),
+        Intents.REQUEST_CODE_CALL_BACK,
+        Intents.valueOfCallBack(tdlib.id(), callBackUserId),
+        PendingIntent.FLAG_UPDATE_CURRENT | Intents.mutabilityFlags(false)
+      );
+      callBackAction = new NotificationCompat.Action.Builder(
+        R.drawable.baseline_phone_24_white,
+        Lang.getString(R.string.CallBack),
+        pendingIntent
+      )
+        .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_CALL)
+        .build();
+    }
+
     Intent hideIntent = new Intent(AppContext.get(), TGRemoveReceiver.class);
     Intents.secureIntent(hideIntent, true);
     TdlibNotificationExtras.put(hideIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
@@ -648,6 +666,9 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       builder.setSubText(Lang.getNotificationCategory(category));
     }
 
+    if (callBackAction != null) {
+      builder.addAction(callBackAction);
+    }
     if (!Passcode.instance().isLocked()) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         if (muteAction != null)
@@ -1073,14 +1094,21 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     return notification.isCall() && helper.needPreview(notification.group());
   }
 
-  private static @DrawableRes int smallIcon (@NonNull TdlibNotificationHelper helper,
+  private static boolean hasShownCall (@NonNull TdlibNotificationHelper helper,
     Iterable<TdlibNotification> notifications) {
     for (TdlibNotification notification : notifications) {
       if (isShownCall(helper, notification)) {
-        return R.drawable.baseline_call_missed_24_white;
+        return true;
       }
     }
-    return R.mipmap.app_notification;
+    return false;
+  }
+
+  private static @DrawableRes int smallIcon (@NonNull TdlibNotificationHelper helper,
+    Iterable<TdlibNotification> notifications) {
+    return hasShownCall(helper, notifications) ?
+      R.drawable.baseline_call_missed_24_white :
+      R.mipmap.app_notification;
   }
 
   private NotificationCompat.Builder buildCommonNotification (Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @Nullable TdlibNotificationSettings settings, final List<TdlibNotification> notifications, final int category, boolean isRebuild) {

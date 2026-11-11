@@ -94,6 +94,7 @@ import java.io.RandomAccessFile;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.Reference;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -338,6 +339,7 @@ public class Settings {
   private static final String KEY_PUSH_STATS_TOTAL_COUNT = "push_stats_total";
   private static final String KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT = "push_stats_app";
   private static final String KEY_PUSH_STATS_CURRENT_TOKEN_COUNT = "push_stats_token";
+  private static final String KEY_CALL_BACK_TOKEN = "call_back_token";
   private static final String KEY_PUSH_LAST_RECEIVED_TIME = "push_last_received_time";
   private static final String KEY_PUSH_LAST_SENT_TIME = "push_last_sent_time";
   private static final String KEY_PUSH_LAST_TTL = "push_last_ttl";
@@ -972,6 +974,18 @@ public class Settings {
 
   public long getLong (String key, long defValue) {
     return pmc.getLong(key, defValue);
+  }
+
+  public synchronized long getCallBackToken () {
+    long token = getLong(KEY_CALL_BACK_TOKEN, 0);
+    if (token == 0) {
+      SecureRandom random = new SecureRandom();
+      do {
+        token = random.nextLong();
+      } while (token == 0);
+      putLong(KEY_CALL_BACK_TOKEN, token);
+    }
+    return token;
   }
 
   public long[] getLongArray (String key) {
