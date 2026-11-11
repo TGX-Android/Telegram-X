@@ -1245,6 +1245,16 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   }
 
   @Override
+  protected void onStop () {
+    super.onStop();
+    // The dialog of the request only pauses the activity, so it's left once stopped, e.g. by Home
+    if (isRequestingMicForCall) {
+      isRequestingMicForCall = false;
+      TGCallService.checkIncomingNotification();
+    }
+  }
+
+  @Override
   public void onDestroy () {
     try {
       super.onDestroy();
@@ -2708,6 +2718,7 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   public void requestMicPermissionForCall (@Nullable ActivityPermissionResult after) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       this.requestMicPermissionCallback = after;
+      this.isRequestingMicForCall = true;
       requestPermissions(new String[] {Manifest.permission.RECORD_AUDIO}, REQUEST_USE_MIC_CALL);
     }
   }
@@ -2797,6 +2808,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   @Override
   public void onRequestPermissionsResult (int requestCode, @NonNull String[] permissions, @NonNull  int[] grantResults) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    if (requestCode == REQUEST_USE_MIC_CALL) {
+      isRequestingMicForCall = false;
+    }
     if (grantResults.length == 0) {
       return;
     }
