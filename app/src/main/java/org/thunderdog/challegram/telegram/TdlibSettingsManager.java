@@ -678,17 +678,30 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public long getLocalChatId (long remoteChatId) {
     synchronized (localChatIdsSync) {
+      long localChatId = findLocalChatId(remoteChatId);
+      if (localChatId == 0) {
+        localChatId = nextLocalChatId();
+        String localKey = key(LOCAL_CHAT_ID_PREFIX, tdlib.id()) + remoteChatId;
+        String remoteKey = key(REMOTE_CHAT_ID_PREFIX, tdlib.id()) + localChatId;
+        Settings.instance().putLong(localKey, localChatId);
+        Settings.instance().putLong(remoteKey, remoteChatId);
+        remoteToLocalChatIds.put(remoteChatId, localChatId);
+        localToRemoteChatIds.put(localChatId, remoteChatId);
+      }
+      return localChatId;
+    }
+  }
+
+  public long findLocalChatId (long remoteChatId) {
+    synchronized (localChatIdsSync) {
       long localChatId = remoteToLocalChatIds.get(remoteChatId);
       if (localChatId == 0) {
         final String key = key(LOCAL_CHAT_ID_PREFIX, tdlib.id()) + remoteChatId;
         localChatId = Settings.instance().getLong(key, 0);
-        if (localChatId == 0) {
-          localChatId = nextLocalChatId();
-          Settings.instance().putLong(key, localChatId);
-          Settings.instance().putLong(key(REMOTE_CHAT_ID_PREFIX, tdlib.id()) + localChatId, remoteChatId);
+        if (localChatId != 0) {
+          remoteToLocalChatIds.put(remoteChatId, localChatId);
+          localToRemoteChatIds.put(localChatId, remoteChatId);
         }
-        remoteToLocalChatIds.put(remoteChatId, localChatId);
-        localToRemoteChatIds.put(localChatId, remoteChatId);
       }
       return localChatId;
     }

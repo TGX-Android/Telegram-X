@@ -1567,7 +1567,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     tdlib.awaitInitialization(() -> {
       SettingsNotificationController.Args args;
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && accountChannelId != null) {
-        args = TdlibNotificationChannelGroup.findSettings(tdlib, accountChannelId);
+        args = TdlibNotificationChannelGroup.findSettings(tdlib, accountChannelId, true);
       } else {
         args = new SettingsNotificationController.Args(
           isAppCallChannel ?
@@ -1582,10 +1582,19 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
         tdlib.decrementUiReferenceCount();
       });
       if (args.chatId != 0) {
-        tdlib.chat(args.chatId, chat -> open.runWithData(chat != null ?
-          new SettingsNotificationController.Args(chat.id) :
-          new SettingsNotificationController.Args(args.section, 0)
-        ));
+        tdlib.chat(args.chatId, chat -> {
+          if (chat != null) {
+            open.runWithData(new SettingsNotificationController.Args(chat.id));
+            return;
+          }
+          SettingsNotificationController.Args ownArgs =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && accountChannelId != null ?
+              TdlibNotificationChannelGroup.findSettings(tdlib, accountChannelId, false) : null;
+          open.runWithData(ownArgs != null && ownArgs.chatId == 0 ?
+            ownArgs :
+            new SettingsNotificationController.Args(args.section, 0)
+          );
+        });
       } else {
         open.runWithData(args);
       }

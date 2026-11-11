@@ -84,6 +84,7 @@
   <string name="format_fileSizeAndDescription">%2$s, %1$s</string>
   <string name="format_fileSizeAndExtension">%1$s %2$s</string>
   <string name="format_filesAndFolders">%1$s, %2$s</string>
+  <string name="format_conversationSettings">%1$s: %2$s</string>
   <string name="format_chatFoldersPositionAndStyle">%1$s, %2$s</string>
   <string name="format_contentAndModifyDate2">%1$s, %2$s</string>
   <string name="format_plus">+%1$d</string>
@@ -2723,6 +2724,18 @@
   <string name="NotificationChannelOngoingCalls">Ongoing Calls</string>
   <string name="NotificationChannelIncomingCallScreen">Incoming Call Screen</string>
   <string name="NotificationChannelMore">More settings</string>
+  <string name="ConversationSettingsResetWarning">To apply this, Telegram X has to recreate the notification categories of these conversations. Android doesn\'t let apps carry over these settings, so they will reset:\n\n%1$s\n\nAll other settings are kept.</string>
+  <string name="ConversationSettingsNewChannelWarning">To apply this, Telegram X has to give this chat a notification category of its own. What was set for this conversation in system settings won\'t apply to it, including:\n\n%1$s\n\nIts sound, vibration and importance will be the ones set in Telegram X.</string>
+  <string name="ConversationPriority">priority conversation</string>
+  <string name="ConversationBubbles">bubbles</string>
+  <string name="ConversationOverrideDnd">override Do Not Disturb</string>
+  <string name="ConversationLockScreen">lock screen</string>
+  <string name="ConversationDemoted">not a conversation</string>
+  <string name="ConversationImportance">importance</string>
+  <string name="ConversationSound">sound</string>
+  <string name="ConversationVibration">vibration</string>
+  <string name="ConversationLights">light</string>
+  <string name="ConversationBadge">notification dot</string>
   <string name="RingtoneCustom">Custom</string>
   <string name="IncognitoKeyboard">Incognito Keyboard</string>
   <string name="IncognitoKeyboardInfo">Request keyboard to not update any personalized data such as typing history and personalized language model based on what you type in Secret Chats.\n\nBe aware that this setting is not a guarantee, and some IMEs may not respect it.</string>
