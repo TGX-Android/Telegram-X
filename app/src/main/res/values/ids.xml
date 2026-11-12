@@ -155,6 +155,7 @@
   <item type="id" name="controller_deleteAccount"/>
   <item type="id" name="controller_addPollOption"/>
   <item type="id" name="controller_userNote"/>
+  <item type="id" name="controller_stickerSetTitle"/>
   <item type="id" name="controller_waitForPremium"/>
 
   <item type="id" name="controller_setEmojiStatusPager" />
@@ -861,6 +862,7 @@
   <item type="id" name="btn_archiveAsFolder" />
   <item type="id" name="btn_folderTags" />
   <item type="id" name="btn_installStickerSet" />
+  <item type="id" name="btn_renameStickerSet" />
   <item type="id" name="btn_shareLink" />
   <item type="id" name="btn_disabled" />
   <item type="id" name="membersList" />

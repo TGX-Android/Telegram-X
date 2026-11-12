@@ -160,6 +160,11 @@ public class StickersListController extends ViewController<StickersListControlle
           strings.append(R.string.DeleteArchivedPack);
           icons.append(R.drawable.baseline_delete_24);
         }
+        if (loadedStickerSet != null && loadedStickerSet.isOwned) {
+          ids.append(R.id.btn_renameStickerSet);
+          strings.append(R.string.RenamePack);
+          icons.append(R.drawable.baseline_edit_24);
+        }
         showMore(ids.get(), strings.get(), icons.get(), 0);
       } else if (!stickerSections.isEmpty() ) {
         int setsToInstall = 0;
@@ -231,6 +236,12 @@ public class StickersListController extends ViewController<StickersListControlle
         long stickerSetId = stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id : -1;
         getArguments().removeStickerSets(new long[] {stickerSetId});
       }
+    } else if (id == R.id.btn_renameStickerSet) {
+      if (loadedStickerSet != null) {
+        EditStickerSetTitleController controller = new EditStickerSetTitleController(context(), tdlib, loadedStickerSet.name, this::reloadStickerSet);
+        controller.setArguments(loadedStickerSet.title);
+        navigateTo(controller);
+      }
     } else if (id == R.id.btn_installStickerSet) {
       if (getArguments() != null) {
         if (stickerSetInfoToLoad != null) {
@@ -252,10 +263,10 @@ public class StickersListController extends ViewController<StickersListControlle
 
   @Override
   public CharSequence getName () {
-    if (stickerSetInfoToLoad != null) {
-      TdApi.StickerSetInfo info = stickerSetInfoToLoad;
-      TdApi.TextEntity[] entities = Td.findEntities(info.title);
-      return TD.formatString(this, info.title, entities, null, null);
+    String title = loadedStickerSet != null ? loadedStickerSet.title : stickerSetInfoToLoad != null ? stickerSetInfoToLoad.title : null;
+    if (title != null) {
+      TdApi.TextEntity[] entities = Td.findEntities(title);
+      return TD.formatString(this, title, entities, null, null);
     }
     if (stickerSections.size() > 1) {
       return Lang.plural(R.string.xEmojiPacks, stickerSections.size());
@@ -516,6 +527,9 @@ public class StickersListController extends ViewController<StickersListControlle
         tdlib.ui().post(() -> {
           if (!isDestroyed()) {
             buildCells(false);
+            if (headerView != null) {
+              headerView.setTitle(this);
+            }
           }
         });
 
