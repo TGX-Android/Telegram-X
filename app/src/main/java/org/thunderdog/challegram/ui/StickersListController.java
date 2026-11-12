@@ -908,19 +908,29 @@ public class StickersListController extends ViewController<StickersListControlle
         Lang.uppercase(Lang.getString(R.string.ViewPackPreview)), R.id.btn_view, ColorId.textNeutral));
     }
 
-    if (isOwnedSticker(sticker)) {
+    StickerSection ownedSection = ownedSectionOf(sticker);
+    if (ownedSection != null) {
+      int index = ownedSection.stickers.indexOf(sticker);
+      if (index > 0) {
+        menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+          Lang.uppercase(Lang.getString(R.string.MoveStickerToStart)), R.id.btn_moveStickerToStart, ColorId.textNeutral));
+      }
+      if (index < ownedSection.stickers.size() - 1) {
+        menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+          Lang.uppercase(Lang.getString(R.string.MoveStickerToEnd)), R.id.btn_moveStickerToEnd, ColorId.textNeutral));
+      }
       menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
         Lang.uppercase(Lang.getString(R.string.RemoveSticker)), R.id.btn_remove, ColorId.textNeutral));
     }
   }
 
-  private boolean isOwnedSticker (TGStickerObj sticker) {
+  private @Nullable StickerSection ownedSectionOf (TGStickerObj sticker) {
     for (StickerSection section : stickerSections) {
-      if (section.stickers.contains(sticker)) {
-        return section.isOwned;
+      if (section.isOwned && section.stickers.contains(sticker)) {
+        return section;
       }
     }
-    return false;
+    return null;
   }
 
   private void reloadStickerSet () {
@@ -946,6 +956,19 @@ public class StickersListController extends ViewController<StickersListControlle
       if (context != null) {
         tdlib.ui().showStickerSet(context, sticker.getStickerSetId(), null);
         stickerSmallView.closePreviewIfNeeded();
+      }
+    } else if (viewId == R.id.btn_moveStickerToStart || viewId == R.id.btn_moveStickerToEnd) {
+      StickerSection section = ownedSectionOf(sticker);
+      if (section != null) {
+        int position = viewId == R.id.btn_moveStickerToStart ? 0 : section.stickers.size() - 1;
+        stickerSmallView.closePreviewIfNeeded();
+        tdlib.send(new TdApi.SetStickerPositionInSet(new TdApi.InputFileId(sticker.getId()), position), (ok, error) -> runOnUiThreadOptional(() -> {
+          if (error != null) {
+            UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+          } else {
+            reloadStickerSet();
+          }
+        }));
       }
     } else if (viewId == R.id.btn_remove) {
       showOptions(Lang.getString(R.string.RemoveStickerConfirm),
