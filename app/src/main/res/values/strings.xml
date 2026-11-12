@@ -6061,6 +6061,8 @@
   <string name="UsernamesChannelHint">Drag and drop links to change order of their appearance on the channel profile screen.</string>
   <string name="UsernamesChat">Chat Links</string>
   <string name="UsernamesChatHint">Drag and drop links to change order of their appearance on the chat profile screen.</string>
+  <string name="DisableAllLinks">Disable all links</string>
+  <string name="DisableAllLinksConfirm">Disable all links to %1$s? People will no longer be able to find this chat through these links.</string>
 
   <string name="PrimaryUsername">Primary username</string>
   <string name="PrimaryLink">Primary link</string>

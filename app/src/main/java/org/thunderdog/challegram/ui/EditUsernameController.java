@@ -22,6 +22,7 @@ import android.text.Spanned;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Toast;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -294,6 +295,12 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
         hasReorderHint = true;
         items.add(reorderHintItem);
       }
+    }
+
+    if (chatId != 0 && !ChatId.isBasicGroup(chatId) && !activeUsernames.isEmpty()) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_disableAllUsernames, R.drawable.baseline_link_off_24, R.string.DisableAllLinks));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
     adapter.setItems(items, false);
@@ -573,6 +580,21 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
             }
             return true;
           });
+        }
+        return true;
+      });
+    } else if (viewId == R.id.btn_disableAllUsernames) {
+      showOptions(Lang.getStringBold(R.string.DisableAllLinksConfirm, tdlib.chatTitle(chatId)), new int[] {R.id.btn_disableAllUsernames, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DisableAllLinks), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (resultItemView, confirmId) -> {
+        if (confirmId == R.id.btn_disableAllUsernames && !isInProgress()) {
+          setInProgress(true);
+          tdlib.send(new TdApi.DisableAllSupergroupUsernames(ChatId.toSupergroupId(chatId)), (ok, error) -> runOnUiThreadOptional(() -> {
+            setInProgress(false);
+            if (error != null) {
+              UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+            } else {
+              onSaveCompleted();
+            }
+          }));
         }
         return true;
       });
