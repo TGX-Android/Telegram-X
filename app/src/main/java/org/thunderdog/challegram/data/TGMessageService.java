@@ -15,6 +15,8 @@
 
 package org.thunderdog.challegram.data;
 
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -29,6 +31,7 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -897,6 +900,27 @@ public final class TGMessageService extends TGMessageServiceImpl {
         );
       }
     });
+    if (!msg.isOutgoing && !chatHasProtectedContentDisableRequested.isExpired && tdlib.canChangeInfo(getChat())) {
+      setOnClickListener(this::showProcessSharingRequestOptions);
+    }
+  }
+
+  private void showProcessSharingRequestOptions () {
+    controller().showOptions(Lang.getString(R.string.AllowSharingQuestion),
+      new int[] {R.id.btn_allowSharing, R.id.btn_dontAllowSharing, R.id.btn_cancel},
+      new String[] {Lang.getString(R.string.Allow), Lang.getString(R.string.DontAllow), Lang.getString(R.string.Cancel)},
+      null,
+      new int[] {R.drawable.baseline_check_circle_24, R.drawable.baseline_lock_24, R.drawable.baseline_cancel_24},
+      (itemView, id) -> {
+        if (id == R.id.btn_allowSharing || id == R.id.btn_dontAllowSharing) {
+          tdlib.send(new TdApi.ProcessChatHasProtectedContentDisableRequest(msg.chatId, msg.id, id == R.id.btn_allowSharing), (ok, error) -> runOnUiThreadOptional(() -> {
+            if (error != null) {
+              UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+            }
+          }));
+        }
+        return true;
+      });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatHasProtectedContentToggled chatHasProtectedContentToggled) {

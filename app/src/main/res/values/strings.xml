@@ -1640,6 +1640,7 @@
   <string name="ActionChatRemovedFromCommunity">This chat was removed from community</string>
 
   <string name="ActionSharingRequestExpired">Sharing request has expired</string>
+  <string name="AllowSharingQuestion">Allow members to copy, save and forward content in this chat?</string>
   <string name="ActionSharingRequestOut">You suggested to enable sharing in this chat</string>
   <string name="ActionSharingRequest">%1$s would like to enable sharing in this chat</string>
   <string name="ActionSharingEnabled">%1$s enabled sharing in this chat</string>
@@ -2003,6 +2004,7 @@
   <string name="RingtoneDisabled">Disabled</string>
   <string name="Calls">Calls</string>
   <string name="Allow">Allow</string>
+  <string name="DontAllow">Don\'t allow</string>
   <string name="ContactAdded">Contact added</string>
   <string name="SuggestInvitingUser">%1$s is not on Telegram yet. Would you like to invite them via SMS?</string>
   <string name="SuggestInvitingUserCommon_one">%2$s is not on Telegram yet. Would you like to invite them via SMS? They may have up to %1$s contact on Telegram.</string>
