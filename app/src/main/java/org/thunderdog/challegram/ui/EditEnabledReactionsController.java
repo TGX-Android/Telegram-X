@@ -206,7 +206,9 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         userView.getStickerSmallView().setTag(reactionsObj);
         if (reactionsObj != null) {
           userView.setReaction(reactionsObj);
-          if (type == TYPE_ENABLED_REACTIONS) {
+          if (item.getId() == R.id.btn_defaultReactionCheckboxGroup) {
+            userView.setChecked(reactionKey.equals(tdlib.defaultReactionKey()), isUpdate);
+          } else if (type == TYPE_ENABLED_REACTIONS) {
             if (availableReactions == null) {
               userView.setChecked(false, isUpdate);
             } else {
@@ -325,12 +327,15 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     }
 
+    List<String> reactionKeys = new ArrayList<>();
+
     if (type == TYPE_ENABLED_REACTIONS && availableReactions.getConstructor() == TdApi.ChatAvailableReactionsSome.CONSTRUCTOR) {
       TdApi.ReactionType[] someReactions = ((TdApi.ChatAvailableReactionsSome) availableReactions).reactions;
       for (TdApi.ReactionType reactionType : someReactions) {
         if (reactionType.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR) {
           TGReaction reaction = tdlib.getReaction(reactionType);
           if (reaction != null) {
+            reactionKeys.add(reaction.key);
             items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.key, false));
           }
         }
@@ -342,11 +347,22 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       for (String activeEmojiReaction : activeEmojiReactions) {
         TGReaction reaction = tdlib.getReaction(new TdApi.ReactionTypeEmoji(activeEmojiReaction));
         if (reaction != null) {
+          reactionKeys.add(reaction.key);
           items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.key, false));
         }
       }
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+
+    if (type == TYPE_QUICK_REACTION && !reactionKeys.isEmpty()) {
+      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.DefaultReaction));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      for (String reactionKey : reactionKeys) {
+        items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_defaultReactionCheckboxGroup, 0, reactionKey, false));
+      }
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.DefaultReactionDesc));
+    }
 
     /* TODO: custom reactions
     List<TGReaction> premiumReactions = tdlib.getOnlyPremiumReactions();
@@ -460,6 +476,16 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       updateQuickReactionsSettings();
       adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
       adapter.updateValuedSettingById(R.id.btn_quick_reaction_enabled);
+    }
+
+    ListItem clickedItem = v.getTag() instanceof ListItem ? (ListItem) v.getTag() : null;
+
+    if (clickedItem != null && clickedItem.getId() == R.id.btn_defaultReactionCheckboxGroup) {
+      String reactionKey = clickedItem.getString().toString();
+      if (!reactionKey.equals(tdlib.defaultReactionKey())) {
+        tdlib.setDefaultReactionKey(reactionKey, () -> adapter.updateAllValuedSettingsById(R.id.btn_defaultReactionCheckboxGroup));
+      }
+      return;
     }
 
     if (v instanceof ReactionCheckboxSettingsView) {

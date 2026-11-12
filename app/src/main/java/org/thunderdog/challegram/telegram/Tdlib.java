@@ -4411,6 +4411,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return EmojiCodes.THUMBS_UP;
   }
 
+  public TdApi.ReactionType defaultReactionType () {
+    synchronized (dataLock) {
+      return defaultReactionType;
+    }
+  }
+
+  public String defaultReactionKey () {
+    TdApi.ReactionType reactionType = defaultReactionType();
+    return reactionType != null ? TD.makeReactionKey(reactionType) : EmojiCodes.THUMBS_UP;
+  }
+
+  public void setDefaultReactionKey (String reactionKey, @Nullable Runnable after) {
+    client().send(new TdApi.SetDefaultReactionType(TD.toReactionType(reactionKey)), okHandler(after));
+  }
+
   @Nullable
   public TdApi.PaidReactionType defaultPaidReaction () {
     synchronized (dataLock) {

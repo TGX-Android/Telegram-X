@@ -2094,6 +2094,8 @@
 
   <string name="QuickReactionEnable">Enable Quick Reaction</string>
   <string name="QuickReactionEnableDesc">Some groups and channels may not allow specific reactions.</string>
+  <string name="DefaultReaction">Default reaction</string>
+  <string name="DefaultReactionDesc">Used as the first quick reaction in chats that allow it.</string>
 
   <string name="ReactionsDisabledDesc">Allow members to react to group messages</string>
   <string name="xReactionsLimit_one">%1$s reaction</string>

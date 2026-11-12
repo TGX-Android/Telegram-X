@@ -1133,6 +1133,7 @@
   <item type="id" name="btn_bigReactionsChannels" />
 
   <item type="id" name="btn_enabledReactionsCheckboxGroup" />
+  <item type="id" name="btn_defaultReactionCheckboxGroup" />
   <item type="id" name="btn_quick_reaction_enabled" />
 
   <item type="id" name="icon_additionalPassword" />
