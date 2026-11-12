@@ -333,6 +333,7 @@
   <item type="id" name="btn_chatTranslateStylePopup" />
   <item type="id" name="btn_chatTranslateStyleInline" />
   <item type="id" name="btn_chatTranslateStyleNone" />
+  <item type="id" name="btn_chatToggleTranslation" />
   <item type="id" name="btn_chatDoNotTranslate" />
   <item type="id" name="btn_chatDoNotTranslateAppLang" />
   <item type="id" name="btn_chatDoNotTranslateSelected" />

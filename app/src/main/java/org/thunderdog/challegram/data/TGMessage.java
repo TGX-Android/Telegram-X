@@ -8944,7 +8944,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         rightActions.add(new SwipeQuickAction(translateStopText, iQuickStopTranslate, () -> {
           stopTranslated();
         }, true, false));
-      } else if (isTranslatable() && translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+      } else if (isTranslatable() && canTranslateHere()) {
         rightActions.add(new SwipeQuickAction(translateText, iQuickTranslate, () -> {
           messagesController().startTranslateMessages(this);
         }, true, false));
@@ -9655,6 +9655,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return manager().getUsedTranslateStyleMode();
   }
 
+  public boolean canTranslateHere () {
+    return tdlib.chatTranslatable(getChatId()) || translationStyleMode() != Settings.TRANSLATE_MODE_NONE;
+  }
+
   private @Nullable TdApi.FormattedText textToTranslate;
   private @Nullable String textToTranslateOriginalLanguage;
 
@@ -9698,7 +9702,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     final TdApi.FormattedText textToTranslate = getTextToTranslateImpl();
     this.textToTranslate = textToTranslate;
     textToTranslateOriginalLanguage = textToTranslate != null ? mTranslationsManager.getCachedTextLanguage(textToTranslate.text) : null;
-    if (textToTranslate != null && textToTranslateOriginalLanguage == null && translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+    if (textToTranslate != null && textToTranslateOriginalLanguage == null && canTranslateHere()) {
       LanguageDetector.detectLanguage(context(), textToTranslate.text, lang -> {
         mTranslationsManager.saveCachedTextLanguage(textToTranslate.text, textToTranslateOriginalLanguage = lang);
         after.run();

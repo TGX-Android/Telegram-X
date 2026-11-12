@@ -641,7 +641,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         ids.append(R.id.btn_chatTranslateOff);
         strings.append(R.string.TranslateOff);
         icons.append(R.drawable.baseline_translate_off_24);
-      } else if (!isMore && msg.isTranslatable() && msg.translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+      } else if (!isMore && msg.isTranslatable() && msg.canTranslateHere()) {
         ids.append(R.id.btn_chatTranslate);
         strings.append(R.string.Translate);
         icons.append(R.drawable.baseline_translate_24);
@@ -898,7 +898,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       ids.append(R.id.btn_chatTranslateOff);
       strings.append(R.string.TranslateOff);
       icons.append(R.drawable.baseline_translate_off_24);
-    } else if (!isMore && msg.isTranslatable() && msg.translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+    } else if (!isMore && msg.isTranslatable() && msg.canTranslateHere()) {
       ids.append(R.id.btn_chatTranslate);
       strings.append(R.string.Translate);
       icons.append(R.drawable.baseline_translate_24);
@@ -1281,7 +1281,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         colors.append(ViewController.OptionColor.NORMAL);
       }
 
-      if (msg.isTranslatable() && msg.translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+      if (msg.isTranslatable() && msg.canTranslateHere()) {
         ids.append(R.id.btn_chatTranslate);
         strings.append(R.string.Translate);
         icons.append(R.drawable.baseline_translate_24);

@@ -3717,6 +3717,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
+  public boolean canToggleChatTranslation (TdApi.Chat chat) {
+    if (chat == null)
+      return false;
+    switch (chat.type.getConstructor()) {
+      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public boolean chatTranslatable (long chatId) {
+    TdApi.Chat chat = chat(chatId);
+    return chat != null && chat.isTranslatable;
+  }
+
   public boolean chatNeedsMuteIcon (long chatId) {
     return chatNeedsMuteIcon(chat(chatId));
   }

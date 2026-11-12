@@ -5214,7 +5214,7 @@ public class TdlibUi extends Handler {
 
     final boolean hasNotifications = tdlib.chatNotificationsEnabled(chat);
 
-    final int size = canSelect && onSelect != null ? 8 : 7;
+    final int size = canSelect && onSelect != null ? 9 : 8;
 
     IntList ids = new IntList(size);
     StringList strings = new StringList(size);
@@ -5248,6 +5248,13 @@ public class TdlibUi extends Handler {
       strings.append(isArchived ? R.string.UnarchiveChat : R.string.ArchiveChat);
       colors.append(ViewController.OptionColor.NORMAL);
       icons.append(isArchived ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
+    }
+
+    if (tdlib.canToggleChatTranslation(chat)) {
+      ids.append(R.id.btn_chatToggleTranslation);
+      strings.append(chat.isTranslatable ? R.string.DoNotTranslateInChat : R.string.TranslateInChat);
+      colors.append(ViewController.OptionColor.NORMAL);
+      icons.append(chat.isTranslatable ? R.drawable.baseline_translate_off_24 : R.drawable.baseline_translate_24);
     }
 
     if (Settings.instance().chatFoldersEnabled()) {
@@ -5682,6 +5689,9 @@ public class TdlibUi extends Handler {
       return true;
     } else if (actionId == R.id.btn_pinChat) {
       tdlib.client().send(new TdApi.ToggleChatIsPinned(chatList, chatId, true), tdlib.okHandler(after));
+      return true;
+    } else if (actionId == R.id.btn_chatToggleTranslation) {
+      tdlib.client().send(new TdApi.ToggleChatIsTranslatable(chatId, !chat.isTranslatable), tdlib.okHandler(after));
       return true;
     } else if (actionId == R.id.btn_archiveUnarchiveChat) {
       showArchiveUnarchiveChat(context, chatList, chatId, source, after);
