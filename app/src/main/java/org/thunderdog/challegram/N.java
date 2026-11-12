@@ -133,6 +133,10 @@ public final class N {
     }
   }
 
+  // syntax.cpp
+  public native static int[] highlightCode (String code, String language);
+  public native static String getLanguageName (String language);
+
   public native static void onFatalError (String msg, int cause);
 
   // Unavailable in legacy flavor

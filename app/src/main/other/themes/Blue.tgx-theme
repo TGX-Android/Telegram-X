@@ -207,3 +207,16 @@ wp_catsGreen: #59843D66
 wp_catsOrange: #94673F66
 wp_catsPink: #B5779566
 blockQuoteText, blockQuoteLine, bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine, bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine: #000000
+codeBlockBackground, bubbleIn_codeBlockBackground, bubbleOut_codeBlockBackground: #0000000F
+codeBlockHeader, bubbleIn_codeBlockHeader, bubbleOut_codeBlockHeader: #0000000A
+syntaxComment, syntaxBlockComment, syntaxProlog, syntaxDoctype, syntaxCdata: #708090
+syntaxPunctuation: #999999
+syntaxProperty, syntaxTag, syntaxBoolean, syntaxNumber, syntaxConstant, syntaxSymbol, syntaxDeleted: #990055
+syntaxSelector, syntaxAttrName, syntaxString, syntaxChar, syntaxBuiltin, syntaxInserted: #669900
+syntaxOperator, syntaxEntity, syntaxUrl: #9A6E3A
+syntaxAtrule, syntaxAttrValue, syntaxKeyword, syntaxFunction: #0077AA
+syntaxClassName: #DD4A68
+codeBlockRipple, bubbleIn_codeBlockRipple: #004D8829
+bubbleOut_codeBlockRipple: #0A558429
+bubbleOut_codeBlockLine: #196696
+syntaxAnnotation: #765900
