@@ -1492,7 +1492,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     lastPart = null;
 
     final int maxWidth = getPartMaxWidth(entity);
-    if (Math.max(currentX, getCodeBlockLineStartX(entity)) + emojiSize > maxWidth) {
+    if (Math.max(currentX, getBlockLineStartX(entity)) + emojiSize > maxWidth) {
       newLineOrEllipsis(out, in);
     }
 
@@ -1830,7 +1830,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     final boolean isFullyMonospace = isMonospace && isMonospace(in, start, end);
     final @BiDiEntity int bidiEntity = getBidiEntity(start);
     // final float monospaceSize = spaceSize;
-    final int lineStartX = getCodeBlockLineStartX(entity);
+    final int lineStartX = getBlockLineStartX(entity);
     final int wrapStartX = lineStartX + getCodeLineContinuationX(in, entity);
 
     float fullWidth;
@@ -2143,7 +2143,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   }
 
   private int getCodeLineWidth (TextEntity entity) {
-    return maxWidth - getCodeBlockLineStartX(entity);
+    return maxWidth - getBlockLineStartX(entity);
   }
 
   private int getPartMaxWidth (@Nullable TextEntity entity) {
@@ -2155,10 +2155,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
   private int codeBlockLineStartX = -1;
 
-  private int getCodeBlockLineStartX (@Nullable TextEntity entity) {
-    // Lines of code blocks start after its paddings, which are added when the first part is placed
+  private int getBlockLineStartX (@Nullable TextEntity entity) {
+    // Lines of quotes and code blocks start after paddings added when the first part is placed
     if (!isCodeBlock(entity)) {
-      return 0;
+      return entity != null && entity.isQuote() ? getQuoteLineStartX(entity) : 0;
     }
     if (codeBlockLineStartX == -1) {
       codeBlockLineStartX = getQuoteLineStartX(entity);
