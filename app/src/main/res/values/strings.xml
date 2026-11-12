@@ -951,6 +951,8 @@
   <string name="ChannelSignMessages">Sign Messages</string>
   <string name="ChannelShowAuthors">Show Authors\' Profiles</string>
   <string name="ApproveNewMembers">Approve New Members</string>
+  <string name="JoinToSendMessages">Join Before Sending</string>
+  <string name="JoinToSendMessagesInfo">Users must join the group before they can send messages</string>
   <string name="ApproveNewMembersInfo">Turn this on if you want new members to join only after they are approved by an admin.</string>
   <string name="RestrictSaving">Restrict Saving Content</string>
   <string name="RestrictSavingBotInfo">Copying or forwarding messages from this bot is restricted.</string>

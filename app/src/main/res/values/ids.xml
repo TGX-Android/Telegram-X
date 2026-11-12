@@ -447,6 +447,7 @@
   <item type="id" name="btn_toggleSignatures" />
   <item type="id" name="btn_toggleShowAuthors" />
   <item type="id" name="btn_toggleJoinByRequest" />
+  <item type="id" name="btn_toggleJoinToSend" />
   <item type="id" name="btn_toggleProtection" />
   <item type="id" name="btn_toggleAutomaticTranslation" />
   <item type="id" name="btn_togglePermission" />
