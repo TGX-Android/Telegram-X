@@ -3014,6 +3014,9 @@
   <string name="LeaveCreatorHintGroup">Warning: you might not be able to return to this group unless added by another member</string>
   <string name="LeaveReturnPublicLinkHintChannel">You will be able to return to this channel by its public link</string>
   <string name="LeaveReturnPublicLinkHintGroup">You will be able to return to this group by its public link</string>
+  <string name="LeaveFutureOwnerChannel">Unless you return within 7 days, %1$s will become the owner of this channel</string>
+  <string name="LeaveFutureOwnerGroup">Unless you return within 7 days, %1$s will become the owner of this group</string>
+  <string name="LeaveFutureOwnerBasicGroup">%1$s will become the owner of this group when you leave</string>
   <string name="DeleteUserChatConfirm">Are you sure you want to delete the chat with %1$s? This action cannot be undone.</string>
   <string name="DeleteAndStopBotConfirm">Are you sure you want to block %1$s and delete the chat with it? This action cannot be undone.</string>
   <string name="DeleteSavedMessagesConfirm">Are you sure you want to delete all **Saved Messages**? This action cannot be undone.</string>

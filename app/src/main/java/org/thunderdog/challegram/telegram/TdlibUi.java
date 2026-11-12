@@ -4741,6 +4741,7 @@ public class TdlibUi extends Handler {
     int confirmButtonRes = 0;
     String informationStr = null;
     boolean forceAdd = false;
+    boolean checkFutureOwner = false;
     boolean hasPublicLink = !StringUtils.isEmpty(tdlib.chatUsername(chatId));
     boolean isChannel = tdlib.isChannel(chatId);
     boolean canReturnAfterLeave = ChatId.isBasicGroup(chatId) || hasPublicLink;
@@ -4756,6 +4757,7 @@ public class TdlibUi extends Handler {
         if (!forceAdd) {
           informationStr = Lang.getString(hasPublicLink ? (isChannel ? R.string.LeaveReturnPublicLinkHintChannel : R.string.LeaveReturnPublicLinkHintGroup) : (isChannel ? R.string.LeaveCreatorHintChannel : R.string.LeaveCreatorHintGroup));
           confirmButtonRes = isChannel ? R.string.LeaveChannel : R.string.LeaveMegaMenu;
+          checkFutureOwner = true;
         }
         break;
       }
@@ -4845,31 +4847,59 @@ public class TdlibUi extends Handler {
         }
       }
     };
-    if (confirmButtonRes != 0) {
-      int checkId = join ? R.id.btn_returnToChat : R.id.btn_removeChatFromList;
-      if (!join && ChatId.isBasicGroup(chatId)) {
-        SettingsWrapBuilder b = new SettingsWrapBuilder(R.id.btn_removeChatFromList).setSaveStr(R.string.LeaveDoneGroup).setSaveColorId(ColorId.textNegative);
-        if (informationStr != null) {
-          b.addHeaderItem(informationStr);
-        }
-        b.setRawItems(new ListItem[] {
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.LeaveRemoveFromList, R.id.btn_removeChatFromList, true)
-        });
-        b.setIntDelegate((id, result) -> {
-          boolean removeFromChatsList = result.get(R.id.btn_removeChatFromList) == R.id.btn_removeChatFromList;
-          act.runWithBool(removeFromChatsList);
-        });
-        context.showSettings(b);
-      } else {
-        context.showOptions(informationStr, new int[]{checkId, R.id.btn_cancel}, new String[]{Lang.getString(confirmButtonRes), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-          if (id == checkId) {
-            act.runWithBool(false);
+    if (checkFutureOwner) {
+      final CharSequence baseInformation = informationStr;
+      final int button = confirmButtonRes;
+      final boolean channel = isChannel;
+      tdlib.client().send(new TdApi.GetChatOwnerAfterLeaving(chatId), result -> {
+        CharSequence information = baseInformation;
+        if (result.getConstructor() == TdApi.User.CONSTRUCTOR) {
+          TdApi.User futureOwner = (TdApi.User) result;
+          if (futureOwner.id != 0 && futureOwner.id != tdlib.myUserId()) {
+            String ownerInfo = Lang.getString(ChatId.isBasicGroup(chatId) ? R.string.LeaveFutureOwnerBasicGroup : (channel ? R.string.LeaveFutureOwnerChannel : R.string.LeaveFutureOwnerGroup), TD.getUserName(futureOwner));
+            information = baseInformation == null ? ownerInfo : baseInformation + "\n" + ownerInfo;
           }
-          return true;
+        } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          Log.d("getChatOwnerAfterLeaving chatId:%d error:%s", chatId, TD.toErrorString(result));
+        }
+        final CharSequence finalInformation = information;
+        UI.post(() -> {
+          if (!context.isDestroyed()) {
+            showLeaveChatConfirm(context, chatId, join, finalInformation, button, act);
+          }
         });
-      }
+      });
     } else {
+      showLeaveChatConfirm(context, chatId, join, informationStr, confirmButtonRes, act);
+    }
+  }
+
+  private void showLeaveChatConfirm (ViewController<?> context, long chatId, boolean join, @Nullable CharSequence informationStr, int confirmButtonRes, RunnableBool act) {
+    if (confirmButtonRes == 0) {
       act.runWithBool(false);
+      return;
+    }
+    int checkId = join ? R.id.btn_returnToChat : R.id.btn_removeChatFromList;
+    if (!join && ChatId.isBasicGroup(chatId)) {
+      SettingsWrapBuilder b = new SettingsWrapBuilder(R.id.btn_removeChatFromList).setSaveStr(R.string.LeaveDoneGroup).setSaveColorId(ColorId.textNegative);
+      if (informationStr != null) {
+        b.addHeaderItem(informationStr);
+      }
+      b.setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.LeaveRemoveFromList, R.id.btn_removeChatFromList, true)
+      });
+      b.setIntDelegate((id, result) -> {
+        boolean removeFromChatsList = result.get(R.id.btn_removeChatFromList) == R.id.btn_removeChatFromList;
+        act.runWithBool(removeFromChatsList);
+      });
+      context.showSettings(b);
+    } else {
+      context.showOptions(informationStr, new int[]{checkId, R.id.btn_cancel}, new String[]{Lang.getString(confirmButtonRes), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (id == checkId) {
+          act.runWithBool(false);
+        }
+        return true;
+      });
     }
   }
 
