@@ -2255,6 +2255,8 @@
   <string name="HoldToPreview">Chat Previews</string>
   <string name="BlockUser">Block user</string>
   <string name="BlockSender">Block sender</string>
+  <string name="BlockSenderFromRepliesInfo">Block this sender?</string>
+  <string name="BlockAndDeleteMessages">Block and delete messages</string>
   <string name="MessageLifetimePhoto">If you set a timer, the photo will self-destruct after it was viewed.</string>
   <string name="MessageLifetimeVideo">If you set a timer, the video will self-destruct after it is viewed.</string>
   <string name="NoMembersToShow">No members to show</string>

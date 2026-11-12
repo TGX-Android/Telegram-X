@@ -1170,6 +1170,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_delete_24);
     }
 
+    if (msg.isRepliesChat() && !msg.isOutgoing()) {
+      ids.append(R.id.btn_messageBlockSenderFromReplies);
+      strings.append(R.string.BlockUser);
+      icons.append(R.drawable.baseline_block_24);
+    }
+
     // Admin tools inside "More"
     final TdApi.ChatMemberStatus myStatus = m.tdlib().chatStatus(msg.getChatId());
     if (myStatus != null && TD.isAdmin(myStatus) && Td.getSenderId(msg.getMessage().senderId) != msg.getChatId()) {

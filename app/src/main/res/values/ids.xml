@@ -1227,6 +1227,10 @@
   <item type="id" name="btn_messageEdit" />
   <item type="id" name="btn_messageCall" />
   <item type="id" name="btn_messageShareCallLogs" />
+  <item type="id" name="btn_messageBlockSenderFromReplies" />
+  <item type="id" name="btn_blockSenderFromReplies" />
+  <item type="id" name="btn_blockSenderFromRepliesDelete" />
+  <item type="id" name="btn_blockSenderFromRepliesReport" />
   <item type="id" name="btn_messageRetractVote" />
   <item type="id" name="btn_messagePollStop" />
   <item type="id" name="btn_messagePollDeleteOption" />

@@ -2460,6 +2460,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  private void showBlockSenderFromRepliesOptions (TdApi.Message message) {
+    showOptions(Lang.getString(R.string.BlockSenderFromRepliesInfo),
+      new int[] {R.id.btn_blockSenderFromReplies, R.id.btn_blockSenderFromRepliesDelete, R.id.btn_blockSenderFromRepliesReport, R.id.btn_cancel},
+      new String[] {
+        Lang.getString(R.string.BlockUser),
+        Lang.getString(R.string.BlockAndDeleteMessages),
+        Lang.getString(R.string.ReportSpam),
+        Lang.getString(R.string.Cancel)
+      },
+      null,
+      new int[] {R.drawable.baseline_block_24, R.drawable.baseline_delete_24, R.drawable.baseline_report_24, R.drawable.baseline_cancel_24},
+      (itemView, id) -> {
+        boolean delete = id == R.id.btn_blockSenderFromRepliesDelete;
+        boolean report = id == R.id.btn_blockSenderFromRepliesReport;
+        if (delete || report || id == R.id.btn_blockSenderFromReplies) {
+          tdlib.send(new TdApi.BlockMessageSenderFromReplies(message.id, delete, delete, report), (ok, error) -> runOnUiThreadOptional(() -> {
+            if (error != null) {
+              UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+            }
+          }));
+        }
+        return true;
+      });
+  }
+
   private void reportChat (@Nullable MessageWithProperties[] messages, final @Nullable Runnable after) {
     TdApi.Message[] array;
     if (messages != null) {
@@ -6912,6 +6937,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else if (id == R.id.btn_messageDelete) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         tdlib.ui().showDeleteOptions(this, selectedMessage.getAllMessagesAndProperties(), null);
+        return true;
+      } else if (id == R.id.btn_messageBlockSenderFromReplies) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
+        showBlockSenderFromRepliesOptions(selectedMessage.getMessage());
         return true;
       } else if (id == R.id.btn_messageReport) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
