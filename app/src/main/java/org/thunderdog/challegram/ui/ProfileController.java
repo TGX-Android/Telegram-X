@@ -1927,6 +1927,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               view.setData(R.string.ChatHistoryHidden);
               break;
           }
+        } else if (itemId == R.id.btn_unrestrictBoostCount) {
+          int value = supergroupFull != null ? supergroupFull.unrestrictBoostCount : 0;
+          if (value == 0) {
+            view.setData(R.string.BoostUnrestrictDisabled);
+          } else {
+            view.setData(Integer.toString(value));
+          }
         } else if (itemId == R.id.btn_chatPermissions) {
           IntRange range = Td.count(chat.permissions, tdlib.isForum(chat.id));
           view.setData(Lang.plural(R.string.xPermissions, range.getStart(), range.getEndInclusive()));
@@ -3495,6 +3502,45 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
+  private void openUnrestrictBoostCountSettings () {
+    if (supergroup == null) {
+      return;
+    }
+    int currentValue = supergroupFull != null ? supergroupFull.unrestrictBoostCount : 0;
+    ListItem[] rawItems = new ListItem[9];
+    rawItems[0] = new ListItem(ListItem.TYPE_RADIO_OPTION, View.generateViewId(), 0, Lang.getString(R.string.BoostUnrestrictDisabled), R.id.btn_unrestrictBoostCount, currentValue == 0);
+    for (int i = 1; i < rawItems.length; i++) {
+      rawItems[i] = new ListItem(ListItem.TYPE_RADIO_OPTION, View.generateViewId(), 0, Integer.toString(i), R.id.btn_unrestrictBoostCount, currentValue == i);
+    }
+    showSettings(new SettingsWrapBuilder(R.id.btn_unrestrictBoostCount)
+      .setRawItems(rawItems)
+      .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.BoostUnrestrictInfo, false))
+      .setIntDelegate((id, result) -> {
+        int selectedId = result.get(R.id.btn_unrestrictBoostCount);
+        int selected = -1;
+        for (int i = 0; i < rawItems.length; i++) {
+          if (rawItems[i].getId() == selectedId) {
+            selected = i;
+            break;
+          }
+        }
+        if (selected == -1 || selected == currentValue) {
+          return;
+        }
+        final int value = selected;
+        tdlib.send(new TdApi.SetSupergroupUnrestrictBoostCount(supergroup.id, value), (ok, error) -> runOnUiThreadOptional(() -> {
+          if (error != null) {
+            UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+          } else {
+            if (supergroupFull != null) {
+              supergroupFull.unrestrictBoostCount = value;
+            }
+            updateValuedItem(R.id.btn_unrestrictBoostCount);
+          }
+        }));
+      }));
+  }
+
   private void togglePrehistoryMode () {
     boolean currentValue;
     if (supergroupFull != null)
@@ -4267,6 +4313,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (supergroup != null && tdlib.canChangeInfo(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_copyBoostLink, 0, R.string.CopyBoostLink));
+      added = true;
+    }
+
+    if (supergroup != null && tdlib.canRestrictMembers(chat.id)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_unrestrictBoostCount, 0, R.string.BoostUnrestrictTitle));
       added = true;
     }
 
@@ -5138,6 +5190,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       // EDIT stuff
     } else if (viewId == R.id.btn_prehistoryMode) {
       togglePrehistoryMode();
+    } else if (viewId == R.id.btn_unrestrictBoostCount) {
+      openUnrestrictBoostCountSettings();
     } else if (viewId == R.id.btn_chatPermissions) {
       openChatPermissions();
     } else if (viewId == R.id.btn_recentActions) {

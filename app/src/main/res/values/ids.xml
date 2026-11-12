@@ -1235,6 +1235,7 @@
   <item type="id" name="btn_messageDeleteAllSenderReactions" />
   <item type="id" name="btn_messageReportSenderReactions" />
   <item type="id" name="btn_copyBoostLink" />
+  <item type="id" name="btn_unrestrictBoostCount" />
   <item type="id" name="btn_messageApplyLocalization" />
   <item type="id" name="btn_messageInstallTheme" />
   <item type="id" name="btn_messageShowSource" />
