@@ -550,7 +550,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     this.stickerSets.put(set.id, new TGStickerSetInfo(tdlib, info));
     updateButton(false);
     stickersController.setStickerSetInfo(info);
-    stickersController.setStickers(set.stickers, info.stickerType, set.emojis);
+    stickersController.setStickers(set);
     addViews();
   }
 

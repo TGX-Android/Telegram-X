@@ -287,10 +287,11 @@ public class StickersListController extends ViewController<StickersListControlle
     this.stickerSetIdsToLoad = stickerSetIds;
   }
 
-  public void setStickers (TdApi.Sticker[] stickers, TdApi.StickerType stickerType, TdApi.Emojis[] emojis) {
+  public void setStickers (TdApi.StickerSet stickerSet) {
     boolean canViewPack = getArguments() == null || getArguments().canViewPack();
+    this.loadedStickerSet = stickerSet;
     this.stickerSections.clear();
-    this.stickerSections.add(new StickerSection(tdlib, stickers, stickerType, emojis, canViewPack));
+    this.stickerSections.add(new StickerSection(tdlib, stickerSet.stickers, stickerSet.stickerType, stickerSet.emojis, canViewPack, stickerSet.isOwned));
   }
 
   private RecyclerView recyclerView;
@@ -510,7 +511,7 @@ public class StickersListController extends ViewController<StickersListControlle
     switch (object.getConstructor()) {
       case TdApi.StickerSet.CONSTRUCTOR: {
         TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
-        setStickers(stickerSet.stickers, stickerSet.stickerType, stickerSet.emojis);
+        setStickers(stickerSet);
 
         tdlib.ui().post(() -> {
           if (!isDestroyed()) {
@@ -625,6 +626,7 @@ public class StickersListController extends ViewController<StickersListControlle
 
   private @Nullable TdApi.StickerSetInfo stickerSetInfoToLoad;
   private @Nullable long[] stickerSetIdsToLoad;
+  private @Nullable TdApi.StickerSet loadedStickerSet;
 
   private RunnableData<ArrayList<TdApi.StickerSet>> loadStickerSetsListener;
 
@@ -795,9 +797,11 @@ public class StickersListController extends ViewController<StickersListControlle
   private static class StickerSection {
     public @Nullable TGStickerSetInfo info;
     public ArrayList<TGStickerObj> stickers;
+    public final boolean isOwned;
 
     public StickerSection (Tdlib tdlib, TdApi.StickerSet stickerSet, int trimToSize) {
       this.info = new TGStickerSetInfo(tdlib, Td.toStickerSetInfo(stickerSet), trimToSize);
+      this.isOwned = stickerSet.isOwned;
       this.stickers = new ArrayList<>(stickerSet.stickers.length);
 
       for (TdApi.Sticker sticker : stickerSet.stickers) {
@@ -805,7 +809,8 @@ public class StickersListController extends ViewController<StickersListControlle
       }
     }
 
-    public StickerSection (Tdlib tdlib, TdApi.Sticker[] stickers, TdApi.StickerType stickerType, TdApi.Emojis[] emojis, boolean canViewPack) {
+    public StickerSection (Tdlib tdlib, TdApi.Sticker[] stickers, TdApi.StickerType stickerType, TdApi.Emojis[] emojis, boolean canViewPack, boolean isOwned) {
+      this.isOwned = isOwned;
       this.stickers = new ArrayList<>(stickers.length);
       int i = 0;
       for (TdApi.Sticker sticker : stickers) {
@@ -863,6 +868,28 @@ public class StickersListController extends ViewController<StickersListControlle
       menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
         Lang.uppercase(Lang.getString(R.string.ViewPackPreview)), R.id.btn_view, ColorId.textNeutral));
     }
+
+    if (isOwnedSticker(sticker)) {
+      menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+        Lang.uppercase(Lang.getString(R.string.RemoveSticker)), R.id.btn_remove, ColorId.textNeutral));
+    }
+  }
+
+  private boolean isOwnedSticker (TGStickerObj sticker) {
+    for (StickerSection section : stickerSections) {
+      if (section.stickers.contains(sticker)) {
+        return section.isOwned;
+      }
+    }
+    return false;
+  }
+
+  private void reloadStickerSet () {
+    if (loadedStickerSet != null) {
+      tdlib.client().send(new TdApi.GetStickerSet(loadedStickerSet.id), this);
+    } else {
+      startLoadStickerSets();
+    }
   }
 
   @Override
@@ -881,6 +908,25 @@ public class StickersListController extends ViewController<StickersListControlle
         tdlib.ui().showStickerSet(context, sticker.getStickerSetId(), null);
         stickerSmallView.closePreviewIfNeeded();
       }
+    } else if (viewId == R.id.btn_remove) {
+      showOptions(Lang.getString(R.string.RemoveStickerConfirm),
+        new int[] {R.id.btn_done, R.id.btn_cancel},
+        new String[] {Lang.getString(R.string.Remove), Lang.getString(R.string.Cancel)},
+        new int[] {OptionColor.RED, OptionColor.NORMAL},
+        new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24},
+        (itemView, confirmId) -> {
+          if (confirmId == R.id.btn_done) {
+            stickerSmallView.closePreviewIfNeeded();
+            tdlib.send(new TdApi.RemoveStickerFromSet(new TdApi.InputFileId(sticker.getId())), (ok, error) -> runOnUiThreadOptional(() -> {
+              if (error != null) {
+                UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+              } else {
+                reloadStickerSet();
+              }
+            }));
+          }
+          return true;
+        });
     }
   }
 }

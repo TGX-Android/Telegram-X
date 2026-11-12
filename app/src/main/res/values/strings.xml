@@ -1902,6 +1902,8 @@
   <string name="RemoveStickerSet">Remove sticker set %1$s?</string>
   <string name="RemoveEmojiSet">Remove emoji pack %1$s?</string>
   <string name="RemoveStickerSetAction">Remove</string>
+  <string name="RemoveSticker">Remove sticker</string>
+  <string name="RemoveStickerConfirm">Remove this sticker from the set?</string>
   <string name="DeletePack">Delete pack</string>
   <string name="AddPack">Add pack</string>
   <string name="DeleteArchivedPack">Delete from archive</string>
