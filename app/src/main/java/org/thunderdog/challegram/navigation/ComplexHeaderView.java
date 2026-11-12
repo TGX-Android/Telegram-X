@@ -309,6 +309,19 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     if (receiver != null) {
       receiver.clear();
     }
+  // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+  }
+
+  protected void drawAvatar (Canvas c) {
+    if (receiver.needPlaceholder()) {
+      receiver.drawPlaceholderRounded(
+        c,
+        receiver.getDisplayRadius(),
+        Theme.headerPlaceholderColor()
+      );
+    }
+    receiver.draw(c);
+  // endregion
   }
 
   // Public utils
@@ -872,10 +885,9 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
       final float textScaleFactor = MathUtils.fromTo(1f + scaleFactor * .1f, avatarTextScale, avatarExpandFactor);
 
       layoutReceiver();
-      if (receiver.needPlaceholder()) {
-        receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), Theme.headerPlaceholderColor());
-      }
-      receiver.draw(c);
+      // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
+      drawAvatar(c);
+      // endregion
       if (avatarExpandFactor > 0f && receiver.getRequestedPlaceholder() == null) {
         getTopShadow().setAlpha((int) (255f * .8f * avatarExpandFactor));
         getTopShadow().draw(c);
