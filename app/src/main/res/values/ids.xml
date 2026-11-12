@@ -156,6 +156,7 @@
   <item type="id" name="controller_addPollOption"/>
   <item type="id" name="controller_userNote"/>
   <item type="id" name="controller_stickerSetTitle"/>
+  <item type="id" name="controller_stickerEmojis"/>
   <item type="id" name="controller_waitForPremium"/>
 
   <item type="id" name="controller_setEmojiStatusPager" />
@@ -563,6 +564,7 @@
   <item type="id" name="btn_remove" />
   <item type="id" name="btn_moveStickerToStart" />
   <item type="id" name="btn_moveStickerToEnd" />
+  <item type="id" name="btn_editStickerEmojis" />
   <item type="id" name="btn_username" />
   <item type="id" name="btn_prehistoryMode" />
   <item type="id" name="btn_slowMode" />

@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -837,10 +838,12 @@ public class StickersListController extends ViewController<StickersListControlle
     public @Nullable TGStickerSetInfo info;
     public ArrayList<TGStickerObj> stickers;
     public final boolean isOwned;
+    public final @Nullable TdApi.StickerType stickerType;
 
     public StickerSection (Tdlib tdlib, TdApi.StickerSet stickerSet, int trimToSize) {
       this.info = new TGStickerSetInfo(tdlib, Td.toStickerSetInfo(stickerSet), trimToSize);
       this.isOwned = stickerSet.isOwned;
+      this.stickerType = stickerSet.stickerType;
       this.stickers = new ArrayList<>(stickerSet.stickers.length);
 
       for (TdApi.Sticker sticker : stickerSet.stickers) {
@@ -850,6 +853,7 @@ public class StickersListController extends ViewController<StickersListControlle
 
     public StickerSection (Tdlib tdlib, TdApi.Sticker[] stickers, TdApi.StickerType stickerType, TdApi.Emojis[] emojis, boolean canViewPack, boolean isOwned) {
       this.isOwned = isOwned;
+      this.stickerType = stickerType;
       this.stickers = new ArrayList<>(stickers.length);
       int i = 0;
       for (TdApi.Sticker sticker : stickers) {
@@ -919,9 +923,22 @@ public class StickersListController extends ViewController<StickersListControlle
         menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
           Lang.uppercase(Lang.getString(R.string.MoveStickerToEnd)), R.id.btn_moveStickerToEnd, ColorId.textNeutral));
       }
+      if (canEditStickerEmojis(sticker)) {
+        menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+          Lang.uppercase(Lang.getString(R.string.StickerEmojis)), R.id.btn_editStickerEmojis, ColorId.textNeutral));
+      }
       menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
         Lang.uppercase(Lang.getString(R.string.RemoveSticker)), R.id.btn_remove, ColorId.textNeutral));
     }
+  }
+
+  private boolean canEditStickerEmojis (TGStickerObj sticker) {
+    StickerSection section = ownedSectionOf(sticker);
+    if (section == null) {
+      return false;
+    }
+    TdApi.StickerType type = section.stickerType;
+    return type != null && (type.getConstructor() == TdApi.StickerTypeRegular.CONSTRUCTOR || type.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR);
   }
 
   private @Nullable StickerSection ownedSectionOf (TGStickerObj sticker) {
@@ -970,6 +987,17 @@ public class StickersListController extends ViewController<StickersListControlle
           }
         }));
       }
+    } else if (viewId == R.id.btn_editStickerEmojis) {
+      stickerSmallView.closePreviewIfNeeded();
+      tdlib.send(new TdApi.GetStickerEmojis(new TdApi.InputFileId(sticker.getId())), (emojis, error) -> runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+        } else {
+          EditStickerEmojisController controller = new EditStickerEmojisController(context(), tdlib, sticker.getId(), this::reloadStickerSet);
+          controller.setArguments(emojis != null && emojis.emojis != null && emojis.emojis.length > 0 ? TextUtils.join(" ", emojis.emojis) : null);
+          navigateTo(controller);
+        }
+      }));
     } else if (viewId == R.id.btn_remove) {
       showOptions(Lang.getString(R.string.RemoveStickerConfirm),
         new int[] {R.id.btn_done, R.id.btn_cancel},

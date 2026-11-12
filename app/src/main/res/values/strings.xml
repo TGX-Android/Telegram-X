@@ -1909,6 +1909,9 @@
   <string name="RenamePack">Rename pack</string>
   <string name="RenamePackHint">Pack name</string>
   <string name="RenamePackDescription">The name is visible to everyone who sees these stickers.</string>
+  <string name="StickerEmojis">Emojis</string>
+  <string name="StickerEmojisHint">Emojis for this sticker</string>
+  <string name="StickerEmojisDescription">Separate the emojis with spaces. Up to 20 emojis.</string>
   <string name="DeletePackConfirm">Delete this pack? All of its stickers will be removed for everyone.</string>
   <string name="DeletePack">Delete pack</string>
   <string name="AddPack">Add pack</string>
