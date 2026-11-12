@@ -688,6 +688,9 @@
   <string name="BoostUnrestrictTitle">Boosts to ignore restrictions</string>
   <string name="BoostUnrestrictDisabled">Disabled</string>
   <string name="BoostUnrestrictInfo">Users who boosted this chat at least the selected number of times will ignore slow mode and chat permission restrictions.</string>
+  <string name="GroupStickerSet">Sticker Set</string>
+  <string name="GroupStickerSetDisabled">Not selected</string>
+  <string name="GroupStickerSetInfo">Stickers from the selected set are automatically installed for all members of this group.</string>
   <string name="CopiedLinkPrivate">Link has been copied to the clipboard. It works only for members of this chat.</string>
   <string name="CopiedText">Text has been copied to the clipboard</string>
   <string name="CopiedDisplayName">Display name has been copied to the clipboard</string>

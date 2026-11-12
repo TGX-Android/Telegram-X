@@ -285,6 +285,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   TdApi.Supergroup supergroup;
   TdApi.SupergroupFullInfo supergroupFull;
 
+  private String groupStickerSetTitle;
+  private long groupStickerTitleRequestedId;
+
   private int inviteLinksCount = -1, inviteLinksRevokedCount = -1;
 
   @Override
@@ -1927,6 +1930,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               view.setData(R.string.ChatHistoryHidden);
               break;
           }
+        } else if (itemId == R.id.btn_groupStickerSet) {
+          long setId = supergroupFull != null ? supergroupFull.stickerSetId : 0;
+          if (setId == 0) {
+            view.setData(R.string.GroupStickerSetDisabled);
+          } else if (groupStickerSetTitle != null) {
+            view.setData(groupStickerSetTitle);
+          } else {
+            loadGroupStickerTitle(setId);
+            view.setData(R.string.LoadingMessageEmojiPack);
+          }
         } else if (itemId == R.id.btn_unrestrictBoostCount) {
           int value = supergroupFull != null ? supergroupFull.unrestrictBoostCount : 0;
           if (value == 0) {
@@ -3502,6 +3515,67 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
+  private void loadGroupStickerTitle (long stickerSetId) {
+    if (groupStickerTitleRequestedId == stickerSetId) {
+      return;
+    }
+    groupStickerTitleRequestedId = stickerSetId;
+    tdlib.send(new TdApi.GetStickerSet(stickerSetId), (stickerSet, error) -> runOnUiThreadOptional(() -> {
+      if (stickerSet != null && supergroupFull != null && supergroupFull.stickerSetId == stickerSetId) {
+        groupStickerSetTitle = stickerSet.title;
+        updateValuedItem(R.id.btn_groupStickerSet);
+      }
+    }));
+  }
+
+  private void openGroupStickerSetPicker () {
+    if (supergroup == null) {
+      return;
+    }
+    final long currentSetId = supergroupFull != null ? supergroupFull.stickerSetId : 0;
+    tdlib.send(new TdApi.GetInstalledStickerSets(new TdApi.StickerTypeRegular()), (installedStickerSets, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+        return;
+      }
+      TdApi.StickerSetInfo[] sets = installedStickerSets.sets;
+      ListItem[] rawItems = new ListItem[sets.length + 1];
+      long[] setIds = new long[rawItems.length];
+      rawItems[0] = new ListItem(ListItem.TYPE_RADIO_OPTION, View.generateViewId(), 0, Lang.getString(R.string.GroupStickerSetDisabled), R.id.btn_groupStickerSet, currentSetId == 0);
+      for (int i = 0; i < sets.length; i++) {
+        rawItems[i + 1] = new ListItem(ListItem.TYPE_RADIO_OPTION, View.generateViewId(), 0, sets[i].title, R.id.btn_groupStickerSet, sets[i].id == currentSetId);
+        setIds[i + 1] = sets[i].id;
+      }
+      showSettings(new SettingsWrapBuilder(R.id.btn_groupStickerSet)
+        .setRawItems(rawItems)
+        .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.GroupStickerSetInfo, false))
+        .setIntDelegate((id, result) -> {
+          int selectedId = result.get(R.id.btn_groupStickerSet);
+          long selectedSetId = -1;
+          for (int i = 0; i < rawItems.length; i++) {
+            if (rawItems[i].getId() == selectedId) {
+              selectedSetId = setIds[i];
+              break;
+            }
+          }
+          if (selectedSetId == -1 || selectedSetId == currentSetId) {
+            return;
+          }
+          final long stickerSetId = selectedSetId;
+          tdlib.send(new TdApi.SetSupergroupStickerSet(supergroup.id, stickerSetId), (ok, e) -> runOnUiThreadOptional(() -> {
+            if (e != null) {
+              UI.showToast(TD.toErrorString(e), Toast.LENGTH_SHORT);
+            } else if (supergroupFull != null) {
+              supergroupFull.stickerSetId = stickerSetId;
+              groupStickerSetTitle = null;
+              groupStickerTitleRequestedId = 0;
+              updateValuedItem(R.id.btn_groupStickerSet);
+            }
+          }));
+        }));
+    }));
+  }
+
   private void openUnrestrictBoostCountSettings () {
     if (supergroup == null) {
       return;
@@ -4319,6 +4393,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (supergroup != null && tdlib.canRestrictMembers(chat.id)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_unrestrictBoostCount, 0, R.string.BoostUnrestrictTitle));
+      added = true;
+    }
+
+    if (supergroupFull != null && supergroupFull.canSetStickerSet) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_groupStickerSet, 0, R.string.GroupStickerSet));
       added = true;
     }
 
@@ -5208,6 +5288,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           UI.copyText(boostLink.link, boostLink.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate);
         }
       }));
+    } else if (viewId == R.id.btn_groupStickerSet) {
+      openGroupStickerSetPicker();
     } else if (viewId == R.id.btn_channelType) {
       editUsername();
     } else if (viewId == R.id.btn_botDescription) {
