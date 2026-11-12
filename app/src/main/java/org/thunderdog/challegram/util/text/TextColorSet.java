@@ -75,6 +75,27 @@ public interface TextColorSet {
     return ColorId.blockQuoteLine;
   }
 
+  default int codeBlockBackgroundColorId () {
+    return ColorId.codeBlockBackground;
+  }
+
+  default int codeBlockHeaderColorId () {
+    return ColorId.codeBlockHeader;
+  }
+
+  default int codeBlockRippleColorId () {
+    return ColorId.codeBlockRipple;
+  }
+
+  @PorterDuffColorId
+  default int codeBlockLineColorId () {
+    return quoteLineColorId();
+  }
+
+  default int codeBlockBarColorId () {
+    return codeBlockLineColorId();
+  }
+
   default int overlayColorId (boolean isPressed) {
     return overlayColor(isPressed);
   }

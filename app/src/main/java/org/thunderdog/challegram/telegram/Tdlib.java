@@ -4936,6 +4936,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public TdApi.MessageContent getPendingMessageText (long chatId, long messageId) {
     synchronized (pendingMessageTexts) {
+      // Previews of chats ask for each message, so no key is made while nothing waits
+      if (pendingMessageTexts.isEmpty()) {
+        return null;
+      }
       return pendingMessageTexts.get(chatId + "_" + messageId);
     }
   }
@@ -4947,6 +4951,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
 
     synchronized (pendingMessageCaptions) {
+      if (pendingMessageCaptions.isEmpty()) {
+        return null;
+      }
       return pendingMessageCaptions.get(chatId + "_" + messageId);
     }
   }

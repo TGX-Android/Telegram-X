@@ -402,6 +402,7 @@
   <item type="id" name="btn_cameraTypeLegacy" />
   <item type="id" name="btn_cameraTypeSystem" />
   <item type="id" name="btn_markdown" />
+  <item type="id" name="btn_wrapCodeBlocks" />
   <item type="id" name="btn_sizeUnit" />
   <item type="id" name="btn_forceExoPlayerExtensions" />
   <item type="id" name="btn_audioCompression" />

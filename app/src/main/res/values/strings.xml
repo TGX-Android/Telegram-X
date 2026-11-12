@@ -498,6 +498,7 @@
   <string name="CopiedLink">Link has been copied to the clipboard</string>
   <string name="CopiedLinkPrivate">Link has been copied to the clipboard. It works only for members of this chat.</string>
   <string name="CopiedText">Text has been copied to the clipboard</string>
+  <string name="CopiedCode">Code copied</string>
   <string name="CopiedDisplayName">Display name has been copied to the clipboard</string>
   <string name="CopiedColor">Color and its name have been copied to the clipboard</string>
   <string name="passcode_pattern_tooshort">Pattern should be at least 4 dots long</string>
@@ -607,6 +608,7 @@
   <string name="Link">Link</string>
   <string name="Copy">Copy</string>
   <string name="CopyText">Copy text</string>
+  <string name="CodeBlockTitle">Code</string>
   <string name="CopyCoordinates">Copy coordinates</string>
   <string name="CopiedCoordinates">Coordinates have been copied to the clipboard</string>
   <string name="CopyLink">Copy link</string>
@@ -2616,6 +2618,7 @@
   <string name="NewPinnedMessage">Pinned message: %1$s</string>
   <string name="PinnedMessageChanged">Pinned message changed</string>
   <string name="EditMarkdown">Edit Markdown</string>
+  <string name="WrapCodeBlocks">Wrap lines in code blocks</string>
   <string name="ForceBuiltinDecoding">Force built-in media decoding</string>
   <string name="DisableHlsVideo">Disable HLS video playback</string>
   <string name="CompressAudio">Compress audio in videos</string>

@@ -241,6 +241,10 @@ public class TextPart {
     return media != null;
   }
 
+  boolean canDrawRange () {
+    return media == null && emojiInfo == null && !BiDiUtils.isRtl(bidiEntity);
+  }
+
   public int makeX (int startX, int endX, int endXBottomPadding) {
     int x;
     int startXPadding, endXPadding;
@@ -277,7 +281,7 @@ public class TextPart {
     return source;
   }
 
-  private TextPaint getPaint (int partIndex, float alpha, @Nullable TextColorSet defaultTheme) {
+  TextPaint getPaint (int partIndex, float alpha, @Nullable TextColorSet defaultTheme) {
     TextPaint textPaint = source.getTextPaint(entity);
     int textColor = source.getTextColor(defaultTheme, entity, source.isClickable(entity), source.isPressed(partIndex));
     textPaint.setColor(ColorUtils.alphaColor(alpha, textColor));
@@ -292,7 +296,16 @@ public class TextPart {
     TextPaint paint = getPaint(partIndex, alpha, colorProvider);
     final float textSize = paint.getTextSize();
     final int textY = y + source.getAscent(textSize) + paint.baselineShift;
-    c.drawText(line, start, end, x, textY, paint);
+    drawText(c, end, x, textY, paint);
+  }
+
+  private void drawText (Canvas c, int end, float x, float y, TextPaint paint) {
+    final char[] chars = source.getDrawnChars(line);
+    if (chars != null) {
+      c.drawText(chars, start, end - start, x, y, paint);
+    } else {
+      c.drawText(line, start, end, x, y, paint);
+    }
   }
 
   private void drawError (Canvas c, float cx, float cy, float radius, float alpha, int color) {
@@ -407,9 +420,15 @@ public class TextPart {
       }
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && BiDiUtils.isValid(bidiEntity)) {
-        c.drawTextRun(line, start, end, 0, line.length(), x, textY, BiDiUtils.isRtl(bidiEntity), textPaint);
+        final boolean isRtl = BiDiUtils.isRtl(bidiEntity);
+        final char[] chars = source.getDrawnChars(line);
+        if (chars != null) {
+          c.drawTextRun(chars, start, end - start, 0, chars.length, x, textY, isRtl, textPaint);
+        } else {
+          c.drawTextRun(line, start, end, 0, line.length(), x, textY, isRtl, textPaint);
+        }
       } else {
-        c.drawText(line, start, end, x, textY, textPaint);
+        drawText(c, end, x, textY, textPaint);
       }
     }
   }

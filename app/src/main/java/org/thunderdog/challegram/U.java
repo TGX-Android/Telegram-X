@@ -2313,7 +2313,15 @@ public class U {
     return measureText(in, p);
   }
 
-  public static float measureTextRun (@Nullable CharSequence in, int start, int end, @NonNull Paint p, boolean isRtl) {
+  public static float measureTextRun (
+    @Nullable CharSequence in,
+    int start,
+    int end,
+    int contextStart,
+    int contextEnd,
+    @NonNull Paint p,
+    boolean isRtl
+  ) {
     final int count = end - start;
 
     if (StringUtils.isEmpty(in) || count <= 0) {
@@ -2321,7 +2329,7 @@ public class U {
     }
 
     if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      return p.getRunAdvance(in, start, end, 0, in.length(), isRtl, end);
+      return p.getRunAdvance(in, start, end, contextStart, contextEnd, isRtl, end);
     }
 
     return measureText(in, start, end, p);

@@ -59,6 +59,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.MessageQuickActionSwipeHelper;
+import org.thunderdog.challegram.component.chat.MessageResizeRules;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
@@ -1151,6 +1152,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private int computeBubbleHeight () {
     int height = getContentHeight();
+    if (Config.ENABLE_TEST_HOOKS) {
+      height += testExtraHeight;
+    }
     if (replyData != null && !alignReplyHorizontally()) {
       height += getBubbleReplyOffset();
     }
@@ -1355,7 +1359,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       buildBubble(false);
       int oldHeight = height;
       height = computeHeight();
-      if (oldHeight != height) {
+      if (oldHeight != height && !keepsTopOnHeightChange()) {
         manager.onMessageHeightChanged(getChatId(), getId(), oldHeight, height);
       }
       return oldHeight != height;
@@ -1423,6 +1427,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return MathUtils.fromTo(height, Screen.dp(HIDDEN_BY_MESSAGE_FILTER_HEIGHT) + extraPadding + headerPadding, isHiddenByFilter.getFloatValue());
     } else {
       int height = pContentY + getContentHeight() + getPaddingBottom() + extraPadding;
+      if (Config.ENABLE_TEST_HOOKS) {
+        height += testExtraHeight;
+      }
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
         height += inlineKeyboard.getHeight() + xPaddingBottom;
       }
@@ -1954,6 +1961,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void draw (MessageView view, Canvas c, @NonNull AvatarReceiver avatarReceiver, Receiver replyReceiver, ComplexReceiver replyTextMediaReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver) {
+    if (Config.ENABLE_TEST_HOOKS) {
+      manager.messageResize().logFrame(this);
+    }
     final int viewWidth = view.getMeasuredWidth();
     final int viewHeight = view.getMeasuredHeight();
 
@@ -3912,7 +3922,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     onBubbleHasChanged();
     if (height != oldHeight) {
       // FIXME?
-      if (hasAnyTargetToInvalidate()) {
+      if (hasAnyTargetToInvalidate() && !keepsTopOnHeightChange()) {
         manager.onMessageHeightChanged(getChatId(), getId(), oldHeight, height);
       }
       requestLayout();
@@ -4388,6 +4398,89 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public int getHeight () {
     return height;
+  }
+
+  // Builds of tests: height added below the content, changed like any animated height
+  private int testExtraHeight, testExtraHeightFrom, testExtraHeightTo;
+  private int testExtraHeightAt = Integer.MAX_VALUE;
+  private boolean isMeasuringTestHeight;
+  private FactorAnimator testHeightAnimator;
+
+  public void setTestExtraHeight (int extraHeight) {
+    if (Config.ENABLE_TEST_HOOKS) {
+      manager.messageResize().forgetChanges();
+      final int height = getHeight();
+      testExtraHeight = Math.max(0, extraHeight);
+      rebuildContentDimensions();
+      if (getHeight() != height) {
+        requestLayout();
+      }
+    }
+  }
+
+  public void animateTestExtraHeight (int extraHeight) {
+    if (!Config.ENABLE_TEST_HOOKS) {
+      return;
+    }
+    final boolean isReverse = testHeightAnimator != null && testHeightAnimator.isAnimating();
+    testExtraHeightFrom = testExtraHeight;
+    testExtraHeightTo = Math.max(0, extraHeight);
+    isMeasuringTestHeight = true;
+    testExtraHeight = testExtraHeightTo;
+    rebuildContentDimensions();
+    final int finalHeight = getHeight();
+    testExtraHeight = testExtraHeightFrom;
+    rebuildContentDimensions();
+    isMeasuringTestHeight = false;
+    manager.messageResize().start(
+      this,
+      finalHeight,
+      isReverse,
+      new int[] {0, getHeight(), 1, 1},
+      (visibleTop, visibleBottom) -> new int[] {
+        visibleTop, getTestLineAfter(visibleTop), visibleBottom, getTestLineAfter(visibleBottom)
+      }
+    );
+    if (testHeightAnimator == null) {
+      testHeightAnimator = new FactorAnimator(0, (id, factor, fraction, callee) -> {
+        testExtraHeight = MathUtils.fromTo(testExtraHeightFrom, testExtraHeightTo, factor);
+        onAnimatedHeightFrame(factor);
+      }, AnimatorUtils.DECELERATE_INTERPOLATOR, Text.CHANGE_DURATION);
+    }
+    testHeightAnimator.forceFactor(0f);
+    testHeightAnimator.animateTo(1f);
+  }
+
+  public void setTestExtraHeightAt (int at) {
+    if (Config.ENABLE_TEST_HOOKS) {
+      testExtraHeightAt = at;
+    }
+  }
+
+  protected final void onAnimatedHeightFrame (float factor) {
+    if (rebuildContentDimensions()) {
+      requestLayout();
+    } else {
+      invalidate();
+    }
+    manager.messageResize().onFrame(this, factor);
+  }
+
+  public boolean isAnimatingHeight () {
+    // By frames of onAnimatedHeightFrame, each of which requests layout
+    return Config.ENABLE_TEST_HOOKS && testHeightAnimator != null &&
+      testHeightAnimator.isAnimating();
+  }
+
+  private int getTestLineAfter (int y) {
+    // A line in a removed part goes to where that part starts
+    final int shift = testExtraHeightTo - testExtraHeightFrom;
+    return y < testExtraHeightAt ? y : Math.max(testExtraHeightAt, y + shift);
+  }
+
+  protected boolean keepsTopOnHeightChange () {
+    // MessageResize moves it in place of onMessageHeightChanged
+    return isMeasuringTestHeight || manager.messageResize().isMoving(this);
   }
 
   public int getContentX () {

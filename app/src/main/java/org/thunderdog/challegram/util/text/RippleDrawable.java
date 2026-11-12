@@ -96,11 +96,7 @@ public class RippleDrawable extends Drawable {
   public boolean onTouchEvent (View view, MotionEvent e, int x, int y) {
     switch (e.getAction()) {
       case MotionEvent.ACTION_DOWN: {
-        caughtPart = new RipplePart(this);
-        caughtPart.anchorX = x;
-        caughtPart.anchorY = y;
-        caughtPart.animateSelectionFactor(1f);
-        parts.add(caughtPart);
+        press(x, y);
         return true;
       }
       case MotionEvent.ACTION_MOVE: {
@@ -131,6 +127,14 @@ public class RippleDrawable extends Drawable {
     }
 
     return true;
+  }
+
+  public void press (int x, int y) {
+    caughtPart = new RipplePart(this);
+    caughtPart.anchorX = x;
+    caughtPart.anchorY = y;
+    caughtPart.animateSelectionFactor(1f);
+    parts.add(caughtPart);
   }
 
   public void performClick (View ignoredView) {
@@ -200,6 +204,15 @@ public class RippleDrawable extends Drawable {
     this.bounds.set(bounds);
     this.boundsF.set(bounds);
     pathInvalidated = true;
+  }
+
+  public void drawBackground (Canvas c, int color) {
+    c.drawPath(getPath(), Paints.fillingPaint(color));
+  }
+
+  public Path getPath () {
+    beforeDraw();
+    return path;
   }
 
   private void beforeDraw () {

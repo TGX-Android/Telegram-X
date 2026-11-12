@@ -309,6 +309,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   MediaViewDelegate,
   ForceTouchView.PreviewDelegate,
   Settings.VideoModePreferenceListener,
+  Settings.SettingsChangeListener,
   RecordAudioVideoController.RecordStateListeners,
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
@@ -1766,12 +1767,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void addStaticListeners () {
     Settings.instance().addVideoPreferenceChangeListener(this);
+    Settings.instance().addNewSettingsListener(this);
     context().getRecordAudioVideoController().addRecordStateListener(this);
   }
 
   public void removeStaticListeners () {
     Settings.instance().removeVideoPreferenceChangeListener(this);
+    Settings.instance().removeNewSettingsListener(this);
     context().getRecordAudioVideoController().removeRecordStateListener(this);
+  }
+
+  @Override
+  public void onSettingsChanged (long newSettings, long oldSettings) {
+    if (BitwiseUtils.hasFlag(newSettings ^ oldSettings, Settings.SETTING_FLAG_WRAP_CODE_BLOCKS)) {
+      manager.rebuildLayouts();
+    }
   }
 
   @Override

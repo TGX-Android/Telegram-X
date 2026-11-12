@@ -14,7 +14,9 @@
  */
 package org.thunderdog.challegram.component.chat;
 
+import android.content.res.Configuration;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -68,9 +70,11 @@ import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.ScrollJumpCompensator;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
+import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,6 +105,32 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessagesSearchManagerMiddleware searchMiddleware;
 
   private final MessagesLoader loader;
+  private final MessageResize messageResize = new MessageResize(new MessageResize.Messages() {
+    @Override
+    public int getMessageTop (TGMessage message) {
+      return MessagesManager.this.getMessageTop(message);
+    }
+
+    @Override
+    public boolean setMessageTop (TGMessage message, int top) {
+      return MessagesManager.this.setMessageTop(message, top);
+    }
+
+    @Override
+    public boolean measureResize (TGMessage message, int finalHeight, MessageResizeRules rules) {
+      return MessagesManager.this.measureResize(message, finalHeight, rules);
+    }
+
+    @Override
+    public boolean findVisiblePart (TGMessage message, int[] range) {
+      return MessagesManager.this.findVisiblePart(message, range);
+    }
+
+    @Override
+    public ViewTreeObserver getViewTreeObserver () {
+      return controller.getMessagesView().getViewTreeObserver();
+    }
+  });
 
   private String eventLogQuery;
   private long[] eventLogUserIds;
@@ -125,6 +155,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       @Override
       public void onScrollStateChanged (RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+          messageResize.setListDragged(true);
           controller.collapsePinnedMessagesBar(true);
           if (Settings.instance().needHideChatKeyboardOnScroll()) {
             controller.hideAllKeyboards();
@@ -140,6 +171,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           }
         }
         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+          messageResize.setListDragged(false);
           saveScrollPosition();
         }
         ((MessagesRecyclerView) recyclerView).setIsScrolling(newState != RecyclerView.SCROLL_STATE_IDLE);
@@ -148,8 +180,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       @Override
       public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
         viewMessages(true);
+        if (dy != 0) {
+          messageResize.onListScrolled(dy);
+        }
         if (dy == 0) {
-          saveScrollPosition();
+          saveScrollPositionOnLayout();
           ((MessagesRecyclerView) recyclerView).showDateForcely();
         }
         if (dy != 0 && !hasScrolled && loader.getChatId() != 0) {
@@ -314,7 +349,26 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public void onViewportMeasure () {
     viewMessages(false);
-    saveScrollPosition();
+    saveScrollPositionOnLayout();
+  }
+
+  private void saveScrollPositionOnLayout () {
+    // A message whose height animates requests layout on each of its frames, so the position is
+    // saved once, on the layout after its last frame
+    if (!hasAnimatingHeight()) {
+      saveScrollPosition();
+    }
+  }
+
+  private boolean hasAnimatingHeight () {
+    for (int i = 0; manager != null && i < manager.getChildCount(); i++) {
+      final MessageView messageView = MessagesHolder.findMessageView(manager.getChildAt(i));
+      final TGMessage message = messageView != null ? messageView.getMessage() : null;
+      if (message != null && message.isAnimatingHeight()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private long lastViewedMentionMessageId;
@@ -939,7 +993,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsoredMessage()) {
         controller.setScrollToBottomVisible(false, false, false);
         if (controller.canWriteMessages()) {
-          manager.scrollToPosition(1);
+          scrollToPositionImpl(1);
         } else {
           scrollToPositionWithOffsetImpl(1, getExtraScrollSpacing());
         }
@@ -1269,7 +1323,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         int currentOffset = view == null ? 0 : calculateOffsetInPixels(view, 0);
         insertExtraSponsoredMessages(items, false);
         adapter.addMessages(items, false);
-        scrollToPositionWithOffsetImpl(firstIndex + items.size(), currentOffset);
+        manager.scrollToPositionWithOffset(firstIndex + items.size(), currentOffset);
         break;
       }
     }
@@ -1396,14 +1450,23 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (newIndex == -1) {
         newIndex = firstIndex;
       }
-      scrollToPositionWithOffsetImpl(newIndex, currentOffset - (message != null ? message.getExtraPadding() : 0));
+      final int extraPadding = message != null ? message.getExtraPadding() : 0;
+      manager.scrollToPositionWithOffset(newIndex, currentOffset - extraPadding);
       return true;
     }
     return false;
   }
 
   private void scrollToPositionWithOffsetImpl (int position, int offset) {
+    // Moving messages go with the list; scrolls that keep what's shown in place, as switches of
+    // blocks place their messages, call the manager itself
+    messageResize.onListScrolled();
     manager.scrollToPositionWithOffset(position, offset);
+  }
+
+  private void scrollToPositionImpl (int position) {
+    messageResize.onListScrolled();
+    manager.scrollToPosition(position);
   }
 
   private CancellationSignal sponsoredContext;
@@ -1884,7 +1947,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void onMessageHeightChanged (final long chatId, final long messageId, final int oldHeight, final int newHeight) {
     final long playingRoundVideoId = TdlibManager.instance().player().getMessageId();
     final boolean isPlayingRoundVideo = playingRoundVideoId == messageId;
-    if (isPlayingRoundVideo) {
+    if (isPlayingRoundVideo || messageResize.isPlacing()) {
       return;
     }
 
@@ -1938,6 +2001,113 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public MessageResize messageResize () {
+    return messageResize;
+  }
+
+  int getMessageTop (TGMessage message) {
+    final View view = findMessageChild(message);
+    return view != null ? view.getTop() : Integer.MIN_VALUE;
+  }
+
+  boolean measureResize (TGMessage message, int finalHeight, MessageResizeRules rules) {
+    final View view = findMessageChild(message);
+    if (view == null) {
+      return false;
+    }
+    final ViewGroup parent = (ViewGroup) view.getParent();
+    final View lastView = findBottomView();
+    // The list moves up above bars of a reply and of files and with the keyboard
+    rules.listTop = controller.getTopOffset() - Math.round(parent.getTranslationY());
+    rules.endBottom = parent.getMeasuredHeight() - parent.getPaddingBottom();
+    rules.visibleBottom = rules.endBottom - getExtraScrollSpacing();
+    rules.top = view.getTop();
+    rules.height = MessagesHolder.findMessageView(view).getHeight();
+    rules.finalHeight = finalHeight;
+    rules.belowHeight = lastView != null ? lastView.getBottom() - view.getBottom() :
+      measureBelowHeight(manager.getPosition(view));
+    final boolean useBubbles = message.useBubbles();
+    rules.spaceAbove = useBubbles ? message.getTopContentEdge() : 0;
+    rules.spaceBelow = useBubbles ? rules.height - message.getBottomContentEdge() : 0;
+    return true;
+  }
+
+  public int getCodeBlockListHeight () {
+    // By the configuration alone, so that a block gets the same default at every layout and in
+    // every chat of the same size, whatever the keyboard and bars of the chat
+    final Configuration configuration = controller.context().getResources().getConfiguration();
+    int height = Screen.dp(configuration.screenHeightDp);
+    if (controller.isInForceTouchMode()) {
+      height -= ForceTouchView.getMatchParentTopMargin() +
+        ForceTouchView.getMatchParentBottomMargin() + Screen.dp(ForceTouchView.HEADER_HEIGHT);
+    } else {
+      height -= Size.getHeaderPortraitSize() + Screen.dp(49f);
+    }
+    return Math.max(0, height);
+  }
+
+  boolean findVisiblePart (TGMessage message, int[] range) {
+    final View view = findMessageChild(message);
+    if (view == null) {
+      return false;
+    }
+    final ViewGroup parent = (ViewGroup) view.getParent();
+    final int listTop = controller.getTopOffset() - Math.round(parent.getTranslationY());
+    final int visibleBottom =
+      parent.getMeasuredHeight() - parent.getPaddingBottom() - getExtraScrollSpacing();
+    range[0] = listTop - view.getTop();
+    range[1] = visibleBottom - view.getTop();
+    return true;
+  }
+
+  private int measureBelowHeight (int position) {
+    // So that a message that shrinks above them knows where the end of the list stops it
+    if (loader.canLoadBottom()) {
+      return -1;
+    }
+    final int width = getRecyclerWidth();
+    int height = 0;
+    for (int i = 0; i < position; i++) {
+      final TGMessage message = adapter.getMessage(i);
+      if (message == null || message.getWidth() != width) {
+        return -1;
+      }
+      height += message.getHeight();
+    }
+    return height;
+  }
+
+  boolean setMessageTop (TGMessage message, int top) {
+    // Offset in the reversed list is of the bottom of the message, at its height on this frame,
+    // and its position is in the adapter, which a message added since the last layout has moved
+    final View view = findMessageChild(message);
+    if (view != null) {
+      final RecyclerView parent = (RecyclerView) view.getParent();
+      final int position = parent.getChildAdapterPosition(view);
+      if (position != RecyclerView.NO_POSITION) {
+        final int listBottom = parent.getMeasuredHeight() - parent.getPaddingBottom();
+        final int offset = listBottom - top - message.getHeight();
+        manager.scrollToPositionWithOffset(position, offset);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private @Nullable View findMessageChild (TGMessage message) {
+    if (manager == null) {
+      return null;
+    }
+    for (int i = 0; i < manager.getChildCount(); i++) {
+      final View view = manager.getChildAt(i);
+      final MessageView messageView = MessagesHolder.findMessageView(view);
+      if (messageView != null && messageView.getMessage() == message) {
+        return view;
+      }
+    }
+    return null;
+  }
+
   private void scrollCompensation (View view, int offset) {
     ScrollJumpCompensator listener = new ScrollJumpCompensator(controller.getMessagesView(), view, offset);
     listener.add();
@@ -1950,6 +2120,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     recyclerView.removeOnScrollListener(listener);
     recyclerView.addOnScrollListener(listener);
     recyclerView.setAdapter(adapter);
+    messageResize.setList(recyclerView);
   }
 
   public boolean isSecretChat () {
@@ -2010,7 +2181,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (!adapter.addMessage(message, false, scrollToBottom)) {
           if (message.isSponsoredMessage() && bottomFullyVisible) {
             if (controller.canWriteMessages()) {
-              manager.scrollToPosition(1);
+              scrollToPositionImpl(1);
             } else {
               scrollToPositionWithOffsetImpl(1, getExtraScrollSpacing());
             }
@@ -2722,6 +2893,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         chatId, topicId,
         savedMessageId
       );
+      if (Config.ENABLE_TEST_HOOKS) {
+        // Builds of tests: checks count the saves while a message changes its height
+        android.util.Log.i("ScrollPosition", "saved " + chatId);
+      }
 
       if (pinnedMessages != null && chatId == scrollMessageChatId) {
         pinnedMessages.ensureMessageAvailability(scrollMessageId);
