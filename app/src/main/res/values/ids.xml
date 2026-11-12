@@ -428,6 +428,7 @@
   <item type="id" name="btn_toggleShowAuthors" />
   <item type="id" name="btn_toggleJoinByRequest" />
   <item type="id" name="btn_toggleProtection" />
+  <item type="id" name="btn_toggleAutomaticTranslation" />
   <item type="id" name="btn_togglePermission" />
   <item type="id" name="btn_togglePermissionGroup" />
   <item type="id" name="btn_allMembers" />

@@ -1944,6 +1944,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           itemId == R.id.btn_toggleJoinByRequest ||
           itemId == R.id.btn_toggleAggressiveAntiSpam ||
           itemId == R.id.btn_chatTtlDefault ||
+          itemId == R.id.btn_toggleAutomaticTranslation ||
           itemId == R.id.btn_toggleHideMembers) {
           view.getToggler().setRadioEnabled(item.isSelected(), isUpdate);
         }
@@ -3308,6 +3309,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
+  private void toggleAutomaticTranslation (View v) {
+    if (toggleAutomaticTranslationItem != null) {
+      toggleAutomaticTranslationItem.setSelected(baseAdapter.toggleView(v));
+      checkDoneButton();
+    }
+  }
+
   private void toggleTtlDefault (View v) {
     if (ttlDefaultItem != null) {
       ttlDefaultItem.setSelected(baseAdapter.toggleView(v));
@@ -3650,7 +3658,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       hasContentProtectionChanges() ||
       hasJoinByRequestChanges() ||
       hasSignMessagesChanges() ||
-      hasShowAuthorsChanges();
+      hasShowAuthorsChanges() ||
+      hasAutomaticTranslationChanges();
   }
 
   private boolean hasSlowModeChanges () {
@@ -3686,6 +3695,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private boolean hasShowAuthorsChanges () {
     boolean originalValue = supergroup != null && supergroup.showMessageSender;
     return toggleShowAuthorsItem != null && originalValue != toggleShowAuthorsItem.isSelected();
+  }
+
+  private boolean hasAutomaticTranslationChanges () {
+    boolean originalValue = supergroup != null && supergroup.hasAutomaticTranslation;
+    return toggleAutomaticTranslationItem != null && originalValue != toggleAutomaticTranslationItem.isSelected();
   }
 
   private boolean hasTtlChanges () {
@@ -3741,6 +3755,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     boolean hasJoinByRequestChanges = hasJoinByRequestChanges();
     boolean hasSignMessagesChanges = hasSignMessagesChanges();
     boolean hasShowAuthorsChanges = hasShowAuthorsChanges();
+    boolean hasAutomaticTranslationChanges = hasAutomaticTranslationChanges();
 
     if (!force && (hasSlowModeChanges || hasAggressiveAntiSpamChanges || hasHideMembersChanges || hasJoinByRequestChanges || hasSignMessagesChanges || hasShowAuthorsChanges) && ChatId.isBasicGroup(chat.id)) {
       showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () -> applyChatChanges(true));
@@ -3809,6 +3824,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       boolean signMessages = toggleSignMessagesItem.isSelected();
       boolean showAuthors = signMessages && toggleShowAuthorsItem.isSelected();
       changes.add(new TdApi.ToggleSupergroupSignMessages(ChatId.toSupergroupId(chat.id), signMessages, showAuthors));
+    }
+
+    if (hasAutomaticTranslationChanges) {
+      changes.add(new TdApi.ToggleSupergroupHasAutomaticTranslation(ChatId.toSupergroupId(chat.id), toggleAutomaticTranslationItem.isSelected()));
     }
 
     if (changes.isEmpty()) {
@@ -3914,7 +3933,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private ListItem slowModeItem, slowModeDescItem;
   private ListItem aggressiveAntiSpamItem, hideMembersItem,
-    toggleJoinByRequestItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem;
+    toggleJoinByRequestItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem,
+    toggleAutomaticTranslationItem;
   private ListItem ttlItem, ttlDescItem, ttlDefaultItem;
   private boolean ttlDefaultOriginal;
 
@@ -4031,6 +4051,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(toggleHasProtectionItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleProtection, 0, R.string.RestrictSaving, chat.hasProtectedContent));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == Mode.EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
+      added = false;
+    }
+    if (mode == Mode.EDIT_CHANNEL && supergroup != null && tdlib.canChangeInfo(chat)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(toggleAutomaticTranslationItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleAutomaticTranslation, 0, R.string.ChannelAutoTranslation, supergroup.hasAutomaticTranslation));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ChannelAutoTranslationHint));
       added = false;
     }
     if (tdlib.canToggleAllHistory(chat)) {
@@ -4295,6 +4322,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       case Mode.EDIT_CHANNEL: {
         baseAdapter.updateValuedSettingById(R.id.btn_toggleSignatures);
+        baseAdapter.updateValuedSettingById(R.id.btn_toggleAutomaticTranslation);
         baseAdapter.updateValuedSettingById(R.id.btn_linkedChat);
         baseAdapter.updateValuedSettingById(R.id.btn_channelType);
         break;
@@ -4954,6 +4982,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       toggleHideMembers(v);
     } else if (viewId == R.id.btn_chatTtlDefault) {
       toggleTtlDefault(v);
+    } else if (viewId == R.id.btn_toggleAutomaticTranslation) {
+      toggleAutomaticTranslation(v);
     } else if (viewId == R.id.btn_toggleProtection) {
       toggleContentProtection(v);
     } else if (viewId == R.id.btn_toggleJoinByRequest) {
