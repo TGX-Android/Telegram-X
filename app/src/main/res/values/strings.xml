@@ -978,6 +978,8 @@
   <string name="InGroups">In Groups</string>
   <string name="InChannels">In Channels</string>
   <string name="AutomaticMediaDownload">Automatic media download</string>
+  <string name="AutosaveMedia">Automatically save media</string>
+  <string name="AutosaveMediaInfo">Photos and videos received in these chats are also saved to your Saved Messages.</string>
   <string name="Advanced">Advanced</string>
   <string name="Never">Never</string>
   <string name="WhenUsingRoaming">When switching to roaming</string>

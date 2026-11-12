@@ -910,6 +910,9 @@
   <item type="id" name="btn_inChannelChats" />
   <item type="id" name="btn_inGroupChats" />
   <item type="id" name="btn_inPrivateChats" />
+  <item type="id" name="btn_autosavePrivateChats" />
+  <item type="id" name="btn_autosaveGroupChats" />
+  <item type="id" name="btn_autosaveChannelChats" />
   <item type="id" name="btn_1month" />
   <item type="id" name="btn_3months" />
   <item type="id" name="btn_6month" />

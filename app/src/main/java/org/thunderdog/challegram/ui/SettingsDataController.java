@@ -177,6 +177,8 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
           view.setData(tdlib.files().getDownloadInGroupChatsList());
         } else if (itemId == R.id.btn_inChannelChats) {
           view.setData(tdlib.files().getDownloadInChannelChatsList());
+        } else if (itemId == R.id.btn_autosavePrivateChats || itemId == R.id.btn_autosaveGroupChats || itemId == R.id.btn_autosaveChannelChats) {
+          view.setData(getAutosaveValue(getAutosaveScopeSettings(itemId)));
         } else if (itemId == R.id.btn_mediaWiFiLimits) {
           view.setData(tdlib.files().getDownloadLimitOverWiFiString());
         } else if (itemId == R.id.btn_mediaMobileLimits) {
@@ -271,6 +273,16 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
         new ListItem(ListItem.TYPE_SEPARATOR_FULL),
         new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, 0, R.string.Advanced),
         new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+
+        new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AutosaveMedia),
+        new ListItem(ListItem.TYPE_SHADOW_TOP),
+        new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_autosavePrivateChats, 0, R.string.InPrivateChats),
+        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+        new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_autosaveGroupChats, 0, R.string.InGroups),
+        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+        new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_autosaveChannelChats, 0, R.string.InChannels),
+        new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+        new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveMediaInfo),
       };
     }
     this.adapter.setItems(rawItems, false);
@@ -299,6 +311,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
 
         TdlibManager.instance().global().addConnectionListener(this);
         Settings.instance().addProxyListener(this);
+        loadAutosaveSettings();
         break;
       }
       case MODE_STATISTICS: {
@@ -517,6 +530,16 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forceMobile, 0, R.string.WhenUsingMobileData, tdlib.files().isDataSaverEnabledOverMobile()),
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forceRoaming, 0, R.string.WhenUsingRoaming, tdlib.files().isDataSaverEnabledOverRoaming())
       }, this);
+    } else if (id == R.id.btn_autosavePrivateChats || id == R.id.btn_autosaveGroupChats || id == R.id.btn_autosaveChannelChats) {
+      TdApi.ScopeAutosaveSettings settings = getAutosaveScopeSettings(id);
+      if (settings == null) {
+        loadAutosaveSettings();
+        return;
+      }
+      showSettings(new SettingsWrapBuilder(id).setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, R.string.Photos, settings.autosavePhotos),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, R.string.Videos, settings.autosaveVideos)
+      }).setIntDelegate(this).setAllowResize(false));
     } else if (id == R.id.btn_inPrivateChats || id == R.id.btn_inGroupChats || id == R.id.btn_inChannelChats || id == R.id.btn_mediaMobileLimits || id == R.id.btn_mediaWiFiLimits || id == R.id.btn_mediaRoamingLimits) {
       int flags;
       int sizeOption = 0;
@@ -603,6 +626,90 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
     };
   }
 
+  private @Nullable TdApi.AutosaveSettings autosaveSettings;
+
+  private void loadAutosaveSettings () {
+    tdlib.send(new TdApi.GetAutosaveSettings(), (settings, error) -> runOnUiThreadOptional(() -> {
+      if (settings == null || isDestroyed()) {
+        return;
+      }
+      this.autosaveSettings = settings;
+      adapter.updateValuedSettingById(R.id.btn_autosavePrivateChats);
+      adapter.updateValuedSettingById(R.id.btn_autosaveGroupChats);
+      adapter.updateValuedSettingById(R.id.btn_autosaveChannelChats);
+    }));
+  }
+
+  private static TdApi.AutosaveSettingsScope getAutosaveScope (@IdRes int id) {
+    if (id == R.id.btn_autosaveGroupChats) {
+      return new TdApi.AutosaveSettingsScopeGroupChats();
+    } else if (id == R.id.btn_autosaveChannelChats) {
+      return new TdApi.AutosaveSettingsScopeChannelChats();
+    }
+    return new TdApi.AutosaveSettingsScopePrivateChats();
+  }
+
+  private @Nullable TdApi.ScopeAutosaveSettings getAutosaveScopeSettings (@IdRes int id) {
+    TdApi.AutosaveSettings settings = this.autosaveSettings;
+    if (settings == null) {
+      return null;
+    }
+    if (id == R.id.btn_autosaveGroupChats) {
+      return settings.groupSettings;
+    } else if (id == R.id.btn_autosaveChannelChats) {
+      return settings.channelSettings;
+    }
+    return settings.privateChatSettings;
+  }
+
+  private void setAutosaveSettings (@IdRes int id, boolean photos, boolean videos) {
+    TdApi.ScopeAutosaveSettings current = getAutosaveScopeSettings(id);
+    if (current == null) {
+      return;
+    }
+    TdApi.ScopeAutosaveSettings settings = new TdApi.ScopeAutosaveSettings(photos, videos, current.maxVideoFileSize);
+    applyAutosaveSettings(id, settings);
+    tdlib.send(new TdApi.SetAutosaveSettings(getAutosaveScope(id), settings), (ok, error) -> {
+      if (error != null) {
+        runOnUiThreadOptional(() -> {
+          UI.showError(error);
+          loadAutosaveSettings();
+        });
+      }
+    });
+  }
+
+  private void applyAutosaveSettings (@IdRes int id, TdApi.ScopeAutosaveSettings settings) {
+    TdApi.AutosaveSettings current = this.autosaveSettings;
+    if (current == null) {
+      return;
+    }
+    if (id == R.id.btn_autosaveGroupChats) {
+      current.groupSettings = settings;
+    } else if (id == R.id.btn_autosaveChannelChats) {
+      current.channelSettings = settings;
+    } else {
+      current.privateChatSettings = settings;
+    }
+    if (!isDestroyed()) {
+      adapter.updateValuedSettingById(id);
+    }
+  }
+
+  private static CharSequence getAutosaveValue (@Nullable TdApi.ScopeAutosaveSettings settings) {
+    if (settings == null) {
+      return Lang.getString(R.string.LoadingInformation);
+    }
+    if (settings.autosavePhotos && settings.autosaveVideos) {
+      return Lang.getString(R.string.Photos) + ", " + Lang.getString(R.string.Videos);
+    } else if (settings.autosavePhotos) {
+      return Lang.getString(R.string.Photos);
+    } else if (settings.autosaveVideos) {
+      return Lang.getString(R.string.Videos);
+    }
+    return Lang.getString(R.string.Off);
+  }
+
   @Override
   public void onApplySettings (@IdRes int id, SparseIntArray result) {
     if (id == R.id.btn_dataSaverForce) {
@@ -624,6 +731,8 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
       if (tdlib.files().setVoipDataSavingOption(option)) {
         adapter.updateValuedSettingById(R.id.btn_lessDataForCalls);
       }
+    } else if (id == R.id.btn_autosavePrivateChats || id == R.id.btn_autosaveGroupChats || id == R.id.btn_autosaveChannelChats) {
+      setAutosaveSettings(id, result.get(R.id.btn_photos) != 0, result.get(R.id.btn_video) != 0);
     } else if (id == R.id.btn_inPrivateChats || id == R.id.btn_inGroupChats || id == R.id.btn_inChannelChats || id == R.id.btn_mediaMobileLimits || id == R.id.btn_mediaWiFiLimits || id == R.id.btn_mediaRoamingLimits) {
       int size = 0;
       int flags = 0;
