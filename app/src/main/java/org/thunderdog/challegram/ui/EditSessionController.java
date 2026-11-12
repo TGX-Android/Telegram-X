@@ -15,6 +15,7 @@ package org.thunderdog.challegram.ui;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -106,6 +107,21 @@ public class EditSessionController extends EditBaseController<EditSessionControl
       this.allowCalls = adapter.toggleView(v);
       adapter.updateValuedSettingById(R.id.btn_sessionAcceptCalls);
       checkDoneButton();
+    } else if (viewId == R.id.btn_sessionConfirm) {
+      showOptions(Lang.getString(R.string.SessionConfirmQuestion), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Confirm), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.NORMAL, OptionColor.NORMAL}, new int[] {R.drawable.baseline_check_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (id == R.id.btn_done) {
+          tdlib.send(new TdApi.ConfirmSession(session.id), (ok, error) -> runOnUiThreadOptional(() -> {
+            if (error != null) {
+              UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+            } else {
+              session.isUnconfirmed = false;
+              getArgumentsStrict().sessionChangeListener.runWithData(session);
+              adapter.removeItemById(R.id.btn_sessionConfirm);
+            }
+          }));
+        }
+        return true;
+      });
     } else if (viewId == R.id.btn_sessionLogout) {
       if (session.isCurrent) {
         navigateTo(new SettingsLogOutController(context, tdlib));
@@ -263,6 +279,10 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    if (session.isUnconfirmed && !session.isCurrent) {
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_sessionConfirm, R.drawable.baseline_check_circle_24, R.string.SessionConfirm));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    }
     items.add(new ListItem((session.isPasswordPending || session.isCurrent) ? ListItem.TYPE_SETTING : ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLogout, R.drawable.baseline_dangerous_24, session.isCurrent ? R.string.LogOut : (session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession)).setTextColorId(ColorId.textNegative));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 

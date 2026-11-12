@@ -1026,6 +1026,7 @@
   <item type="id" name="btn_sessionFirstLogin" />
   <item type="id" name="btn_sessionLastLogin" />
   <item type="id" name="btn_sessionLogout" />
+  <item type="id" name="btn_sessionConfirm" />
 
   <item type="id" name="btn_secret_dontReadMessages" />
   <item type="id" name="btn_secret_dropSavedScrollPositions" />
