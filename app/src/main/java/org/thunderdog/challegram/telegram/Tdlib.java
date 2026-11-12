@@ -2264,7 +2264,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           newestMessage.topicId,
           newestMessage.id,
           -count,
-          count + 1,
+          ForumHistory.isForum(newestMessage.topicId) ? count + 1 : count,
           onlyLocal
         ),
         result -> {
