@@ -1131,6 +1131,58 @@ public class TdlibUi extends Handler {
     });
   }
 
+  public @Nullable String chatThemeName (long chatId) {
+    TdApi.Chat chat = tdlib.chat(chatId);
+    return chat != null && chat.theme instanceof TdApi.ChatThemeEmoji ? ((TdApi.ChatThemeEmoji) chat.theme).name : null;
+  }
+
+  public String chatThemeTitle (long chatId) {
+    String name = chatThemeName(chatId);
+    return name == null || name.isEmpty() ? Lang.getString(R.string.Default) : name;
+  }
+
+  public void setChatTheme (long chatId, @Nullable String themeName) {
+    TdApi.InputChatTheme theme = themeName == null || themeName.isEmpty() ? null : new TdApi.InputChatThemeEmoji(themeName);
+    tdlib.client().send(new TdApi.SetChatTheme(chatId, theme), result -> {
+      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+        UI.showError(result);
+        Log.e("setChatTheme chatId:%d theme:%s error:%s", chatId, themeName, TD.toErrorString(result));
+      }
+    });
+  }
+
+  public void showChatThemeOptions (ViewController<?> context, long chatId) {
+    TdApi.EmojiChatTheme[] themes = tdlib.chatThemesList();
+    final int capacity = themes.length + 1;
+    final String currentThemeName = chatThemeName(chatId);
+    final IntList ids = new IntList(capacity);
+    final StringList names = new StringList(capacity);
+    final IntList icons = new IntList(capacity);
+
+    ids.append(R.id.btn_chatThemeReset);
+    names.append(R.string.Default);
+    icons.append(StringUtils.isEmpty(currentThemeName) ? R.drawable.baseline_check_24 : 0);
+
+    for (int i = 0; i < themes.length; i++) {
+      // Negative ids cannot collide with real resource ids in this dedicated popup
+      ids.append(-(i + 1));
+      names.append(themes[i].name);
+      icons.append(themes[i].name.equals(currentThemeName) ? R.drawable.baseline_check_24 : 0);
+    }
+
+    context.showOptions(null, ids.get(), names.get(), null, icons.get(), (itemView, id) -> {
+      if (id == R.id.btn_chatThemeReset) {
+        setChatTheme(chatId, null);
+      } else if (id < 0) {
+        int index = -(id + 1);
+        if (index >= 0 && index < themes.length) {
+          setChatTheme(chatId, themes[index].name);
+        }
+      }
+      return true;
+    });
+  }
+
   public int getIconForSetting (@Nullable TdApi.Chat chat) {
     final int muteFor = tdlib.chatMuteFor(chat);
     return muteFor >= MUTE_MAX ? R.drawable.baseline_notifications_off_24 : muteFor > 0 ? R.drawable.baseline_notifications_paused_24 : R.drawable.baseline_notifications_24;

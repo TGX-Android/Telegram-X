@@ -546,6 +546,8 @@
   <item type="id" name="btn_night" />
   <item type="id" name="btn_bubble" />
   <item type="id" name="btn_notifications" />
+  <item type="id" name="btn_chatTheme" />
+  <item type="id" name="btn_chatThemeReset" />
   <item type="id" name="btn_birthdate" />
   <item type="id" name="btn_addBirthdate" />
   <item type="id" name="btn_groupsInCommon" />

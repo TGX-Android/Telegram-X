@@ -9511,6 +9511,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  @AnyThread
+  public TdApi.EmojiChatTheme[] chatThemesList () {
+    synchronized (dataLock) {
+      TdApi.EmojiChatTheme[] themes = emojiChatThemes.values().toArray(new TdApi.EmojiChatTheme[0]);
+      Arrays.sort(themes, (a, b) -> String.CASE_INSENSITIVE_ORDER.compare(a.name, b.name));
+      return themes;
+    }
+  }
+
   @TdlibThread
   private boolean setUnreadCounters (@NonNull TdApi.ChatList chatList, int unreadMessageCount, int unreadUnmutedCount) {
     TdlibCounter counter = getCounter(chatList);

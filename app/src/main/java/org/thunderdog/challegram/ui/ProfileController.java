@@ -1777,6 +1777,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           TdApi.Chat cachedChat = tdlib.chat(chat.id);
           view.setIcon(tdlib.ui().getIconForSetting(cachedChat));
           tdlib.ui().setValueForSetting(view, chat.id);
+        } else if (itemId == R.id.btn_chatTheme) {
+          view.setData(tdlib.ui().chatThemeTitle(chat.id));
         } else if (itemId == R.id.btn_groupsInCommon) {
           view.setData(Lang.plural(R.string.xGroups, userFull.groupInCommonCount));
         } else if (itemId == R.id.btn_encryptionKey) {
@@ -2398,6 +2400,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_notifications, R.drawable.baseline_notifications_24, R.string.Notifications);
   }
 
+  private ListItem newChatThemeItem () {
+    if (chat == null || !tdlib.isUserChat(chat) || tdlib.isBotChat(chat.id)) {
+      return null;
+    }
+    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatTheme, R.drawable.baseline_palette_24, R.string.ChatTheme);
+  }
+
   private ListItem newBirthdateItem () {
     return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_birthdate, R.drawable.baseline_cake_variant_24, R.string.Birthdate);
   }
@@ -2506,6 +2515,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (!isMe) {
       items.add(newNotificationItem());
+      ListItem chatThemeItem = newChatThemeItem();
+      if (chatThemeItem != null) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(chatThemeItem);
+      }
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
@@ -4938,6 +4952,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     } else if (viewId == R.id.btn_notifications) {
       tdlib.ui().showMuteOptions(this, chat.id, true, null);
+    } else if (viewId == R.id.btn_chatTheme) {
+      tdlib.ui().showChatThemeOptions(this, chat.id);
     } else if (viewId == R.id.btn_encryptionKey) {
       if (secretChat != null && secretChat.keyHash != null && secretChat.keyHash.length > 0) {
         EncryptionKeyController controller = new EncryptionKeyController(context, tdlib);
@@ -6480,6 +6496,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (headerView != null) {
           headerView.updateButton(getMenuId(), R.id.menu_btn_call, data -> data.setTranslationX(res ? 0f : Screen.dp(StopwatchHeaderButton.WIDTH)));
         }
+      }
+    });
+  }
+
+  @Override
+  public void onChatThemeChanged (long chatId, TdApi.ChatTheme theme) {
+    tdlib.ui().post(() -> {
+      if (chat != null && chat.id == chatId && baseAdapter != null) {
+        baseAdapter.updateValuedSettingById(R.id.btn_chatTheme);
       }
     });
   }
