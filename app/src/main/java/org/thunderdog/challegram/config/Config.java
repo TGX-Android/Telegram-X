@@ -72,7 +72,10 @@ public class Config {
   public static final boolean CODE_BLOCK_TIME_BELOW = true;
   // A switch keeps in place the line at the edge of the list when this share of it is seen,
   // otherwise the next one
-  public static final float CODE_BLOCK_ANCHOR_MIN_VISIBLE = 0.45f;
+  public static final float BLOCK_SWITCH_ANCHOR_MIN_VISIBLE = 0.45f;
+  // Lines of the layout that a collapsed expandable quote shows, the last of them under its fade; a
+  // quote of fewer than two lines more is shown whole, so that a collapse hides at least two lines
+  public static final int EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT = 4;
 
   // Allow stretch bounce in places where the glow looks ugly
   public static final boolean HAS_NICE_OVER_SCROLL_EFFECT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;

@@ -139,7 +139,7 @@ final class TextPieces {
     final Builder builder = new Builder(text);
     for (int i = 0; i < text.getPartCount(); i++) {
       final TextPart part = text.getTextPart(i);
-      final QuoteBackground block = text.findCodeBlockOfPart(i);
+      final QuoteBackground block = text.findBlockOfPart(i);
       final float x = getPartX(text, part, block, startX, endX, endXBottomPadding);
       final float y = part.getY() + text.getPartVerticalOffset(part);
       builder.still(part, i, x, y, block != null ? block.lines : null);
@@ -182,7 +182,7 @@ final class TextPieces {
     final Builder builder = new Builder(text);
     for (int index = 0; index < text.getPartCount(); index++) {
       final TextPart part = text.getTextPart(index);
-      final QuoteBackground block = text.findCodeBlockOfPart(index);
+      final QuoteBackground block = text.findBlockOfPart(index);
       final float x = getPartX(text, part, block, startX, endX, endXBottomPadding);
       final float y = part.getY() + text.getPartVerticalOffset(part);
       final boolean isSeen = visible == null || isPartSeen(
@@ -192,6 +192,7 @@ final class TextPieces {
         newText,
         part,
         y,
+        y + Builder.getChangeShift(block),
         visible,
         startFactor,
         margin
@@ -263,15 +264,23 @@ final class TextPieces {
         start = end;
       }
     }
-    // Parts of an old text with media or emoji can't be drawn after the layout and disappear
     for (int i = 0; i < from.pieces.length; i++) {
       final Piece old = from.pieces[i];
-      if (old.isWhole ||
-        (visible != null && !isSeen(visible, startFactor, old.toY, old.toY, old.toY, margin))) {
+      final QuoteBackground block = text.findBlockById(old.part.getQuoteEntityId());
+      final float toY = old.toY - Builder.getChangeShift(block);
+      if (visible != null && !isSeen(visible, startFactor, old.toY, old.toY, toY, margin)) {
         continue;
       }
-      final QuoteBackground block = text.findCodeBlockById(old.part.getQuoteEntityId());
       builder.source = i;
+      if (old.isWhole) {
+        // Parts of an old text with media or emoji can't be drawn after the layout and disappear,
+        // unless the new one has them in lines that a collapsed quote hides
+        final TextPart hiddenPart = text.findHiddenPart(old.part);
+        if (hiddenPart != null && (old.start == old.end || !isTaken[old.start])) {
+          builder.fadeOutWhole(old, hiddenPart, block);
+        }
+        continue;
+      }
       if (!old.isMatchable) {
         builder.fadeOut(old, old.start, old.end, old.toX, block);
         continue;
@@ -302,14 +311,15 @@ final class TextPieces {
     String newText,
     TextPart part,
     float y,
+    float fadeFromY,
     int[] visible,
     float startFactor,
     int margin
   ) {
-    float fromTop = y, fromBottom = y;
+    float fromTop = Math.min(y, fadeFromY), fromBottom = Math.max(y, fadeFromY);
     if (part.getLine() == newText && part.getEnd() > part.getStart()) {
-      final float first = findFromY(from, fromPieces, matching, part.getStart(), y);
-      final float last = findFromY(from, fromPieces, matching, part.getEnd() - 1, y);
+      final float first = findFromY(from, fromPieces, matching, part.getStart(), fadeFromY);
+      final float last = findFromY(from, fromPieces, matching, part.getEnd() - 1, fadeFromY);
       fromTop = Math.min(y, Math.min(first, last));
       fromBottom = Math.max(y, Math.max(first, last));
     }
@@ -393,11 +403,12 @@ final class TextPieces {
     @Nullable ComplexReceiver receiver
   ) {
     QuoteBackground clipBlock = null;
-    int saveCount = -1;
+    int saveCount = -1, fadeSaveCount = -1;
     SyntaxLines colorLines = null;
     for (Piece piece : pieces) {
       if (piece.block != clipBlock) {
         if (saveCount != -1) {
+          clipBlock.finishFade(c, fadeSaveCount);
           Views.restore(c, saveCount);
           saveCount = -1;
         }
@@ -405,6 +416,7 @@ final class TextPieces {
         if (clipBlock != null) {
           saveCount = Views.save(c);
           clipBlock.clipContent(c);
+          fadeSaveCount = clipBlock.beginFade(c);
         }
       }
       final float pieceAlpha = alpha * MathUtils.fromTo(piece.fromAlpha, piece.toAlpha, factor);
@@ -449,6 +461,7 @@ final class TextPieces {
       }
     }
     if (saveCount != -1) {
+      clipBlock.finishFade(c, fadeSaveCount);
       Views.restore(c, saveCount);
     }
   }
@@ -498,7 +511,13 @@ final class TextPieces {
       float y,
       @Nullable QuoteBackground block
     ) {
-      add(part, partIndex, start, end, isWhole, x, y, 0f, x, y, block);
+      final float fromY = y + getChangeShift(block);
+      add(part, partIndex, start, end, isWhole, x, fromY, 0f, x, y, block);
+    }
+
+    private static int getChangeShift (@Nullable QuoteBackground block) {
+      // Lines that a collapsed quote hides move with those it shows to found text
+      return block != null ? block.getChangeShift() : 0;
     }
 
     void move (
@@ -557,6 +576,7 @@ final class TextPieces {
     }
 
     void fadeOut (Piece from, int start, int end, float x, @Nullable QuoteBackground block) {
+      final float toY = from.toY - getChangeShift(block);
       for (int pieceStart = start; pieceStart < end; ) {
         final int pieceEnd = from.style == STYLE_UNCUT ?
           Math.min(end, from.lines.styleEnd(pieceStart)) : end;
@@ -573,7 +593,7 @@ final class TextPieces {
           from.toY,
           from.toAlpha,
           pieceX,
-          from.toY,
+          toY,
           0f,
           block,
           from.lines,
@@ -582,6 +602,27 @@ final class TextPieces {
         ));
         pieceStart = pieceEnd;
       }
+    }
+
+    void fadeOutWhole (Piece from, TextPart part, @Nullable QuoteBackground block) {
+      pieces.add(new Piece(
+        part,
+        -1,
+        from.start,
+        from.end,
+        true,
+        false,
+        from.toX,
+        from.toY,
+        from.toAlpha,
+        from.toX,
+        from.toY - getChangeShift(block),
+        0f,
+        block,
+        null,
+        0,
+        source
+      ));
     }
 
     private void add (

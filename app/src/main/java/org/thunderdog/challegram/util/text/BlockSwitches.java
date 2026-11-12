@@ -17,17 +17,18 @@ package org.thunderdog.challegram.util.text;
 import me.vkryl.core.collection.IntList;
 
 /**
- * Code blocks that a user switched from scrolling to wrapped lines or back
+ * Blocks that a user switched on or off: code blocks to wrapped lines or back to scrolling ones,
+ * expandable quotes to expanded or back to collapsed
  */
-public final class CodeBlockSwitches {
+public final class BlockSwitches {
   public interface Listener {
     // Before the size of the text changes; isReverse when it switches back during its animation
-    default void onCodeBlockSwitchStart (Text text, boolean isReverse) { }
+    default void onBlockSwitchStart (Text text, boolean isReverse) { }
 
     void onTextSizeChanged (Text text);
 
     // The text was destroyed during a switch, which then has no last frame
-    default void onCodeBlockSwitchStopped (Text text) { }
+    default void onBlockSwitchStopped (Text text) { }
 
     default boolean findVisiblePart (Text text, boolean atEnd, int[] range) {
       // Top and bottom of the visible part from the top of the view of the text, where a switch
@@ -44,11 +45,11 @@ public final class CodeBlockSwitches {
   private final Listener listener;
   // The state chosen, not an inversion of the default, so that a later default never turns it
   private final IntList blockIds = new IntList(0);
-  private final IntList wrappedStates = new IntList(0);
+  private final IntList onStates = new IntList(0);
   // Changes with each switch, so that texts of a layout before it get a new layout
   private int version;
 
-  public CodeBlockSwitches (Listener listener) {
+  public BlockSwitches (Listener listener) {
     this.listener = listener;
   }
 
@@ -56,18 +57,18 @@ public final class CodeBlockSwitches {
     return blockIds.contains(blockId);
   }
 
-  boolean isChosenWrapped (int blockId) {
+  boolean isChosenOn (int blockId) {
     final int index = blockIds.indexOf(blockId);
-    return index != -1 && wrappedStates.get(index) == 1;
+    return index != -1 && onStates.get(index) == 1;
   }
 
-  void choose (int blockId, boolean isWrapped) {
+  void choose (int blockId, boolean isOn) {
     final int index = blockIds.indexOf(blockId);
     if (index == -1) {
       blockIds.append(blockId);
-      wrappedStates.append(isWrapped ? 1 : 0);
+      onStates.append(isOn ? 1 : 0);
     } else {
-      wrappedStates.set(index, isWrapped ? 1 : 0);
+      onStates.set(index, isOn ? 1 : 0);
     }
     version++;
   }
@@ -76,8 +77,8 @@ public final class CodeBlockSwitches {
     return version;
   }
 
-  void notifyCodeBlockSwitchStart (Text text, boolean isReverse) {
-    listener.onCodeBlockSwitchStart(text, isReverse);
+  void notifyBlockSwitchStart (Text text, boolean isReverse) {
+    listener.onBlockSwitchStart(text, isReverse);
   }
 
   void notifyTextSizeChanged (Text text) {
@@ -85,7 +86,7 @@ public final class CodeBlockSwitches {
   }
 
   void notifySwitchStopped (Text text) {
-    listener.onCodeBlockSwitchStopped(text);
+    listener.onBlockSwitchStopped(text);
   }
 
   boolean findVisiblePart (Text text, boolean atEnd, int[] range) {

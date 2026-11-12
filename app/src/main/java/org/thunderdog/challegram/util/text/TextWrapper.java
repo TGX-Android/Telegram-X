@@ -126,10 +126,10 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
     return this;
   }
 
-  private @Nullable CodeBlockSwitches codeBlockSwitches;
+  private @Nullable BlockSwitches blockSwitches;
 
-  public TextWrapper setCodeBlockSwitches (@Nullable CodeBlockSwitches codeBlockSwitches) {
-    this.codeBlockSwitches = codeBlockSwitches;
+  public TextWrapper setBlockSwitches (@Nullable BlockSwitches blockSwitches) {
+    this.blockSwitches = blockSwitches;
     return this;
   }
 
@@ -243,7 +243,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
 
     boolean sizeChanged = textSizes[index] != textSizePx || (texts[index] != null && texts[index].getMaxLineCount() != maxLines);
     if (sizeChanged || texts[index] == null || sizes[index] != maxWidth ||
-      texts[index].needLayoutForCodeBlockSwitches()) {
+      texts[index].needLayoutForBlockSwitches()) {
       boolean needBigEmoji = BitwiseUtils.hasFlag(textFlags, Text.FLAG_BIG_EMOJI) && Settings.instance().useBigEmoji();
       final Text oldText = texts[index];
       Text text = oldText;
@@ -256,7 +256,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
           .viewProvider(viewProvider)
           .highlight(highlightText)
           .lineWidthProvider(lineWidthProvider)
-          .codeBlockSwitches(codeBlockSwitches)
+          .blockSwitches(blockSwitches)
           .textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));
         text = b.build();
         if (needBigEmoji) {
@@ -314,6 +314,11 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
   public boolean endsWithCodeBlock () {
     final Text text = getCurrent();
     return text != null && text.endsWithCodeBlock();
+  }
+
+  public boolean endsWithExpandableQuote () {
+    final Text text = getCurrent();
+    return text != null && text.endsWithExpandableQuote();
   }
 
   public boolean getLastLineIsRtl () {

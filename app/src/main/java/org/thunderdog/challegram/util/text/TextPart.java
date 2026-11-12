@@ -366,7 +366,7 @@ public class TextPart {
     if (media != null) {
       if (media.isNotFoundCustomEmoji()) {
         if (emojiInfo != null) {
-          drawEmoji(c, x, y, textPaint, alpha);
+          drawEmoji(c, x, y, textPaint, 1f);
         } else {
           drawError(c, x + height / 2f, y + height / 2f, height / 2f, alpha, 0xffff0000);
         }
@@ -410,7 +410,7 @@ public class TextPart {
         }
       }
     } else if (isRecognizedEmoji()) {
-      drawEmoji(c, x, y, textPaint, alpha);
+      drawEmoji(c, x, y, textPaint, 1f);
     } else {
       final int textY = y + source.getAscent(textSize) + textPaint.baselineShift;
       if (DEBUG && BiDiUtils.isValid(bidiEntity)) {

@@ -501,6 +501,12 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
+  public boolean isExpandableQuote () {
+    return quoteEntity != null &&
+      quoteEntity.type.getConstructor() == TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR;
+  }
+
+  @Override
   public void performClick (View view, Text text, TextPart part, @Nullable Text.ClickCallback callback, boolean isFromLongPressMenu) {
     final ViewController<?> context = findRoot(view);
     if (context == null) {

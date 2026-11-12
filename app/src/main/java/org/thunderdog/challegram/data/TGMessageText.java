@@ -38,7 +38,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.text.CodeBlockSwitches;
+import org.thunderdog.challegram.util.text.BlockSwitches;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -58,10 +58,10 @@ import tgx.td.Td;
 public class TGMessageText extends TGMessage {
   private TdApi.FormattedText text;
 
-  private final CodeBlockSwitches codeBlockSwitches =
-    new CodeBlockSwitches(new CodeBlockSwitches.Listener() {
+  private final BlockSwitches blockSwitches =
+    new BlockSwitches(new BlockSwitches.Listener() {
       @Override
-      public void onCodeBlockSwitchStart (Text text, boolean isReverse) {
+      public void onBlockSwitchStart (Text text, boolean isReverse) {
         // The height at the end is measured with the time at its final place
         final float timeExpand =
           isReverse ? switchTimeExpand.get() : getTimeExpand(calculateTextLastLineWidth());
@@ -97,7 +97,7 @@ public class TGMessageText extends TGMessage {
       }
 
       @Override
-      public void onCodeBlockSwitchStopped (Text text) {
+      public void onBlockSwitchStopped (Text text) {
         manager().messageResize().stop(TGMessageText.this);
       }
 
@@ -111,7 +111,7 @@ public class TGMessageText extends TGMessage {
         return manager().getCodeBlockListHeight();
       }
     });
-  // Time below the last line of the text, 1f, or after it, 0f, while a code block switches
+  // Time below the last line of the text, 1f, or after it, 0f, while a block switches
   private final VariableFloat switchTimeExpand = new VariableFloat(0f);
   private final VariableFloat lastLineWidth = new VariableFloat(0f);
   private final ReplaceAnimator<TextWrapper> visibleText = new ReplaceAnimator<>(new ReplaceAnimator.Callback() {
@@ -311,7 +311,7 @@ public class TGMessageText extends TGMessage {
   }
 
   private void onTextSizeChanged (Text text) {
-    if (text.isSwitchingCodeBlock()) {
+    if (text.isSwitchingBlock()) {
       switchTimeExpand.applyAnimation(text.getChangeProgress());
     }
     visibleText.measure(false);
@@ -327,12 +327,12 @@ public class TGMessageText extends TGMessage {
   @Override
   protected boolean keepsTopOnHeightChange () {
     // The height at the end of a switch is measured before MessageResize moves the message
-    return isSwitchingCodeBlock() || super.keepsTopOnHeightChange();
+    return isSwitchingBlock() || super.keepsTopOnHeightChange();
   }
 
-  private boolean isSwitchingCodeBlock () {
+  private boolean isSwitchingBlock () {
     final Text text = effectiveWrapper != null ? effectiveWrapper.getCurrent() : null;
-    return text != null && text.isSwitchingCodeBlock();
+    return text != null && text.isSwitchingBlock();
   }
 
   private boolean setText (TdApi.FormattedText text, boolean parseEntities) {
@@ -369,7 +369,7 @@ public class TGMessageText extends TGMessage {
       }
       wrapper.addTextFlags(Text.FLAG_BIG_EMOJI);
       wrapper.setTextFlagEnabled(Text.FLAG_WRAP_CODE_BLOCKS, needWrapCodeBlocks());
-      wrapper.setCodeBlockSwitches(codeBlockSwitches);
+      wrapper.setBlockSwitches(blockSwitches);
       if (useBubbles()) {
         wrapper.addTextFlags(Text.FLAG_ADJUST_TO_CURRENT_WIDTH);
       }
@@ -674,8 +674,10 @@ public class TGMessageText extends TGMessage {
   }
 
   private int calculateTextLastLineWidth (int width) {
+    // An expandable quote has the icon of its switch at the bottom right
     if (effectiveWrapper != null && Lang.rtl() == effectiveWrapper.getLastLineIsRtl() &&
-      !(Config.CODE_BLOCK_TIME_BELOW && effectiveWrapper.endsWithCodeBlock())) {
+      !(Config.CODE_BLOCK_TIME_BELOW && effectiveWrapper.endsWithCodeBlock()) &&
+      !effectiveWrapper.endsWithExpandableQuote()) {
       // TODO: support for rtl <-> non-rtl transition
       return width;
     }
@@ -689,7 +691,7 @@ public class TGMessageText extends TGMessage {
   }
 
   private boolean isTimeAfterSwitchingText () {
-    return isSwitchingCodeBlock() &&
+    return isSwitchingBlock() &&
       (linkPreview == null || linkPreviewAboveText.getFloatValue() == 1f);
   }
 

@@ -18,9 +18,15 @@ package org.thunderdog.challegram.util.text.quotes;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -35,9 +41,11 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -67,8 +75,12 @@ public class QuoteBackground {
   private static final float CODE_ICON_BUTTON_END = 20f;
   private static final float CODE_ICON_BUTTON_STEP = 32f;
   private static final float CODE_HEADER_TEXT_SIZE = 13f;
+  // A collapsed quote fades out in its last 24 dp, as in Telegram for Android
+  private static final float COLLAPSED_FADE_HEIGHT = 24f;
 
   private static Drawable quoteDrawable;
+  private static Paint fadePaint;
+  private static final Matrix fadeMatrix = new Matrix();
 
   private int topAddition;
   private int bottomAddition;
@@ -93,6 +105,14 @@ public class QuoteBackground {
   private @Nullable RippleDrawable copyRipple;
   private @Nullable RippleDrawable switchRipple;
   private boolean isWrapped;
+  private boolean canCollapse, isExpanded;
+  // The first character of lines left out below the shown ones when collapsed, and the width of
+  // the widest line left out
+  private int hiddenStart, hiddenWidth;
+  // Found text in lines that a collapse hides moves the shown lines to it: they start at the
+  // character shownStart, moved up by shiftHeight, with a fade at the top too
+  private int shownStart, shiftHeight;
+  private boolean hidesBelow;
   private @Nullable RippleDrawable pressedButton;
   // Tokens that come after the block was drawn animate its colors
   private boolean wasDrawn;
@@ -212,10 +232,128 @@ public class QuoteBackground {
 
   public void calcHeightAddition () {
     final int lineHeight = parent.getLineHeight();
-    this.topAddition = TextPart.getAdditionalLinesBefore(parent.getTextPart(partStart)) * lineHeight;
+    final int countBefore = TextPart.getAdditionalLinesBefore(parent.getTextPart(partStart));
+    this.topAddition = (isCollapsed() && shiftHeight > 0 ? 0 : countBefore) * lineHeight;
 
     final int count = TextPart.getAdditionalLinesAfter(parent.getTextPart(partEnd - 1));
-    this.bottomAddition = (count == 1 ? 0 : count) * lineHeight;
+    this.bottomAddition = (count == 1 || isCollapsed() ? 0 : count) * lineHeight;
+  }
+
+  public int findCollapsedEnd () {
+    // The first part after the lines that the collapsed quote shows, or partEnd when it's whole
+    final int shownLineCount = Config.EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT;
+    if (getLineCount() < shownLineCount + 2) {
+      return partEnd;
+    }
+    return findLinePart(shownLineCount);
+  }
+
+  public int findShownFirstLine (int foundLine) {
+    // Found text on a line that the collapsed quote hides or fades is moved to the line above its
+    // bottom fade, or to its last line
+    final int shownLineCount = Config.EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT;
+    if (foundLine < shownLineCount - 1) {
+      return 0;
+    }
+    return Math.min(foundLine - shownLineCount + 2, getLineCount() - shownLineCount);
+  }
+
+  private int getLineCount () {
+    final int firstLine = parent.getTextPart(partStart).getLineIndex();
+    return parent.getTextPart(partEnd - 1).getLineIndex() - firstLine + 1;
+  }
+
+  public int findLinePart (int line) {
+    // The first part of the line, counted from the first line of the quote, or partEnd
+    final int firstLine = parent.getTextPart(partStart).getLineIndex();
+    for (int i = partStart; i < partEnd; i++) {
+      if (parent.getTextPart(i).getLineIndex() >= firstLine + line) {
+        return i;
+      }
+    }
+    return partEnd;
+  }
+
+  public int getHiddenHeight (int shownEnd) {
+    return getTextBottom(partEnd) + bottomAddition - getTextBottom(shownEnd);
+  }
+
+  public int getHiddenAboveHeight (int shownStart) {
+    return parent.getTextPart(shownStart).getY() - parent.getTextPart(partStart).getY() +
+      topAddition;
+  }
+
+  private int getTextBottom (int end) {
+    int bottom = Integer.MIN_VALUE;
+    for (int i = partStart; i < end; i++) {
+      final TextPart part = parent.getTextPart(i);
+      bottom = Math.max(bottom, part.getY() + getPartHeight(part));
+    }
+    return bottom;
+  }
+
+  private int getPartHeight (TextPart part) {
+    final TextPaint paint = parent.getTextPaint(part.getEntity());
+    final Paint.FontMetricsInt fm = parent.getFontMetrics(paint.getTextSize());
+    return part.getHeight() == -1 ? fm.descent - fm.ascent : part.getHeight();
+  }
+
+  public void setCollapsible (
+    boolean isExpanded,
+    int shownStart,
+    int shiftHeight,
+    boolean hidesBelow,
+    int hiddenStart,
+    int hiddenWidth
+  ) {
+    this.canCollapse = true;
+    this.isExpanded = isExpanded;
+    this.shownStart = shownStart;
+    this.shiftHeight = shiftHeight;
+    this.hidesBelow = hidesBelow;
+    this.hiddenStart = hiddenStart;
+    this.hiddenWidth = hiddenWidth;
+  }
+
+  public boolean canCollapse () {
+    return canCollapse;
+  }
+
+  public boolean isCollapsed () {
+    return canCollapse && !isExpanded;
+  }
+
+  public int getHiddenStart () {
+    return hiddenStart;
+  }
+
+  public int getShownStart () {
+    return shownStart;
+  }
+
+  public boolean hasTopFade () {
+    return shiftHeight > 0;
+  }
+
+  public boolean hasBottomFade () {
+    return hidesBelow;
+  }
+
+  public int getContentShift () {
+    return isCollapsed() ? shiftHeight : 0;
+  }
+
+  public int getChangeShift () {
+    // How much more the lines are moved up than where the change starts, for those that fade
+    return changeStartContentShift == -1 ? 0 : getContentShift() - changeStartContentShift;
+  }
+
+  public boolean isSwitchedOn () {
+    return isCode ? isWrapped : isExpanded;
+  }
+
+  public boolean clipsContent () {
+    return isCode || canCollapse;
   }
 
   public void calcCodeWidth (boolean hasScrollingLines) {
@@ -321,7 +459,7 @@ public class QuoteBackground {
   }
 
   public boolean hasSwitch () {
-    return switchRipple != null;
+    return switchRipple != null || canCollapse;
   }
 
   public boolean isSwitchButtonPressed () {
@@ -338,6 +476,67 @@ public class QuoteBackground {
 
   public int getScrollX () {
     return isScrollable() ? scrollX : 0;
+  }
+
+  private float getFadeTop () {
+    return bounds.top + Screen.dp(QUOTE_VERTICAL_PADDING);
+  }
+
+  private float getFadeBottom () {
+    return bounds.bottom - Screen.dp(QUOTE_VERTICAL_PADDING);
+  }
+
+  public int beginFade (Canvas c) {
+    // Lines of a collapsed quote fade out at its bottom, and at its top when they're moved to
+    // found text, in a layer of their own, and nothing of them, e.g. a spoiler or the highlight of
+    // a press, draws beyond the fades
+    if (!canCollapse || parent.getSwitchFactor(this) == 1f) {
+      return -1;
+    }
+    final float top = hasTopFade() ? getFadeTop() : bounds.top;
+    final float bottom = hidesBelow ? getFadeBottom() : bounds.bottom;
+    final int saveCount = Views.saveLayerAlpha(
+      c,
+      bounds.left,
+      top,
+      bounds.right,
+      bottom,
+      0xFF,
+      Canvas.ALL_SAVE_FLAG
+    );
+    c.clipRect(bounds.left, top, bounds.right, bottom);
+    return saveCount;
+  }
+
+  public void finishFade (Canvas c, int saveCount) {
+    if (saveCount == -1) {
+      return;
+    }
+    if (fadePaint == null) {
+      fadePaint = new Paint();
+      fadePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+      fadePaint.setShader(
+        new LinearGradient(0, 0, 0, 1, Color.TRANSPARENT, Color.BLACK, Shader.TileMode.CLAMP)
+      );
+    }
+    final float height = Screen.dp(COLLAPSED_FADE_HEIGHT);
+    fadePaint.setAlpha(Math.round(0xFF * (1f - parent.getSwitchFactor(this))));
+    if (hidesBelow) {
+      drawFade(c, getFadeBottom() - height, height);
+    }
+    if (hasTopFade()) {
+      drawFade(c, getFadeTop() + height, -height);
+    }
+    Views.restore(c, saveCount);
+  }
+
+  private void drawFade (Canvas c, float start, float height) {
+    // Clear at start, all gone at start + height, upwards when height is negative
+    fadeMatrix.setScale(1f, height);
+    fadeMatrix.postTranslate(0, start);
+    fadePaint.getShader().setLocalMatrix(fadeMatrix);
+    final float end = start + height;
+    c.drawRect(bounds.left, Math.min(start, end), bounds.right, Math.max(start, end), fadePaint);
   }
 
   public Canvas beginContent (Canvas c) {
@@ -371,7 +570,8 @@ public class QuoteBackground {
   private int topOffset, rightOffset, bottomOffset;
   private int topDiff, rightDiff, bottomDiff;
   // Where the icon of the switch goes on from, e.g. in the middle of a switch, or -1
-  private float changeStartWrapFactor = -1f;
+  private float changeStartSwitchFactor = -1f;
+  private int changeStartContentShift = -1;
 
   public void getChangeStart (
     RectF out,
@@ -390,7 +590,8 @@ public class QuoteBackground {
 
   public void startChange (
     RectF from,
-    float fromWrapFactor,
+    float fromSwitchFactor,
+    int fromContentShift,
     int startX,
     int endX,
     int endXBottomPadding
@@ -400,11 +601,12 @@ public class QuoteBackground {
     topDiff = Math.round(from.top - laidOut.top);
     rightDiff = Math.round(from.right - laidOut.right);
     bottomDiff = Math.round(from.bottom - laidOut.bottom);
-    changeStartWrapFactor = fromWrapFactor;
+    changeStartSwitchFactor = fromSwitchFactor;
+    changeStartContentShift = fromContentShift;
   }
 
-  public float getChangeStartWrapFactor () {
-    return changeStartWrapFactor;
+  public float getChangeStartSwitchFactor () {
+    return changeStartSwitchFactor;
   }
 
   public void applyChange (float factor) {
@@ -417,7 +619,8 @@ public class QuoteBackground {
   public void finishChange () {
     topDiff = rightDiff = bottomDiff = 0;
     topOffset = rightOffset = bottomOffset = 0;
-    changeStartWrapFactor = -1f;
+    changeStartSwitchFactor = -1f;
+    changeStartContentShift = -1;
     hasGeometry = false;
   }
 
@@ -444,9 +647,7 @@ public class QuoteBackground {
   private void updateGeometry (int startX, int endX, int endXBottomPadding, int startY) {
     for (int a = partStart; a < partEnd; a++) {
       final TextPart part = parent.getTextPart(a);
-      final TextPaint paint = parent.getTextPaint(part.getEntity());
-      final Paint.FontMetricsInt fm = parent.getFontMetrics(paint.getTextSize());
-      final int height = (part.getHeight() == -1 ? fm.descent - fm.ascent : part.getHeight());
+      final int height = getPartHeight(part);
 
       final int x = part.makeX(startX, endX, endXBottomPadding);
       final int y = part.getY() + startY;
@@ -465,6 +666,14 @@ public class QuoteBackground {
       bounds.right = bounds.left + getCodeWidth();
     } else {
       bounds.right += Screen.dp(QUOTE_RIGHT_PADDING) + rightOffset;
+    }
+    // A collapsed quote is as wide as when expanded
+    if (isCollapsed() && bounds.width() < hiddenWidth) {
+      if (parent.getTextPart(partStart).isRtl()) {
+        bounds.left = bounds.right - hiddenWidth;
+      } else {
+        bounds.right = bounds.left + hiddenWidth;
+      }
     }
 
     ripple.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
@@ -548,6 +757,18 @@ public class QuoteBackground {
         quoteDrawable = Drawables.get(R.drawable.baseline_format_quote_close_16);
       }
       Drawables.draw(c, quoteDrawable, iconX, iconY, PorterDuffPaint.get(lineColorId));
+      if (canCollapse) {
+        // Below the quote mark, as far from the bottom as the mark is from the top
+        final float center = Screen.dp(8f);
+        DrawAlgorithms.drawCollapse(
+          c,
+          iconX + center,
+          bounds.bottom - (iconY - bounds.top) - center,
+          Theme.getColor(lineColorId),
+          parent.getSwitchFactor(this),
+          0f
+        );
+      }
       barColor = Theme.getColor(lineColorId);
     }
     c.drawRoundRect(barRect, barRadius, barRadius, Paints.fillingPaint(barColor));
@@ -592,7 +813,7 @@ public class QuoteBackground {
       switchRipple.setMainColorId(parent.getCodeBlockRippleColorId(), 1f);
       switchRipple.draw(c);
       // The icon shows what a press does, and turns clockwise while lines wrap
-      final float wrapFactor = parent.getCodeBlockWrapFactor(this);
+      final float wrapFactor = parent.getSwitchFactor(this);
       final Paint paint = PorterDuffPaint.get(lineColorId);
       drawSwitchIcon(c, R.drawable.baseline_wrap_text_18, 90f * wrapFactor, 1f - wrapFactor, paint);
       drawSwitchIcon(
