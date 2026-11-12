@@ -2,6 +2,7 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -18,6 +19,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.ReactionModifier;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -192,10 +194,12 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       return false;
     }
     final TdApi.MessageSender senderId = (TdApi.MessageSender) data;
-    IntList ids = new IntList(3);
-    IntList colors = new IntList(3);
-    IntList icons = new IntList(3);
-    StringList titles = new StringList(3);
+    TdApi.MessageProperties properties = message.lastMessageProperties();
+    boolean canReportSenderReactions = properties != null && properties.canReportReactions;
+    IntList ids = new IntList(4);
+    IntList colors = new IntList(4);
+    IntList icons = new IntList(4);
+    StringList titles = new StringList(4);
     ids.append(R.id.btn_messageDeleteSenderReactions);
     colors.append(OptionColor.RED);
     icons.append(R.drawable.baseline_remove_circle_24);
@@ -205,6 +209,12 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       colors.append(OptionColor.RED);
       icons.append(R.drawable.baseline_remove_circle_24);
       titles.append(Lang.getString(R.string.RemoveAllSenderReactions));
+    }
+    if (canReportSenderReactions) {
+      ids.append(R.id.btn_messageReportSenderReactions);
+      colors.append(OptionColor.RED);
+      icons.append(R.drawable.baseline_report_24);
+      titles.append(Lang.getString(R.string.ReportSenderReactions));
     }
     ids.append(R.id.btn_cancel);
     colors.append(OptionColor.NORMAL);
@@ -222,6 +232,22 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
           (itemView2, confirmId) -> {
             if (confirmId == R.id.btn_done) {
               tdlib.send(new TdApi.DeleteAllRecentMessageReactionsFromSender(message.getChatId(), senderId), tdlib.typedOkHandler(this::reload));
+            }
+            return true;
+          });
+      } else if (id == R.id.btn_messageReportSenderReactions) {
+        showOptions(Lang.getString(R.string.ReportSenderReactionsConfirm),
+          new int[] {R.id.btn_done, R.id.btn_cancel},
+          new String[] {Lang.getString(R.string.Report), Lang.getString(R.string.Cancel)},
+          new int[] {OptionColor.RED, OptionColor.NORMAL},
+          new int[] {R.drawable.baseline_report_24, R.drawable.baseline_cancel_24},
+          (itemView2, confirmId) -> {
+            if (confirmId == R.id.btn_done) {
+              tdlib.send(new TdApi.ReportMessageReactions(message.getChatId(), message.getSmallestId(), senderId), (ok, error) -> runOnUiThreadOptional(() -> {
+                if (error != null) {
+                  UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+                }
+              }));
             }
             return true;
           });

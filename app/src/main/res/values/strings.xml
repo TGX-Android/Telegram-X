@@ -187,6 +187,8 @@
   <string name="RemoveSenderReactions">Remove reactions on this message</string>
   <string name="RemoveAllSenderReactions">Remove recent reactions in this chat</string>
   <string name="RemoveAllSenderReactionsConfirm">Remove all recent reactions left by this user in this chat?</string>
+  <string name="ReportSenderReactions">Report reactions to moderators</string>
+  <string name="ReportSenderReactionsConfirm">Report the reactions left by this user on this message to Telegram moderators?</string>
   <string name="language_continueInLanguage">Continue in English</string>
 
   <string name="Page1Title">Telegram X</string>
