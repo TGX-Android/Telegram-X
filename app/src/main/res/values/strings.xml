@@ -786,6 +786,7 @@
   <string name="ChannelPublicInfo">Public channels can be found in search, anyone can join them.</string>
   <string name="ChannelUsernameHelp">If you set a public link, other people will be able to find and join your channel.\n\nYou can use a–z, 0–9 and underscores.\nMinimum length is 5 characters.</string>
   <string name="DirectMessages">Direct Messages</string>
+  <string name="DirectMessagesInfo">Messages your subscribers send to you are collected in a separate group.</string>
   <string name="ChannelPrivate">Private Channel</string>
   <string name="ChannelPrivateInfo">Private channels can only be joined via invite link.</string>
   <string name="ChannelPrivateLinkHelp">People can join your channel by following this link. You can revoke the link at any time.</string>

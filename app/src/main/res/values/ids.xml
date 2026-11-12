@@ -450,6 +450,7 @@
   <item type="id" name="btn_toggleJoinByRequest" />
   <item type="id" name="btn_toggleJoinToSend" />
   <item type="id" name="btn_toggleForum" />
+  <item type="id" name="btn_toggleDirectMessages" />
   <item type="id" name="btn_toggleProtection" />
   <item type="id" name="btn_toggleAutomaticTranslation" />
   <item type="id" name="btn_togglePermission" />

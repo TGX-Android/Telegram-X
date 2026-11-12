@@ -1950,6 +1950,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           itemId == R.id.btn_toggleJoinByRequest ||
           itemId == R.id.btn_toggleJoinToSend ||
           itemId == R.id.btn_toggleForum ||
+          itemId == R.id.btn_toggleDirectMessages ||
           itemId == R.id.btn_toggleAggressiveAntiSpam ||
           itemId == R.id.btn_chatTtlDefault ||
           itemId == R.id.btn_toggleAutomaticTranslation ||
@@ -3412,6 +3413,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return supergroup != null && !supergroup.isChannel && !supergroup.isBroadcastGroup && !supergroup.hasLinkedChat && tdlib.haveCreatorRights(chat.id);
   }
 
+  private void toggleDirectMessages (View v) {
+    if (canToggleDirectMessages()) {
+      boolean newValue = baseAdapter.toggleView(v);
+      toggleDirectMessagesItem.setSelected(newValue);
+      checkDoneButton();
+    }
+  }
+
+  private boolean canToggleDirectMessages () {
+    // TDLib only changes direct messages settings for a channel chat, and requires owner privileges
+    return supergroup != null && tdlib.isChannelChat(chat) && tdlib.haveCreatorRights(chat.id);
+  }
+
+  private boolean hasDirectMessagesChanges () {
+    boolean originalValue = supergroup != null && supergroup.hasDirectMessagesGroup;
+    return toggleDirectMessagesItem != null && originalValue != toggleDirectMessagesItem.isSelected();
+  }
+
   private void toggleContentProtection (View v) {
     if (tdlib.canToggleContentProtection(chat.id)) {
       boolean enabled = baseAdapter.toggleView(v);
@@ -3729,6 +3748,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       hasJoinByRequestChanges() ||
       hasJoinToSendChanges() ||
       hasForumChanges() ||
+      hasDirectMessagesChanges() ||
       hasSignMessagesChanges() ||
       hasShowAuthorsChanges() ||
       hasAutomaticTranslationChanges();
@@ -3841,6 +3861,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     boolean hasJoinByRequestChanges = hasJoinByRequestChanges();
     boolean hasJoinToSendChanges = hasJoinToSendChanges();
     boolean hasForumChanges = hasForumChanges();
+    boolean hasDirectMessagesChanges = hasDirectMessagesChanges();
     boolean hasSignMessagesChanges = hasSignMessagesChanges();
     boolean hasShowAuthorsChanges = hasShowAuthorsChanges();
     boolean hasAutomaticTranslationChanges = hasAutomaticTranslationChanges();
@@ -3905,6 +3926,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (hasForumChanges) {
       changes.add(new TdApi.ToggleSupergroupIsForum(ChatId.toSupergroupId(chat.id), toggleForumItem.isSelected(), supergroup.hasForumTabs));
+    }
+
+    if (hasDirectMessagesChanges) {
+      // Re-sending the current price keeps a paid direct messages group untouched when only the toggle changed
+      changes.add(new TdApi.SetChatDirectMessagesGroup(chat.id, toggleDirectMessagesItem.isSelected(), supergroup.paidMessageStarCount));
     }
 
     if (hasAggressiveAntiSpamChanges) {
@@ -4028,7 +4054,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private ListItem slowModeItem, slowModeDescItem;
   private ListItem aggressiveAntiSpamItem, hideMembersItem,
-    toggleJoinByRequestItem, toggleJoinToSendItem, toggleForumItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem,
+    toggleJoinByRequestItem, toggleJoinToSendItem, toggleForumItem, toggleDirectMessagesItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem,
     toggleAutomaticTranslationItem;
   private ListItem ttlItem, ttlDescItem, ttlDefaultItem;
   private int ttlDefaultTtl = -1;
@@ -4141,6 +4167,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(toggleForumItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleForum, 0, R.string.ForumChatTopics, supergroup.isForum));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ForumChatTopicsInfo));
+    }
+
+    if (canToggleDirectMessages()) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(toggleDirectMessagesItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleDirectMessages, 0, R.string.DirectMessages, supergroup.hasDirectMessagesGroup));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.DirectMessagesInfo));
     }
 
     boolean added = false;
@@ -5108,6 +5141,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       toggleJoinToSend(v);
     } else if (viewId == R.id.btn_toggleForum) {
       toggleForum(v);
+    } else if (viewId == R.id.btn_toggleDirectMessages) {
+      toggleDirectMessages(v);
     } else if (viewId == R.id.btn_convertToBroadcastGroup) {
       showOptions(
         Lang.getMarkdownString(this, R.string.ConvertToBroadcastGroupHint),
