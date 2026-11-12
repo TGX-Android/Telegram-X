@@ -285,8 +285,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   TdApi.Supergroup supergroup;
   TdApi.SupergroupFullInfo supergroupFull;
 
-  private String groupStickerSetTitle;
-  private long groupStickerTitleRequestedId;
+  private final HashMap<Long, String> stickerSetTitles = new HashMap<>();
 
   private int inviteLinksCount = -1, inviteLinksRevokedCount = -1;
 
@@ -1930,15 +1929,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               view.setData(R.string.ChatHistoryHidden);
               break;
           }
-        } else if (itemId == R.id.btn_groupStickerSet) {
-          long setId = supergroupFull != null ? supergroupFull.stickerSetId : 0;
+        } else if (itemId == R.id.btn_groupStickerSet || itemId == R.id.btn_channelCustomEmojiSet) {
+          boolean forCustomEmoji = itemId == R.id.btn_channelCustomEmojiSet;
+          long setId = supergroupStickerSetId(forCustomEmoji);
+          String title = setId != 0 ? stickerSetTitles.get(setId) : null;
           if (setId == 0) {
-            view.setData(R.string.GroupStickerSetDisabled);
-          } else if (groupStickerSetTitle != null) {
-            view.setData(groupStickerSetTitle);
+            view.setData(R.string.StickerSetDisabled);
+          } else if (title != null) {
+            view.setData(title);
           } else {
-            loadGroupStickerTitle(setId);
-            view.setData(R.string.LoadingMessageEmojiPack);
+            loadStickerSetTitle(setId, itemId);
+            view.setData(R.string.LoadingInformation);
           }
         } else if (itemId == R.id.btn_unrestrictBoostCount) {
           int value = supergroupFull != null ? supergroupFull.unrestrictBoostCount : 0;
@@ -3515,25 +3516,36 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  private void loadGroupStickerTitle (long stickerSetId) {
-    if (groupStickerTitleRequestedId == stickerSetId) {
+  private void loadStickerSetTitle (long stickerSetId, int rowId) {
+    if (stickerSetTitles.containsKey(stickerSetId)) {
       return;
     }
-    groupStickerTitleRequestedId = stickerSetId;
+    stickerSetTitles.put(stickerSetId, null);
     tdlib.send(new TdApi.GetStickerSet(stickerSetId), (stickerSet, error) -> runOnUiThreadOptional(() -> {
-      if (stickerSet != null && supergroupFull != null && supergroupFull.stickerSetId == stickerSetId) {
-        groupStickerSetTitle = stickerSet.title;
-        updateValuedItem(R.id.btn_groupStickerSet);
+      if (stickerSet != null) {
+        stickerSetTitles.put(stickerSetId, stickerSet.title);
+        updateValuedItem(rowId);
+      } else {
+        stickerSetTitles.remove(stickerSetId);
       }
     }));
   }
 
-  private void openGroupStickerSetPicker () {
+  private long supergroupStickerSetId (boolean forCustomEmoji) {
+    if (supergroupFull == null) {
+      return 0;
+    }
+    return forCustomEmoji ? supergroupFull.customEmojiStickerSetId : supergroupFull.stickerSetId;
+  }
+
+  private void openStickerSetPicker (boolean forCustomEmoji) {
     if (supergroup == null) {
       return;
     }
-    final long currentSetId = supergroupFull != null ? supergroupFull.stickerSetId : 0;
-    tdlib.send(new TdApi.GetInstalledStickerSets(new TdApi.StickerTypeRegular()), (installedStickerSets, error) -> runOnUiThreadOptional(() -> {
+    final int rowId = forCustomEmoji ? R.id.btn_channelCustomEmojiSet : R.id.btn_groupStickerSet;
+    final long currentSetId = supergroupStickerSetId(forCustomEmoji);
+    TdApi.StickerType stickerType = forCustomEmoji ? new TdApi.StickerTypeCustomEmoji() : new TdApi.StickerTypeRegular();
+    tdlib.send(new TdApi.GetInstalledStickerSets(stickerType), (installedStickerSets, error) -> runOnUiThreadOptional(() -> {
       if (error != null) {
         UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
         return;
@@ -3541,16 +3553,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       TdApi.StickerSetInfo[] sets = installedStickerSets.sets;
       ListItem[] rawItems = new ListItem[sets.length + 1];
       long[] setIds = new long[rawItems.length];
-      rawItems[0] = new ListItem(ListItem.TYPE_RADIO_OPTION, View.generateViewId(), 0, Lang.getString(R.string.GroupStickerSetDisabled), R.id.btn_groupStickerSet, currentSetId == 0);
+      rawItems[0] = new ListItem(ListItem.TYPE_RADIO_OPTION, View.generateViewId(), 0, Lang.getString(R.string.StickerSetDisabled), rowId, currentSetId == 0);
       for (int i = 0; i < sets.length; i++) {
-        rawItems[i + 1] = new ListItem(ListItem.TYPE_RADIO_OPTION, View.generateViewId(), 0, sets[i].title, R.id.btn_groupStickerSet, sets[i].id == currentSetId);
+        rawItems[i + 1] = new ListItem(ListItem.TYPE_RADIO_OPTION, View.generateViewId(), 0, sets[i].title, rowId, sets[i].id == currentSetId);
         setIds[i + 1] = sets[i].id;
       }
-      showSettings(new SettingsWrapBuilder(R.id.btn_groupStickerSet)
+      showSettings(new SettingsWrapBuilder(rowId)
         .setRawItems(rawItems)
-        .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.GroupStickerSetInfo, false))
+        .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, forCustomEmoji ? R.string.CustomEmojiSetInfo : R.string.GroupStickerSetInfo, false))
         .setIntDelegate((id, result) -> {
-          int selectedId = result.get(R.id.btn_groupStickerSet);
+          int selectedId = result.get(rowId);
           long selectedSetId = -1;
           for (int i = 0; i < rawItems.length; i++) {
             if (rawItems[i].getId() == selectedId) {
@@ -3562,14 +3574,19 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             return;
           }
           final long stickerSetId = selectedSetId;
-          tdlib.send(new TdApi.SetSupergroupStickerSet(supergroup.id, stickerSetId), (ok, e) -> runOnUiThreadOptional(() -> {
+          TdApi.Function<TdApi.Ok> request = forCustomEmoji ?
+            new TdApi.SetSupergroupCustomEmojiStickerSet(supergroup.id, stickerSetId) :
+            new TdApi.SetSupergroupStickerSet(supergroup.id, stickerSetId);
+          tdlib.send(request, (ok, e) -> runOnUiThreadOptional(() -> {
             if (e != null) {
               UI.showToast(TD.toErrorString(e), Toast.LENGTH_SHORT);
             } else if (supergroupFull != null) {
-              supergroupFull.stickerSetId = stickerSetId;
-              groupStickerSetTitle = null;
-              groupStickerTitleRequestedId = 0;
-              updateValuedItem(R.id.btn_groupStickerSet);
+              if (forCustomEmoji) {
+                supergroupFull.customEmojiStickerSetId = stickerSetId;
+              } else {
+                supergroupFull.stickerSetId = stickerSetId;
+              }
+              updateValuedItem(rowId);
             }
           }));
         }));
@@ -4399,6 +4416,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (supergroupFull != null && supergroupFull.canSetStickerSet) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_groupStickerSet, 0, R.string.GroupStickerSet));
+      added = true;
+    }
+
+    if (mode == Mode.EDIT_CHANNEL && supergroup != null && tdlib.canChangeInfo(chat)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_channelCustomEmojiSet, 0, R.string.CustomEmojiSet));
       added = true;
     }
 
@@ -5289,7 +5312,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       }));
     } else if (viewId == R.id.btn_groupStickerSet) {
-      openGroupStickerSetPicker();
+      openStickerSetPicker(false);
+    } else if (viewId == R.id.btn_channelCustomEmojiSet) {
+      openStickerSetPicker(true);
     } else if (viewId == R.id.btn_channelType) {
       editUsername();
     } else if (viewId == R.id.btn_botDescription) {

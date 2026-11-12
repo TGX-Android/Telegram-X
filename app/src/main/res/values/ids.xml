@@ -1240,6 +1240,7 @@
   <item type="id" name="btn_dontAllowSharing" />
   <item type="id" name="btn_toggleSponsoredMessages" />
   <item type="id" name="btn_groupStickerSet" />
+  <item type="id" name="btn_channelCustomEmojiSet" />
   <item type="id" name="btn_messageApplyLocalization" />
   <item type="id" name="btn_messageInstallTheme" />
   <item type="id" name="btn_messageShowSource" />
