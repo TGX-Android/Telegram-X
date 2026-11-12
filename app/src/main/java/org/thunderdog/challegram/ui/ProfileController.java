@@ -3708,7 +3708,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasTtlDefaultChanges () {
-    return ttlDefaultItem != null && ttlDefaultOriginal != ttlDefaultItem.isSelected();
+    return ttlDefaultTtl != -1 && ttlDefaultItem != null && ttlDefaultItem.isSelected() != isTtlDefaultApplied();
+  }
+
+  private boolean isTtlDefaultApplied () {
+    return ttlItem != null && ttlDefaultTtl != 0 && ttlDefaultTtl == TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()];
   }
 
   @Override
@@ -3799,9 +3803,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       changes.add(new TdApi.SetChatMessageAutoDeleteTime(chat.id, newTtl));
     }
 
-    if (hasTtlDefaultChanges || (hasTtlChanges && ttlDefaultItem != null && ttlDefaultItem.isSelected())) {
-      boolean applyAsDefault = ttlDefaultItem.isSelected();
-      changes.add(new TdApi.SetDefaultMessageAutoDeleteTime(new TdApi.MessageAutoDeleteTime(applyAsDefault ? newTtl : 0)));
+    if (hasTtlDefaultChanges) {
+      changes.add(new TdApi.SetDefaultMessageAutoDeleteTime(new TdApi.MessageAutoDeleteTime(ttlDefaultItem.isSelected() ? newTtl : 0)));
     }
 
     if (hasContentProtectionChanges) {
@@ -3936,7 +3939,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     toggleJoinByRequestItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem,
     toggleAutomaticTranslationItem;
   private ListItem ttlItem, ttlDescItem, ttlDefaultItem;
-  private boolean ttlDefaultOriginal;
+  private int ttlDefaultTtl = -1;
 
   private void buildEditCells () {
     ArrayList<ListItem> items = new ArrayList<>();
@@ -4194,6 +4197,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(ttlDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_chatTtlDescription, 0, getTtlDescription(ttlValue, isChannel), false));
 
+      ttlDefaultTtl = -1;
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(ttlDefaultItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_chatTtlDefault, 0, R.string.ChatTtlDefault, false));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -4221,8 +4225,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (ttlDefaultItem == null || ttlItem == null) {
           return;
         }
-        ttlDefaultOriginal = defaultTtl != 0 && defaultTtl == TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()];
-        ttlDefaultItem.setSelected(ttlDefaultOriginal);
+        ttlDefaultTtl = defaultTtl;
+        ttlDefaultItem.setSelected(isTtlDefaultApplied());
         baseAdapter.updateValuedSettingById(R.id.btn_chatTtlDefault);
       });
     });
