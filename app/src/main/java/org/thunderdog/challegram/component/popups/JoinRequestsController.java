@@ -156,6 +156,7 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_search) {
+      header.addMoreButton(menu, this);
       header.addSearchButton(menu, this);
     } else if (id == R.id.menu_clear) {
       header.addClearButton(menu, this);
@@ -164,7 +165,9 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    if (id == R.id.menu_btn_search) {
+    if (id == R.id.menu_btn_more) {
+      component.showProcessAllOptions();
+    } else if (id == R.id.menu_btn_search) {
       mediaLayout.getHeaderView().openSearchMode();
       headerView = mediaLayout.getHeaderView();
     } else if (id == R.id.menu_btn_clear) {

@@ -104,6 +104,7 @@ public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinR
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_search) {
+      header.addMoreButton(menu, this);
       if (getArgumentsStrict().inviteLink == null || getArgumentsStrict().inviteLink.isEmpty()) {
         header.addSearchButton(menu, this);
       }
@@ -114,7 +115,9 @@ public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinR
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    if (id == R.id.menu_btn_search) {
+    if (id == R.id.menu_btn_more) {
+      component.showProcessAllOptions();
+    } else if (id == R.id.menu_btn_search) {
       if (headerView != null) {
         headerView.openSearchMode();
       }

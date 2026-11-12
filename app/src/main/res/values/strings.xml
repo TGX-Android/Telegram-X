@@ -4975,6 +4975,10 @@
   <string name="InviteLinkRequestsHintChannel">Some [additional links](%1$s) are set up to generate requests to join your channel.</string>
   <string name="AreYouSureAcceptJoinRequest">Are you sure you want to invite %1$s to %2$s?</string>
   <string name="AreYouSureDeclineJoinRequest">Are you sure you want to decline the request from %1$s?</string>
+  <string name="InviteLinkActionAcceptAll">Add Everyone</string>
+  <string name="InviteLinkActionDeclineAll">Decline All Requests</string>
+  <string name="AreYouSureAcceptAllJoinRequests">Are you sure you want to invite everyone to %1$s?</string>
+  <string name="AreYouSureDeclineAllJoinRequests">Are you sure you want to decline every pending request in %1$s?</string>
 
   <string name="xActiveLinks_one">%1$s active link</string>
   <string name="xActiveLinks_other">%1$s active links</string>

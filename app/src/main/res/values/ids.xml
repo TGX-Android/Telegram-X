@@ -1221,6 +1221,8 @@
 
   <item type="id" name="btn_approveChatRequest" />
   <item type="id" name="btn_declineChatRequest" />
+  <item type="id" name="btn_approveAllChatRequests" />
+  <item type="id" name="btn_declineAllChatRequests" />
 
   <item type="id" name="btn_menu_enable" />
   <item type="id" name="btn_menu_1hour" />

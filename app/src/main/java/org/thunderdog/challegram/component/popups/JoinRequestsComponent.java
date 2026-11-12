@@ -33,6 +33,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ChatJoinRequestsController;
 import org.thunderdog.challegram.ui.ChatLinksController;
 import org.thunderdog.challegram.ui.ListItem;
@@ -271,6 +272,63 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       }
 
       return true;
+    });
+  }
+
+  public void showProcessAllOptions () {
+    if (joinRequests == null || joinRequests.isEmpty()) {
+      return;
+    }
+    controller.showOptions(new int[] {R.id.btn_approveAllChatRequests, R.id.btn_declineAllChatRequests},
+      new String[] {Lang.getString(R.string.InviteLinkActionAcceptAll), Lang.getString(R.string.InviteLinkActionDeclineAll)},
+      new int[] {ViewController.OptionColor.BLUE, ViewController.OptionColor.RED}, (itemView, id) -> {
+      if (id == R.id.btn_approveAllChatRequests) {
+        confirmProcessAll(true);
+      } else if (id == R.id.btn_declineAllChatRequests) {
+        confirmProcessAll(false);
+      }
+      return true;
+    });
+  }
+
+  private void confirmProcessAll (boolean approve) {
+    CharSequence information = Lang.getStringBold(approve
+      ? R.string.AreYouSureAcceptAllJoinRequests
+      : R.string.AreYouSureDeclineAllJoinRequests, tdlib().chatTitle(chatId));
+    int actionId = approve ? R.id.btn_approveChatRequest : R.id.btn_declineChatRequest;
+    controller.showOptions(information, new int[] {actionId, R.id.btn_cancel},
+      new String[] {Lang.getString(approve ? (isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept) : R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.Cancel)},
+      new int[] {approve ? ViewController.OptionColor.BLUE : ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL},
+      new int[] {approve ? R.drawable.baseline_person_add_24 : R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      if (id == actionId) {
+        tdlib().client().send(new TdApi.ProcessChatJoinRequests(chatId, inviteLink != null ? inviteLink : "", approve), result -> {
+          if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+            controller.runOnUiThreadOptional(() -> UI.showError((TdApi.Error) result));
+          } else {
+            removeAllSenders();
+          }
+        });
+      }
+      return true;
+    });
+  }
+
+  private void removeAllSenders () {
+    controller.runOnUiThreadOptional(() -> {
+      if (controller.isDestroyed()) {
+        return;
+      }
+      if (joinRequests != null) {
+        joinRequests.clear();
+      }
+      joinRequestsTdlib.clear();
+      buildCells();
+      if (isBottomSheet) {
+        ((JoinRequestsController) controller).close();
+      } else if (controller instanceof ChatJoinRequestsController) {
+        onRequestDecided();
+        controller.navigateBack();
+      }
     });
   }
 
