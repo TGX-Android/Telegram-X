@@ -1191,6 +1191,47 @@ public class TdlibUi extends Handler {
     });
   }
 
+  public String chatAccentColorTitle (long chatId) {
+    int accentColorId = tdlib.chatAccentColorId(chatId);
+    return accentColorId >= 0 && accentColorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT
+      ? TdlibAccentColor.getTextRepresentation(accentColorId)
+      : Lang.getString(R.string.Default);
+  }
+
+  public void setChatAccentColor (long chatId, int accentColorId) {
+    tdlib.client().send(new TdApi.SetChatAccentColor(chatId, accentColorId, 0), result -> {
+      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+        UI.showError(result);
+        Log.e("setChatAccentColor chatId:%d accentColorId:%d error:%s", chatId, accentColorId, TD.toErrorString(result));
+      }
+    });
+  }
+
+  public void showChatAccentColorOptions (ViewController<?> context, long chatId) {
+    final int capacity = TdlibAccentColor.BUILT_IN_COLOR_COUNT;
+    final int currentAccentColorId = tdlib.chatAccentColorId(chatId);
+    final IntList ids = new IntList(capacity);
+    final StringList names = new StringList(capacity);
+    final IntList icons = new IntList(capacity);
+
+    for (int i = 0; i < capacity; i++) {
+      // Negative ids cannot collide with real resource ids in this dedicated popup
+      ids.append(-(i + 1));
+      names.append(TdlibAccentColor.getTextRepresentation(i));
+      icons.append(i == currentAccentColorId ? R.drawable.baseline_check_24 : 0);
+    }
+
+    context.showOptions(null, ids.get(), names.get(), null, icons.get(), (itemView, id) -> {
+      if (id < 0) {
+        int index = -(id + 1);
+        if (index >= 0 && index < capacity) {
+          setChatAccentColor(chatId, index);
+        }
+      }
+      return true;
+    });
+  }
+
   public int getIconForSetting (@Nullable TdApi.Chat chat) {
     final int muteFor = tdlib.chatMuteFor(chat);
     return muteFor >= MUTE_MAX ? R.drawable.baseline_notifications_off_24 : muteFor > 0 ? R.drawable.baseline_notifications_paused_24 : R.drawable.baseline_notifications_24;
