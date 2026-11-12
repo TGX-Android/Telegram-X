@@ -684,6 +684,7 @@
   <string name="CopiedPeerId">Peer ID has been copied to the clipboard</string>
   <string name="CopiedUsername">Username has been copied to the clipboard</string>
   <string name="CopiedLink">Link has been copied to the clipboard</string>
+  <string name="CopyBoostLink">Copy boost link</string>
   <string name="CopiedLinkPrivate">Link has been copied to the clipboard. It works only for members of this chat.</string>
   <string name="CopiedText">Text has been copied to the clipboard</string>
   <string name="CopiedDisplayName">Display name has been copied to the clipboard</string>

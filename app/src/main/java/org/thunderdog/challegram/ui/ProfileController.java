@@ -4264,6 +4264,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       added = true;
     }
 
+    if (supergroup != null && tdlib.canChangeInfo(chat)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_copyBoostLink, 0, R.string.CopyBoostLink));
+      added = true;
+    }
+
     if (supergroupFull != null && supergroupFull.canGetStatistics) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_viewStatistics, 0, R.string.ViewStats));
@@ -5140,6 +5146,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       openStats();
     } else if (viewId == R.id.btn_enabledReactions) {
       openEnabledReactions();
+    } else if (viewId == R.id.btn_copyBoostLink) {
+      tdlib.send(new TdApi.GetChatBoostLink(chat.id), (boostLink, error) -> runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+        } else {
+          UI.copyText(boostLink.link, boostLink.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate);
+        }
+      }));
     } else if (viewId == R.id.btn_channelType) {
       editUsername();
     } else if (viewId == R.id.btn_botDescription) {
