@@ -5549,6 +5549,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  private void showEmbeddingCode (CharSequence code) {
+    if (StringUtils.isEmpty(code)) {
+      return;
+    }
+    showOptions(code, new int[] {R.id.btn_copyText}, new String[] {Lang.getString(R.string.Copy)}, null, new int[] {R.drawable.baseline_content_copy_24}, Config.MAX_COPY_TEXT_LINE_COUNT, (itemView, id) -> {
+      if (id == R.id.btn_copyText) {
+        UI.copyText(code, R.string.CopiedText);
+      }
+      return true;
+    }, null);
+  }
+
   @SuppressWarnings("unchecked")
   private OptionDelegate newMessageOptionDelegate (final TGMessage selectedMessage, final TdApi.ChatMember selectedMessageSender, final Object selectedMessageTag) {
     return (itemView, id) -> {
@@ -5782,6 +5794,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         TdApi.FormattedText text = id == R.id.btn_copyTranslation ? selectedMessage.getTranslatedText() : Td.textOrCaption(message.content);
         if (text != null)
           UI.copyText(TD.toCopyText(text), R.string.CopiedText);
+        return true;
+      } else if (id == R.id.btn_messageCopyEmbedCode) {
+        TdApi.Message message = selectedMessage.getNewestMessage();
+        tdlib.send(new TdApi.GetMessageEmbeddingCode(message.chatId, message.id, message.mediaAlbumId != 0), code -> runOnUiThreadOptional(() -> showEmbeddingCode(code.text)), UI::showError);
         return true;
       } else if (id == R.id.btn_messageEdit) {
         TdApi.Message message = null;

@@ -883,6 +883,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_link_24);
     }
 
+    if (!isMore && msg.canGetEmbeddingCode()) {
+      ids.append(R.id.btn_messageCopyEmbedCode);
+      strings.append(R.string.CopyEmbeddingCode);
+      icons.append(R.drawable.baseline_code_24);
+    }
+
     if (!isMore && msg.canBeSaved() && msg.canCopyText()) {
       if (msg.isTranslated()) {
         ids.append(R.id.btn_copyTranslation);

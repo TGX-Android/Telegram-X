@@ -609,6 +609,7 @@
   <string name="CopyCoordinates">Copy coordinates</string>
   <string name="CopiedCoordinates">Coordinates have been copied to the clipboard</string>
   <string name="CopyLink">Copy link</string>
+  <string name="CopyEmbeddingCode">Copy embedding code</string>
   <string name="CopyDisplayName">Copy display name</string>
   <string name="Search">Search</string>
   <string name="NoChats">You have no chats</string>

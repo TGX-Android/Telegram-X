@@ -5132,6 +5132,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return properties.canGetViewers;
   }
 
+  public final boolean canGetEmbeddingCode () {
+    TdApi.MessageProperties properties = lastMessageProperties();
+    return properties.canGetEmbeddingCode;
+  }
+
   public final TdApi.Message getAnchorMessageThreadMessage () {
     return getOldestMessage();
   }
