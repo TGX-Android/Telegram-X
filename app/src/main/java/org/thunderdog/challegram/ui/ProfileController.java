@@ -1943,6 +1943,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           itemId == R.id.btn_toggleProtection ||
           itemId == R.id.btn_toggleJoinByRequest ||
           itemId == R.id.btn_toggleAggressiveAntiSpam ||
+          itemId == R.id.btn_chatTtlDefault ||
           itemId == R.id.btn_toggleHideMembers) {
           view.getToggler().setRadioEnabled(item.isSelected(), isUpdate);
         }
@@ -3307,6 +3308,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
+  private void toggleTtlDefault (View v) {
+    if (ttlDefaultItem != null) {
+      ttlDefaultItem.setSelected(baseAdapter.toggleView(v));
+      checkDoneButton();
+    }
+  }
+
   private void toggleHideMembers (View v) {
     boolean canToggleHideMembers =
       (supergroupFull != null && supergroupFull.canHideMembers) ||
@@ -3635,6 +3643,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       (chatTitleItem != null && !StringUtils.equalsOrBothEmpty(chat.title, chatTitleItem.getStringValue())) ||
       (chatDescriptionItem != null && !StringUtils.equalsOrBothEmpty(getDescriptionValue(), chatDescriptionItem.getStringValue())) ||
       hasTtlChanges() ||
+      hasTtlDefaultChanges() ||
       hasSlowModeChanges() ||
       hasAggressiveAntiSpamChanges() ||
       hasHideMembersChanges() ||
@@ -3684,6 +3693,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return ttlItem != null && originalSlowMode != TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()];
   }
 
+  private boolean hasTtlDefaultChanges () {
+    return ttlDefaultItem != null && ttlDefaultOriginal != ttlDefaultItem.isSelected();
+  }
+
   @Override
   public boolean onDoneClick (View v) {
     applyChatChanges();
@@ -3721,6 +3734,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     boolean hasSlowModeChanges = hasSlowModeChanges();
     boolean hasTtlChanges = hasTtlChanges();
+    boolean hasTtlDefaultChanges = hasTtlDefaultChanges();
     boolean hasAggressiveAntiSpamChanges = hasAggressiveAntiSpamChanges();
     boolean hasHideMembersChanges = hasHideMembersChanges();
     boolean hasContentProtectionChanges = hasContentProtectionChanges();
@@ -3764,8 +3778,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       changes.add(new TdApi.SetChatSlowModeDelay(chat.id, TdConstants.SLOW_MODE_OPTIONS[slowModeItem.getSliderValue()]));
     }
 
+    int newTtl = ttlItem != null ? TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()] : 0;
+
     if (hasTtlChanges) {
-      changes.add(new TdApi.SetChatMessageAutoDeleteTime(chat.id, TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()]));
+      changes.add(new TdApi.SetChatMessageAutoDeleteTime(chat.id, newTtl));
+    }
+
+    if (hasTtlDefaultChanges || (hasTtlChanges && ttlDefaultItem != null && ttlDefaultItem.isSelected())) {
+      boolean applyAsDefault = ttlDefaultItem.isSelected();
+      changes.add(new TdApi.SetDefaultMessageAutoDeleteTime(new TdApi.MessageAutoDeleteTime(applyAsDefault ? newTtl : 0)));
     }
 
     if (hasContentProtectionChanges) {
@@ -3894,7 +3915,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private ListItem slowModeItem, slowModeDescItem;
   private ListItem aggressiveAntiSpamItem, hideMembersItem,
     toggleJoinByRequestItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem;
-  private ListItem ttlItem, ttlDescItem;
+  private ListItem ttlItem, ttlDescItem, ttlDefaultItem;
+  private boolean ttlDefaultOriginal;
 
   private void buildEditCells () {
     ArrayList<ListItem> items = new ArrayList<>();
@@ -4144,6 +4166,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(ttlItem = new ListItem(ListItem.TYPE_SLIDER, R.id.btn_chatTtl).setSliderInfo(sliderValues, sliderValueIndex));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(ttlDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_chatTtlDescription, 0, getTtlDescription(ttlValue, isChannel), false));
+
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(ttlDefaultItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_chatTtlDefault, 0, R.string.ChatTtlDefault, false));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ChatTtlDefaultHint));
+      requestDefaultMessageAutoDeleteTime();
     }
 
     if (mode != Mode.EDIT_BOT_USER) {
@@ -4154,6 +4182,23 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (tdlib.canInviteUsers(chat)) {
       requestInviteLinks(TD.isCreator(myStatus));
     }
+  }
+
+  private void requestDefaultMessageAutoDeleteTime () {
+    tdlib.client().send(new TdApi.GetDefaultMessageAutoDeleteTime(), object -> {
+      if (object.getConstructor() != TdApi.MessageAutoDeleteTime.CONSTRUCTOR) {
+        return;
+      }
+      final int defaultTtl = ((TdApi.MessageAutoDeleteTime) object).time;
+      runOnUiThreadOptional(() -> {
+        if (ttlDefaultItem == null || ttlItem == null) {
+          return;
+        }
+        ttlDefaultOriginal = defaultTtl != 0 && defaultTtl == TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()];
+        ttlDefaultItem.setSelected(ttlDefaultOriginal);
+        baseAdapter.updateValuedSettingById(R.id.btn_chatTtlDefault);
+      });
+    });
   }
 
   private void requestInviteLinks (boolean owner) {
@@ -4907,6 +4952,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       toggleAggressiveAntiSpam(v);
     } else if (viewId == R.id.btn_toggleHideMembers) {
       toggleHideMembers(v);
+    } else if (viewId == R.id.btn_chatTtlDefault) {
+      toggleTtlDefault(v);
     } else if (viewId == R.id.btn_toggleProtection) {
       toggleContentProtection(v);
     } else if (viewId == R.id.btn_toggleJoinByRequest) {

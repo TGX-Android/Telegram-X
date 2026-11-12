@@ -4983,6 +4983,8 @@
   <string name="ChannelTtlOff">Off</string>
   <string name="ChannelTtlDisabled">Choose a period of time after which posts will be automatically deleted for subscribers of the channel.</string>
   <string name="ChannelTtlEnabled">Automatically delete new posts after %1$s for subscribers of the channel.</string>
+  <string name="ChatTtlDefault">Set as default for new chats</string>
+  <string name="ChatTtlDefaultHint">Chats you open later will start with the same auto-delete period.</string>
 
   <string name="ChatBackgroundPreview">Chat Wallpaper Preview</string>
   <string name="ChatBackgroundApply">Apply Chat Wallpaper</string>

@@ -539,6 +539,7 @@
   <item type="id" name="btn_slowModeDescription" />
   <item type="id" name="btn_chatTtl" />
   <item type="id" name="btn_chatTtlDescription" />
+  <item type="id" name="btn_chatTtlDefault" />
   <item type="id" name="btn_phone" />
   <item type="id" name="btn_useExplicitDice" />
   <item type="id" name="btn_night" />
