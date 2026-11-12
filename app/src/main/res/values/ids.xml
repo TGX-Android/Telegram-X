@@ -1339,6 +1339,7 @@
   <item type="id" name="btn_removeFolder" />
   <item type="id" name="btn_folderIncludeChats" />
   <item type="id" name="btn_folderExcludeChats" />
+  <item type="id" name="folderChatCount" />
   <item type="id" name="btn_chatFolderStyle" />
   <item type="id" name="btn_changeFolderIcon" />
   <item type="id" name="btn_labelOnly" />

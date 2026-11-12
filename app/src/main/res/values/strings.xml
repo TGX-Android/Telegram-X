@@ -5553,6 +5553,8 @@
   <string name="FolderIncludedChatsInfo">Choose chats or types of chats that will appear in this folder.</string>
   <string name="FolderExcludedChats">Excluded Chats</string>
   <string name="FolderExcludedChatsInfo">Choose chats or types of chats that will **not** appear in this folder.</string>
+  <string name="FolderChatCount_one">%1$d chat will be added to this folder</string>
+  <string name="FolderChatCount_other">%1$d chats will be added to this folder</string>
   <string name="FolderActionIncludeChats">Add Chats to Included</string>
   <string name="FolderActionExcludeChats">Add Chats to Excluded</string>
   <string name="FolderName">Folder name</string>

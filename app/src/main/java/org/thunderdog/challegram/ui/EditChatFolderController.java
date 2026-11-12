@@ -158,6 +158,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   private volatile int chatFolderId;
   private TdApi.ChatFolder originChatFolder;
   private TdApi.ChatFolder editedChatFolder;
+  private int chatFolderCount = -1;
 
   private @Nullable TdApi.ChatFolderInviteLink[] inviteLinks;
 
@@ -215,6 +216,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     this.chatFolderId = args.chatFolderId;
     this.originChatFolder = args.chatFolder;
     this.editedChatFolder = args.chatFolder != null ? Td.copyOf(args.chatFolder) : TD.newChatFolder(args.chatFolderName);
+    this.chatFolderCount = -1;
   }
 
   @Override
@@ -265,6 +267,10 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.FolderExcludedChatsInfo)));
     }
 
+    ListItem chatCountItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.folderChatCount, 0, 0);
+    chatCountItem.setString(chatFolderCountText());
+    items.add(chatCountItem);
+
     if (chatFolderId != NO_CHAT_FOLDER_ID) {
       items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.InviteLinks));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP, 0));
@@ -282,6 +288,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
     RemoveHelper.attach(recyclerView, new RemoveHelperCallback());
+    updateChatFolderCount();
 
     if (chatFolderId != NO_CHAT_FOLDER_ID) {
       if (originChatFolder == null) {
@@ -713,6 +720,26 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     updateIncludedChats();
     updateExcludedChats();
     updateFolderIcon();
+    updateChatFolderCount();
+  }
+
+  private void updateChatFolderCount () {
+    tdlib.send(new TdApi.GetChatFolderChatCount(editedChatFolder), result -> {
+      runOnUiThreadOptional(() -> {
+        chatFolderCount = result.count;
+        int index = adapter.indexOfViewById(R.id.folderChatCount);
+        if (index != -1) {
+          ListItem item = adapter.getItems().get(index);
+          if (item.setStringIfChanged(chatFolderCountText())) {
+            adapter.updateItem(index);
+          }
+        }
+      });
+    }, null);
+  }
+
+  private CharSequence chatFolderCountText () {
+    return chatFolderCount < 0 ? "" : Lang.plural(R.string.FolderChatCount, chatFolderCount, chatFolderCount);
   }
 
   private void updateIncludedChats () {
