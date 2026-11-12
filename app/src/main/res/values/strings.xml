@@ -184,6 +184,8 @@
   <string name="ForumTopicLoadFailed">Could not load this topic. Tap to retry.</string>
   <!-- endregion -->
   <string name="ForumChatTopicsInfo">Turn this on to organize the group into separate topics.</string>
+  <string name="RemoveSenderReactions">Remove reactions</string>
+  <string name="RemoveSenderReactionsConfirm">Remove all reactions left by this user on this message?</string>
   <string name="language_continueInLanguage">Continue in English</string>
 
   <string name="Page1Title">Telegram X</string>

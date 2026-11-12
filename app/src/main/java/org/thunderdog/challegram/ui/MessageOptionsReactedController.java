@@ -39,6 +39,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
   private boolean canLoadMore = true;
   private boolean isLoadingMore = false;
   private int totalCount = 0;
+  private boolean canDeleteSenderReactions = false;
 
   public MessageOptionsReactedController (Context context, Tdlib tdlib, PopupLayout popupLayout, TGMessage message, @Nullable TdApi.ReactionType reactionType) {
     super(context, tdlib);
@@ -71,6 +72,11 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
         } else {
           userView.setDrawModifier(null);
         }
+        if (canDeleteSenderReactions) {
+          userView.setOnLongClickListener(v -> showDeleteSenderReactionsOptions(v));
+        } else {
+          userView.setOnLongClickListener(null);
+        }
       }
 
       @Override
@@ -92,6 +98,12 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
     });
     ViewSupport.setThemedBackground(recyclerView, ColorId.background);
     addThemeInvalidateListener(recyclerView);
+    message.getMessageProperties(message.getSmallestId(), properties -> {
+      if (properties != null && properties.canDeleteReactions && !canDeleteSenderReactions) {
+        canDeleteSenderReactions = true;
+        adapter.notifyDataSetChanged();
+      }
+    });
     loadMore();
   }
 
@@ -156,6 +168,39 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
     } else {
       adapter.notifyItemRangeChanged(itemsCount, items.size() - itemsCount);
     }
+  }
+
+  private boolean showDeleteSenderReactionsOptions (View v) {
+    if (!(v.getTag() instanceof ListItem)) {
+      return false;
+    }
+    Object data = ((ListItem) v.getTag()).getData();
+    if (!(data instanceof TdApi.MessageSender)) {
+      return false;
+    }
+    final TdApi.MessageSender senderId = (TdApi.MessageSender) data;
+    showOptions(null,
+      new int[] {R.id.btn_messageDeleteSenderReactions, R.id.btn_cancel},
+      new String[] {Lang.getString(R.string.RemoveSenderReactions), Lang.getString(R.string.Cancel)},
+      new int[] {OptionColor.RED, OptionColor.NORMAL},
+      new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24},
+      (itemView, id) -> {
+        if (id == R.id.btn_messageDeleteSenderReactions) {
+          tdlib.send(new TdApi.DeleteMessageReactionsFromSender(message.getChatId(), message.getSmallestId(), senderId), tdlib.typedOkHandler(this::reload));
+        }
+        return true;
+      });
+    return true;
+  }
+
+  private void reload () {
+    offset = "";
+    totalCount = 0;
+    canLoadMore = true;
+    isLoadingMore = false;
+    adapter.getItems().clear();
+    adapter.notifyDataSetChanged();
+    loadMore();
   }
 
   @Override
