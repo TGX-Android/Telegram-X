@@ -150,7 +150,10 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_appBadge, 0, R.string.BadgeCounter));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_archiveAsFolder, 0, R.string.ArchiveAsFolder));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_folderTags, 0, R.string.ChatFolderTags));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ChatFolderTagsInfo));
 
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatFolders));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP, chatFoldersPreviousItemId));
@@ -312,6 +315,8 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
         } else if (item.getId() == R.id.btn_archiveAsFolder) {
           boolean showArchiveAsFolder = tdlib.settings().isChatListEnabled(ChatPosition.CHAT_LIST_ARCHIVE);
           view.getToggler().setRadioEnabled(showArchiveAsFolder, isUpdate);
+        } else if (item.getId() == R.id.btn_folderTags) {
+          view.getToggler().setRadioEnabled(tdlib.areChatFolderTagsEnabled(), isUpdate);
         }
       }
     };
@@ -368,6 +373,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
   public void onChatFoldersChanged (TdApi.ChatFolderInfo[] chatFolders, int mainChatListPosition) {
     runOnUiThreadOptional(() -> {
       adapter.updateValuedSettingById(R.id.btn_createNewFolder);
+      adapter.updateValuedSettingById(R.id.btn_folderTags);
       updateChatFolders(chatFolders, mainChatListPosition, tdlib.settings().archiveChatListPosition());
       if (isFocused()) {
         tdlib.ui().postDelayed(() -> {
@@ -483,6 +489,14 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
       boolean showArchiveAsFolder = adapter.toggleView(v);
       tdlib.settings().setChatListEnabled(ChatPosition.CHAT_LIST_ARCHIVE, showArchiveAsFolder);
       updateChatFolders();
+    } else if (v.getId() == R.id.btn_folderTags) {
+      boolean areTagsEnabled = adapter.toggleView(v);
+      tdlib.send(new TdApi.ToggleChatFolderTags(areTagsEnabled), (ok, error) -> runOnUiThreadOptional(() -> {
+        if (error != null) {
+          adapter.updateValuedSettingById(R.id.btn_folderTags);
+          context().tooltipManager().builder(v).icon(R.drawable.baseline_warning_24).show(tdlib, TD.toErrorString(error));
+        }
+      }));
     }
   }
 

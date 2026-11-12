@@ -3701,6 +3701,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public boolean areChatFolderTagsEnabled () {
+    synchronized (dataLock) {
+      return areTagsEnabled;
+    }
+  }
+
   public TdApi.ChatFolderInfo chatFolderInfo (int chatFolderId) {
     if (chatFolderId == 0) {
       return null;

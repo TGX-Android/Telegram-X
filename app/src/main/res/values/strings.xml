@@ -6025,6 +6025,8 @@
   <string name="xOfYChatsSelected3_other">%1$s/%2$s chats selected</string>
   <string name="ThisChatCantBeShared">This chat can’t be shared</string>
   <string name="ArchiveAsFolder">Archive as Folder</string>
+  <string name="ChatFolderTags">Folder tags</string>
+  <string name="ChatFolderTagsInfo">Chats with unread messages in other folders are shown as tags, so you can jump to them without opening the folder.</string>
   <string name="HoldAndDragToReorder">Hold and drag to reorder</string>
 
   <string name="SlowFileAccess">Slow file access. Message will be sent after reading the files</string>
