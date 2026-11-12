@@ -312,6 +312,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   private volatile Integer _channelGlobalVersion;
   private final LocalScopeNotificationSettings privateSettings, groupSettings, channelSettings;
   private @Nullable TdApi.ScopeNotificationSettings settingsForPrivateChats, settingsForGroupChats, settingsForChannelChats;
+  private @Nullable volatile TdApi.ReactionNotificationSettings reactionSettings;
 
   private Integer _callVibrate;
   private Boolean _callVibrateOnlyIfSilent;
@@ -2012,6 +2013,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     throw new RuntimeException();
   }
 
+  public @Nullable TdApi.ReactionNotificationSettings getReactionNotificationSettings () {
+    return reactionSettings;
+  }
+
   public @NonNull TdApi.NotificationSettingsScope scope (long chatId) {
     switch (ChatId.getType(chatId)) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR:
@@ -2396,6 +2401,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     if (previewToggled || isSwitched) {
       onUpdateNotifications(scope);
     }
+  }
+
+  @TdlibThread
+  void onUpdateReactionNotificationSettings (TdApi.UpdateReactionNotificationSettings update) {
+    reactionSettings = update.notificationSettings;
   }
 
   // TDLib Notifications API

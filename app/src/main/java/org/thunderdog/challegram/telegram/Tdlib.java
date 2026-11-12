@@ -8889,6 +8889,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateReactionNotificationSettings (TdApi.UpdateReactionNotificationSettings update) {
+    notificationManager.onUpdateReactionNotificationSettings(update);
     listeners.updateReactionNotificationSettings(update);
   }
 

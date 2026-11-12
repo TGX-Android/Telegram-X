@@ -1028,6 +1028,18 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           } else {
             view.setData(Lang.plural(R.string.xMinutes, minutes));
           }
+        } else if (itemId == R.id.btn_reactionNotifications_message || itemId == R.id.btn_reactionNotifications_story || itemId == R.id.btn_reactionNotifications_poll) {
+          TdApi.ReactionNotificationSource source = getReactionSource(itemId);
+          if (source instanceof TdApi.ReactionNotificationSourceAll) {
+            view.setData(R.string.Everybody);
+          } else if (source instanceof TdApi.ReactionNotificationSourceContacts) {
+            view.setData(R.string.MyContacts);
+          } else {
+            view.setData(R.string.Nobody);
+          }
+        } else if (itemId == R.id.btn_reactionNotifications_preview) {
+          TdApi.ReactionNotificationSettings settings = tdlib.notifications().getReactionNotificationSettings();
+          view.getToggler().setRadioEnabled(settings != null && settings.showPreview, isUpdate);
         }
         view.setColorDataId(dataColorId);
       }
@@ -1299,6 +1311,22 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_silenceNonContacts, 0, R.string.MuteNonContacts));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.MuteNonContactsInfo));
+
+        if (tdlib.notifications().getReactionNotificationSettings() != null) {
+          items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Reactions));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_reactionNotifications_message, 0, R.string.MessageReactions));
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_reactionNotifications_story, 0, R.string.StoryReactions));
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_reactionNotifications_poll, 0, R.string.PollVotes));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ReactionNotificationsInfo));
+
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_reactionNotifications_preview, 0, R.string.ReactionNotificationsPreview));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        }
 
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.BadgeCounter));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -1928,6 +1956,15 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       tdlib.setDisableSentScheduledMessageNotifications(!adapter.toggleView(v));
     } else if (viewId == R.id.btn_silenceNonContacts) {
       tdlib.settings().setUserPreference(TdlibSettingsManager.PREFERENCE_MUTE_NON_CONTACTS, adapter.toggleView(v));
+    } else if (viewId == R.id.btn_reactionNotifications_message || viewId == R.id.btn_reactionNotifications_story || viewId == R.id.btn_reactionNotifications_poll) {
+      showReactionSourceOptions(viewId);
+    } else if (viewId == R.id.btn_reactionNotifications_preview) {
+      TdApi.ReactionNotificationSettings settings = tdlib.notifications().getReactionNotificationSettings();
+      if (settings != null) {
+        TdApi.ReactionNotificationSettings newSettings = copyReactionSettings(settings);
+        newSettings.showPreview = adapter.toggleView(v);
+        setReactionNotificationSettings(newSettings);
+      }
     } else if (viewId == R.id.btn_archiveMuteNonContacts) {
       if (archiveChatListSettings != null) {
         archiveChatListSettings.archiveAndMuteNewChatsFromUnknownUsers = adapter.toggleView(v);
@@ -2241,6 +2278,83 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     if (isCommonScreen()) {
       tdlib.listeners().removeOptionListener(this);
     }
+  }
+
+  private @Nullable TdApi.ReactionNotificationSource getReactionSource (@IdRes int viewId) {
+    TdApi.ReactionNotificationSettings settings = tdlib.notifications().getReactionNotificationSettings();
+    if (settings == null) {
+      return null;
+    }
+    if (viewId == R.id.btn_reactionNotifications_story) {
+      return settings.storyReactionSource;
+    } else if (viewId == R.id.btn_reactionNotifications_poll) {
+      return settings.pollVoteSource;
+    }
+    return settings.messageReactionSource;
+  }
+
+  private void showReactionSourceOptions (@IdRes int viewId) {
+    TdApi.ReactionNotificationSource source = getReactionSource(viewId);
+    boolean isContacts = source instanceof TdApi.ReactionNotificationSourceContacts;
+    boolean isEveryone = source instanceof TdApi.ReactionNotificationSourceAll;
+    showSettings(new SettingsWrapBuilder(viewId).setRawItems(new ListItem[] {
+      new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.ReactionNotificationsInfo),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_reactionsFromNobody, 0, R.string.Nobody, viewId, !isContacts && !isEveryone),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_reactionsFromContacts, 0, R.string.MyContacts, viewId, isContacts),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_reactionsFromEveryone, 0, R.string.Everybody, viewId, isEveryone),
+    }).setIntDelegate((id, result) -> {
+      TdApi.ReactionNotificationSettings settings = tdlib.notifications().getReactionNotificationSettings();
+      if (settings == null) {
+        return;
+      }
+      int sourceId = result.get(id);
+      TdApi.ReactionNotificationSettings newSettings = copyReactionSettings(settings);
+      TdApi.ReactionNotificationSource newSource = sourceId == R.id.btn_reactionsFromContacts ? new TdApi.ReactionNotificationSourceContacts() :
+        sourceId == R.id.btn_reactionsFromEveryone ? new TdApi.ReactionNotificationSourceAll() : new TdApi.ReactionNotificationSourceNone();
+      if (id == R.id.btn_reactionNotifications_story) {
+        newSettings.storyReactionSource = newSource;
+      } else if (id == R.id.btn_reactionNotifications_poll) {
+        newSettings.pollVoteSource = newSource;
+      } else {
+        newSettings.messageReactionSource = newSource;
+      }
+      setReactionNotificationSettings(newSettings);
+    }).setAllowResize(false));
+  }
+
+  private void setReactionNotificationSettings (TdApi.ReactionNotificationSettings settings) {
+    tdlib.send(new TdApi.SetReactionNotificationSettings(settings), (ok, error) -> {
+      if (error != null) {
+        runOnUiThreadOptional(() -> {
+          UI.showError(error);
+          if (!isDestroyed() && adapter != null) {
+            adapter.updateValuedSettingById(R.id.btn_reactionNotifications_preview);
+          }
+        });
+      }
+    });
+  }
+
+  private static TdApi.ReactionNotificationSettings copyReactionSettings (TdApi.ReactionNotificationSettings src) {
+    TdApi.ReactionNotificationSettings dst = new TdApi.ReactionNotificationSettings();
+    dst.messageReactionSource = src.messageReactionSource;
+    dst.storyReactionSource = src.storyReactionSource;
+    dst.pollVoteSource = src.pollVoteSource;
+    dst.soundId = src.soundId;
+    dst.showPreview = src.showPreview;
+    return dst;
+  }
+
+  @Override
+  public void onReactionNotificationSettingsChanged (TdApi.ReactionNotificationSettings settings) {
+    tdlib.ui().post(() -> {
+      if (!isDestroyed() && adapter != null) {
+        adapter.updateValuedSettingById(R.id.btn_reactionNotifications_message);
+        adapter.updateValuedSettingById(R.id.btn_reactionNotifications_story);
+        adapter.updateValuedSettingById(R.id.btn_reactionNotifications_poll);
+        adapter.updateValuedSettingById(R.id.btn_reactionNotifications_preview);
+      }
+    });
   }
 
   @Override

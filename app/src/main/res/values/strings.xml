@@ -2118,6 +2118,11 @@
   <string name="BigReactionsChannels">Channels</string>
   <string name="BigReactionsNone">None</string>
   <string name="ChannelReactionsAnonymous">Reactions in channels are anonymous</string>
+  <string name="MessageReactions">Message Reactions</string>
+  <string name="StoryReactions">Story Reactions</string>
+  <string name="PollVotes">Poll Votes</string>
+  <string name="ReactionNotificationsInfo">Choose whose reactions and votes you receive notifications about.</string>
+  <string name="ReactionNotificationsPreview">Show Reaction in Notifications</string>
 
   <string name="UserRestrictions">User Permissions</string>
   <string name="GroupRestrictions">Group Permissions</string>
