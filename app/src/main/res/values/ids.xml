@@ -153,6 +153,7 @@
   <item type="id" name="controller_linkChat" />
   <item type="id" name="controller_enabledReactions"/>
   <item type="id" name="controller_deleteAccount"/>
+  <item type="id" name="controller_addPollOption"/>
   <item type="id" name="controller_waitForPremium"/>
 
   <item type="id" name="controller_setEmojiStatusPager" />
@@ -1215,6 +1216,7 @@
   <item type="id" name="btn_messageRetractVote" />
   <item type="id" name="btn_messagePollStop" />
   <item type="id" name="btn_messagePollDeleteOption" />
+  <item type="id" name="btn_messagePollAddOption" />
   <item type="id" name="btn_messageDeleteSenderReactions" />
   <item type="id" name="btn_messageApplyLocalization" />
   <item type="id" name="btn_messageInstallTheme" />

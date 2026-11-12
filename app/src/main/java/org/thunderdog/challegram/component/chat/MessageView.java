@@ -764,7 +764,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       //noinspection SwitchIntDef
       switch (content.getConstructor()) {
         case TdApi.MessagePoll.CONSTRUCTOR: {
-          TdApi.Poll poll = ((TdApi.MessagePoll) content).poll;
+          TdApi.MessagePoll pollContent = (TdApi.MessagePoll) content;
+          TdApi.Poll poll = pollContent.poll;
           if (!poll.isClosed) {
             boolean isQuiz = poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
             if (TD.canRetractVote(poll)) {
@@ -776,6 +777,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
               ids.append(R.id.btn_messagePollStop);
               icons.append(isQuiz ? R.drawable.baseline_help_24 : R.drawable.baseline_poll_24);
               strings.append(isQuiz ? R.string.StopQuiz : R.string.StopPoll);
+              if (pollContent.canAddOption) {
+                // TDLib tells whether the poll still accepts another option
+                ids.append(R.id.btn_messagePollAddOption);
+                icons.append(R.drawable.baseline_add_24);
+                strings.append(R.string.AddPollOption);
+              }
               if (poll.options.length > 2) {
                 // TDLib keeps polls at two options minimum, and the server rejects anything below that
                 ids.append(R.id.btn_messagePollDeleteOption);

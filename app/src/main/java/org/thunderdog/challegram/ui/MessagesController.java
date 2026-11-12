@@ -6802,6 +6802,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return true;
         });
         return true;
+      } else if (id == R.id.btn_messagePollAddOption) {
+        TdApi.Message message = selectedMessage.getMessage();
+        AddPollOptionController c = new AddPollOptionController(context(), tdlib);
+        c.setArguments(new long[] {message.chatId, message.id});
+        navigateTo(c);
+        return true;
       } else if (id == R.id.btn_messagePollDeleteOption) {
         TdApi.Message message = selectedMessage.getMessage();
         TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
