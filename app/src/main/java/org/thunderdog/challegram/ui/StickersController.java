@@ -58,6 +58,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
   public static final int MODE_STICKERS = 0;
   public static final int MODE_STICKERS_ARCHIVED = 1;
   public static final int MODE_MASKS = 2;
+  public static final int MODE_OWNED = 3;
 
   public static class Args {
     public final int mode;
@@ -87,6 +88,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
     switch (mode) {
       case MODE_STICKERS: return R.id.controller_stickers;
       case MODE_STICKERS_ARCHIVED: return R.id.controller_stickersArchived;
+      case MODE_OWNED: return R.id.controller_stickersOwned;
       case MODE_MASKS: return R.id.controller_masks;
     }
     return R.id.controller_stickers;
@@ -226,6 +228,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
     switch (mode) {
       case MODE_STICKERS:
       case MODE_STICKERS_ARCHIVED:
+      case MODE_OWNED:
         return new TdApi.StickerTypeRegular();
       case MODE_MASKS:
         return new TdApi.StickerTypeMask();
@@ -324,6 +327,8 @@ public class StickersController extends RecyclerViewController<StickersControlle
     TdApi.Function<?> function = null;
     if ((mode == MODE_STICKERS || mode == MODE_MASKS) && !isMore) {
       function = new TdApi.GetInstalledStickerSets(getStickerType());
+    } else if (mode == MODE_OWNED && !isMore) {
+      function = new TdApi.GetOwnedStickerSets(0, 100);
     } else if (mode == MODE_STICKERS_ARCHIVED) {
       long offsetStickerSetId;
       int limit;
@@ -422,6 +427,17 @@ public class StickersController extends RecyclerViewController<StickersControlle
               TGStickerSetInfo stickerSet = new TGStickerSetInfo(tdlib, info);
               stickerSet.setBoundList(stickerSets);
               stickerSets.add(stickerSet);
+            }
+            break;
+          }
+          case MODE_OWNED: {
+            // GetOwnedStickerSets returns sets of every type, while this tab belongs to a single one
+            for (TdApi.StickerSetInfo info : sets) {
+              if (Td.equalsTo(getStickerType(), info.stickerType)) {
+                TGStickerSetInfo stickerSet = new TGStickerSetInfo(tdlib, info);
+                stickerSet.setBoundList(stickerSets);
+                stickerSets.add(stickerSet);
+              }
             }
             break;
           }
@@ -537,6 +553,8 @@ public class StickersController extends RecyclerViewController<StickersControlle
       if (stickerSets == null || stickerSets.isEmpty()) {
         if (mode == MODE_STICKERS_ARCHIVED) {
           items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, Lang.getString(!isEmoji ? R.string.ArchivedStickersInfo : R.string.ArchivedEmojiInfo, Strings.buildCounter(tdlib.getInstalledStickerSetLimit())), false));
+        } else if (mode == MODE_OWNED) {
+          items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, R.string.NoOwnedPacks));
         } else {
           items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, mode == MODE_STICKERS ? R.string.NoStickerSets : R.string.NoMasks));
         }

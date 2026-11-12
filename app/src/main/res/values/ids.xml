@@ -233,6 +233,7 @@
   <item type="id" name="controller_stickers" />
   <item type="id" name="controller_stickerSet" />
   <item type="id" name="controller_stickersArchived" />
+  <item type="id" name="controller_stickersOwned" />
   <item type="id" name="controller_stickersTrending" />
   <item type="id" name="controller_masks" />
   <item type="id" name="controller_editUsername" />

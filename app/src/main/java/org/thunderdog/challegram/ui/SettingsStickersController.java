@@ -121,7 +121,8 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
   private static final int TRENDING_POSITION = 0;
   private static final int STICKERS_POSITION = 1;
   private static final int ARCHIVED_POSITION = 2;
-  private static final int MASKS_POSITION = 3;
+  private static final int OWNED_POSITION = 3;
+  private static final int MASKS_POSITION = 4;
 
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager) {
@@ -145,7 +146,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
 
   @Override
   protected int getPagerItemCount () {
-    return type == TYPE_STICKER ? 4 : 3;
+    return type == TYPE_STICKER ? 5 : 4;
   }
 
   @Override
@@ -154,11 +155,13 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
       Lang.uppercase(Lang.getString(R.string.Trending)),
       Lang.uppercase(Lang.getString(R.string.Installed)),
       Lang.uppercase(Lang.getString(R.string.Archived)),
+      Lang.uppercase(Lang.getString(R.string.Owned)),
       Lang.uppercase(Lang.getString(R.string.Masks))
     }: new String[] {
       Lang.uppercase(Lang.getString(R.string.Trending)),
       Lang.uppercase(Lang.getString(R.string.Installed)),
-      Lang.uppercase(Lang.getString(R.string.Archived))
+      Lang.uppercase(Lang.getString(R.string.Archived)),
+      Lang.uppercase(Lang.getString(R.string.Owned))
     };
   }
 
@@ -190,6 +193,12 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
       case ARCHIVED_POSITION: {
         StickersController c = new StickersController(this.context, this.tdlib);
         c.setArguments(new StickersController.Args(StickersController.MODE_STICKERS_ARCHIVED, isEmoji(), false));
+        c.search(searchRequest);
+        return c;
+      }
+      case OWNED_POSITION: {
+        StickersController c = new StickersController(this.context, this.tdlib);
+        c.setArguments(new StickersController.Args(StickersController.MODE_OWNED, isEmoji(), false));
         c.search(searchRequest);
         return c;
       }

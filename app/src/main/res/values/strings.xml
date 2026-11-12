@@ -1341,6 +1341,8 @@
   <string name="MasksHint">In future versions, you will be able to add masks to photos and videos you send.</string>
   <string name="Trending">Trending</string>
   <string name="Archived">Archived</string>
+  <string name="Owned">My Packs</string>
+  <string name="NoOwnedPacks">You haven\'t created any packs yet</string>
   <string name="Masks">Masks</string>
   <string name="StickersHide">Archive</string>
   <string name="XOnlyIfSilent">%1$s (only if silent)</string>
