@@ -819,6 +819,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   private TdApi.ArchiveChatListSettings archiveChatListSettings;
+  private @Nullable long[] notificationExceptions;
+  private @Nullable TdApi.Chat[] notificationExceptionChats;
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
@@ -1040,6 +1042,10 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         } else if (itemId == R.id.btn_reactionNotifications_preview) {
           TdApi.ReactionNotificationSettings settings = tdlib.notifications().getReactionNotificationSettings();
           view.getToggler().setRadioEnabled(settings != null && settings.showPreview, isUpdate);
+        } else if (itemId == R.id.btn_notificationExceptions) {
+          if (notificationExceptions != null) {
+            view.setData(Lang.plural(R.string.xExceptions, notificationExceptions.length));
+          }
         }
         view.setColorDataId(dataColorId);
       }
@@ -1327,6 +1333,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_reactionNotifications_preview, 0, R.string.ReactionNotificationsPreview));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         }
+
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_notificationExceptions, 0, R.string.CustomNotifications));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        loadNotificationExceptions();
 
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.BadgeCounter));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -1965,6 +1976,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         newSettings.showPreview = adapter.toggleView(v);
         setReactionNotificationSettings(newSettings);
       }
+    } else if (viewId == R.id.btn_notificationExceptions) {
+      showNotificationExceptions();
     } else if (viewId == R.id.btn_archiveMuteNonContacts) {
       if (archiveChatListSettings != null) {
         archiveChatListSettings.archiveAndMuteNewChatsFromUnknownUsers = adapter.toggleView(v);
@@ -2098,6 +2111,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   @Override
   public void onFocus () {
     super.onFocus();
+    if (isCommonScreen() && scope == null && customChatId == 0) {
+      loadNotificationExceptions();
+    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       if (oneShot && adapter != null) {
         makeChannelChecks();
@@ -2354,6 +2370,65 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         adapter.updateValuedSettingById(R.id.btn_reactionNotifications_poll);
         adapter.updateValuedSettingById(R.id.btn_reactionNotifications_preview);
       }
+    });
+  }
+
+  private void loadNotificationExceptions () {
+    tdlib.send(new TdApi.GetChatNotificationSettingsExceptions(null, false), (result, error) -> runOnUiThreadOptional(() -> {
+      if (result == null || isDestroyed()) {
+        return;
+      }
+      this.notificationExceptions = result.chatIds;
+      if (adapter != null) {
+        adapter.updateValuedSettingById(R.id.btn_notificationExceptions);
+      }
+    }));
+  }
+
+  private void showNotificationExceptions () {
+    long[] chatIds = this.notificationExceptions;
+    if (chatIds == null || chatIds.length == 0) {
+      return;
+    }
+    TdApi.Chat[] chats = new TdApi.Chat[chatIds.length];
+    int[] pending = new int[] {chatIds.length};
+    for (int i = 0; i < chatIds.length; i++) {
+      int index = i;
+      tdlib.chat(chatIds[i], chat -> runOnUiThreadOptional(() -> {
+        chats[index] = chat;
+        if (--pending[0] == 0) {
+          openNotificationExceptions(chats);
+        }
+      }));
+    }
+  }
+
+  private void openNotificationExceptions (TdApi.Chat[] chats) {
+    if (isDestroyed()) {
+      return;
+    }
+    List<TdApi.Chat> list = new ArrayList<>(chats.length);
+    for (TdApi.Chat chat : chats) {
+      if (chat != null && !StringUtils.isEmpty(tdlib.chatTitle(chat))) {
+        list.add(chat);
+      }
+    }
+    if (list.isEmpty()) {
+      return;
+    }
+    int[] ids = new int[list.size()];
+    String[] titles = new String[list.size()];
+    for (int i = 0; i < ids.length; i++) {
+      ids[i] = i; // option id is the index into notificationExceptionChats
+      titles[i] = tdlib.chatTitle(list.get(i));
+    }
+    this.notificationExceptionChats = list.toArray(new TdApi.Chat[0]);
+    showOptions(Lang.getString(R.string.NotificationExceptionsInfo), ids, titles, null, null, (itemView, id) -> {
+      TdApi.Chat[] current = this.notificationExceptionChats;
+      if (current != null && id >= 0 && id < current.length) {
+        tdlib.ui().openChat(this, current[id].id, null);
+      }
+      return true;
     });
   }
 

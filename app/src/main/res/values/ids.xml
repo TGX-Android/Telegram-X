@@ -1127,6 +1127,7 @@
   <item type="id" name="btn_reactionsFromNobody" />
   <item type="id" name="btn_reactionsFromContacts" />
   <item type="id" name="btn_reactionsFromEveryone" />
+  <item type="id" name="btn_notificationExceptions" />
   <item type="id" name="btn_archiveSettings" />
   <item type="id" name="btn_events_pinnedMessages" />
   <item type="id" name="btn_events_mentions" />

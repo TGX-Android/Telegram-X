@@ -2124,6 +2124,8 @@
   <string name="ReactionNotificationsInfo">Choose whose reactions and votes you receive notifications about.</string>
   <string name="ReactionNotificationsPreview">Show Reaction in Notifications</string>
 
+  <string name="NotificationExceptionsInfo">These chats override the notification settings above.</string>
+
   <string name="UserRestrictions">User Permissions</string>
   <string name="GroupRestrictions">Group Permissions</string>
   <string name="ChannelRestrictions">Channel Permissions</string>
