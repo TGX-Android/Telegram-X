@@ -6802,6 +6802,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return true;
         });
         return true;
+      } else if (id == R.id.btn_messagePollDeleteOption) {
+        TdApi.Message message = selectedMessage.getMessage();
+        TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
+        final IntList optionIds = new IntList(poll.options.length);
+        final StringList optionNames = new StringList(poll.options.length);
+        for (int i = 0; i < poll.options.length; i++) {
+          // Negative ids cannot collide with real resource ids in this dedicated popup
+          optionIds.append(-(i + 1));
+          optionNames.append(poll.options[i].text.text);
+        }
+        showOptions(Lang.getString(R.string.RemovePollOption), optionIds.get(), optionNames.get(), null, null, (optionItemView, optionId) -> {
+          if (optionId < 0) {
+            int index = -(optionId + 1);
+            if (index >= 0 && index < poll.options.length) {
+              showOptions(Lang.getStringBold(R.string.RemovePollOptionConfirm, poll.options[index].text), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Remove), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (optionItemView2, confirmId) -> {
+                if (confirmId == R.id.btn_done) {
+                  tdlib.send(new TdApi.DeletePollOption(message.chatId, message.id, poll.options[index].id), tdlib.typedOkHandler());
+                }
+                return true;
+              });
+            }
+          }
+          return true;
+        });
+        return true;
       } else if (id == R.id.btn_messageLiveStop) {
         ((TGMessageLocation) selectedMessage).stopLiveLocation();
         return true;

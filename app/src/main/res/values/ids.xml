@@ -1214,6 +1214,7 @@
   <item type="id" name="btn_messageShareCallLogs" />
   <item type="id" name="btn_messageRetractVote" />
   <item type="id" name="btn_messagePollStop" />
+  <item type="id" name="btn_messagePollDeleteOption" />
   <item type="id" name="btn_messageApplyLocalization" />
   <item type="id" name="btn_messageInstallTheme" />
   <item type="id" name="btn_messageShowSource" />

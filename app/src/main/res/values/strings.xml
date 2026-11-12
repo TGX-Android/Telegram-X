@@ -3938,6 +3938,8 @@
 
   <string name="StopPollWarn">If you stop this poll now, nobody will be able to vote in it anymore.\n\nThis action cannot be undone.</string>
   <string name="StopQuizWarn">If you stop this quiz now, nobody will be able to participate in it anymore.\n\nThis action cannot be undone.</string>
+  <string name="RemovePollOption">Remove an option</string>
+  <string name="RemovePollOptionConfirm">Remove %1$s from the poll? Votes for this option will be discarded.</string>
 
   <string name="ViewPollResults">View Results</string>
   <string name="ViewQuizResults">View Results</string>
