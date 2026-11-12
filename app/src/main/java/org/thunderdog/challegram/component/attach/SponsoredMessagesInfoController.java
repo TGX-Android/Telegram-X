@@ -16,22 +16,28 @@ import android.content.Context;
 import android.net.Uri;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Intents;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 
 public class SponsoredMessagesInfoController extends MediaBottomBaseController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
+  private boolean hasSponsoredMessagesSetting;
+  private boolean areSponsoredMessagesEnabled;
 
   public SponsoredMessagesInfoController (MediaLayout context, int titleResource) {
     super(context, titleResource);
@@ -50,21 +56,43 @@ public class SponsoredMessagesInfoController extends MediaBottomBaseController<V
         } else {
           view.setIconColorId(ColorId.icon);
         }
+        if (item.getId() == R.id.btn_toggleSponsoredMessages) {
+          view.getToggler().setRadioEnabled(areSponsoredMessagesEnabled, isUpdate);
+        }
       }
     });
 
     ViewSupport.setThemedBackground(recyclerView, ColorId.background);
 
-    adapter.setItems(new ListItem[] {
-      new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL),
-      new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SponsoredInfoText),
-      new ListItem(ListItem.TYPE_SHADOW_TOP),
-      new ListItem(ListItem.TYPE_SETTING, R.id.btn_openLink, R.drawable.baseline_language_24, Lang.getString(R.string.url_promote), false).setTextColorId(ColorId.textNeutral),
-      new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
-      new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SponsoredInfoText2),
-    }, false);
+    adapter.setItems(getItems(), false);
+
+    if (tdlib.hasPremium()) {
+      tdlib.send(new TdApi.GetUserFullInfo(tdlib.myUserId()), (userFullInfo, error) -> runOnUiThreadOptional(() -> {
+        if (userFullInfo != null && (!hasSponsoredMessagesSetting || areSponsoredMessagesEnabled != userFullInfo.hasSponsoredMessagesEnabled)) {
+          hasSponsoredMessagesSetting = true;
+          areSponsoredMessagesEnabled = userFullInfo.hasSponsoredMessagesEnabled;
+          adapter.setItems(getItems(), true);
+        }
+      }));
+    }
 
     return contentView;
+  }
+
+  private ListItem[] getItems () {
+    ListItem[] base = new ListItem[hasSponsoredMessagesSetting ? 8 : 6];
+    int i = 0;
+    base[i++] = new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL);
+    base[i++] = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SponsoredInfoText);
+    base[i++] = new ListItem(ListItem.TYPE_SHADOW_TOP);
+    base[i++] = new ListItem(ListItem.TYPE_SETTING, R.id.btn_openLink, R.drawable.baseline_language_24, Lang.getString(R.string.url_promote), false).setTextColorId(ColorId.textNeutral);
+    if (hasSponsoredMessagesSetting) {
+      base[i++] = new ListItem(ListItem.TYPE_SEPARATOR_FULL);
+      base[i++] = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleSponsoredMessages, 0, R.string.SponsoredMessagesSetting);
+    }
+    base[i++] = new ListItem(ListItem.TYPE_SHADOW_BOTTOM);
+    base[i] = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SponsoredInfoText2);
+    return base;
   }
 
   @Override
@@ -100,6 +128,16 @@ public class SponsoredMessagesInfoController extends MediaBottomBaseController<V
     if (v.getId() == R.id.btn_openLink) {
       mediaLayout.hide(false);
       Intents.openUriInBrowser(Uri.parse(Lang.getString(R.string.url_promote)));
+    } else if (v.getId() == R.id.btn_toggleSponsoredMessages) {
+      boolean value = adapter.toggleView(v);
+      tdlib.send(new TdApi.ToggleHasSponsoredMessagesEnabled(value), (ok, error) -> runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+          adapter.updateValuedSettingById(R.id.btn_toggleSponsoredMessages);
+        } else {
+          areSponsoredMessagesEnabled = value;
+        }
+      }));
     }
   }
 
