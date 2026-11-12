@@ -876,7 +876,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   public void unsubscribeFromCallUpdates (int callId, CallStateChangeListener listener) {
-    putCallListener(callId, listener);
+    callListeners.remove(callId, listener);
   }
 
   public void addMyUserListener (MyUserDataChangeListener listener) {

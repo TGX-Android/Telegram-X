@@ -1,7 +1,6 @@
 @file:Suppress("UnstableApiUsage", "AvoidApplyPluginMethod")
 
 import androidx.baselineprofile.gradle.consumer.BaselineProfileConsumerExtension
-import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.impl.VariantOutputImpl
 import com.android.build.gradle.tasks.ExternalNativeBuildTask
@@ -9,7 +8,6 @@ import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
 import tgx.gradle.source.GitInformationSource
 import tgx.gradle.task.*
-import tgx.test.configureTests
 import java.util.*
 
 plugins {
@@ -999,27 +997,14 @@ android {
           "src/google/$folderName/AndroidManifest.xml"
         )
       }
-
-      if (variant.isMinifyEnabled) {
-        val variantName = variant.name.uppercaseFirstChar()
-        val copyTask = project.tasks.register<Copy>(
-          "copy${variantName}MappingFile"
-        ) {
-          description = "Creates a copy of mapping.txt with a build name"
-          from(variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE))
-          into(project.layout.buildDirectory.dir("outputs/mapping/${variant.name}"))
-          val mappingFileName = "${config.outputFileNamePrefix}-$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$buildTypeSuffix"
-          rename("mapping.txt", "$mappingFileName.txt")
-        }
-        project.afterEvaluate {
-          project.tasks.findByName("assemble$variantName")?.finalizedBy(copyTask)
-        }
-      }
     }
   }
 }
 
-configureTests()
+val hasTests = rootDir.resolve("tests/.git").exists()
+if (hasTests) {
+  apply(plugin = "tgx-tests-app")
+}
 
 extensions.configure<BaselineProfileConsumerExtension> {
   mergeIntoMain = false
@@ -1027,10 +1012,12 @@ extensions.configure<BaselineProfileConsumerExtension> {
   saveInSrc = true
   warnings.disabledVariants = false
   warnings.variantHasNoBaselineProfileDependency = false
-  Sdk.VARIANTS.values.filter {
-    it.usesBaselineProfile
-  }.forEach { variant ->
-    variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
+  if (hasTests) {
+    Sdk.VARIANTS.values.filter {
+      it.usesBaselineProfile
+    }.forEach { variant ->
+      variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
+    }
   }
 }
 
@@ -1273,9 +1260,10 @@ dependencies {
   compileOnly(libs.annotations.jsr305)
   compileOnly(libs.annotations.kotlin)
 
-  // Tests: tests/README.md
-  testImplementation(libs.bundles.unit.test)
-  androidTestImplementation(project(":tests:core"))
+  if (hasTests) {
+    testImplementation(libs.bundles.unit.test)
+    androidTestImplementation(project(":tests:core"))
+  }
 }
 
 if (!config.isExperimentalBuild) {

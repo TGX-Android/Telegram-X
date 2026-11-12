@@ -105,6 +105,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.RecordAudioVideoController;
 import org.thunderdog.challegram.player.RoundVideoController;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.service.TGCallService;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
@@ -233,6 +234,8 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
           return new ClickBait(0, true);
         case Tdlib.ResolvableProblem.NOTIFICATIONS:
           return new ClickBait(R.drawable.baseline_notification_important_14, true);
+        case Tdlib.ResolvableProblem.CALLS:
+          return new ClickBait(R.drawable.baseline_call_alert_14, true);
         case Tdlib.ResolvableProblem.CHECK_PASSWORD:
           return new ClickBait(R.drawable.baseline_gpp_maybe_14, true);
         case Tdlib.ResolvableProblem.CHECK_PHONE_NUMBER:
@@ -698,6 +701,7 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
       Log.e("Cannot show dialog", t);
       return null;
     }
+    dialog.setOnKeyListener((d, keyCode, event) -> silenceRingingByVolumeKey(event));
     View view = dialog.findViewById(android.R.id.message);
     if (view != null) {
       if (dialogMessages == null) {
@@ -805,11 +809,41 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   }
 
   private boolean backKeyDownReceived;
+  private int silencingVolumeKey = KeyEvent.KEYCODE_UNKNOWN;
+
+  public boolean silenceRingingByVolumeKey (KeyEvent event) {
+    int keyCode = event.getKeyCode();
+    if (keyCode != KeyEvent.KEYCODE_VOLUME_DOWN && keyCode != KeyEvent.KEYCODE_VOLUME_UP &&
+      keyCode != KeyEvent.KEYCODE_VOLUME_MUTE) {
+      return false;
+    }
+    if (event.getAction() == KeyEvent.ACTION_UP) {
+      boolean isSilencing = silencingVolumeKey == keyCode;
+      if (isSilencing) {
+        silencingVolumeKey = KeyEvent.KEYCODE_UNKNOWN;
+      }
+      return isSilencing;
+    }
+    if (event.getAction() != KeyEvent.ACTION_DOWN) {
+      return false;
+    }
+    if (silencingVolumeKey == keyCode && event.getRepeatCount() > 0) {
+      return true;
+    }
+    TGCallService service = TGCallService.currentInstance();
+    boolean isSilenced = service != null && service.silenceAppRinging();
+    // A window that took the key down may be gone before its key up
+    silencingVolumeKey = isSilenced ? keyCode : KeyEvent.KEYCODE_UNKNOWN;
+    return isSilenced;
+  }
 
   @Override
   public final boolean onKeyDown (int keyCode, KeyEvent event) {
     if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
       backKeyDownReceived = true;
+    }
+    if (silenceRingingByVolumeKey(event)) {
+      return true;
     }
     boolean handled = false;
     for (KeyEventListener listener : keyEventListeners) {
@@ -828,6 +862,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
         return true;
       }
       backKeyDownReceived = false;
+    }
+    if (silenceRingingByVolumeKey(event)) {
+      return true;
     }
     boolean handled = false;
     for (KeyEventListener listener : keyEventListeners) {
@@ -1183,9 +1220,16 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
     }
   }
 
+  protected boolean needPasscode () {
+    return true;
+  }
+
   public final void checkPasscode (boolean byUserLock) {
     if (byUserLock) {
       // TODO FIXME
+      return;
+    }
+    if (!needPasscode()) {
       return;
     }
     if (Passcode.instance().isLocked()) {
@@ -1195,7 +1239,18 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
         Log.e("TODO", t);
       }
     } else {
+      hidePasscode();
       Passcode.instance().trackUserActivity(false);
+    }
+  }
+
+  @Override
+  protected void onStop () {
+    super.onStop();
+    // The dialog of the request only pauses the activity, so it's left once stopped, e.g. by Home
+    if (isRequestingMicForCall) {
+      isRequestingMicForCall = false;
+      TGCallService.checkIncomingNotification();
     }
   }
 
@@ -1734,6 +1789,7 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
       for (int i = size - 1; i >= 0; i--) {
         passcodeListeners.get(i).onPasscodeShowing(this, isShowing);
       }
+      TGCallService.checkIncomingNotification();
     }
   }
 
@@ -2653,10 +2709,16 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   }*/
 
   private ActivityPermissionResult requestMicPermissionCallback;
+  private boolean isRequestingMicForCall;
+
+  public boolean isRequestingMicForCall () {
+    return isRequestingMicForCall;
+  }
 
   public void requestMicPermissionForCall (@Nullable ActivityPermissionResult after) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       this.requestMicPermissionCallback = after;
+      this.isRequestingMicForCall = true;
       requestPermissions(new String[] {Manifest.permission.RECORD_AUDIO}, REQUEST_USE_MIC_CALL);
     }
   }
@@ -2746,6 +2808,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   @Override
   public void onRequestPermissionsResult (int requestCode, @NonNull String[] permissions, @NonNull  int[] grantResults) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    if (requestCode == REQUEST_USE_MIC_CALL) {
+      isRequestingMicForCall = false;
+    }
     if (grantResults.length == 0) {
       return;
     }

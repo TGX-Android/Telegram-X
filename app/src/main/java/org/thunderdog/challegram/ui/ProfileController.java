@@ -4084,7 +4084,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (hasForumChanges) {
-      changes.add(new TdApi.ToggleSupergroupIsForum(ChatId.toSupergroupId(chat.id), toggleForumItem.isSelected(), supergroup.hasForumTabs));
+      changes.add(new TdApi.ToggleSupergroupIsForum(ChatId.toSupergroupId(chat.id), toggleForumItem.isSelected(), supergroup.hasForumTabs, supergroup.hasForumSidebar));
     }
 
     if (hasDirectMessagesChanges) {

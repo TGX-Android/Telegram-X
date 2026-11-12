@@ -812,7 +812,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     LevelDB db = Settings.instance().pmc();
     db.removeByPrefix(key(NOTIFICATION_DATA_PREFIX, tdlib.id()));
     db.removeByPrefix(key(NOTIFICATION_GROUP_DATA_PREFIX, tdlib.id()));
-    db.flush();
+    if (Config.NEED_FLUSH_NOTIFICATION_DATA) {
+      db.flush();
+    }
   }
 
   public int getNotificationData (int notificationId) {

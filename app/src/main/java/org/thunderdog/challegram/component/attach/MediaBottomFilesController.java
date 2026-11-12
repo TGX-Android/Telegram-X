@@ -119,14 +119,21 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           final ArrayList<InlineResult<?>> results = new ArrayList<>(uris.size());
           final TD.FileInfo fileInfo = new TD.FileInfo();
           for (Uri uri : uris) {
-            String filePath = U.tryResolveFilePath(uri);
-            if (!StringUtils.isEmpty(filePath) && U.canReadFile(filePath)) {
+            String filePath = U.resolveSharedFilePath(uri);
+            if (filePath == null) {
+              continue;
+            }
+            if (U.canReadFile(filePath)) {
               results.add(createItem(context, tdlib, new File(filePath), null));
             } else {
               final String path = uri.toString();
               TD.createInputFile(path, null, fileInfo);
               results.add(createItem(context, tdlib, path, R.drawable.baseline_insert_drive_file_24, fileInfo.title, Strings.buildSize(fileInfo.knownSize)));
             }
+          }
+          if (results.isEmpty()) {
+            UI.showToast(R.string.ShareContentUnsupported, Toast.LENGTH_SHORT);
+            return;
           }
           UI.post(() -> mediaLayout.getFilesControllerDelegate().onFilesSelected(results, false));
         });

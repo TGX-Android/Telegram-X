@@ -2379,6 +2379,15 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return tdlibDirectories;
   }
 
+  private static final String EXTERNAL_ACCOUNT_DIRECTORY_PREFIX = "x_account";
+
+  public static boolean isExternalTdlibFile (String relativePath) {
+    String[] names = relativePath.split("/");
+    int start = names[0].startsWith(EXTERNAL_ACCOUNT_DIRECTORY_PREFIX) &&
+      StringUtils.isNumeric(names[0].substring(EXTERNAL_ACCOUNT_DIRECTORY_PREFIX.length())) ? 1 : 0;
+    return names.length > start + 1 && getAllTdlibDirectories(false).contains(names[start]);
+  }
+
   public static long deleteLogFile (boolean old) {
     return deleteLogFiles(old ? DELETE_LOG_MODE_OLD : DELETE_LOG_MODE_CURRENT);
   }
@@ -2480,7 +2489,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
     if (file != null) {
       if (accountId != 0) {
-        file = new File(file, "x_account" + accountId);
+        file = new File(file, EXTERNAL_ACCOUNT_DIRECTORY_PREFIX + accountId);
         if (!file.exists()) {
           if (createIfNotFound) {
             if (!FileUtils.mkdirs(file))

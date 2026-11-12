@@ -171,8 +171,8 @@ private fun Project.findAppKeystore(): Keystore? {
 * Kotlin code reads Java getters as properties: `it.type.constructor`, not `it.type.getConstructor()`.
 * Kotlin is allowed in new modules outside of `org.thunderdog` (see `me.vkryl` package), tests and build code, as long as it is interoperable with Java code or private.
 * New files in `app` start with the license header, copied from a neighbouring file.
-* Build code in `buildSrc` and `tests/buildSrc` fails with `fatal(message)` of `tgx.gradle`.
-* Drawing, animations and scrolling don't allocate objects or request layout on frames, see [tests](/tests/README.md#drawing-and-animations).
+* Build code in `buildSrc` fails with `fatal(message)` of `tgx.gradle`.
+* Drawing, animations and scrolling don't allocate objects or request layout on frames.
 * A check of `Build.VERSION.SDK_INT` with both branches tests the newer version first, with the code since that version in `if` and the code before it in `else`:
 
   ```java

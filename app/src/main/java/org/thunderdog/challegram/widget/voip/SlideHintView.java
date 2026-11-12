@@ -20,6 +20,7 @@ import android.os.SystemClock;
 import android.view.View;
 
 import androidx.annotation.FloatRange;
+import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Screen;
@@ -48,13 +49,27 @@ public class SlideHintView extends View implements Runnable {
   }
 
   @Override
-  public void setVisibility (int visibility) {
-    super.setVisibility(visibility);
+  protected void onVisibilityChanged (@NonNull View changedView, int visibility) {
+    // Also of a parent, e.g. the buttons of a call hidden on the passcode after the call
+    super.onVisibilityChanged(changedView, visibility);
     checkLooping();
   }
 
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    checkLooping();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    setIsLooping(false);
+  }
+
   private void checkLooping () {
-    setIsLooping(getVisibility() == View.VISIBLE && getAlpha() > 0f && getMeasuredWidth() != 0 && getMeasuredHeight() != 0);
+    setIsLooping(isShown() && getAlpha() > 0f &&
+      getMeasuredWidth() != 0 && getMeasuredHeight() != 0);
   }
 
   private void setIsLooping (boolean isLooping) {
