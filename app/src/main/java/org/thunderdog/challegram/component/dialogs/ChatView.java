@@ -48,7 +48,6 @@ import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
-import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -585,7 +584,15 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       int titleTop = getTitleTop2(chatListMode);
       if (chat.isSecretChat()) {
         Drawable d = Icons.getSecureDrawable();
-        Drawables.drawRtl(c, d, titleX - Screen.dp(7f), titleTop + title.getHeight() / 2 - d.getMinimumHeight() / 2, Paints.getGreenPorterDuffPaint(), viewWidth, rtl);
+        Icons.drawBitmapRtl(
+          c,
+          R.drawable.deproko_baseline_lock_24,
+          titleX - Screen.dp(7f),
+          titleTop + title.getHeight() / 2 - d.getMinimumHeight() / 2,
+          Paints.getGreenPorterDuffPaint(),
+          viewWidth,
+          rtl
+        );
         titleX += Screen.dp(14f);
       }
 
@@ -598,7 +605,15 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     }
 
     if (chat.showVerify()) {
-      Drawables.drawRtl(c, Icons.getChatVerifyDrawable(), chat.getVerifyLeft(), getMuteTop(chatListMode), Paints.getVerifyPaint(), viewWidth, rtl);
+      Icons.drawBitmapRtl(
+        c,
+        R.drawable.deproko_baseline_verify_chat_24,
+        chat.getVerifyLeft(),
+        getMuteTop(chatListMode),
+        Paints.getVerifyPaint(),
+        viewWidth,
+        rtl
+      );
     }
 
     if ((chat.showScam() || chat.showFake()) && chat.getChatMark() != null) {
@@ -615,12 +630,28 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     }
 
     if (chat.showMute()) {
-      Drawables.drawRtl(c, Icons.getChatMuteDrawable(ColorId.chatListMute), chat.getMuteLeft(), getMuteTop(chatListMode), Paints.getChatsMutePaint(), viewWidth, rtl);
+      Icons.drawBitmapRtl(
+        c,
+        R.drawable.deproko_baseline_notifications_off_24,
+        chat.getMuteLeft(),
+        getMuteTop(chatListMode),
+        Paints.getChatsMutePaint(),
+        viewWidth,
+        rtl
+      );
     }
 
     if (chat.isSending()) {
       int x = chat.getChecksRight() - Screen.dp(10f) - Screen.dp(Icons.CLOCK_SHIFT_X);
-      Drawables.drawRtl(c, Icons.getClockIcon(ColorId.iconLight), x, getClockTop(chatListMode) - Screen.dp(Icons.CLOCK_SHIFT_Y), Paints.getIconLightPorterDuffPaint(), viewWidth, rtl);
+      Icons.drawBitmapRtl(
+        c,
+        R.drawable.deproko_baseline_clock_24,
+        x,
+        getClockTop(chatListMode) - Screen.dp(Icons.CLOCK_SHIFT_Y),
+        Paints.getIconLightPorterDuffPaint(),
+        viewWidth,
+        rtl
+      );
     } else {
       int x = chat.getChecksRight();
       int y = getClockTop(chatListMode);
@@ -636,7 +667,17 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
         } else {
           int iconX = x - Screen.dp(Icons.TICKS_SHIFT_X) - Screen.dp(14f);
           boolean unread = chat.isUnread();
-          Drawables.drawRtl(c, unread ? Icons.getSingleTick(ColorId.ticks) : Icons.getDoubleTick(ColorId.ticks), iconX, y - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint(), viewWidth, rtl);
+          Icons.drawBitmapRtl(
+            c,
+            unread ?
+              R.drawable.deproko_baseline_check_single_24 :
+              R.drawable.deproko_baseline_check_double_24,
+            iconX,
+            y - Screen.dp(Icons.TICKS_SHIFT_Y),
+            unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint(),
+            viewWidth,
+            rtl
+          );
           x -= Screen.dp(24 - 8 + 3);
         }
       }
@@ -701,7 +742,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
             if (iconId == R.drawable.baseline_camera_alt_16) {
               y += Screen.dp(.5f);
             }
-            Drawables.drawRtl(c, d, x, y, paint, viewWidth, rtl);
+            Icons.drawBitmapRtl(c, iconId, x, y, paint, viewWidth, rtl);
             x += Screen.dp(18f); //  + d.getMinimumWidth();
 
           }

@@ -2151,12 +2151,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       // Clock, tick and views
       if (isSending()) {
-        Drawables.draw(c, Icons.getClockIcon(ColorId.iconLight), clockX, pClockTop - Screen.dp(Icons.CLOCK_SHIFT_Y), Paints.getIconLightPorterDuffPaint());
+        Icons.drawBitmap(
+          c,
+          R.drawable.deproko_baseline_clock_24,
+          clockX,
+          pClockTop - Screen.dp(Icons.CLOCK_SHIFT_Y),
+          Paints.getIconLightPorterDuffPaint()
+        );
       } else if (isFailed()) {
         // TODO failure icon
       } else if (shouldShowTicks() && getViewCountMode() != VIEW_COUNT_MAIN) {
         boolean unread = isUnread() && !noUnread();
-        Drawables.draw(c, unread ? Icons.getSingleTick(ColorId.ticks) : Icons.getDoubleTick(ColorId.ticksRead), viewsX, pTicksTop - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint());
+        Icons.drawBitmap(
+          c,
+          unread ?
+            R.drawable.deproko_baseline_check_single_24 :
+            R.drawable.deproko_baseline_check_double_24,
+          viewsX,
+          pTicksTop - Screen.dp(Icons.TICKS_SHIFT_Y),
+          unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint()
+        );
       }
 
       int right = pTicksLeft - (shouldShowTicks() ? Icons.getSingleTickWidth() + Screen.dp(2.5f) : 0); //needMetadata ? pTimeLeft - Screen.dp(4f) : pTicksLeft;
@@ -2169,7 +2183,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         if (isBeingEdited()) {
           right -= Icons.getEditedIconWidth();
           right -= Screen.dp(COUNTER_ADD_MARGIN);
-          Drawables.draw(c, Icons.getClockIcon(ColorId.iconLight), pTicksLeft - (shouldShowTicks() ? Icons.getSingleTickWidth() + Screen.dp(2.5f) : 0) - Icons.getEditedIconWidth() - Screen.dp(6f), pTicksTop - Screen.dp(5f), Paints.getIconLightPorterDuffPaint());
+          Icons.drawBitmap(
+            c,
+            R.drawable.deproko_baseline_clock_24,
+            pTicksLeft - (shouldShowTicks() ? Icons.getSingleTickWidth() + Screen.dp(2.5f) : 0) -
+              Icons.getEditedIconWidth() - Screen.dp(6f),
+            pTicksTop - Screen.dp(5f),
+            Paints.getIconLightPorterDuffPaint()
+          );
         } else {
           isEdited.draw(c, right, top, Gravity.RIGHT, 1f, view, ColorId.iconLight, isEditedCounterLastDrawRect);
           right -= isEdited.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
@@ -4027,7 +4048,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         if ((useBubble() && !drawBubbleTimeOverContent()) && viewsWidth > clockWidth) {
           startX += viewsWidth - clockWidth;
         }
-        Drawables.draw(c, Icons.getClockIcon(iconColorId), startX - Screen.dp(Icons.CLOCK_SHIFT_X), startY + Screen.dp(5f) - Screen.dp(Icons.CLOCK_SHIFT_Y), iconPaint);
+        Icons.drawBitmap(
+          c,
+          R.drawable.deproko_baseline_clock_24,
+          startX - Screen.dp(Icons.CLOCK_SHIFT_X),
+          startY + Screen.dp(5f) - Screen.dp(Icons.CLOCK_SHIFT_Y),
+          iconPaint
+        );
         startX += clockWidth;
       } else {
         viewCounter.draw(c, startX, counterY, Gravity.LEFT, 1f, view, iconColorId);
@@ -4055,7 +4082,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     if (shouldShowEdited()) {
       if (isBeingEdited()) {
-        Drawables.draw(c, Icons.getClockIcon(iconColorId), startX - Screen.dp(6f), startY + Screen.dp(4.5f) - Screen.dp(5f), iconPaint);
+        Icons.drawBitmap(
+          c,
+          R.drawable.deproko_baseline_clock_24,
+          startX - Screen.dp(6f),
+          startY + Screen.dp(4.5f) - Screen.dp(5f),
+          iconPaint
+        );
         startX += Icons.getEditedIconWidth() + Screen.dp(3f);
       } else {
         isEdited.draw(c, startX, counterY, Gravity.LEFT, 1f, view, iconColorId, isEditedCounterLastDrawRect);
@@ -4088,10 +4121,24 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (isFailed) {
         // TODO failure icon
       } else if (isSending) {
-        Drawables.draw(c, Icons.getClockIcon(iconColorId), startX - Screen.dp(Icons.CLOCK_SHIFT_X), top - Screen.dp(Icons.CLOCK_SHIFT_Y), iconPaint);
+        Icons.drawBitmap(
+          c,
+          R.drawable.deproko_baseline_clock_24,
+          startX - Screen.dp(Icons.CLOCK_SHIFT_X),
+          top - Screen.dp(Icons.CLOCK_SHIFT_Y),
+          iconPaint
+        );
       } else {
         boolean unread = isUnread() && !noUnread();
-        Drawables.draw(c, unread ? Icons.getSingleTick(iconColorId) : Icons.getDoubleTick(iconColorId), startX - Screen.dp(Icons.TICKS_SHIFT_X), top - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? ticksPaint : ticksReadPaint);
+        Icons.drawBitmap(
+          c,
+          unread ?
+            R.drawable.deproko_baseline_check_single_24 :
+            R.drawable.deproko_baseline_check_double_24,
+          startX - Screen.dp(Icons.TICKS_SHIFT_X),
+          top - Screen.dp(Icons.TICKS_SHIFT_Y),
+          unread ? ticksPaint : ticksReadPaint
+        );
       }
       startX += Icons.getSingleTickWidth();
     }

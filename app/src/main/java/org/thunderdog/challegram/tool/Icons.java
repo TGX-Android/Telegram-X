@@ -16,11 +16,14 @@ package org.thunderdog.challegram.tool;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
+import androidx.collection.SparseArrayCompat;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.ColorId;
@@ -31,11 +34,13 @@ public class Icons {
   public static void reset () {
     livePinIcon = null;
     chatSelfDrawable = null;
-    chatVerifyDrawable = null;
     secureDrawable = null;
     secureSmallDrawable = null;
     if (sparseDrawables != null)
       sparseDrawables.clear();
+    if (bitmaps != null) {
+      bitmaps.clear();
+    }
     livePinIcon = null;
   }
 
@@ -47,14 +52,6 @@ public class Icons {
       chatSelfDrawable = Drawables.get(UI.getResources(), R.drawable.baseline_bookmark_24);
     }
     return chatSelfDrawable;
-  }
-
-  private static Drawable chatVerifyDrawable;
-  public static Drawable getChatVerifyDrawable () {
-    if (chatVerifyDrawable == null) {
-      chatVerifyDrawable = Drawables.get(UI.getResources(), R.drawable.deproko_baseline_verify_chat_24);
-    }
-    return chatVerifyDrawable;
   }
 
   public static int getEditedIconWidth () {
@@ -106,6 +103,61 @@ public class Icons {
     return drawable;
   }
 
+  // In a display list a VectorDrawable of 18 dp takes about 9 µs, a bitmap less than 1
+  private static SparseArrayCompat<Bitmap> bitmaps;
+
+  public static Bitmap getBitmap (@DrawableRes int res) {
+    if (bitmaps == null) {
+      bitmaps = new SparseArrayCompat<>();
+    }
+    Bitmap bitmap = bitmaps.get(res);
+    if (bitmap == null) {
+      bitmap = Drawables.getBitmap(res);
+      bitmaps.put(res, bitmap);
+    }
+    return bitmap;
+  }
+
+  public static void drawBitmap (
+    Canvas c,
+    @DrawableRes int res,
+    float x,
+    float y,
+    @Nullable Paint paint
+  ) {
+    c.drawBitmap(getBitmap(res), x, y, paint);
+  }
+
+  public static void drawBitmapRtl (
+    Canvas c,
+    @DrawableRes int res,
+    float x,
+    float y,
+    @Nullable Paint paint,
+    int viewWidth,
+    boolean rtl
+  ) {
+    Bitmap bitmap = getBitmap(res);
+    c.drawBitmap(bitmap, rtl ? viewWidth - x - bitmap.getWidth() : x, y, paint);
+  }
+
+  public static void drawBitmapOrVector (
+    Canvas c,
+    @DrawableRes int res,
+    Drawable vector,
+    boolean isScaled,
+    float x,
+    float y,
+    @Nullable Paint paint
+  ) {
+    // Scaled on the GPU, a bitmap looks sharper than its vector, at its own size the same
+    if (isScaled || res == 0) {
+      Drawables.draw(c, vector, x, y, paint);
+    } else {
+      drawBitmap(c, res, x, y, paint);
+    }
+  }
+
   private static Drawable calendarSmallDrawable;
 
   public static Drawable getCalendarSmallDrawable () {
@@ -121,28 +173,12 @@ public class Icons {
     return livePinIcon;
   }
 
-  public static Drawable getChatMuteDrawable (@ColorId int colorId) {
-    return getSparseDrawable(R.drawable.deproko_baseline_notifications_off_24, colorId);
-  }
-
   public static int getChatMuteDrawableWidth () {
     return Screen.dp(18f);
   }
 
-  public static Drawable getSingleTick (@ColorId int colorId) {
-    return getSparseDrawable(R.drawable.deproko_baseline_check_single_24, colorId);
-  }
-
   public static int getSingleTickWidth () {
     return Screen.dp(18f);
-  }
-
-  public static Drawable getDoubleTick (@ColorId int colorId) {
-    return getSparseDrawable(R.drawable.deproko_baseline_check_double_24, colorId);
-  }
-
-  public static Drawable getClockIcon (@ColorId int colorId) {
-    return getSparseDrawable(R.drawable.deproko_baseline_clock_24, colorId);
   }
 
   public static int getClockIconWidth () {

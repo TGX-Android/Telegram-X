@@ -176,7 +176,15 @@ public class AvatarPlaceholder {
       } else {
         saveCount = -1;
       }
-      Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2f, centerY - drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(metadata.iconColorId, alpha));
+      Icons.drawBitmapOrVector(
+        c,
+        metadata.drawableRes,
+        drawable,
+        needRestore,
+        centerX - drawable.getMinimumWidth() / 2f,
+        centerY - drawable.getMinimumHeight() / 2f,
+        PorterDuffPaint.get(metadata.iconColorId, alpha)
+      );
       if (needRestore) {
         Views.restore(c, saveCount);
       }
