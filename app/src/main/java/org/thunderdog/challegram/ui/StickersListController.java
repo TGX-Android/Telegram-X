@@ -164,6 +164,10 @@ public class StickersListController extends ViewController<StickersListControlle
           ids.append(R.id.btn_renameStickerSet);
           strings.append(R.string.RenamePack);
           icons.append(R.drawable.baseline_edit_24);
+
+          ids.append(R.id.btn_deleteStickerSet);
+          strings.append(R.string.DeletePack);
+          icons.append(R.drawable.baseline_delete_24);
         }
         showMore(ids.get(), strings.get(), icons.get(), 0);
       } else if (!stickerSections.isEmpty() ) {
@@ -241,6 +245,27 @@ public class StickersListController extends ViewController<StickersListControlle
         EditStickerSetTitleController controller = new EditStickerSetTitleController(context(), tdlib, loadedStickerSet.name, this::reloadStickerSet);
         controller.setArguments(loadedStickerSet.title);
         navigateTo(controller);
+      }
+    } else if (id == R.id.btn_deleteStickerSet) {
+      if (loadedStickerSet != null) {
+        String setName = loadedStickerSet.name;
+        showOptions(Lang.getString(R.string.DeletePackConfirm),
+          new int[] {R.id.btn_done, R.id.btn_cancel},
+          new String[] {Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)},
+          new int[] {OptionColor.RED, OptionColor.NORMAL},
+          new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24},
+          (itemView, confirmId) -> {
+            if (confirmId == R.id.btn_done) {
+              tdlib.send(new TdApi.DeleteStickerSet(setName), (ok, error) -> runOnUiThreadOptional(() -> {
+                if (error != null) {
+                  UI.showToast(TD.toErrorString(error), Toast.LENGTH_SHORT);
+                } else {
+                  navigateBack();
+                }
+              }));
+            }
+            return true;
+          });
       }
     } else if (id == R.id.btn_installStickerSet) {
       if (getArguments() != null) {

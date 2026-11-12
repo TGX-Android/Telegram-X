@@ -863,6 +863,7 @@
   <item type="id" name="btn_folderTags" />
   <item type="id" name="btn_installStickerSet" />
   <item type="id" name="btn_renameStickerSet" />
+  <item type="id" name="btn_deleteStickerSet" />
   <item type="id" name="btn_shareLink" />
   <item type="id" name="btn_disabled" />
   <item type="id" name="membersList" />
