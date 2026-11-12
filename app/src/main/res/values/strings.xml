@@ -1779,6 +1779,7 @@
   <string name="Themes">Themes</string>
   <string name="ChatTheme">Chat Theme</string>
   <string name="ChatColor">Chat Color</string>
+  <string name="ProfileColor">Profile Color</string>
   <string name="ThemeSettings">Themes and Chats</string>
   <string name="Tweaks">Interface Options</string>
   <string name="TweakSettings">Interface</string>

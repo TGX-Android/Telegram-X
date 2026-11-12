@@ -1234,6 +1234,55 @@ public class TdlibUi extends Handler {
     });
   }
 
+  public String chatProfileAccentColorTitle (long chatId) {
+    TdApi.Chat chat = tdlib.chat(chatId);
+    int profileAccentColorId = chat != null ? chat.profileAccentColorId : -1;
+    return profileAccentColorId >= 0 && profileAccentColorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT
+      ? TdlibAccentColor.getTextRepresentation(profileAccentColorId)
+      : Lang.getString(R.string.Default);
+  }
+
+  public void setChatProfileAccentColor (long chatId, int profileAccentColorId) {
+    tdlib.client().send(new TdApi.SetChatProfileAccentColor(chatId, profileAccentColorId, 0), result -> {
+      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+        UI.showError(result);
+        Log.e("setChatProfileAccentColor chatId:%d profileAccentColorId:%d error:%s", chatId, profileAccentColorId, TD.toErrorString(result));
+      }
+    });
+  }
+
+  public void showChatProfileAccentColorOptions (ViewController<?> context, long chatId) {
+    final int capacity = TdlibAccentColor.BUILT_IN_COLOR_COUNT + 1;
+    TdApi.Chat chat = tdlib.chat(chatId);
+    final int currentProfileAccentColorId = chat != null ? chat.profileAccentColorId : -1;
+    final IntList ids = new IntList(capacity);
+    final StringList names = new StringList(capacity);
+    final IntList icons = new IntList(capacity);
+
+    ids.append(R.id.btn_chatProfileColorReset);
+    names.append(R.string.Default);
+    icons.append(currentProfileAccentColorId == -1 ? R.drawable.baseline_check_24 : 0);
+
+    for (int i = 0; i < TdlibAccentColor.BUILT_IN_COLOR_COUNT; i++) {
+      // Negative ids cannot collide with real resource ids in this dedicated popup
+      ids.append(-(i + 1));
+      names.append(TdlibAccentColor.getTextRepresentation(i));
+      icons.append(i == currentProfileAccentColorId ? R.drawable.baseline_check_24 : 0);
+    }
+
+    context.showOptions(null, ids.get(), names.get(), null, icons.get(), (itemView, id) -> {
+      if (id == R.id.btn_chatProfileColorReset) {
+        setChatProfileAccentColor(chatId, -1);
+      } else if (id < 0) {
+        int index = -(id + 1);
+        if (index >= 0 && index < TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+          setChatProfileAccentColor(chatId, index);
+        }
+      }
+      return true;
+    });
+  }
+
   public int getIconForSetting (@Nullable TdApi.Chat chat) {
     final int muteFor = tdlib.chatMuteFor(chat);
     return muteFor >= MUTE_MAX ? R.drawable.baseline_notifications_off_24 : muteFor > 0 ? R.drawable.baseline_notifications_paused_24 : R.drawable.baseline_notifications_24;

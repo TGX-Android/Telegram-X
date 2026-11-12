@@ -571,6 +571,8 @@
   <item type="id" name="btn_chatTheme" />
   <item type="id" name="btn_chatThemeReset" />
   <item type="id" name="btn_chatColor" />
+  <item type="id" name="btn_chatProfileColor" />
+  <item type="id" name="btn_chatProfileColorReset" />
   <item type="id" name="btn_birthdate" />
   <item type="id" name="btn_addBirthdate" />
   <item type="id" name="btn_groupsInCommon" />

@@ -1781,6 +1781,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           view.setData(tdlib.ui().chatThemeTitle(chat.id));
         } else if (itemId == R.id.btn_chatColor) {
           view.setData(tdlib.ui().chatAccentColorTitle(chat.id));
+        } else if (itemId == R.id.btn_chatProfileColor) {
+          view.setData(tdlib.ui().chatProfileAccentColorTitle(chat.id));
         } else if (itemId == R.id.btn_groupsInCommon) {
           view.setData(Lang.plural(R.string.xGroups, userFull.groupInCommonCount));
         } else if (itemId == R.id.btn_encryptionKey) {
@@ -2416,6 +2418,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return null;
     }
     return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatColor, R.drawable.baseline_format_color_fill_24, R.string.ChatColor);
+  }
+
+  private ListItem newChatProfileColorItem () {
+    if (chat == null || !tdlib.isChannelChat(chat) || !tdlib.canChangeInfo(chat)) {
+      return null;
+    }
+    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatProfileColor, R.drawable.baseline_account_circle_24, R.string.ProfileColor);
   }
 
   private ListItem newBirthdateItem () {
@@ -3211,6 +3220,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (chatColorItem != null) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(chatColorItem);
+      ListItem chatProfileColorItem = newChatProfileColorItem();
+      if (chatProfileColorItem != null) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(chatProfileColorItem);
+      }
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
@@ -5034,6 +5048,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       tdlib.ui().showChatThemeOptions(this, chat.id);
     } else if (viewId == R.id.btn_chatColor) {
       tdlib.ui().showChatAccentColorOptions(this, chat.id);
+    } else if (viewId == R.id.btn_chatProfileColor) {
+      tdlib.ui().showChatProfileAccentColorOptions(this, chat.id);
     } else if (viewId == R.id.btn_encryptionKey) {
       if (secretChat != null && secretChat.keyHash != null && secretChat.keyHash.length > 0) {
         EncryptionKeyController controller = new EncryptionKeyController(context, tdlib);
@@ -6600,6 +6616,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     tdlib.ui().post(() -> {
       if (chat != null && chat.id == chatId && baseAdapter != null) {
         baseAdapter.updateValuedSettingById(R.id.btn_chatColor);
+        baseAdapter.updateValuedSettingById(R.id.btn_chatProfileColor);
       }
     });
   }
