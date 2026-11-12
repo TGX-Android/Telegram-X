@@ -1219,6 +1219,7 @@
   <item type="id" name="btn_messagePollDeleteOption" />
   <item type="id" name="btn_messagePollAddOption" />
   <item type="id" name="btn_messageDeleteSenderReactions" />
+  <item type="id" name="btn_messageDeleteAllSenderReactions" />
   <item type="id" name="btn_messageApplyLocalization" />
   <item type="id" name="btn_messageInstallTheme" />
   <item type="id" name="btn_messageShowSource" />

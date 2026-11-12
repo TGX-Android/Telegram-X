@@ -26,6 +26,7 @@ import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.List;
 
+import me.vkryl.core.collection.IntList;
 import tgx.td.Td;
 
 public class MessageOptionsReactedController extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<Void> implements View.OnClickListener {
@@ -40,6 +41,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
   private boolean isLoadingMore = false;
   private int totalCount = 0;
   private boolean canDeleteSenderReactions = false;
+  private boolean canDeleteAllSenderReactions = false;
 
   public MessageOptionsReactedController (Context context, Tdlib tdlib, PopupLayout popupLayout, TGMessage message, @Nullable TdApi.ReactionType reactionType) {
     super(context, tdlib);
@@ -72,7 +74,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
         } else {
           userView.setDrawModifier(null);
         }
-        if (canDeleteSenderReactions) {
+        if (canDeleteSenderReactions || canDeleteAllSenderReactions) {
           userView.setOnLongClickListener(v -> showDeleteSenderReactionsOptions(v));
         } else {
           userView.setOnLongClickListener(null);
@@ -98,6 +100,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
     });
     ViewSupport.setThemedBackground(recyclerView, ColorId.background);
     addThemeInvalidateListener(recyclerView);
+    canDeleteAllSenderReactions = checkCanDeleteAllSenderReactions();
     message.getMessageProperties(message.getSmallestId(), properties -> {
       if (properties != null && properties.canDeleteReactions && !canDeleteSenderReactions) {
         canDeleteSenderReactions = true;
@@ -170,6 +173,16 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
     }
   }
 
+  private boolean checkCanDeleteAllSenderReactions () {
+    // TDLib only deletes the recent reactions of a sender in groups, and only for administrators allowed to delete messages
+    TdApi.Chat chat = tdlib.chat(message.getChatId());
+    if (chat == null) {
+      return false;
+    }
+    int chatType = chat.type.getConstructor();
+    return (chatType == TdApi.ChatTypeBasicGroup.CONSTRUCTOR || chatType == TdApi.ChatTypeSupergroup.CONSTRUCTOR) && tdlib.canDeleteMessages(message.getChatId());
+  }
+
   private boolean showDeleteSenderReactionsOptions (View v) {
     if (!(v.getTag() instanceof ListItem)) {
       return false;
@@ -179,17 +192,42 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       return false;
     }
     final TdApi.MessageSender senderId = (TdApi.MessageSender) data;
-    showOptions(null,
-      new int[] {R.id.btn_messageDeleteSenderReactions, R.id.btn_cancel},
-      new String[] {Lang.getString(R.string.RemoveSenderReactions), Lang.getString(R.string.Cancel)},
-      new int[] {OptionColor.RED, OptionColor.NORMAL},
-      new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24},
-      (itemView, id) -> {
-        if (id == R.id.btn_messageDeleteSenderReactions) {
-          tdlib.send(new TdApi.DeleteMessageReactionsFromSender(message.getChatId(), message.getSmallestId(), senderId), tdlib.typedOkHandler(this::reload));
-        }
-        return true;
-      });
+    IntList ids = new IntList(3);
+    IntList colors = new IntList(3);
+    IntList icons = new IntList(3);
+    StringList titles = new StringList(3);
+    ids.append(R.id.btn_messageDeleteSenderReactions);
+    colors.append(OptionColor.RED);
+    icons.append(R.drawable.baseline_remove_circle_24);
+    titles.append(Lang.getString(R.string.RemoveSenderReactions));
+    if (canDeleteAllSenderReactions) {
+      ids.append(R.id.btn_messageDeleteAllSenderReactions);
+      colors.append(OptionColor.RED);
+      icons.append(R.drawable.baseline_remove_circle_24);
+      titles.append(Lang.getString(R.string.RemoveAllSenderReactions));
+    }
+    ids.append(R.id.btn_cancel);
+    colors.append(OptionColor.NORMAL);
+    icons.append(R.drawable.baseline_cancel_24);
+    titles.append(Lang.getString(R.string.Cancel));
+    showOptions(null, ids.get(), titles.get(), colors.get(), icons.get(), (itemView, id) -> {
+      if (id == R.id.btn_messageDeleteSenderReactions) {
+        tdlib.send(new TdApi.DeleteMessageReactionsFromSender(message.getChatId(), message.getSmallestId(), senderId), tdlib.typedOkHandler(this::reload));
+      } else if (id == R.id.btn_messageDeleteAllSenderReactions) {
+        showOptions(Lang.getString(R.string.RemoveAllSenderReactionsConfirm),
+          new int[] {R.id.btn_done, R.id.btn_cancel},
+          new String[] {Lang.getString(R.string.Remove), Lang.getString(R.string.Cancel)},
+          new int[] {OptionColor.RED, OptionColor.NORMAL},
+          new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24},
+          (itemView2, confirmId) -> {
+            if (confirmId == R.id.btn_done) {
+              tdlib.send(new TdApi.DeleteAllRecentMessageReactionsFromSender(message.getChatId(), senderId), tdlib.typedOkHandler(this::reload));
+            }
+            return true;
+          });
+      }
+      return true;
+    });
     return true;
   }
 
