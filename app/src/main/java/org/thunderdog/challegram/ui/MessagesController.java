@@ -368,6 +368,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CameraAccessImageView mediaButton;
   private InvisibleImageView cameraButton, scheduleButton;
   private InvisibleImageView commandButton;
+  private @Nullable TdApi.BotMenuButton botMenuButton;
   private @Nullable SilentButton silentButton;
 
   private HapticMenuHelper sendAsMenu;
@@ -2103,8 +2104,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       manager.scrollToNextUnreadReaction();
     } else if (viewId == R.id.msg_command) {
       // FIXME: rely on some state, not on icon id
-      if (lastCmdResource == R.drawable.deproko_baseline_bots_command_26) {
-        onCommandClick();
+      if (lastCmdResource == R.drawable.deproko_baseline_bots_command_26 || lastCmdResource == R.drawable.deproko_baseline_bots_24) {
+        TdApi.BotMenuButton menuButton = this.botMenuButton;
+        if (menuButton != null) {
+          openBotMenuButton(menuButton);
+        } else {
+          onCommandClick();
+        }
       } else if (lastCmdResource == R.drawable.deproko_baseline_bots_keyboard_26 ||
         lastCmdResource == R.drawable.baseline_direction_arrow_down_24 ||
         lastCmdResource == R.drawable.baseline_keyboard_24) {
@@ -2897,8 +2903,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     boolean isMultiChat = tdlib.isMultiChat(chat.id);
 
+    setBotMenuButton(null);
+
     if (isMultiChat || tdlib.isBotChat(chat)/* || (TGUtils.isChannel(chat) && TGUtils.hasWritePermission(chat))*/) {
-      updateCommandButton(R.drawable.deproko_baseline_bots_command_26);
+      updateCommandButton(defaultCommandButtonIcon());
       updateCommandButton(false);
       botHelper = new BotHelper(this, chat);
     } else {
@@ -7481,6 +7489,29 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  public void setBotMenuButton (@Nullable TdApi.BotMenuButton menuButton) {
+    if (this.botMenuButton == menuButton) {
+      return;
+    }
+    this.botMenuButton = menuButton;
+    commandButton.setContentDescription(menuButton != null ? menuButton.text : null);
+    if (lastCmdResource == R.drawable.deproko_baseline_bots_command_26 || lastCmdResource == R.drawable.deproko_baseline_bots_24) {
+      updateCommandButton(defaultCommandButtonIcon());
+    }
+  }
+
+  private int defaultCommandButtonIcon () {
+    return botMenuButton != null ? R.drawable.deproko_baseline_bots_24 : R.drawable.deproko_baseline_bots_command_26;
+  }
+
+  private void openBotMenuButton (TdApi.BotMenuButton menuButton) {
+    if (StringUtils.isEmpty(menuButton.url)) {
+      onCommandClick();
+      return;
+    }
+    tdlib.ui().openUrl(this, menuButton.url, new TdlibUi.UrlOpenParameters().controller(this));
+  }
+
   private void onCommandClick () {
     inputView.setInput("/", true, true);
     Keyboard.show(inputView);
@@ -7545,7 +7576,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       setCommandsShown(false);
       if (destroy) {
-        updateCommandButton(R.drawable.deproko_baseline_bots_command_26);
+        updateCommandButton(defaultCommandButtonIcon());
       } else {
         updateCommandButton(R.drawable.deproko_baseline_bots_keyboard_26);
         if (byUserEvent) {
@@ -7553,7 +7584,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
     } else if (destroy) {
-      updateCommandButton(R.drawable.deproko_baseline_bots_command_26);
+      updateCommandButton(defaultCommandButtonIcon());
     }
   }
 
@@ -7966,7 +7997,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onDestroyCommandKeyboard () {
     clearScheduledKeyboard();
     closeCommandsKeyboardImpl(true, false);
-    updateCommandButton(R.drawable.deproko_baseline_bots_command_26);
+    updateCommandButton(defaultCommandButtonIcon());
     if (commandsMessageId != 0) {
       botHelper.onDestroyKeyboard(commandsMessageId);
     }

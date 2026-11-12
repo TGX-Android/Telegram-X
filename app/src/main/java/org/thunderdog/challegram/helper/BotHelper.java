@@ -52,6 +52,8 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
 
   private ArrayList<InlineResult<?>> commands;
 
+  private @Nullable TdApi.BotMenuButton menuButton;
+
   public BotHelper (@NonNull MessagesController controller, TdApi.Chat chat) {
     this.context = controller;
     if (chat != null) {
@@ -174,6 +176,8 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
     }
 
     if (full.botInfo != null) {
+      boolean changed = false;
+
       if (!StringUtils.isEmpty(full.botInfo.description) && !context.areScheduledOnly()) {
         this.botInfoMessage = new TGMessageBotInfo(context.getManager(), chatId, full.botInfo.description);
       }
@@ -184,11 +188,34 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
           commands.add(new InlineResultCommand(context.context(), context.tdlib(), objectId, command));
         }
         this.commands = commands;
-        context.tdlib().uiExecute(this);
+        changed = true;
       } else if (botInfoMessage != null) {
+        changed = true;
+      }
+
+      TdApi.BotMenuButton newMenuButton = full.botInfo.menuButton;
+      if (newMenuButton != null && (StringUtils.isEmpty(newMenuButton.text) || StringUtils.isEmpty(newMenuButton.url))) {
+        newMenuButton = null;
+      }
+      if (!isSameMenuButton(this.menuButton, newMenuButton)) {
+        this.menuButton = newMenuButton;
+        changed = true;
+      }
+
+      if (changed) {
         context.tdlib().uiExecute(this);
       }
     }
+  }
+
+  private static boolean isSameMenuButton (@Nullable TdApi.BotMenuButton a, @Nullable TdApi.BotMenuButton b) {
+    if (a == b) {
+      return true;
+    }
+    if (a == null || b == null) {
+      return false;
+    }
+    return StringUtils.equalsOrBothEmpty(a.text, b.text) && StringUtils.equalsOrBothEmpty(a.url, b.url);
   }
 
   @Override
@@ -431,7 +458,9 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
       } else {
         context.getManager().checkBotStart();
       }
-      context.updateCommandButton((botsCount > 0 || type == TYPE_PRIVATE) && hasCommands());
+      TdApi.BotMenuButton menuButton = this.menuButton;
+      context.setBotMenuButton(menuButton);
+      context.updateCommandButton(menuButton != null || ((botsCount > 0 || type == TYPE_PRIVATE) && hasCommands()));
     }
   }
 
