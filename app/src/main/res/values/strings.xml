@@ -183,6 +183,7 @@
   <string name="ForumTopicUnavailable">Topic unavailable</string>
   <string name="ForumTopicLoadFailed">Could not load this topic. Tap to retry.</string>
   <!-- endregion -->
+  <string name="ForumChatTopicsInfo">Turn this on to organize the group into separate topics.</string>
   <string name="language_continueInLanguage">Continue in English</string>
 
   <string name="Page1Title">Telegram X</string>

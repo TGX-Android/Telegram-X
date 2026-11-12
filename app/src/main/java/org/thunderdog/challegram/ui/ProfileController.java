@@ -1947,6 +1947,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           itemId == R.id.btn_toggleProtection ||
           itemId == R.id.btn_toggleJoinByRequest ||
           itemId == R.id.btn_toggleJoinToSend ||
+          itemId == R.id.btn_toggleForum ||
           itemId == R.id.btn_toggleAggressiveAntiSpam ||
           itemId == R.id.btn_chatTtlDefault ||
           itemId == R.id.btn_toggleAutomaticTranslation ||
@@ -3384,6 +3385,19 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return supergroup != null && supergroup.hasLinkedChat && !supergroup.isBroadcastGroup && tdlib.canRestrictMembers(chat.id);
   }
 
+  private void toggleForum (View v) {
+    if (canToggleForum()) {
+      boolean newValue = baseAdapter.toggleView(v);
+      toggleForumItem.setSelected(newValue);
+      checkDoneButton();
+    }
+  }
+
+  private boolean canToggleForum () {
+    // TDLib requires owner privileges, and discussion supergroups cannot be converted to forums
+    return supergroup != null && !supergroup.isChannel && !supergroup.isBroadcastGroup && !supergroup.hasLinkedChat && tdlib.haveCreatorRights(chat.id);
+  }
+
   private void toggleContentProtection (View v) {
     if (tdlib.canToggleContentProtection(chat.id)) {
       boolean enabled = baseAdapter.toggleView(v);
@@ -3700,6 +3714,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       hasContentProtectionChanges() ||
       hasJoinByRequestChanges() ||
       hasJoinToSendChanges() ||
+      hasForumChanges() ||
       hasSignMessagesChanges() ||
       hasShowAuthorsChanges() ||
       hasAutomaticTranslationChanges();
@@ -3733,6 +3748,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private boolean hasJoinToSendChanges () {
     boolean originalValue = supergroup != null && supergroup.joinToSendMessages;
     return toggleJoinToSendItem != null && originalValue != toggleJoinToSendItem.isSelected();
+  }
+
+  private boolean hasForumChanges () {
+    boolean originalValue = supergroup != null && supergroup.isForum;
+    return toggleForumItem != null && originalValue != toggleForumItem.isSelected();
   }
 
   private boolean hasSignMessagesChanges () {
@@ -3806,6 +3826,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     boolean hasContentProtectionChanges = hasContentProtectionChanges();
     boolean hasJoinByRequestChanges = hasJoinByRequestChanges();
     boolean hasJoinToSendChanges = hasJoinToSendChanges();
+    boolean hasForumChanges = hasForumChanges();
     boolean hasSignMessagesChanges = hasSignMessagesChanges();
     boolean hasShowAuthorsChanges = hasShowAuthorsChanges();
     boolean hasAutomaticTranslationChanges = hasAutomaticTranslationChanges();
@@ -3866,6 +3887,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (hasJoinToSendChanges) {
       changes.add(new TdApi.ToggleSupergroupJoinToSendMessages(ChatId.toSupergroupId(chat.id), toggleJoinToSendItem.isSelected()));
+    }
+
+    if (hasForumChanges) {
+      changes.add(new TdApi.ToggleSupergroupIsForum(ChatId.toSupergroupId(chat.id), toggleForumItem.isSelected(), supergroup.hasForumTabs));
     }
 
     if (hasAggressiveAntiSpamChanges) {
@@ -3989,7 +4014,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private ListItem slowModeItem, slowModeDescItem;
   private ListItem aggressiveAntiSpamItem, hideMembersItem,
-    toggleJoinByRequestItem, toggleJoinToSendItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem,
+    toggleJoinByRequestItem, toggleJoinToSendItem, toggleForumItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem,
     toggleAutomaticTranslationItem;
   private ListItem ttlItem, ttlDescItem, ttlDefaultItem;
   private int ttlDefaultTtl = -1;
@@ -4095,6 +4120,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(toggleJoinToSendItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleJoinToSend, 0, R.string.JoinToSendMessages, supergroup.joinToSendMessages));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.JoinToSendMessagesInfo));
+    }
+
+    if (canToggleForum()) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(toggleForumItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleForum, 0, R.string.ForumChatTopics, supergroup.isForum));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ForumChatTopicsInfo));
     }
 
     boolean added = false;
@@ -5058,6 +5090,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       toggleJoinByRequests(v);
     } else if (viewId == R.id.btn_toggleJoinToSend) {
       toggleJoinToSend(v);
+    } else if (viewId == R.id.btn_toggleForum) {
+      toggleForum(v);
     } else if (viewId == R.id.btn_convertToBroadcastGroup) {
       showOptions(
         Lang.getMarkdownString(this, R.string.ConvertToBroadcastGroupHint),
