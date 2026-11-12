@@ -1798,6 +1798,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           } else {
             view.setName(Lang.getString(R.string.LoadingInformation));
           }
+        } else if (itemId == R.id.btn_userNote) {
+          TdApi.FormattedText note = userFull != null ? userFull.note : null;
+          view.setData(note != null && !StringUtils.isEmpty(note.text) ? note.text : Lang.getString(R.string.TapToSetup));
         } else if (itemId == R.id.btn_description) {
           view.setText(aboutWrapper);
           if (canEditDescription() && !hasDescription()) {
@@ -2432,6 +2435,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_birthdate, R.drawable.baseline_cake_variant_24, R.string.Birthdate);
   }
 
+  private ListItem newUserNoteItem () {
+    if (isEditing()) {
+      return null;
+    }
+    // TDLib only stores a note for users that are in the contact list
+    if (user == null || !user.isContact || TD.isBot(user) || tdlib.isSelfUserId(user.id)) {
+      return null;
+    }
+    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_userNote, R.drawable.baseline_label_24, R.string.UserNote);
+  }
+
   private ListItem newUsernameItem () {
     if (isEditing()) {
       return null;
@@ -2503,6 +2517,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           items.add(new ListItem(ListItem.TYPE_SEPARATOR));
         }
         items.add(newDescriptionItem());
+        addedCount++;
+      }
+      ListItem userNoteItem = newUserNoteItem();
+      if (userNoteItem != null) {
+        if (addedCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
+        items.add(userNoteItem);
         addedCount++;
       }
     }
@@ -5061,6 +5083,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           null
         );
       }
+    } else if (viewId == R.id.btn_userNote) {
+      if (user != null) {
+        EditUserNoteController controller = new EditUserNoteController(context, tdlib, user.id);
+        controller.setArguments(userFull != null && userFull.note != null ? userFull.note.text : null);
+        navigateTo(controller);
+      }
     } else if (viewId == R.id.btn_description) {
       if (canEditDescription() && !hasDescription()) {
         editDescription(false);
@@ -6499,6 +6527,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         checkUserButtons();
         checkGroupsInCommon();
         checkDescription();
+        updateValuedItem(R.id.btn_userNote);
         if (mode == Mode.EDIT_BOT_USER) {
           updateValuedItem(R.id.btn_botDescription);
         }

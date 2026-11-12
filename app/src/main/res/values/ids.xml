@@ -154,6 +154,7 @@
   <item type="id" name="controller_enabledReactions"/>
   <item type="id" name="controller_deleteAccount"/>
   <item type="id" name="controller_addPollOption"/>
+  <item type="id" name="controller_userNote"/>
   <item type="id" name="controller_waitForPremium"/>
 
   <item type="id" name="controller_setEmojiStatusPager" />
@@ -576,6 +577,7 @@
   <item type="id" name="btn_chatProfileColor" />
   <item type="id" name="btn_chatProfileColorReset" />
   <item type="id" name="btn_birthdate" />
+  <item type="id" name="btn_userNote" />
   <item type="id" name="btn_addBirthdate" />
   <item type="id" name="btn_groupsInCommon" />
   <item type="id" name="btn_chatBackground" />

@@ -1156,6 +1156,9 @@
   <string name="TimerInstant">Immediately</string>
   <string name="Chats">Chats</string>
   <string name="Birthdate">Birthday</string>
+  <string name="UserNote">Note</string>
+  <string name="UserNoteHint">Note about this contact</string>
+  <string name="UserNoteDescription">Only you can see this note.</string>
   <string name="Notifications">Notifications</string>
   <string name="NotificationsEnabled">Enabled</string>
   <string name="NotificationsEnabledHint">Enabled (%1$s)</string>
