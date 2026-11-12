@@ -818,6 +818,7 @@
   <item type="id" name="btn_ledDisabled" />
 
   <item type="id" name="btn_clearChatHistory" />
+  <item type="id" name="btn_clearChatHistoryByDate" />
   <item type="id" name="btn_setPasscode" />
   <item type="id" name="btn_returnToChat" />
   <item type="id" name="btn_removeChatFromList" />

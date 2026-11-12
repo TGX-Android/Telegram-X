@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.telegram;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
@@ -74,6 +75,7 @@ import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
@@ -5618,12 +5620,34 @@ public class TdlibUi extends Handler {
         info = Lang.getString(revoke ? R.string.ClearHistoryAllConfirm : R.string.ClearHistoryConfirm);
         confirmButton = Lang.getString(revoke ? R.string.ClearHistoryAll : R.string.ClearHistory);
       }
+      final IntList ids = new IntList(3);
+      final StringList names = new StringList(3);
+      final IntList colors = new IntList(3);
+      final IntList icons = new IntList(3);
+
+      ids.append(R.id.btn_clearChatHistory);
+      names.append(confirmButton);
+      colors.append(ViewController.OptionColor.RED);
+      icons.append(confirmButtonIcon);
+
+      if (canDeleteMessagesByDate(chatId)) {
+        ids.append(R.id.btn_clearChatHistoryByDate);
+        names.append(Lang.getString(R.string.ClearHistoryByDateRange));
+        colors.append(ViewController.OptionColor.NORMAL);
+        icons.append(R.drawable.baseline_date_range_24);
+      }
+
+      ids.append(R.id.btn_cancel);
+      names.append(Lang.getString(R.string.Cancel));
+      colors.append(ViewController.OptionColor.NORMAL);
+      icons.append(R.drawable.baseline_cancel_24);
+
       context.showOptions(
         info,
-        new int[]{R.id.btn_clearChatHistory, R.id.btn_cancel},
-        new String[]{confirmButton, Lang.getString(R.string.Cancel)},
-        new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL},
-        new int[]{confirmButtonIcon, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        ids.get(),
+        names.get(),
+        colors.get(),
+        icons.get(), (itemView, id) -> {
           if (id == R.id.btn_clearChatHistory) {
             if (needSecondaryConfirm && !isSecondaryConfirm) {
               showClearHistoryConfirm(context, chatId, after, true);
@@ -5631,10 +5655,66 @@ public class TdlibUi extends Handler {
               tdlib.send(new TdApi.DeleteChatHistory(chatId, false, revoke), tdlib.typedOkHandler());
               U.run(after);
             }
+          } else if (id == R.id.btn_clearChatHistoryByDate) {
+            showDeleteMessagesByDateRange(context, chatId, revoke);
           }
           return true;
         });
     }
+  }
+
+  private boolean canDeleteMessagesByDate (long chatId) {
+    // TDLib deletes messages by date range in private chats and basic groups only
+    return ChatId.isUserChat(chatId) || ChatId.isBasicGroup(chatId);
+  }
+
+  private void showDeleteMessagesByDateRange (ViewController<?> context, long chatId, boolean revoke) {
+    // TDLib only lets messages be revoked for the other party in private chats
+    final boolean revokeForAll = ChatId.isUserChat(chatId) && revoke;
+    Calendar now = Calendar.getInstance();
+    DatePickerDialog fromDialog = new DatePickerDialog(context.context(), Theme.dialogTheme(), (view, year, month, dayOfMonth) ->
+      showDeleteMessagesToDate(context, chatId, toStartOfDay(year, month, dayOfMonth), revokeForAll),
+      now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
+    );
+    fromDialog.setTitle(Lang.getString(R.string.ClearHistoryFrom));
+    fromDialog.getDatePicker().setMaxDate(now.getTimeInMillis());
+    ViewSupport.showDatePicker(fromDialog);
+  }
+
+  private void showDeleteMessagesToDate (ViewController<?> context, long chatId, int minDate, boolean revoke) {
+    Calendar now = Calendar.getInstance();
+    DatePickerDialog toDialog = new DatePickerDialog(context.context(), Theme.dialogTheme(), (view, year, month, dayOfMonth) -> {
+      int maxDate = toEndOfDay(year, month, dayOfMonth);
+      context.showOptions(
+        Lang.getString(R.string.ClearHistoryByDateConfirm, Lang.getDatestamp(minDate, TimeUnit.SECONDS), Lang.getDatestamp(maxDate, TimeUnit.SECONDS)),
+        new int[]{R.id.btn_delete, R.id.btn_cancel},
+        new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)},
+        new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL},
+        new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_delete) {
+            tdlib.send(new TdApi.DeleteChatMessagesByDate(chatId, minDate, maxDate, revoke), tdlib.typedOkHandler());
+          }
+          return true;
+        });
+    }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
+    toDialog.setTitle(Lang.getString(R.string.ClearHistoryTo));
+    toDialog.getDatePicker().setMinDate((long) minDate * 1000l);
+    toDialog.getDatePicker().setMaxDate(now.getTimeInMillis());
+    ViewSupport.showDatePicker(toDialog);
+  }
+
+  private static int toStartOfDay (int year, int month, int dayOfMonth) {
+    Calendar c = Calendar.getInstance();
+    c.set(year, month, dayOfMonth, 0, 0, 0);
+    c.set(Calendar.MILLISECOND, 0);
+    return (int) (c.getTimeInMillis() / 1000l);
+  }
+
+  private static int toEndOfDay (int year, int month, int dayOfMonth) {
+    Calendar c = Calendar.getInstance();
+    c.set(year, month, dayOfMonth, 23, 59, 59);
+    c.set(Calendar.MILLISECOND, 0);
+    return (int) (c.getTimeInMillis() / 1000l);
   }
 
   public void showDeleteChatConfirm (final ViewController<?> context, final long chatId) {

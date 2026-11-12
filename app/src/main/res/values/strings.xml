@@ -728,6 +728,10 @@
   <string name="DeletePhoto">Remove photo</string>
   <string name="ClearHistory">Clear history</string>
   <string name="ClearHistoryAll">Clear history for everyone</string>
+  <string name="ClearHistoryByDateRange">By date range</string>
+  <string name="ClearHistoryFrom">From date</string>
+  <string name="ClearHistoryTo">To date</string>
+  <string name="ClearHistoryByDateConfirm">Delete messages between %1$s and %2$s? Messages sent in the last 30 seconds are kept, and this cannot be undone.</string>
   <string name="ClearChannel">Delete all messages</string>
   <string name="ClearSavedMessages">Delete all Saved Messages</string>
   <string name="Cancel">Cancel</string>
