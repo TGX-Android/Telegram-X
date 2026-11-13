@@ -147,6 +147,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
         UI.post(EmojiStatusSelectorEmojiPage.this::onSetStatusAnimationFinish, 180L);
       }
     };
+    emojiCustomListController.setTargetChatId(parent.targetChatId);
     emojiCustomListController.setArguments(emojiCustomListLayout);
     emojiCustomListController.initWithFakeViews(customRecyclerView = recyclerView);
     emojiCustomListController.getValue();
@@ -193,7 +194,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
   @Override
   public boolean onSetEmojiStatus (@Nullable View view, TGStickerObj sticker, TdApi.EmojiStatus emojiStatus) {
-    tdlib.send(new TdApi.SetEmojiStatus(emojiStatus), tdlib.typedOkHandler());
+    emojiCustomListController.setEmojiStatus(emojiStatus);
     parent.hidePopupWindow(true);
     if (view == null) return true;
 
@@ -651,6 +652,13 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   /* * */
 
   public static class Wrapper extends BottomSheetViewController<Void> {
+    private long targetChatId;
+
+    public Wrapper setTargetChatId (long chatId) {
+      this.targetChatId = chatId;
+      return this;
+    }
+
     private final EmojiStatusSelectorEmojiPage fragment;
     private final ViewController<?> parent;
     private final FrameLayout foregroundView;

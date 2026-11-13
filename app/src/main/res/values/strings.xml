@@ -4634,6 +4634,8 @@
   <string name="RevokeBotEmojiStatusConfirm">Prevent this bot from changing your emoji status?</string>
   <string name="BotEmojiStatusPermissionRevoked">Emoji status permission revoked</string>
   <string name="StickerKeywords">Edit Search Keywords</string>
+  <string name="ChatEmojiStatus">Chat Emoji Status</string>
+  <string name="ChatEmojiStatusUnavailable">Changing this chat’s emoji status requires permission to change chat info and a sufficient chat boost level.</string>
   <string name="StickerKeywordsHint">cat, happy, hello</string>
   <string name="StickerKeywordsDescription">Enter keywords separated by commas or new lines. Saving replaces all previous search keywords, which Telegram does not return to this editor. Leave empty to clear them.</string>
   <string name="StickerKeywordsLimit">Use up to 20 keywords with a total of at most 64 characters.</string>

@@ -20,6 +20,7 @@ import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -918,6 +919,31 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
 
   /* Loading functions */
 
+  private long targetChatId;
+
+  public void setTargetChatId (long chatId) {
+    this.targetChatId = chatId;
+  }
+
+  protected TdApi.Function<TdApi.Ok> emojiStatusRequest (TdApi.EmojiStatus status) {
+    if (targetChatId == 0) {
+      return new TdApi.SetEmojiStatus(status);
+    }
+    if (status != null && status.type instanceof TdApi.EmojiStatusTypeCustomEmoji &&
+      ((TdApi.EmojiStatusTypeCustomEmoji) status.type).customEmojiId == 0) {
+      status = null;
+    }
+    return new TdApi.SetChatEmojiStatus(targetChatId, status);
+  }
+
+  protected void setEmojiStatus (TdApi.EmojiStatus status) {
+    if (targetChatId != 0 && !tdlib.canChangeInfo(tdlib.chat(targetChatId), false)) {
+      UI.showToast(R.string.ChatEmojiStatusUnavailable, Toast.LENGTH_SHORT);
+      return;
+    }
+    tdlib.send(emojiStatusRequest(status), tdlib.typedOkHandler());
+  }
+
   private boolean loadingStickers;
   private boolean stickersLoaded;
   private Runnable onStickersLoadListener;
@@ -934,9 +960,13 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
       if (StringUtils.isEmpty(currentTextSearchRequest) && StringUtils.isEmpty(currentEmojiSearchRequest)) {
         LongList recentEmojiList = new LongList(200);
         LongList trendingEmojiList = new LongList(200);
-        getCustomEmojiStatusList(new TdApi.GetThemedEmojiStatuses(), trendingEmojiList, () ->
+        getCustomEmojiStatusList(targetChatId != 0 ?
+          new TdApi.GetThemedChatEmojiStatuses() : new TdApi.GetThemedEmojiStatuses(),
+          trendingEmojiList, () ->
           getEmojiStatusList(new TdApi.GetRecentEmojiStatuses(), recentEmojiList, () ->
-            getCustomEmojiStatusList(new TdApi.GetDefaultEmojiStatuses(), trendingEmojiList, () ->
+            getCustomEmojiStatusList(targetChatId != 0 ?
+              new TdApi.GetDefaultChatEmojiStatuses() : new TdApi.GetDefaultEmojiStatuses(),
+              trendingEmojiList, () ->
               getCustomEmojiStickers(trendingEmojiList.get(), trendingStickersHandler(() ->
                 getCustomEmojiStickers(recentEmojiList.get(), serviceStickersHandler(null))))))
         );
@@ -1389,7 +1419,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     final long emojiId = sticker.getCustomEmojiId();
     final int viewId = v.getId();
     if (viewId == R.id.btn_setEmojiStatus) {
-      tdlib.send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0)), tdlib.typedOkHandler());
+      setEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0));
       stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, 0);
       stickerSmallView.closePreviewIfNeeded();
     } else if (viewId == R.id.btn_setEmojiStatusTimed) {
@@ -1429,7 +1459,9 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
               long expirationDate = millis / 1000L;
               stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-              tdlib.send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.typedOkHandler());
+              setEmojiStatus(new TdApi.EmojiStatus(
+                new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate
+              ));
               stickerSmallView.closePreviewIfNeeded();
             }, null);
             return true;
@@ -1449,7 +1481,9 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           }
           long expirationDate = System.currentTimeMillis() / 1000L + duration;
           stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-          tdlib.send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.typedOkHandler());
+          setEmojiStatus(new TdApi.EmojiStatus(
+            new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate
+          ));
           stickerSmallView.closePreviewIfNeeded();
           return true;
         });

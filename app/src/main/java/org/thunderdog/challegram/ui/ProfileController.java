@@ -3310,6 +3310,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         items.add(chatProfileColorItem);
       }
     }
+    if (supergroup != null && !tdlib.isDirectMessagesChat(chat.id) &&
+      tdlib.canChangeInfo(chat, false)) {
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatEmojiStatus,
+        R.drawable.baseline_account_circle_24, R.string.ChatEmojiStatus));
+    }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     addMediaItems(items);
@@ -3569,6 +3575,48 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         stickerSetTitles.remove(stickerSetId);
       }
     }));
+  }
+
+  private void openChatEmojiStatus () {
+    if (chat == null || supergroup == null || !tdlib.canChangeInfo(chat, false)) {
+      return;
+    }
+    final long chatId = chat.id;
+    tdlib.send(new TdApi.GetChatBoostLevelFeatures(supergroup.isChannel, supergroup.boostLevel),
+      (features, error) -> runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showError(error);
+        } else if (!features.canSetEmojiStatus || !tdlib.canChangeInfo(tdlib.chat(chatId), false)) {
+          UI.showToast(R.string.ChatEmojiStatusUnavailable, Toast.LENGTH_SHORT);
+        } else {
+          EmojiStatusSelectorEmojiPage.Wrapper picker = new EmojiStatusSelectorEmojiPage.Wrapper(
+            context(), tdlib, this,
+            new EmojiStatusSelectorEmojiPage.AnimationsEmojiStatusSetDelegate() {
+              @Override
+              public void onAnimationStart () {
+                headerCell.setIgnoreDrawEmojiStatus(true);
+              }
+
+              @Override
+              public void onAnimationEnd () {
+                headerCell.setIgnoreDrawEmojiStatus(false);
+              }
+
+              @Override
+              public int getDestX () {
+                return headerCell.getEmojiStatusLastDrawX() + Screen.dp(12);
+              }
+
+              @Override
+              public int getDestY () {
+                return headerCell.getEmojiStatusLastDrawY() + Screen.dp(12);
+              }
+            }
+          );
+          picker.setTargetChatId(chatId).show();
+        }
+      })
+    );
   }
 
   private long supergroupStickerSetId (boolean forCustomEmoji) {
@@ -5312,6 +5360,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       tdlib.ui().showChatAccentColorOptions(this, chat.id);
     } else if (viewId == R.id.btn_chatProfileColor) {
       tdlib.ui().showChatProfileAccentColorOptions(this, chat.id);
+    } else if (viewId == R.id.btn_chatEmojiStatus) {
+      openChatEmojiStatus();
     } else if (viewId == R.id.btn_encryptionKey) {
       if (secretChat != null && secretChat.keyHash != null && secretChat.keyHash.length > 0) {
         EncryptionKeyController controller = new EncryptionKeyController(context, tdlib);

@@ -406,6 +406,7 @@
   <item type="id" name="btn_useSavedSound" />
   <item type="id" name="btn_revokeBotEmojiStatus" />
   <item type="id" name="btn_editStickerKeywords" />
+  <item type="id" name="btn_chatEmojiStatus" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
