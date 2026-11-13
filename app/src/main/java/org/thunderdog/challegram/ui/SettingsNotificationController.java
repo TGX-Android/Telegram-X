@@ -313,11 +313,13 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       Background.instance().post(() -> {
         Uri soundUri = null;
         try {
-          Uri source = FileProvider.getUriForFile(context(), Config.FILE_PROVIDER_AUTHORITY,
-            new java.io.File(file.local.path));
           // Android channels need a durable, system-readable copy, not TDLib's cache file.
-          soundUri = TdlibNotificationManager.fixSoundUri(source, true,
+          java.io.File destination = new java.io.File(U.getRingtonesDir(),
             tdlib.id() + "_saved_" + sound.id + ".mp3");
+          if (me.vkryl.core.FileUtils.copy(new java.io.File(file.local.path), destination)) {
+            soundUri = FileProvider.getUriForFile(context(), Config.FILE_PROVIDER_AUTHORITY,
+              destination);
+          }
         } catch (Throwable t) {
           Log.e("Unable to prepare a saved notification sound", t);
         }
