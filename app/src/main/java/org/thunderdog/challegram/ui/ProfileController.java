@@ -653,6 +653,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (TD.isContact(user)) {
+      if (canSuggestContactBirthdate()) {
+        ids.append(R.id.btn_suggestContactBirthdate);
+        strings.append(R.string.SuggestContactBirthdate);
+      }
       if (canRemovePersonalPhoto()) {
         ids.append(R.id.btn_removePersonalPhoto);
         strings.append(R.string.RemovePersonalContactPhoto);
@@ -716,6 +720,61 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     PrivacyExceptionController c = new PrivacyExceptionController(context, tdlib);
     c.setArguments(new PrivacyExceptionController.Args(getChatId()));
     navigateTo(c);
+  }
+
+  private boolean canSuggestContactBirthdate () {
+    return mode == Mode.USER && user != null && user.type instanceof TdApi.UserTypeRegular &&
+      !tdlib.isSelfUserId(user.id) && TD.isContact(user) && chat != null &&
+      !ChatId.isSecret(chat.id) && chat.lastMessage != null && userFull != null &&
+      userFull.outgoingPaidMessageStarCount == 0;
+  }
+
+  private boolean suggestingContactBirthdate;
+
+  private void sendContactBirthdateSuggestion (long userId, TdApi.Birthdate birthdate, Runnable after) {
+    if (suggestingContactBirthdate || !canSuggestContactBirthdate() || user.id != userId) {
+      return;
+    }
+    suggestingContactBirthdate = true;
+    tdlib.send(new TdApi.SuggestUserBirthdate(userId, birthdate), (ok, error) -> runOnUiThreadOptional(() -> {
+      suggestingContactBirthdate = false;
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        UI.showToast(R.string.ContactBirthdateSuggested, Toast.LENGTH_SHORT);
+        after.run();
+      }
+    }));
+  }
+
+  private void suggestContactBirthdate () {
+    if (!canSuggestContactBirthdate()) {
+      return;
+    }
+    final long userId = user.id;
+    TdApi.Birthdate current = userFull.birthdate;
+    java.util.Calendar today = java.util.Calendar.getInstance();
+    int day = current != null ? current.day : today.get(java.util.Calendar.DAY_OF_MONTH);
+    int month = current != null ? current.month - 1 : today.get(java.util.Calendar.MONTH);
+    int year = current != null ? current.year : 0;
+    showCalendarDatePicker(Lang.getString(R.string.SuggestContactBirthdate), Lang.getString(R.string.Continue),
+      day, month, year, true, (picker, button, newDay, newMonth, newYear) -> {
+        TdApi.Birthdate birthdate = new TdApi.Birthdate(newDay, newMonth + 1, newYear);
+        Options options = getOptions(Lang.getStringBold(R.string.SuggestContactBirthdateConfirm,
+            Lang.getBirthdate(birthdate, false, false)),
+          new int[] {R.id.btn_send, R.id.btn_cancel},
+          new String[] {Lang.getString(R.string.Send), Lang.getString(R.string.Cancel)},
+          new int[] {OptionColor.NORMAL, OptionColor.NORMAL},
+          new int[] {R.drawable.baseline_cake_variant_24, R.drawable.baseline_cancel_24}, Text.LINE_COUNT_UNLIMITED);
+        options.setIgnoreOtherPopUps(true);
+        showOptions(options, (view, id) -> {
+          if (id == R.id.btn_send) {
+            sendContactBirthdateSuggestion(userId, birthdate, () -> picker.dismissPopup(true));
+          }
+          return true;
+        });
+        return false;
+      });
   }
 
   private boolean canRemovePersonalPhoto () {
@@ -788,6 +847,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_suggestContactBirthdate) {
+      suggestContactBirthdate();
+      return;
+    }
     if (id == R.id.btn_removePersonalPhoto) {
       removePersonalPhoto();
       return;

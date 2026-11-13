@@ -2375,6 +2375,9 @@
   <string name="PersonalContactPhotoRemoved">Personal contact photo removed</string>
   <string name="ImportedContacts">Imported Contacts · Tap to Refresh</string>
   <string name="NewChatsContactsPremium">My Contacts and Premium Users</string>
+  <string name="SuggestContactBirthdate">Suggest Birthday</string>
+  <string name="SuggestContactBirthdateConfirm">Suggest %1$s as this contact’s birthday? They will receive your suggestion and choose whether to apply it.</string>
+  <string name="ContactBirthdateSuggested">Birthday suggestion sent</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>

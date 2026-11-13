@@ -420,6 +420,7 @@
   <item type="id" name="btn_importedContactCount" />
   <item type="id" name="btn_newChatsAllowAll" />
   <item type="id" name="btn_newChatsContactsPremium" />
+  <item type="id" name="btn_suggestContactBirthdate" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
