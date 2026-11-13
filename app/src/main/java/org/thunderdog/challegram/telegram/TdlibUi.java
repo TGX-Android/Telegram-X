@@ -5154,14 +5154,19 @@ public class TdlibUi extends Handler {
             case TdApi.SettingsSectionEditProfile.CONSTRUCTOR: {
               TdApi.SettingsSectionEditProfile editProfile = (TdApi.SettingsSectionEditProfile) section;
               switch (editProfile.subsection) {
+                case "first-name":
+                case "last-name": {
+                  EditNameController name = new EditNameController(context.context(), tdlib);
+                  name.setMode(EditNameController.Mode.RENAME_SELF);
+                  result = name;
+                  break;
+                }
                 case "change-number": {
                   result = new SettingsPhoneController(context.context(), context.tdlib());
                   break;
                 }
                 case "":
                 case "set-photo":
-                case "first-name":
-                case "last-name":
                 case "emoji-status":
                 case "bio":
                 case "birthday":
