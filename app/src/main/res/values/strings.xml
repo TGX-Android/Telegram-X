@@ -2398,6 +2398,9 @@
   <string name="SetPersonalContactPhotoConfirm">Save this photo for this contact? Only you will see it. Their own profile photo will not be changed.</string>
   <string name="PersonalContactPhotoSaved">Personal contact photo saved</string>
   <string name="ContactPhotoStaticOnly">Choose a photo, not a video, for this contact.</string>
+  <string name="SuggestProfilePhoto">Suggest Profile Photo</string>
+  <string name="SuggestProfilePhotoConfirm">Send this photo as a profile photo suggestion? The recipient will receive it and decide whether to use it. This does not set a personal contact photo.</string>
+  <string name="ProfilePhotoSuggested">Profile photo suggestion sent</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>

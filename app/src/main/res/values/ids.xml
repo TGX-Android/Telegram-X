@@ -430,6 +430,7 @@
   <item type="id" name="btn_recentlyOpenedChats" />
   <item type="id" name="btn_inactiveGroupChats" />
   <item type="id" name="btn_setPersonalContactPhoto" />
+  <item type="id" name="btn_suggestProfilePhoto" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />

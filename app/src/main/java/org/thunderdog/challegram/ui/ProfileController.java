@@ -652,6 +652,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(R.string.EditPrivacy);
     }
 
+    if (canSuggestProfilePhoto()) {
+      ids.append(R.id.btn_suggestProfilePhoto);
+      strings.append(R.string.SuggestProfilePhoto);
+    }
     if (TD.isContact(user)) {
       if (canSetPersonalContactPhoto()) {
         ids.append(R.id.btn_setPersonalContactPhoto);
@@ -770,6 +774,52 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           UI.showError(error);
         } else {
           UI.showToast(R.string.PersonalContactPhotoSaved, Toast.LENGTH_SHORT);
+        }
+      }));
+  }
+
+  private boolean canSuggestProfilePhoto () {
+    return mode == Mode.USER && user != null && user.type instanceof TdApi.UserTypeRegular &&
+      !tdlib.isSelfUserId(user.id) && chat != null && !ChatId.isSecret(chat.id) &&
+      chat.lastMessage != null && userFull != null && userFull.outgoingPaidMessageStarCount == 0;
+  }
+
+  private void pickSuggestedProfilePhoto () {
+    if (!canSuggestProfilePhoto() || changingContactPhoto) {
+      return;
+    }
+    final long userId = user.id;
+    final Object pick = contactPhotoPick = new Object();
+    avatarPickerManager.pickContactPhoto(file -> {
+      if (pick != contactPhotoPick || !canSuggestProfilePhoto() || user.id != userId) {
+        return;
+      }
+      showOptions(Lang.getString(R.string.SuggestProfilePhotoConfirm),
+        new int[] {R.id.btn_suggestProfilePhoto, R.id.btn_cancel},
+        new String[] {Lang.getString(R.string.Send), Lang.getString(R.string.Cancel)}, null,
+        new int[] {R.drawable.baseline_image_24, R.drawable.baseline_cancel_24}, (view, id) -> {
+          if (id == R.id.btn_suggestProfilePhoto) {
+            sendProfilePhotoSuggestion(userId, pick, file);
+          }
+          return true;
+        });
+    });
+  }
+
+  private void sendProfilePhotoSuggestion (long userId, Object pick, TdApi.InputFileGenerated file) {
+    if (changingContactPhoto || file == null || pick != contactPhotoPick ||
+      !canSuggestProfilePhoto() || user.id != userId) {
+      return;
+    }
+    changingContactPhoto = true;
+    contactPhotoPick = null;
+    tdlib.send(new TdApi.SuggestUserProfilePhoto(userId, new TdApi.InputChatPhotoStatic(file)),
+      (ok, error) -> runOnUiThreadOptional(() -> {
+        changingContactPhoto = false;
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          UI.showToast(R.string.ProfilePhotoSuggested, Toast.LENGTH_SHORT);
         }
       }));
   }
@@ -899,6 +949,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_suggestProfilePhoto) {
+      pickSuggestedProfilePhoto();
+      return;
+    }
     if (id == R.id.btn_setPersonalContactPhoto) {
       pickPersonalContactPhoto();
       return;
