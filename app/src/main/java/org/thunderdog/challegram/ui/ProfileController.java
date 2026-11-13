@@ -600,6 +600,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
 
+    if (canConfigureChatAutosave()) {
+      ids.append(R.id.btn_chatAutosaveSettings);
+      strings.append(R.string.ChatAutosaveSettings);
+    }
     if (isBot) {
       if (TD.canEditBot(user)) {
         ids.append(R.id.more_btn_edit);
@@ -690,6 +694,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
 
+    if (canConfigureChatAutosave()) {
+      ids.append(R.id.btn_chatAutosaveSettings);
+      strings.append(R.string.ChatAutosaveSettings);
+    }
     if (supergroupFull != null && supergroupFull.location != null) {
       ids.append(R.id.btn_viewGroupLocation);
       strings.append(R.string.ViewGroupLocation);
@@ -726,6 +734,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (ids.size() > 0) {
       showMore(ids.get(), strings.get(), 0);
     }
+  }
+
+  private boolean canConfigureChatAutosave () {
+    return chat != null && (chat.type instanceof TdApi.ChatTypePrivate ||
+      chat.type instanceof TdApi.ChatTypeBasicGroup || chat.type instanceof TdApi.ChatTypeSupergroup);
   }
 
   private void openGroupLocation () {
@@ -965,6 +978,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_chatAutosaveSettings) {
+      if (canConfigureChatAutosave()) {
+        tdlib.ui().showChatAutosaveSettings(this, chat.id);
+      }
+      return;
+    }
     if (id == R.id.btn_viewGroupLocation) {
       openGroupLocation();
       return;
