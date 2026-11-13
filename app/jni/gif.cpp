@@ -171,6 +171,7 @@ struct VideoInfo {
       sws_freeContext(scale_ctx);
       scale_ctx = nullptr;
     }
+    sws_freeContext(frame_scale_ctx);
     if (packet != nullptr) {
       av_packet_free(&packet);
       packet = nullptr;
@@ -184,9 +185,12 @@ struct VideoInfo {
   AVStream *video_stream = nullptr;
   AVCodecContext *video_dec_ctx = nullptr;
   SwsContext *scale_ctx = nullptr;
-  int32_t dst_linesize[1];
+  SwsContext *frame_scale_ctx = nullptr;
+  int frameScaleWidth = -1, frameScaleHeight = -1;
+  AVPixelFormat frameScaleFormat = AV_PIX_FMT_NONE;
   AVFrame *frame = nullptr;
   int srcWidth = -1, srcHeight = -1;
+  AVPixelFormat srcFormat = AV_PIX_FMT_NONE;
   int dstWidth = -1, dstHeight = -1;
   int frameRate = -1;
   bool has_decoded_frames = false;
@@ -250,6 +254,14 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
   return 0;
 }
 
+static SwsContext *getScaleContext (int srcWidth, int srcHeight, AVPixelFormat srcFormat,
+                                    int dstWidth, int dstHeight) {
+  const int flags =
+    srcWidth == dstWidth && srcHeight == dstHeight ? SWS_FAST_BILINEAR : SWS_BILINEAR;
+  return sws_getContext(srcWidth, srcHeight, srcFormat, dstWidth, dstHeight,
+                        BITMAP_TARGET_FORMAT, flags, nullptr, nullptr, nullptr);
+}
+
 JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaTimestamp) {
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
@@ -293,6 +305,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaT
 
   const int srcWidth = info->srcWidth = info->video_dec_ctx->width;
   const int srcHeight = info->srcHeight = info->video_dec_ctx->height;
+  info->srcFormat = info->video_dec_ctx->pix_fmt;
 
   int dstWidth = srcWidth;
   int dstHeight = srcHeight;
@@ -316,9 +329,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaT
     if (newWidth > 0 && newHeight > 0) {
       AVPixelFormat fmt = info->video_dec_ctx->pix_fmt;
       if (fmt != AV_PIX_FMT_NONE && fmt != AV_PIX_FMT_YUVA420P && (fmt != BITMAP_TARGET_FORMAT || newWidth != srcWidth || newHeight != srcHeight)) {
-        info->scale_ctx = sws_getContext(srcWidth, srcHeight, fmt, newWidth, newHeight,
-                                         BITMAP_TARGET_FORMAT, newWidth == srcWidth && newHeight == srcHeight ? SWS_FAST_BILINEAR : SWS_BILINEAR, nullptr, nullptr,
-                                         nullptr);
+        info->scale_ctx = getScaleContext(srcWidth, srcHeight, fmt, newWidth, newHeight);
         if (info->scale_ctx != nullptr) {
           dstWidth = newWidth;
           dstHeight = newHeight;
@@ -420,13 +431,83 @@ JNI_FUNC(jboolean, isVideoBroken, jlong ptr) {
   }
 }
 
-void to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jlongArray data) {
-  auto fmt = (AVPixelFormat) info->frame->format;
+static bool scaleFrame (SwsContext *context, const AVFrame *frame, void *pixels,
+                        const AndroidBitmapInfo &bitmapInfo) {
+  uint8_t *const dst[] = {(uint8_t *) pixels};
+  const int dstStride[] = {(int) bitmapInfo.stride};
+  // Errors are negative: the NEON converters of swscale for arm32 give 0 for a whole frame
+  return sws_scale(context, frame->data, frame->linesize, 0, frame->height, dst, dstStride) >= 0;
+}
 
+static bool scaleChangedFrame (VideoInfo *info, const AVFrame *frame, void *pixels,
+                               const AndroidBitmapInfo &bitmapInfo) {
+  const auto format = (AVPixelFormat) frame->format;
+  // sws_getCachedContext would make it again for each frame of yuvj formats, which swscale keeps
+  // as their yuv ones
+  if (frame->width != info->frameScaleWidth || frame->height != info->frameScaleHeight ||
+      format != info->frameScaleFormat) {
+    sws_freeContext(info->frame_scale_ctx);
+    info->frame_scale_ctx = getScaleContext(frame->width, frame->height, format, info->dstWidth,
+                                            info->dstHeight);
+    info->frameScaleWidth = frame->width;
+    info->frameScaleHeight = frame->height;
+    info->frameScaleFormat = format;
+  }
+  if (info->frame_scale_ctx == nullptr ||
+      !scaleFrame(info->frame_scale_ctx, frame, pixels, bitmapInfo)) {
+    return false;
+  }
+  const AVPixFmtDescriptor *descriptor = av_pix_fmt_desc_get(format);
+  if (descriptor != nullptr && (descriptor->flags & AV_PIX_FMT_FLAG_ALPHA) != 0) {
+    // Bitmaps keep alpha premultiplied, as I420AlphaToARGBMatrix gives it, and swscale doesn't
+    libyuv::ARGBAttenuate((uint8_t *) pixels, (int) bitmapInfo.stride, (uint8_t *) pixels,
+                          (int) bitmapInfo.stride, info->dstWidth, info->dstHeight);
+  }
+  return true;
+}
+
+static bool copyFrame (const AVFrame *frame, void *pixels, const AndroidBitmapInfo &bitmapInfo) {
+  const int width = (int) bitmapInfo.width;
+  const int height = (int) bitmapInfo.height;
+  const int stride = (int) bitmapInfo.stride;
+  if (frame->width != width || frame->height != height) {
+    return false;
+  }
+  auto *dst = (uint8_t *) pixels;
+  switch ((AVPixelFormat) frame->format) {
+    case BITMAP_TARGET_FORMAT:
+      av_image_copy_plane(dst, stride, frame->data[0], frame->linesize[0], width * 4, height);
+      return true;
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUVJ420P:
+      if (frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
+        return libyuv::H420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
+                                  frame->linesize[2], frame->data[1], frame->linesize[1],
+                                  dst, stride, width, height) == 0;
+      }
+      return libyuv::I420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
+                                frame->linesize[2], frame->data[1], frame->linesize[1],
+                                dst, stride, width, height) == 0;
+    case AV_PIX_FMT_YUVA420P:
+      return libyuv::I420AlphaToARGBMatrix(frame->data[0], frame->linesize[0], frame->data[2],
+                                           frame->linesize[2], frame->data[1], frame->linesize[1],
+                                           frame->data[3], frame->linesize[3], dst, stride,
+                                           &libyuv::kYvuI601Constants, width, height, 50) == 0;
+    case AV_PIX_FMT_BGRA:
+      return libyuv::ABGRToARGB(frame->data[0], frame->linesize[0], dst, stride, width,
+                                height) == 0;
+    default:
+      return false;
+  }
+}
+
+static bool to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jlongArray data) {
   AndroidBitmapInfo bitmapInfo;
-  AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
+  bool drawn = false;
 
-  if (bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
+  if (AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) == ANDROID_BITMAP_RESULT_SUCCESS &&
+      bitmapInfo.format == ANDROID_BITMAP_FORMAT_RGBA_8888 &&
+      bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
     jlong *dataArr = env->GetLongArrayElements(data, 0);
     if (dataArr != nullptr) {
       jlong timestamp = (jlong) (1000.0 * ((double) info->frame->pts * av_q2d(info->video_stream->time_base)));
@@ -438,58 +519,23 @@ void to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jlongArray
     }
 
     AVFrame *frame = info->frame;
-    int frameWidth = frame->width;
-    int frameHeight = frame->height;
 
     void *pixels;
     if (AndroidBitmap_lockPixels(env, bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
-      if (info->scale_ctx != nullptr) {
-        uint8_t *dst_data[1];
-        dst_data[0] = (uint8_t *) pixels;
-        info->dst_linesize[0] = bitmapInfo.stride;
+      if (info->scale_ctx != nullptr && frame->width == info->srcWidth &&
+          frame->height == info->srcHeight && frame->format == info->srcFormat) {
         // TODO: find out why sws_scale doesn't support transparency (AV_PIX_FMT_YUVA420P) properly
         // note: for now, updated libyuv + kYvuI601Constants in I420AlphaToARGBMatrix fixes AV_PIX_FMT_YUVA420P issue - but still needs to be researched
-        /*int res =*/ sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height, dst_data, info->dst_linesize);
+        drawn = scaleFrame(info->scale_ctx, frame, pixels, bitmapInfo);
+      } else if (info->scale_ctx == nullptr && copyFrame(frame, pixels, bitmapInfo)) {
+        drawn = true;
       } else {
-        switch (fmt) {
-          case BITMAP_TARGET_FORMAT: {
-            int size = av_image_get_buffer_size(fmt, frameWidth, frameHeight, 1);
-            memcpy((uint8_t *) pixels, frame->data[0], size);
-            break;
-          }
-          case AV_PIX_FMT_YUV420P:
-          case AV_PIX_FMT_YUVJ420P:
-            if (frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
-              libyuv::H420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
-                                 frame->linesize[2], frame->data[1], frame->linesize[1],
-                                 (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
-            } else {
-              libyuv::I420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
-                                 frame->linesize[2], frame->data[1], frame->linesize[1],
-                                 (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
-            }
-            break;
-          case AV_PIX_FMT_YUVA420P:
-            libyuv::I420AlphaToARGBMatrix(frame->data[0], frame->linesize[0], frame->data[2],
-                                          frame->linesize[2], frame->data[1], frame->linesize[1],
-                                          frame->data[3], frame->linesize[3],
-                                          (uint8_t *) pixels, frameWidth * 4,
-                                          &libyuv::kYvuI601Constants, frameWidth, frameHeight,
-                                          50);
-            break;
-          case AV_PIX_FMT_BGRA:
-            libyuv::ABGRToARGB(frame->data[0], frame->linesize[0], (uint8_t *) pixels,
-                               frameWidth * 4, frameWidth, frameHeight);
-            break;
-          default:
-            // TODO more libyuv cases?
-            logw(TAG_GIF_LOADER, "unsupported pixel format: %d", fmt);
-            break;
-        }
+        drawn = scaleChangedFrame(info, frame, pixels, bitmapInfo);
       }
       AndroidBitmap_unlockPixels(env, bitmap);
     }
   }
+  return drawn;
 }
 
 JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
@@ -617,10 +663,17 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
   }
 
   if (gotFrame) {
-    to_android_bitmap(env, info, bitmap, data);
+    const bool drawn = to_android_bitmap(env, info, bitmap, data);
+    if (!drawn) {
+      loge(TAG_GIF_LOADER, "can't draw frame %dx%d, format: %d, %s", info->frame->width,
+           info->frame->height, info->frame->format, info->path.c_str());
+      info->is_broken = true;
+    }
     info->has_decoded_frames = true;
     av_frame_unref(info->frame);
-    return hasLooped ? 2 : 1;
+    if (drawn) {
+      return hasLooped ? 2 : 1;
+    }
   }
 
   return 0;
