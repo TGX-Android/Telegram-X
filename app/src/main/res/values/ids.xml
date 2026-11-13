@@ -1621,5 +1621,19 @@
   <item type="id" name="controller_tgxStars" />
   <item type="id" name="btn_tgxBusinessAddQuickReply" />
   <item type="id" name="btn_tgxBusinessDisconnect" />
+  <item type="id" name="controller_starsGifts" />
+  <item type="id" name="controller_starsRevenue" />
+  <item type="id" name="btn_starsGiftItem" />
+  <item type="id" name="btn_starsGiftReload" />
+  <item type="id" name="btn_starsGiftPublic" />
+  <item type="id" name="btn_starsGiftPrivate" />
+  <item type="id" name="btn_starsWithdraw" />
+  <item type="id" name="btn_starsRevenueReload" />
+  <item type="id" name="stats_starsRevenue" />
+  <item type="id" name="btn_starsGifts" />
+  <item type="id" name="btn_starsRevenue" />
+  <item type="id" name="btn_starsPersonalRevenue" />
+  <item type="id" name="btn_starsBotRevenue" />
+  <item type="id" name="btn_starsChatRevenue" />
 </resources>
 <!-- endregion -->

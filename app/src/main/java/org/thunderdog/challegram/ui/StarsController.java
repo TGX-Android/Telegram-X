@@ -27,6 +27,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
 import java.util.ArrayList;
@@ -234,6 +235,8 @@ public final class StarsController extends RecyclerViewController<Void> implemen
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.TgxStarsEmpty));
     }
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxStarsRefresh, 0, R.string.TgxPremiumRefreshStars));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_starsGifts, 0, R.string.TgxStarsGiftCatalog));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_starsRevenue, 0, R.string.TgxStarsRevenue));
     adapter.setItems(items, false);
   }
 
@@ -284,6 +287,10 @@ public final class StarsController extends RecyclerViewController<Void> implemen
         showPage(Page.values()[selected - 1]);
         return true;
       });
+    } else if (id == R.id.btn_starsGifts) {
+      pickGiftRecipient();
+    } else if (id == R.id.btn_starsRevenue) {
+      chooseRevenueOwner();
     } else if (id == R.id.btn_tgxStarsRefresh) {
       showPage(page);
     } else if (id == R.id.btn_tgxStarsMore) {
@@ -297,6 +304,78 @@ public final class StarsController extends RecyclerViewController<Void> implemen
         showSubscription(subscription);
       }
     }
+  }
+
+  public void pickGiftRecipient () {
+    ContactsController picker = new ContactsController(context(), tdlib);
+    picker.setArguments(new ContactsController.Args(new SenderPickerDelegate() {
+      @Override
+      public boolean allowGlobalSearch () { return true; }
+
+      @Override
+      public String getUserPickTitle () { return Lang.getString(R.string.TgxStarsGiftRecipient); }
+
+      @Override
+      public boolean onSenderPick (ContactsController origin, View view, TdApi.MessageSender senderId) {
+        if (senderId instanceof TdApi.MessageSenderUser user && user.userId != tdlib.myUserId() &&
+            tdlib.cache().user(user.userId) != null &&
+            tdlib.cache().user(user.userId).type instanceof TdApi.UserTypeRegular) {
+          origin.navigateTo(new StarsGiftsController(context(), tdlib, user.userId));
+        } else {
+          UI.showToast(R.string.TgxStarsGiftRecipientError, Toast.LENGTH_SHORT);
+        }
+        return false;
+      }
+    }));
+    navigateTo(picker);
+  }
+
+  public void openPersonalRevenue () {
+    long userId = tdlib.myUserId();
+    if (userId != 0) {
+      navigateTo(new StarsRevenueController(context(), tdlib, new TdApi.MessageSenderUser(userId), true));
+    }
+  }
+
+  private void chooseRevenueOwner () {
+    showOptions(new int[] {R.id.btn_starsPersonalRevenue, R.id.btn_starsBotRevenue, R.id.btn_cancel},
+      new String[] {Lang.getString(R.string.TgxStarsPersonalRevenue), Lang.getString(R.string.TgxStarsBotRevenue),
+        Lang.getString(R.string.Cancel)}, (view, id) -> {
+          if (id == R.id.btn_starsPersonalRevenue) {
+            openPersonalRevenue();
+          } else if (id == R.id.btn_starsBotRevenue) {
+            loadRevenueBots();
+          }
+          return true;
+        });
+  }
+
+  private void loadRevenueBots () {
+    tdlib.send(new TdApi.GetOwnedBots(), (result, error) -> runOnUiThreadOptional(() -> {
+      if (!isFocused()) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      if (result.userIds.length == 0) {
+        UI.showToast(R.string.TgxStarsNoOwnedBots, Toast.LENGTH_SHORT);
+        return;
+      }
+      Options.Builder options = new Options.Builder().info(Lang.getString(R.string.TgxStarsBotRevenue));
+      for (int i = 0; i < result.userIds.length; i++) {
+        options.item(new OptionItem(i + 1, tdlib.cache().userName(result.userIds[i]), OptionColor.NORMAL, 0));
+      }
+      options.cancelItem();
+      showOptions(options.build(), (view, id) -> {
+        if (id > 0 && id <= result.userIds.length) {
+          long bot = result.userIds[id - 1];
+          navigateTo(new StarsRevenueController(context(), tdlib, new TdApi.MessageSenderUser(bot), true));
+        }
+        return true;
+      });
+    }));
   }
 
   private void confirmTopUp (long minimumBalance) {

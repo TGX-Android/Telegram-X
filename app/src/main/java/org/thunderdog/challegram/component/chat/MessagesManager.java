@@ -1744,7 +1744,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             }
             case TdApi.SettingsSectionMyStars.CONSTRUCTOR: {
               String subsection = ((TdApi.SettingsSectionMyStars) settings.section).subsection;
-              return StringUtils.isEmpty(subsection) || "top-up".equals(subsection);
+              return StringUtils.isEmpty(subsection) || "top-up".equals(subsection) || "gift".equals(subsection) || "stats".equals(subsection);
             }
             case TdApi.SettingsSectionBusiness.CONSTRUCTOR:
               return StringUtils.isEmpty(((TdApi.SettingsSectionBusiness) settings.section).subsection);

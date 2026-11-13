@@ -715,6 +715,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         strings.append(R.string.ViewChatBoosts);
       }
     }
+    if (supergroup != null && supergroupFull != null && supergroupFull.canGetStarRevenueStatistics) {
+      ids.append(R.id.btn_starsChatRevenue);
+      strings.append(R.string.TgxStarsRevenue);
+    }
     if (canConfigureChatAutosave()) {
       ids.append(R.id.btn_chatAutosaveSettings);
       strings.append(R.string.ChatAutosaveSettings);
@@ -1307,6 +1311,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     if (id == R.id.btn_openProfileChannel) {
       openProfileChannel();
+      return;
+    }
+    if (id == R.id.btn_starsChatRevenue) {
+      if (chat != null && supergroup != null && supergroupFull != null && supergroupFull.canGetStarRevenueStatistics) {
+        navigateTo(new StarsRevenueController(context(), tdlib, new TdApi.MessageSenderChat(chat.id), TD.isCreator(supergroup.status)));
+      }
       return;
     }
     if (id == R.id.btn_viewChatBoosts) {

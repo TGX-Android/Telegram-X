@@ -5315,8 +5315,15 @@ public class TdlibUi extends Handler {
             }
             case TdApi.SettingsSectionMyStars.CONSTRUCTOR: {
               String subsection = ((TdApi.SettingsSectionMyStars) section).subsection;
-              if (tdlib.isAuthorized() && (StringUtils.isEmpty(subsection) || "top-up".equals(subsection))) {
-                result = new StarsController(context.context(), tdlib, "top-up".equals(subsection), 0, "");
+              if (tdlib.isAuthorized() && (StringUtils.isEmpty(subsection) || "top-up".equals(subsection) ||
+                  "gift".equals(subsection) || "stats".equals(subsection))) {
+                StarsController stars = new StarsController(context.context(), tdlib, "top-up".equals(subsection), 0, "");
+                if ("gift".equals(subsection)) {
+                  stars.addOneShotFocusListener(stars::pickGiftRecipient);
+                } else if ("stats".equals(subsection)) {
+                  stars.addOneShotFocusListener(stars::openPersonalRevenue);
+                }
+                result = stars;
               } else {
                 unsupported.run();
               }
