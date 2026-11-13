@@ -436,6 +436,7 @@
   <item type="id" name="btn_viewGroupLocation" />
   <item type="id" name="btn_chatAutosaveSettings" />
   <item type="id" name="btn_chatBoostStatus" />
+  <item type="id" name="btn_openBoostChatProfile" />
   <item type="id" name="btn_shareBoostLink" />
   <item type="id" name="btn_channelSponsoredMessages" />
   <item type="id" name="btn_channelAdsEnabled" />

@@ -4590,6 +4590,67 @@ public class TdlibUi extends Handler {
     });
   }
 
+  private void openChatBoostLink (TdlibDelegate context, String url, @Nullable UrlOpenParameters openParameters,
+                                  @Nullable RunnableBool after) {
+    NavigationController navigation = context.context().navigation();
+    ViewController<?> origin = navigation.getCurrentStackItem();
+    if (origin == null || origin.tdlib() != tdlib || StringUtils.isEmpty(url)) {
+      if (after != null) {
+        after.runWithBool(false);
+      }
+      return;
+    }
+    Object originArguments = origin.getArguments();
+    long originChatId = origin.getChatId();
+    tdlib.send(new TdApi.GetChatBoostLinkInfo(url), (info, error) -> post(() -> {
+      if (!isCurrentBoostLinkOrigin(navigation, origin, originArguments, originChatId)) {
+        if (after != null) {
+          after.runWithBool(true);
+        }
+        return;
+      }
+      if (error != null || info.chatId == 0) {
+        showLinkTooltip(tdlib, R.drawable.baseline_error_24,
+          error != null ? TD.toErrorString(error) : Lang.getString(R.string.BoostLinkChatUnavailable), openParameters);
+        if (after != null) {
+          after.runWithBool(true);
+        }
+        return;
+      }
+      tdlib.send(new TdApi.GetChatBoostStatus(info.chatId), (status, statusError) -> post(() -> {
+        if (isCurrentBoostLinkOrigin(navigation, origin, originArguments, originChatId)) {
+          if (statusError != null) {
+            showLinkTooltip(tdlib, R.drawable.baseline_error_24, TD.toErrorString(statusError), openParameters);
+          } else {
+            CharSequence summary = status.nextLevelBoostCount == 0
+              ? Lang.getString(R.string.ChatBoostStatusMaxInfo, status.level, status.boostCount)
+              : Lang.getString(R.string.ChatBoostStatusInfo, status.level, status.boostCount,
+                Math.max(0, status.nextLevelBoostCount - status.boostCount));
+            origin.showOptions(summary,
+              new int[] {R.id.btn_openBoostChatProfile, R.id.btn_cancel},
+              new String[] {Lang.getString(R.string.OpenProfile), Lang.getString(R.string.Cancel)},
+              (view, id) -> {
+                if (id == R.id.btn_openBoostChatProfile &&
+                    isCurrentBoostLinkOrigin(navigation, origin, originArguments, originChatId)) {
+                  openChatProfile(origin, info.chatId, null, new TdApi.GetChat(info.chatId), openParameters);
+                }
+                return true;
+              });
+          }
+        }
+        if (after != null) {
+          after.runWithBool(true);
+        }
+      }));
+    }));
+  }
+
+  private boolean isCurrentBoostLinkOrigin (NavigationController navigation, ViewController<?> origin,
+                                            @Nullable Object arguments, long chatId) {
+    return !navigation.isDestroyed() && navigation.getCurrentStackItem() == origin && !origin.isDestroyed() &&
+      origin.tdlib() == tdlib && origin.getArguments() == arguments && origin.getChatId() == chatId;
+  }
+
   public void openInternalLinkType (TdlibDelegate context, @Nullable String originalUrl, @NonNull TdApi.InternalLinkType linkType, @Nullable UrlOpenParameters openParameters, @Nullable RunnableBool after) {
     if (!UI.inUiThread()) {
       post(() ->
@@ -5199,6 +5260,11 @@ public class TdlibUi extends Handler {
         }
         break;
       }
+      case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeChatBoost boostLink = (TdApi.InternalLinkTypeChatBoost) linkType;
+        openChatBoostLink(context, boostLink.url, openParameters, after);
+        return;
+      }
       case TdApi.InternalLinkTypeDirectMessagesChat.CONSTRUCTOR: {
         TdApi.InternalLinkTypeDirectMessagesChat directMessagesChat = (TdApi.InternalLinkTypeDirectMessagesChat) linkType;
         openDirectMessages(context, directMessagesChat.channelUsername, openParameters);
@@ -5227,7 +5293,6 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:

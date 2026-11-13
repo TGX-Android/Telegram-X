@@ -2411,6 +2411,7 @@
   <string name="ChatBoostStatusTitle">Boost Status</string>
   <string name="ChatBoostStatusInfo">Level %1$d · %2$d boosts\n%3$d more boosts needed for the next level.</string>
   <string name="ChatBoostStatusMaxInfo">Level %1$d · %2$d boosts\nNo next level is currently available.</string>
+  <string name="BoostLinkChatUnavailable">The chat for this boost link is unavailable.</string>
   <string name="ShareBoostLink">Share Boost Link</string>
   <string name="ChannelSponsoredMessages">Channel Sponsored Messages</string>
   <string name="ChannelSponsoredMessagesInfo">Allow sponsored messages in this channel? This owner setting affects the channel, not just your device. Disabling them requires Telegram’s minimum boost level.</string>
