@@ -445,6 +445,7 @@
   <item type="id" name="controller_profileChannel" />
   <item type="id" name="btn_removeProfileChannel" />
   <item type="id" name="btn_mainProfileTab" />
+  <item type="id" name="btn_resetStickerSetThumbnail" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />

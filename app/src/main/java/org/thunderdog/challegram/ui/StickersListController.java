@@ -162,6 +162,11 @@ public class StickersListController extends ViewController<StickersListControlle
           icons.append(R.drawable.baseline_delete_24);
         }
         if (loadedStickerSet != null && loadedStickerSet.isOwned) {
+          if (loadedStickerSet.thumbnail != null) {
+            ids.append(R.id.btn_resetStickerSetThumbnail);
+            strings.append(R.string.ResetStickerSetThumbnail);
+            icons.append(R.drawable.baseline_image_24);
+          }
           ids.append(R.id.btn_renameStickerSet);
           strings.append(R.string.RenamePack);
           icons.append(R.drawable.baseline_edit_24);
@@ -240,6 +245,12 @@ public class StickersListController extends ViewController<StickersListControlle
       if (getArguments() != null) {
         long stickerSetId = stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id : -1;
         getArguments().removeStickerSets(new long[] {stickerSetId});
+      }
+    } else if (id == R.id.btn_resetStickerSetThumbnail) {
+      TdApi.StickerSet expected = loadedStickerSet;
+      if (expected != null && expected.isOwned && expected.thumbnail != null) {
+        showConfirm(Lang.getString(R.string.ResetStickerSetThumbnailConfirm), Lang.getString(R.string.Reset),
+          R.drawable.baseline_image_24, OptionColor.NORMAL, () -> resetStickerSetThumbnail(expected));
       }
     } else if (id == R.id.btn_renameStickerSet) {
       if (loadedStickerSet != null) {
@@ -951,6 +962,41 @@ public class StickersListController extends ViewController<StickersListControlle
       }
     }
     return null;
+  }
+
+  private boolean changingPackThumbnail;
+
+  private void resetStickerSetThumbnail (TdApi.StickerSet expected) {
+    if (changingPackThumbnail || expected == null || expected != loadedStickerSet ||
+      !expected.isOwned || expected.thumbnail == null) {
+      return;
+    }
+    int thumbnailFileId = expected.thumbnail.file.id;
+    changingPackThumbnail = true;
+    tdlib.send(new TdApi.GetStickerSet(expected.id), (current, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        changingPackThumbnail = false;
+        UI.showError(error);
+        return;
+      }
+      if (loadedStickerSet != expected || !current.isOwned || current.id != expected.id ||
+        !current.name.equals(expected.name) || current.thumbnail == null || current.thumbnail.file.id != thumbnailFileId) {
+        changingPackThumbnail = false;
+        UI.showToast(R.string.StickerSetThumbnailChanged, Toast.LENGTH_SHORT);
+        return;
+      }
+      TdApi.Function<TdApi.Ok> request = current.stickerType instanceof TdApi.StickerTypeCustomEmoji ?
+        new TdApi.SetCustomEmojiStickerSetThumbnail(current.name, 0) :
+        new TdApi.SetStickerSetThumbnail(tdlib.myUserId(), current.name, null, null);
+      tdlib.send(request, (ok, setError) -> runOnUiThreadOptional(() -> {
+        changingPackThumbnail = false;
+        if (setError != null) {
+          UI.showError(setError);
+        } else {
+          reloadStickerSet();
+        }
+      }));
+    }));
   }
 
   private void reloadStickerSet () {
