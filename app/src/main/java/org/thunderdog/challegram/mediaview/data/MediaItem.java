@@ -1648,6 +1648,19 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return sourceDocument;
   }
 
+  public @Nullable TdApi.File getFileWithStickers () {
+    if (sourcePhoto != null && sourcePhoto.hasStickers) {
+      return targetFile;
+    }
+    if (sourceVideo != null && sourceVideo.hasStickers) {
+      return sourceVideo.video;
+    }
+    if (sourceAnimation != null && sourceAnimation.hasStickers) {
+      return sourceAnimation.animation;
+    }
+    return null;
+  }
+
   // Files-related stuff
 
   public void download (boolean force) {

@@ -70,6 +70,7 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.preview.FlingDetector;
+import org.thunderdog.challegram.component.sticker.StickerSetWrap;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -1695,6 +1696,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       strings.append(R.string.SaveGif);
     }
 
+    if (canViewAttachedStickerSets(item)) {
+      ids.append(R.id.btn_attachedStickerSets);
+      strings.append(R.string.AttachedStickerSets);
+    }
+
     if (!StringUtils.isEmpty(getArgumentsStrict().copyLink) || (chat != null && tdlib.canCopyPostLink(item.getMessage()))) {
       ids.append(R.id.btn_copyLink);
       strings.append(R.string.CopyLink);
@@ -1752,10 +1758,66 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return mode == MODE_SECRET || !stack.getCurrent().canBeSaved() || super.shouldDisallowScreenshots();
   }
 
+  private boolean canViewAttachedStickerSets (MediaItem item) {
+    return item != null && mode != MODE_SECRET && mode != MODE_GALLERY && !item.isSecret() &&
+      !ChatId.isSecret(item.getSourceChatId()) && item.canBeSaved() &&
+      item.getFileWithStickers() != null;
+  }
+
+  private boolean loadingAttachedStickerSets;
+
+  private void showAttachedStickerSets (MediaItem item) {
+    TdApi.File file = item != null ? item.getFileWithStickers() : null;
+    if (loadingAttachedStickerSets || file == null || !canViewAttachedStickerSets(item)) {
+      return;
+    }
+    loadingAttachedStickerSets = true;
+    tdlib.send(new TdApi.GetAttachedStickerSets(file.id), (result, error) ->
+      runOnUiThreadOptional(() -> {
+        loadingAttachedStickerSets = false;
+        if (stack.getCurrent() != item || !canViewAttachedStickerSets(item)) {
+          return;
+        }
+        if (error != null) {
+          UI.showError(error);
+          return;
+        }
+        TdApi.StickerSetInfo[] sets = result.sets;
+        if (sets.length == 0) {
+          UI.showToast(R.string.NoAttachedStickerSets, Toast.LENGTH_SHORT);
+        } else if (sets.length == 1) {
+          StickerSetWrap.showStickerSet(this, sets[0]);
+        } else {
+          int[] ids = new int[sets.length];
+          String[] titles = new String[sets.length];
+          for (int i = 0; i < sets.length; i++) {
+            ids[i] = View.generateViewId();
+            titles[i] = sets[i].title;
+          }
+          showOptions(Lang.getString(R.string.AttachedStickerSets), ids, titles, null, null,
+            (view, id) -> {
+              if (stack.getCurrent() == item && canViewAttachedStickerSets(item)) {
+                for (int i = 0; i < ids.length; i++) {
+                  if (ids[i] == id) {
+                    StickerSetWrap.showStickerSet(this, sets[i]);
+                    break;
+                  }
+                }
+              }
+              return true;
+            }
+          );
+        }
+      })
+    );
+  }
+
   @Override
   public void onMoreItemPressed (int id) {
     MediaItem item = stack.getCurrent();
-    if (id == R.id.btn_saveToGallery) {
+    if (id == R.id.btn_attachedStickerSets) {
+      showAttachedStickerSets(item);
+    } else if (id == R.id.btn_saveToGallery) {
       TdApi.File file = item.getTargetFile();
       tdlib.files().isFileLoadedAndExists(file, isLoadedAndExists -> {
         if (isLoadedAndExists) {
