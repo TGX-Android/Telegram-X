@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.os.Build;
+import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -742,8 +743,15 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     translationMode = direction;
     translatingForward = forward;
 
-    currentWidth = rootView.getMeasuredWidth();
-    currentHeight = rootView.getMeasuredHeight();
+    if (rootView.getMeasuredHeight() != 0) {
+      currentWidth = rootView.getMeasuredWidth();
+      currentHeight = rootView.getMeasuredHeight();
+    } else {
+      // No layout yet, e.g. under the passcode since the start of the activity
+      DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+      currentWidth = metrics.widthPixels;
+      currentHeight = metrics.heightPixels;
+    }
     currentPrevWidth = -(currentWidth / Size.NAVIGATION_PREVIEW_TRANSLATE_FACTOR);
 
     if (forward) {

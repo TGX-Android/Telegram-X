@@ -516,10 +516,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
             case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
             case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
+            case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
+            case TdApi.MessageWidget.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_f7758f8b();
+              Td.assertMessageContent_37851fea();
               throw Td.unsupported(message.content);
           }
           if (format == null) {

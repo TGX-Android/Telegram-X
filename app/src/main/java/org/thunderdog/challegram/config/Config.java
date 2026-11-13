@@ -46,6 +46,7 @@ public class Config {
   public static final boolean ADJUST_STATUS_BAR_TO_AVOID_DISPLAY_CUTOUT = false;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
+  public static final boolean NEED_FLUSH_NOTIFICATION_DATA = false;
 
   public static final boolean SHOW_EMOJI_TONE_PICKER_ALWAYS = true;
 
@@ -65,6 +66,9 @@ public class Config {
   public static final boolean TRANSCODE_ROTATED_VIDEOS_FOR_IOS_CLIENT = true;
 
   public static final boolean ENABLE_TEST_HOOKS = BuildConfig.TEST_HOOKS_ENABLED;
+
+  // How often at most a chat of the chat list layouts changes of its last message and unread count
+  public static final long CHAT_CHANGES_INTERVAL_MS = 100;
 
   public static final boolean ENABLE_DELETE_CALL_HISTORY = BuildConfig.DEBUG;
 
@@ -190,6 +194,8 @@ public class Config {
   public static final boolean USE_CRASHLYTICS = false;
 
   public static final boolean CALL_FROM_PREVIEW = false;
+  // Android 10 and older: the buttons of a call on the passcode above the keyboard of a password
+  public static final boolean CALL_BUTTONS_ABOVE_KEYBOARD = true;
 
   public static final boolean USE_GROUP_NAMES = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
 
@@ -263,9 +269,9 @@ public class Config {
 
   public static final boolean SHOW_COPY_REPORT_DETAILS_IN_SETTINGS = BuildConfig.EXPERIMENTAL;
 
-  // Builds of tests are experimental too, but get notifications like release builds
   public static final boolean FORCE_DISABLE_NOTIFICATIONS =
-    BuildConfig.EXPERIMENTAL && !BuildConfig.DEBUG && !ENABLE_TEST_HOOKS;
+    BuildConfig.EXPERIMENTAL && !BuildConfig.DEBUG && !ENABLE_TEST_HOOKS &&
+    !BuildConfig.FIREBASE_MESSAGING_ENABLED;
 
   public static final int MINIMUM_CALL_CONTACTS_SUGGESTIONS = 3;
 

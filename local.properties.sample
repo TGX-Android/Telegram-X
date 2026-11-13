@@ -10,11 +10,17 @@
 # Path to Android SDK
 sdk.dir=
 
+# Path to the home of rustup with Rust of version.rust of version.properties, see scripts/setup-rust.sh
+rust.dir=
+
 # Location of the MSYS2. This is only used on Windows.
 msys2.dir=
 
 ## Path to the keystore file
 keystore.file=
+
+## Path to a google-services.json used instead of the one in the repository
+google_services.file=
 
 ## Package name
 app.id=org.example.tgx

@@ -54,6 +54,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.TelegramViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.ColorId;
@@ -85,7 +86,8 @@ import me.vkryl.core.collection.LongList;
 import tgx.td.Td;
 
 public class ContactsController extends TelegramViewController<ContactsController.Args> implements OptionDelegate, BubbleHeaderView.Callback, TextWatcher, Runnable, Menu, Unlockable,
-  TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, Comparator<TdApi.User> {
+  TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, Comparator<TdApi.User>,
+  DateChangeListener {
   public static final int MODE_PICK = 1;
   public static final int MODE_CHANNEL_MEMBERS = 2;
   public static final int MODE_NEW_GROUP = 3;
@@ -1304,6 +1306,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
           }
         });
         tdlib.cache().addGlobalUsersListener(this);
+        tdlib.context().dateManager().addListener(this);
         break;
       }
       case SOURCE_TYPE_LOCAL: {
@@ -1326,6 +1329,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     }
     if (sourceType == SOURCE_TYPE_REMOTE) {
       tdlib.cache().removeGlobalUsersListener(this);
+      tdlib.context().dateManager().removeListener(this);
     }
   }
 
@@ -1371,6 +1375,13 @@ public class ContactsController extends TelegramViewController<ContactsControlle
   @Override
   public void onUserStatusChanged (final long userId, final TdApi.UserStatus status, boolean uiOnly) {
     updateUserStatus(userId, status);
+  }
+
+  @Override
+  public void onTimeFormatChanged () {
+    if (adapter != null) {
+      Views.updateRows(recyclerView, 0, adapter.getItemCount(), Views::updateRowTimes);
+    }
   }
 
   // Local storage

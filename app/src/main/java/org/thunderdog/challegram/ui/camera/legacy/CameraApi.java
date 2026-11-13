@@ -16,10 +16,12 @@ package org.thunderdog.challegram.ui.camera.legacy;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
 
+import androidx.annotation.ChecksSdkIntAtLeast;
 import androidx.annotation.WorkerThread;
 
 import org.thunderdog.challegram.Log;
@@ -97,7 +99,7 @@ public abstract class CameraApi {
   protected abstract void onPreviewSizeChanged (int newWidth, int newHeight);
 
   private boolean isCameraBusy () {
-    return isVideoCapturing || (roundRecorder != null && roundRecorder.isCapturing());
+    return isVideoCapturing || (hasRoundRecorder() && roundRecorder.isCapturing());
   }
 
   /**
@@ -147,7 +149,7 @@ public abstract class CameraApi {
       return;
     }
 
-    if (roundRecorder != null) {
+    if (hasRoundRecorder()) {
       if (roundRecorder.canSwitchToNewCamera()) {
         onNextCameraSourceRequested();
       }
@@ -714,7 +716,7 @@ public abstract class CameraApi {
       sendMessage(ACTION_OPEN_CAMERA_IF_NEEDED, recorder);
       return;
     }
-    if (this.roundRecorder == recorder && isCameraActive && !cameraOpened) {
+    if (hasRoundRecorder() && this.roundRecorder == recorder && isCameraActive && !cameraOpened) {
       try {
         openCamera(recorder.getCameraTexture());
         cameraOpened = true;
@@ -750,7 +752,7 @@ public abstract class CameraApi {
       sendMessage(ACTION_DESTROY_ROUND_RENDERER);
       return;
     }
-    if (roundRecorder != null) {
+    if (hasRoundRecorder()) {
       roundRecorder.destroy();
       roundRecorder = null;
     }
@@ -775,7 +777,7 @@ public abstract class CameraApi {
             if (surface == null) {
               throw new NullPointerException();
             }
-            if (manager.useRoundRender()) {
+            if (Config.ROUND_VIDEOS_RECORD_SUPPORTED && manager.useRoundRender()) {
               if (roundRecorder == null) {
                 roundRecorder = new RoundVideoRecorder(this, surface, mSurfaceWidth, mSurfaceHeight);
                 roundRecorder.setPreviewSizes(getCameraOutputWidth(), getCameraOutputHeight(), calculateDisplayOrientation());
@@ -801,7 +803,7 @@ public abstract class CameraApi {
         } catch (Throwable t) {
           Log.w(Log.TAG_CAMERA, "Cannot close camera, but we ignore it.", t);
         }
-        if (roundRecorder != null) {
+        if (hasRoundRecorder()) {
           roundRecorder.onCameraClose();
         }
         cameraOpened = false;
@@ -819,13 +821,20 @@ public abstract class CameraApi {
 
   private RoundVideoRecorder roundRecorder;
 
+  @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
+  private boolean hasRoundRecorder () {
+    return Config.ROUND_VIDEOS_RECORD_SUPPORTED && roundRecorder != null;
+  }
+
   public final void startRoundVideoCapture (String key, RoundVideoRecorder.Delegate delegate, String outputPath) {
     if (!checkCameraThread()) {
       sendMessage(ACTION_START_ROUND_CAPTURE, new Object[] {key, delegate, outputPath});
       return;
     }
 
-    roundRecorder.startCapture(delegate, key, outputPath);
+    if (Config.ROUND_VIDEOS_RECORD_SUPPORTED) {
+      roundRecorder.startCapture(delegate, key, outputPath);
+    }
   }
 
   public final void finishOrCancelRoundVideoCapture (String key, boolean saveResult) {
@@ -834,6 +843,8 @@ public abstract class CameraApi {
       return;
     }
 
-    roundRecorder.finishCapture(key, saveResult);
+    if (Config.ROUND_VIDEOS_RECORD_SUPPORTED) {
+      roundRecorder.finishCapture(key, saveResult);
+    }
   }
 }

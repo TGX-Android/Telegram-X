@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.graphics.Canvas;
 import android.os.Build;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -98,6 +99,13 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     backgroundView = new BackgroundView(context);
     backgroundView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     addView(backgroundView);
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      // Also while no view of a window of its own has the focus, which keys go to
+      addOnUnhandledKeyEventListener((view, event) ->
+        UI.getContext(getContext()).silenceRingingByVolumeKey(event)
+      );
+    }
   }
 
   public void setOverlayStatusBar (boolean overlayStatusBar) {
@@ -401,6 +409,13 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   public void setSoftInputMode (int method) {
     this.softInputMode = method;
+  }
+
+  @Override
+  public boolean dispatchKeyEvent (KeyEvent event) {
+    // A window of its own with the soft input takes the keys from the activity
+    return UI.getContext(getContext()).silenceRingingByVolumeKey(event) ||
+      super.dispatchKeyEvent(event);
   }
 
   public boolean isBoundWindowShowing () {

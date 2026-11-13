@@ -8,10 +8,13 @@ import android.content.IntentFilter;
 import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
@@ -28,14 +31,18 @@ public class DateManager {
         switch (action) {
           case Intent.ACTION_TIMEZONE_CHANGED:
             notifyTimeZoneChanged();
-            UI.execute(DateManager.this::checkCurrentDate);
+            UI.execute(DateManager.this::checkDateAndTimeFormat);
             break;
           case Intent.ACTION_DATE_CHANGED:
-            UI.execute(DateManager.this::checkCurrentDate);
+            UI.execute(DateManager.this::checkDateAndTimeFormat);
             break;
           case Intent.ACTION_TIME_CHANGED:
+            // Also sent when 12 or 24 hours change
             notifyTimeChanged();
-            UI.execute(DateManager.this::checkCurrentDate);
+            UI.execute(DateManager.this::checkDateAndTimeFormat);
+            break;
+          case Intent.ACTION_LOCALE_CHANGED:
+            UI.execute(DateManager.this::checkDateAndTimeFormat);
             break;
         }
       }
@@ -104,6 +111,28 @@ public class DateManager {
     }
   }
 
+  private String timeFormat = currentTimeFormat();
+
+  private static String currentTimeFormat () {
+    String locale = Locale.getDefault().toString();
+    return TimeZone.getDefault().getID() + " " + UI.needAmPm() + " " + locale;
+  }
+
+  public void checkTimeFormat () {
+    String timeFormat = currentTimeFormat();
+    if (!this.timeFormat.equals(timeFormat)) {
+      this.timeFormat = timeFormat;
+      DateUtils.clearCache();
+      Lang.clearDateFormats();
+      notifyListeners(DateChangeListener::onTimeFormatChanged);
+    }
+  }
+
+  public void checkDateAndTimeFormat () {
+    checkCurrentDate();
+    checkTimeFormat();
+  }
+
   private boolean dateWatcherRegistered;
 
   private void setNeedDateWatcher (boolean needDateWatcher) {
@@ -113,6 +142,7 @@ public class DateManager {
         filter.addAction(Intent.ACTION_DATE_CHANGED);
         filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
         filter.addAction(Intent.ACTION_TIME_CHANGED);
+        filter.addAction(Intent.ACTION_LOCALE_CHANGED);
         try {
           AppContext.get().registerReceiver(dateChangeReceiver, filter);
           this.dateWatcherRegistered = true;

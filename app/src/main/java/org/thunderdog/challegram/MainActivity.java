@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.TypedValue;
+import android.view.Choreographer;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,6 +47,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.sync.TemporaryNotification;
 import org.thunderdog.challegram.telegram.AccountSwitchReason;
+import org.thunderdog.challegram.telegram.CallProblems;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalCountersListener;
 import org.thunderdog.challegram.telegram.GlobalResolvableProblemListener;
@@ -92,6 +94,7 @@ import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsPrivacyKeyController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
 import org.thunderdog.challegram.ui.WaitForPremiumController;
+import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.widget.GearView;
@@ -111,6 +114,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
+import tgx.td.ChatId;
 import tgx.td.MessageId;
 import tgx.td.Td;
 
@@ -129,6 +133,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     Log.i("MainActivity.onCreate");
 
     handler = new Handler(Looper.getMainLooper());
+
+    addPasscodeListener((context, isShowing) -> {
+      if (!isShowing) {
+        openRingingCall();
+      }
+    });
 
     TdlibManager.instance().global().addAccountListener(this);
     TdlibManager.instance().global().addCountersListener(this);
@@ -248,10 +258,18 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
   private CancellableRunnable lastAccountSwitchTask;
 
+  // Checked only when it may have changed, e.g. on resume, since asking the system is slow
+  private @Tdlib.ResolvableProblem int resolvableProblem = Tdlib.ResolvableProblem.NONE;
+
   private void updateCounter () {
+    resolvableProblem = currentTdlib().findResolvableProblem();
+    updateCounterBadge();
+  }
+
+  private void updateCounterBadge () {
     Tdlib tdlib = currentTdlib();
     boolean animated = getActivityState() == UI.State.RESUMED;
-    @Tdlib.ResolvableProblem int problemType = tdlib.findResolvableProblem();
+    @Tdlib.ResolvableProblem int problemType = resolvableProblem;
     BackHeaderButton backButton = navigation.getHeaderView().getBackButton();
     if (problemType != Tdlib.ResolvableProblem.NONE) {
       @ColorId int colorId;
@@ -279,9 +297,18 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     updateCounter();
   }
 
+  private boolean isCounterFramePosted;
+  private final Choreographer.FrameCallback counterFrame = frameTimeNanos -> {
+    isCounterFramePosted = false;
+    updateCounterBadge();
+  };
+
   @Override
   public void onTotalUnreadCounterChanged (@NonNull TdApi.ChatList chatList, boolean isReset) {
-    updateCounter();
+    if (!isCounterFramePosted) {
+      isCounterFramePosted = true;
+      Choreographer.getInstance().postFrameCallback(counterFrame);
+    }
   }
 
   @Override
@@ -729,6 +756,17 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     intent.setAction("");
     setIntent(intent);
 
+    if (Intents.ACTION_OPEN_CALL.equals(action) &&
+      !intent.getBooleanExtra(Intents.KEY_OPEN_CHAT, false)) {
+      // Under the passcode, so that the call is there at once after it; the passcode shows here
+      // already, before onResume, so that the call opens without animation
+      checkPasscode(false);
+      if (isPasscodeShowing()) {
+        openCallController(false);
+        return true;
+      }
+    }
+
     if (isPasscodeShowing()) {
       addPasscodeListener(new PasscodeListener() {
         @Override
@@ -813,7 +851,15 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     }
 
     if (Intents.ACTION_OPEN_CALL.equals(action)) {
-      openCallController();
+      openCallController(intent.getBooleanExtra(Intents.KEY_OPEN_CHAT, false));
+      if (intent.getBooleanExtra(Intents.KEY_ANSWER_CALL, false)) {
+        // Only a resumed activity asks for the microphone, and an intent comes before onResume
+        if (getActivityState() == UI.State.RESUMED) {
+          answerIncomingCall(intent);
+        } else {
+          pendingAnswerIntent = intent;
+        }
+      }
       return true;
     }
 
@@ -1416,11 +1462,38 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     }
   }
 
-  private void openCallController () {
+  private @Nullable Intent pendingAnswerIntent;
+
+  private void answerIncomingCall (Intent intent) {
+    if (Passcode.instance().isLockedForIncomingCalls()) {
+      return;
+    }
+    int accountId = intent.getIntExtra(Intents.KEY_ACCOUNT_ID, TdlibAccount.NO_ID);
+    int callId = intent.getIntExtra(Intents.KEY_CALL_ID, 0);
+    if (accountId == TdlibAccount.NO_ID || callId == 0) {
+      return;
+    }
+    Tdlib tdlib = TdlibManager.getTdlib(accountId);
+    TdApi.Call call = tdlib.cache().getCall(callId);
+    if (call != null && !call.isOutgoing &&
+      call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
+      tdlib.context().calls().acceptCall(this, tdlib, call.id);
+    } else {
+      tdlib.context().calls().cancelIncomingCallWithoutService();
+    }
+  }
+
+  private void openCallController (boolean openChat) {
     TdApi.Call call = TdlibManager.instance().calls().getCurrentCall();
     Tdlib tdlib = TdlibManager.instance().calls().getCurrentCallTdlib();
 
-    if (call == null) {
+    if (call != null && openChat) {
+      openMessagesController(tdlib.id(), ChatId.fromUserId(call.userId), 0);
+      return;
+    }
+
+    // Also a call that ended while the passcode waited
+    if (call == null || TD.isFinished(call)) {
       if (navigation.isEmpty()) {
         initDefault(currentTdlib().id(), false);
       }
@@ -1436,8 +1509,16 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
     CallController controller = new CallController(this, tdlib);
     controller.setArguments(new CallController.Arguments(call));
-
     navigateToSafely(controller);
+  }
+
+  private void openRingingCall () {
+    TdApi.Call call = TdlibManager.instance().calls().getCurrentCall();
+    boolean isRinging = call != null && !call.isOutgoing &&
+      call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR;
+    if (isRinging && !(navigation.getCurrentStackItem() instanceof CallController)) {
+      openCallController(false);
+    }
   }
 
   public void navigateToSafely (@NonNull ViewController<?> c) {
@@ -1492,12 +1573,24 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
   @Override
   public void onResume () {
+    // Before the drawer and the screens read it on their resume
+    CallProblems.refresh(this);
     super.onResume();
     Log.i("MainActivity.onResume");
+    if (pendingAnswerIntent != null) {
+      Intent intent = pendingAnswerIntent;
+      pendingAnswerIntent = null;
+      answerIncomingCall(intent);
+    }
+    // CallManager can't show a call that came while the app was in background: it opens under
+    // the passcode, so that it's there at once after it
+    if (isPasscodeShowing()) {
+      openRingingCall();
+    }
     // Log.e("%s", Strings.getHexColor(U.compositeColor(Theme.headerColor(), Theme.getColor(ColorId.statusBar)), false));
     tdlib.contacts().makeSilentPermissionCheck(this);
     tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
-    tdlib.context().dateManager().checkCurrentDate();
+    tdlib.context().dateManager().checkDateAndTimeFormat();
     UI.startNotificationService();
     TemporaryNotification.hide(this);
   }
@@ -1507,6 +1600,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     TdlibManager.instance().global().removeAccountListener(this);
     TdlibManager.instance().global().removeCountersListener(this);
     TdlibManager.instance().global().removeResolvableProblemAvailabilityListener(this);
+    Choreographer.getInstance().removeFrameCallback(counterFrame);
     destroyMessageControllers();
 
     Log.i("MainActivity.onDestroy");

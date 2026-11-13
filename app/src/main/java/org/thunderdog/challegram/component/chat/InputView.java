@@ -487,7 +487,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           TdApi.TextEntityType[] textEntityTypes = TD.toEntityType(existingSpan);
           if (textEntityTypes != null) {
             for (TdApi.TextEntityType textEntityType : textEntityTypes) {
-              if (textEntityType.getConstructor() == typeForRemove.getConstructor()) {
+              // Removing monospace removes blocks of code too
+              if (textEntityType.getConstructor() == typeForRemove.getConstructor() ||
+                (Td.isMonospaceTextOrBlock(textEntityType) &&
+                  Td.isMonospaceTextOrBlock(typeForRemove))) {
                 needContinue = false;
                 break;
               }

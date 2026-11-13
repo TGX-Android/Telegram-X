@@ -1,14 +1,14 @@
 [versions]
-android-gradle-plugin = "9.4.1"
+android-gradle-plugin = "9.5.1"
 
 kotlin = "2.4.21"
-ksp = "2.3.4"
+ksp = "2.3.13"
 desugaring = "2.1.5"
 
-jgit = "7.8.0.202609011348-r"
+jgit = "7.8.1.202611041320-r"
 
 kotlinx-coroutines = "1.11.0"
-kotlinx-serialization = "1.11.0"
+kotlinx-serialization = "1.12.0"
 
 androidx-multidex = "2.0.1"
 androidx-annotation = "1.11.0"
@@ -34,11 +34,11 @@ subsampling-scale-image-view = "3.10.0"
 #noinspection NewerVersionAvailable
 mp4parser-isoparser = "1.0.6" # Do not upgrade.
 
-annotations-checkerframework = "4.3.1"
-annotations-errorprone = "2.50.0"
+annotations-checkerframework = "4.4.0"
+annotations-errorprone = "2.52.0"
 annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
-annotations-kotlin = "2.1.20"
+annotations-kotlin = "2.4.21"
 
 androidx-baselineprofile = "1.5.0"
 androidx-profileinstaller = "1.4.1"
@@ -51,7 +51,7 @@ google-truth = "1.4.5"
 
 # latest
 
-okhttp-latest = "5.5.0"
+okhttp-latest = "5.5.1"
 
 androidx-core-latest = "1.19.1"
 androidx-activity-latest = "1.13.0"
@@ -70,7 +70,7 @@ androidx-palette-latest = "1.1.0"
 
 firebase-messaging-latest = "26.0.1"
 
-google-recaptcha-latest = "18.9.3"
+google-recaptcha-latest = "18.9.4"
 
 google-play-billing-latest = "9.1.0"
 google-play-integrity-latest = "1.6.0"
@@ -117,7 +117,7 @@ google-play-services-location-lollipop = "21.3.0"
 
 # legacy
 
-okhttp-legacy = "4.12.0" # 5.x+ requires minSdk 21
+okhttp-legacy = "4.12.1" # 5.x+ requires minSdk 21
 
 androidx-core-legacy = "1.12.0" # 1.13.0+ requires minSdk 19
 androidx-activity-legacy = "1.8.2" # 1.9.0+ requires minSdk 19
@@ -126,7 +126,7 @@ androidx-gridlayout-legacy = "1.0.0" # 1.1.0+ requires minSdk 21
 androidx-recyclerview-legacy = "1.3.2" # 1.4.0+ requires minSdk 21
 androidx-constraintlayout-legacy = "2.1.4" # 2.2.0+ requires minSdk 21
 androidx-viewpager-legacy = "1.0.0" # 1.1.0+ requires minSdk 21
-androidx-browser-legacy = "1.5.0" # 1.7.0+ requires minSdk 19
+androidx-browser-legacy = "1.6.0" # 1.7.0+ requires minSdk 19
 androidx-exifinterface-legacy = "1.3.7" # 1.4.0+ requires minSdk 21
 androidx-camera-legacy = "1.4.2" # 1.6.0+ requires minSdk 23
 androidx-media-legacy = "1.2.1" # 1.3.0+ requires minSdk 19, 1.5.0+ requires minSdk 21

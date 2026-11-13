@@ -334,9 +334,11 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   public boolean isEmpty () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long accountUserId = tdlib.myUserId(true);
-      if (accountUserId != 0) {
+      // Only channels made already: this makes none, e.g. when the data of an account that logs
+      // out is dropped and its channels are deleted
+      TdlibNotificationChannelGroup channelGroup = tdlib.notifications().getExistingChannelCache();
+      if (accountUserId != 0 && channelGroup != null) {
         try {
-          TdlibNotificationChannelGroup channelGroup = tdlib.notifications().getChannelCache();
           for (TdlibNotificationGroup group : this) {
             if (channelGroup.getChannel(group, false) != null)
               return false;

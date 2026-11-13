@@ -1364,6 +1364,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     updateUtcTimeOffset();
   }
 
+  @Override
+  public void onTimeFormatChanged () {
+    cache().onTimeFormatChanged();
+  }
+
   private boolean isOptimizing;
 
   public boolean isOptimizing () {
@@ -4176,7 +4181,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean isRepliesChat (long chatId) {
-    return (options.repliesBotChatId != 0 && options.repliesBotChatId == chatId) || (chatId == ChatId.fromUserId(options.repliesBotUserId));
+    return (options.repliesBotChatId != 0 && options.repliesBotChatId == chatId) ||
+      chatId == ChatId.fromUserId(TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID);
   }
 
   public boolean hasMessageThreads (long chatId) {
@@ -4833,7 +4839,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_37851fea();
         break;
     }
 
@@ -4917,7 +4923,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_f7758f8b();
+      Td.assertMessageContent_37851fea();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -5808,11 +5814,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   private boolean setLanguagePackIdImpl (@NonNull String languagePackId, boolean dispatch) {
-    if (!StringUtils.equalsOrBothEmpty(languagePackId, languagePackId)) {
+    if (!StringUtils.equalsOrBothEmpty(this.languagePackId, languagePackId)) {
       this.languagePackId = languagePackId;
+      this.countries = null; // Reset locale-specific names.
       if (dispatch) {
         updateLanguageParameters(client(), false);
-        this.countries = null; // Reset locale-specific names.
       }
       return true;
     }
@@ -6791,10 +6797,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return options.pinnedArchivedChatCountMax;
   }
 
-  public double emojiesAnimatedZoom () {
-    return options.emojiesAnimatedZoom;
-  }
-
   public boolean youtubePipEnabled () {
     if (!options.youtubePipDisabled) return true;
     return AppInstallationUtil.isAppSideLoaded(AppContext.get());
@@ -6935,8 +6937,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return options.animationSearchBotUsername;
   }
 
+  private static final String VENUE_SEARCH_BOT_USERNAME_FALLBACK = "foursquare";
+
   public String getVenueSearchBotUsername () {
-    return options.venueSearchBotUsername;
+    String username = options.venueSearchBotUsername;
+    return StringUtils.isEmpty(username) && !isDebugInstance() ?
+      VENUE_SEARCH_BOT_USERNAME_FALLBACK : username;
   }
 
   public String getPhotoSearchBotUsername () {
@@ -7059,7 +7065,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean allowQrLoginCamera () {
-    return (options.qrLoginCamera && Config.QR_AVAILABLE);
+    return Config.QR_AVAILABLE;
   }
 
   public long callPacketTimeoutMs () {
@@ -7613,7 +7619,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
       default: {
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_37851fea();
         break;
       }
     }
@@ -8219,20 +8225,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
     listeners.updateChatTitle(update, chat, chatLists);
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      long myUserId = myUserId();
-      if (myUserId != 0) {
-        try {
-          TdlibNotificationChannelGroup.updateChat(this, myUserId, chat);
-        } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
-          TDLib.Tag.notifications("Unable to update notification channel title for chat %d:\n%s",
-            update.chatId,
-            Log.toString(e)
-          );
-          settings().trackNotificationChannelProblem(e, chat.id);
-        }
-      }
-    }
+    notifications().updateChatChannel(chat.id);
   }
 
   @TdlibThread
@@ -8944,9 +8937,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     if (update.file.local.isDownloadingActive || update.file.remote.isUploadingActive) {
       files().onFileProgress(update);
 
-      int fileId = update.file.id;
       if (!ImageLoader.instance().onProgress(this, update.file)) {
-        if (!GifBridge.instance().onProgress(this, fileId, TD.getFileProgress(update.file))) {
+        if (!GifBridge.instance().onProgress(this, update.file, TD.getFileProgress(update.file))) {
           // Nothing?
         }
       }
@@ -10561,6 +10553,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateTonWalletState.CONSTRUCTOR:
       case TdApi.UpdateTonWalletTonConnectSession.CONSTRUCTOR:
       case TdApi.UpdateTonWalletTonConnectSessionDisconnectRequired.CONSTRUCTOR:
+      case TdApi.UpdateWebProxyCarrierOpened.CONSTRUCTOR:
+      case TdApi.UpdateWebProxyCarrierData.CONSTRUCTOR:
+      case TdApi.UpdateWebProxyCarrierClosed.CONSTRUCTOR:
+      case TdApi.UpdateSpeechRecognitionInFile.CONSTRUCTOR:
         break;
 
       // for bots only.
@@ -10587,12 +10583,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateNewBusinessCallbackQuery.CONSTRUCTOR:
       case TdApi.UpdateNewGuestQuery.CONSTRUCTOR:
       case TdApi.UpdatePaidMediaPurchased.CONSTRUCTOR:
-      case TdApi.UpdateUserSubscription.CONSTRUCTOR: {
+      case TdApi.UpdateUserSubscription.CONSTRUCTOR:
+      case TdApi.UpdateNewWidgetQuery.CONSTRUCTOR:
+      case TdApi.UpdateNewInlineWidgetQuery.CONSTRUCTOR:
+      case TdApi.UpdateNewWidgetCopyQuery.CONSTRUCTOR: {
         // Must never come from TDLib. If it does, there's a bug on TDLib side.
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_c11d0a6d();
+        Td.assertUpdate_2f0de2f1();
         throw Td.unsupported(update);
       }
     }
@@ -10773,7 +10772,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     connectionListeners = new ConditionalExecutor(() -> authorizationStatus() != Status.UNKNOWN && connectionState == ConnectionState.CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
     notificationInitListeners = new ConditionalExecutor(() -> {
       final int status = authorizationStatus();
-      return status == Status.UNAUTHORIZED || (status == Status.READY && haveInitializedNotifications);
+      return status == Status.UNAUTHORIZED || (status == Status.READY && (haveInitializedNotifications || isServiceInstance() || Config.FORCE_DISABLE_NOTIFICATIONS));
     }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationListeners = new ConditionalExecutor(() -> !havePendingNotifications).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationConsistencyListeners = new ConditionalExecutor(() -> false),
@@ -11523,6 +11522,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageVoiceNote.CONSTRUCTOR:
         case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
           return getDefaultRestrictionText(chat, RightId.SEND_VOICE_NOTES);
+        case TdApi.MessageWidget.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_OTHER_MESSAGES);
         // RightId.SEND_BASIC_MESSAGES
         case TdApi.MessageText.CONSTRUCTOR:
         case TdApi.MessageRichMessage.CONSTRUCTOR:
@@ -11619,11 +11620,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
         case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
         case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
+        case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
           // None of these messages ever passed to this method,
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_f7758f8b();
+          Td.assertMessageContent_37851fea();
           throw Td.unsupported(message.content);
       }
     }
@@ -11657,6 +11659,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           getDiceRestrictionText(chat, ((TdApi.InputMessageDice) content).emoji);
         case TdApi.InputMessageGame.CONSTRUCTOR ->
           getGameRestrictionText(chat);
+        case TdApi.InputMessageWidget.CONSTRUCTOR, TdApi.InputMessageSharedWidget.CONSTRUCTOR ->
+          getDefaultRestrictionText(chat, RightId.SEND_OTHER_MESSAGES);
 
         // RightId.SEND_BASIC_MESSAGES
         // TODO tdlib.getMessageLocally?
@@ -11673,7 +11677,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
              TdApi.InputMessageStakeDice.CONSTRUCTOR ->
           getBasicMessageRestrictionText(chat);
         default -> {
-          Td.assertInputMessageContent_7c412303();
+          Td.assertInputMessageContent_758b3691();
           throw Td.unsupported(content);
         }
       };
@@ -12108,7 +12112,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     ResolvableProblem.CHECK_PASSWORD,
     ResolvableProblem.CHECK_PHONE_NUMBER,
     ResolvableProblem.SET_BIRTHDATE,
-    ResolvableProblem.SET_LOGIN_EMAIL
+    ResolvableProblem.SET_LOGIN_EMAIL,
+    ResolvableProblem.CALLS
   })
   public @interface ResolvableProblem {
     int
@@ -12118,19 +12123,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       CHECK_PASSWORD = 3,
       CHECK_PHONE_NUMBER = 4,
       SET_BIRTHDATE = 5,
-      SET_LOGIN_EMAIL = 6;
+      SET_LOGIN_EMAIL = 6,
+      CALLS = 7;
   }
 
   @ResolvableProblem
   public int findResolvableProblem () {
     final boolean haveNotificationsProblem = notifications().hasLocalNotificationProblem();
+    final boolean haveCallsProblem = CallProblems.get(this) != CallProblems.Type.NONE &&
+      !notifications().areNotificationsBlockedGlobally();
     final TdApi.SuggestedAction singleAction = singleSettingsSuggestion();
     final boolean haveSuggestions = singleAction != null || haveAnySettingsSuggestions();
-    final int totalCount = (singleAction != null ? 1 : haveSuggestions ? 2 : 0) + (haveNotificationsProblem ? 1 : 0);
+    final int totalCount = (singleAction != null ? 1 : haveSuggestions ? 2 : 0) +
+      (haveNotificationsProblem ? 1 : 0) + (haveCallsProblem ? 1 : 0);
     if (totalCount > 1) {
       return ResolvableProblem.MIXED;
     } else if (haveNotificationsProblem) {
       return ResolvableProblem.NOTIFICATIONS;
+    } else if (haveCallsProblem) {
+      return ResolvableProblem.CALLS;
     } else if (singleAction != null) {
       switch (singleAction.getConstructor()) {
         case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:

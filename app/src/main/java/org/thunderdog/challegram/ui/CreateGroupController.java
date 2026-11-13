@@ -41,6 +41,7 @@ import org.thunderdog.challegram.navigation.EditHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.ColorId;
@@ -58,7 +59,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 
 public class CreateGroupController extends ViewController<Void> implements EditHeaderView.ReadyCallback, Unlockable, ActivityResultHandler,
-  TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
+  TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, DateChangeListener {
 
   private final AvatarPickerManager avatarPickerManager;
   private ArrayList<TGUser> members;
@@ -167,10 +168,19 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   private void subscribeToUpdates () {
     tdlib.cache().subscribeToUserUpdates(getUserIds(), this);
+    tdlib.context().dateManager().addListener(this);
   }
 
   private void unsubscribeFromUpdates () {
     tdlib.cache().unsubscribeFromUserUpdates(getUserIds(), this);
+    tdlib.context().dateManager().removeListener(this);
+  }
+
+  @Override
+  public void onTimeFormatChanged () {
+    if (adapter != null) {
+      Views.updateRows(recyclerView, 1, members.size() + 1, Views::updateRowTimes);
+    }
   }
 
   private int indexOfUser (long userId) {
