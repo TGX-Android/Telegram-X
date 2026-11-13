@@ -21,9 +21,11 @@ import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -43,6 +45,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -202,7 +205,6 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       protected void setValuedSetting(ListItem item, SettingView view, boolean isUpdate) {
         int itemId = item.getId();
         if (
-          itemId == R.id.btn_pollSetting_duration ||
           itemId == R.id.btn_pollSetting_hideResults ||
           itemId == R.id.btn_pollSetting_multiAnswers ||
           itemId == R.id.btn_pollSetting_revoting ||
@@ -219,7 +221,10 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
           view.getToggler().setRadioEnabled(!isQuiz && item.getBoolValue(), isUpdate);
         }
 
-        if (itemId == R.id.btn_pollSetting_showVoters) {
+        if (itemId == R.id.btn_pollSetting_duration) {
+          view.setData(pollOpenPeriod == 0 ? Lang.getString(R.string.PollSettingDurationOff) :
+            Lang.getString(R.string.PollClosesAfter, formatPollDuration(pollOpenPeriod)));
+        } else if (itemId == R.id.btn_pollSetting_showVoters) {
           view.setData(item.getBoolValue() ? R.string.PollSettingShowVotersOn : R.string.PollSettingShowVotersOff);
         } else if (itemId == R.id.btn_pollSetting_multiAnswers) {
           view.setData(item.getBoolValue() ? R.string.PollSettingMultipleOn : R.string.PollSettingMultipleOff);
@@ -315,13 +320,10 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     items.add(settingShuffle = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_shuffle, 0, R.string.PollSettingShuffle).setBoolValue(true));
     settingCount++;
 
-    if (false) {
-      // TODO: limit duration
-      if (settingCount > 0)
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(settingDuration = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_pollSetting_duration, 0, R.string.PollSettingDuration));
-      settingCount++;
-    }
+    if (settingCount > 0)
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_pollSetting_duration, 0, R.string.PollSettingDuration));
+    settingCount++;
 
     if (isChannel) {
       if (settingCount > 0)
@@ -380,7 +382,8 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
 
   private boolean isQuiz;
-  private ListItem settingQuiz, settingShowVoters, settingMultiAnswers, settingRevoting, settingShuffle, settingHideResults, settingAdditions, settingDuration, settingOnlyMembers, settingCountries;
+  private ListItem settingQuiz, settingShowVoters, settingMultiAnswers, settingRevoting, settingShuffle, settingHideResults, settingAdditions, settingOnlyMembers, settingCountries;
+  private int pollOpenPeriod;
   private Set<ListItem> correctOptionItems = new LinkedHashSet<>();
 
   private void toggleCorrectOptionEnabled (final ListItem option) {
@@ -488,8 +491,9 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
         }
       }, selectedCountries.values().toArray(new TdApi.CountryInfo[0])));
       navigateTo(c);
+    } else if (itemId == R.id.btn_pollSetting_duration) {
+      showPollDurationOptions();
     } else if (
-      itemId == R.id.btn_pollSetting_duration ||
       itemId == R.id.btn_pollSetting_hideResults ||
       itemId == R.id.btn_pollSetting_members ||
       itemId == R.id.btn_pollSetting_multiAnswers ||
@@ -499,14 +503,6 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       (itemId == R.id.btn_pollSetting_quiz && canChangePollType()) ||
       (itemId == R.id.btn_pollSetting_additions && !isQuiz)
     ) {
-      if (!item.getBoolValue() && itemId == R.id.btn_pollSetting_duration) {
-        long maxCloseDate = tdlib.currentTime(TimeUnit.SECONDS) + tdlib.options().pollOpenPeriodMax;
-
-        // TODO Open up duration picker
-
-        return;
-      }
-
       boolean value = adapter.toggleView(v);
 
       item.setBoolValue(value);
@@ -745,7 +741,46 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     return settingMultiAnswers != null && settingMultiAnswers.getBoolValue();
   }
 
+  private CharSequence formatPollDuration (int seconds) {
+    return Lang.pluralDuration(seconds, TimeUnit.SECONDS, R.string.xSeconds, R.string.xMinutes,
+      R.string.xHours, R.string.xDays, 0, 0);
+  }
+
+  private void showPollDurationOptions () {
+    if (getDoneButton().isInProgress()) {
+      return;
+    }
+    int[] presets = {0, 60, 300, 600, 1800, 3600, 21600, 86400, 259200, 604800, 1209600, 2592000};
+    Map<Integer, Integer> durations = new LinkedHashMap<>();
+    Options.Builder options = new Options.Builder().info(Lang.getString(R.string.PollSettingDuration));
+    for (int seconds : presets) {
+      if (seconds > 0 && seconds > tdlib.options().pollOpenPeriodMax) {
+        break;
+      }
+      int id = ViewCompat.generateViewId();
+      durations.put(id, seconds);
+      CharSequence title = seconds == 0 ? Lang.getString(R.string.PollNoDurationLimit) : formatPollDuration(seconds);
+      options.item(new OptionItem(id, title, OptionColor.NORMAL,
+        seconds == pollOpenPeriod ? R.drawable.baseline_check_24 : 0));
+    }
+    options.cancelItem();
+    showOptions(options.build(), (view, id) -> {
+      Integer seconds = durations.get(id);
+      if (seconds != null && !isDestroyed() && !getDoneButton().isInProgress()) {
+        if (seconds > 0 && seconds > tdlib.options().pollOpenPeriodMax) {
+          UI.showToast(R.string.PollDurationUnavailable, Toast.LENGTH_SHORT);
+        } else {
+          pollOpenPeriod = seconds;
+          adapter.updateValuedSettingById(R.id.btn_pollSetting_duration);
+        }
+      }
+      return true;
+    });
+  }
+
   private boolean hasUnsavedPoll () {
+    if (pollOpenPeriod != 0)
+      return true;
     CharSequence title = StringUtils.trim(questionItem.getCharSequenceValue());
     if (!StringUtils.isEmpty(title))
       return true;
@@ -865,11 +900,11 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
     TdApi.FormattedText description = getDescription(!disableMarkdown);
 
-    // @param openPeriod Amount of time the poll will be active after creation, in seconds; 0-getOption(&quot;poll_open_period_max&quot;); pass 0 if not specified.
-    // @param closeDate Point in time (Unix timestamp) when the poll will automatically be closed; must be 0-getOption(&quot;poll_open_period_max&quot;) seconds in the future; pass 0 if not specified.
-    // The list of two-letter ISO 3166-1 alpha-2 codes of countries, users from which will be able to vote; for channel chats only. If empty, then all users can participate in the poll. There can be up to getOption(&quot;poll_country_count_max&quot;) chosen countries.
-    int openPeriod = 0;
-    int closeDate = 0;
+    if (pollOpenPeriod > 0 && pollOpenPeriod > tdlib.options().pollOpenPeriodMax) {
+      context().tooltipManager().builder(getDoneButton()).controller(this)
+        .show(tdlib, Lang.getString(R.string.PollDurationUnavailable)).hideDelayed();
+      return;
+    }
 
     // TODO lock texts
     getDoneButton().setInProgress(true);
@@ -892,8 +927,8 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       settingShuffle != null && settingShuffle.getBoolValue(),
       settingHideResults != null && settingHideResults.getBoolValue(),
       inputPollType,
-      openPeriod,
-      closeDate,
+      pollOpenPeriod,
+      0,
       false
     );
 

@@ -4679,6 +4679,9 @@
   <string name="PollSettingDuration">Limit Duration</string>
   <string name="PollSettingDurationOff">Automatically close voting at the set time</string>
   <string name="PollSettingDurationOn">Voting closes at %1$s</string>
+  <string name="PollClosesAfter">Voting closes %1$s after sending</string>
+  <string name="PollNoDurationLimit">No time limit</string>
+  <string name="PollDurationUnavailable">This voting duration is no longer available. Choose a shorter duration or remove the limit.</string>
 
   <string name="PollSettingMembers">Restrict to Subscribers</string>
   <string name="PollSettingMembersOff">Non-subscribed users can vote</string>
