@@ -1201,8 +1201,10 @@ public class TdlibUi extends Handler {
         return accentPaletteLabel(color.id, Theme.isDark() ? color.darkThemeColors : color.lightThemeColors);
       }
     }
-    return accentColorId >= 0 && accentColorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT ?
-      TdlibAccentColor.getTextRepresentation(accentColorId) : Lang.getString(R.string.Default);
+    if (accentColorId >= 0 && accentColorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+      return TdlibAccentColor.getTextRepresentation(accentColorId);
+    }
+    return accentColorId < 0 ? Lang.getString(R.string.Default) : Lang.getString(R.string.AccentPaletteColorId, accentColorId);
   }
 
   public void setChatAccentColor (long chatId, int accentColorId) {
@@ -1256,7 +1258,7 @@ public class TdlibUi extends Handler {
 
   private void applyAvailableChatAccentColor (ViewController<?> context, long chatId, int colorId) {
     TdApi.Chat chat = tdlib.chat(chatId);
-    if (loadingChatAccentColor || chat == null || !tdlib.isChannelChat(chat) || !tdlib.canChangeInfo(chat, false)) {
+    if (context.isDestroyed() || loadingChatAccentColor || chat == null || !tdlib.isChannelChat(chat) || !tdlib.canChangeInfo(chat, false)) {
       return;
     }
     loadingChatAccentColor = true;
@@ -1287,9 +1289,12 @@ public class TdlibUi extends Handler {
   public String chatProfileAccentColorTitle (long chatId) {
     TdApi.Chat chat = tdlib.chat(chatId);
     int profileAccentColorId = chat != null ? chat.profileAccentColorId : -1;
-    return profileAccentColorId >= 0 && profileAccentColorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT
-      ? TdlibAccentColor.getTextRepresentation(profileAccentColorId)
-      : Lang.getString(R.string.Default);
+    for (TdApi.ProfileAccentColor color : tdlib.availableProfileAccentColors()) {
+      if (color.id == profileAccentColorId) {
+        return profilePaletteLabel(color);
+      }
+    }
+    return profileAccentColorId < 0 ? Lang.getString(R.string.Default) : Lang.getString(R.string.AccentPaletteColorId, profileAccentColorId);
   }
 
   public void setChatProfileAccentColor (long chatId, int profileAccentColorId) {
@@ -1306,8 +1311,12 @@ public class TdlibUi extends Handler {
   }
 
   public void showChatProfileAccentColorOptions (ViewController<?> context, long chatId) {
-    final int capacity = TdlibAccentColor.BUILT_IN_COLOR_COUNT + 1;
     TdApi.Chat chat = tdlib.chat(chatId);
+    if (chat == null || !tdlib.isChannelChat(chat) || !tdlib.canChangeInfo(chat, false)) {
+      return;
+    }
+    final TdApi.ProfileAccentColor[] colors = tdlib.availableProfileAccentColors();
+    final int capacity = colors.length + 1;
     final int currentProfileAccentColorId = chat != null ? chat.profileAccentColorId : -1;
     final IntList ids = new IntList(capacity);
     final StringList names = new StringList(capacity);
@@ -1317,24 +1326,60 @@ public class TdlibUi extends Handler {
     names.append(R.string.Default);
     icons.append(currentProfileAccentColorId == -1 ? R.drawable.baseline_check_24 : 0);
 
-    for (int i = 0; i < TdlibAccentColor.BUILT_IN_COLOR_COUNT; i++) {
+    for (int i = 0; i < colors.length; i++) {
       // Negative ids cannot collide with real resource ids in this dedicated popup
       ids.append(-(i + 1));
-      names.append(TdlibAccentColor.getTextRepresentation(i));
-      icons.append(i == currentProfileAccentColorId ? R.drawable.baseline_check_24 : 0);
+      names.append(profilePaletteLabel(colors[i]));
+      icons.append(colors[i].id == currentProfileAccentColorId ? R.drawable.baseline_check_24 : 0);
     }
 
-    context.showOptions(null, ids.get(), names.get(), null, icons.get(), (itemView, id) -> {
+    context.showOptions(Lang.getString(R.string.UserProfileColorInfo), ids.get(), names.get(), null, icons.get(), (itemView, id) -> {
       if (id == R.id.btn_chatProfileColorReset) {
-        setChatProfileAccentColor(chatId, -1);
+        applyAvailableChatProfileAccentColor(context, chatId, -1);
       } else if (id < 0) {
         int index = -(id + 1);
-        if (index >= 0 && index < TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
-          setChatProfileAccentColor(chatId, index);
+        if (index >= 0 && index < colors.length) {
+          applyAvailableChatProfileAccentColor(context, chatId, colors[index].id);
         }
       }
       return true;
     });
+  }
+
+  private boolean loadingChatProfileAccentColor;
+
+  private void applyAvailableChatProfileAccentColor (ViewController<?> context, long chatId, int colorId) {
+    TdApi.Chat chat = tdlib.chat(chatId);
+    if (context.isDestroyed() || loadingChatProfileAccentColor || chat == null || !tdlib.isChannelChat(chat) || !tdlib.canChangeInfo(chat, false)) {
+      return;
+    }
+    if (colorId == -1) {
+      setChatProfileAccentColor(chatId, -1);
+      return;
+    }
+    loadingChatProfileAccentColor = true;
+    tdlib.send(new TdApi.GetChatBoostStatus(chatId), (status, error) -> post(() -> {
+      loadingChatProfileAccentColor = false;
+      TdApi.Chat current = tdlib.chat(chatId);
+      if (context.isDestroyed() || current == null || !tdlib.canChangeInfo(current, false)) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      for (TdApi.ProfileAccentColor color : tdlib.availableProfileAccentColors()) {
+        if (color.id == colorId) {
+          if (status.level < color.minChannelChatBoostLevel) {
+            UI.showToast(Lang.getString(R.string.AccentColorBoostRequired, color.minChannelChatBoostLevel), Toast.LENGTH_SHORT);
+          } else {
+            setChatProfileAccentColor(chatId, colorId);
+          }
+          return;
+        }
+      }
+      UI.showToast(R.string.NoAvailableAccentColors, Toast.LENGTH_SHORT);
+    }));
   }
 
   public static String accentPaletteLabel (int colorId, int[] colors) {
