@@ -5274,6 +5274,18 @@ public class TdlibUi extends Handler {
         openChatBoostLink(context, boostLink.url, openParameters, after);
         return;
       }
+      case TdApi.InternalLinkTypeSearch.CONSTRUCTOR: {
+        NavigationController navigation = context.context().navigation();
+        ViewController<?> current = navigation.getCurrentStackItem();
+        if (current instanceof MainController main && main.tdlib() == tdlib) {
+          main.onMenuItemPressed(R.id.menu_btn_search, null);
+        } else {
+          MainController chats = new MainController(context.context(), tdlib);
+          chats.addOneShotFocusListener(() -> chats.onMenuItemPressed(R.id.menu_btn_search, null));
+          ok = navigation.navigateTo(chats);
+        }
+        break;
+      }
       case TdApi.InternalLinkTypeDirectMessagesChat.CONSTRUCTOR: {
         TdApi.InternalLinkTypeDirectMessagesChat directMessagesChat = (TdApi.InternalLinkTypeDirectMessagesChat) linkType;
         openDirectMessages(context, directMessagesChat.channelUsername, openParameters);
@@ -5315,7 +5327,6 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGiftPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRequestManagedBot.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeSearch.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeTextCompositionStyle.CONSTRUCTOR:
       case TdApi.InternalLinkTypeTonConnect.CONSTRUCTOR:
