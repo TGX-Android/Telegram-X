@@ -57,6 +57,7 @@ import org.thunderdog.challegram.widget.VerticalChatView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
@@ -591,38 +592,41 @@ public class CallListController extends RecyclerViewController<Void> implements
     this.nextOffset = messages.nextOffset;
     buildSections();
     removeItemAnimatorDelayed();
-    if (StringUtils.isEmpty(nextOffset)) {
-      endReached = true;
-    }
+    endReached = StringUtils.isEmpty(nextOffset);
     executeScheduledAnimation();
+    if (onlyMissed && this.messages.isEmpty() && !endReached) {
+      loadMore();
+    }
   }
 
   private boolean isLoadingMore;
   private boolean endReached;
 
   private void loadMore () {
-    if (!isLoadingMore && messages != null && !messages.isEmpty() && !endReached && sections != null && !sections.isEmpty() && !isDestroyed()) {
-      isLoadingMore = true;
-      tdlib.client().send(new TdApi.SearchCallMessages(nextOffset, 40, onlyMissed), new Client.ResultHandler() {
-        @Override
-        public void onResult (TdApi.Object object) {
-          if (object.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
-            TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
-            if (foundMessages.messages.length == 0 && !StringUtils.isEmpty(foundMessages.nextOffset) && !foundMessages.nextOffset.equals(nextOffset)) {
-              nextOffset = foundMessages.nextOffset;
-              tdlib.client().send(new TdApi.SearchCallMessages(foundMessages.nextOffset, 40, onlyMissed), this);
-              return;
-            }
-          }
-          runOnUiThreadOptional(() -> {
-            isLoadingMore = false;
-            if (object.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
-              addMessages((TdApi.FoundMessages) object);
-            }
-          });
-        }
-      });
+    if (isLoadingMore || messages == null || endReached || isDestroyed() ||
+        (!onlyMissed && (messages.isEmpty() || sections == null || sections.isEmpty()))) {
+      return;
     }
+    isLoadingMore = true;
+    loadCallPage(nextOffset, new HashSet<>());
+  }
+
+  private void loadCallPage (String offset, HashSet<String> requestedOffsets) {
+    requestedOffsets.add(offset);
+    tdlib.send(new TdApi.SearchCallMessages(offset, 40, onlyMissed), (page, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        isLoadingMore = false;
+        return;
+      }
+      boolean hasMore = !StringUtils.isEmpty(page.nextOffset) && !requestedOffsets.contains(page.nextOffset);
+      if (hasMore && Arrays.stream(page.messages).noneMatch(this::filter)) {
+        loadCallPage(page.nextOffset, requestedOffsets);
+        return;
+      }
+      isLoadingMore = false;
+      addMessages(page);
+      endReached = !hasMore;
+    }));
   }
 
   private ArrayList<CallSection> sections;
