@@ -19,6 +19,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.SparseIntArray;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
@@ -179,6 +180,9 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
           view.setData(tdlib.files().getDownloadInChannelChatsList());
         } else if (itemId == R.id.btn_autosavePrivateChats || itemId == R.id.btn_autosaveGroupChats || itemId == R.id.btn_autosaveChannelChats) {
           view.setData(getAutosaveValue(getAutosaveScopeSettings(itemId)));
+        } else if (itemId == R.id.btn_autosaveExceptions) {
+          view.setData(autosaveSettings != null ? Lang.plural(R.string.xExceptions, autosaveSettings.exceptions.length) :
+            Lang.getString(R.string.LoadingInformation));
         } else if (itemId == R.id.btn_mediaWiFiLimits) {
           view.setData(tdlib.files().getDownloadLimitOverWiFiString());
         } else if (itemId == R.id.btn_mediaMobileLimits) {
@@ -281,8 +285,11 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
         new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_autosaveGroupChats, 0, R.string.InGroups),
         new ListItem(ListItem.TYPE_SEPARATOR_FULL),
         new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_autosaveChannelChats, 0, R.string.InChannels),
+        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+        new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_autosaveExceptions, 0, R.string.AutosaveExceptions),
         new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
         new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveMediaInfo),
+        new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveExceptionsCompatibility),
       };
     }
     this.adapter.setItems(rawItems, false);
@@ -530,6 +537,8 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forceMobile, 0, R.string.WhenUsingMobileData, tdlib.files().isDataSaverEnabledOverMobile()),
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forceRoaming, 0, R.string.WhenUsingRoaming, tdlib.files().isDataSaverEnabledOverRoaming())
       }, this);
+    } else if (id == R.id.btn_autosaveExceptions) {
+      showAutosaveExceptions();
     } else if (id == R.id.btn_autosavePrivateChats || id == R.id.btn_autosaveGroupChats || id == R.id.btn_autosaveChannelChats) {
       TdApi.ScopeAutosaveSettings settings = getAutosaveScopeSettings(id);
       if (settings == null) {
@@ -627,16 +636,85 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
   }
 
   private @Nullable TdApi.AutosaveSettings autosaveSettings;
+  private boolean loadingAutosaveExceptions, changingAutosaveException;
+
+  private void showAutosaveExceptions () {
+    if (loadingAutosaveExceptions || changingAutosaveException) {
+      return;
+    }
+    loadingAutosaveExceptions = true;
+    tdlib.send(new TdApi.GetAutosaveSettings(), (settings, error) -> runOnUiThreadOptional(() -> {
+      loadingAutosaveExceptions = false;
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      updateAutosaveSettings(settings);
+      TdApi.AutosaveSettingsException[] exceptions = settings.exceptions.clone();
+      if (exceptions.length == 0) {
+        UI.showToast(R.string.NoAutosaveExceptions, Toast.LENGTH_SHORT);
+        return;
+      }
+      int[] ids = new int[exceptions.length];
+      String[] names = new String[exceptions.length];
+      for (int i = 0; i < exceptions.length; i++) {
+        ids[i] = -(i + 1);
+        names[i] = tdlib.chatTitle(exceptions[i].chatId) + " — " + getAutosaveValue(exceptions[i].settings);
+      }
+      showOptions(Lang.getString(R.string.AutosaveExceptions), ids, names, null, null, (view, id) -> {
+        int index = -(id + 1);
+        if (id < 0 && index >= 0 && index < exceptions.length) {
+          confirmResetAutosaveException(exceptions[index].chatId);
+        }
+        return true;
+      });
+    }));
+  }
+
+  private void confirmResetAutosaveException (long chatId) {
+    showOptions(Lang.getStringBold(R.string.ResetAutosaveExceptionConfirm, tdlib.chatTitle(chatId)),
+      new int[] {R.id.btn_resetAutosaveException, R.id.btn_cancel},
+      new String[] {Lang.getString(R.string.Reset), Lang.getString(R.string.Cancel)},
+      new int[] {OptionColor.RED, OptionColor.NORMAL},
+      new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (view, id) -> {
+        if (id == R.id.btn_resetAutosaveException) {
+          resetAutosaveException(chatId);
+        }
+        return true;
+      });
+  }
+
+  private void resetAutosaveException (long chatId) {
+    if (changingAutosaveException || autosaveSettings == null) {
+      return;
+    }
+    changingAutosaveException = true;
+    tdlib.send(new TdApi.SetAutosaveSettings(new TdApi.AutosaveSettingsScopeChat(chatId), null),
+      (ok, error) -> runOnUiThreadOptional(() -> {
+        changingAutosaveException = false;
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          loadAutosaveSettings();
+          UI.showToast(R.string.AutosaveExceptionReset, Toast.LENGTH_SHORT);
+        }
+      }));
+  }
+
+  private void updateAutosaveSettings (TdApi.AutosaveSettings settings) {
+    this.autosaveSettings = settings;
+    adapter.updateValuedSettingById(R.id.btn_autosavePrivateChats);
+    adapter.updateValuedSettingById(R.id.btn_autosaveGroupChats);
+    adapter.updateValuedSettingById(R.id.btn_autosaveChannelChats);
+    adapter.updateValuedSettingById(R.id.btn_autosaveExceptions);
+  }
 
   private void loadAutosaveSettings () {
     tdlib.send(new TdApi.GetAutosaveSettings(), (settings, error) -> runOnUiThreadOptional(() -> {
       if (settings == null || isDestroyed()) {
         return;
       }
-      this.autosaveSettings = settings;
-      adapter.updateValuedSettingById(R.id.btn_autosavePrivateChats);
-      adapter.updateValuedSettingById(R.id.btn_autosaveGroupChats);
-      adapter.updateValuedSettingById(R.id.btn_autosaveChannelChats);
+      updateAutosaveSettings(settings);
     }));
   }
 

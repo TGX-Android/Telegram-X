@@ -2378,6 +2378,11 @@
   <string name="SuggestContactBirthdate">Suggest Birthday</string>
   <string name="SuggestContactBirthdateConfirm">Suggest %1$s as this contact’s birthday? They will receive your suggestion and choose whether to apply it.</string>
   <string name="ContactBirthdateSuggested">Birthday suggestion sent</string>
+  <string name="AutosaveExceptions">Telegram Autosave Exceptions</string>
+  <string name="AutosaveExceptionsCompatibility">These are Telegram account settings used by compatible clients. Changing them does not enable automatic gallery saving in Telegram X.</string>
+  <string name="NoAutosaveExceptions">No autosave exceptions.</string>
+  <string name="ResetAutosaveExceptionConfirm">Reset the autosave exception for %1$s? This chat will use its chat type’s default, which may save more or less media in compatible clients.</string>
+  <string name="AutosaveExceptionReset">Autosave exception reset</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>
