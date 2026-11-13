@@ -4627,6 +4627,8 @@
   <string name="AttachedStickerSets">Attached Sticker Packs</string>
   <string name="NoAttachedStickerSets">No attached sticker packs found</string>
   <string name="SavedNotificationSounds">Saved Notification Sounds</string>
+  <string name="SaveNotificationSound">Save as Notification Sound</string>
+  <string name="NotificationSoundSaved">Notification sound saved to Telegram</string>
   <string name="NoSavedNotificationSounds">No saved notification sounds. Save a short audio message as a notification sound first.</string>
   <string name="NotificationSoundDownloadFailed">Could not prepare this notification sound. Please try again.</string>
   <string name="SavedNotificationSoundApplied">Notification sound applied on this device</string>

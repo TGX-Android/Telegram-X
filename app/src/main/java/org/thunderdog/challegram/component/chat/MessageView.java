@@ -993,6 +993,13 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
 
     if (messageCount == 1) {
+      if (!isMore && TD.canSaveNotificationSound(msg.getMessage(),
+        m.tdlib().options().notificationSoundDurationMax,
+        m.tdlib().options().notificationSoundSizeMax)) {
+        ids.append(R.id.btn_saveNotificationSound);
+        strings.append(R.string.SaveNotificationSound);
+        icons.append(R.drawable.baseline_notifications_24);
+      }
       if (!isMore && msg.getMessage().content.getConstructor() == TdApi.MessageSticker.CONSTRUCTOR) {
         TdApi.Sticker sticker = ((TdApi.MessageSticker) msg.getMessage().content).sticker;
         if (Config.FAVORITE_STICKERS_WITHOUT_SETS || sticker.setId != 0) {

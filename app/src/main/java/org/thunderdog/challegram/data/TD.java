@@ -4108,6 +4108,22 @@ public class TD {
     return null;
   }
 
+  public static boolean canSaveNotificationSound (
+    TdApi.Message message,
+    int maxDuration,
+    long maxSize
+  ) {
+    if (message == null || !message.canBeSaved || ChatId.isSecret(message.chatId) ||
+      message.selfDestructType != null || message.sendingState != null ||
+      message.content.getConstructor() != TdApi.MessageAudio.CONSTRUCTOR) {
+      return false;
+    }
+    TdApi.Audio audio = ((TdApi.MessageAudio) message.content).audio;
+    return audio.duration > 0 && audio.duration <= maxDuration && audio.audio.size > 0 &&
+      audio.audio.size <= maxSize && ("audio/mpeg".equals(audio.mimeType) ||
+      "audio/mp3".equals(audio.mimeType));
+  }
+
   public static @Nullable TdApi.File getFile (TdApi.Message msg) {
     if (msg == null) {
       return null;

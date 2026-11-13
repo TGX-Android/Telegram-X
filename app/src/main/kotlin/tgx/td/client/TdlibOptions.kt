@@ -49,6 +49,8 @@ data class TdlibOptions(
   @JvmField var disableTopChats: Boolean = false,
   @JvmField var disableContactRegisteredNotifications: Boolean = false,
   @JvmField var disableSentScheduledMessageNotifications: Boolean = false,
+  @JvmField var notificationSoundDurationMax: Int = 5,
+  @JvmField var notificationSoundSizeMax: Long = 307200L,
 
   @JvmField var isPremium: Boolean = false,
   @JvmField var isPremiumAvailable: Boolean = false,
@@ -639,11 +641,13 @@ data class TdlibOptions(
       "stake_dice_stake_amount_max" ->
         stakeDiceStakeAmountMax = value.longValue()
 
-      "test_mode",
+      "notification_sound_duration_max" ->
+        notificationSoundDurationMax = value.intValue()
+      "notification_sound_size_max" ->
+        notificationSoundSizeMax = value.longValue()
 
+      "test_mode",
       "notification_sound_count_max",
-      "notification_sound_duration_max",
-      "notification_sound_size_max",
       "localization_target",
       "language_pack_database_path",
       "ignore_file_names",

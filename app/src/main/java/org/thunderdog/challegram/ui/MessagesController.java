@@ -7000,6 +7000,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
         }
         return true;
+      } else if (id == R.id.btn_saveNotificationSound) {
+        TdApi.Message message = selectedMessage.getMessage();
+        if (selectedMessage.canBeSaved() && TD.canSaveNotificationSound(message,
+          tdlib.options().notificationSoundDurationMax, tdlib.options().notificationSoundSizeMax)) {
+          TdApi.Audio audio = ((TdApi.MessageAudio) message.content).audio;
+          tdlib.send(new TdApi.AddSavedNotificationSound(new TdApi.InputFileId(audio.audio.id)),
+            (sound, error) -> runOnUiThreadOptional(() -> {
+              if (error != null) {
+                UI.showError(error);
+              } else {
+                UI.showToast(R.string.NotificationSoundSaved, Toast.LENGTH_SHORT);
+              }
+            })
+          );
+        }
       } else if (id == R.id.btn_messageStickerSet) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         ((TGMessageSticker) selectedMessage).openStickerSet();
