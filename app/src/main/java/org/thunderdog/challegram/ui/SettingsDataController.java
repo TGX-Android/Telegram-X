@@ -29,6 +29,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.AutosaveVideoSize;
 import org.thunderdog.challegram.data.TGNetworkStats;
 import org.thunderdog.challegram.data.TGStorageStatsFast;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -41,6 +42,7 @@ import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.voip.annotation.DataSavingOption;
@@ -549,10 +551,28 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
         loadAutosaveSettings();
         return;
       }
+      long[] sizes = AutosaveVideoSize.options(settings.maxVideoFileSize);
+      String[] labels = new String[sizes.length];
+      int selected = 0;
+      for (int i = 0; i < sizes.length; i++) {
+        labels[i] = Strings.buildSize(sizes[i]);
+        if (sizes[i] == settings.maxVideoFileSize) {
+          selected = i;
+        }
+      }
+      final int initial = selected;
       showSettings(new SettingsWrapBuilder(id).setRawItems(new ListItem[] {
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, R.string.Photos, settings.autosavePhotos),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, R.string.Videos, settings.autosaveVideos)
-      }).setIntDelegate(this).setAllowResize(false));
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, R.string.Videos, settings.autosaveVideos),
+        new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveExceptionsCompatibility)
+      }).setSizeOptionId(R.id.btn_autosaveVideoSize).setSizeStringRes(R.string.AutosaveMaxVideoSize)
+        .setSizeValues(labels).setSizeValue(initial).setAllowResize(false).setIntDelegate((settingId, result) -> {
+          int index = result.get(R.id.btn_autosaveVideoSize, initial);
+          if (index >= 0 && index < sizes.length) {
+            saveAutosaveDefault(settingId, result.get(R.id.btn_photos) != 0, result.get(R.id.btn_video) != 0,
+              index != initial ? sizes[index] : null);
+          }
+        }));
     } else if (id == R.id.btn_inPrivateChats || id == R.id.btn_inGroupChats || id == R.id.btn_inChannelChats || id == R.id.btn_mediaMobileLimits || id == R.id.btn_mediaWiFiLimits || id == R.id.btn_mediaRoamingLimits) {
       int flags;
       int sizeOption = 0;
@@ -805,20 +825,34 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
   }
 
   private void setAutosaveSettings (@IdRes int id, boolean photos, boolean videos) {
-    TdApi.ScopeAutosaveSettings current = getAutosaveScopeSettings(id);
-    if (current == null) {
+    saveAutosaveDefault(id, photos, videos, null);
+  }
+
+  private void saveAutosaveDefault (@IdRes int id, boolean photos, boolean videos, @Nullable Long requestedSize) {
+    if ((id != R.id.btn_autosavePrivateChats && id != R.id.btn_autosaveGroupChats && id != R.id.btn_autosaveChannelChats) ||
+      changingAutosaveException || requestedSize != null && !AutosaveVideoSize.isValid(requestedSize)) {
       return;
     }
-    TdApi.ScopeAutosaveSettings settings = new TdApi.ScopeAutosaveSettings(photos, videos, current.maxVideoFileSize);
-    applyAutosaveSettings(id, settings);
-    tdlib.send(new TdApi.SetAutosaveSettings(getAutosaveScope(id), settings), (ok, error) -> {
+    changingAutosaveException = true;
+    tdlib.send(new TdApi.GetAutosaveSettings(), (loaded, error) -> runOnUiThreadOptional(() -> {
       if (error != null) {
-        runOnUiThreadOptional(() -> {
-          UI.showError(error);
-          loadAutosaveSettings();
-        });
+        changingAutosaveException = false;
+        UI.showError(error);
+        return;
       }
-    });
+      updateAutosaveSettings(loaded);
+      TdApi.ScopeAutosaveSettings current = getAutosaveScopeSettings(id);
+      long size = requestedSize != null ? requestedSize : current.maxVideoFileSize;
+      TdApi.ScopeAutosaveSettings updated = new TdApi.ScopeAutosaveSettings(photos, videos, size);
+      tdlib.send(new TdApi.SetAutosaveSettings(getAutosaveScope(id), updated), (ok, setError) -> runOnUiThreadOptional(() -> {
+        changingAutosaveException = false;
+        if (setError != null) {
+          UI.showError(setError);
+        } else {
+          applyAutosaveSettings(id, updated);
+        }
+      }));
+    }));
   }
 
   private void applyAutosaveSettings (@IdRes int id, TdApi.ScopeAutosaveSettings settings) {
