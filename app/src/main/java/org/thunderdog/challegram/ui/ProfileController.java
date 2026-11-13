@@ -703,6 +703,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (supergroup != null && !supergroup.isDirectMessagesGroup) {
       ids.append(R.id.btn_chatBoostStatus);
       strings.append(R.string.ChatBoostStatusTitle);
+      ids.append(R.id.btn_boostWithUnusedSlot);
+      strings.append(R.string.BoostWithUnusedSlot);
     }
     if (canConfigureChatAutosave()) {
       ids.append(R.id.btn_chatAutosaveSettings);
@@ -835,6 +837,81 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           UI.showToast(R.string.ChannelAdsSettingSaved, Toast.LENGTH_SHORT);
         }
       }));
+  }
+
+  public static TdApi.ChatBoostSlot findUnusedBoostSlot (TdApi.ChatBoostSlot[] slots, long now) {
+    for (TdApi.ChatBoostSlot slot : slots) {
+      if (slot != null && slot.currentlyBoostedChatId == 0 && slot.expirationDate > now && slot.cooldownUntilDate <= now) {
+        return slot;
+      }
+    }
+    return null;
+  }
+
+  private boolean applyingUnusedBoost;
+
+  private void offerUnusedChatBoost () {
+    if (applyingUnusedBoost || chat == null || supergroup == null || supergroup.isDirectMessagesGroup) {
+      return;
+    }
+    final long chatId = chat.id;
+    applyingUnusedBoost = true;
+    tdlib.send(new TdApi.GetAvailableChatBoostSlots(), (slots, error) -> runOnUiThreadOptional(() -> {
+      applyingUnusedBoost = false;
+      if (chat == null || chat.id != chatId) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      TdApi.ChatBoostSlot slot = findUnusedBoostSlot(slots.slots, tdlib.currentTimeMillis() / 1000L);
+      if (slot == null) {
+        UI.showToast(R.string.NoUnusedBoostSlots, Toast.LENGTH_SHORT);
+        return;
+      }
+      final int slotId = slot.slotId;
+      showConfirm(Lang.getStringBold(R.string.BoostWithUnusedSlotConfirm, tdlib.chatTitle(chatId)),
+        Lang.getString(R.string.BoostWithUnusedSlot), R.drawable.baseline_check_24, OptionColor.NORMAL,
+        () -> applyUnusedChatBoost(chatId, slotId));
+    }));
+  }
+
+  private void applyUnusedChatBoost (long chatId, int slotId) {
+    if (applyingUnusedBoost || chat == null || chat.id != chatId || supergroup == null || supergroup.isDirectMessagesGroup) {
+      return;
+    }
+    applyingUnusedBoost = true;
+    // Recheck availability instead of deliberately transferring another chat's slot.
+    tdlib.send(new TdApi.GetAvailableChatBoostSlots(), (slots, error) -> runOnUiThreadOptional(() -> {
+      if (error != null || chat == null || chat.id != chatId) {
+        applyingUnusedBoost = false;
+        if (error != null) {
+          UI.showError(error);
+        }
+        return;
+      }
+      TdApi.ChatBoostSlot selected = null;
+      for (TdApi.ChatBoostSlot slot : slots.slots) {
+        if (slot != null && slot.slotId == slotId) {
+          selected = findUnusedBoostSlot(new TdApi.ChatBoostSlot[] {slot}, tdlib.currentTimeMillis() / 1000L);
+          break;
+        }
+      }
+      if (selected == null) {
+        applyingUnusedBoost = false;
+        UI.showToast(R.string.NoUnusedBoostSlots, Toast.LENGTH_SHORT);
+        return;
+      }
+      tdlib.send(new TdApi.BoostChat(chatId, new int[] {slotId}), (updated, boostError) -> runOnUiThreadOptional(() -> {
+        applyingUnusedBoost = false;
+        if (boostError != null) {
+          UI.showError(boostError);
+        } else {
+          UI.showToast(R.string.UnusedBoostApplied, Toast.LENGTH_SHORT);
+        }
+      }));
+    }));
   }
 
   private boolean loadingBoostStatus;
@@ -1118,6 +1195,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_boostWithUnusedSlot) {
+      offerUnusedChatBoost();
+      return;
+    }
     if (id == R.id.btn_openProfileChannel) {
       openProfileChannel();
       return;
