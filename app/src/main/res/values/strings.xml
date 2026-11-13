@@ -2404,6 +2404,8 @@
   <string name="RemoveChatEmojiStatusConfirm">Remove this chat’s emoji status? No new status will be selected.</string>
   <string name="ChangeChatEmojiStatus">Change Emoji Status</string>
   <string name="ViewGroupLocation">View Group Location</string>
+  <string name="EditAutosaveException">Edit Telegram Autosave Exception</string>
+  <string name="ChatAutosaveSettingsTitle">Telegram autosave for %1$s. Save to create or replace this chat’s exception. The maximum video size is kept.</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>

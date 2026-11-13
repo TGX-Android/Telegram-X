@@ -668,11 +668,26 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
       showOptions(Lang.getString(R.string.AutosaveExceptions), ids, names, null, null, (view, id) -> {
         int index = -(id + 1);
         if (id < 0 && index >= 0 && index < exceptions.length) {
-          confirmResetAutosaveException(exceptions[index].chatId);
+          showAutosaveExceptionActions(exceptions[index].chatId);
         }
         return true;
       });
     }));
+  }
+
+  private void showAutosaveExceptionActions (long chatId) {
+    showOptions(tdlib.chatTitle(chatId),
+      new int[] {R.id.btn_chatAutosaveSettings, R.id.btn_resetAutosaveException, R.id.btn_cancel},
+      new String[] {Lang.getString(R.string.EditAutosaveException), Lang.getString(R.string.Reset), Lang.getString(R.string.Cancel)},
+      new int[] {OptionColor.NORMAL, OptionColor.RED, OptionColor.NORMAL},
+      new int[] {R.drawable.baseline_image_24, R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (view, id) -> {
+        if (id == R.id.btn_chatAutosaveSettings) {
+          tdlib.ui().showChatAutosaveSettings(this, chatId);
+        } else if (id == R.id.btn_resetAutosaveException) {
+          confirmResetAutosaveException(chatId);
+        }
+        return true;
+      });
   }
 
   private void confirmResetAutosaveException (long chatId) {

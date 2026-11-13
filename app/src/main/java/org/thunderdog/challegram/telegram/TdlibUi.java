@@ -1360,6 +1360,90 @@ public class TdlibUi extends Handler {
     });
   }
 
+  private boolean changingChatAutosave;
+  private Object chatAutosavePicker;
+
+  public static @Nullable TdApi.ScopeAutosaveSettings chatAutosaveSettings (TdApi.Chat chat, TdApi.AutosaveSettings settings) {
+    if (chat == null || chat.type instanceof TdApi.ChatTypeSecret) {
+      return null;
+    }
+    for (TdApi.AutosaveSettingsException exception : settings.exceptions) {
+      if (exception.chatId == chat.id) {
+        return exception.settings;
+      }
+    }
+    if (chat.type instanceof TdApi.ChatTypeBasicGroup ||
+      chat.type instanceof TdApi.ChatTypeSupergroup && !((TdApi.ChatTypeSupergroup) chat.type).isChannel) {
+      return settings.groupSettings;
+    } else if (chat.type instanceof TdApi.ChatTypeSupergroup) {
+      return settings.channelSettings;
+    }
+    return settings.privateChatSettings;
+  }
+
+  public void showChatAutosaveSettings (ViewController<?> context, long chatId) {
+    if (changingChatAutosave) {
+      return;
+    }
+    final Object picker = chatAutosavePicker = new Object();
+    tdlib.send(new TdApi.GetAutosaveSettings(), (settings, error) -> context.runOnUiThreadOptional(() -> {
+      if (picker != chatAutosavePicker) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      TdApi.ScopeAutosaveSettings current = chatAutosaveSettings(tdlib.chat(chatId), settings);
+      if (current == null) {
+        return;
+      }
+      context.showSettings(new SettingsWrapBuilder(R.id.btn_chatAutosaveSettings)
+        .addHeaderItem(Lang.getStringBold(R.string.ChatAutosaveSettingsTitle, tdlib.chatTitle(chatId)))
+        .setRawItems(new ListItem[] {
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, R.string.Photos, current.autosavePhotos),
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, R.string.Videos, current.autosaveVideos),
+          new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveExceptionsCompatibility)
+        }).setAllowResize(false).setIntDelegate((id, result) ->
+          saveChatAutosaveSettings(context, chatId, picker, result.get(R.id.btn_photos) != 0, result.get(R.id.btn_video) != 0)));
+    }));
+  }
+
+  private void saveChatAutosaveSettings (ViewController<?> context, long chatId, Object picker, boolean photos, boolean videos) {
+    if (context.isDestroyed() || changingChatAutosave || picker != chatAutosavePicker) {
+      return;
+    }
+    changingChatAutosave = true;
+    chatAutosavePicker = null;
+    // Refresh at commit time so toggling media never restores an obsolete video-size limit.
+    tdlib.send(new TdApi.GetAutosaveSettings(), (settings, error) -> post(() -> {
+      if (context.isDestroyed()) {
+        changingChatAutosave = false;
+        return;
+      }
+      if (error != null) {
+        changingChatAutosave = false;
+        UI.showError(error);
+        return;
+      }
+      TdApi.ScopeAutosaveSettings current = chatAutosaveSettings(tdlib.chat(chatId), settings);
+      if (current == null) {
+        changingChatAutosave = false;
+        return;
+      }
+      TdApi.ScopeAutosaveSettings updated = new TdApi.ScopeAutosaveSettings(photos, videos, current.maxVideoFileSize);
+      tdlib.send(new TdApi.SetAutosaveSettings(new TdApi.AutosaveSettingsScopeChat(chatId), updated), (ok, setError) -> {
+        // Release the account-wide guard even if the originating controller was destroyed.
+        post(() -> {
+          changingChatAutosave = false;
+          if (setError != null) {
+            UI.showError(setError);
+          }
+        });
+      });
+    }));
+  }
+
   public int getIconForSetting (@Nullable TdApi.Chat chat) {
     final int muteFor = tdlib.chatMuteFor(chat);
     return muteFor >= MUTE_MAX ? R.drawable.baseline_notifications_off_24 : muteFor > 0 ? R.drawable.baseline_notifications_paused_24 : R.drawable.baseline_notifications_24;
