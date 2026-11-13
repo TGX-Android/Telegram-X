@@ -5242,6 +5242,9 @@ public class TdlibUi extends Handler {
                   stats.setArguments(new SettingsNetworkStatsController.Args(network, null));
                   result = stats;
                 }
+                case "proxy", "proxy/edit", "proxy/use-proxy", "proxy/share-list", "proxy/use-for-calls" ->
+                  result = new SettingsProxyController(context.context(), tdlib);
+                case "proxy/add-proxy" -> addNewProxy(context, true);
                 default -> result = new SettingsDataController(context.context(), tdlib);
               }
               break;
