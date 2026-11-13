@@ -9883,11 +9883,32 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int[] availableProfileAccentColorIds;
   private final SparseArrayCompat<TdApi.ProfileAccentColor> profileAccentColors = new SparseArrayCompat<>();
 
+  private static TdApi.ProfileAccentColors copyProfileColors (TdApi.ProfileAccentColors colors) {
+    return new TdApi.ProfileAccentColors(colors.paletteColors.clone(), colors.backgroundColors.clone(), colors.storyColors.clone());
+  }
+
+  public TdApi.ProfileAccentColor[] availableProfileAccentColors () {
+    synchronized (profileAccentColors) {
+      List<TdApi.ProfileAccentColor> result = new ArrayList<>();
+      HashSet<Integer> seen = new HashSet<>();
+      if (availableProfileAccentColorIds != null) {
+        for (int id : availableProfileAccentColorIds) {
+          TdApi.ProfileAccentColor color = profileAccentColors.get(id);
+          if (id >= 0 && color != null && seen.add(id)) {
+            result.add(new TdApi.ProfileAccentColor(id, copyProfileColors(color.lightThemeColors),
+              copyProfileColors(color.darkThemeColors), color.minSupergroupChatBoostLevel, color.minChannelChatBoostLevel));
+          }
+        }
+      }
+      return result.toArray(new TdApi.ProfileAccentColor[0]);
+    }
+  }
+
   @TdlibThread
   private void updateProfileAccentColors (TdApi.UpdateProfileAccentColors update) {
     boolean listChanged;
     synchronized (profileAccentColors) {
-      listChanged = Arrays.equals(this.availableProfileAccentColorIds, update.availableAccentColorIds);
+      listChanged = !Arrays.equals(this.availableProfileAccentColorIds, update.availableAccentColorIds);
       this.availableProfileAccentColorIds = update.availableAccentColorIds;
       for (TdApi.ProfileAccentColor profileAccentColor : update.colors) {
         profileAccentColors.put(profileAccentColor.id, profileAccentColor);

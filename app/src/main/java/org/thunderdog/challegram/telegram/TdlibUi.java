@@ -1397,10 +1397,32 @@ public class TdlibUi extends Handler {
     });
   }
 
+  public static String profilePaletteLabel (TdApi.ProfileAccentColor color) {
+    int[] colors = (Theme.isDark() ? color.darkThemeColors : color.lightThemeColors).paletteColors;
+    StringBuilder rgb = new StringBuilder();
+    for (int value : colors) {
+      if (rgb.length() > 0) {
+        rgb.append(" / ");
+      }
+      rgb.append(String.format(Locale.US, "#%06X", value & 0xffffff));
+    }
+    // Profile palette IDs are not the seven built-in name color IDs.
+    return Lang.getString(R.string.AccentPaletteColor, color.id, rgb.toString());
+  }
+
   public void setUserProfileAccentColor (int colorId) {
     TdApi.User user = tdlib.myUser();
-    if (user == null || !tdlib.hasPremium() || colorId < -1 ||
-      colorId >= TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+    if (user == null || !tdlib.hasPremium() || colorId < -1) {
+      return;
+    }
+    boolean available = colorId == -1;
+    for (TdApi.ProfileAccentColor color : tdlib.availableProfileAccentColors()) {
+      if (color.id == colorId) {
+        available = true;
+        break;
+      }
+    }
+    if (!available) {
       return;
     }
     tdlib.send(new TdApi.SetProfileAccentColor(colorId, user.profileBackgroundCustomEmojiId),
@@ -1412,7 +1434,8 @@ public class TdlibUi extends Handler {
     if (user == null || !tdlib.hasPremium()) {
       return;
     }
-    int count = TdlibAccentColor.BUILT_IN_COLOR_COUNT;
+    TdApi.ProfileAccentColor[] colors = tdlib.availableProfileAccentColors();
+    int count = colors.length;
     int[] ids = new int[count + 1];
     String[] names = new String[count + 1];
     int[] icons = new int[count + 1];
@@ -1421,14 +1444,14 @@ public class TdlibUi extends Handler {
     icons[0] = user.profileAccentColorId == -1 ? R.drawable.baseline_check_24 : 0;
     for (int i = 0; i < count; i++) {
       ids[i + 1] = -(i + 1);
-      names[i + 1] = TdlibAccentColor.getTextRepresentation(i);
-      icons[i + 1] = user.profileAccentColorId == i ? R.drawable.baseline_check_24 : 0;
+      names[i + 1] = profilePaletteLabel(colors[i]);
+      icons[i + 1] = user.profileAccentColorId == colors[i].id ? R.drawable.baseline_check_24 : 0;
     }
     context.showOptions(Lang.getString(R.string.UserProfileColorInfo), ids, names, null, icons, (view, id) -> {
       if (id == R.id.btn_chatProfileColorReset) {
         setUserProfileAccentColor(-1);
       } else if (id < 0 && id >= -count) {
-        setUserProfileAccentColor(-(id + 1));
+        setUserProfileAccentColor(colors[-(id + 1)].id);
       }
       return true;
     });
