@@ -5188,6 +5188,8 @@ public class TdlibUi extends Handler {
         TdApi.InternalLinkTypeCallsPage callsLink = (TdApi.InternalLinkTypeCallsPage) linkType;
         if (StringUtils.isEmpty(callsLink.section) || "all".equals(callsLink.section)) {
           ok = context.context().navigation().navigateTo(new CallListController(context.context(), tdlib));
+        } else if ("missed".equals(callsLink.section)) {
+          ok = context.context().navigation().navigateTo(new CallListController(context.context(), tdlib, true));
         } else if ("start-call".equals(callsLink.section)) {
           ContactsController picker = new ContactsController(context.context(), tdlib);
           picker.initWithMode(ContactsController.MODE_CALL);

@@ -73,8 +73,15 @@ public class CallListController extends RecyclerViewController<Void> implements
   DateChangeListener,
   View.OnLongClickListener,
   BaseView.ActionListProvider, TdlibOptionListener {
+  private final boolean onlyMissed;
+
   public CallListController (Context context, Tdlib tdlib) {
+    this(context, tdlib, false);
+  }
+
+  public CallListController (Context context, Tdlib tdlib, boolean onlyMissed) {
     super(context, tdlib);
+    this.onlyMissed = onlyMissed;
   }
 
   @Override
@@ -84,12 +91,12 @@ public class CallListController extends RecyclerViewController<Void> implements
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(R.string.Calls);
+    return Lang.getString(onlyMissed ? R.string.MissedCallsTitle : R.string.Calls);
   }
 
   @Override
   protected int getMenuId () {
-    if (Config.ENABLE_DELETE_CALL_HISTORY) {
+    if (Config.ENABLE_DELETE_CALL_HISTORY && !onlyMissed) {
       return messages != null && !messages.isEmpty() ? R.id.menu_btn_more : 0;
     } else {
       return 0;
@@ -203,7 +210,7 @@ public class CallListController extends RecyclerViewController<Void> implements
       }
     });
 
-    tdlib.client().send(new TdApi.SearchCallMessages(null, Screen.calculateLoadingItems(Screen.dp(72f), 20), false), this);
+    tdlib.client().send(new TdApi.SearchCallMessages(null, Screen.calculateLoadingItems(Screen.dp(72f), 20), onlyMissed), this);
     tdlib.client().send(new TdApi.GetTopChats(new TdApi.TopChatCategoryCalls(), 30), this);
     tdlib.listeners().subscribeForGlobalUpdates(this);
     tdlib.context().dateManager().addListener(this);
@@ -444,7 +451,7 @@ public class CallListController extends RecyclerViewController<Void> implements
     if (StringUtils.isEmpty(nextOffset)) {
       endReached = true;
     }
-    TdApi.Message[] messages = Arrays.stream(foundMessages.messages).filter(CallListController::filter).toArray(TdApi.Message[]::new);
+    TdApi.Message[] messages = Arrays.stream(foundMessages.messages).filter(this::filter).toArray(TdApi.Message[]::new);
     if (messages.length == 0) {
       adapter.updateValuedSettingById(R.id.btn_calls);
       return;
@@ -580,7 +587,7 @@ public class CallListController extends RecyclerViewController<Void> implements
 
   private void setMessages (TdApi.FoundMessages messages) {
     this.messages = new ArrayList<>(messages.messages.length);
-    ArrayUtils.addAllFiltered(this.messages, messages.messages, CallListController::filter);
+    ArrayUtils.addAllFiltered(this.messages, messages.messages, this::filter);
     this.nextOffset = messages.nextOffset;
     buildSections();
     removeItemAnimatorDelayed();
@@ -596,14 +603,14 @@ public class CallListController extends RecyclerViewController<Void> implements
   private void loadMore () {
     if (!isLoadingMore && messages != null && !messages.isEmpty() && !endReached && sections != null && !sections.isEmpty() && !isDestroyed()) {
       isLoadingMore = true;
-      tdlib.client().send(new TdApi.SearchCallMessages(nextOffset, 40, false), new Client.ResultHandler() {
+      tdlib.client().send(new TdApi.SearchCallMessages(nextOffset, 40, onlyMissed), new Client.ResultHandler() {
         @Override
         public void onResult (TdApi.Object object) {
           if (object.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
             TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
             if (foundMessages.messages.length == 0 && !StringUtils.isEmpty(foundMessages.nextOffset) && !foundMessages.nextOffset.equals(nextOffset)) {
               nextOffset = foundMessages.nextOffset;
-              tdlib.client().send(new TdApi.SearchCallMessages(foundMessages.nextOffset, 40, false), this);
+              tdlib.client().send(new TdApi.SearchCallMessages(foundMessages.nextOffset, 40, onlyMissed), this);
               return;
             }
           }
@@ -786,8 +793,11 @@ public class CallListController extends RecyclerViewController<Void> implements
     }
   }
 
-  private static boolean filter (TdApi.Message message) {
-    return Td.isCall(message.content) && message.sendingState == null && message.schedulingState == null && message.content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR;
+  private boolean filter (TdApi.Message message) {
+    if (!(message.content instanceof TdApi.MessageCall) || message.sendingState != null || message.schedulingState != null) {
+      return false;
+    }
+    return !onlyMissed || (!message.isOutgoing && CallItem.isMissedOrCancelled((TdApi.MessageCall) message.content));
   }
 
   @Override

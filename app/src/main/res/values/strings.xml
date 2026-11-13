@@ -2015,6 +2015,7 @@
   <string name="RingtoneTelegramCall">Telegram Call</string>
   <string name="RingtoneSystemDefault">System Default</string>
   <string name="Calls">Calls</string>
+  <string name="MissedCallsTitle">Missed Calls</string>
   <string name="Allow">Allow</string>
   <string name="DontAllow">Don\'t allow</string>
   <string name="ContactAdded">Contact added</string>
