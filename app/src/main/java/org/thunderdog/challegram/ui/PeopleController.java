@@ -121,7 +121,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     switch (mode) {
       case MODE_CONTACTS:
         tdlib.cache().addGlobalUsersListener(this);
-        tdlib.searchContacts(null, ContactsController.DISPLAY_LIMIT, this);
+        tdlib.getContacts(this);
         tdlib.contacts().addListener(this);
         break;
       case MODE_DISCUSSION_GROUPS:

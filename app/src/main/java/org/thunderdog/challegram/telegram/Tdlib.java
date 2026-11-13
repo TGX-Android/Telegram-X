@@ -1850,6 +1850,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }, timeoutSeconds);
   }
 
+  public void getContacts (Client.ResultHandler handler) {
+    send(new TdApi.GetContacts(), handler);
+  }
+
   public void searchContacts (@Nullable String searchQuery, int limit, Client.ResultHandler handler) {
     Log.ensureReturnType(TdApi.SearchContacts.class, TdApi.Users.class);
     client().send(new TdApi.SearchContacts(searchQuery, limit), handler);

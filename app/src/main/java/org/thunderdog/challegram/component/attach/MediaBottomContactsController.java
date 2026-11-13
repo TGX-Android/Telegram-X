@@ -33,7 +33,6 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.ui.ContactsController;
 import org.thunderdog.challegram.util.text.Highlight;
 
 import java.util.ArrayList;
@@ -95,7 +94,7 @@ public class MediaBottomContactsController extends MediaBottomBaseController<Voi
     setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
     setAdapter(adapter = new SimpleUsersAdapter(this, this, SimpleUsersAdapter.OPTION_CLICKABLE | SimpleUsersAdapter.OPTION_SELECTABLE, this));
     recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, HIDE_PROGRESS_DURATION));
-    tdlib.searchContacts(null, ContactsController.DISPLAY_LIMIT, this);
+    tdlib.getContacts(this);
     return contentView;
   }
 

@@ -1275,13 +1275,11 @@ public class ContactsController extends TelegramViewController<ContactsControlle
 
   // Data
 
-  public static final int DISPLAY_LIMIT = 1024 * 10;
-
   private void loadContacts () {
     showProgress();
     switch (sourceType) {
       case SOURCE_TYPE_REMOTE: {
-        tdlib.searchContacts(null, DISPLAY_LIMIT, object -> {
+        tdlib.getContacts(object -> {
           switch (object.getConstructor()) {
             case TdApi.Users.CONSTRUCTOR: {
               long[] userIds = ((TdApi.Users) object).userIds;
