@@ -4001,6 +4001,7 @@
   <string name="StopQuizWarn">If you stop this quiz now, nobody will be able to participate in it anymore.\n\nThis action cannot be undone.</string>
   <string name="RemovePollOption">Remove an option</string>
   <string name="RemovePollOptionConfirm">Remove %1$s from the poll? Votes for this option will be discarded.</string>
+  <string name="NoRemovablePollOptions">No added answers can be removed from this poll right now.</string>
   <string name="AddPollOption">Add an option</string>
   <string name="AddPollOptionHint">Option</string>
   <string name="AddPollOptionDescription">An option can be up to 100 characters long.</string>

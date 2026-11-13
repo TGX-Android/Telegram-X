@@ -6777,6 +6777,132 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }, null);
   }
 
+  private int pollOptionRequestGeneration;
+  private boolean deletingPollOption;
+
+  private @Nullable TdApi.PollOption currentPollOption (TGMessage selectedMessage, long pollId, String optionId) {
+    if (selectedMessage.isDestroyed() || selectedMessage.getChatId() != getChatId() ||
+      !(selectedMessage.getMessage().content instanceof TdApi.MessagePoll)) {
+      return null;
+    }
+    TdApi.Poll poll = ((TdApi.MessagePoll) selectedMessage.getMessage().content).poll;
+    if (poll.id != pollId || poll.isClosed) {
+      return null;
+    }
+    for (TdApi.PollOption option : poll.options) {
+      if (option.id.equals(optionId)) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  private void showRemovePollOptions (TGMessage selectedMessage) {
+    if (!(selectedMessage.getMessage().content instanceof TdApi.MessagePoll)) {
+      return;
+    }
+    TdApi.Message message = selectedMessage.getMessage();
+    TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
+    ArrayList<TdApi.PollOption> candidates = new ArrayList<>();
+    for (TdApi.PollOption option : poll.options) {
+      if (option.author != null && !StringUtils.isEmpty(option.id)) {
+        candidates.add(option);
+      }
+    }
+    if (poll.isClosed || candidates.isEmpty()) {
+      return;
+    }
+    final int generation = ++pollOptionRequestGeneration;
+    boolean[] removable = new boolean[candidates.size()];
+    int[] remaining = {candidates.size()};
+    TdApi.Error[] firstError = {null};
+    for (int i = 0; i < candidates.size(); i++) {
+      final int index = i;
+      tdlib.send(new TdApi.GetPollOptionProperties(message.chatId, message.id, candidates.get(i).id),
+        (properties, error) -> runOnUiThreadOptional(() -> {
+          if (generation != pollOptionRequestGeneration || selectedMessage.isDestroyed() ||
+            getChatId() != message.chatId) {
+            return;
+          }
+          removable[index] = error == null && properties.canBeDeleted;
+          if (error != null && firstError[0] == null) {
+            firstError[0] = error;
+          }
+          if (--remaining[0] != 0) {
+            return;
+          }
+          if (firstError[0] != null) {
+            UI.showError(firstError[0]);
+            return;
+          }
+          IntList ids = new IntList(candidates.size());
+          StringList names = new StringList(candidates.size());
+          for (int j = 0; j < candidates.size(); j++) {
+            TdApi.PollOption current = currentPollOption(selectedMessage, poll.id, candidates.get(j).id);
+            if (removable[j] && current != null) {
+              ids.append(-(j + 1));
+              names.append(current.text.text);
+            }
+          }
+          if (ids.isEmpty()) {
+            UI.showToast(R.string.NoRemovablePollOptions, Toast.LENGTH_SHORT);
+            return;
+          }
+          showOptions(Lang.getString(R.string.RemovePollOption), ids.get(), names.get(), null, null,
+            (view, id) -> {
+              int selectedIndex = -(id + 1);
+              if (generation == pollOptionRequestGeneration && id < 0 &&
+                selectedIndex >= 0 && selectedIndex < candidates.size() && removable[selectedIndex]) {
+                TdApi.PollOption option = currentPollOption(selectedMessage, poll.id, candidates.get(selectedIndex).id);
+                if (option != null) {
+                  showOptions(Lang.getStringBold(R.string.RemovePollOptionConfirm, option.text.text),
+                    new int[] {R.id.btn_done, R.id.btn_cancel},
+                    new String[] {Lang.getString(R.string.Remove), Lang.getString(R.string.Cancel)},
+                    new int[] {OptionColor.RED, OptionColor.NORMAL},
+                    new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24},
+                    (confirmView, confirmId) -> {
+                      if (confirmId == R.id.btn_done && generation == pollOptionRequestGeneration) {
+                        deletePollOption(selectedMessage, poll.id, option.id);
+                      }
+                      return true;
+                    });
+                }
+              }
+              return true;
+            });
+        }));
+    }
+  }
+
+  private void deletePollOption (TGMessage selectedMessage, long pollId, String optionId) {
+    if (deletingPollOption || currentPollOption(selectedMessage, pollId, optionId) == null) {
+      return;
+    }
+    deletingPollOption = true;
+    TdApi.Message message = selectedMessage.getMessage();
+    // Permissions for an added answer may expire while the confirmation is open.
+    tdlib.send(new TdApi.GetPollOptionProperties(message.chatId, message.id, optionId),
+      (properties, error) -> runOnUiThreadOptional(() -> {
+        if (error != null || !properties.canBeDeleted ||
+          currentPollOption(selectedMessage, pollId, optionId) == null) {
+          deletingPollOption = false;
+          if (error != null) {
+            UI.showError(error);
+          } else {
+            UI.showToast(R.string.NoRemovablePollOptions, Toast.LENGTH_SHORT);
+          }
+          return;
+        }
+        tdlib.send(new TdApi.DeletePollOption(message.chatId, message.id, optionId),
+          (ok, deleteError) -> runOnUiThreadOptional(() -> {
+            deletingPollOption = false;
+            if (deleteError != null) {
+              UI.showError(deleteError);
+            }
+          }));
+      }));
+  }
+
   @SuppressWarnings("unchecked")
   private OptionDelegate newMessageOptionDelegate (final TGMessage selectedMessage, final TdApi.ChatMember selectedMessageSender, final Object selectedMessageTag) {
     return (itemView, id) -> {
@@ -6829,34 +6955,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return true;
       } else if (id == R.id.btn_messagePollAddOption) {
         TdApi.Message message = selectedMessage.getMessage();
+        if (!(message.content instanceof TdApi.MessagePoll) ||
+          !((TdApi.MessagePoll) message.content).canAddOption) {
+          return true;
+        }
         AddPollOptionController c = new AddPollOptionController(context(), tdlib);
         c.setArguments(new long[] {message.chatId, message.id});
         navigateTo(c);
         return true;
       } else if (id == R.id.btn_messagePollDeleteOption) {
-        TdApi.Message message = selectedMessage.getMessage();
-        TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
-        final IntList optionIds = new IntList(poll.options.length);
-        final StringList optionNames = new StringList(poll.options.length);
-        for (int i = 0; i < poll.options.length; i++) {
-          // Negative ids cannot collide with real resource ids in this dedicated popup
-          optionIds.append(-(i + 1));
-          optionNames.append(poll.options[i].text.text);
-        }
-        showOptions(Lang.getString(R.string.RemovePollOption), optionIds.get(), optionNames.get(), null, null, (optionItemView, optionId) -> {
-          if (optionId < 0) {
-            int index = -(optionId + 1);
-            if (index >= 0 && index < poll.options.length) {
-              showOptions(Lang.getStringBold(R.string.RemovePollOptionConfirm, poll.options[index].text.text), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Remove), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (optionItemView2, confirmId) -> {
-                if (confirmId == R.id.btn_done) {
-                  tdlib.send(new TdApi.DeletePollOption(message.chatId, message.id, poll.options[index].id), tdlib.typedOkHandler());
-                }
-                return true;
-              });
-            }
-          }
-          return true;
-        });
+        showRemovePollOptions(selectedMessage);
         return true;
       } else if (id == R.id.btn_messageLiveStop) {
         ((TGMessageLocation) selectedMessage).stopLiveLocation();

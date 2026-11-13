@@ -777,17 +777,19 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
               ids.append(R.id.btn_messagePollStop);
               icons.append(isQuiz ? R.drawable.baseline_help_24 : R.drawable.baseline_poll_24);
               strings.append(isQuiz ? R.string.StopQuiz : R.string.StopPoll);
-              if (pollContent.canAddOption) {
-                // TDLib tells whether the poll still accepts another option
-                ids.append(R.id.btn_messagePollAddOption);
-                icons.append(R.drawable.baseline_add_24);
-                strings.append(R.string.AddPollOption);
-              }
-              if (poll.options.length > 2) {
-                // TDLib keeps polls at two options minimum, and the server rejects anything below that
+            }
+            if (pollContent.canAddOption) {
+              ids.append(R.id.btn_messagePollAddOption);
+              icons.append(R.drawable.baseline_add_24);
+              strings.append(R.string.AddPollOption);
+            }
+            for (TdApi.PollOption option : poll.options) {
+              if (option.author != null && !StringUtils.isEmpty(option.id)) {
+                // Only added answers are candidates; fetch per-option capabilities before offering deletion.
                 ids.append(R.id.btn_messagePollDeleteOption);
                 icons.append(R.drawable.baseline_remove_circle_24);
                 strings.append(R.string.RemovePollOption);
+                break;
               }
             }
           }
