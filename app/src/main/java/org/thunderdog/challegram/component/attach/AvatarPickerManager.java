@@ -58,6 +58,7 @@ public class AvatarPickerManager extends MediaLayoutManager {
   public static final int MODE_PROFILE_PUBLIC = 1;
   public static final int MODE_CHAT = 2;
   public static final int MODE_NON_CREATED = 3;
+  public static final int MODE_CALLBACK_ONLY = 4;
 
   public AvatarPickerManager (ViewController<?> context) {
     super(context);
@@ -317,6 +318,10 @@ public class AvatarPickerManager extends MediaLayoutManager {
   }
 
   private void handleActivitySetPhoto (String path, int mode, @Nullable TdApi.Chat chat, @Nullable EditHeaderView headerView) {
+    if (mode == MODE_CALLBACK_ONLY) {
+      // A lost/consumed picker callback must never fall back to an unrelated photo setter.
+      return;
+    }
     if (mode == MODE_PROFILE || mode == MODE_PROFILE_PUBLIC) {
       setProfilePhoto(new TdApi.InputFileGenerated(path, SimpleGenerationInfo.makeConversion(path), 0), mode == MODE_PROFILE_PUBLIC);
     } else if (mode == MODE_CHAT && chat != null) {

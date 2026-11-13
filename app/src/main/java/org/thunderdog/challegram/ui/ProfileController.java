@@ -5479,7 +5479,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, AvatarPickerManager.MODE_CHAT, chat, null);
+    int photoMode = user != null && (chat == null || !tdlib.canEditBotChat(chat.id)) ?
+      AvatarPickerManager.MODE_CALLBACK_ONLY : AvatarPickerManager.MODE_CHAT;
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, photoMode, chat, null);
   }
 
   private void changeProfilePhoto () {
