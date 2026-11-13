@@ -2417,6 +2417,7 @@
   <string name="ChannelAdsDisabled">Disable Sponsored Messages</string>
   <string name="ChannelAdsBoostRequired">This channel needs boost level %1$d to disable sponsored messages.</string>
   <string name="ChannelAdsSettingSaved">Channel sponsored-message setting saved</string>
+  <string name="OpenProfileChannel">Open Profile Channel</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>

@@ -600,6 +600,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
 
+    if (userFull != null && userFull.personalChatId != 0) {
+      ids.append(R.id.btn_openProfileChannel);
+      strings.append(R.string.OpenProfileChannel);
+    }
     if (canConfigureChatAutosave()) {
       ids.append(R.id.btn_chatAutosaveSettings);
       strings.append(R.string.ChatAutosaveSettings);
@@ -738,6 +742,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (ids.size() > 0) {
       showMore(ids.get(), strings.get(), 0);
     }
+  }
+
+  private void openProfileChannel () {
+    if (userFull == null || userFull.personalChatId == 0) {
+      return;
+    }
+    tdlib.ui().openChat(this, userFull.personalChatId, new TdlibUi.ChatOpenParameters().keepStack());
   }
 
   private boolean changingChannelSponsoredMessages;
@@ -1105,6 +1116,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_openProfileChannel) {
+      openProfileChannel();
+      return;
+    }
     if (id == R.id.btn_chatBoostStatus) {
       showChatBoostStatus();
       return;
