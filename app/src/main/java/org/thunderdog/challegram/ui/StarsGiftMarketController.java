@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.core.StringUtils;
 
 final class StarsGiftMarketController extends RecyclerViewController<Void> implements View.OnClickListener {
-  private final long giftId, recipientId, account;
+  private final long giftId, recipientId, account, profileId;
   private final LinkedHashMap<String, TdApi.Object> entries = new LinkedHashMap<>();
   private final HashSet<String> cursors = new HashSet<>();
   private String offset = "";
@@ -45,19 +45,29 @@ final class StarsGiftMarketController extends RecyclerViewController<Void> imple
   private boolean loading, failed, saving;
 
   StarsGiftMarketController (Context context, Tdlib tdlib, long giftId, long recipientId) {
+    this(context, tdlib, giftId, recipientId, 0);
+  }
+
+  StarsGiftMarketController (Context context, Tdlib tdlib, long profileId) {
+    this(context, tdlib, 0, tdlib.myUserId(), profileId);
+  }
+
+  private StarsGiftMarketController (Context context, Tdlib tdlib, long giftId, long recipientId, long profileId) {
     super(context, tdlib);
+    this.profileId = profileId;
     this.giftId = giftId;
     this.recipientId = recipientId;
     this.account = tdlib.myUserId();
   }
 
   private boolean owned () {
-    return giftId == 0;
+    return giftId == 0 && profileId == 0;
   }
 
   @Override public int getId () { return R.id.controller_giftMarket; }
   @Override public CharSequence getName () {
-    return Lang.getString(owned() ? R.string.TgxStarsMyCollectibles : R.string.TgxStarsResale);
+    return Lang.getString(profileId != 0 ? R.string.TgxStarsPublicCollectibles :
+      owned() ? R.string.TgxStarsMyCollectibles : R.string.TgxStarsResale);
   }
 
   @Override
@@ -75,32 +85,35 @@ final class StarsGiftMarketController extends RecyclerViewController<Void> imple
     loading = true;
     failed = false;
     render();
-    if (owned()) {
-      tdlib.send(new TdApi.GetReceivedGifts("", new TdApi.MessageSenderUser(account), 0,
-        false, false, true, true, true, false, false, true, false, cursor, 30),
+    if (owned() || profileId != 0) {
+      tdlib.send(new TdApi.GetReceivedGifts("", new TdApi.MessageSenderUser(owned() ? account : profileId), 0,
+        profileId != 0, false, true, true, true, false, false, true, false, cursor, 30),
         (page, error) -> runOnUiThreadOptional(() -> {
           if (account != tdlib.myUserId()) {
             return;
           }
           if (page != null) {
             for (TdApi.ReceivedGift item : page.gifts) {
-              if (!item.wasRefunded && item.receivedGiftId != null && !item.receivedGiftId.isEmpty() &&
-                  item.gift instanceof TdApi.SentGiftUpgraded) {
-                entries.put(item.receivedGiftId, item);
+              if (!item.wasRefunded && item.gift instanceof TdApi.SentGiftUpgraded upgraded) {
+                if (profileId != 0) {
+                  entries.put(upgraded.gift.name, upgraded.gift);
+                } else if (!StringUtils.isEmpty(item.receivedGiftId)) {
+                  entries.put(item.receivedGiftId, item);
+                }
               }
             }
           }
           finishPage(cursor, page != null ? page.nextOffset : null, error);
         }));
     } else {
-      tdlib.send(new TdApi.SearchGiftsForResale(giftId, new TdApi.GiftForResaleOrderPrice(), false, true,
+      tdlib.send(new TdApi.SearchGiftsForResale(giftId, new TdApi.GiftForResaleOrderPrice(), false, false,
         new TdApi.UpgradedGiftAttributeId[0], cursor, 30), (page, error) -> runOnUiThreadOptional(() -> {
           if (account != tdlib.myUserId()) {
             return;
           }
           if (page != null) {
             for (TdApi.GiftForResale item : page.gifts) {
-              if (starPrice(item.gift) > 0) {
+              if (starPrice(item.gift) > 0 || StarsCollectibleController.tonPrice(item.gift) > 0) {
                 entries.put(item.gift.name, item.gift);
               }
             }
@@ -139,6 +152,9 @@ final class StarsGiftMarketController extends RecyclerViewController<Void> imple
       long price = starPrice(gift);
       if (price > 0) {
         title = Lang.getString(R.string.TgxStarsGiftItem, title, Lang.formatNumber(price));
+      } else if (StarsCollectibleController.tonPrice(gift) > 0) {
+        title = Lang.getString(R.string.TgxStarsCollectiblePriced, title,
+          StarsCollectibleController.formatPrice(new TdApi.GiftResalePriceGram(StarsCollectibleController.tonPrice(gift))));
       }
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_giftMarketItem, R.drawable.baseline_stars_24, title).setData(entry));
     }
@@ -175,34 +191,11 @@ final class StarsGiftMarketController extends RecyclerViewController<Void> imple
       refresh();
     } else if (view.getId() == R.id.btn_giftMarketItem && view.getTag() instanceof ListItem row) {
       if (row.getData() instanceof TdApi.UpgradedGift gift) {
-        confirmPurchase(gift);
+        navigateTo(new StarsCollectibleController(context, tdlib, gift.name, recipientId));
       } else if (row.getData() instanceof TdApi.ReceivedGift received) {
         showListingActions(received);
       }
     }
-  }
-
-  private void confirmPurchase (TdApi.UpgradedGift expected) {
-    long price = starPrice(expected);
-    if (price <= 0) {
-      return;
-    }
-    showConfirm(Lang.getString(R.string.TgxStarsBuyResaleConfirm, expected.title, Lang.formatNumber(expected.number),
-      Lang.formatNumber(price), tdlib.cache().userName(recipientId)), Lang.getString(R.string.TgxStarsBuyResale), () -> {
-        if (!begin()) {
-          return;
-        }
-        tdlib.send(new TdApi.GetUpgradedGift(expected.name), (fresh, error) -> runOnUiThreadOptional(() -> {
-          if (!current() || error != null || !sameOffer(expected, fresh) ||
-              (fresh.ownerId instanceof TdApi.MessageSenderUser user && user.userId == account)) {
-            afterMutation(error, false);
-            return;
-          }
-          tdlib.send(new TdApi.SendResoldGift(fresh.name, new TdApi.MessageSenderUser(recipientId),
-            new TdApi.GiftResalePriceStar(price), null, false), (result, purchaseError) -> runOnUiThreadOptional(() ->
-            afterMutation(purchaseError, result instanceof TdApi.GiftResaleResultOk)));
-        }));
-      });
   }
 
   private void showListingActions (TdApi.ReceivedGift received) {

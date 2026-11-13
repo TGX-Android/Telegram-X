@@ -32,6 +32,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.StarsCollectibleController;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -71,6 +72,46 @@ public final class TGMessageService extends TGMessageServiceImpl {
         );
       }
     });
+  }
+
+  TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageContent initialGift) {
+    super(context, msg);
+    setTextCreator(() -> {
+      TdApi.MessageContent content = msg.content.getConstructor() == initialGift.getConstructor() ? msg.content : initialGift;
+      if (content instanceof TdApi.MessageUpgradedGiftPurchaseOffer offer) {
+        int label = offer.state instanceof TdApi.GiftPurchaseOfferStateAccepted ? R.string.TgxStarsOfferAccepted :
+          offer.state instanceof TdApi.GiftPurchaseOfferStateRejected ? R.string.TgxStarsOfferRejected : R.string.TgxStarsOfferMessage;
+        return getText(label, new BoldArgument(StarsCollectibleController.formatPrice(offer.price)));
+      }
+      if (content instanceof TdApi.MessageUpgradedGiftPurchaseOfferRejected rejected) {
+        return getText(rejected.wasExpired ? R.string.TgxStarsOfferExpired : R.string.TgxStarsOfferRejected,
+          new BoldArgument(StarsCollectibleController.formatPrice(rejected.price)));
+      }
+      TdApi.UpgradedGift gift = ((TdApi.MessageUpgradedGift) content).gift;
+      return getText(R.string.TgxStarsCollectibleNumber, new BoldArgument(gift.title),
+        new BoldArgument(Lang.formatNumber(gift.number)));
+    });
+    setOnClickListener(() -> {
+      TdApi.MessageContent content = msg.content.getConstructor() == initialGift.getConstructor() ? msg.content : initialGift;
+      if (content instanceof TdApi.MessageUpgradedGiftPurchaseOffer offer) {
+        StarsCollectibleController.openChatOffer(controller(), msg, offer);
+      } else {
+        TdApi.UpgradedGift gift = content instanceof TdApi.MessageUpgradedGift upgraded ?
+          upgraded.gift : ((TdApi.MessageUpgradedGiftPurchaseOfferRejected) content).gift;
+        controller().context().navigation().navigateTo(new StarsCollectibleController(controller().context(),
+          tdlib, gift.name, tdlib.myUserId()));
+      }
+    });
+  }
+
+  @Override
+  protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
+    if (newContent instanceof TdApi.MessageUpgradedGiftPurchaseOffer) {
+      message.content = newContent;
+      updateServiceMessage();
+      return true;
+    }
+    return super.updateMessageContent(message, newContent, isBottomMessage);
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageGiftedPremium giftedPremium) {

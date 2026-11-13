@@ -8729,11 +8729,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageUsersShared.CONSTRUCTOR:
         case TdApi.MessageChatShared.CONSTRUCTOR:
         case TdApi.MessagePaidMedia.CONSTRUCTOR:
-        case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
-        case TdApi.MessageGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
         case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+          return new TGMessageService(context, msg, content);
+
+        case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
+        case TdApi.MessageGift.CONSTRUCTOR:
         case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
         case TdApi.MessageStakeDice.CONSTRUCTOR:
 

@@ -3254,6 +3254,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     checkBirthdate();
     checkDescription();
     checkGroupsInCommon();
+    checkCollectibles();
 
     /*if (userFull.commonChatCount > 0) {
       int index = baseAdapter.indexOfViewById(R.id.btn_notifications);
@@ -3266,6 +3267,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }*/
 
     checkUserButtons();
+  }
+
+  private void checkCollectibles () {
+    if (isEditing() || mode == Mode.SECRET || baseAdapter == null) {
+      return;
+    }
+    int index = baseAdapter.indexOfViewById(R.id.btn_tgxPublicCollectibles);
+    boolean visible = userFull != null && userFull.giftCount > 0 && user != null && !tdlib.isSelfUserId(user.id);
+    if (visible && index == -1) {
+      addTopItem(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxPublicCollectibles, R.drawable.baseline_stars_24,
+        R.string.TgxStarsPublicCollectibles), baseHeaderItemCount);
+    } else if (!visible && index != -1) {
+      removeTopItem(index);
+    }
   }
 
   private void checkUserButtons () {
@@ -5926,6 +5941,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     final int viewId = v.getId();
     if (viewId == R.id.avatar) {
       changeProfilePhoto();
+    } else if (viewId == R.id.btn_tgxPublicCollectibles && user != null) {
+      navigateTo(new StarsGiftMarketController(context, tdlib, user.id));
     } else if (viewId == R.id.btn_done) {
       applyChatChanges();
     } else if (viewId == R.id.menu_btn_copy) {
@@ -7537,6 +7554,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (isUpdate) {
         checkUserButtons();
         checkGroupsInCommon();
+        checkCollectibles();
         checkDescription();
         updateValuedItem(R.id.btn_userNote);
         if (mode == Mode.EDIT_BOT_USER) {

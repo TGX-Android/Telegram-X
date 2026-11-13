@@ -180,6 +180,9 @@ public final class StarsGiftAuctionController extends RecyclerViewController<Voi
       } else if (state.state instanceof TdApi.AuctionStateFinished finished) {
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getString(R.string.TgxStarsAuctionFinished,
           Lang.formatNumber(finished.averagePrice))));
+        if (StarsCollectibleController.fragmentUri(finished.fragmentUrl) != null && finished.fragmentListedItemCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxGiftFragment, 0, R.string.TgxStarsViewFragment));
+        }
         if (finished.telegramListedItemCount > 0) {
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_giftAuctionResale, 0, R.string.TgxStarsResale));
         }
@@ -208,6 +211,9 @@ public final class StarsGiftAuctionController extends RecyclerViewController<Voi
     } else if (view.getId() == R.id.btn_giftAuctionBid && state != null &&
         state.state instanceof TdApi.AuctionStateActive active && !bidding) {
       enterBid(state.gift.id, active);
+    } else if (view.getId() == R.id.btn_tgxGiftFragment && state != null &&
+        state.state instanceof TdApi.AuctionStateFinished finished) {
+      StarsCollectibleController.openFragment(this, finished.fragmentUrl);
     } else if (view.getId() == R.id.btn_giftAuctionResale && state != null) {
       navigateTo(new StarsGiftMarketController(context(), tdlib, state.gift.id, recipientId));
     } else if (view.getId() == R.id.btn_giftAuctionAcquired && state != null && !checkingAcquired) {
@@ -243,11 +249,11 @@ public final class StarsGiftAuctionController extends RecyclerViewController<Voi
         }
         tdlib.ui().post(() -> {
           if (current()) {
-            String receiver = prior > 0 && expected.userBid.ownerId != null ? tdlib.senderName(expected.userBid.ownerId) :
-              tdlib.cache().userName(recipientId);
-            showConfirm(Lang.getString(R.string.TgxStarsAuctionBidConfirm, Lang.formatNumber(total),
-              Lang.formatNumber(total - prior), receiver), Lang.getString(R.string.Confirm),
-              () -> sendBid(giftId, expected, total));
+            if (prior == 0) {
+              chooseBidDetails(giftId, expected, total, "", false);
+            } else {
+              confirmBid(giftId, expected, total, "", false);
+            }
           }
         });
         return true;
@@ -255,7 +261,59 @@ public final class StarsGiftAuctionController extends RecyclerViewController<Voi
     field.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
   }
 
-  private void sendBid (long giftId, TdApi.AuctionStateActive expected, long total) {
+  private void chooseBidDetails (long giftId, TdApi.AuctionStateActive expected, long total, String note, boolean privateBid) {
+    Options.Builder options = new Options.Builder().info(Lang.getString(R.string.TgxStarsAuctionBidDetails));
+    options.item(new OptionItem(1, Lang.getString(privateBid ? R.string.TgxStarsAuctionBidPublic :
+      R.string.TgxStarsAuctionBidPrivate), OptionColor.NORMAL, 0));
+    if (tdlib.options().giftTextLengthMax > 0) {
+      options.item(new OptionItem(2, Lang.getString(R.string.TgxStarsAuctionBidNote), OptionColor.NORMAL, 0));
+    }
+    options.item(new OptionItem(3, Lang.getString(R.string.Continue), OptionColor.NORMAL, 0));
+    options.cancelItem();
+    showOptions(options.build(), (view, id) -> {
+      if (id == 1) {
+        tdlib.ui().post(() -> {
+          if (current()) {
+            chooseBidDetails(giftId, expected, total, note, !privateBid);
+          }
+        });
+      } else if (id == 2) {
+        openInputAlert(Lang.getString(R.string.TgxStarsAuctionBidNote), null, R.string.Done, R.string.Cancel,
+          note, (edit, value) -> {
+            if (value.codePointCount(0, value.length()) > tdlib.options().giftTextLengthMax) {
+              return false;
+            }
+            tdlib.ui().post(() -> {
+              if (current()) {
+                chooseBidDetails(giftId, expected, total, value.trim(), privateBid);
+              }
+            });
+            return true;
+          }, true);
+      } else if (id == 3) {
+        confirmBid(giftId, expected, total, note, privateBid);
+      }
+      return true;
+    });
+  }
+
+  private void confirmBid (long giftId, TdApi.AuctionStateActive expected, long total, String note, boolean privateBid) {
+    long prior = currentBid(expected);
+    String receiver = prior > 0 && expected.userBid.ownerId != null ? tdlib.senderName(expected.userBid.ownerId) :
+      tdlib.cache().userName(recipientId);
+    String message = Lang.getString(R.string.TgxStarsAuctionBidConfirm, Lang.formatNumber(total),
+      Lang.formatNumber(total - prior), receiver);
+    if (prior == 0) {
+      message += "\n\n" + Lang.getString(R.string.TgxStarsAuctionBidPrivacyConfirm,
+        Lang.getString(privateBid ? R.string.TgxStarsAuctionBidPrivate : R.string.TgxStarsAuctionBidPublic));
+      if (!note.isEmpty()) {
+        message += "\n" + Lang.getString(R.string.TgxStarsAuctionBidNoteConfirm, note);
+      }
+    }
+    showConfirm(message, Lang.getString(R.string.Confirm), () -> sendBid(giftId, expected, total, note, privateBid));
+  }
+
+  private void sendBid (long giftId, TdApi.AuctionStateActive expected, long total, String note, boolean privateBid) {
     if (!current() || bidding) {
       return;
     }
@@ -267,12 +325,14 @@ public final class StarsGiftAuctionController extends RecyclerViewController<Voi
           active.currentRoundNumber != expected.currentRoundNumber || currentBid(expected) != currentBid(active) ||
           (currentBid(active) > 0 && (active.userBid.bidDate != expected.userBid.bidDate ||
             !Td.equalsTo(active.userBid.ownerId, expected.userBid.ownerId))) ||
-          !canBid(active, tdlib.currentTime(TimeUnit.SECONDS), total)) {
+          !canBid(active, tdlib.currentTime(TimeUnit.SECONDS), total) ||
+          (!note.isEmpty() && note.codePointCount(0, note.length()) > tdlib.options().giftTextLengthMax)) {
         finish(error, false);
         return;
       }
       TdApi.Function<TdApi.Ok> request = currentBid(active) > 0 ? new TdApi.IncreaseGiftAuctionBid(giftId, total) :
-        new TdApi.PlaceGiftAuctionBid(giftId, total, recipientId, null, false);
+        new TdApi.PlaceGiftAuctionBid(giftId, total, recipientId, note.isEmpty() ? null :
+          new TdApi.FormattedText(note, new TdApi.TextEntity[0]), privateBid);
       tdlib.send(request, (ok, bidError) -> runOnUiThreadOptional(() -> finish(bidError, bidError == null)));
     }));
   }

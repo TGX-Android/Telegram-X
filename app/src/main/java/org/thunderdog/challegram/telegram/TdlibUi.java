@@ -130,6 +130,7 @@ import org.thunderdog.challegram.ui.PasswordController;
 import org.thunderdog.challegram.ui.PeopleController;
 import org.thunderdog.challegram.ui.PhoneController;
 import org.thunderdog.challegram.ui.StarsController;
+import org.thunderdog.challegram.ui.StarsCollectibleController;
 import org.thunderdog.challegram.ui.StarsGiftAuctionController;
 import org.thunderdog.challegram.ui.BusinessSettingsController;
 import org.thunderdog.challegram.ui.PremiumSettingsController;
@@ -5446,6 +5447,16 @@ public class TdlibUi extends Handler {
         }
         break;
       }
+      case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeUpgradedGift gift = (TdApi.InternalLinkTypeUpgradedGift) linkType;
+        if (tdlib.isAuthorized() && !StringUtils.isEmpty(gift.name)) {
+          ok = context.context().navigation().navigateTo(new StarsCollectibleController(context.context(), tdlib,
+            gift.name, tdlib.myUserId()));
+        } else {
+          unsupported.run();
+        }
+        break;
+      }
       case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR: {
         TdApi.InternalLinkTypeGiftAuction auction = (TdApi.InternalLinkTypeGiftAuction) linkType;
         if (tdlib.isAuthorized() && !StringUtils.isEmpty(auction.auctionId)) {
@@ -5517,7 +5528,6 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR:
 
