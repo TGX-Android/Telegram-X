@@ -621,6 +621,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (isBot) {
+      if (userFull != null && userFull.botInfo != null && userFull.botInfo.canManageEmojiStatus) {
+        ids.append(R.id.btn_revokeBotEmojiStatus);
+        strings.append(R.string.RevokeBotEmojiStatus);
+      }
       if (Td.hasUsername(user)) {
         ids.append(R.id.more_btn_share);
         strings.append(R.string.Share);
@@ -710,8 +714,44 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     navigateTo(c);
   }
 
+  private void revokeBotEmojiStatusPermission () {
+    if (user == null || !TD.isBot(user) || userFull == null || userFull.botInfo == null ||
+      !userFull.botInfo.canManageEmojiStatus) {
+      return;
+    }
+    final long botUserId = user.id;
+    showOptions(Lang.getString(R.string.RevokeBotEmojiStatusConfirm),
+      new int[] {R.id.btn_revokeBotEmojiStatus, R.id.btn_cancel},
+      new String[] {
+        Lang.getString(R.string.RevokeBotEmojiStatus), Lang.getString(R.string.Cancel)
+      },
+      new int[] {OptionColor.RED, OptionColor.NORMAL},
+      new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24},
+      (view, id) -> {
+        if (id == R.id.btn_revokeBotEmojiStatus) {
+          tdlib.send(new TdApi.ToggleBotCanManageEmojiStatus(botUserId, false), (ok, error) ->
+            runOnUiThreadOptional(() -> {
+              if (error != null) {
+                UI.showError(error);
+              } else if (user != null && user.id == botUserId && userFull != null &&
+                userFull.botInfo != null) {
+                userFull.botInfo.canManageEmojiStatus = false;
+                UI.showToast(R.string.BotEmojiStatusPermissionRevoked, Toast.LENGTH_SHORT);
+              }
+            })
+          );
+        }
+        return true;
+      }
+    );
+  }
+
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_revokeBotEmojiStatus) {
+      revokeBotEmojiStatusPermission();
+      return;
+    }
     if (tdlib.ui().processLeaveButton(this, null, getChatId(), id, null)) {
       return;
     }
