@@ -171,6 +171,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1291,10 +1292,33 @@ public class TdlibUi extends Handler {
     });
   }
 
+  public static String accentPaletteLabel (int colorId, int[] colors) {
+    if (colorId >= 0 && colorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+      return TdlibAccentColor.getTextRepresentation(colorId);
+    }
+    StringBuilder rgb = new StringBuilder();
+    for (int color : colors) {
+      if (rgb.length() > 0) {
+        rgb.append(" / ");
+      }
+      rgb.append(String.format(Locale.US, "#%06X", color & 0xffffff));
+    }
+    return Lang.getString(R.string.AccentPaletteColor, colorId, rgb.toString());
+  }
+
   public void setUserAccentColor (int colorId) {
     TdApi.User user = tdlib.myUser();
-    if (user == null || !tdlib.hasPremium() || colorId < 0 ||
-      colorId >= TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+    if (user == null || !tdlib.hasPremium() || colorId < 0) {
+      return;
+    }
+    boolean available = false;
+    for (TdApi.AccentColor color : tdlib.availableAccentColors()) {
+      if (color.id == colorId) {
+        available = true;
+        break;
+      }
+    }
+    if (!available) {
       return;
     }
     // Selecting a color must not erase a background emoji configured in another client.
@@ -1306,18 +1330,23 @@ public class TdlibUi extends Handler {
     if (user == null || !tdlib.hasPremium()) {
       return;
     }
-    int count = TdlibAccentColor.BUILT_IN_COLOR_COUNT;
+    TdApi.AccentColor[] colors = tdlib.availableAccentColors();
+    int count = colors.length;
+    if (count == 0) {
+      UI.showToast(R.string.NoAvailableAccentColors, Toast.LENGTH_SHORT);
+      return;
+    }
     int[] ids = new int[count];
     String[] names = new String[count];
     int[] icons = new int[count];
     for (int i = 0; i < count; i++) {
       ids[i] = -(i + 1);
-      names[i] = TdlibAccentColor.getTextRepresentation(i);
-      icons[i] = user.accentColorId == i ? R.drawable.baseline_check_24 : 0;
+      names[i] = accentPaletteLabel(colors[i].id, Theme.isDark() ? colors[i].darkThemeColors : colors[i].lightThemeColors);
+      icons[i] = user.accentColorId == colors[i].id ? R.drawable.baseline_check_24 : 0;
     }
-    context.showOptions(Lang.getString(R.string.UserAccentColor), ids, names, null, icons, (view, id) -> {
+    context.showOptions(Lang.getString(R.string.AccentPaletteCompatibility), ids, names, null, icons, (view, id) -> {
       if (id < 0 && id >= -count) {
-        setUserAccentColor(-(id + 1));
+        setUserAccentColor(colors[-(id + 1)].id);
       }
       return true;
     });

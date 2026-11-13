@@ -9818,6 +9818,29 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int[] availableAccentColorIds;
   private final SparseArrayCompat<TdlibAccentColor> accentColors = new SparseArrayCompat<>();
 
+  public TdApi.AccentColor[] availableAccentColors () {
+    synchronized (accentColors) {
+      List<TdApi.AccentColor> result = new ArrayList<>();
+      HashSet<Integer> seen = new HashSet<>();
+      if (availableAccentColorIds != null) {
+        for (int id : availableAccentColorIds) {
+          if (id < 0 || !seen.add(id)) {
+            continue;
+          }
+          TdlibAccentColor wrapper = accentColors.get(id);
+          TdApi.AccentColor color = wrapper != null ? wrapper.getRemoteAccentColor() : null;
+          if (color != null) {
+            result.add(new TdApi.AccentColor(id, color.builtInAccentColorId,
+              color.lightThemeColors.clone(), color.darkThemeColors.clone(), color.minChannelChatBoostLevel));
+          } else if (id < TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+            result.add(new TdApi.AccentColor(id, id, new int[0], new int[0], 0));
+          }
+        }
+      }
+      return result.toArray(new TdApi.AccentColor[0]);
+    }
+  }
+
   @TdlibThread
   private void updateAccentColors (TdApi.UpdateAccentColors update) {
     boolean listChanged;
