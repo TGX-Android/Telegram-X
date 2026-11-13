@@ -653,6 +653,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (TD.isContact(user)) {
+      if (canRemovePersonalPhoto()) {
+        ids.append(R.id.btn_removePersonalPhoto);
+        strings.append(R.string.RemovePersonalContactPhoto);
+      }
       ids.append(R.id.more_btn_edit);
       strings.append(R.string.RenameContact);
       ids.append(R.id.more_btn_delete);
@@ -714,6 +718,42 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     navigateTo(c);
   }
 
+  private boolean canRemovePersonalPhoto () {
+    return user != null && user.type instanceof TdApi.UserTypeRegular &&
+      !tdlib.isSelfUserId(user.id) && TD.isContact(user) &&
+      userFull != null && userFull.personalPhoto != null;
+  }
+
+  private boolean removingPersonalPhoto;
+
+  private void removePersonalPhoto () {
+    if (!canRemovePersonalPhoto() || removingPersonalPhoto) {
+      return;
+    }
+    final long userId = user.id;
+    final TdApi.ChatPhoto photo = userFull.personalPhoto;
+    showOptions(Lang.getString(R.string.RemovePersonalContactPhotoConfirm),
+      new int[] {R.id.btn_removePersonalPhoto, R.id.btn_cancel},
+      new String[] {Lang.getString(R.string.Remove), Lang.getString(R.string.Cancel)},
+      new int[] {OptionColor.RED, OptionColor.NORMAL},
+      new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (view, id) -> {
+        if (id == R.id.btn_removePersonalPhoto && !removingPersonalPhoto && canRemovePersonalPhoto() &&
+          user.id == userId && userFull.personalPhoto == photo) {
+          removingPersonalPhoto = true;
+          tdlib.send(new TdApi.SetUserPersonalProfilePhoto(userId, null), (ok, error) ->
+            runOnUiThreadOptional(() -> {
+              removingPersonalPhoto = false;
+              if (error != null) {
+                UI.showError(error);
+              } else {
+                UI.showToast(R.string.PersonalContactPhotoRemoved, Toast.LENGTH_SHORT);
+              }
+            }));
+        }
+        return true;
+      });
+  }
+
   private void revokeBotEmojiStatusPermission () {
     if (user == null || !TD.isBot(user) || userFull == null || userFull.botInfo == null ||
       !userFull.botInfo.canManageEmojiStatus) {
@@ -748,6 +788,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_removePersonalPhoto) {
+      removePersonalPhoto();
+      return;
+    }
     if (id == R.id.btn_revokeBotEmojiStatus) {
       revokeBotEmojiStatusPermission();
       return;
