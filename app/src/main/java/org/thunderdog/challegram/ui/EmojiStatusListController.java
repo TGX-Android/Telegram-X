@@ -920,6 +920,27 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
   /* Loading functions */
 
   private long targetChatId;
+  private long[] disallowedChatEmojiIds = new long[0];
+
+  public void setDisallowedChatEmojiIds (long[] emojiIds) {
+    this.disallowedChatEmojiIds = emojiIds.clone();
+  }
+
+  public static boolean isDisallowedChatEmojiStatus (long chatId, TdApi.EmojiStatus status, long[] disallowedIds) {
+    if (chatId == 0 || status == null || !(status.type instanceof TdApi.EmojiStatusTypeCustomEmoji)) {
+      return false;
+    }
+    long emojiId = ((TdApi.EmojiStatusTypeCustomEmoji) status.type).customEmojiId;
+    if (emojiId == 0) {
+      return false;
+    }
+    for (long disallowedId : disallowedIds) {
+      if (emojiId == disallowedId) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   public void setTargetChatId (long chatId) {
     this.targetChatId = chatId;
@@ -936,12 +957,17 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     return new TdApi.SetChatEmojiStatus(targetChatId, status);
   }
 
-  protected void setEmojiStatus (TdApi.EmojiStatus status) {
+  protected boolean setEmojiStatus (TdApi.EmojiStatus status) {
     if (targetChatId != 0 && !tdlib.canChangeInfo(tdlib.chat(targetChatId), false)) {
       UI.showToast(R.string.ChatEmojiStatusUnavailable, Toast.LENGTH_SHORT);
-      return;
+      return false;
+    }
+    if (isDisallowedChatEmojiStatus(targetChatId, status, disallowedChatEmojiIds)) {
+      UI.showToast(R.string.ChatEmojiStatusDisallowed, Toast.LENGTH_SHORT);
+      return false;
     }
     tdlib.send(emojiStatusRequest(status), tdlib.typedOkHandler());
+    return true;
   }
 
   private boolean loadingStickers;
@@ -1419,9 +1445,10 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     final long emojiId = sticker.getCustomEmojiId();
     final int viewId = v.getId();
     if (viewId == R.id.btn_setEmojiStatus) {
-      setEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0));
-      stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, 0);
-      stickerSmallView.closePreviewIfNeeded();
+      if (setEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0))) {
+        stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, 0);
+        stickerSmallView.closePreviewIfNeeded();
+      }
     } else if (viewId == R.id.btn_setEmojiStatusTimed) {
       if (context != null) {
         context.showOptions(null, new int[] {
@@ -1458,11 +1485,12 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
 
             context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
               long expirationDate = millis / 1000L;
-              stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-              setEmojiStatus(new TdApi.EmojiStatus(
+              if (setEmojiStatus(new TdApi.EmojiStatus(
                 new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate
-              ));
-              stickerSmallView.closePreviewIfNeeded();
+              ))) {
+                stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
+                stickerSmallView.closePreviewIfNeeded();
+              }
             }, null);
             return true;
           }
@@ -1480,11 +1508,12 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             duration = 0;
           }
           long expirationDate = System.currentTimeMillis() / 1000L + duration;
-          stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-          setEmojiStatus(new TdApi.EmojiStatus(
+          if (setEmojiStatus(new TdApi.EmojiStatus(
             new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate
-          ));
-          stickerSmallView.closePreviewIfNeeded();
+          ))) {
+            stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
+            stickerSmallView.closePreviewIfNeeded();
+          }
           return true;
         });
       }

@@ -2368,6 +2368,7 @@
   <string name="CopyProfileLink">Copy My Profile Link</string>
   <string name="ShareProfileLink">Share My Profile Link</string>
   <string name="UserAccentColor">My Name Color</string>
+  <string name="ChatEmojiStatusDisallowed">This emoji cannot be used as a chat status. Choose another emoji.</string>
   <string name="MessageAuthorProfile">View Message Author</string>
   <string name="RemovePersonalContactPhoto">Remove Personal Contact Photo</string>
   <string name="RemovePersonalContactPhotoConfirm">Remove the photo you set for this contact? Their original profile photo will not be changed.</string>

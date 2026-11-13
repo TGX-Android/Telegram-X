@@ -148,6 +148,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       }
     };
     emojiCustomListController.setTargetChatId(parent.targetChatId);
+    emojiCustomListController.setDisallowedChatEmojiIds(parent.disallowedChatEmojiIds);
     emojiCustomListController.setArguments(emojiCustomListLayout);
     emojiCustomListController.initWithFakeViews(customRecyclerView = recyclerView);
     emojiCustomListController.getValue();
@@ -194,7 +195,9 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
   @Override
   public boolean onSetEmojiStatus (@Nullable View view, TGStickerObj sticker, TdApi.EmojiStatus emojiStatus) {
-    emojiCustomListController.setEmojiStatus(emojiStatus);
+    if (!emojiCustomListController.setEmojiStatus(emojiStatus)) {
+      return true;
+    }
     parent.hidePopupWindow(true);
     if (view == null) return true;
 
@@ -653,6 +656,12 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
   public static class Wrapper extends BottomSheetViewController<Void> {
     private long targetChatId;
+    private long[] disallowedChatEmojiIds = new long[0];
+
+    public Wrapper setDisallowedChatEmojiIds (long[] emojiIds) {
+      this.disallowedChatEmojiIds = emojiIds.clone();
+      return this;
+    }
 
     public Wrapper setTargetChatId (long chatId) {
       this.targetChatId = chatId;

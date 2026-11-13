@@ -3621,46 +3621,62 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }));
   }
 
+  private boolean loadingChatEmojiStatus;
+
   private void openChatEmojiStatus () {
-    if (chat == null || supergroup == null || !tdlib.canChangeInfo(chat, false)) {
+    if (loadingChatEmojiStatus || chat == null || supergroup == null || !tdlib.canChangeInfo(chat, false)) {
       return;
     }
+    loadingChatEmojiStatus = true;
     final long chatId = chat.id;
     tdlib.send(new TdApi.GetChatBoostLevelFeatures(supergroup.isChannel, supergroup.boostLevel),
       (features, error) -> runOnUiThreadOptional(() -> {
         if (error != null) {
+          loadingChatEmojiStatus = false;
           UI.showError(error);
         } else if (!features.canSetEmojiStatus || !tdlib.canChangeInfo(tdlib.chat(chatId), false)) {
+          loadingChatEmojiStatus = false;
           UI.showToast(R.string.ChatEmojiStatusUnavailable, Toast.LENGTH_SHORT);
         } else {
-          EmojiStatusSelectorEmojiPage.Wrapper picker = new EmojiStatusSelectorEmojiPage.Wrapper(
-            context(), tdlib, this,
-            new EmojiStatusSelectorEmojiPage.AnimationsEmojiStatusSetDelegate() {
-              @Override
-              public void onAnimationStart () {
-                headerCell.setIgnoreDrawEmojiStatus(true);
-              }
-
-              @Override
-              public void onAnimationEnd () {
-                headerCell.setIgnoreDrawEmojiStatus(false);
-              }
-
-              @Override
-              public int getDestX () {
-                return headerCell.getEmojiStatusLastDrawX() + Screen.dp(12);
-              }
-
-              @Override
-              public int getDestY () {
-                return headerCell.getEmojiStatusLastDrawY() + Screen.dp(12);
-              }
+          tdlib.send(new TdApi.GetDisallowedChatEmojiStatuses(), (disallowed, statusError) -> runOnUiThreadOptional(() -> {
+            loadingChatEmojiStatus = false;
+            if (statusError != null) {
+              UI.showError(statusError);
+            } else if (chat != null && chat.id == chatId && tdlib.canChangeInfo(tdlib.chat(chatId), false)) {
+              showChatEmojiStatusPicker(chatId, disallowed.customEmojiIds);
             }
-          );
-          picker.setTargetChatId(chatId).show();
+          }));
         }
       })
     );
+  }
+
+  private void showChatEmojiStatusPicker (long chatId, long[] disallowedEmojiIds) {
+    EmojiStatusSelectorEmojiPage.Wrapper picker = new EmojiStatusSelectorEmojiPage.Wrapper(
+      context(), tdlib, this,
+      new EmojiStatusSelectorEmojiPage.AnimationsEmojiStatusSetDelegate() {
+        @Override
+        public void onAnimationStart () {
+          headerCell.setIgnoreDrawEmojiStatus(true);
+        }
+
+        @Override
+        public void onAnimationEnd () {
+          headerCell.setIgnoreDrawEmojiStatus(false);
+        }
+
+        @Override
+        public int getDestX () {
+          return headerCell.getEmojiStatusLastDrawX() + Screen.dp(12);
+        }
+
+        @Override
+        public int getDestY () {
+          return headerCell.getEmojiStatusLastDrawY() + Screen.dp(12);
+        }
+      }
+    );
+    picker.setTargetChatId(chatId).setDisallowedChatEmojiIds(disallowedEmojiIds).show();
   }
 
   private long supergroupStickerSetId (boolean forCustomEmoji) {
