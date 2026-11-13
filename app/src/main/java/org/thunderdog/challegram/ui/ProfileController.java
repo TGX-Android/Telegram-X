@@ -710,6 +710,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(R.string.BoostWithUnusedSlot);
       ids.append(R.id.btn_transferChatBoost);
       strings.append(R.string.TransferChatBoost);
+      if (ChatBoostsController.canViewBoosts(tdlib, chat.id)) {
+        ids.append(R.id.btn_viewChatBoosts);
+        strings.append(R.string.ViewChatBoosts);
+      }
     }
     if (canConfigureChatAutosave()) {
       ids.append(R.id.btn_chatAutosaveSettings);
@@ -1303,6 +1307,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     if (id == R.id.btn_openProfileChannel) {
       openProfileChannel();
+      return;
+    }
+    if (id == R.id.btn_viewChatBoosts) {
+      if (chat != null && ChatBoostsController.canViewBoosts(tdlib, chat.id)) {
+        navigateTo(new ChatBoostsController(context(), tdlib, chat.id));
+      }
       return;
     }
     if (id == R.id.btn_transferChatBoost) {

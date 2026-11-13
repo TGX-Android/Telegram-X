@@ -451,6 +451,9 @@
   <item type="id" name="btn_autosaveVideoSize" />
   <item type="id" name="btn_boostWithUnusedSlot" />
   <item type="id" name="btn_transferChatBoost" />
+  <item type="id" name="btn_viewChatBoosts" />
+  <item type="id" name="btn_loadChatBoosts" />
+  <item type="id" name="controller_chatBoosts" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />

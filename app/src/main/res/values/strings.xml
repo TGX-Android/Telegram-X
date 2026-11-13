@@ -2439,6 +2439,16 @@
   <string name="BoostWithUnusedSlot">Boost with an Unused Slot</string>
   <string name="BoostWithUnusedSlotConfirm">Apply one boost currently reported as unused to %1$s? Availability will be checked again before applying it. Active boosts are not offered for transfer and no purchase will be made. The slot will be assigned to this chat and Telegram may apply a cooldown before it can be moved again.</string>
   <string name="NoUnusedBoostSlots">No unused, unexpired boost slot is available. Slots assigned to other chats are not offered by this selector.</string>
+  <string name="ViewChatBoosts">View Chat Boosts</string>
+  <string name="ChatBoostsTotal">%1$d boosts applied</string>
+  <string name="ChatBoostsUnavailable">You need administrator rights to view this chat’s boosts.</string>
+  <string name="NoChatBoosts">This chat has no active boosts.</string>
+  <string name="LoadMoreChatBoosts">Load More Boosts</string>
+  <string name="ChatBoostPremiumSource">Telegram Premium</string>
+  <string name="ChatBoostGiftCodeSource">Gift Code</string>
+  <string name="ChatBoostGiveawaySource">Giveaway</string>
+  <string name="ChatBoostUnknownSource">Boost</string>
+  <string name="ChatBoostSourceDetails">%1$s · %2$d boosts · expires %3$s</string>
   <string name="TransferChatBoost">Transfer a Boost</string>
   <string name="TransferChatBoostSlot">%1$s · expires %2$s</string>
   <string name="TransferChatBoostUnknownChat">Chat %1$s</string>
