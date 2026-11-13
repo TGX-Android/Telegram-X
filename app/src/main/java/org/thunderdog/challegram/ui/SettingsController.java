@@ -194,7 +194,9 @@ public class SettingsController extends ViewController<Void> implements
   @Override
   public void onMenuItemPressed (int id, View view) {
     if (id == R.id.menu_btn_more) {
-      showMore(new int[] {R.id.more_btn_logout}, new String[] {Lang.getString(R.string.LogOut)}, 0);
+      showMore(new int[] {R.id.btn_copyProfileLink, R.id.btn_shareProfileLink, R.id.more_btn_logout},
+        new String[] {Lang.getString(R.string.CopyProfileLink), Lang.getString(R.string.ShareProfileLink),
+          Lang.getString(R.string.LogOut)}, 0);
     }
   }
 
@@ -235,11 +237,35 @@ public class SettingsController extends ViewController<Void> implements
 
   @Override
   public void onMoreItemPressed (int id) {
-    if (id == R.id.menu_btn_more) {
+    if (id == R.id.btn_copyProfileLink || id == R.id.btn_shareProfileLink) {
+      getOwnProfileLink(id == R.id.btn_shareProfileLink);
+    } else if (id == R.id.menu_btn_more) {
       tdlib.ui().logOut(this, true);
     } else {
       tdlib.ui().handleProfileMore(this, id, tdlib.myUser(), null);
     }
+  }
+
+  private boolean loadingProfileLink;
+
+  private void getOwnProfileLink (boolean share) {
+    if (loadingProfileLink) {
+      return;
+    }
+    loadingProfileLink = true;
+    // A normal profile link: do not waive message fees, revoke links or request special privileges.
+    tdlib.send(new TdApi.GetUserLink(false, false, false), (link, error) -> runOnUiThreadOptional(() -> {
+      loadingProfileLink = false;
+      if (error != null) {
+        UI.showError(error);
+      } else if (share) {
+        ShareController controller = new ShareController(context(), tdlib);
+        controller.setArguments(new ShareController.Args(link.url).setShare(link.url, null));
+        controller.show();
+      } else {
+        UI.copyText(link.url, R.string.CopiedLink);
+      }
+    }));
   }
 
   @Override
