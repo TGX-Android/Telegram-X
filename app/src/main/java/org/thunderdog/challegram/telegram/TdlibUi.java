@@ -5140,14 +5140,17 @@ public class TdlibUi extends Handler {
                   unsupported.run();
                   break;
 
-                case "blocked": {
+                case "blocked":
+                case "blocked/block-user": {
                   SettingsBlockedController blocked = new SettingsBlockedController(context.context(), tdlib);
                   blocked.setArguments(new TdApi.BlockListMain());
+                  if ("blocked/block-user".equals(privacyAndSecurity.subsection)) {
+                    blocked.addOneShotFocusListener(blocked::blockContact);
+                  }
                   result = blocked;
                   break;
                 }
                 case "blocked/edit":
-                case "blocked/block-user":
                 case "blocked/block-user/chats":
                 case "blocked/block-user/contacts":
                   unsupported.run();

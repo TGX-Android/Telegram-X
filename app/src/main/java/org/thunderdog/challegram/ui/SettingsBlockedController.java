@@ -88,7 +88,7 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
     }
   }
 
-  private void blockContact () {
+  public void blockContact () {
     ContactsController c = new ContactsController(context, tdlib);
     c.setArguments(new ContactsController.Args(this));
     c.setAllowBots(true);
