@@ -129,6 +129,7 @@ import org.thunderdog.challegram.ui.PasscodeSetupController;
 import org.thunderdog.challegram.ui.PasswordController;
 import org.thunderdog.challegram.ui.PeopleController;
 import org.thunderdog.challegram.ui.PhoneController;
+import org.thunderdog.challegram.ui.PremiumSettingsController;
 import org.thunderdog.challegram.ui.ProfileChannelController;
 import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
@@ -5310,12 +5311,15 @@ public class TdlibUi extends Handler {
               }
               break;
             }
+            case TdApi.SettingsSectionPremium.CONSTRUCTOR: {
+              result = new PremiumSettingsController(context.context(), tdlib, new TdApi.PremiumSourceSettings());
+              break;
+            }
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
             case TdApi.SettingsSectionSearch.CONSTRUCTOR:
             case TdApi.SettingsSectionMyStars.CONSTRUCTOR:
             case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
             case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
-            case TdApi.SettingsSectionPremium.CONSTRUCTOR:
             case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
             case TdApi.SettingsSectionBusiness.CONSTRUCTOR:
             case TdApi.SettingsSectionInAppBrowser.CONSTRUCTOR:
@@ -5416,6 +5420,11 @@ public class TdlibUi extends Handler {
         }
         break;
       }
+      case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR: {
+        TdApi.InternalLinkTypePremiumFeaturesPage premium = (TdApi.InternalLinkTypePremiumFeaturesPage) linkType;
+        ok = openPremiumSettings(context, new TdApi.PremiumSourceLink(premium.referrer));
+        break;
+      }
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR: {
         TdApi.InternalLinkTypeChatBoost boostLink = (TdApi.InternalLinkTypeChatBoost) linkType;
         openChatBoostLink(context, boostLink.url, openParameters, after);
@@ -5471,7 +5480,6 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeChatSelection.CONSTRUCTOR:
       case TdApi.InternalLinkTypeNewStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeOauth.CONSTRUCTOR:
-      case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGiftPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRequestManagedBot.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
@@ -9022,6 +9030,11 @@ public class TdlibUi extends Handler {
 
   // Telegram Premium
 
+  public boolean openPremiumSettings (TdlibDelegate context, TdApi.PremiumSource source) {
+    return tdlib.isAuthorized() && context.tdlib() == tdlib &&
+      context.context().navigation().navigateTo(new PremiumSettingsController(context.context(), tdlib, source));
+  }
+
   public interface PremiumLimitCallback {
     void onPremiumLimitReached (int currentLimit, int premiumLimit);
   }
@@ -9100,23 +9113,35 @@ public class TdlibUi extends Handler {
     if (tdlib.hasPremium())
       return false;
     int stringRes;
+    TdApi.PremiumFeature feature;
     switch (premiumFeature) {
       case PremiumFeature.STICKER:
         stringRes = R.string.PremiumRequiredSticker;
+        feature = new TdApi.PremiumFeatureUniqueStickers();
         break;
       case PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES:
         stringRes = R.string.PremiumRequiredVoiceVideo;
+        feature = new TdApi.PremiumFeatureMessagePrivacy();
         break;
       case PremiumFeature.CUSTOM_EMOJI:
         stringRes = R.string.MessageContainsPremiumFeatures;
+        feature = new TdApi.PremiumFeatureCustomEmoji();
         break;
       case PremiumFeature.NEW_CHATS_PRIVACY:
         stringRes = R.string.PremiumRequiredNewChats;
+        feature = new TdApi.PremiumFeatureMessagePrivacy();
         break;
       default:
         throw new IllegalStateException();
     }
-    showPremiumRequiredTooltip(context, tooltipManager, view, Lang.getMarkdownString(context, stringRes));
+    if (context.isFocused() && context.navigationController() != null &&
+        context.navigationController().getCurrentStackItem() == context && !context.context().isWindowPopupShowing()) {
+      context.showConfirm(Lang.getMarkdownString(context, stringRes), Lang.getString(R.string.TgxPremiumTitle),
+        R.drawable.baseline_premium_star_24, ViewController.OptionColor.BLUE,
+        () -> openPremiumSettings(context, new TdApi.PremiumSourceFeature(feature)));
+    } else {
+      showPremiumRequiredTooltip(context, tooltipManager, view, Lang.getMarkdownString(context, stringRes));
+    }
     return true;
   }
 

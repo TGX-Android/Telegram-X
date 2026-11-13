@@ -1579,5 +1579,18 @@
   <item type="id" name="btn_playback_speed_1_5" />
   <item type="id" name="btn_playback_speed_2_0" />
 <!-- region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095") -->
+  <item type="id" name="controller_premiumSettings" />
+  <item type="id" name="btn_premiumSettings" />
+  <item type="id" name="btn_premiumRetry" />
+  <item type="id" name="btn_premiumFeature" />
+  <item type="id" name="btn_premiumPlan" />
+  <item type="id" name="btn_premiumContinue" />
+  <item type="id" name="btn_premiumFaq" />
+  <item type="id" name="btn_premiumPreview" />
+  <item type="id" name="btn_premiumLimits" />
+  <item type="id" name="btn_premiumNameColor" />
+  <item type="id" name="btn_premiumProfileColor" />
+  <item type="id" name="btn_premiumPrivacy" />
+  <item type="id" name="btn_premiumFolders" />
 </resources>
 <!-- endregion -->

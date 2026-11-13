@@ -84,6 +84,7 @@ import org.thunderdog.challegram.ui.PasswordController;
 import org.thunderdog.challegram.ui.PhoneController;
 import org.thunderdog.challegram.ui.PlaybackController;
 import org.thunderdog.challegram.ui.PrivacyExceptionController;
+import org.thunderdog.challegram.ui.PremiumSettingsController;
 import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.ui.SettingsBugController;
@@ -1295,6 +1296,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   private static boolean canSaveController (int id, ViewController<?> c) {
     return
       id == R.id.controller_settings ||
+      id == R.id.controller_premiumSettings ||
       id == R.id.controller_wallpaper ||
       id == R.id.controller_fontSize ||
       id == R.id.controller_storageSettings;
@@ -1304,6 +1306,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     ViewController<?> restore;
     if (id == R.id.controller_settings) {
       return new SettingsController(context, tdlib);
+    } else if (id == R.id.controller_premiumSettings) {
+      return new PremiumSettingsController(context, tdlib, null);
     } else if (id == R.id.controller_storageSettings) {
       return new SettingsCacheController(context, tdlib);
     } else if (id == R.id.controller_wallpaper || id == R.id.controller_fontSize) {
