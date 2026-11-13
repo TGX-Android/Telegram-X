@@ -5213,6 +5213,19 @@ public class TdlibUi extends Handler {
                   }
                   break;
                 }
+                case "your-color":
+                case "profile-color/profile":
+                case "profile-color/name": {
+                  ViewController<?> current = context.context().navigation().getCurrentStackItem();
+                  if (current == null || current.tdlib() != tdlib || !tdlib.hasPremium()) {
+                    unsupported.run();
+                  } else if ("profile-color/profile".equals(editProfile.subsection)) {
+                    showUserProfileAccentColorOptions(current);
+                  } else {
+                    showUserAccentColorOptions(current);
+                  }
+                  break;
+                }
                 case "channel": {
                   result = new ProfileChannelController(context.context(), tdlib);
                   break;
@@ -5224,13 +5237,10 @@ public class TdlibUi extends Handler {
                 case "":
                 case "set-photo":
                 case "emoji-status":
-                case "your-color":
                 case "add-account":
                 case "log-out":
-                case "profile-color/profile":
                 case "profile-color/profile/add-icons":
                 case "profile-color/profile/use-gift":
-                case "profile-color/name":
                 case "profile-color/name/add-icons":
                 case "profile-color/name/use-gift":
                 case "profile-photo/use-emoji": {
