@@ -5161,6 +5161,10 @@ public class TdlibUi extends Handler {
                   result = name;
                   break;
                 }
+                case "username": {
+                  result = new EditUsernameController(context.context(), tdlib);
+                  break;
+                }
                 case "change-number": {
                   result = new SettingsPhoneController(context.context(), context.tdlib());
                   break;
@@ -5170,7 +5174,6 @@ public class TdlibUi extends Handler {
                 case "emoji-status":
                 case "bio":
                 case "birthday":
-                case "username":
                 case "your-color":
                 case "channel":
                 case "add-account":
