@@ -5278,6 +5278,16 @@ public class TdlibUi extends Handler {
                   stats.setArguments(new SettingsNetworkStatsController.Args(network, null));
                   result = stats;
                 }
+                case "auto-download/mobile", "auto-download/wifi", "auto-download/roaming" -> {
+                  SettingsDataController downloads = new SettingsDataController(context.context(), tdlib);
+                  int setting = switch (subsection) {
+                    case "auto-download/wifi" -> R.id.btn_mediaWiFiLimits;
+                    case "auto-download/roaming" -> R.id.btn_mediaRoamingLimits;
+                    default -> R.id.btn_mediaMobileLimits;
+                  };
+                  downloads.addOneShotFocusListener(() -> downloads.showDownloadLimits(setting));
+                  result = downloads;
+                }
                 case "proxy", "proxy/edit", "proxy/use-proxy", "proxy/share-list", "proxy/use-for-calls" ->
                   result = new SettingsProxyController(context.context(), tdlib);
                 case "proxy/add-proxy" -> addNewProxy(context, true);

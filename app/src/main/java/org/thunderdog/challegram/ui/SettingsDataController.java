@@ -574,54 +574,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
           }
         }));
     } else if (id == R.id.btn_inPrivateChats || id == R.id.btn_inGroupChats || id == R.id.btn_inChannelChats || id == R.id.btn_mediaMobileLimits || id == R.id.btn_mediaWiFiLimits || id == R.id.btn_mediaRoamingLimits) {
-      int flags;
-      int sizeOption = 0;
-      int size = 0;
-      if (id == R.id.btn_inPrivateChats) {
-        flags = tdlib.files().getDownloadInPrivateChats();
-      } else if (id == R.id.btn_inGroupChats) {
-        flags = tdlib.files().getDownloadInGroupChats();
-      } else if (id == R.id.btn_inChannelChats) {
-        flags = tdlib.files().getDownloadInChannelChats();
-      } else if (id == R.id.btn_mediaMobileLimits) {
-        flags = tdlib.files().getExcludeOverMobile();
-        size = tdlib.files().getDownloadLimitOverMobile();
-        sizeOption = R.id.btn_size;
-      } else if (id == R.id.btn_mediaWiFiLimits) {
-        flags = tdlib.files().getExcludeOverWiFi();
-        size = tdlib.files().getDownloadLimitOverWifi();
-        sizeOption = R.id.btn_size;
-      } else if (id == R.id.btn_mediaRoamingLimits) {
-        flags = tdlib.files().getExcludeOverRoaming();
-        size = tdlib.files().getDownloadLimitOverRoaming();
-        sizeOption = R.id.btn_size;
-      } else {
-        throw new RuntimeException();
-      }
-
-      int currentValue = 0;
-      String[] sizeOptions;
-      if (sizeOption != 0) {
-        sizeOptions = new String[TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS.length];
-        for (int i = 0; i < sizeOptions.length; i++) {
-          sizeOptions[i] = TdlibFilesManager.getDownloadLimitString(TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i]);
-          if (TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i] == size) {
-            currentValue = i;
-          }
-        }
-      } else {
-        sizeOptions = null;
-      }
-
-      showSettings(new SettingsWrapBuilder(id).setRawItems(new ListItem[] {
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, sizeOption != 0 ? R.string.NoPhotos : R.string.Photos, (flags & TdlibFilesManager.DOWNLOAD_FLAG_PHOTO) != 0),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_voice, 0, sizeOption != 0 ? R.string.NoVoiceMessages : R.string.VoiceMessages, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VOICE) != 0),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_videoNote, 0, sizeOption != 0 ? R.string.NoVideoMessages : R.string.VideoMessages, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VIDEO_NOTE) != 0),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, sizeOption != 0 ? R.string.NoVideos : R.string.Videos, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VIDEO) != 0),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_file, 0, sizeOption != 0 ? R.string.NoFiles : R.string.Files, (flags & TdlibFilesManager.DOWNLOAD_FLAG_FILE) != 0),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_music, 0, sizeOption != 0 ? R.string.NoMusic : R.string.Music, (flags & TdlibFilesManager.DOWNLOAD_FLAG_MUSIC) != 0),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_gif, 0, sizeOption != 0 ? R.string.NoGIFs : R.string.GIFs, (flags & TdlibFilesManager.DOWNLOAD_FLAG_GIF) != 0),
-      }).setIntDelegate(this).setSizeOptionId(sizeOption).setSizeValue(currentValue).setSizeValues(sizeOptions).setAllowResize(false));
+      showDownloadLimits(id);
     } else if (id == R.id.btn_cacheSettings) {
       navigateTo(new SettingsCacheController(context, tdlib));
     } else if (id == R.id.btn_showAdvanced) {
@@ -661,6 +614,57 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
 
   private @Nullable TdApi.AutosaveSettings autosaveSettings;
   private boolean loadingAutosaveExceptions, changingAutosaveException;
+
+  public void showDownloadLimits (@IdRes int id) {
+    int flags;
+    int sizeOption = 0;
+    int size = 0;
+    if (id == R.id.btn_inPrivateChats) {
+      flags = tdlib.files().getDownloadInPrivateChats();
+    } else if (id == R.id.btn_inGroupChats) {
+      flags = tdlib.files().getDownloadInGroupChats();
+    } else if (id == R.id.btn_inChannelChats) {
+      flags = tdlib.files().getDownloadInChannelChats();
+    } else if (id == R.id.btn_mediaMobileLimits) {
+      flags = tdlib.files().getExcludeOverMobile();
+      size = tdlib.files().getDownloadLimitOverMobile();
+      sizeOption = R.id.btn_size;
+    } else if (id == R.id.btn_mediaWiFiLimits) {
+      flags = tdlib.files().getExcludeOverWiFi();
+      size = tdlib.files().getDownloadLimitOverWifi();
+      sizeOption = R.id.btn_size;
+    } else if (id == R.id.btn_mediaRoamingLimits) {
+      flags = tdlib.files().getExcludeOverRoaming();
+      size = tdlib.files().getDownloadLimitOverRoaming();
+      sizeOption = R.id.btn_size;
+    } else {
+      throw new RuntimeException();
+    }
+
+    int currentValue = 0;
+    String[] sizeOptions;
+    if (sizeOption != 0) {
+      sizeOptions = new String[TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS.length];
+      for (int i = 0; i < sizeOptions.length; i++) {
+        sizeOptions[i] = TdlibFilesManager.getDownloadLimitString(TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i]);
+        if (TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i] == size) {
+          currentValue = i;
+        }
+      }
+    } else {
+      sizeOptions = null;
+    }
+
+    showSettings(new SettingsWrapBuilder(id).setRawItems(new ListItem[] {
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, sizeOption != 0 ? R.string.NoPhotos : R.string.Photos, (flags & TdlibFilesManager.DOWNLOAD_FLAG_PHOTO) != 0),
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_voice, 0, sizeOption != 0 ? R.string.NoVoiceMessages : R.string.VoiceMessages, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VOICE) != 0),
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_videoNote, 0, sizeOption != 0 ? R.string.NoVideoMessages : R.string.VideoMessages, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VIDEO_NOTE) != 0),
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, sizeOption != 0 ? R.string.NoVideos : R.string.Videos, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VIDEO) != 0),
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_file, 0, sizeOption != 0 ? R.string.NoFiles : R.string.Files, (flags & TdlibFilesManager.DOWNLOAD_FLAG_FILE) != 0),
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_music, 0, sizeOption != 0 ? R.string.NoMusic : R.string.Music, (flags & TdlibFilesManager.DOWNLOAD_FLAG_MUSIC) != 0),
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_gif, 0, sizeOption != 0 ? R.string.NoGIFs : R.string.GIFs, (flags & TdlibFilesManager.DOWNLOAD_FLAG_GIF) != 0),
+    }).setIntDelegate(this).setSizeOptionId(sizeOption).setSizeValue(currentValue).setSizeValues(sizeOptions).setAllowResize(false));
+  }
 
   private void showAutosaveExceptions () {
     if (loadingAutosaveExceptions || changingAutosaveException) {
