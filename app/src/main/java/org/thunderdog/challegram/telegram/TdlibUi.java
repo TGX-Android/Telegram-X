@@ -124,6 +124,7 @@ import org.thunderdog.challegram.data.ForumNavigation;
 import org.thunderdog.challegram.ui.PasscodeController;
 import org.thunderdog.challegram.ui.PasscodeSetupController;
 import org.thunderdog.challegram.ui.PasswordController;
+import org.thunderdog.challegram.ui.PeopleController;
 import org.thunderdog.challegram.ui.PhoneController;
 import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
@@ -5170,6 +5171,18 @@ public class TdlibUi extends Handler {
         ok = context.context().navigation().navigateTo(picker);
         break;
       }
+      case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeContactsPage contactsLink = (TdApi.InternalLinkTypeContactsPage) linkType;
+        if (StringUtils.isEmpty(contactsLink.section)) {
+          ok = context.context().navigation().navigateTo(new PeopleController(context.context(), tdlib));
+        } else if ("new".equals(contactsLink.section)) {
+          ok = context.context().navigation().navigateTo(
+            new PhoneController(context.context(), tdlib).setMode(PhoneController.MODE_ADD_CONTACT));
+        } else {
+          unsupported.run();
+        }
+        break;
+      }
       case TdApi.InternalLinkTypeDirectMessagesChat.CONSTRUCTOR: {
         TdApi.InternalLinkTypeDirectMessagesChat directMessagesChat = (TdApi.InternalLinkTypeDirectMessagesChat) linkType;
         openDirectMessages(context, directMessagesChat.channelUsername, openParameters);
@@ -5208,7 +5221,6 @@ public class TdlibUi extends Handler {
 
       case TdApi.InternalLinkTypeCallsPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatSelection.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypeNewStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeOauth.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR:
