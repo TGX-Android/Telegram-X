@@ -131,6 +131,7 @@ import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.Settings2FAController;
+import org.thunderdog.challegram.ui.SettingsBlockedController;
 import org.thunderdog.challegram.ui.SettingsController;
 import org.thunderdog.challegram.ui.SettingsDataController;
 import org.thunderdog.challegram.ui.SettingsFoldersController;
@@ -5086,18 +5087,25 @@ public class TdlibUi extends Handler {
                   break;
                 }
 
+                case "blocked": {
+                  SettingsBlockedController blocked = new SettingsBlockedController(context.context(), tdlib);
+                  blocked.setArguments(new TdApi.BlockListMain());
+                  result = blocked;
+                  break;
+                }
+                case "blocked/edit":
+                case "blocked/block-user":
+                case "blocked/block-user/chats":
+                case "blocked/block-user/contacts":
+                  unsupported.run();
+                  break;
+
                 case "passkey":
                 case "passkey/create":
 
                 case "messages":
                 case "messages/set-price":
                 case "messages/exceptions":
-
-                case "blocked":
-                case "blocked/edit":
-                case "blocked/block-user":
-                case "blocked/block-user/chats":
-                case "blocked/block-user/contacts":
 
                 case "auto-delete":
                 case "auto-delete/set-custom":
