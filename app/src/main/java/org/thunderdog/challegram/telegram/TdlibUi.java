@@ -5133,6 +5133,22 @@ public class TdlibUi extends Handler {
               break;
             }
             case TdApi.SettingsSectionNotifications.CONSTRUCTOR: {
+              String subsection = ((TdApi.SettingsSectionNotifications) section).subsection;
+              TdApi.NotificationSettingsScope scope = switch (subsection != null ? subsection : "") {
+                case "private-chats", "private-chats/edit" -> new TdApi.NotificationSettingsScopePrivateChats();
+                case "groups", "groups/edit" -> new TdApi.NotificationSettingsScopeGroupChats();
+                case "channels", "channels/edit" -> new TdApi.NotificationSettingsScopeChannelChats();
+                default -> null;
+              };
+              if (StringUtils.isEmpty(subsection) || scope != null) {
+                SettingsNotificationController notifications = new SettingsNotificationController(context.context(), tdlib);
+                if (scope != null) {
+                  notifications.setArguments(new SettingsNotificationController.Args(scope));
+                }
+                result = notifications;
+              } else {
+                unsupported.run();
+              }
               break;
             }
             case TdApi.SettingsSectionEditProfile.CONSTRUCTOR: {
