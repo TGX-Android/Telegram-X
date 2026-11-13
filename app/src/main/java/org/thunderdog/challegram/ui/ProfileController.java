@@ -61,6 +61,7 @@ import org.thunderdog.challegram.component.attach.AvatarPickerManager;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ProfileTabUtils;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.data.TGUser;
@@ -481,6 +482,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMenuItemPressed (int id, View view) {
+    mainProfileTabTouched = true;
     if (id == R.id.menu_btn_more) {
       showMore();
     } else if (id == R.id.menu_btn_addContact) {
@@ -2475,6 +2477,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     }
 
+    mainProfileTabViewReady = true;
+    pager.post(this::applyMainProfileTabIfReady);
     return contentView;
   }
 
@@ -5705,6 +5709,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onClick (View v) {
+    mainProfileTabTouched = true;
     final int viewId = v.getId();
     if (viewId == R.id.avatar) {
       changeProfilePhoto();
@@ -6374,6 +6379,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onPageScrollStateChanged (int state) {
+    if (state == ViewPager.SCROLL_STATE_DRAGGING) {
+      mainProfileTabTouched = true;
+    }
     if (topCellView != null && state != ViewPager.SCROLL_STATE_SETTLING) {
       topCellView.getTopView().resetFromTo();
     }
@@ -6381,6 +6389,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onPagerItemClick (int index) {
+    mainProfileTabTouched = true;
     invalidateCachedPosition();
     if (pager.getCurrentItem() != index) {
       topCellView.getTopView().setFromTo(pager.getCurrentItem(), index);
@@ -6750,6 +6759,44 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return Math.min(itemCount, oneShot ? itemCount : 1);
   }
 
+  private boolean mainProfileTabViewReady, mainProfileTabTouched, mainProfileTabApplied;
+
+  private void applyMainProfileTabIfReady () {
+    if (!mainProfileTabViewReady || mainProfileTabTouched || mainProfileTabApplied || isDestroyed() || isEditing()) {
+      return;
+    }
+    final TdApi.ProfileTab tab;
+    if (mode == Mode.USER) {
+      if (userFull == null) {
+        return;
+      }
+      tab = userFull.mainProfileTab;
+    } else if (mode == Mode.CHANNEL) {
+      if (supergroupFull == null) {
+        return;
+      }
+      tab = supergroupFull.mainProfileTab;
+    } else {
+      return;
+    }
+    if (!ProfileTabUtils.isSupported(tab)) {
+      return;
+    }
+    int[] filters = new int[controllers.size()];
+    for (int i = 0; i < controllers.size(); i++) {
+      TdApi.SearchMessagesFilter filter = controllers.get(i).provideSearchFilter();
+      filters[i] = filter != null ? filter.getConstructor() : 0;
+    }
+    int index = ProfileTabUtils.findIndex(tab, filters);
+    if (index >= 0) {
+      mainProfileTabApplied = true;
+      invalidateCachedPosition();
+      pager.setCurrentItem(index, false);
+      topCellView.getTopView().setSelectionFactor(index);
+      updateMediaSubtitle();
+    }
+  }
+
   private final ArrayList<SharedBaseController<?>> controllers = new ArrayList<>(6);
 
   private List<ViewPagerTopView.Item> getPagerTitles () {
@@ -7053,6 +7100,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       topCellView.getTopView().addItemAtIndex(newItem(c), visualIndex);
     }
     pagerAdapter.notifyDataSetChanged();
+    applyMainProfileTabIfReady();
   }
 
   private boolean hasTab (TdApi.SearchMessagesFilter filter, int indexGuess) {
@@ -7272,6 +7320,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       } else {
         addFullCells(userFull);
       }
+      applyMainProfileTabIfReady();
     });
   }
 
@@ -7609,7 +7658,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       };
     }
-    tdlib.uiExecute(act);
+    tdlib.uiExecute(() -> {
+      act.run();
+      applyMainProfileTabIfReady();
+    });
   }
 
   @Override
