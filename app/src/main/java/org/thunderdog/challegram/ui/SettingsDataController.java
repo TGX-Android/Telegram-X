@@ -287,6 +287,8 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
         new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_autosaveChannelChats, 0, R.string.InChannels),
         new ListItem(ListItem.TYPE_SEPARATOR_FULL),
         new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_autosaveExceptions, 0, R.string.AutosaveExceptions),
+        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+        new ListItem(ListItem.TYPE_SETTING, R.id.btn_clearAutosaveExceptions, 0, R.string.ClearAutosaveExceptions),
         new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
         new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveMediaInfo),
         new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveExceptionsCompatibility),
@@ -539,6 +541,8 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
       }, this);
     } else if (id == R.id.btn_autosaveExceptions) {
       showAutosaveExceptions();
+    } else if (id == R.id.btn_clearAutosaveExceptions) {
+      confirmClearAutosaveExceptions();
     } else if (id == R.id.btn_autosavePrivateChats || id == R.id.btn_autosaveGroupChats || id == R.id.btn_autosaveChannelChats) {
       TdApi.ScopeAutosaveSettings settings = getAutosaveScopeSettings(id);
       if (settings == null) {
@@ -699,6 +703,51 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
           UI.showToast(R.string.AutosaveExceptionReset, Toast.LENGTH_SHORT);
         }
       }));
+  }
+
+  private void confirmClearAutosaveExceptions () {
+    if (loadingAutosaveExceptions || changingAutosaveException) {
+      return;
+    }
+    loadingAutosaveExceptions = true;
+    tdlib.send(new TdApi.GetAutosaveSettings(), (settings, error) -> runOnUiThreadOptional(() -> {
+      loadingAutosaveExceptions = false;
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      updateAutosaveSettings(settings);
+      if (settings.exceptions.length == 0) {
+        UI.showToast(R.string.NoAutosaveExceptions, Toast.LENGTH_SHORT);
+        return;
+      }
+      showOptions(Lang.getStringBold(R.string.ClearAutosaveExceptionsConfirm, settings.exceptions.length),
+        new int[] {R.id.btn_clearAutosaveExceptions, R.id.btn_cancel},
+        new String[] {Lang.getString(R.string.Reset), Lang.getString(R.string.Cancel)},
+        new int[] {OptionColor.RED, OptionColor.NORMAL},
+        new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (view, id) -> {
+          if (id == R.id.btn_clearAutosaveExceptions) {
+            clearAutosaveExceptions();
+          }
+          return true;
+        });
+    }));
+  }
+
+  private void clearAutosaveExceptions () {
+    if (changingAutosaveException || autosaveSettings == null) {
+      return;
+    }
+    changingAutosaveException = true;
+    tdlib.send(new TdApi.ClearAutosaveSettingsExceptions(), (ok, error) -> runOnUiThreadOptional(() -> {
+      changingAutosaveException = false;
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        loadAutosaveSettings();
+        UI.showToast(R.string.AllAutosaveExceptionsReset, Toast.LENGTH_SHORT);
+      }
+    }));
   }
 
   private void updateAutosaveSettings (TdApi.AutosaveSettings settings) {

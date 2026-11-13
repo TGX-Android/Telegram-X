@@ -2383,6 +2383,9 @@
   <string name="NoAutosaveExceptions">No autosave exceptions.</string>
   <string name="ResetAutosaveExceptionConfirm">Reset the autosave exception for %1$s? This chat will use its chat type’s default, which may save more or less media in compatible clients.</string>
   <string name="AutosaveExceptionReset">Autosave exception reset</string>
+  <string name="ClearAutosaveExceptions">Reset All Autosave Exceptions</string>
+  <string name="ClearAutosaveExceptionsConfirm">Reset all %1$d autosave exceptions? Each affected chat will use its chat type’s default, which may save more or less media in compatible clients. Default settings and existing media will not be deleted.</string>
+  <string name="AllAutosaveExceptionsReset">All autosave exceptions reset</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>
