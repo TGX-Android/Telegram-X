@@ -2367,6 +2367,7 @@
   <string name="ReplyToPollOption">Reply to Poll Answer</string>
   <string name="CopyProfileLink">Copy My Profile Link</string>
   <string name="ShareProfileLink">Share My Profile Link</string>
+  <string name="UserAccentColor">My Name Color</string>
   <string name="PollOptionReplyUnavailable">You can’t reply to this poll answer right now.</string>
   <string name="PollOptionLinkUnavailable">A link to this poll answer is unavailable.</string>
   <string name="PollVoteStatisticsUnavailable">Vote statistics are unavailable. Please try again later.</string>

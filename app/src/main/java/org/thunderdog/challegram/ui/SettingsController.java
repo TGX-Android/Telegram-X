@@ -194,9 +194,19 @@ public class SettingsController extends ViewController<Void> implements
   @Override
   public void onMenuItemPressed (int id, View view) {
     if (id == R.id.menu_btn_more) {
-      showMore(new int[] {R.id.btn_copyProfileLink, R.id.btn_shareProfileLink, R.id.more_btn_logout},
-        new String[] {Lang.getString(R.string.CopyProfileLink), Lang.getString(R.string.ShareProfileLink),
-          Lang.getString(R.string.LogOut)}, 0);
+      IntList ids = new IntList(4);
+      StringList names = new StringList(4);
+      ids.append(R.id.btn_copyProfileLink);
+      names.append(R.string.CopyProfileLink);
+      ids.append(R.id.btn_shareProfileLink);
+      names.append(R.string.ShareProfileLink);
+      if (tdlib.hasPremium()) {
+        ids.append(R.id.btn_userAccentColor);
+        names.append(R.string.UserAccentColor);
+      }
+      ids.append(R.id.more_btn_logout);
+      names.append(R.string.LogOut);
+      showMore(ids.get(), names.get(), 0);
     }
   }
 
@@ -239,6 +249,8 @@ public class SettingsController extends ViewController<Void> implements
   public void onMoreItemPressed (int id) {
     if (id == R.id.btn_copyProfileLink || id == R.id.btn_shareProfileLink) {
       getOwnProfileLink(id == R.id.btn_shareProfileLink);
+    } else if (id == R.id.btn_userAccentColor) {
+      tdlib.ui().showUserAccentColorOptions(this);
     } else if (id == R.id.menu_btn_more) {
       tdlib.ui().logOut(this, true);
     } else {

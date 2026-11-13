@@ -1283,6 +1283,38 @@ public class TdlibUi extends Handler {
     });
   }
 
+  public void setUserAccentColor (int colorId) {
+    TdApi.User user = tdlib.myUser();
+    if (user == null || !tdlib.hasPremium() || colorId < 0 ||
+      colorId >= TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+      return;
+    }
+    // Selecting a color must not erase a background emoji configured in another client.
+    tdlib.send(new TdApi.SetAccentColor(colorId, user.backgroundCustomEmojiId), tdlib.typedOkHandler());
+  }
+
+  public void showUserAccentColorOptions (ViewController<?> context) {
+    TdApi.User user = tdlib.myUser();
+    if (user == null || !tdlib.hasPremium()) {
+      return;
+    }
+    int count = TdlibAccentColor.BUILT_IN_COLOR_COUNT;
+    int[] ids = new int[count];
+    String[] names = new String[count];
+    int[] icons = new int[count];
+    for (int i = 0; i < count; i++) {
+      ids[i] = -(i + 1);
+      names[i] = TdlibAccentColor.getTextRepresentation(i);
+      icons[i] = user.accentColorId == i ? R.drawable.baseline_check_24 : 0;
+    }
+    context.showOptions(Lang.getString(R.string.UserAccentColor), ids, names, null, icons, (view, id) -> {
+      if (id < 0 && id >= -count) {
+        setUserAccentColor(-(id + 1));
+      }
+      return true;
+    });
+  }
+
   public int getIconForSetting (@Nullable TdApi.Chat chat) {
     final int muteFor = tdlib.chatMuteFor(chat);
     return muteFor >= MUTE_MAX ? R.drawable.baseline_notifications_off_24 : muteFor > 0 ? R.drawable.baseline_notifications_paused_24 : R.drawable.baseline_notifications_24;
