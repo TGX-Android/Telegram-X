@@ -98,6 +98,7 @@ import org.thunderdog.challegram.ui.ChatJoinRequestsController;
 import org.thunderdog.challegram.ui.ChatLinkMembersController;
 import org.thunderdog.challegram.ui.ChatLinksController;
 import org.thunderdog.challegram.ui.ChatsController;
+import org.thunderdog.challegram.ui.ContactsController;
 import org.thunderdog.challegram.ui.CreateChannelController;
 import org.thunderdog.challegram.ui.EditChatFolderController;
 import org.thunderdog.challegram.ui.EditChatLinkController;
@@ -5157,6 +5158,12 @@ public class TdlibUi extends Handler {
         ok = context.context().navigation().navigateTo(new CreateChannelController(context.context(), tdlib));
         break;
       }
+      case TdApi.InternalLinkTypeNewGroupChat.CONSTRUCTOR: {
+        ContactsController picker = new ContactsController(context.context(), tdlib);
+        picker.initWithMode(ContactsController.MODE_NEW_GROUP);
+        ok = context.context().navigation().navigateTo(picker);
+        break;
+      }
       case TdApi.InternalLinkTypeDirectMessagesChat.CONSTRUCTOR: {
         TdApi.InternalLinkTypeDirectMessagesChat directMessagesChat = (TdApi.InternalLinkTypeDirectMessagesChat) linkType;
         openDirectMessages(context, directMessagesChat.channelUsername, openParameters);
@@ -5196,7 +5203,6 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeCallsPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatSelection.CONSTRUCTOR:
       case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeNewGroupChat.CONSTRUCTOR:
       case TdApi.InternalLinkTypeNewPrivateChat.CONSTRUCTOR:
       case TdApi.InternalLinkTypeNewStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeOauth.CONSTRUCTOR:
