@@ -54,15 +54,22 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     public final long chatId;
     public @Nullable TdApi.Message message;
     public @Nullable List<TdApi.Message> album;
+    public final boolean pollVoteStatistics;
 
     public Args (long chatId, TdApi.Message message) {
+      this(chatId, message, false);
+    }
+
+    public Args (long chatId, TdApi.Message message, boolean pollVoteStatistics) {
       this.chatId = chatId;
       this.message = message;
+      this.pollVoteStatistics = pollVoteStatistics;
     }
 
     public Args (long chatId, @NonNull List<TdApi.Message> album) {
       this.chatId = chatId;
       this.album = album;
+      this.pollVoteStatistics = false;
     }
   }
 
@@ -75,13 +82,16 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(R.string.StatsMessageInfo);
+    return Lang.getString(getArgumentsStrict().pollVoteStatistics ?
+      R.string.PollVoteStatistics : R.string.StatsMessageInfo);
   }
 
   @Override
   public void onClick (View v) {
     ListItem item = (ListItem) v.getTag();
-    if (v.getId() == R.id.chat) {
+    if (v.getId() == R.id.btn_retry && getArgumentsStrict().pollVoteStatistics) {
+      loadPollVoteStatistics();
+    } else if (v.getId() == R.id.chat) {
       TGUser user = ((UserView) v).getUser();
       if (user != null) {
         tdlib.ui().openChat(this, user.getChatId(), new TdlibUi.ChatOpenParameters().highlightMessage(new MessageId(user.getChatId(), ((TdApi.Message) item.getData()).id)).keepStack());
@@ -180,7 +190,9 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     tdlib.ui().attachViewportToRecyclerView(messageViewport, recyclerView);
     recyclerView.setAdapter(adapter);
 
-    if (getArgumentsStrict().album != null) {
+    if (getArgumentsStrict().pollVoteStatistics) {
+      loadPollVoteStatistics();
+    } else if (getArgumentsStrict().album != null) {
       setAlbum(getArgumentsStrict().album);
     } else {
       long chatId = getArgumentsStrict().chatId;
@@ -215,6 +227,43 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
   private TdApi.MessageStatistics statistics;
   private int pendingRequests;
+  private boolean loadingPollStatistics, pollStatisticsLoaded;
+
+  private void loadPollVoteStatistics () {
+    if (loadingPollStatistics || pendingRequests > 0) {
+      return;
+    }
+    loadingPollStatistics = true;
+    adapter.setItems(Collections.singletonList(new ListItem(ListItem.TYPE_PROGRESS)), false);
+    Args args = getArgumentsStrict();
+    tdlib.send(new TdApi.GetPollVoteStatistics(args.chatId, args.message.id, Theme.isDark()),
+      (pollStatistics, error) -> runOnUiThreadOptional(() -> {
+        loadingPollStatistics = false;
+        pollStatisticsLoaded = true;
+        if (error != null) {
+          UI.showError(error);
+        }
+        setPollVoteStatistics(error == null ? pollStatistics.voteGraph : null);
+      }));
+  }
+
+  private void setPollVoteStatistics (@Nullable TdApi.StatisticalGraph graph) {
+    List<ListItem> items = new ArrayList<>();
+    items.add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_openChat)
+      .setData(getArgumentsStrict().message));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    Chart chart = graph != null ? new Chart(R.id.stats_pollVotes, tdlib,
+      getArgumentsStrict().chatId, R.string.PollVotes, ChartDataUtil.TYPE_LINEAR, graph, 0) : null;
+    List<Chart> charts = chart != null && (chart.isAsync() || chart.getBaseData() != null) ?
+      Collections.singletonList(chart) : Collections.emptyList();
+    setCharts(items, charts, () -> {
+      if (adapter.indexOfViewById(R.id.stats_pollVotes) < 0) {
+        adapter.addItems(adapter.getItemCount(),
+          new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.PollVoteStatisticsUnavailable),
+          new ListItem(ListItem.TYPE_SETTING, R.id.btn_retry, 0, R.string.FirebaseErrorResolveTryAgain));
+      }
+    });
+  }
 
   private void setAlbum (List<TdApi.Message> album) {
     List<ListItem> items = new ArrayList<>();
@@ -372,6 +421,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
   @Override
   public boolean needAsynchronousAnimation () {
-    return statistics == null || pendingRequests > 0;
+    return (getArgumentsStrict().pollVoteStatistics ? !pollStatisticsLoaded : statistics == null) ||
+      pendingRequests > 0;
   }
 }

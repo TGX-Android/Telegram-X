@@ -7242,6 +7242,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
           tdlib.files().cancelDownloadOrUploadFile(file.id, false, true);
         }
         return true;
+      } else if (id == R.id.btn_pollVoteStatistics) {
+        if (selectedMessage.getMessage().content instanceof TdApi.MessagePoll &&
+          selectedMessage.lastMessageProperties().canGetPollVoteStatistics) {
+          cancelSheduledKeyboardOpeningAndHideAllKeyboards();
+          MessageStatisticsController controller = new MessageStatisticsController(context(), tdlib);
+          controller.setArguments(new MessageStatisticsController.Args(
+            selectedMessage.getChatId(), selectedMessage.getMessage(), true
+          ));
+          navigateTo(controller);
+        }
+        return true;
       } else if (id == R.id.btn_viewStatistics) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         TdApi.Message[] messages = selectedMessage.getAllMessages();
