@@ -405,6 +405,8 @@
   <item type="id" name="btn_saveNotificationSound" />
   <item type="id" name="btn_useSavedSound" />
   <item type="id" name="btn_revokeBotEmojiStatus" />
+  <item type="id" name="btn_editStickerKeywords" />
+  <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
   <item type="id" name="btn_peer_id" />

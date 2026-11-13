@@ -4633,6 +4633,10 @@
   <string name="RevokeBotEmojiStatus">Revoke Emoji Status Permission</string>
   <string name="RevokeBotEmojiStatusConfirm">Prevent this bot from changing your emoji status?</string>
   <string name="BotEmojiStatusPermissionRevoked">Emoji status permission revoked</string>
+  <string name="StickerKeywords">Edit Search Keywords</string>
+  <string name="StickerKeywordsHint">cat, happy, hello</string>
+  <string name="StickerKeywordsDescription">Enter keywords separated by commas or new lines. Saving replaces all previous search keywords, which Telegram does not return to this editor. Leave empty to clear them.</string>
+  <string name="StickerKeywordsLimit">Use up to 20 keywords with a total of at most 64 characters.</string>
   <string name="RemoveSavedNotificationSoundConfirm">Remove this sound from your Telegram account? Other clients using it may fall back to their default sound. Copies already applied on this device will remain.</string>
   <string name="NoSavedNotificationSounds">No saved notification sounds. Save a short audio message as a notification sound first.</string>
   <string name="NotificationSoundDownloadFailed">Could not prepare this notification sound. Please try again.</string>

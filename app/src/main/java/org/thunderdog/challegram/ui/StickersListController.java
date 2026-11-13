@@ -926,6 +926,9 @@ public class StickersListController extends ViewController<StickersListControlle
       if (canEditStickerEmojis(sticker)) {
         menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
           Lang.uppercase(Lang.getString(R.string.StickerEmojis)), R.id.btn_editStickerEmojis, ColorId.textNeutral));
+        menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+          Lang.uppercase(Lang.getString(R.string.StickerKeywords)),
+          R.id.btn_editStickerKeywords, ColorId.textNeutral));
       }
       menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
         Lang.uppercase(Lang.getString(R.string.RemoveSticker)), R.id.btn_remove, ColorId.textNeutral));
@@ -986,6 +989,13 @@ public class StickersListController extends ViewController<StickersListControlle
             reloadStickerSet();
           }
         }));
+      }
+    } else if (viewId == R.id.btn_editStickerKeywords) {
+      if (canEditStickerEmojis(sticker)) {
+        stickerSmallView.closePreviewIfNeeded();
+        navigateTo(new EditStickerKeywordsController(
+          context(), tdlib, sticker.getId(), this::reloadStickerSet
+        ));
       }
     } else if (viewId == R.id.btn_editStickerEmojis) {
       stickerSmallView.closePreviewIfNeeded();
