@@ -1880,6 +1880,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         client().send(new TdApi.ReadAllChatMentions(chat.id), okHandler());
         read = true;
       }
+      if (chat.unreadReactionCount > 0) {
+        send(new TdApi.ReadAllChatReactions(chat.id), typedOkHandler());
+        read = true;
+      }
+      if (chat.unreadPollVoteCount > 0) {
+        send(new TdApi.ReadAllChatPollVotes(chat.id), typedOkHandler());
+        read = true;
+      }
       if (read) {
         readChatsCount.incrementAndGet();
       }
