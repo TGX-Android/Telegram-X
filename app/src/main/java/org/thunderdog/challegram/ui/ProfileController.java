@@ -6424,6 +6424,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onPageSelected (int position) {
+    rememberProfileTabPosition(position);
     if (headerView != null) {
       headerView.updateCustomButtons(this, getMenuId());
     }
@@ -6849,6 +6850,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean mainProfileTabViewReady, mainProfileTabTouched, mainProfileTabApplied;
+  private int lastProfileTabPosition;
+
+  private void rememberProfileTabPosition (int position) {
+    // Keyboard/accessibility paging and restored selection may not dispatch DRAGGING.
+    if (position != lastProfileTabPosition && !mainProfileTabApplied) {
+      mainProfileTabTouched = true;
+    }
+    lastProfileTabPosition = position;
+  }
 
   private void applyMainProfileTabIfReady () {
     if (!mainProfileTabViewReady || mainProfileTabTouched || mainProfileTabApplied || isDestroyed() || isEditing()) {
