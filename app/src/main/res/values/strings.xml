@@ -4626,6 +4626,10 @@
   <string name="OpenStickerSet">Show Sticker Set</string>
   <string name="AttachedStickerSets">Attached Sticker Packs</string>
   <string name="NoAttachedStickerSets">No attached sticker packs found</string>
+  <string name="SavedNotificationSounds">Saved Notification Sounds</string>
+  <string name="NoSavedNotificationSounds">No saved notification sounds. Save a short audio message as a notification sound first.</string>
+  <string name="NotificationSoundDownloadFailed">Could not prepare this notification sound. Please try again.</string>
+  <string name="SavedNotificationSoundApplied">Notification sound applied on this device</string>
 
   <string name="PinTooMuchWarn_one">Sorry, you can only pin %1$s chat in your main list. If you\'re looking for more organization, try archiving some chats — the Archived Chats folder allows unlimited pins.</string>
   <string name="PinTooMuchWarn_other">Sorry, you can only pin %1$s chats in your main list. If you\'re looking for more organization, try archiving some chats — the Archived Chats folder allows unlimited pins.</string>

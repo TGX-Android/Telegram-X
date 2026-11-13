@@ -50,6 +50,8 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.FileProvider;
+import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -148,7 +150,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   @Override
   protected int getMenuId () {
-    return isCommonScreen() ? R.id.menu_more : 0;
+    return specificSection == Section.DEFAULT ? R.id.menu_more : 0;
   }
 
   @Override
@@ -156,8 +158,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     IntList ids = new IntList(1);
     StringList strings = new StringList(1);
 
-    ids.append(R.id.btn_resetNotifications);
-    strings.append(R.string.ResetNotifications);
+    ids.append(R.id.btn_savedNotificationSounds);
+    strings.append(R.string.SavedNotificationSounds);
+    if (isCommonScreen()) {
+      ids.append(R.id.btn_resetNotifications);
+      strings.append(R.string.ResetNotifications);
+    }
 
     showMore(ids.get(), strings.get(), 0);
   }
@@ -166,7 +172,126 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   public void onMoreItemPressed (int id) {
     if (id == R.id.btn_resetNotifications) {
       showResetNotificationsConfirm();
+    } else if (id == R.id.btn_savedNotificationSounds) {
+      showSavedNotificationSounds();
     }
+  }
+
+  private void showSavedNotificationSounds () {
+    tdlib.send(new TdApi.GetSavedNotificationSounds(), (sounds, error) ->
+      runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showError(error);
+          return;
+        }
+        TdApi.NotificationSound[] savedSounds = sounds.notificationSounds;
+        if (savedSounds.length == 0) {
+          UI.showToast(R.string.NoSavedNotificationSounds, Toast.LENGTH_SHORT);
+          return;
+        }
+        int[] ids = new int[savedSounds.length];
+        String[] titles = new String[savedSounds.length];
+        for (int i = 0; i < savedSounds.length; i++) {
+          ids[i] = View.generateViewId();
+          titles[i] = savedSounds[i].title;
+        }
+        showOptions(Lang.getString(R.string.SavedNotificationSounds), ids, titles, null, null,
+          (view, id) -> {
+            for (int i = 0; i < ids.length; i++) {
+              if (id == ids[i]) {
+                chooseSavedSoundScope(savedSounds[i]);
+                break;
+              }
+            }
+            return true;
+          }
+        );
+      })
+    );
+  }
+
+  private void chooseSavedSoundScope (TdApi.NotificationSound sound) {
+    if (customChatId != 0 || scope != null) {
+      applySavedNotificationSound(sound, scope);
+      return;
+    }
+    TdApi.NotificationSettingsScope[] scopes = {
+      new TdApi.NotificationSettingsScopePrivateChats(),
+      new TdApi.NotificationSettingsScopeGroupChats(),
+      new TdApi.NotificationSettingsScopeChannelChats()
+    };
+    int[] ids = {View.generateViewId(), View.generateViewId(), View.generateViewId()};
+    showOptions(sound.title, ids, new String[] {
+      Lang.getString(R.string.PrivateChats),
+      Lang.getString(R.string.Groups),
+      Lang.getString(R.string.Channels)
+    }, null, null, (view, id) -> {
+      for (int i = 0; i < ids.length; i++) {
+        if (ids[i] == id) {
+          applySavedNotificationSound(sound, scopes[i]);
+          break;
+        }
+      }
+      return true;
+    });
+  }
+
+  private boolean applyingSavedSound;
+
+  private void applySavedNotificationSound (
+    TdApi.NotificationSound sound,
+    TdApi.NotificationSettingsScope targetScope
+  ) {
+    if (applyingSavedSound) {
+      return;
+    }
+    applyingSavedSound = true;
+    tdlib.send(new TdApi.DownloadFile(sound.sound.id, 32, 0, 0, true), (file, error) -> {
+      if (error != null || !TD.isFileLoaded(file)) {
+        runOnUiThreadOptional(() -> {
+          applyingSavedSound = false;
+          if (error != null) {
+            UI.showError(error);
+          } else {
+            UI.showToast(R.string.NotificationSoundDownloadFailed, Toast.LENGTH_SHORT);
+          }
+        });
+        return;
+      }
+      Background.instance().post(() -> {
+        Uri soundUri = null;
+        try {
+          Uri source = FileProvider.getUriForFile(context(), Config.FILE_PROVIDER_AUTHORITY,
+            new java.io.File(file.local.path));
+          // Android channels need a durable, system-readable copy, not TDLib's cache file.
+          soundUri = TdlibNotificationManager.fixSoundUri(source, true,
+            tdlib.id() + "_saved_" + sound.id + ".mp3");
+        } catch (Throwable t) {
+          Log.e("Unable to prepare a saved notification sound", t);
+        }
+        final Uri result = soundUri;
+        runOnUiThreadOptional(() -> {
+          applyingSavedSound = false;
+          if (result == null) {
+            UI.showToast(R.string.NotificationSoundDownloadFailed, Toast.LENGTH_SHORT);
+          } else {
+            if (customChatId != 0) {
+              tdlib.notifications().setCustomSound(
+                customChatId, result.toString(), sound.title, null
+              );
+              adapter.updateValuedSettingById(R.id.btn_customChat_sound);
+            } else {
+              tdlib.notifications().setDefaultSound(
+                targetScope, result.toString(), sound.title, null
+              );
+              adapter.updateValuedSettingById(R.id.btn_notifications_sound);
+            }
+            onNotificationSettingsChanged();
+            UI.showToast(R.string.SavedNotificationSoundApplied, Toast.LENGTH_SHORT);
+          }
+        });
+      });
+    });
   }
 
   @Override
