@@ -2430,6 +2430,9 @@
   <string name="ResetStickerSetThumbnail">Reset Pack Cover</string>
   <string name="ResetStickerSetThumbnailConfirm">Remove the custom cover from this pack? Telegram will choose an automatic cover. The pack and its stickers will not be deleted.</string>
   <string name="StickerSetThumbnailChanged">The pack’s ownership or cover changed. Reopen it before changing the cover.</string>
+  <string name="UseEmojiAsPackCover">Use as Pack Cover</string>
+  <string name="UseEmojiAsPackCoverConfirm">Use this emoji as the pack’s cover? This changes the cover for everyone using the pack. No message will be sent.</string>
+  <string name="EmojiPackCoverUnavailable">The pack is no longer yours or this emoji is no longer in it. Reopen the pack and try again.</string>
   <string name="MainProfileTabInfo">Choose which tab opens first on this channel’s profile. Telegram X uses its existing media tabs; hidden or unsupported tabs fall back to the current layout. Default restores Telegram’s Posts preference, without adding a Posts renderer to Telegram X.</string>
   <string name="NoAvailableAccentColors">Telegram’s color palette is not available yet. Try again after connecting.</string>
   <string name="AccentPaletteCompatibility">Choose a color from Telegram’s available palette. Multi-color designs are simplified in Telegram X; their full appearance is visible in compatible clients. Your background emoji is kept.</string>

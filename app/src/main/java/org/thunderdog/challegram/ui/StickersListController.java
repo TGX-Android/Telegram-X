@@ -925,6 +925,10 @@ public class StickersListController extends ViewController<StickersListControlle
 
     StickerSection ownedSection = ownedSectionOf(sticker);
     if (ownedSection != null) {
+      if (canSetEmojiPackThumbnail(sticker)) {
+        menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+          Lang.uppercase(Lang.getString(R.string.UseEmojiAsPackCover)), R.id.btn_setEmojiPackThumbnail, ColorId.textNeutral));
+      }
       int index = ownedSection.stickers.indexOf(sticker);
       if (index > 0) {
         menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
@@ -962,6 +966,54 @@ public class StickersListController extends ViewController<StickersListControlle
       }
     }
     return null;
+  }
+
+  private boolean canSetEmojiPackThumbnail (TGStickerObj sticker) {
+    return loadedStickerSet != null && loadedStickerSet.isOwned &&
+      loadedStickerSet.stickerType instanceof TdApi.StickerTypeCustomEmoji &&
+      sticker.isCustomEmoji() && sticker.getCustomEmojiId() != 0 &&
+      sticker.getStickerSetId() == loadedStickerSet.id && ownedSectionOf(sticker) != null;
+  }
+
+  private void setEmojiPackThumbnail (long setId, long customEmojiId) {
+    TdApi.StickerSet expected = loadedStickerSet;
+    if (changingPackThumbnail || customEmojiId == 0 || expected == null || expected.id != setId ||
+      !expected.isOwned || !(expected.stickerType instanceof TdApi.StickerTypeCustomEmoji)) {
+      return;
+    }
+    changingPackThumbnail = true;
+    tdlib.send(new TdApi.GetStickerSet(setId), (current, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        changingPackThumbnail = false;
+        UI.showError(error);
+        return;
+      }
+      boolean belongsToSet = false;
+      if (loadedStickerSet == expected && current.id == setId && current.isOwned && current.name.equals(expected.name) &&
+        current.stickerType instanceof TdApi.StickerTypeCustomEmoji) {
+        for (TdApi.Sticker sticker : current.stickers) {
+          if (sticker.fullType instanceof TdApi.StickerFullTypeCustomEmoji &&
+            ((TdApi.StickerFullTypeCustomEmoji) sticker.fullType).customEmojiId == customEmojiId) {
+            belongsToSet = true;
+            break;
+          }
+        }
+      }
+      if (!belongsToSet) {
+        changingPackThumbnail = false;
+        UI.showToast(R.string.EmojiPackCoverUnavailable, Toast.LENGTH_SHORT);
+        return;
+      }
+      tdlib.send(new TdApi.SetCustomEmojiStickerSetThumbnail(current.name, customEmojiId),
+        (ok, setError) -> runOnUiThreadOptional(() -> {
+          changingPackThumbnail = false;
+          if (setError != null) {
+            UI.showError(setError);
+          } else {
+            reloadStickerSet();
+          }
+        }));
+    }));
   }
 
   private boolean changingPackThumbnail;
@@ -1035,6 +1087,14 @@ public class StickersListController extends ViewController<StickersListControlle
             reloadStickerSet();
           }
         }));
+      }
+    } else if (viewId == R.id.btn_setEmojiPackThumbnail) {
+      if (canSetEmojiPackThumbnail(sticker)) {
+        final long setId = sticker.getStickerSetId();
+        final long emojiId = sticker.getCustomEmojiId();
+        stickerSmallView.closePreviewIfNeeded();
+        showConfirm(Lang.getString(R.string.UseEmojiAsPackCoverConfirm), Lang.getString(R.string.Save),
+          R.drawable.baseline_image_24, OptionColor.NORMAL, () -> setEmojiPackThumbnail(setId, emojiId));
       }
     } else if (viewId == R.id.btn_editStickerKeywords) {
       if (canEditStickerEmojis(sticker)) {
