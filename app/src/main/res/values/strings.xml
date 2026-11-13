@@ -4629,6 +4629,8 @@
   <string name="SavedNotificationSounds">Saved Notification Sounds</string>
   <string name="SaveNotificationSound">Save as Notification Sound</string>
   <string name="NotificationSoundSaved">Notification sound saved to Telegram</string>
+  <string name="UseNotificationSound">Use Sound on This Device</string>
+  <string name="RemoveSavedNotificationSoundConfirm">Remove this sound from your Telegram account? Other clients using it may fall back to their default sound. Copies already applied on this device will remain.</string>
   <string name="NoSavedNotificationSounds">No saved notification sounds. Save a short audio message as a notification sound first.</string>
   <string name="NotificationSoundDownloadFailed">Could not prepare this notification sound. Please try again.</string>
   <string name="SavedNotificationSoundApplied">Notification sound applied on this device</string>

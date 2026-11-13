@@ -199,7 +199,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           (view, id) -> {
             for (int i = 0; i < ids.length; i++) {
               if (id == ids[i]) {
-                chooseSavedSoundScope(savedSounds[i]);
+                showSavedSoundActions(savedSounds[i]);
                 break;
               }
             }
@@ -234,6 +234,58 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       }
       return true;
     });
+  }
+
+  private void showSavedSoundActions (TdApi.NotificationSound sound) {
+    showOptions(sound.title,
+      new int[] {R.id.btn_useSavedSound, R.id.btn_delete, R.id.btn_cancel},
+      new String[] {
+        Lang.getString(R.string.UseNotificationSound),
+        Lang.getString(R.string.Delete),
+        Lang.getString(R.string.Cancel)
+      },
+      new int[] {OptionColor.NORMAL, OptionColor.RED, OptionColor.NORMAL},
+      new int[] {
+        R.drawable.baseline_notifications_24,
+        R.drawable.baseline_delete_24,
+        R.drawable.baseline_cancel_24
+      },
+      (view, id) -> {
+        if (id == R.id.btn_useSavedSound) {
+          chooseSavedSoundScope(sound);
+        } else if (id == R.id.btn_delete) {
+          confirmRemoveSavedSound(sound);
+        }
+        return true;
+      }
+    );
+  }
+
+  private boolean removingSavedSound;
+
+  private void confirmRemoveSavedSound (TdApi.NotificationSound sound) {
+    showOptions(Lang.getString(R.string.RemoveSavedNotificationSoundConfirm),
+      new int[] {R.id.btn_delete, R.id.btn_cancel},
+      new String[] {Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)},
+      new int[] {OptionColor.RED, OptionColor.NORMAL},
+      new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24},
+      (view, id) -> {
+        if (id == R.id.btn_delete && !removingSavedSound) {
+          removingSavedSound = true;
+          tdlib.send(new TdApi.RemoveSavedNotificationSound(sound.id), (ok, error) ->
+            runOnUiThreadOptional(() -> {
+              removingSavedSound = false;
+              if (error != null) {
+                UI.showError(error);
+              } else {
+                showSavedNotificationSounds();
+              }
+            })
+          );
+        }
+        return true;
+      }
+    );
   }
 
   private boolean applyingSavedSound;
