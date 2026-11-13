@@ -133,6 +133,7 @@ import org.thunderdog.challegram.ui.RequestController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.Settings2FAController;
 import org.thunderdog.challegram.ui.SettingsBlockedController;
+import org.thunderdog.challegram.ui.SettingsCacheController;
 import org.thunderdog.challegram.ui.SettingsController;
 import org.thunderdog.challegram.ui.SettingsDataController;
 import org.thunderdog.challegram.ui.SettingsFoldersController;
@@ -5220,7 +5221,12 @@ public class TdlibUi extends Handler {
               break;
             }
             case TdApi.SettingsSectionDataAndStorage.CONSTRUCTOR: {
-              result = new SettingsDataController(context.context(), context.tdlib());
+              String subsection = ((TdApi.SettingsSectionDataAndStorage) section).subsection;
+              switch (subsection != null ? subsection : "") {
+                case "storage", "storage/edit", "storage/auto-remove", "storage/clear-cache", "storage/max-cache" ->
+                  result = new SettingsCacheController(context.context(), tdlib);
+                default -> result = new SettingsDataController(context.context(), tdlib);
+              }
               break;
             }
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
