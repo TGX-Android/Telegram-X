@@ -129,6 +129,7 @@ import org.thunderdog.challegram.ui.PasscodeSetupController;
 import org.thunderdog.challegram.ui.PasswordController;
 import org.thunderdog.challegram.ui.PeopleController;
 import org.thunderdog.challegram.ui.PhoneController;
+import org.thunderdog.challegram.ui.ProfileChannelController;
 import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
 import org.thunderdog.challegram.ui.SettingHolder;
@@ -5212,6 +5213,10 @@ public class TdlibUi extends Handler {
                   }
                   break;
                 }
+                case "channel": {
+                  result = new ProfileChannelController(context.context(), tdlib);
+                  break;
+                }
                 case "change-number": {
                   result = new SettingsPhoneController(context.context(), context.tdlib());
                   break;
@@ -5220,7 +5225,6 @@ public class TdlibUi extends Handler {
                 case "set-photo":
                 case "emoji-status":
                 case "your-color":
-                case "channel":
                 case "add-account":
                 case "log-out":
                 case "profile-color/profile":
