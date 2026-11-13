@@ -5110,6 +5110,17 @@ public class TdlibUi extends Handler {
                   break;
                 }
 
+                case "messages": {
+                  SettingsPrivacyController privacy = new SettingsPrivacyController(context.context(), tdlib);
+                  privacy.addOneShotFocusListener(privacy::showNewChatPrivacyChoices);
+                  result = privacy;
+                  break;
+                }
+                case "messages/set-price":
+                case "messages/exceptions":
+                  unsupported.run();
+                  break;
+
                 case "auto-delete": {
                   SettingsPrivacyController privacy = new SettingsPrivacyController(context.context(), tdlib);
                   privacy.addOneShotFocusListener(privacy::openDefaultMessageAutoDelete);
@@ -5135,10 +5146,6 @@ public class TdlibUi extends Handler {
 
                 case "passkey":
                 case "passkey/create":
-
-                case "messages":
-                case "messages/set-price":
-                case "messages/exceptions":
 
                 case "self-destruct":
 

@@ -924,13 +924,20 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
 
   private boolean changingNewChatPrivacy;
 
-  private void showNewChatPrivacyChoices () {
-    if (changingNewChatPrivacy || !tdlib.canSetNewChatPrivacySettings()) {
+  public void showNewChatPrivacyChoices () {
+    if (changingNewChatPrivacy) {
+      return;
+    }
+    if (!tdlib.canSetNewChatPrivacySettings()) {
+      UI.showToast(R.string.NewChatsPrivacyUnavailable, Toast.LENGTH_SHORT);
       return;
     }
     changingNewChatPrivacy = true;
     tdlib.send(new TdApi.GetNewChatPrivacySettings(), (settings, error) -> runOnUiThreadOptional(() -> {
       changingNewChatPrivacy = false;
+      if (!isFocused()) {
+        return;
+      }
       if (error != null) {
         UI.showError(error);
       } else if (settings.incomingPaidMessageStarCount != 0) {
