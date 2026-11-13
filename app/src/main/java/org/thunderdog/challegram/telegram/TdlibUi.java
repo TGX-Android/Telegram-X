@@ -1201,10 +1201,14 @@ public class TdlibUi extends Handler {
   }
 
   public void setChatAccentColor (long chatId, int accentColorId) {
-    tdlib.client().send(new TdApi.SetChatAccentColor(chatId, accentColorId, 0), result -> {
-      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-        UI.showError(result);
-        Log.e("setChatAccentColor chatId:%d accentColorId:%d error:%s", chatId, accentColorId, TD.toErrorString(result));
+    TdApi.Chat chat = tdlib.chat(chatId);
+    if (chat == null) {
+      return;
+    }
+    tdlib.send(new TdApi.SetChatAccentColor(chatId, accentColorId, chat.backgroundCustomEmojiId), (ok, error) -> {
+      if (error != null) {
+        UI.showError(error);
+        Log.e("setChatAccentColor chatId:%d accentColorId:%d error:%s", chatId, accentColorId, TD.toErrorString(error));
       }
     });
   }
@@ -1243,10 +1247,14 @@ public class TdlibUi extends Handler {
   }
 
   public void setChatProfileAccentColor (long chatId, int profileAccentColorId) {
-    tdlib.client().send(new TdApi.SetChatProfileAccentColor(chatId, profileAccentColorId, 0), result -> {
-      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-        UI.showError(result);
-        Log.e("setChatProfileAccentColor chatId:%d profileAccentColorId:%d error:%s", chatId, profileAccentColorId, TD.toErrorString(result));
+    TdApi.Chat chat = tdlib.chat(chatId);
+    if (chat == null) {
+      return;
+    }
+    tdlib.send(new TdApi.SetChatProfileAccentColor(chatId, profileAccentColorId, chat.profileBackgroundCustomEmojiId), (ok, error) -> {
+      if (error != null) {
+        UI.showError(error);
+        Log.e("setChatProfileAccentColor chatId:%d profileAccentColorId:%d error:%s", chatId, profileAccentColorId, TD.toErrorString(error));
       }
     });
   }
