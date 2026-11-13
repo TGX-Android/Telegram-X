@@ -1686,7 +1686,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
@@ -1694,25 +1693,28 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR:
 
-      case TdApi.InternalLinkTypeCallsPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatSelection.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyProfilePage.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeNewChannelChat.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeNewGroupChat.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeNewPrivateChat.CONSTRUCTOR:
       case TdApi.InternalLinkTypeNewStory.CONSTRUCTOR:
       case TdApi.InternalLinkTypeOauth.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGiftPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRequestManagedBot.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeSavedMessages.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeSearch.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeTextCompositionStyle.CONSTRUCTOR:
       case TdApi.InternalLinkTypeTonConnect.CONSTRUCTOR:
       case TdApi.InternalLinkTypeTonWalletTransfer.CONSTRUCTOR:
         return false;
+
+      case TdApi.InternalLinkTypeCallsPage.CONSTRUCTOR: {
+        String section = ((TdApi.InternalLinkTypeCallsPage) internalLinkType).section;
+        return StringUtils.isEmpty(section) || "all".equals(section) || "missed".equals(section) || "start-call".equals(section);
+      }
+      case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR: {
+        String section = ((TdApi.InternalLinkTypeContactsPage) internalLinkType).section;
+        return StringUtils.isEmpty(section) || "search".equals(section) || "new".equals(section);
+      }
+      case TdApi.InternalLinkTypeMyProfilePage.CONSTRUCTOR:
+        return StringUtils.isEmpty(((TdApi.InternalLinkTypeMyProfilePage) internalLinkType).section);
 
       case TdApi.InternalLinkTypeSettings.CONSTRUCTOR: {
         TdApi.InternalLinkTypeSettings settings = (TdApi.InternalLinkTypeSettings) internalLinkType;
