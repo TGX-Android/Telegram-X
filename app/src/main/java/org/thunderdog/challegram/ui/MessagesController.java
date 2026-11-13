@@ -6820,7 +6820,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         TdApi.Message message = selectedMessage.getMessage();
         TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
         boolean isQuiz = poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
-        showOptions(Lang.getStringBold(isQuiz ? R.string.StopQuizWarn : R.string.StopPollWarn, poll.question), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(isQuiz ? R.string.StopQuiz : R.string.StopPoll), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_poll_24, R.drawable.baseline_cancel_24}, (optionItemView, optionId) -> {
+        showOptions(Lang.getStringBold(isQuiz ? R.string.StopQuizWarn : R.string.StopPollWarn, poll.question.text), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(isQuiz ? R.string.StopQuiz : R.string.StopPoll), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_poll_24, R.drawable.baseline_cancel_24}, (optionItemView, optionId) -> {
           if (optionId == R.id.btn_done) {
             tdlib.send(new TdApi.StopPoll(message.chatId, message.id, message.replyMarkup), tdlib.typedOkHandler());
           }
@@ -6847,7 +6847,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (optionId < 0) {
             int index = -(optionId + 1);
             if (index >= 0 && index < poll.options.length) {
-              showOptions(Lang.getStringBold(R.string.RemovePollOptionConfirm, poll.options[index].text), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Remove), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (optionItemView2, confirmId) -> {
+              showOptions(Lang.getStringBold(R.string.RemovePollOptionConfirm, poll.options[index].text.text), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Remove), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (optionItemView2, confirmId) -> {
                 if (confirmId == R.id.btn_done) {
                   tdlib.send(new TdApi.DeletePollOption(message.chatId, message.id, poll.options[index].id), tdlib.typedOkHandler());
                 }
