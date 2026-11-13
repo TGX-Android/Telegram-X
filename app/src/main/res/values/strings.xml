@@ -2427,6 +2427,7 @@
   <string name="AccentPaletteColor">Color %1$d — %2$s</string>
   <string name="NoAvailableAccentColors">Telegram’s color palette is not available yet. Try again after connecting.</string>
   <string name="AccentPaletteCompatibility">Choose a color from Telegram’s available palette. Multi-color designs are simplified in Telegram X; their full appearance is visible in compatible clients. Your background emoji is kept.</string>
+  <string name="AccentColorBoostRequired">This color requires chat boost level %1$d.</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>

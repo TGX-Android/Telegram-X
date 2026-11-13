@@ -1196,9 +1196,13 @@ public class TdlibUi extends Handler {
 
   public String chatAccentColorTitle (long chatId) {
     int accentColorId = tdlib.chatAccentColorId(chatId);
-    return accentColorId >= 0 && accentColorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT
-      ? TdlibAccentColor.getTextRepresentation(accentColorId)
-      : Lang.getString(R.string.Default);
+    for (TdApi.AccentColor color : tdlib.availableAccentColors()) {
+      if (color.id == accentColorId) {
+        return accentPaletteLabel(color.id, Theme.isDark() ? color.darkThemeColors : color.lightThemeColors);
+      }
+    }
+    return accentColorId >= 0 && accentColorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT ?
+      TdlibAccentColor.getTextRepresentation(accentColorId) : Lang.getString(R.string.Default);
   }
 
   public void setChatAccentColor (long chatId, int accentColorId) {
@@ -1215,7 +1219,16 @@ public class TdlibUi extends Handler {
   }
 
   public void showChatAccentColorOptions (ViewController<?> context, long chatId) {
-    final int capacity = TdlibAccentColor.BUILT_IN_COLOR_COUNT;
+    TdApi.Chat chat = tdlib.chat(chatId);
+    if (chat == null || !tdlib.isChannelChat(chat) || !tdlib.canChangeInfo(chat, false)) {
+      return;
+    }
+    final TdApi.AccentColor[] colors = tdlib.availableAccentColors();
+    final int capacity = colors.length;
+    if (capacity == 0) {
+      UI.showToast(R.string.NoAvailableAccentColors, Toast.LENGTH_SHORT);
+      return;
+    }
     final int currentAccentColorId = tdlib.chatAccentColorId(chatId);
     final IntList ids = new IntList(capacity);
     final StringList names = new StringList(capacity);
@@ -1224,19 +1237,51 @@ public class TdlibUi extends Handler {
     for (int i = 0; i < capacity; i++) {
       // Negative ids cannot collide with real resource ids in this dedicated popup
       ids.append(-(i + 1));
-      names.append(TdlibAccentColor.getTextRepresentation(i));
-      icons.append(i == currentAccentColorId ? R.drawable.baseline_check_24 : 0);
+      names.append(accentPaletteLabel(colors[i].id, Theme.isDark() ? colors[i].darkThemeColors : colors[i].lightThemeColors));
+      icons.append(colors[i].id == currentAccentColorId ? R.drawable.baseline_check_24 : 0);
     }
 
-    context.showOptions(null, ids.get(), names.get(), null, icons.get(), (itemView, id) -> {
+    context.showOptions(Lang.getString(R.string.AccentPaletteCompatibility), ids.get(), names.get(), null, icons.get(), (itemView, id) -> {
       if (id < 0) {
         int index = -(id + 1);
         if (index >= 0 && index < capacity) {
-          setChatAccentColor(chatId, index);
+          applyAvailableChatAccentColor(context, chatId, colors[index].id);
         }
       }
       return true;
     });
+  }
+
+  private boolean loadingChatAccentColor;
+
+  private void applyAvailableChatAccentColor (ViewController<?> context, long chatId, int colorId) {
+    TdApi.Chat chat = tdlib.chat(chatId);
+    if (loadingChatAccentColor || chat == null || !tdlib.isChannelChat(chat) || !tdlib.canChangeInfo(chat, false)) {
+      return;
+    }
+    loadingChatAccentColor = true;
+    tdlib.send(new TdApi.GetChatBoostStatus(chatId), (status, error) -> post(() -> {
+      loadingChatAccentColor = false;
+      TdApi.Chat current = tdlib.chat(chatId);
+      if (context.isDestroyed() || current == null || !tdlib.canChangeInfo(current, false)) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      for (TdApi.AccentColor color : tdlib.availableAccentColors()) {
+        if (color.id == colorId) {
+          if (status.level < color.minChannelChatBoostLevel) {
+            UI.showToast(Lang.getString(R.string.AccentColorBoostRequired, color.minChannelChatBoostLevel), Toast.LENGTH_SHORT);
+          } else {
+            setChatAccentColor(chatId, colorId);
+          }
+          return;
+        }
+      }
+      UI.showToast(R.string.NoAvailableAccentColors, Toast.LENGTH_SHORT);
+    }));
   }
 
   public String chatProfileAccentColorTitle (long chatId) {
