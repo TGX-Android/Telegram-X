@@ -328,7 +328,8 @@ public class StickersController extends RecyclerViewController<StickersControlle
     if ((mode == MODE_STICKERS || mode == MODE_MASKS) && !isMore) {
       function = new TdApi.GetInstalledStickerSets(getStickerType());
     } else if (mode == MODE_OWNED && !isMore) {
-      function = new TdApi.GetOwnedStickerSets(0, 100);
+      loadOwnedStickerSets(0, new ArrayList<>());
+      return;
     } else if (mode == MODE_STICKERS_ARCHIVED) {
       long offsetStickerSetId;
       int limit;
@@ -347,6 +348,36 @@ public class StickersController extends RecyclerViewController<StickersControlle
     if (function != null) {
       tdlib.client().send(function, this::onStickerSetsResult);
     }
+  }
+
+  private void loadOwnedStickerSets (
+    long offsetStickerSetId,
+    ArrayList<TdApi.StickerSetInfo> stickerSets
+  ) {
+    tdlib.send(new TdApi.GetOwnedStickerSets(offsetStickerSetId, 100), (page, error) ->
+      runOnUiThreadOptional(() -> {
+        if (error != null) {
+          onStickerSetsResult(error);
+          return;
+        }
+        if (page.sets.length > 0) {
+          long nextOffset = page.sets[page.sets.length - 1].id;
+          if (nextOffset != offsetStickerSetId) {
+            // Pages contain every sticker type and can be shorter than the requested limit.
+            // Advance using the unfiltered page, even when this tab has no matching sets yet.
+            for (TdApi.StickerSetInfo info : page.sets) {
+              stickerSets.add(info);
+            }
+            loadOwnedStickerSets(nextOffset, stickerSets);
+            return;
+          }
+        }
+        onStickerSetsResult(new TdApi.StickerSets(
+          stickerSets.size(),
+          stickerSets.toArray(new TdApi.StickerSetInfo[0])
+        ));
+      })
+    );
   }
 
   @Override
