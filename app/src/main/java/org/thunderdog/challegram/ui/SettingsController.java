@@ -200,6 +200,12 @@ public class SettingsController extends ViewController<Void> implements
       names.append(R.string.CopyProfileLink);
       ids.append(R.id.btn_shareProfileLink);
       names.append(R.string.ShareProfileLink);
+      ids.append(R.id.btn_chooseProfileChannel);
+      names.append(R.string.ChooseProfileChannel);
+      if (userFull != null && userFull.personalChatId != 0) {
+        ids.append(R.id.btn_openProfileChannel);
+        names.append(R.string.OpenProfileChannel);
+      }
       ids.append(R.id.btn_recommendedChannels);
       names.append(R.string.RecommendedChannels);
       ids.append(R.id.btn_recentlyOpenedChats);
@@ -257,6 +263,12 @@ public class SettingsController extends ViewController<Void> implements
   public void onMoreItemPressed (int id) {
     if (id == R.id.btn_copyProfileLink || id == R.id.btn_shareProfileLink) {
       getOwnProfileLink(id == R.id.btn_shareProfileLink);
+    } else if (id == R.id.btn_chooseProfileChannel) {
+      navigateTo(new ProfileChannelController(context, tdlib));
+    } else if (id == R.id.btn_openProfileChannel) {
+      if (userFull != null && userFull.personalChatId != 0) {
+        tdlib.ui().openChat(this, userFull.personalChatId, new TdlibUi.ChatOpenParameters().keepStack());
+      }
     } else if (id == R.id.btn_recommendedChannels) {
       navigateTo(new ChatDiscoveryController(context, tdlib));
     } else if (id == R.id.btn_recentlyOpenedChats) {

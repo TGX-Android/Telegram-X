@@ -441,6 +441,8 @@
   <item type="id" name="btn_channelAdsEnabled" />
   <item type="id" name="btn_channelAdsDisabled" />
   <item type="id" name="btn_openProfileChannel" />
+  <item type="id" name="btn_chooseProfileChannel" />
+  <item type="id" name="controller_profileChannel" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
