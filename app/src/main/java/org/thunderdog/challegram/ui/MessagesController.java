@@ -2358,6 +2358,69 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  private boolean changingBusinessBotPause;
+
+  private TdApi.BusinessBotManageBar businessBotBar (long chatId) {
+    if (chat == null || chat.id != chatId || !(chat.type instanceof TdApi.ChatTypePrivate) ||
+        isSecretChat() || inPreviewMode() || areScheduledOnly()) {
+      return null;
+    }
+    TdApi.Chat current = tdlib.chat(chatId);
+    return current != null ? current.businessBotManageBar : null;
+  }
+
+  private void confirmBusinessBotPause () {
+    long chatId = getChatId();
+    TdApi.BusinessBotManageBar bar = businessBotBar(chatId);
+    if (changingBusinessBotPause || bar == null) {
+      return;
+    }
+    final long botId = bar.botUserId;
+    final boolean paused = bar.isBotPaused;
+    showConfirm(Lang.getString(paused ? R.string.TgxBusinessResumeChatConfirm : R.string.TgxBusinessPauseChatConfirm,
+      tdlib.cache().userName(botId), tdlib.chatTitle(chatId)),
+      Lang.getString(paused ? R.string.TgxBusinessResumeChat : R.string.TgxBusinessPauseChat),
+      () -> changeBusinessBotPause(chatId, botId, paused));
+  }
+
+  private void changeBusinessBotPause (long chatId, long botId, boolean wasPaused) {
+    long account = tdlib.myUserId();
+    if (changingBusinessBotPause || !isFocused() || account == 0) {
+      return;
+    }
+    changingBusinessBotPause = true;
+    tdlib.send(new TdApi.GetChat(chatId), (fresh, error) -> runOnUiThreadOptional(() -> {
+      TdApi.BusinessBotManageBar bar = businessBotBar(chatId);
+      if (!isFocused() || tdlib.myUserId() != account || !matchesBusinessBotPause(bar, botId, wasPaused) ||
+          error != null || !matchesBusinessBotPause(fresh.businessBotManageBar, botId, wasPaused)) {
+        changingBusinessBotPause = false;
+        if (isFocused() && getChatId() == chatId) {
+          if (error != null) {
+            UI.showError(error);
+          } else {
+            UI.showToast(R.string.TgxBusinessChanged, Toast.LENGTH_SHORT);
+          }
+        }
+        return;
+      }
+      tdlib.send(new TdApi.ToggleBusinessConnectedBotChatIsPaused(chatId, !wasPaused),
+        (ok, updateError) -> runOnUiThreadOptional(() -> {
+          changingBusinessBotPause = false;
+          if (isFocused() && getChatId() == chatId) {
+            if (updateError != null) {
+              UI.showError(updateError);
+            } else {
+              UI.showToast(wasPaused ? R.string.TgxBusinessChatResumed : R.string.TgxBusinessChatPaused, Toast.LENGTH_SHORT);
+            }
+          }
+        }));
+    }));
+  }
+
+  static boolean matchesBusinessBotPause (TdApi.BusinessBotManageBar bar, long botId, boolean paused) {
+    return bar != null && botId != 0 && bar.botUserId == botId && bar.isBotPaused == paused;
+  }
+
   private boolean sendingBusinessQuickReply;
 
   private boolean canUseBusinessQuickReplies (long chatId) {
@@ -2465,6 +2528,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_businessBotPauseChat) {
+      confirmBusinessBotPause();
+      return;
+    }
     if (id == R.id.btn_businessQuickReplySend) {
       showBusinessQuickReplies();
       return;
@@ -5713,6 +5780,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
 
+    TdApi.BusinessBotManageBar botManageBar = businessBotBar(chat.id);
+    if (botManageBar != null) {
+      ids.append(R.id.btn_businessBotPauseChat);
+      strings.append(botManageBar.isBotPaused ? R.string.TgxBusinessResumeChat : R.string.TgxBusinessPauseChat);
+    }
     if (canUseBusinessQuickReplies(chat.id)) {
       ids.append(R.id.btn_businessQuickReplySend);
       strings.append(R.string.TgxBusinessQuickReplies);

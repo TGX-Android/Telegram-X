@@ -6648,6 +6648,24 @@
   <string name="TgxStarsAuctionBidConfirm">Bid %1$s Stars for %3$s? This uses %2$s more Stars from your balance. An active bid can carry over to the next round.</string>
   <string name="TgxStarsAuctionBidSaved">Bid submitted</string>
   <string name="TgxStarsAuctionChanged">The auction or your bid changed. Review the updated round.</string>
+  <string name="TgxBusinessPauseChat">Pause Business Bot in This Chat</string>
+  <string name="TgxBusinessResumeChat">Resume Business Bot in This Chat</string>
+  <string name="TgxBusinessPauseChatConfirm">Pause %1$s in the chat with %2$s?</string>
+  <string name="TgxBusinessResumeChatConfirm">Resume %1$s in the chat with %2$s?</string>
+  <string name="TgxBusinessChatPaused">Business bot paused in this chat</string>
+  <string name="TgxBusinessChatResumed">Business bot resumed in this chat</string>
+  <string name="TgxBusinessCustomRecipients">Customize Recipients</string>
+  <string name="TgxBusinessExcludeSelected">Exclude the selected chats</string>
+  <string name="TgxBusinessExistingChats">Existing private chats</string>
+  <string name="TgxBusinessNewChats">New private chats</string>
+  <string name="TgxBusinessContacts">Chats with contacts</string>
+  <string name="TgxBusinessNonContacts">Chats with non-contacts</string>
+  <string name="TgxBusinessIncludedSelection">Include These Chats</string>
+  <string name="TgxBusinessExcludedSelection">Exclude These Chats</string>
+  <string name="TgxBusinessAlwaysExcluded">Always Excluded</string>
+  <string name="TgxBusinessAddRecipient">Add a Private Chat</string>
+  <string name="TgxBusinessRecipientInvalid">Choose a private chat with another person.</string>
+  <string name="TgxBusinessApplyCustomRecipients">Save the automatic reply for the selected recipients?</string>
   <string name="TgxStarsMyAuctions">My Active Auctions</string>
   <string name="TgxStarsNoAuctions">There are no active auctions you have bid in.</string>
 </resources>

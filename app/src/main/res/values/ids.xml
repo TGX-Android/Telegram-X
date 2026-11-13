@@ -1651,6 +1651,18 @@
   <item type="id" name="btn_giftOpenResale" />
   <item type="id" name="btn_giftOpenAuction" />
   <item type="id" name="btn_giftMyCollectibles" />
+  <item type="id" name="btn_businessBotPauseChat" />
+  <item type="id" name="controller_businessRecipients" />
+  <item type="id" name="btn_businessRecipientsExcludeMode" />
+  <item type="id" name="btn_businessRecipientsExisting" />
+  <item type="id" name="btn_businessRecipientsNew" />
+  <item type="id" name="btn_businessRecipientsContacts" />
+  <item type="id" name="btn_businessRecipientsNonContacts" />
+  <item type="id" name="btn_businessRecipientsDone" />
+  <item type="id" name="btn_businessRecipientsRemoveExcluded" />
+  <item type="id" name="btn_businessRecipientsRemoveSelected" />
+  <item type="id" name="btn_businessRecipientsAddExcluded" />
+  <item type="id" name="btn_businessRecipientsAddSelected" />
   <item type="id" name="btn_giftMyAuctions" />
 </resources>
 <!-- endregion -->

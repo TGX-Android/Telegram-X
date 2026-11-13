@@ -88,4 +88,22 @@
   <string name="TgxBusinessSendShortcut">Enviar respuesta rápida</string>
   <string name="TgxBusinessSendShortcutConfirm">¿Enviar %1$s (%2$s mensajes) a %3$s?\n\nVista previa: %4$s</string>
   <string name="TgxBusinessQuickReplyPaid">Las respuestas rápidas no pueden enviarse a un chat de pago.</string>
+  <string name="TgxBusinessPauseChat">Pausar el bot de empresa en este chat</string>
+  <string name="TgxBusinessResumeChat">Reactivar el bot de empresa en este chat</string>
+  <string name="TgxBusinessPauseChatConfirm">¿Pausar a %1$s en el chat con %2$s?</string>
+  <string name="TgxBusinessResumeChatConfirm">¿Reactivar a %1$s en el chat con %2$s?</string>
+  <string name="TgxBusinessChatPaused">Bot de empresa pausado en este chat</string>
+  <string name="TgxBusinessChatResumed">Bot de empresa reactivado en este chat</string>
+  <string name="TgxBusinessCustomRecipients">Personalizar destinatarios</string>
+  <string name="TgxBusinessExcludeSelected">Excluir los chats de la selección</string>
+  <string name="TgxBusinessExistingChats">Chats privados existentes</string>
+  <string name="TgxBusinessNewChats">Chats privados nuevos</string>
+  <string name="TgxBusinessContacts">Chats con contactos</string>
+  <string name="TgxBusinessNonContacts">Chats con personas fuera de tus contactos</string>
+  <string name="TgxBusinessIncludedSelection">Incluir estos chats</string>
+  <string name="TgxBusinessExcludedSelection">Excluir estos chats</string>
+  <string name="TgxBusinessAlwaysExcluded">Siempre excluidos</string>
+  <string name="TgxBusinessAddRecipient">Añadir un chat privado</string>
+  <string name="TgxBusinessRecipientInvalid">Elige un chat privado con otra persona.</string>
+  <string name="TgxBusinessApplyCustomRecipients">¿Guardar la respuesta automática para los destinatarios seleccionados?</string>
 </resources>

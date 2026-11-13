@@ -398,9 +398,10 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
         if (days == 7 || days == 14 || days == 21 || days == 28) {
           TdApi.BusinessRecipients recipients = current != null ? current.recipients : defaultAutomationRecipients();
           TdApi.BusinessGreetingMessageSettings updated = new TdApi.BusinessGreetingMessageSettings(shortcutId, recipients, days);
-          confirmAutomation(current != null, () -> saveProfile(
+          chooseAutomationRecipients(current != null, recipients, selected -> saveProfile(
             business -> business != null ? business.greetingMessageSettings : null, current,
-            new TdApi.SetBusinessGreetingMessageSettings(updated)));
+            new TdApi.SetBusinessGreetingMessageSettings(new TdApi.BusinessGreetingMessageSettings(
+              updated.shortcutId, selected, updated.inactivityDays))));
         }
         return true;
       });
@@ -443,8 +444,28 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
       if (mode == 1 || mode == 2) {
         TdApi.BusinessRecipients recipients = current != null ? current.recipients : defaultAutomationRecipients();
         TdApi.BusinessAwayMessageSettings updated = new TdApi.BusinessAwayMessageSettings(id, recipients, schedule, mode == 1);
-        confirmAutomation(current != null, () -> saveProfile(business -> business != null ? business.awayMessageSettings : null,
-          current, new TdApi.SetBusinessAwayMessageSettings(updated)));
+        chooseAutomationRecipients(current != null, recipients, selected -> saveProfile(
+          business -> business != null ? business.awayMessageSettings : null, current,
+          new TdApi.SetBusinessAwayMessageSettings(new TdApi.BusinessAwayMessageSettings(
+            updated.shortcutId, selected, updated.schedule, updated.offlineOnly))));
+      }
+      return true;
+    });
+  }
+
+  private void chooseAutomationRecipients (boolean existing, TdApi.BusinessRecipients recipients,
+                                           RunnableData<TdApi.BusinessRecipients> save) {
+    Options.Builder options = new Options.Builder().info(Lang.getString(R.string.TgxBusinessCustomRecipients));
+    options.item(new OptionItem(1, Lang.getString(existing ? R.string.TgxBusinessBotKeepScope : R.string.TgxBusinessBotAllChats),
+      OptionColor.NORMAL, 0));
+    options.item(new OptionItem(2, Lang.getString(R.string.TgxBusinessCustomRecipients), OptionColor.NORMAL, 0));
+    options.cancelItem();
+    showOptions(options.build(), (view, option) -> {
+      if (option == 1) {
+        confirmAutomation(existing, () -> save.runWithData(recipients));
+      } else if (option == 2) {
+        openRecipients(recipients, false, chosen -> showConfirm(Lang.getString(R.string.TgxBusinessApplyCustomRecipients),
+          Lang.getString(R.string.Save), () -> save.runWithData(chosen)));
       }
       return true;
     });
@@ -832,9 +853,14 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
     options.item(new OptionItem(2, Lang.getString(R.string.TgxBusinessBotContacts), OptionColor.NORMAL, 0));
     options.item(new OptionItem(3, Lang.getString(R.string.TgxBusinessBotNonContacts), OptionColor.NORMAL, 0));
     options.item(new OptionItem(4, Lang.getString(R.string.TgxBusinessBotAllChats), OptionColor.NORMAL, 0));
+    options.item(new OptionItem(5, Lang.getString(R.string.TgxBusinessCustomRecipients), OptionColor.NORMAL, 0));
     options.cancelItem();
     showOptions(options.build(), (view, id) -> {
-      if (id == 1 && sameBot) {
+      if (id == 5) {
+        TdApi.BusinessRecipients current = sameBot && expected.bot.recipients != null ? expected.bot.recipients :
+          new TdApi.BusinessRecipients(new long[0], new long[0], false, false, false, false, false);
+        openRecipients(current, true, value -> configureBotPermissions(expected, botId, value));
+      } else if (id == 1 && sameBot) {
         configureBotPermissions(expected, botId, expected.bot.recipients);
       } else if (id >= 2 && id <= 4) {
         configureBotPermissions(expected, botId, new TdApi.BusinessRecipients(new long[0], new long[0],
@@ -842,6 +868,10 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
       }
       return true;
     });
+  }
+
+  private void openRecipients (TdApi.BusinessRecipients source, boolean forBot, RunnableData<TdApi.BusinessRecipients> done) {
+    navigateTo(new BusinessRecipientsController(context(), tdlib, source, forBot, done));
   }
 
   private void configureBotPermissions (TdApi.BusinessConnectedBotInfo expected, long botId, TdApi.BusinessRecipients recipients) {
