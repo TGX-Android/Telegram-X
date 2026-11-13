@@ -6780,13 +6780,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private int pollOptionRequestGeneration;
   private boolean deletingPollOption;
 
-  private @Nullable TdApi.PollOption currentPollOption (TGMessage selectedMessage, long pollId, String optionId) {
+  private @Nullable TdApi.PollOption currentPollOption (TGMessage selectedMessage, long pollId, String optionId, boolean allowClosed) {
     if (selectedMessage.isDestroyed() || selectedMessage.getChatId() != getChatId() ||
       !(selectedMessage.getMessage().content instanceof TdApi.MessagePoll)) {
       return null;
     }
     TdApi.Poll poll = ((TdApi.MessagePoll) selectedMessage.getMessage().content).poll;
-    if (poll.id != pollId || poll.isClosed) {
+    if (poll.id != pollId || (poll.isClosed && !allowClosed)) {
       return null;
     }
     for (TdApi.PollOption option : poll.options) {
@@ -6795,6 +6795,73 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
     return null;
+  }
+
+  private void showPollOptionPicker (TGMessage selectedMessage, int titleRes, RunnableData<TdApi.PollOption> onSelect) {
+    if (selectedMessage.isDestroyed() || !(selectedMessage.getMessage().content instanceof TdApi.MessagePoll)) {
+      return;
+    }
+    TdApi.Poll poll = ((TdApi.MessagePoll) selectedMessage.getMessage().content).poll;
+    ArrayList<TdApi.PollOption> options = new ArrayList<>();
+    for (TdApi.PollOption option : poll.options) {
+      if (!StringUtils.isEmpty(option.id)) {
+        options.add(option);
+      }
+    }
+    if (options.isEmpty()) {
+      return;
+    }
+    final int generation = ++pollOptionRequestGeneration;
+    int[] ids = new int[options.size()];
+    String[] names = new String[options.size()];
+    for (int i = 0; i < options.size(); i++) {
+      ids[i] = -(i + 1);
+      names[i] = options.get(i).text.text;
+    }
+    showOptions(Lang.getString(titleRes), ids, names, null, null, (view, id) -> {
+      int index = -(id + 1);
+      if (generation == pollOptionRequestGeneration && id < 0 && index >= 0 && index < options.size()) {
+        TdApi.PollOption option = currentPollOption(selectedMessage, poll.id, options.get(index).id, true);
+        if (option != null) {
+          onSelect.runWithData(option);
+        }
+      }
+      return true;
+    });
+  }
+
+  private void copyPollOptionLink (TGMessage selectedMessage, long pollId, String optionId) {
+    if (currentPollOption(selectedMessage, pollId, optionId, true) == null) {
+      return;
+    }
+    TdApi.Message message = selectedMessage.getMessage();
+    final boolean inMessageThread = messageThread != null;
+    final int generation = ++pollOptionRequestGeneration;
+    tdlib.send(new TdApi.GetPollOptionProperties(message.chatId, message.id, optionId),
+      (properties, error) -> runOnUiThreadOptional(() -> {
+        if (generation != pollOptionRequestGeneration ||
+          currentPollOption(selectedMessage, pollId, optionId, true) == null) {
+          return;
+        }
+        if (error != null) {
+          UI.showError(error);
+        } else if (!properties.canGetLink) {
+          UI.showToast(R.string.PollOptionLinkUnavailable, Toast.LENGTH_SHORT);
+        } else {
+          tdlib.send(new TdApi.GetMessageLink(message.chatId, message.id, 0, 0, optionId, false, inMessageThread),
+            (link, linkError) -> runOnUiThreadOptional(() -> {
+              if (generation != pollOptionRequestGeneration ||
+                currentPollOption(selectedMessage, pollId, optionId, true) == null) {
+                return;
+              }
+              if (linkError != null) {
+                UI.showError(linkError);
+              } else {
+                UI.copyText(link.link, link.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate);
+              }
+            }));
+        }
+      }));
   }
 
   private void showRemovePollOptions (TGMessage selectedMessage) {
@@ -6838,7 +6905,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           IntList ids = new IntList(candidates.size());
           StringList names = new StringList(candidates.size());
           for (int j = 0; j < candidates.size(); j++) {
-            TdApi.PollOption current = currentPollOption(selectedMessage, poll.id, candidates.get(j).id);
+            TdApi.PollOption current = currentPollOption(selectedMessage, poll.id, candidates.get(j).id, false);
             if (removable[j] && current != null) {
               ids.append(-(j + 1));
               names.append(current.text.text);
@@ -6853,7 +6920,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               int selectedIndex = -(id + 1);
               if (generation == pollOptionRequestGeneration && id < 0 &&
                 selectedIndex >= 0 && selectedIndex < candidates.size() && removable[selectedIndex]) {
-                TdApi.PollOption option = currentPollOption(selectedMessage, poll.id, candidates.get(selectedIndex).id);
+                TdApi.PollOption option = currentPollOption(selectedMessage, poll.id, candidates.get(selectedIndex).id, false);
                 if (option != null) {
                   showOptions(Lang.getStringBold(R.string.RemovePollOptionConfirm, option.text.text),
                     new int[] {R.id.btn_done, R.id.btn_cancel},
@@ -6875,7 +6942,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void deletePollOption (TGMessage selectedMessage, long pollId, String optionId) {
-    if (deletingPollOption || currentPollOption(selectedMessage, pollId, optionId) == null) {
+    if (deletingPollOption || currentPollOption(selectedMessage, pollId, optionId, false) == null) {
       return;
     }
     deletingPollOption = true;
@@ -6884,7 +6951,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.send(new TdApi.GetPollOptionProperties(message.chatId, message.id, optionId),
       (properties, error) -> runOnUiThreadOptional(() -> {
         if (error != null || !properties.canBeDeleted ||
-          currentPollOption(selectedMessage, pollId, optionId) == null) {
+          currentPollOption(selectedMessage, pollId, optionId, false) == null) {
           deletingPollOption = false;
           if (error != null) {
             UI.showError(error);
@@ -6937,6 +7004,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return true;
       } else if (id == R.id.btn_messageCopyLink) {
         tdlib.getMessageLink(selectedMessage.getNewestMessage(), selectedMessage.getMessageCount() > 1, messageThread != null, link -> UI.copyText(link.url, link.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate));
+        return true;
+      } else if (id == R.id.btn_copyPollOptionLink) {
+        if (selectedMessage.getMessage().content instanceof TdApi.MessagePoll &&
+          selectedMessage.lastMessageProperties().canGetLink) {
+          long pollId = ((TdApi.MessagePoll) selectedMessage.getMessage().content).poll.id;
+          showPollOptionPicker(selectedMessage, R.string.CopyPollOptionLink,
+            option -> copyPollOptionLink(selectedMessage, pollId, option.id));
+        }
         return true;
       } else if (id == R.id.btn_messageRetractVote) {
         TdApi.Message message = selectedMessage.getMessage();

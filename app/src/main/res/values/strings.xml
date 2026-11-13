@@ -2363,6 +2363,8 @@
   <string name="StoryReactions">Story Reactions</string>
   <string name="PollVotes">Poll Votes</string>
   <string name="PollVoteStatistics">Poll Vote Statistics</string>
+  <string name="CopyPollOptionLink">Copy Poll Answer Link</string>
+  <string name="PollOptionLinkUnavailable">A link to this poll answer is unavailable.</string>
   <string name="PollVoteStatisticsUnavailable">Vote statistics are unavailable. Please try again later.</string>
   <string name="ReactionNotificationsInfo">Choose whose reactions and votes you receive notifications about.</string>
   <string name="ReactionNotificationsPreview">Show Reaction in Notifications</string>
