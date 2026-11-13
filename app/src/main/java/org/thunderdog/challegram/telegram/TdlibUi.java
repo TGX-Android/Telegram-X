@@ -62,6 +62,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.LangUtils;
+import org.thunderdog.challegram.data.ProfileTabUtils;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
@@ -1583,6 +1584,68 @@ public class TdlibUi extends Handler {
           }
         });
       });
+    }));
+  }
+
+  private boolean changingMainProfileTab;
+
+  private void showMainProfileTabOptions (ViewController<?> context, TdApi.ProfileTab current, RunnableData<TdApi.ProfileTab> onChoose) {
+    TdApi.ProfileTab[] tabs = {
+      new TdApi.ProfileTabPosts(), new TdApi.ProfileTabMedia(), new TdApi.ProfileTabFiles(),
+      new TdApi.ProfileTabLinks(), new TdApi.ProfileTabMusic(), new TdApi.ProfileTabVoice(), new TdApi.ProfileTabGifs()
+    };
+    int[] labels = {R.string.Default, R.string.TabMedia, R.string.Files, R.string.TabLinks,
+      R.string.Music, R.string.VoiceMessages, R.string.GIFs};
+    int[] ids = new int[tabs.length];
+    String[] names = new String[tabs.length];
+    int[] icons = new int[tabs.length];
+    for (int i = 0; i < tabs.length; i++) {
+      ids[i] = -(i + 1);
+      names[i] = Lang.getString(labels[i]);
+      icons[i] = current != null && current.getConstructor() == tabs[i].getConstructor() ? R.drawable.baseline_check_24 : 0;
+    }
+    context.showOptions(Lang.getString(R.string.MainProfileTabInfo), ids, names, null, icons, (view, id) -> {
+      if (id < 0 && id >= -tabs.length) {
+        onChoose.runWithData(tabs[-(id + 1)]);
+      }
+      return true;
+    });
+  }
+
+  public void showChannelMainProfileTabOptions (ViewController<?> context, long chatId) {
+    TdApi.Chat chat = tdlib.chat(chatId);
+    if (changingMainProfileTab || context.isDestroyed() || chat == null ||
+      !tdlib.isChannelChat(chat) || !tdlib.canChangeInfo(chat, false)) {
+      return;
+    }
+    changingMainProfileTab = true;
+    tdlib.send(new TdApi.GetSupergroupFullInfo(ChatId.toSupergroupId(chatId)), (info, error) -> post(() -> {
+      changingMainProfileTab = false;
+      TdApi.Chat current = tdlib.chat(chatId);
+      if (context.isDestroyed() || current == null || !tdlib.canChangeInfo(current, false)) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        showMainProfileTabOptions(context, info.mainProfileTab, tab -> setChannelMainProfileTab(context, chatId, tab));
+      }
+    }));
+  }
+
+  private void setChannelMainProfileTab (ViewController<?> context, long chatId, TdApi.ProfileTab tab) {
+    TdApi.Chat chat = tdlib.chat(chatId);
+    if (changingMainProfileTab || context.isDestroyed() || chat == null ||
+      !tdlib.isChannelChat(chat) || !tdlib.canChangeInfo(chat, false) ||
+      !(tab instanceof TdApi.ProfileTabPosts) && !ProfileTabUtils.isSupported(tab)) {
+      return;
+    }
+    changingMainProfileTab = true;
+    tdlib.send(new TdApi.SetSupergroupMainProfileTab(ChatId.toSupergroupId(chatId), tab), (ok, error) -> post(() -> {
+      changingMainProfileTab = false;
+      if (error != null) {
+        UI.showError(error);
+      }
     }));
   }
 

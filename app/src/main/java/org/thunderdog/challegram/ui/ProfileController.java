@@ -4968,6 +4968,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       added = true;
     }
 
+    if (mode == Mode.EDIT_CHANNEL && tdlib.canChangeInfo(chat, false)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_mainProfileTab, 0, R.string.MainProfileTab));
+      added = true;
+    }
+
     if (supergroup != null && tdlib.canRestrictMembers(chat.id)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_unrestrictBoostCount, 0, R.string.BoostUnrestrictTitle));
@@ -5869,6 +5875,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       openStats();
     } else if (viewId == R.id.btn_enabledReactions) {
       openEnabledReactions();
+    } else if (viewId == R.id.btn_mainProfileTab) {
+      tdlib.ui().showChannelMainProfileTabOptions(this, chat.id);
     } else if (viewId == R.id.btn_channelSponsoredMessages) {
       showChannelSponsoredMessages();
     } else if (viewId == R.id.btn_copyBoostLink) {
