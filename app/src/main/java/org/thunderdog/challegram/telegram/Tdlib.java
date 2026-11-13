@@ -936,6 +936,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         ownedStarAmount = null;
         quickReplyShortcuts.clear();
         quickReplyMessages.clear();
+        activeGiftAuctions = new TdApi.GiftAuctionState[0];
         quickReplyShortcutOrder = null;
         incrementJobReferenceCount(JOB_ID_CLEAN_UP);
         deleteAllFiles(success -> {
@@ -7887,6 +7888,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   }
 
+  private volatile TdApi.GiftAuctionState[] activeGiftAuctions = new TdApi.GiftAuctionState[0];
+  private final java.util.concurrent.CopyOnWriteArrayList<RunnableData<TdApi.GiftAuctionState>> giftAuctionListeners =
+    new java.util.concurrent.CopyOnWriteArrayList<>();
+
+  public TdApi.GiftAuctionState[] activeGiftAuctions () {
+    return activeGiftAuctions.clone();
+  }
+
+  public void addGiftAuctionListener (RunnableData<TdApi.GiftAuctionState> listener) {
+    giftAuctionListeners.addIfAbsent(listener);
+  }
+
+  public void removeGiftAuctionListener (RunnableData<TdApi.GiftAuctionState> listener) {
+    giftAuctionListeners.remove(listener);
+  }
+
   // Updates: SHORTCUTS
 
   private final java.util.concurrent.ConcurrentHashMap<Integer, TdApi.QuickReplyShortcut> quickReplyShortcuts =
@@ -10813,9 +10830,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
 
-      case TdApi.UpdateLiveStoryTopDonors.CONSTRUCTOR:
-      case TdApi.UpdateGiftAuctionState.CONSTRUCTOR:
+      case TdApi.UpdateGiftAuctionState.CONSTRUCTOR: {
+        TdApi.GiftAuctionState state = ((TdApi.UpdateGiftAuctionState) update).state;
+        for (RunnableData<TdApi.GiftAuctionState> listener : giftAuctionListeners) {
+          listener.runWithData(state);
+        }
+        break;
+      }
       case TdApi.UpdateActiveGiftAuctions.CONSTRUCTOR:
+        activeGiftAuctions = ((TdApi.UpdateActiveGiftAuctions) update).states.clone();
+        break;
+      case TdApi.UpdateLiveStoryTopDonors.CONSTRUCTOR:
       case TdApi.UpdateStakeDiceState.CONSTRUCTOR:
       case TdApi.UpdateNewOauthRequest.CONSTRUCTOR:
       case TdApi.UpdateTextCompositionStyles.CONSTRUCTOR:

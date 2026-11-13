@@ -95,6 +95,18 @@ public final class StarsGiftsController extends RecyclerViewController<Void> imp
             .setData(entry.gift));
           count++;
         }
+        String collectible = entry.title != null && !entry.title.isEmpty() ? entry.title :
+          Lang.getString(R.string.TgxStarsGiftNumber, Long.toString(entry.gift.id));
+        if (entry.resaleCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_giftOpenResale, 0,
+            Lang.getString(R.string.TgxStarsResaleFor, collectible)).setData(entry.gift));
+          count++;
+        }
+        if (entry.gift.auctionInfo != null && entry.gift.auctionInfo.id != null && !entry.gift.auctionInfo.id.isEmpty()) {
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_giftOpenAuction, 0,
+            Lang.getString(R.string.TgxStarsAuctionFor, collectible)).setData(entry.gift));
+          count++;
+        }
       }
       if (count == 0 && !loading && !failed) {
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.TgxStarsGiftEmpty));
@@ -114,7 +126,13 @@ public final class StarsGiftsController extends RecyclerViewController<Void> imp
     if (view.getId() == R.id.btn_starsGiftReload) {
       load();
     } else if (view.getTag() instanceof ListItem item && item.getData() instanceof TdApi.Gift gift) {
-      compose(gift);
+      if (view.getId() == R.id.btn_giftOpenResale) {
+        navigateTo(new StarsGiftMarketController(context(), tdlib, gift.id, recipientId));
+      } else if (view.getId() == R.id.btn_giftOpenAuction) {
+        navigateTo(new StarsGiftAuctionController(context(), tdlib, gift.auctionInfo.id, recipientId));
+      } else {
+        compose(gift);
+      }
     }
   }
 

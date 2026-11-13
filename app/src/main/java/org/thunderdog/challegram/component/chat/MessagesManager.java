@@ -1687,7 +1687,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
       case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeGiftAuction.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
 

@@ -1639,5 +1639,18 @@
   <item type="id" name="btn_businessBotConnect" />
   <item type="id" name="btn_businessBotManage" />
   <item type="id" name="btn_businessQuickReplySend" />
+  <item type="id" name="controller_giftMarket" />
+  <item type="id" name="btn_giftMarketItem" />
+  <item type="id" name="btn_giftMarketMore" />
+  <item type="id" name="btn_giftMarketRefresh" />
+  <item type="id" name="controller_giftAuction" />
+  <item type="id" name="btn_giftAuctionBid" />
+  <item type="id" name="btn_giftAuctionResale" />
+  <item type="id" name="btn_giftAuctionAcquired" />
+  <item type="id" name="btn_giftAuctionRefresh" />
+  <item type="id" name="btn_giftOpenResale" />
+  <item type="id" name="btn_giftOpenAuction" />
+  <item type="id" name="btn_giftMyCollectibles" />
+  <item type="id" name="btn_giftMyAuctions" />
 </resources>
 <!-- endregion -->

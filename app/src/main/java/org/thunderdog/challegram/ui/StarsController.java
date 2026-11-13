@@ -236,6 +236,8 @@ public final class StarsController extends RecyclerViewController<Void> implemen
     }
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxStarsRefresh, 0, R.string.TgxPremiumRefreshStars));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_starsGifts, 0, R.string.TgxStarsGiftCatalog));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_giftMyAuctions, 0, R.string.TgxStarsMyAuctions));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_giftMyCollectibles, 0, R.string.TgxStarsMyCollectibles));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_starsRevenue, 0, R.string.TgxStarsRevenue));
     adapter.setItems(items, false);
   }
@@ -289,6 +291,10 @@ public final class StarsController extends RecyclerViewController<Void> implemen
       });
     } else if (id == R.id.btn_starsGifts) {
       pickGiftRecipient();
+    } else if (id == R.id.btn_giftMyAuctions) {
+      showActiveAuctions();
+    } else if (id == R.id.btn_giftMyCollectibles) {
+      navigateTo(new StarsGiftMarketController(context(), tdlib, 0, tdlib.myUserId()));
     } else if (id == R.id.btn_starsRevenue) {
       chooseRevenueOwner();
     } else if (id == R.id.btn_tgxStarsRefresh) {
@@ -304,6 +310,30 @@ public final class StarsController extends RecyclerViewController<Void> implemen
         showSubscription(subscription);
       }
     }
+  }
+
+  private void showActiveAuctions () {
+    ArrayList<TdApi.Gift> gifts = new ArrayList<>();
+    Options.Builder options = new Options.Builder().info(Lang.getString(R.string.TgxStarsMyAuctions));
+    for (TdApi.GiftAuctionState auction : tdlib.activeGiftAuctions()) {
+      if (auction != null && auction.gift != null && auction.gift.auctionInfo != null &&
+          !StringUtils.isEmpty(auction.gift.auctionInfo.id)) {
+        gifts.add(auction.gift);
+        options.item(new OptionItem(gifts.size(), Lang.getString(R.string.TgxStarsGiftNumber,
+          Long.toString(auction.gift.id)), OptionColor.NORMAL, 0));
+      }
+    }
+    if (gifts.isEmpty()) {
+      UI.showToast(R.string.TgxStarsNoAuctions, Toast.LENGTH_SHORT);
+      return;
+    }
+    options.cancelItem();
+    showOptions(options.build(), (view, id) -> {
+      if (id > 0 && id <= gifts.size()) {
+        navigateTo(new StarsGiftAuctionController(context(), tdlib, gifts.get(id - 1).auctionInfo.id, 0));
+      }
+      return true;
+    });
   }
 
   public void pickGiftRecipient () {
