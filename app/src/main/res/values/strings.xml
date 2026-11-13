@@ -2390,6 +2390,8 @@
   <string name="RefreshChatList">Refresh List</string>
   <string name="RetryChatList">Could not load the list · Tap to Retry</string>
   <string name="NoDiscoveryChats">No chats in this list.</string>
+  <string name="RecentlyOpenedChats">Recently Opened Chats</string>
+  <string name="RecentlyOpenedChatsInfo">Up to 100 recently opened chats remembered by Telegram on this device. This is not your search history.</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>

@@ -34,8 +34,17 @@ import java.util.HashSet;
 
 /** Account-level chat lists, using the same cells and navigation as shared chats. */
 public class ChatDiscoveryController extends RecyclerViewController<Void> implements View.OnClickListener {
+  public static final int RECOMMENDED = 0;
+  public static final int RECENT = 1;
+  private final int mode;
+
   public ChatDiscoveryController (Context context, Tdlib tdlib) {
+    this(context, tdlib, RECOMMENDED);
+  }
+
+  public ChatDiscoveryController (Context context, Tdlib tdlib, int mode) {
     super(context, tdlib);
+    this.mode = mode;
   }
 
   @Override
@@ -45,10 +54,13 @@ public class ChatDiscoveryController extends RecyclerViewController<Void> implem
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(R.string.RecommendedChannels);
+    return Lang.getString(mode == RECENT ? R.string.RecentlyOpenedChats : R.string.RecommendedChannels);
   }
 
   protected TdApi.Function<TdApi.Chats> discoveryRequest () {
+    if (mode == RECENT) {
+      return new TdApi.GetRecentlyOpenedChats(100);
+    }
     return new TdApi.GetRecommendedChats();
   }
 
@@ -115,6 +127,9 @@ public class ChatDiscoveryController extends RecyclerViewController<Void> implem
     items.add(new ListItem(loading ? ListItem.TYPE_DESCRIPTION : ListItem.TYPE_SETTING,
       R.id.btn_reloadDiscovery, 0, loading ? R.string.LoadingInformation :
         loadError != null ? R.string.RetryChatList : R.string.RefreshChatList));
+    if (mode == RECENT) {
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.RecentlyOpenedChatsInfo));
+    }
     if (chats != null && chats.length > 0) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       HashSet<Long> seen = new HashSet<>();

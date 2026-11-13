@@ -202,6 +202,8 @@ public class SettingsController extends ViewController<Void> implements
       names.append(R.string.ShareProfileLink);
       ids.append(R.id.btn_recommendedChannels);
       names.append(R.string.RecommendedChannels);
+      ids.append(R.id.btn_recentlyOpenedChats);
+      names.append(R.string.RecentlyOpenedChats);
       if (tdlib.hasPremium()) {
         ids.append(R.id.btn_userAccentColor);
         names.append(R.string.UserAccentColor);
@@ -255,6 +257,8 @@ public class SettingsController extends ViewController<Void> implements
       getOwnProfileLink(id == R.id.btn_shareProfileLink);
     } else if (id == R.id.btn_recommendedChannels) {
       navigateTo(new ChatDiscoveryController(context, tdlib));
+    } else if (id == R.id.btn_recentlyOpenedChats) {
+      navigateTo(new ChatDiscoveryController(context, tdlib, ChatDiscoveryController.RECENT));
     } else if (id == R.id.btn_userAccentColor) {
       tdlib.ui().showUserAccentColorOptions(this);
     } else if (id == R.id.btn_userProfileAccentColor) {
