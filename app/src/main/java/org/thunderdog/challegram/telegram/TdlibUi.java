@@ -65,6 +65,7 @@ import org.thunderdog.challegram.core.LangUtils;
 import org.thunderdog.challegram.data.AutosaveVideoSize;
 import org.thunderdog.challegram.data.ProfileTabUtils;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.TGNetworkStats;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGSwitchInline;
@@ -139,6 +140,7 @@ import org.thunderdog.challegram.ui.SettingsDataController;
 import org.thunderdog.challegram.ui.SettingsFoldersController;
 import org.thunderdog.challegram.ui.SettingsLanguageController;
 import org.thunderdog.challegram.ui.SettingsLogOutController;
+import org.thunderdog.challegram.ui.SettingsNetworkStatsController;
 import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPhoneController;
 import org.thunderdog.challegram.ui.SettingsPrivacyController;
@@ -5225,6 +5227,21 @@ public class TdlibUi extends Handler {
               switch (subsection != null ? subsection : "") {
                 case "storage", "storage/edit", "storage/auto-remove", "storage/clear-cache", "storage/max-cache" ->
                   result = new SettingsCacheController(context.context(), tdlib);
+                case "usage", "usage/reset" -> {
+                  SettingsDataController usage = new SettingsDataController(context.context(), tdlib);
+                  usage.setArguments(new SettingsDataController.Args(SettingsDataController.MODE_STATISTICS));
+                  result = usage;
+                }
+                case "usage/mobile", "usage/roaming", "usage/wifi" -> {
+                  int network = switch (subsection) {
+                    case "usage/wifi" -> TGNetworkStats.TYPE_WIFI;
+                    case "usage/roaming" -> TGNetworkStats.TYPE_ROAMING;
+                    default -> TGNetworkStats.TYPE_MOBILE;
+                  };
+                  SettingsNetworkStatsController stats = new SettingsNetworkStatsController(context.context(), tdlib);
+                  stats.setArguments(new SettingsNetworkStatsController.Args(network, null));
+                  result = stats;
+                }
                 default -> result = new SettingsDataController(context.context(), tdlib);
               }
               break;

@@ -86,7 +86,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
   private int mode;
 
   private static final int MODE_NONE = 0;
-  private static final int MODE_STATISTICS = 1;
+  public static final int MODE_STATISTICS = 1;
 
   @Override
   public int getId () {
