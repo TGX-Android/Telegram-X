@@ -694,6 +694,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
 
+    if (supergroup != null && !supergroup.isDirectMessagesGroup) {
+      ids.append(R.id.btn_chatBoostStatus);
+      strings.append(R.string.ChatBoostStatusTitle);
+    }
     if (canConfigureChatAutosave()) {
       ids.append(R.id.btn_chatAutosaveSettings);
       strings.append(R.string.ChatAutosaveSettings);
@@ -734,6 +738,45 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (ids.size() > 0) {
       showMore(ids.get(), strings.get(), 0);
     }
+  }
+
+  private boolean loadingBoostStatus;
+
+  private void showChatBoostStatus () {
+    if (loadingBoostStatus || chat == null || supergroup == null || supergroup.isDirectMessagesGroup) {
+      return;
+    }
+    final long chatId = chat.id;
+    loadingBoostStatus = true;
+    tdlib.send(new TdApi.GetChatBoostStatus(chatId), (status, error) -> runOnUiThreadOptional(() -> {
+      loadingBoostStatus = false;
+      if (chat == null || chat.id != chatId) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      CharSequence info = Lang.getString(R.string.ChatBoostStatusInfo, status.level, status.boostCount,
+        Math.max(0, status.nextLevelBoostCount - status.boostCount));
+      if (status.nextLevelBoostCount == 0) {
+        info = Lang.getString(R.string.ChatBoostStatusMaxInfo, status.level, status.boostCount);
+      }
+      showOptions(info,
+        new int[] {R.id.btn_copyBoostLink, R.id.btn_shareBoostLink, R.id.btn_cancel},
+        new String[] {Lang.getString(R.string.CopyBoostLink), Lang.getString(R.string.ShareBoostLink), Lang.getString(R.string.Cancel)},
+        null, new int[] {R.drawable.baseline_content_copy_24, R.drawable.baseline_share_24, R.drawable.baseline_cancel_24},
+        (view, id) -> {
+          if (id == R.id.btn_copyBoostLink) {
+            UI.copyText(status.boostUrl, R.string.CopiedLink);
+          } else if (id == R.id.btn_shareBoostLink) {
+            ShareController controller = new ShareController(context(), tdlib);
+            controller.setArguments(new ShareController.Args(status.boostUrl).setShare(status.boostUrl, null));
+            controller.show();
+          }
+          return true;
+        });
+    }));
   }
 
   private boolean canConfigureChatAutosave () {
@@ -978,6 +1021,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_chatBoostStatus) {
+      showChatBoostStatus();
+      return;
+    }
     if (id == R.id.btn_chatAutosaveSettings) {
       if (canConfigureChatAutosave()) {
         tdlib.ui().showChatAutosaveSettings(this, chat.id);
