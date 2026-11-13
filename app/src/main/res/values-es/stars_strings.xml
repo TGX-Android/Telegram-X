@@ -138,4 +138,9 @@
   <string name="TgxStarsOfferRejectDone">Oferta rechazada</string>
   <string name="TgxStarsOfferAccept">Aceptar oferta</string>
   <string name="TgxStarsOfferDecline">Rechazar oferta</string>
+  <string name="TgxStarsListInStars">Anunciar en estrellas</string>
+  <string name="TgxStarsListInTon">Anunciar en TON</string>
+  <string name="TgxStarsListingPriceConfirm">¿Anunciar %1$s #%2$s por %3$s?</string>
+  <string name="TgxStarsEditInStars">Cambiar precio en estrellas</string>
+  <string name="TgxStarsEditInTon">Cambiar precio en TON</string>
 </resources>

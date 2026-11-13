@@ -6719,4 +6719,9 @@
   <string name="TgxStarsOfferRejectDone">Offer declined</string>
   <string name="TgxStarsOfferAccept">Accept offer</string>
   <string name="TgxStarsOfferDecline">Decline offer</string>
+  <string name="TgxStarsListInStars">List in Stars</string>
+  <string name="TgxStarsListInTon">List in TON</string>
+  <string name="TgxStarsListingPriceConfirm">List %1$s #%2$s for %3$s?</string>
+  <string name="TgxStarsEditInStars">Change price in Stars</string>
+  <string name="TgxStarsEditInTon">Change price in TON</string>
 </resources>

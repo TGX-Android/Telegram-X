@@ -29,7 +29,9 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +39,8 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.core.StringUtils;
 
 final class StarsGiftMarketController extends RecyclerViewController<Void> implements View.OnClickListener {
-  private final long giftId, recipientId, account, profileId;
+  private final long giftId, recipientId, account;
+  private final TdApi.MessageSender profile;
   private final LinkedHashMap<String, TdApi.Object> entries = new LinkedHashMap<>();
   private final HashSet<String> cursors = new HashSet<>();
   private String offset = "";
@@ -45,28 +48,28 @@ final class StarsGiftMarketController extends RecyclerViewController<Void> imple
   private boolean loading, failed, saving;
 
   StarsGiftMarketController (Context context, Tdlib tdlib, long giftId, long recipientId) {
-    this(context, tdlib, giftId, recipientId, 0);
+    this(context, tdlib, giftId, recipientId, null);
   }
 
-  StarsGiftMarketController (Context context, Tdlib tdlib, long profileId) {
-    this(context, tdlib, 0, tdlib.myUserId(), profileId);
+  StarsGiftMarketController (Context context, Tdlib tdlib, TdApi.MessageSender profile) {
+    this(context, tdlib, 0, tdlib.myUserId(), profile);
   }
 
-  private StarsGiftMarketController (Context context, Tdlib tdlib, long giftId, long recipientId, long profileId) {
+  private StarsGiftMarketController (Context context, Tdlib tdlib, long giftId, long recipientId, TdApi.MessageSender profile) {
     super(context, tdlib);
-    this.profileId = profileId;
+    this.profile = profile;
     this.giftId = giftId;
     this.recipientId = recipientId;
     this.account = tdlib.myUserId();
   }
 
   private boolean owned () {
-    return giftId == 0 && profileId == 0;
+    return giftId == 0 && profile == null;
   }
 
   @Override public int getId () { return R.id.controller_giftMarket; }
   @Override public CharSequence getName () {
-    return Lang.getString(profileId != 0 ? R.string.TgxStarsPublicCollectibles :
+    return Lang.getString(profile != null ? R.string.TgxStarsPublicCollectibles :
       owned() ? R.string.TgxStarsMyCollectibles : R.string.TgxStarsResale);
   }
 
@@ -85,9 +88,9 @@ final class StarsGiftMarketController extends RecyclerViewController<Void> imple
     loading = true;
     failed = false;
     render();
-    if (owned() || profileId != 0) {
-      tdlib.send(new TdApi.GetReceivedGifts("", new TdApi.MessageSenderUser(owned() ? account : profileId), 0,
-        profileId != 0, false, true, true, true, false, false, true, false, cursor, 30),
+    if (owned() || profile != null) {
+      tdlib.send(new TdApi.GetReceivedGifts("", owned() ? new TdApi.MessageSenderUser(account) : profile, 0,
+        profile != null, false, true, true, true, false, false, true, false, cursor, 30),
         (page, error) -> runOnUiThreadOptional(() -> {
           if (account != tdlib.myUserId()) {
             return;
@@ -95,7 +98,7 @@ final class StarsGiftMarketController extends RecyclerViewController<Void> imple
           if (page != null) {
             for (TdApi.ReceivedGift item : page.gifts) {
               if (!item.wasRefunded && item.gift instanceof TdApi.SentGiftUpgraded upgraded) {
-                if (profileId != 0) {
+                if (profile != null) {
                   entries.put(upgraded.gift.name, upgraded.gift);
                 } else if (!StringUtils.isEmpty(item.receivedGiftId)) {
                   entries.put(item.receivedGiftId, item);
@@ -200,76 +203,91 @@ final class StarsGiftMarketController extends RecyclerViewController<Void> imple
 
   private void showListingActions (TdApi.ReceivedGift received) {
     TdApi.UpgradedGift gift = ((TdApi.SentGiftUpgraded) received.gift).gift;
-    boolean listed = starPrice(gift) > 0;
+    long stars = starPrice(gift), ton = StarsCollectibleController.tonPrice(gift);
+    boolean listed = stars > 0 || ton > 0;
     Options.Builder options = new Options.Builder().info(Lang.getString(R.string.TgxStarsCollectibleNumber,
       gift.title, Lang.formatNumber(gift.number)));
-    if (gift.resaleParameters == null || !gift.resaleParameters.gramOnly) {
-      options.item(new OptionItem(1, Lang.getString(R.string.TgxStarsListForSale), OptionColor.NORMAL, 0));
-    }
+    options.item(new OptionItem(1, Lang.getString(stars > 0 ? R.string.TgxStarsEditInStars : R.string.TgxStarsListInStars), OptionColor.NORMAL, 0));
+    options.item(new OptionItem(2, Lang.getString(ton > 0 && gift.resaleParameters.gramOnly ? R.string.TgxStarsEditInTon : R.string.TgxStarsListInTon), OptionColor.NORMAL, 0));
     if (listed) {
-      options.item(new OptionItem(2, Lang.getString(R.string.TgxStarsUnlist), OptionColor.RED, 0));
+      options.item(new OptionItem(3, Lang.getString(R.string.TgxStarsUnlist), OptionColor.RED, 0));
     }
     options.cancelItem();
     showOptions(options.build(), (view, id) -> {
-      if (id == 1) {
-        enterListingPrice(received, gift);
-      } else if (id == 2) {
+      if (id == 1 || id == 2) {
+        enterListingPrice(received, gift, id == 2);
+      } else if (id == 3) {
         showConfirm(Lang.getString(R.string.TgxStarsUnlistConfirm), Lang.getString(R.string.TgxStarsUnlist),
-          () -> setListing(received, gift, 0));
+          () -> setListing(received, gift, null));
       }
       return true;
     });
   }
 
-  private void enterListingPrice (TdApi.ReceivedGift received, TdApi.UpgradedGift gift) {
-    long minimum = tdlib.options().giftResaleStarCountMin;
-    long maximum = tdlib.options().giftResaleStarCountMax;
-    CharSequence caption = Lang.getString(R.string.TgxStarsWithdrawalRange, Lang.formatNumber(minimum), Lang.formatNumber(maximum));
-    long existing = starPrice(gift);
-    var input = openInputAlert(Lang.getString(R.string.TgxStarsListForSale), caption, R.string.Continue, R.string.Cancel,
-      existing > 0 ? Long.toString(existing) : null, (edit, value) -> {
-        long amount;
-        try {
-          amount = Long.parseLong(value.trim());
-        } catch (NumberFormatException error) {
+  private long minimum (boolean ton) {
+    return ton ? tdlib.options().giftResaleGramCentCountMin : tdlib.options().giftResaleStarCountMin;
+  }
+
+  private long maximum (boolean ton) {
+    return ton ? tdlib.options().giftResaleGramCentCountMax : tdlib.options().giftResaleStarCountMax;
+  }
+
+  private void enterListingPrice (TdApi.ReceivedGift received, TdApi.UpgradedGift gift, boolean ton) {
+    long minimum = minimum(ton), maximum = maximum(ton);
+    CharSequence caption = Lang.getString(R.string.TgxStarsWithdrawalRange,
+      StarsCollectibleController.formatPrice(StarsCollectibleController.price(ton, minimum)),
+      StarsCollectibleController.formatPrice(StarsCollectibleController.price(ton, maximum)));
+    long existing = ton ? StarsCollectibleController.tonPrice(gift) : starPrice(gift);
+    String initial = existing <= 0 ? null : ton ? BigDecimal.valueOf(existing, 2).stripTrailingZeros().toPlainString() :
+      Long.toString(existing);
+    var input = openInputAlert(Lang.getString(ton ? R.string.TgxStarsListInTon : R.string.TgxStarsListInStars),
+      caption, R.string.Continue, R.string.Cancel, initial, (edit, value) -> {
+        long amount = StarsCollectibleController.parseAmount(value, ton);
+        if (!validListingAmount(amount, minimum, maximum)) {
           return false;
         }
-        if (amount < minimum || amount > maximum || amount <= 0) {
-          return false;
-        }
+        TdApi.GiftResalePrice price = StarsCollectibleController.price(ton, amount);
         tdlib.ui().post(() -> {
           if (current()) {
-            showConfirm(Lang.getString(R.string.TgxStarsListingConfirm, gift.title, Lang.formatNumber(gift.number),
-              Lang.formatNumber(amount)), Lang.getString(R.string.Save), () -> setListing(received, gift, amount));
+            showConfirm(Lang.getString(R.string.TgxStarsListingPriceConfirm, gift.title, Lang.formatNumber(gift.number),
+              StarsCollectibleController.formatPrice(price)), Lang.getString(R.string.Save),
+              () -> setListing(received, gift, price));
           }
         });
         return true;
       }, true);
-    input.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
+    input.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER | (ton ? InputType.TYPE_NUMBER_FLAG_DECIMAL : 0));
   }
 
-  private void setListing (TdApi.ReceivedGift received, TdApi.UpgradedGift previous, long amount) {
+  static boolean validListingAmount (long amount, long minimum, long maximum) {
+    return amount > 0 && amount >= minimum && amount <= maximum;
+  }
+
+  private void setListing (TdApi.ReceivedGift received, TdApi.UpgradedGift previous, TdApi.GiftResalePrice price) {
     if (!begin()) {
       return;
     }
     tdlib.send(new TdApi.GetReceivedGift(received.receivedGiftId), (fresh, error) -> runOnUiThreadOptional(() -> {
-      if (!current() || error != null || fresh.wasRefunded || !(fresh.gift instanceof TdApi.SentGiftUpgraded upgraded) ||
-          upgraded.gift.id != previous.id || !sameListing(previous, upgraded.gift) ||
-          (amount > 0 && (fresh.nextResaleDate > tdlib.currentTime(TimeUnit.SECONDS) ||
-            amount < tdlib.options().giftResaleStarCountMin || amount > tdlib.options().giftResaleStarCountMax))) {
+      if (!current() || error != null || fresh == null || fresh.wasRefunded ||
+          !(fresh.gift instanceof TdApi.SentGiftUpgraded upgraded) || !sameListing(previous, upgraded.gift) ||
+          (price != null && fresh.nextResaleDate > tdlib.currentTime(TimeUnit.SECONDS)) ||
+          (price instanceof TdApi.GiftResalePriceStar stars && !validListingAmount(stars.starCount, minimum(false), maximum(false))) ||
+          (price instanceof TdApi.GiftResalePriceGram ton && !validListingAmount(ton.gramCentCount, minimum(true), maximum(true)))) {
         afterMutation(error, false);
         return;
       }
-      tdlib.send(new TdApi.SetGiftResalePrice(received.receivedGiftId,
-        amount == 0 ? null : new TdApi.GiftResalePriceStar(amount)), (ok, saveError) ->
+      tdlib.send(new TdApi.SetGiftResalePrice(received.receivedGiftId, price), (ok, saveError) ->
         runOnUiThreadOptional(() -> afterMutation(saveError, saveError == null)));
     }));
   }
 
   static boolean sameListing (TdApi.UpgradedGift first, TdApi.UpgradedGift second) {
+    if (first.id != second.id || !Objects.equals(first.name, second.name)) {
+      return false;
+    }
     TdApi.GiftResaleParameters a = first.resaleParameters, b = second.resaleParameters;
-    return a == b ? a == null || !a.gramOnly : (a != null && b != null && a.starCount == b.starCount && a.gramCentCount == b.gramCentCount &&
-      a.gramOnly == b.gramOnly && !b.gramOnly);
+    return a == b || (a != null && b != null && a.starCount == b.starCount && a.gramCentCount == b.gramCentCount &&
+      a.gramOnly == b.gramOnly);
   }
 
   private boolean current () {

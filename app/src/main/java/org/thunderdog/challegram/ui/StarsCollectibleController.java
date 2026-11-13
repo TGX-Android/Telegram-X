@@ -35,8 +35,10 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongConsumer;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableData;
 
 public final class StarsCollectibleController extends RecyclerViewController<Void> implements View.OnClickListener {
   private static final int[] OFFER_HOURS = {6, 12, 24, 36, 48, 72};
@@ -107,10 +109,15 @@ public final class StarsCollectibleController extends RecyclerViewController<Voi
   }
 
   static boolean validOfferOwner (TdApi.UpgradedGift expected, TdApi.UpgradedGift fresh, long account) {
-    long owner = userOwner(expected);
-    return expected != null && fresh != null && owner != 0 && owner != account &&
-      owner == userOwner(fresh) && expected.id == fresh.id && expected.name != null &&
-      expected.name.equals(fresh.name) && fresh.canSendPurchaseOffer;
+    if (expected == null || fresh == null || !fresh.canSendPurchaseOffer ||
+        expected.id != fresh.id || expected.name == null || !expected.name.equals(fresh.name)) {
+      return false;
+    }
+    if (expected.ownerId instanceof TdApi.MessageSenderUser a && fresh.ownerId instanceof TdApi.MessageSenderUser b) {
+      return a.userId != 0 && a.userId != account && a.userId == b.userId;
+    }
+    return expected.ownerId instanceof TdApi.MessageSenderChat a && fresh.ownerId instanceof TdApi.MessageSenderChat b &&
+      a.chatId != 0 && a.chatId == b.chatId;
   }
 
   static boolean sameTonListing (TdApi.UpgradedGift expected, TdApi.UpgradedGift fresh) {
@@ -145,9 +152,9 @@ public final class StarsCollectibleController extends RecyclerViewController<Voi
     } else if (gift != null) {
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, title(gift)));
       long owner = userOwner(gift);
-      if (owner != 0) {
+      if (gift.ownerId != null) {
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getString(R.string.TgxStarsGiftOwner,
-          tdlib.cache().userName(owner))));
+          tdlib.senderName(gift.ownerId))));
       }
       if (owner != account) {
         addPurchase(items, false, StarsGiftMarketController.starPrice(gift));
@@ -178,7 +185,7 @@ public final class StarsCollectibleController extends RecyclerViewController<Voi
     return Lang.getString(R.string.TgxStarsCollectibleNumber, gift.title, Lang.formatNumber(gift.number));
   }
 
-  private static TdApi.GiftResalePrice price (boolean ton, long amount) {
+  static TdApi.GiftResalePrice price (boolean ton, long amount) {
     return ton ? new TdApi.GiftResalePriceGram(amount) : new TdApi.GiftResalePriceStar(amount);
   }
 
@@ -279,32 +286,50 @@ public final class StarsCollectibleController extends RecyclerViewController<Voi
   }
 
   private void previewOffer (TdApi.UpgradedGift expected, boolean ton, long amount, int hours) {
-    long owner = userOwner(expected);
     if (busy || !current() || !validOfferOwner(expected, expected, account)) {
       return;
     }
-    tdlib.send(new TdApi.GetUserFullInfo(owner), (full, error) -> runOnUiThreadOptional(() -> {
-      if (!current()) {
+    getOfferFee(expected.ownerId, fee -> {
+      if (busy || !current()) {
         return;
       }
-      if (error != null) {
-        UI.showError(error);
-        return;
-      }
-      long fee = full.outgoingPaidMessageStarCount;
       TdApi.GiftResalePrice price = price(ton, amount);
       String confirmation = Lang.getString(R.string.TgxStarsOfferConfirm, title(expected), formatPrice(price),
-        tdlib.cache().userName(owner), Lang.formatNumber(hours));
+        tdlib.senderName(expected.ownerId), Lang.formatNumber(hours));
       if (fee > 0) {
         confirmation += "\n\n" + Lang.getString(R.string.TgxStarsOfferMessageFee, Lang.formatNumber(fee));
       }
       showConfirm(confirmation, Lang.getString(R.string.TgxStarsMakeOffer),
-        () -> sendOffer(expected, ton, amount, price, owner, hours, fee));
-    }));
+        () -> sendOffer(expected, ton, amount, hours, fee));
+    }, error -> {
+      if (current()) {
+        UI.showError(error);
+      }
+    });
   }
 
-  private void sendOffer (TdApi.UpgradedGift expected, boolean ton, long amount, TdApi.GiftResalePrice price,
-                          long owner, int hours, long fee) {
+  private void getOfferFee (TdApi.MessageSender owner, LongConsumer result,
+                            RunnableData<TdApi.Error> failure) {
+    if (owner instanceof TdApi.MessageSenderUser user) {
+      tdlib.send(new TdApi.GetUserFullInfo(user.userId), (full, error) -> runOnUiThreadOptional(() -> {
+        if (full != null) {
+          result.accept(full.outgoingPaidMessageStarCount);
+        } else {
+          failure.runWithData(error);
+        }
+      }));
+    } else if (owner instanceof TdApi.MessageSenderChat channel) {
+      tdlib.send(new TdApi.GetChat(channel.chatId), (chat, error) -> runOnUiThreadOptional(() -> {
+        if (chat != null && chat.type instanceof TdApi.ChatTypeSupergroup group && group.isChannel) {
+          result.accept(0);
+        } else {
+          failure.runWithData(error != null ? error : new TdApi.Error(400, Lang.getString(R.string.TgxStarsGiftChanged)));
+        }
+      }));
+    }
+  }
+
+  private void sendOffer (TdApi.UpgradedGift expected, boolean ton, long amount, int hours, long fee) {
     if (!begin()) {
       return;
     }
@@ -313,12 +338,12 @@ public final class StarsCollectibleController extends RecyclerViewController<Voi
         finish(error, false);
         return;
       }
-      tdlib.send(new TdApi.GetUserFullInfo(owner), (full, profileError) -> runOnUiThreadOptional(() -> {
-        if (!current() || profileError != null || full.outgoingPaidMessageStarCount != fee || amount > offerMaximum(ton)) {
-          finish(profileError, false);
+      getOfferFee(fresh.ownerId, currentFee -> {
+        if (!current() || currentFee != fee || amount > offerMaximum(ton)) {
+          finish(null, false);
           return;
         }
-        tdlib.send(new TdApi.SendGiftPurchaseOffer(new TdApi.MessageSenderUser(owner), name, price, hours * 3600, fee),
+        tdlib.send(new TdApi.SendGiftPurchaseOffer(fresh.ownerId, name, price(ton, amount), hours * 3600, fee),
           (ok, sendError) -> runOnUiThreadOptional(() -> {
             if (ok != null && current()) {
               UI.showToast(R.string.TgxStarsOfferSent, Toast.LENGTH_SHORT);
@@ -328,7 +353,7 @@ public final class StarsCollectibleController extends RecyclerViewController<Voi
               finish(sendError, false);
             }
           }));
-      }));
+      }, offerError -> finish(offerError, false));
     }));
   }
 

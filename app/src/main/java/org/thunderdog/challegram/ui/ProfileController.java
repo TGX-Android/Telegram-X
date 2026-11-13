@@ -3275,7 +3275,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     }
     int index = baseAdapter.indexOfViewById(R.id.btn_tgxPublicCollectibles);
-    boolean visible = userFull != null && userFull.giftCount > 0 && user != null && !tdlib.isSelfUserId(user.id);
+    boolean visible = mode == Mode.CHANNEL ? supergroupFull != null && supergroupFull.giftCount > 0 :
+      userFull != null && userFull.giftCount > 0 && user != null && !tdlib.isSelfUserId(user.id);
     if (visible && index == -1) {
       addTopItem(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxPublicCollectibles, R.drawable.baseline_stars_24,
         R.string.TgxStarsPublicCollectibles), baseHeaderItemCount);
@@ -5956,8 +5957,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     final int viewId = v.getId();
     if (viewId == R.id.avatar) {
       changeProfilePhoto();
-    } else if (viewId == R.id.btn_tgxPublicCollectibles && user != null) {
-      navigateTo(new StarsGiftMarketController(context, tdlib, user.id));
+    } else if (viewId == R.id.btn_tgxPublicCollectibles) {
+      TdApi.MessageSender owner = mode == Mode.CHANNEL && chat != null ? new TdApi.MessageSenderChat(chat.id) :
+        user != null ? new TdApi.MessageSenderUser(user.id) : null;
+      if (owner != null) {
+        navigateTo(new StarsGiftMarketController(context, tdlib, owner));
+      }
     } else if (viewId == R.id.btn_tgxPublicBusiness && user != null && userFull != null) {
       navigateTo(new BusinessProfileController(context, tdlib, user.id, userFull.businessInfo));
     } else if (viewId == R.id.btn_done) {
@@ -7845,6 +7850,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             addFullSupergroupCells(supergroupFull);
           } else {
             addFullChannelCells(supergroupFull);
+            if (mode == Mode.CHANNEL) {
+              checkCollectibles();
+            }
           }
         }
       };
@@ -7852,6 +7860,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else {
       act = () -> {
         if (!isDestroyed()) {
+          if (mode == Mode.CHANNEL) {
+            checkCollectibles();
+          }
           // updateValuedItem(R.id.btn_members);
           if (tdlib.canCreateInviteLink(chat)) {
             updateValuedItem(R.id.btn_inviteLink);
