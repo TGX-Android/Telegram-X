@@ -6722,6 +6722,11 @@
   <string name="TgxStarsListInStars">List in Stars</string>
   <string name="TgxStarsListInTon">List in TON</string>
   <string name="TgxStarsListingPriceConfirm">List %1$s #%2$s for %3$s?</string>
+  <string name="TgxBusinessQuickReplyTarget">To %1$s</string>
+  <string name="TgxBusinessQuickReplySendSelected">Send selected (%1$s)</string>
+  <string name="TgxBusinessQuickReplyConfirmTarget">Send %1$s selected messages to %2$s?</string>
+  <string name="TgxBusinessQuickReplySubsetUnavailable">This selection includes messages that require sending the full shortcut. Change the selection or send all messages.</string>
+  <string name="TgxBusinessQuickReplyPartial">Some messages were queued before sending stopped. Check the chat before trying again.</string>
   <string name="TgxStarsEditInStars">Change price in Stars</string>
   <string name="TgxStarsEditInTon">Change price in TON</string>
 </resources>

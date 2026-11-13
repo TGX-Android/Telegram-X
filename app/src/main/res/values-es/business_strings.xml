@@ -119,4 +119,9 @@
   <string name="TgxBusinessYourTimezone">Horas en tu zona horaria</string>
   <string name="TgxBusinessDayHours">%1$s · %2$s</string>
   <string name="TgxBusinessClosed">Cerrado</string>
+  <string name="TgxBusinessQuickReplyTarget">Para %1$s</string>
+  <string name="TgxBusinessQuickReplySendSelected">Enviar selección (%1$s)</string>
+  <string name="TgxBusinessQuickReplyConfirmTarget">¿Enviar %1$s mensajes seleccionados a %2$s?</string>
+  <string name="TgxBusinessQuickReplySubsetUnavailable">Esta selección incluye mensajes que requieren enviar el atajo completo. Cambia la selección o envía todos los mensajes.</string>
+  <string name="TgxBusinessQuickReplyPartial">Se pusieron algunos mensajes en cola antes de detenerse el envío. Revisa el chat antes de reintentar.</string>
 </resources>

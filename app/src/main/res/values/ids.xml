@@ -1673,5 +1673,9 @@
   <item type="id" name="btn_tgxGiftBuyStars" />
   <item type="id" name="btn_tgxGiftMakeOffer" />
   <item type="id" name="btn_tgxGiftFragment" />
+  <item type="id" name="controller_tgxQuickReplyPreview" />
+  <item type="id" name="btn_tgxQuickReplySelect" />
+  <item type="id" name="btn_tgxQuickReplyReload" />
+  <item type="id" name="btn_tgxQuickReplyConfirm" />
 </resources>
 <!-- endregion -->
