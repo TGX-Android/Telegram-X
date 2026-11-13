@@ -2405,7 +2405,7 @@
   <string name="ChangeChatEmojiStatus">Change Emoji Status</string>
   <string name="ViewGroupLocation">View Group Location</string>
   <string name="EditAutosaveException">Edit Telegram Autosave Exception</string>
-  <string name="ChatAutosaveSettingsTitle">Telegram autosave for %1$s. Save to create or replace this chat’s exception. The maximum video size is kept.</string>
+  <string name="ChatAutosaveSettingsTitle">Telegram autosave for %1$s. Save to create or replace this chat’s exception. You can change the maximum video size below; leaving it unchanged keeps the latest limit from Telegram.</string>
   <string name="ChatAutosaveSettings">Telegram Autosave for This Chat</string>
   <string name="ChatBoostStatusTitle">Boost Status</string>
   <string name="ChatBoostStatusInfo">Level %1$d · %2$d boosts\n%3$d more boosts needed for the next level.</string>

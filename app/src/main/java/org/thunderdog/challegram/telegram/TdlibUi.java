@@ -62,6 +62,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.LangUtils;
+import org.thunderdog.challegram.data.AutosaveVideoSize;
 import org.thunderdog.challegram.data.ProfileTabUtils;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGBotStart;
@@ -1541,19 +1542,45 @@ public class TdlibUi extends Handler {
       if (current == null) {
         return;
       }
+      long[] sizes = AutosaveVideoSize.options(current.maxVideoFileSize);
+      String[] sizeLabels = new String[sizes.length];
+      int selected = 0;
+      for (int i = 0; i < sizes.length; i++) {
+        sizeLabels[i] = Strings.buildSize(sizes[i]);
+        if (sizes[i] == current.maxVideoFileSize) {
+          selected = i;
+        }
+      }
+      final int initial = selected;
       context.showSettings(new SettingsWrapBuilder(R.id.btn_chatAutosaveSettings)
         .addHeaderItem(Lang.getStringBold(R.string.ChatAutosaveSettingsTitle, tdlib.chatTitle(chatId)))
         .setRawItems(new ListItem[] {
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, R.string.Photos, current.autosavePhotos),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, R.string.Videos, current.autosaveVideos),
           new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveExceptionsCompatibility)
-        }).setAllowResize(false).setIntDelegate((id, result) ->
-          saveChatAutosaveSettings(context, chatId, picker, result.get(R.id.btn_photos) != 0, result.get(R.id.btn_video) != 0)));
+        }).setSizeOptionId(R.id.btn_autosaveVideoSize).setSizeStringRes(R.string.AutosaveMaxVideoSize)
+        .setSizeValues(sizeLabels).setSizeValue(initial).setAllowResize(false).setIntDelegate((id, result) -> {
+          int index = result.get(R.id.btn_autosaveVideoSize, initial);
+          if (index >= 0 && index < sizes.length) {
+            boolean photos = result.get(R.id.btn_photos) != 0;
+            boolean videos = result.get(R.id.btn_video) != 0;
+            if (index == initial) {
+              saveChatAutosaveSettings(context, chatId, picker, photos, videos);
+            } else {
+              saveChatAutosaveSettingsWithSize(context, chatId, picker, photos, videos, sizes[index]);
+            }
+          }
+        }));
     }));
   }
 
   private void saveChatAutosaveSettings (ViewController<?> context, long chatId, Object picker, boolean photos, boolean videos) {
-    if (context.isDestroyed() || changingChatAutosave || picker != chatAutosavePicker) {
+    saveChatAutosaveSettingsWithSize(context, chatId, picker, photos, videos, null);
+  }
+
+  private void saveChatAutosaveSettingsWithSize (ViewController<?> context, long chatId, Object picker, boolean photos, boolean videos, @Nullable Long requestedSize) {
+    if (context.isDestroyed() || changingChatAutosave || picker != chatAutosavePicker ||
+      requestedSize != null && !AutosaveVideoSize.isValid(requestedSize)) {
       return;
     }
     changingChatAutosave = true;
@@ -1574,7 +1601,8 @@ public class TdlibUi extends Handler {
         changingChatAutosave = false;
         return;
       }
-      TdApi.ScopeAutosaveSettings updated = new TdApi.ScopeAutosaveSettings(photos, videos, current.maxVideoFileSize);
+      long size = requestedSize != null ? requestedSize : current.maxVideoFileSize;
+      TdApi.ScopeAutosaveSettings updated = new TdApi.ScopeAutosaveSettings(photos, videos, size);
       tdlib.send(new TdApi.SetAutosaveSettings(new TdApi.AutosaveSettingsScopeChat(chatId), updated), (ok, setError) -> {
         // Release the account-wide guard even if the originating controller was destroyed.
         post(() -> {
