@@ -154,6 +154,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.lang.ref.SoftReference;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
@@ -1346,13 +1347,33 @@ public class U {
     UI.showToast(R.string.NoAppToOpen, Toast.LENGTH_SHORT);
   }
 
+  private static Method hiddenDurationScale;
+  private static boolean noHiddenDurationScale;
+
   public static float getAnimationScale (Context context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       return ValueAnimator.getDurationScale();
     }
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O && !noHiddenDurationScale) {
+      // Unlike the setting, it's 0 while battery saver of Android 5.0–7.1 turns animators off
+      try {
+        if (hiddenDurationScale == null) {
+          hiddenDurationScale = ValueAnimator.class.getMethod("getDurationScale");
+        }
+        return (Float) hiddenDurationScale.invoke(null);
+      } catch (Throwable t) {
+        noHiddenDurationScale = true;
+      }
+    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
       try {
         return Settings.Global.getFloat(context.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE, 1.0f);
+      } catch (Throwable ignored) { }
+    } else {
+      try {
+        @SuppressWarnings("deprecation")
+        String key = Settings.System.ANIMATOR_DURATION_SCALE;
+        return Settings.System.getFloat(context.getContentResolver(), key, 1.0f);
       } catch (Throwable ignored) { }
     }
     return 1.0f;
