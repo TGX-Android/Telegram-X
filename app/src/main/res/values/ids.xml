@@ -424,6 +424,9 @@
   <item type="id" name="btn_autosaveExceptions" />
   <item type="id" name="btn_resetAutosaveException" />
   <item type="id" name="btn_clearAutosaveExceptions" />
+  <item type="id" name="controller_chatDiscovery" />
+  <item type="id" name="btn_reloadDiscovery" />
+  <item type="id" name="btn_recommendedChannels" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
