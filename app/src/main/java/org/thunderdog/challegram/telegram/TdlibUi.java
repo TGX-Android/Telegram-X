@@ -5142,6 +5142,16 @@ public class TdlibUi extends Handler {
         }
         break;
       }
+      case TdApi.InternalLinkTypeMyProfilePage.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeMyProfilePage profileLink = (TdApi.InternalLinkTypeMyProfilePage) linkType;
+        long userId = tdlib.myUserId();
+        if (userId != 0 && StringUtils.isEmpty(profileLink.section)) {
+          openPrivateProfile(context, userId, openParameters);
+        } else {
+          unsupported.run();
+        }
+        break;
+      }
       case TdApi.InternalLinkTypeDirectMessagesChat.CONSTRUCTOR: {
         TdApi.InternalLinkTypeDirectMessagesChat directMessagesChat = (TdApi.InternalLinkTypeDirectMessagesChat) linkType;
         openDirectMessages(context, directMessagesChat.channelUsername, openParameters);
@@ -5181,7 +5191,6 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeCallsPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatSelection.CONSTRUCTOR:
       case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeMyProfilePage.CONSTRUCTOR:
       case TdApi.InternalLinkTypeNewChannelChat.CONSTRUCTOR:
       case TdApi.InternalLinkTypeNewGroupChat.CONSTRUCTOR:
       case TdApi.InternalLinkTypeNewPrivateChat.CONSTRUCTOR:
