@@ -3800,6 +3800,51 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (loadingChatEmojiStatus || chat == null || supergroup == null || !tdlib.canChangeInfo(chat, false)) {
       return;
     }
+    if (chat.emojiStatus == null) {
+      openChatEmojiStatusPicker();
+      return;
+    }
+    final long chatId = chat.id;
+    final TdApi.EmojiStatus status = chat.emojiStatus;
+    showOptions(Lang.getString(R.string.ChatEmojiStatus),
+      new int[] {R.id.btn_changeChatEmojiStatus, R.id.btn_removeChatEmojiStatus, R.id.btn_cancel},
+      new String[] {Lang.getString(R.string.ChangeChatEmojiStatus), Lang.getString(R.string.Remove), Lang.getString(R.string.Cancel)},
+      new int[] {OptionColor.NORMAL, OptionColor.RED, OptionColor.NORMAL},
+      new int[] {R.drawable.baseline_account_circle_24, R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24},
+      (view, id) -> {
+        if (chat == null || chat.id != chatId) {
+          return true;
+        }
+        if (id == R.id.btn_changeChatEmojiStatus) {
+          openChatEmojiStatusPicker();
+        } else if (id == R.id.btn_removeChatEmojiStatus) {
+          showConfirm(Lang.getString(R.string.RemoveChatEmojiStatusConfirm), Lang.getString(R.string.Remove),
+            R.drawable.baseline_delete_24, OptionColor.RED, () -> removeChatEmojiStatus(chatId, status));
+        }
+        return true;
+      });
+  }
+
+  private void removeChatEmojiStatus (long chatId, TdApi.EmojiStatus expectedStatus) {
+    TdApi.Chat current = tdlib.chat(chatId);
+    if (loadingChatEmojiStatus || chat == null || chat.id != chatId || current == null ||
+      expectedStatus == null || current.emojiStatus != expectedStatus || !tdlib.canChangeInfo(current, false)) {
+      return;
+    }
+    loadingChatEmojiStatus = true;
+    // Clearing a status does not require selecting a new boosted emoji.
+    tdlib.send(new TdApi.SetChatEmojiStatus(chatId, null), (ok, error) -> runOnUiThreadOptional(() -> {
+      loadingChatEmojiStatus = false;
+      if (error != null) {
+        UI.showError(error);
+      }
+    }));
+  }
+
+  private void openChatEmojiStatusPicker () {
+    if (loadingChatEmojiStatus || chat == null || supergroup == null || !tdlib.canChangeInfo(chat, false)) {
+      return;
+    }
     loadingChatEmojiStatus = true;
     final long chatId = chat.id;
     tdlib.send(new TdApi.GetChatBoostLevelFeatures(supergroup.isChannel, supergroup.boostLevel),
