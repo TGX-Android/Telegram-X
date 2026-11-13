@@ -21,6 +21,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.IdRes;
+import androidx.core.view.ViewCompat;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 
@@ -52,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.StringUtils;
+import tgx.td.TdConstants;
 import tgx.td.Td;
 
 public class SettingsPrivacyController extends RecyclerViewController<SettingsPrivacyController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, TdlibCache.UserDataChangeListener, TdlibContactManager.StatusChangeListener, PrivacySettingsListener, SessionListener, ChatListener {
@@ -113,6 +115,10 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
           v.setData(getAuthorizationsCount());
         } else if (itemId == R.id.btn_passcode) {
           v.setData(Passcode.instance().getModeName());
+        } else if (itemId == R.id.btn_defaultMessageAutoDelete) {
+          v.setData(defaultMessageAutoDeleteSeconds >= 0
+            ? Lang.getDuration(defaultMessageAutoDeleteSeconds, R.string.Off)
+            : Lang.getString(loadingDefaultMessageAutoDelete ? R.string.LoadingInformation : R.string.Error));
         } else if (itemId == R.id.btn_accountTTL) {
           v.setData(getAccountTTLIn());
         } else if (itemId == R.id.btn_hideSecretChats) {
@@ -245,6 +251,8 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.PrivacyAdvanced));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_defaultMessageAutoDelete, 0, R.string.DefaultMessageAutoDelete));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_clearAllDrafts, 0, R.string.PrivacyDeleteCloudDrafts));
     /*items.add(new SettingItem(SettingItem.TYPE_SEPARATOR_FULL));
     items.add(new SettingItem(SettingItem.TYPE_VALUED_SETTING, R.id.btn_mapProviderCloud, 0, R.string.MapPreviewProviderCloud));*/
@@ -330,6 +338,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     super.onFocus();
     if (adapter != null && !isOnlyPrivacy()) {
       loadImportedContactCount();
+      loadDefaultMessageAutoDelete(false);
     }
   }
 
@@ -526,6 +535,8 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       if (passwordState != null && !StringUtils.isEmpty(passwordState.loginEmailAddressPattern)) {
         tdlib.ui().editLoginEmail(this, passwordState);
       }
+    } else if (id == R.id.btn_defaultMessageAutoDelete) {
+      openDefaultMessageAutoDelete();
     } else if (id == R.id.btn_accountTTL) {
       int days = accountTtl != null ? accountTtl.days : 0;
       int months = days / 30;
@@ -812,6 +823,103 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     privacyRules.put(privacyKey, rules);
     if (adapter != null)
       adapter.updateValuedSettingByLongId(privacyKey);
+  }
+
+  private int defaultMessageAutoDeleteSeconds = -1;
+  private boolean loadingDefaultMessageAutoDelete;
+  private boolean openDefaultMessageAutoDeleteWhenLoaded;
+
+  public void openDefaultMessageAutoDelete () {
+    loadDefaultMessageAutoDelete(true);
+  }
+
+  private void loadDefaultMessageAutoDelete (boolean openPicker) {
+    openDefaultMessageAutoDeleteWhenLoaded |= openPicker;
+    if (loadingDefaultMessageAutoDelete) {
+      return;
+    }
+    loadingDefaultMessageAutoDelete = true;
+    adapter.updateValuedSettingById(R.id.btn_defaultMessageAutoDelete);
+    tdlib.send(new TdApi.GetDefaultMessageAutoDeleteTime(), (settings, error) -> runOnUiThreadOptional(() -> {
+      loadingDefaultMessageAutoDelete = false;
+      boolean showPicker = openDefaultMessageAutoDeleteWhenLoaded && isFocused();
+      openDefaultMessageAutoDeleteWhenLoaded = false;
+      if (error != null) {
+        if (showPicker) {
+          UI.showError(error);
+        }
+      } else {
+        defaultMessageAutoDeleteSeconds = settings.time;
+        if (showPicker) {
+          showDefaultMessageAutoDeleteOptions(settings.time);
+        }
+      }
+      adapter.updateValuedSettingById(R.id.btn_defaultMessageAutoDelete);
+    }));
+  }
+
+  private void showDefaultMessageAutoDeleteOptions (int currentSeconds) {
+    Options.Builder options = new Options.Builder().info(Lang.getString(R.string.DefaultMessageAutoDeleteInfo));
+    int[] ids = new int[TdConstants.CHAT_TTL_OPTIONS.length];
+    for (int i = 0; i < ids.length; i++) {
+      int seconds = TdConstants.CHAT_TTL_OPTIONS[i];
+      ids[i] = ViewCompat.generateViewId();
+      options.item(new OptionItem(ids[i], Lang.getDuration(seconds, R.string.Off), OptionColor.NORMAL,
+        seconds == currentSeconds ? R.drawable.baseline_check_24 : 0));
+    }
+    if (java.util.Arrays.binarySearch(TdConstants.CHAT_TTL_OPTIONS, currentSeconds) < 0) {
+      options.item(new OptionItem(ViewCompat.generateViewId(), Lang.getDuration(currentSeconds, R.string.Off),
+        OptionColor.NORMAL, R.drawable.baseline_check_24));
+    }
+    options.cancelItem();
+    showOptions(options.build(), (view, id) -> {
+      for (int i = 0; i < ids.length; i++) {
+        if (id == ids[i]) {
+          int seconds = TdConstants.CHAT_TTL_OPTIONS[i];
+          if (seconds != currentSeconds) {
+            showConfirm(Lang.getString(R.string.DefaultMessageAutoDeleteConfirm,
+              Lang.getDuration(seconds, R.string.Off)), Lang.getString(R.string.Save),
+              () -> saveDefaultMessageAutoDelete(currentSeconds, seconds));
+          }
+          break;
+        }
+      }
+      return true;
+    });
+  }
+
+  private void saveDefaultMessageAutoDelete (int expected, int selected) {
+    if (loadingDefaultMessageAutoDelete || !isFocused()) {
+      return;
+    }
+    loadingDefaultMessageAutoDelete = true;
+    tdlib.send(new TdApi.GetDefaultMessageAutoDeleteTime(), (settings, error) -> runOnUiThreadOptional(() -> {
+      if (error != null || !isFocused() || settings.time != expected) {
+        loadingDefaultMessageAutoDelete = false;
+        openDefaultMessageAutoDeleteWhenLoaded = false;
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          defaultMessageAutoDeleteSeconds = settings.time;
+          adapter.updateValuedSettingById(R.id.btn_defaultMessageAutoDelete);
+          if (isFocused()) {
+            UI.showToast(R.string.DefaultMessageAutoDeleteChanged, Toast.LENGTH_SHORT);
+          }
+        }
+        return;
+      }
+      tdlib.send(new TdApi.SetDefaultMessageAutoDeleteTime(new TdApi.MessageAutoDeleteTime(selected)),
+        (ok, setError) -> runOnUiThreadOptional(() -> {
+          loadingDefaultMessageAutoDelete = false;
+          openDefaultMessageAutoDeleteWhenLoaded = false;
+          if (setError != null) {
+            UI.showError(setError);
+          } else {
+            defaultMessageAutoDeleteSeconds = selected;
+            adapter.updateValuedSettingById(R.id.btn_defaultMessageAutoDelete);
+          }
+        }));
+    }));
   }
 
   private boolean changingNewChatPrivacy;

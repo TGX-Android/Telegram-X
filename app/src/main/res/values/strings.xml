@@ -5373,6 +5373,10 @@
   <string name="ChannelTtlOff">Off</string>
   <string name="ChannelTtlDisabled">Choose a period of time after which posts will be automatically deleted for subscribers of the channel.</string>
   <string name="ChannelTtlEnabled">Automatically delete new posts after %1$s for subscribers of the channel.</string>
+  <string name="DefaultMessageAutoDelete">Auto-Delete in New Chats</string>
+  <string name="DefaultMessageAutoDeleteInfo">Choose the default auto-delete timer for new chats. Existing chats keep their current timers.</string>
+  <string name="DefaultMessageAutoDeleteConfirm">Set the default timer for new chats to %1$s?</string>
+  <string name="DefaultMessageAutoDeleteChanged">The default timer changed. Open the setting again to continue.</string>
   <string name="ChatTtlDefault">Set as default for new chats</string>
   <string name="ChatTtlDefaultHint">Chats you open later will start with the same auto-delete period.</string>
   <string name="ChannelAutoTranslation">Automatic Translation</string>
