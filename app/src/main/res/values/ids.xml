@@ -1664,11 +1664,14 @@
   <item type="id" name="btn_businessRecipientsAddExcluded" />
   <item type="id" name="btn_businessRecipientsAddSelected" />
   <item type="id" name="btn_giftMyAuctions" />
-</resources>
+  <item type="id" name="controller_tgxPublicBusiness" />
   <item type="id" name="controller_tgxCollectible" />
+  <item type="id" name="btn_tgxPublicBusiness" />
   <item type="id" name="btn_tgxPublicCollectibles" />
+  <item type="id" name="btn_tgxBusinessMap" />
   <item type="id" name="btn_tgxGiftBuyTon" />
   <item type="id" name="btn_tgxGiftBuyStars" />
   <item type="id" name="btn_tgxGiftMakeOffer" />
   <item type="id" name="btn_tgxGiftFragment" />
+</resources>
 <!-- endregion -->

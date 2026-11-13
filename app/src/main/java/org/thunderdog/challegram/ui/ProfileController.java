@@ -3254,6 +3254,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     checkBirthdate();
     checkDescription();
     checkGroupsInCommon();
+    checkBusinessProfile();
     checkCollectibles();
 
     /*if (userFull.commonChatCount > 0) {
@@ -3278,6 +3279,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (visible && index == -1) {
       addTopItem(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxPublicCollectibles, R.drawable.baseline_stars_24,
         R.string.TgxStarsPublicCollectibles), baseHeaderItemCount);
+    } else if (!visible && index != -1) {
+      removeTopItem(index);
+    }
+  }
+
+  private void checkBusinessProfile () {
+    if (isEditing() || mode == Mode.SECRET || baseAdapter == null) {
+      return;
+    }
+    int index = baseAdapter.indexOfViewById(R.id.btn_tgxPublicBusiness);
+    boolean visible = userFull != null && BusinessProfileController.hasPublicInfo(userFull.businessInfo);
+    if (visible && index == -1) {
+      addTopItem(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxPublicBusiness, R.drawable.baseline_info_24,
+        R.string.TgxBusinessPublicProfile), baseHeaderItemCount);
     } else if (!visible && index != -1) {
       removeTopItem(index);
     }
@@ -5943,6 +5958,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       changeProfilePhoto();
     } else if (viewId == R.id.btn_tgxPublicCollectibles && user != null) {
       navigateTo(new StarsGiftMarketController(context, tdlib, user.id));
+    } else if (viewId == R.id.btn_tgxPublicBusiness && user != null && userFull != null) {
+      navigateTo(new BusinessProfileController(context, tdlib, user.id, userFull.businessInfo));
     } else if (viewId == R.id.btn_done) {
       applyChatChanges();
     } else if (viewId == R.id.menu_btn_copy) {
@@ -7554,6 +7571,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (isUpdate) {
         checkUserButtons();
         checkGroupsInCommon();
+        checkBusinessProfile();
         checkCollectibles();
         checkDescription();
         updateValuedItem(R.id.btn_userNote);

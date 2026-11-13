@@ -106,4 +106,17 @@
   <string name="TgxBusinessAddRecipient">Añadir un chat privado</string>
   <string name="TgxBusinessRecipientInvalid">Elige un chat privado con otra persona.</string>
   <string name="TgxBusinessApplyCustomRecipients">¿Guardar la respuesta automática para los destinatarios seleccionados?</string>
+  <string name="TgxBusinessCustomDates">Fechas personalizadas</string>
+  <string name="TgxBusinessAwayStart">Inicio de la ausencia</string>
+  <string name="TgxBusinessAwayEnd">Fin de la ausencia</string>
+  <string name="TgxBusinessDateRange">%1$s – %2$s</string>
+  <string name="TgxBusinessInvalidDates">Elige un fin posterior al inicio y que aún no haya pasado.</string>
+  <string name="TgxBusinessPublicProfile">Información del negocio</string>
+  <string name="TgxBusinessPublicEmpty">Esta cuenta no tiene información comercial pública.</string>
+  <string name="TgxBusinessPublicMap">Abrir en el mapa</string>
+  <string name="TgxBusinessOpenNow">Abierto ahora</string>
+  <string name="TgxBusinessClosedNow">Cerrado ahora</string>
+  <string name="TgxBusinessYourTimezone">Horas en tu zona horaria</string>
+  <string name="TgxBusinessDayHours">%1$s · %2$s</string>
+  <string name="TgxBusinessClosed">Cerrado</string>
 </resources>

@@ -17,7 +17,10 @@
  */
 package org.thunderdog.challegram.ui;
 
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.content.Context;
+import android.text.format.DateFormat;
 import android.text.InputType;
 import android.view.View;
 import android.widget.Toast;
@@ -27,12 +30,15 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
+import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -161,7 +167,7 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
     addRow(items, R.id.btn_tgxBusinessGreeting, R.string.TgxBusinessGreeting,
       info != null && info.greetingMessageSettings != null ? Lang.getString(R.string.TgxBusinessConfigured) : null);
     addRow(items, R.id.btn_tgxBusinessAway, R.string.TgxBusinessAway,
-      info != null && info.awayMessageSettings != null ? Lang.getString(R.string.TgxBusinessConfigured) : null);
+      info != null && info.awayMessageSettings != null ? awayScheduleLabel(info.awayMessageSettings.schedule) : null);
 
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.TgxBusinessLinks));
     if (links != null) {
@@ -415,11 +421,16 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
       if (info != null && info.openingHours != null) {
         options.item(new OptionItem(2, Lang.getString(R.string.TgxBusinessOutsideHours), OptionColor.NORMAL, 0));
       }
-      if (current != null && current.schedule != null) {
+      options.item(new OptionItem(4, Lang.getString(R.string.TgxBusinessCustomDates), OptionColor.NORMAL, 0));
+      if (current != null && current.schedule != null && !(current.schedule instanceof TdApi.BusinessAwayMessageScheduleCustom)) {
         options.item(new OptionItem(3, Lang.getString(R.string.TgxBusinessKeepSchedule), OptionColor.NORMAL, 0));
       }
       options.cancelItem();
       showOptions(options.build(), (view, id) -> {
+        if (id == 4) {
+          editAwayDates(current, shortcutId);
+          return true;
+        }
         TdApi.BusinessAwayMessageSchedule schedule = switch (id) {
           case 1 -> new TdApi.BusinessAwayMessageScheduleAlways();
           case 2 -> new TdApi.BusinessAwayMessageScheduleOutsideOfOpeningHours();
@@ -434,9 +445,84 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
     });
   }
 
+  private static String awayScheduleLabel (TdApi.BusinessAwayMessageSchedule schedule) {
+    if (schedule instanceof TdApi.BusinessAwayMessageScheduleCustom custom) {
+      return Lang.getString(R.string.TgxBusinessDateRange, Lang.dateYearShortTime(custom.startDate, TimeUnit.SECONDS),
+        Lang.dateYearShortTime(custom.endDate, TimeUnit.SECONDS));
+    }
+    return Lang.getString(schedule instanceof TdApi.BusinessAwayMessageScheduleOutsideOfOpeningHours ?
+      R.string.TgxBusinessOutsideHours : R.string.TgxBusinessAlways);
+  }
+
+  private void editAwayDates (TdApi.BusinessAwayMessageSettings current, int shortcutId) {
+    long account = tdlib.myUserId();
+    TdApi.BusinessAwayMessageScheduleCustom previous = current != null &&
+      current.schedule instanceof TdApi.BusinessAwayMessageScheduleCustom custom ? custom : null;
+    long now = tdlib.currentTime(TimeUnit.SECONDS);
+    long minStart = previous != null && previous.endDate > now ? Math.min(previous.startDate / 60 * 60L, now) : now;
+    long start = previous != null && previous.endDate > now ? previous.startDate : now + 60;
+    pickAwayDate(R.string.TgxBusinessAwayStart, account, minStart, start, from -> {
+      long initialEnd = previous != null && previous.endDate > Math.max(now, from) ?
+        previous.endDate : Math.max(now, from) + 3600;
+      pickAwayDate(R.string.TgxBusinessAwayEnd, account, Math.max(now, from), initialEnd, until -> {
+        if (validAwayDates(from, until, tdlib.currentTime(TimeUnit.SECONDS))) {
+          selectAwayAvailability(current, shortcutId, new TdApi.BusinessAwayMessageScheduleCustom(from, until));
+        } else {
+          UI.showToast(R.string.TgxBusinessInvalidDates, Toast.LENGTH_SHORT);
+        }
+      });
+    });
+  }
+
+  private void pickAwayDate (int title, long account, long minimum, long initial, RunnableData<Integer> next) {
+    Calendar date = Calendar.getInstance();
+    date.setTimeInMillis(Math.min(initial, Integer.MAX_VALUE) * 1000);
+    DatePickerDialog days = new DatePickerDialog(context(), Theme.dialogTheme(), (view, year, month, day) -> {
+      if (!isFocused() || account == 0 || account != tdlib.myUserId()) {
+        return;
+      }
+      TimePickerDialog time = new TimePickerDialog(context(), Theme.dialogTheme(), (picker, hour, minute) -> {
+        long selected = awayDate(date, year, month, day, hour, minute);
+        if (!isFocused() || account != tdlib.myUserId()) {
+          return;
+        }
+        if (selected < minimum || selected > Integer.MAX_VALUE) {
+          UI.showToast(R.string.TgxBusinessInvalidDates, Toast.LENGTH_SHORT);
+          return;
+        }
+        next.runWithData((int) selected);
+      }, date.get(Calendar.HOUR_OF_DAY), date.get(Calendar.MINUTE), DateFormat.is24HourFormat(context()));
+      time.setTitle(title);
+      ViewSupport.showTimePicker(time);
+    }, date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH));
+    days.setTitle(title);
+    days.getDatePicker().setMinDate(minimum * 1000);
+    days.getDatePicker().setMaxDate(Integer.MAX_VALUE * 1000L);
+    ViewSupport.showDatePicker(days);
+  }
+
+  static long awayDate (Calendar date, int year, int month, int day, int hour, int minute) {
+    Calendar selected = (Calendar) date.clone();
+    selected.clear();
+    selected.setLenient(false);
+    selected.set(year, month, day, hour, minute);
+    try {
+      return selected.getTimeInMillis() / 1000;
+    } catch (IllegalArgumentException ignored) {
+      return -1;
+    }
+  }
+
+  static boolean validAwayDates (int start, int end, long now) {
+    return start > 0 && end > start && end > now;
+  }
+
   private void selectAwayAvailability (TdApi.BusinessAwayMessageSettings current, int id,
                                        TdApi.BusinessAwayMessageSchedule schedule) {
     Options.Builder options = new Options.Builder().info(Lang.getString(R.string.TgxBusinessAwaySchedule));
+    if (schedule instanceof TdApi.BusinessAwayMessageScheduleCustom) {
+      options.info(awayScheduleLabel(schedule));
+    }
     options.item(new OptionItem(1, Lang.getString(R.string.TgxBusinessOfflineOnly), OptionColor.NORMAL, 0));
     options.item(new OptionItem(2, Lang.getString(R.string.TgxBusinessRegardlessOnline), OptionColor.NORMAL, 0));
     options.cancelItem();
@@ -644,6 +730,10 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
       if (!isFocused() || userId != tdlib.myUserId() || error != null) {
         finish(error, false);
       } else if (!sameObject(previous, accessor.apply(fresh.businessInfo))) {
+        finish(null, false);
+      } else if (request instanceof TdApi.SetBusinessAwayMessageSettings update && update.awayMessageSettings != null &&
+          update.awayMessageSettings.schedule instanceof TdApi.BusinessAwayMessageScheduleCustom custom &&
+          !validAwayDates(custom.startDate, custom.endDate, tdlib.currentTime(TimeUnit.SECONDS))) {
         finish(null, false);
       } else {
         tdlib.send(request, (ok, setError) -> runOnUiThreadOptional(() -> finish(setError, setError == null)));
