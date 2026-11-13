@@ -5031,8 +5031,16 @@ public class TdlibUi extends Handler {
                   break;
                 }
 
+                case "birthday/add": {
+                  ViewController<?> current = context.context().navigation().getCurrentStackItem();
+                  if (current != null && current.tdlib() == tdlib && tdlib.myUserId() != 0) {
+                    openProfileEditorFromLink(current, true);
+                  } else {
+                    unsupported.run();
+                  }
+                  break;
+                }
                 case "birthday":
-                case "birthday/add":
                 case "birthday/never":
                 case "birthday/always": {
                   SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
