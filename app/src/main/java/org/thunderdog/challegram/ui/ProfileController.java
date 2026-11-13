@@ -690,6 +690,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
 
+    if (supergroupFull != null && supergroupFull.location != null) {
+      ids.append(R.id.btn_viewGroupLocation);
+      strings.append(R.string.ViewGroupLocation);
+    }
     if (canAddAnyKindOfMembers()) {
       ids.append(R.id.more_btn_addMember);
       strings.append(Lang.getString(R.string.AddMember));
@@ -722,6 +726,18 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (ids.size() > 0) {
       showMore(ids.get(), strings.get(), 0);
     }
+  }
+
+  private void openGroupLocation () {
+    if (chat == null || supergroupFull == null || supergroupFull.location == null) {
+      return;
+    }
+    TdApi.ChatLocation location = supergroupFull.location;
+    MapController.Args args = new MapController.Args(location.location.latitude, location.location.longitude)
+      .setChatId(chat.id, getTopicId()).setLocationOwnerChatId(chat.id);
+    args.title = tdlib.chatTitle(chat.id);
+    args.address = location.address;
+    tdlib.ui().openMap(this, args);
   }
 
   private void openPrivacyExceptions () {
@@ -949,6 +965,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_viewGroupLocation) {
+      openGroupLocation();
+      return;
+    }
     if (id == R.id.btn_suggestProfilePhoto) {
       pickSuggestedProfilePhoto();
       return;

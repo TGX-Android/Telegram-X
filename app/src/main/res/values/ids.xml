@@ -433,6 +433,7 @@
   <item type="id" name="btn_suggestProfilePhoto" />
   <item type="id" name="btn_changeChatEmojiStatus" />
   <item type="id" name="btn_removeChatEmojiStatus" />
+  <item type="id" name="btn_viewGroupLocation" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
