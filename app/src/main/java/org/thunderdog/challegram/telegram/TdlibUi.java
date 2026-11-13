@@ -5235,8 +5235,17 @@ public class TdlibUi extends Handler {
       }
       case TdApi.InternalLinkTypeContactsPage.CONSTRUCTOR: {
         TdApi.InternalLinkTypeContactsPage contactsLink = (TdApi.InternalLinkTypeContactsPage) linkType;
-        if (StringUtils.isEmpty(contactsLink.section)) {
-          ok = context.context().navigation().navigateTo(new PeopleController(context.context(), tdlib));
+        if (StringUtils.isEmpty(contactsLink.section) || "search".equals(contactsLink.section)) {
+          NavigationController navigation = context.context().navigation();
+          PeopleController contacts = new PeopleController(context.context(), tdlib);
+          if ("search".equals(contactsLink.section)) {
+            contacts.addOneShotFocusListener(() -> {
+              if (navigation.getCurrentStackItem() == contacts) {
+                navigation.getHeaderView().openSearchMode();
+              }
+            });
+          }
+          ok = navigation.navigateTo(contacts);
         } else if ("new".equals(contactsLink.section)) {
           ok = context.context().navigation().navigateTo(
             new PhoneController(context.context(), tdlib).setMode(PhoneController.MODE_ADD_CONTACT));
