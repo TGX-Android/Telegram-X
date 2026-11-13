@@ -8,7 +8,7 @@ desugaring = "2.1.5"
 jgit = "7.8.1.202611041320-r"
 
 kotlinx-coroutines = "1.11.0"
-kotlinx-serialization = "1.12.0"
+kotlinx-serialization = "1.13.0"
 
 androidx-multidex = "2.0.1"
 androidx-annotation = "1.11.0"
@@ -68,7 +68,7 @@ androidx-media-latest = "1.11.1"
 androidx-tracing-latest = "2.0.5"
 androidx-palette-latest = "1.1.0"
 
-firebase-messaging-latest = "26.0.1"
+firebase-messaging-latest = "26.0.2"
 
 google-recaptcha-latest = "18.9.4"
 
