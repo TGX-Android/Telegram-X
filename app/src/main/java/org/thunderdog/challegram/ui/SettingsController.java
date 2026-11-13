@@ -204,6 +204,8 @@ public class SettingsController extends ViewController<Void> implements
       names.append(R.string.RecommendedChannels);
       ids.append(R.id.btn_recentlyOpenedChats);
       names.append(R.string.RecentlyOpenedChats);
+      ids.append(R.id.btn_inactiveGroupChats);
+      names.append(R.string.InactiveGroupChats);
       if (tdlib.hasPremium()) {
         ids.append(R.id.btn_userAccentColor);
         names.append(R.string.UserAccentColor);
@@ -259,6 +261,8 @@ public class SettingsController extends ViewController<Void> implements
       navigateTo(new ChatDiscoveryController(context, tdlib));
     } else if (id == R.id.btn_recentlyOpenedChats) {
       navigateTo(new ChatDiscoveryController(context, tdlib, ChatDiscoveryController.RECENT));
+    } else if (id == R.id.btn_inactiveGroupChats) {
+      navigateTo(new ChatDiscoveryController(context, tdlib, ChatDiscoveryController.INACTIVE));
     } else if (id == R.id.btn_userAccentColor) {
       tdlib.ui().showUserAccentColorOptions(this);
     } else if (id == R.id.btn_userProfileAccentColor) {
