@@ -546,33 +546,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
     } else if (id == R.id.btn_clearAutosaveExceptions) {
       confirmClearAutosaveExceptions();
     } else if (id == R.id.btn_autosavePrivateChats || id == R.id.btn_autosaveGroupChats || id == R.id.btn_autosaveChannelChats) {
-      TdApi.ScopeAutosaveSettings settings = getAutosaveScopeSettings(id);
-      if (settings == null) {
-        loadAutosaveSettings();
-        return;
-      }
-      long[] sizes = AutosaveVideoSize.options(settings.maxVideoFileSize);
-      String[] labels = new String[sizes.length];
-      int selected = 0;
-      for (int i = 0; i < sizes.length; i++) {
-        labels[i] = Strings.buildSize(sizes[i]);
-        if (sizes[i] == settings.maxVideoFileSize) {
-          selected = i;
-        }
-      }
-      final int initial = selected;
-      showSettings(new SettingsWrapBuilder(id).setRawItems(new ListItem[] {
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, R.string.Photos, settings.autosavePhotos),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, R.string.Videos, settings.autosaveVideos),
-        new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveExceptionsCompatibility)
-      }).setSizeOptionId(R.id.btn_autosaveVideoSize).setSizeStringRes(R.string.AutosaveMaxVideoSize)
-        .setSizeValues(labels).setSizeValue(initial).setAllowResize(false).setIntDelegate((settingId, result) -> {
-          int index = result.get(R.id.btn_autosaveVideoSize, initial);
-          if (index >= 0 && index < sizes.length) {
-            saveAutosaveDefault(settingId, result.get(R.id.btn_photos) != 0, result.get(R.id.btn_video) != 0,
-              index != initial ? sizes[index] : null);
-          }
-        }));
+      showAutosaveScopeSettings(id);
     } else if (id == R.id.btn_inPrivateChats || id == R.id.btn_inGroupChats || id == R.id.btn_inChannelChats || id == R.id.btn_mediaMobileLimits || id == R.id.btn_mediaWiFiLimits || id == R.id.btn_mediaRoamingLimits) {
       showDownloadLimits(id);
     } else if (id == R.id.btn_cacheSettings) {
@@ -664,6 +638,53 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
       new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_music, 0, sizeOption != 0 ? R.string.NoMusic : R.string.Music, (flags & TdlibFilesManager.DOWNLOAD_FLAG_MUSIC) != 0),
       new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_gif, 0, sizeOption != 0 ? R.string.NoGIFs : R.string.GIFs, (flags & TdlibFilesManager.DOWNLOAD_FLAG_GIF) != 0),
     }).setIntDelegate(this).setSizeOptionId(sizeOption).setSizeValue(currentValue).setSizeValues(sizeOptions).setAllowResize(false));
+  }
+
+  public void showAutosaveScopeSettings (@IdRes int id) {
+    TdApi.ScopeAutosaveSettings settings = getAutosaveScopeSettings(id);
+    if (settings != null) {
+      showAutosaveScopeSettings(id, settings);
+      return;
+    }
+    tdlib.send(new TdApi.GetAutosaveSettings(), (loaded, error) -> runOnUiThreadOptional(() -> {
+      if (!isFocused()) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        updateAutosaveSettings(loaded);
+        TdApi.ScopeAutosaveSettings current = getAutosaveScopeSettings(id);
+        if (current != null) {
+          showAutosaveScopeSettings(id, current);
+        }
+      }
+    }));
+  }
+
+  private void showAutosaveScopeSettings (@IdRes int id, TdApi.ScopeAutosaveSettings settings) {
+    long[] sizes = AutosaveVideoSize.options(settings.maxVideoFileSize);
+    String[] labels = new String[sizes.length];
+    int selected = 0;
+    for (int i = 0; i < sizes.length; i++) {
+      labels[i] = Strings.buildSize(sizes[i]);
+      if (sizes[i] == settings.maxVideoFileSize) {
+        selected = i;
+      }
+    }
+    final int initial = selected;
+    showSettings(new SettingsWrapBuilder(id).setRawItems(new ListItem[] {
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, R.string.Photos, settings.autosavePhotos),
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, R.string.Videos, settings.autosaveVideos),
+      new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AutosaveExceptionsCompatibility)
+    }).setSizeOptionId(R.id.btn_autosaveVideoSize).setSizeStringRes(R.string.AutosaveMaxVideoSize)
+      .setSizeValues(labels).setSizeValue(initial).setAllowResize(false).setIntDelegate((settingId, result) -> {
+        int index = result.get(R.id.btn_autosaveVideoSize, initial);
+        if (index >= 0 && index < sizes.length) {
+          saveAutosaveDefault(settingId, result.get(R.id.btn_photos) != 0, result.get(R.id.btn_video) != 0,
+            index != initial ? sizes[index] : null);
+        }
+      }));
   }
 
   private void showAutosaveExceptions () {

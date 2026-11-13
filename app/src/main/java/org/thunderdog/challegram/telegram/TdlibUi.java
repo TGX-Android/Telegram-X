@@ -5278,6 +5278,18 @@ public class TdlibUi extends Handler {
                   stats.setArguments(new SettingsNetworkStatsController.Args(network, null));
                   result = stats;
                 }
+                case "save-to-photos/chats", "save-to-photos/chats/max-video-size",
+                     "save-to-photos/groups", "save-to-photos/groups/max-video-size",
+                     "save-to-photos/channels", "save-to-photos/channels/max-video-size" -> {
+                  SettingsDataController autosave = new SettingsDataController(context.context(), tdlib);
+                  int setting = switch (subsection) {
+                    case "save-to-photos/groups", "save-to-photos/groups/max-video-size" -> R.id.btn_autosaveGroupChats;
+                    case "save-to-photos/channels", "save-to-photos/channels/max-video-size" -> R.id.btn_autosaveChannelChats;
+                    default -> R.id.btn_autosavePrivateChats;
+                  };
+                  autosave.addOneShotFocusListener(() -> autosave.showAutosaveScopeSettings(setting));
+                  result = autosave;
+                }
                 case "auto-download/mobile", "auto-download/wifi", "auto-download/roaming" -> {
                   SettingsDataController downloads = new SettingsDataController(context.context(), tdlib);
                   int setting = switch (subsection) {
