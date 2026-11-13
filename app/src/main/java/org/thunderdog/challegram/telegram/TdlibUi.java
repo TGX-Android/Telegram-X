@@ -129,6 +129,7 @@ import org.thunderdog.challegram.ui.PasscodeSetupController;
 import org.thunderdog.challegram.ui.PasswordController;
 import org.thunderdog.challegram.ui.PeopleController;
 import org.thunderdog.challegram.ui.PhoneController;
+import org.thunderdog.challegram.ui.StarsController;
 import org.thunderdog.challegram.ui.PremiumSettingsController;
 import org.thunderdog.challegram.ui.ProfileChannelController;
 import org.thunderdog.challegram.ui.ProfileController;
@@ -5311,13 +5312,21 @@ public class TdlibUi extends Handler {
               }
               break;
             }
+            case TdApi.SettingsSectionMyStars.CONSTRUCTOR: {
+              String subsection = ((TdApi.SettingsSectionMyStars) section).subsection;
+              if (tdlib.isAuthorized() && (StringUtils.isEmpty(subsection) || "top-up".equals(subsection))) {
+                result = new StarsController(context.context(), tdlib, "top-up".equals(subsection), 0, "");
+              } else {
+                unsupported.run();
+              }
+              break;
+            }
             case TdApi.SettingsSectionPremium.CONSTRUCTOR: {
               result = new PremiumSettingsController(context.context(), tdlib, new TdApi.PremiumSourceSettings());
               break;
             }
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
             case TdApi.SettingsSectionSearch.CONSTRUCTOR:
-            case TdApi.SettingsSectionMyStars.CONSTRUCTOR:
             case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
             case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
             case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
@@ -5420,6 +5429,16 @@ public class TdlibUi extends Handler {
         }
         break;
       }
+      case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeStarPurchase purchase = (TdApi.InternalLinkTypeStarPurchase) linkType;
+        if (tdlib.isAuthorized() && purchase.starCount > 0) {
+          ok = context.context().navigation().navigateTo(new StarsController(context.context(), tdlib,
+            true, purchase.starCount, purchase.purpose != null ? purchase.purpose : ""));
+        } else {
+          unsupported.run();
+        }
+        break;
+      }
       case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR: {
         TdApi.InternalLinkTypePremiumFeaturesPage premium = (TdApi.InternalLinkTypePremiumFeaturesPage) linkType;
         ok = openPremiumSettings(context, new TdApi.PremiumSourceLink(premium.referrer));
@@ -5482,7 +5501,6 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeOauth.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGiftPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRequestManagedBot.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeTextCompositionStyle.CONSTRUCTOR:
       case TdApi.InternalLinkTypeTonConnect.CONSTRUCTOR:
       case TdApi.InternalLinkTypeTonWalletTransfer.CONSTRUCTOR: {

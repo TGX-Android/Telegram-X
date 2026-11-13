@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="TgxOfficialTelegramRequired">Abre esta opción en la aplicación oficial de Telegram.</string>
+  <string name="TgxStarsTitle">Estrellas de Telegram</string>
+  <string name="TgxStarsBalance">%1$s estrellas disponibles</string>
+  <string name="TgxStarsDatedAmount">%1$s estrellas · %2$s</string>
+  <string name="TgxStarsRecurring">%1$s estrellas cada %2$s</string>
+  <string name="TgxStarsSubscriptionSummary">%1$s · %2$s</string>
+  <string name="TgxStarsUnknownChat">Chat %1$s</string>
+  <string name="TgxStarsChooseView">Mostrar %1$s</string>
+  <string name="TgxStarsMore">Cargar más</string>
+  <string name="TgxStarsEmpty">No hay movimientos en esta vista.</string>
+  <string name="TgxPremiumRefreshStars">Actualizar estrellas</string>
+  <string name="TgxStarsTopUpInfo">Continúa en Telegram para revisar la compra y el precio final. Comprueba que esté seleccionada la misma cuenta.</string>
+  <string name="TgxStarsRequired">Saldo solicitado: %1$s estrellas</string>
+  <string name="TgxStarsPack">%1$s estrellas</string>
+  <string name="TgxStarsAll">Todos los movimientos</string>
+  <string name="TgxStarsIncoming">Entradas</string>
+  <string name="TgxStarsOutgoing">Salidas</string>
+  <string name="TgxStarsSubscriptions">Suscripciones</string>
+  <string name="TgxStarsTopUp">Recargar</string>
+  <string name="TgxStarsRefund">Reembolso</string>
+  <string name="TgxStarsDeposit">Depósito</string>
+  <string name="TgxStarsWithdrawal">Retiro</string>
+  <string name="TgxStarsSubscriptionTransaction">Pago de suscripción</string>
+  <string name="TgxStarsGift">Regalo</string>
+  <string name="TgxStarsPaidMedia">Contenido multimedia de pago</string>
+  <string name="TgxStarsPaidMessage">Mensaje de pago</string>
+  <string name="TgxStarsPaidReaction">Reacción de pago</string>
+  <string name="TgxStarsTransaction">Movimiento de estrellas</string>
+  <string name="TgxStarsCopyId">Copiar ID del movimiento</string>
+  <string name="TgxStarsExpired">Vencida</string>
+  <string name="TgxStarsCanceled">Renovación desactivada</string>
+  <string name="TgxStarsExpiring">Por vencer</string>
+  <string name="TgxStarsRenewing">Se renueva automáticamente</string>
+  <string name="TgxStarsSubscriptionDate">%1$s · el periodo actual termina el %2$s</string>
+  <string name="TgxStarsEnableRenewal">Activar renovación</string>
+  <string name="TgxStarsCancelRenewal">Desactivar renovación</string>
+  <string name="TgxStarsEnableConfirm">¿Activar la renovación automática? Telegram cobrará estrellas al comenzar el próximo periodo.</string>
+  <string name="TgxStarsCancelConfirm">¿Desactivar la renovación automática de esta suscripción?</string>
+  <string name="TgxStarsSubscriptionChanged">La suscripción cambió. Revisa los datos actualizados.</string>
+</resources>

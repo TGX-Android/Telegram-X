@@ -933,6 +933,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         if (after != null)
           after.run();
       } else {
+        ownedStarAmount = null;
         incrementJobReferenceCount(JOB_ID_CLEAN_UP);
         deleteAllFiles(success -> {
           if (success) {
@@ -9731,9 +9732,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     // TODO ?
   }
 
+  private volatile TdApi.StarAmount ownedStarAmount;
+  private final java.util.concurrent.CopyOnWriteArrayList<RunnableData<TdApi.StarAmount>> starAmountListeners =
+    new java.util.concurrent.CopyOnWriteArrayList<>();
+
+  public TdApi.StarAmount ownedStarAmount () {
+    return ownedStarAmount;
+  }
+
+  public void addStarAmountListener (RunnableData<TdApi.StarAmount> listener) {
+    starAmountListeners.addIfAbsent(listener);
+  }
+
+  public void removeStarAmountListener (RunnableData<TdApi.StarAmount> listener) {
+    starAmountListeners.remove(listener);
+  }
+
   @TdlibThread
   private void updateOwnedStarCount (TdApi.UpdateOwnedStarCount update) {
-    // TODO(stars)
+    ownedStarAmount = update.starAmount;
+    for (RunnableData<TdApi.StarAmount> listener : starAmountListeners) {
+      listener.runWithData(update.starAmount);
+    }
   }
 
   @TdlibThread

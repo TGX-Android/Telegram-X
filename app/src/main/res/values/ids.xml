@@ -1592,5 +1592,15 @@
   <item type="id" name="btn_premiumProfileColor" />
   <item type="id" name="btn_premiumPrivacy" />
   <item type="id" name="btn_premiumFolders" />
+  <item type="id" name="btn_tgxStarsChangeRenewal" />
+  <item type="id" name="btn_tgxStarsCopy" />
+  <item type="id" name="btn_tgxStarsMore" />
+  <item type="id" name="btn_tgxStarsOfficial" />
+  <item type="id" name="btn_tgxStarsOpenChat" />
+  <item type="id" name="btn_tgxStarsRefresh" />
+  <item type="id" name="btn_tgxStarsRow" />
+  <item type="id" name="btn_tgxStarsSettings" />
+  <item type="id" name="btn_tgxStarsView" />
+  <item type="id" name="controller_tgxStars" />
 </resources>
 <!-- endregion -->

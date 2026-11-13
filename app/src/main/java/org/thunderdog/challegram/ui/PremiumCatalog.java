@@ -144,7 +144,7 @@ final class PremiumCatalog {
       plan.paymentOption.amount > 0 && currencyExponent(plan.paymentOption.currency) >= 0;
   }
 
-  private static int currencyExponent (String code) {
+  static int currencyExponent (String code) {
     if (code == null || !code.matches("[A-Z]{3}")) {
       return -1;
     }
