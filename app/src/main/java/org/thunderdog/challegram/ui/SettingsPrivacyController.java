@@ -92,6 +92,9 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
         final int itemId = item.getId();
         if (itemId == R.id.btn_syncContacts) {
           v.getToggler().setRadioEnabled(tdlib.contacts().isSyncEnabled(), isUpdate);
+        } else if (itemId == R.id.btn_importedContactCount) {
+          v.setData(importedContactCount >= 0 ? Lang.plural(R.string.xContacts, importedContactCount) :
+            Lang.getString(loadingImportedContactCount ? R.string.LoadingInformation : R.string.Error));
         } else if (itemId == R.id.btn_mapProvider) {
           v.setData(getMapProviderName(false));
         } else if (itemId == R.id.btn_mapProviderCloud) {
@@ -204,6 +207,8 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     if (!isOnlyPrivacy()) {
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Contacts));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_importedContactCount, 0, R.string.ImportedContacts));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_suggestContacts, 0, R.string.SuggestContacts));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_resetContacts, 0, R.string.SyncContactsDelete));
@@ -257,6 +262,9 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
 
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
+    if (!isOnlyPrivacy()) {
+      loadImportedContactCount();
+    }
 
     Log.ensureReturnType(TdApi.GetBlockedMessageSenders.class, TdApi.MessageSenders.class);
     tdlib.send(new TdApi.GetBlockedMessageSenders(new TdApi.BlockListMain(), 0, 1), (blockedSenders) -> runOnUiThreadOptional(() ->
@@ -296,6 +304,33 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     super.restoreInstanceState(in, keyPrefix);
     setArguments(new Args(in.getBoolean(keyPrefix + "only", false)));
     return true;
+  }
+
+  private int importedContactCount = -1;
+  private boolean loadingImportedContactCount;
+
+  private void loadImportedContactCount () {
+    if (loadingImportedContactCount) {
+      return;
+    }
+    loadingImportedContactCount = true;
+    adapter.updateValuedSettingById(R.id.btn_importedContactCount);
+    tdlib.send(new TdApi.GetImportedContactCount(), (count, error) -> runOnUiThreadOptional(() -> {
+      loadingImportedContactCount = false;
+      importedContactCount = error == null ? count.count : -1;
+      adapter.updateValuedSettingById(R.id.btn_importedContactCount);
+      if (error != null) {
+        UI.showError(error);
+      }
+    }));
+  }
+
+  @Override
+  public void onFocus () {
+    super.onFocus();
+    if (adapter != null && !isOnlyPrivacy()) {
+      loadImportedContactCount();
+    }
   }
 
   private int getSyncContactsInfoRes () {
@@ -438,6 +473,8 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       } else {
         tdlib.setDisableTopChats(!((SettingView) v).getToggler().toggle(true));
       }
+    } else if (id == R.id.btn_importedContactCount) {
+      loadImportedContactCount();
     } else if (id == R.id.btn_resetContacts) {
       showOptions(Lang.getString(R.string.SyncContactsDeleteInfo), new int[] {R.id.btn_resetContacts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SyncContactsDeleteButton), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, resultId) -> {
         if (resultId == R.id.btn_resetContacts) {
