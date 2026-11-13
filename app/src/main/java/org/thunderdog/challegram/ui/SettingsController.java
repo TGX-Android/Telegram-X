@@ -21,6 +21,7 @@ import android.text.SpannableStringBuilder;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IntDef;
@@ -205,6 +206,8 @@ public class SettingsController extends ViewController<Void> implements
       if (userFull != null && userFull.personalChatId != 0) {
         ids.append(R.id.btn_openProfileChannel);
         names.append(R.string.OpenProfileChannel);
+        ids.append(R.id.btn_removeProfileChannel);
+        names.append(R.string.RemoveProfileChannel);
       }
       ids.append(R.id.btn_recommendedChannels);
       names.append(R.string.RecommendedChannels);
@@ -265,6 +268,12 @@ public class SettingsController extends ViewController<Void> implements
       getOwnProfileLink(id == R.id.btn_shareProfileLink);
     } else if (id == R.id.btn_chooseProfileChannel) {
       navigateTo(new ProfileChannelController(context, tdlib));
+    } else if (id == R.id.btn_removeProfileChannel) {
+      if (userFull != null && userFull.personalChatId != 0) {
+        final long channelId = userFull.personalChatId;
+        showConfirm(Lang.getString(R.string.RemoveProfileChannelConfirm), Lang.getString(R.string.Remove),
+          R.drawable.baseline_delete_24, OptionColor.RED, () -> removeProfileChannel(channelId));
+      }
     } else if (id == R.id.btn_openProfileChannel) {
       if (userFull != null && userFull.personalChatId != 0) {
         tdlib.ui().openChat(this, userFull.personalChatId, new TdlibUi.ChatOpenParameters().keepStack());
@@ -284,6 +293,31 @@ public class SettingsController extends ViewController<Void> implements
     } else {
       tdlib.ui().handleProfileMore(this, id, tdlib.myUser(), null);
     }
+  }
+
+  private boolean removingProfileChannel;
+
+  private void removeProfileChannel (long expectedChannelId) {
+    if (removingProfileChannel || expectedChannelId == 0) {
+      return;
+    }
+    removingProfileChannel = true;
+    tdlib.send(new TdApi.GetUserFullInfo(tdlib.myUserId()), (info, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        removingProfileChannel = false;
+        UI.showError(error);
+      } else if (info.personalChatId != expectedChannelId) {
+        removingProfileChannel = false;
+        UI.showToast(R.string.ProfileChannelChanged, Toast.LENGTH_SHORT);
+      } else {
+        tdlib.send(new TdApi.SetPersonalChat(0), (ok, setError) -> runOnUiThreadOptional(() -> {
+          removingProfileChannel = false;
+          if (setError != null) {
+            UI.showError(setError);
+          }
+        }));
+      }
+    }));
   }
 
   private boolean loadingProfileLink;

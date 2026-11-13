@@ -2421,6 +2421,9 @@
   <string name="ChooseProfileChannel">Choose Profile Channel</string>
   <string name="SetProfileChannelConfirm">Show %1$s on your Telegram profile? It will replace your current profile channel. This does not change channel ownership or membership.</string>
   <string name="ProfileChannelUnavailable">This channel is no longer eligible for your profile. Refresh the list and try again.</string>
+  <string name="RemoveProfileChannel">Remove Profile Channel</string>
+  <string name="RemoveProfileChannelConfirm">Remove the channel link from your Telegram profile? You will not leave or delete the channel, and its ownership will not change.</string>
+  <string name="ProfileChannelChanged">Your profile channel changed. Open the menu again to review the current channel.</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>
