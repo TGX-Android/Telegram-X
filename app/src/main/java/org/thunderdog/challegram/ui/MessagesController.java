@@ -6864,6 +6864,43 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }));
   }
 
+  private void replyToPollOption (TGMessage selectedMessage, long pollId, String optionId) {
+    if (currentPollOption(selectedMessage, pollId, optionId, true) == null) {
+      return;
+    }
+    TdApi.Message message = selectedMessage.getMessage();
+    final int generation = ++pollOptionRequestGeneration;
+    final Object epoch = draftEpoch;
+    final long revision = inputEditRevision;
+    final TdApi.MessageTopic topicId = getMessageTopicId();
+    tdlib.send(new TdApi.GetPollOptionProperties(message.chatId, message.id, optionId),
+      (optionProperties, error) -> runOnUiThreadOptional(() -> {
+        if (generation != pollOptionRequestGeneration || draftEpoch != epoch ||
+          inputEditRevision != revision || !Td.equalsTo(topicId, getMessageTopicId()) ||
+          currentPollOption(selectedMessage, pollId, optionId, true) == null) {
+          return;
+        }
+        if (error != null) {
+          UI.showError(error);
+        } else if (!optionProperties.canBeReplied) {
+          UI.showToast(R.string.PollOptionReplyUnavailable, Toast.LENGTH_SHORT);
+        } else {
+          selectedMessage.getMessageProperties(message.id, properties -> runOnUiThreadOptional(() -> {
+            if (generation != pollOptionRequestGeneration || draftEpoch != epoch ||
+              inputEditRevision != revision || !Td.equalsTo(topicId, getMessageTopicId()) ||
+              currentPollOption(selectedMessage, pollId, optionId, true) == null) {
+              return;
+            }
+            if (properties == null || !properties.canBeReplied) {
+              UI.showToast(R.string.PollOptionReplyUnavailable, Toast.LENGTH_SHORT);
+            } else {
+              showReply(new MessageWithProperties(message, properties), null, 0, optionId, true, true);
+            }
+          }));
+        }
+      }));
+  }
+
   private void showRemovePollOptions (TGMessage selectedMessage) {
     if (!(selectedMessage.getMessage().content instanceof TdApi.MessagePoll)) {
       return;
@@ -7011,6 +7048,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
           long pollId = ((TdApi.MessagePoll) selectedMessage.getMessage().content).poll.id;
           showPollOptionPicker(selectedMessage, R.string.CopyPollOptionLink,
             option -> copyPollOptionLink(selectedMessage, pollId, option.id));
+        }
+        return true;
+      } else if (id == R.id.btn_replyToPollOption) {
+        if (selectedMessage.getMessage().content instanceof TdApi.MessagePoll &&
+          selectedMessage.lastMessageProperties().canBeReplied) {
+          long pollId = ((TdApi.MessagePoll) selectedMessage.getMessage().content).poll.id;
+          showPollOptionPicker(selectedMessage, R.string.ReplyToPollOption,
+            option -> replyToPollOption(selectedMessage, pollId, option.id));
         }
         return true;
       } else if (id == R.id.btn_messageRetractVote) {

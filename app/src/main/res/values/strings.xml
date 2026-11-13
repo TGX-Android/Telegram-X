@@ -2364,6 +2364,8 @@
   <string name="PollVotes">Poll Votes</string>
   <string name="PollVoteStatistics">Poll Vote Statistics</string>
   <string name="CopyPollOptionLink">Copy Poll Answer Link</string>
+  <string name="ReplyToPollOption">Reply to Poll Answer</string>
+  <string name="PollOptionReplyUnavailable">You can’t reply to this poll answer right now.</string>
   <string name="PollOptionLinkUnavailable">A link to this poll answer is unavailable.</string>
   <string name="PollVoteStatisticsUnavailable">Vote statistics are unavailable. Please try again later.</string>
   <string name="ReactionNotificationsInfo">Choose whose reactions and votes you receive notifications about.</string>

@@ -979,6 +979,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       strings.append(R.string.CopyPollOptionLink);
       icons.append(R.drawable.baseline_link_24);
     }
+    if (!isMore && messageCount == 1 && content instanceof TdApi.MessagePoll &&
+      msg.lastMessageProperties().canBeReplied) {
+      ids.append(R.id.btn_replyToPollOption);
+      strings.append(R.string.ReplyToPollOption);
+      icons.append(R.drawable.baseline_reply_24);
+    }
 
     if (!isMore && msg.canGetEmbeddingCode()) {
       ids.append(R.id.btn_messageCopyEmbedCode);

@@ -410,6 +410,7 @@
   <item type="id" name="btn_pollVoteStatistics" />
   <item type="id" name="stats_pollVotes" />
   <item type="id" name="btn_copyPollOptionLink" />
+  <item type="id" name="btn_replyToPollOption" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
