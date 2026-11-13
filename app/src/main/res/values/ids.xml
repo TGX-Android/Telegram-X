@@ -1635,5 +1635,9 @@
   <item type="id" name="btn_starsPersonalRevenue" />
   <item type="id" name="btn_starsBotRevenue" />
   <item type="id" name="btn_starsChatRevenue" />
+  <item type="id" name="btn_businessBotEdit" />
+  <item type="id" name="btn_businessBotConnect" />
+  <item type="id" name="btn_businessBotManage" />
+  <item type="id" name="btn_businessQuickReplySend" />
 </resources>
 <!-- endregion -->

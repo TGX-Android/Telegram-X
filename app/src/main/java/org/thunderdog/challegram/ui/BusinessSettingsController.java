@@ -26,6 +26,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -172,12 +173,12 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxBusinessAddLink, 0, R.string.TgxBusinessAddLink));
       }
     }
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_businessBotManage, 0, R.string.TgxBusinessBots));
     if (features != null) {
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.TgxBusinessTools));
       for (TdApi.BusinessFeature feature : features) {
         int title = switch (feature.getConstructor()) {
           case TdApi.BusinessFeatureQuickReplies.CONSTRUCTOR -> R.string.TgxBusinessQuickReplies;
-          case TdApi.BusinessFeatureBots.CONSTRUCTOR -> R.string.TgxBusinessBots;
           case TdApi.BusinessFeatureChatFolderTags.CONSTRUCTOR -> R.string.TgxBusinessFolderTags;
           case TdApi.BusinessFeatureEmojiStatus.CONSTRUCTOR -> R.string.TgxPremiumFeatureEmojiStatus;
           case TdApi.BusinessFeatureUpgradedStories.CONSTRUCTOR -> R.string.TgxPremiumFeatureUpgradedStories;
@@ -215,13 +216,13 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
       tdlib.ui().openPremiumSettings(this, new TdApi.PremiumSourceFeature(new TdApi.PremiumFeatureBusiness()));
     } else if (id == R.id.btn_tgxBusinessRefresh) {
       refresh();
+    } else if (id == R.id.btn_businessBotManage) {
+      showConnectedBot();
     } else if (id == R.id.btn_tgxBusinessOfficial) {
       openOfficial();
     } else if (id == R.id.btn_tgxBusinessTool && view.getTag() instanceof ListItem item &&
                item.getData() instanceof TdApi.BusinessFeature feature) {
-      if (feature instanceof TdApi.BusinessFeatureBots) {
-        showConnectedBot();
-      } else if (feature instanceof TdApi.BusinessFeatureQuickReplies && (tdlib.hasPremium() || info != null)) {
+      if (feature instanceof TdApi.BusinessFeatureQuickReplies && (tdlib.hasPremium() || info != null)) {
         loadShortcuts(this::showQuickReplies);
       } else {
         openOfficial();
@@ -774,23 +775,148 @@ public final class BusinessSettingsController extends RecyclerViewController<Voi
         return;
       }
       if (connected.bot == null) {
-        showConfirm(Lang.getString(R.string.TgxBusinessNoBot), Lang.getString(R.string.TgxPremiumViewOptions), this::openOfficial);
+        showConfirm(Lang.getString(R.string.TgxBusinessNoBot), Lang.getString(R.string.TgxBusinessConnectBot),
+          () -> chooseBusinessBot(connected));
         return;
       }
       long botUserId = connected.bot.botUserId;
       String status = Lang.getString(R.string.TgxBusinessConnectedBot, tdlib.cache().userName(botUserId),
         Lang.dateYearShortTime(connected.connectionDate, TimeUnit.SECONDS));
-      showOptions(status, new int[] {R.id.btn_tgxBusinessOfficial, R.id.btn_tgxBusinessDisconnect, R.id.btn_cancel},
-        new String[] {Lang.getString(R.string.TgxPremiumViewOptions), Lang.getString(R.string.TgxBusinessDisconnect),
-          Lang.getString(R.string.Cancel)}, (view, id) -> {
-            if (id == R.id.btn_tgxBusinessOfficial) {
-              openOfficial();
+      showOptions(status, new int[] {R.id.btn_businessBotEdit, R.id.btn_businessBotConnect, R.id.btn_tgxBusinessDisconnect, R.id.btn_cancel},
+        new String[] {Lang.getString(R.string.TgxBusinessBotPermissions), Lang.getString(R.string.TgxBusinessReplaceBot),
+          Lang.getString(R.string.TgxBusinessDisconnect), Lang.getString(R.string.Cancel)}, (view, id) -> {
+            if (id == R.id.btn_businessBotEdit) {
+              configureBotScope(connected, botUserId);
+            } else if (id == R.id.btn_businessBotConnect) {
+              chooseBusinessBot(connected);
             } else if (id == R.id.btn_tgxBusinessDisconnect) {
               showConfirm(Lang.getString(R.string.TgxBusinessDisconnectConfirm), Lang.getString(R.string.TgxBusinessDisconnect),
                 () -> disconnectBot(botUserId, connected.connectionDate));
             }
             return true;
           });
+    }));
+  }
+
+  private void chooseBusinessBot (TdApi.BusinessConnectedBotInfo expected) {
+    askText(R.string.TgxBusinessBotUsername, "", false, input -> {
+      String username = input.trim().replaceFirst("^@", "");
+      if (!username.matches("[A-Za-z0-9_]{1,32}")) {
+        UI.showToast(R.string.TgxBusinessBotNotEligible, Toast.LENGTH_SHORT);
+        return;
+      }
+      tdlib.send(new TdApi.SearchPublicChat(username), (chat, error) -> runOnUiThreadOptional(() -> {
+        if (!isFocused() || busy) {
+          return;
+        }
+        if (error != null) {
+          UI.showError(error);
+          return;
+        }
+        TdApi.User bot = tdlib.chatUser(chat);
+        if (bot == null || !(bot.type instanceof TdApi.UserTypeBot type) || !type.canConnectToBusiness) {
+          UI.showToast(R.string.TgxBusinessBotNotEligible, Toast.LENGTH_SHORT);
+          return;
+        }
+        configureBotScope(expected, bot.id);
+      }));
+    });
+  }
+
+  private void configureBotScope (TdApi.BusinessConnectedBotInfo expected, long botId) {
+    boolean sameBot = expected != null && expected.bot != null && expected.bot.botUserId == botId;
+    Options.Builder options = new Options.Builder().info(Lang.getString(R.string.TgxBusinessBotScope));
+    if (sameBot) {
+      options.item(new OptionItem(1, Lang.getString(R.string.TgxBusinessBotKeepScope), OptionColor.NORMAL, 0));
+    }
+    options.item(new OptionItem(2, Lang.getString(R.string.TgxBusinessBotContacts), OptionColor.NORMAL, 0));
+    options.item(new OptionItem(3, Lang.getString(R.string.TgxBusinessBotNonContacts), OptionColor.NORMAL, 0));
+    options.item(new OptionItem(4, Lang.getString(R.string.TgxBusinessBotAllChats), OptionColor.NORMAL, 0));
+    options.cancelItem();
+    showOptions(options.build(), (view, id) -> {
+      if (id == 1 && sameBot) {
+        configureBotPermissions(expected, botId, expected.bot.recipients);
+      } else if (id >= 2 && id <= 4) {
+        configureBotPermissions(expected, botId, new TdApi.BusinessRecipients(new long[0], new long[0],
+          true, true, id != 3, id != 2, false));
+      }
+      return true;
+    });
+  }
+
+  private void configureBotPermissions (TdApi.BusinessConnectedBotInfo expected, long botId, TdApi.BusinessRecipients recipients) {
+    TdApi.BusinessBotRights old = expected != null && expected.bot != null && expected.bot.botUserId == botId
+      ? expected.bot.rights : new TdApi.BusinessBotRights();
+    if (old == null) {
+      old = new TdApi.BusinessBotRights();
+    }
+    int[] labels = {
+      R.string.TgxBusinessBotReply, R.string.TgxBusinessBotRead, R.string.TgxBusinessBotDeleteSent,
+      R.string.TgxBusinessBotDeleteAll, R.string.TgxBusinessBotEditName, R.string.TgxBusinessBotEditBio,
+      R.string.TgxBusinessBotEditPhoto, R.string.TgxBusinessBotEditUsername, R.string.TgxBusinessBotViewGifts,
+      R.string.TgxBusinessBotSellGifts, R.string.TgxBusinessBotGiftSettings, R.string.TgxBusinessBotTransferGifts,
+      R.string.TgxBusinessBotTransferStars, R.string.TgxBusinessBotStories
+    };
+    boolean[] previous = botRights(old);
+    ListItem[] fields = new ListItem[labels.length];
+    int[] ids = new int[labels.length];
+    for (int i = 0; i < labels.length; i++) {
+      ids[i] = androidx.core.view.ViewCompat.generateViewId();
+      fields[i] = new ListItem(ListItem.TYPE_CHECKBOX_OPTION, ids[i], 0, labels[i], previous[i]);
+    }
+    showSettings(new SettingsWrapBuilder(R.id.btn_businessBotEdit).setRawItems(fields).setSaveStr(R.string.Continue)
+      .setIntDelegate((id, result) -> {
+        boolean[] selected = new boolean[ids.length];
+        ArrayList<String> granted = new ArrayList<>();
+        for (int i = 0; i < ids.length; i++) {
+          selected[i] = result.get(ids[i]) != 0;
+          if (selected[i]) {
+            granted.add(Lang.getString(labels[i]));
+          }
+        }
+        TdApi.BusinessBotRights rights = new TdApi.BusinessBotRights(selected[0], selected[1], selected[2], selected[3],
+          selected[4], selected[5], selected[6], selected[7], selected[8], selected[9], selected[10], selected[11],
+          selected[12], selected[13]);
+        String permissions = granted.isEmpty() ? Lang.getString(R.string.TgxBusinessBotNoRights) :
+          android.text.TextUtils.join("\n", granted);
+        showConfirm(Lang.getString(R.string.TgxBusinessBotConfirm, tdlib.cache().userName(botId), permissions),
+          Lang.getString(R.string.Save), () -> saveBusinessBot(expected, new TdApi.BusinessConnectedBot(botId, recipients, rights)));
+      }));
+  }
+
+  private static boolean[] botRights (TdApi.BusinessBotRights rights) {
+    return new boolean[] {rights.canReply, rights.canReadMessages, rights.canDeleteSentMessages, rights.canDeleteAllMessages,
+      rights.canEditName, rights.canEditBio, rights.canEditProfilePhoto, rights.canEditUsername, rights.canViewGiftsAndStars,
+      rights.canSellGifts, rights.canChangeGiftSettings, rights.canTransferAndUpgradeGifts, rights.canTransferStars,
+      rights.canManageStories};
+  }
+
+  private static boolean sameBotConnection (TdApi.BusinessConnectedBotInfo a, TdApi.BusinessConnectedBotInfo b) {
+    TdApi.BusinessConnectedBot first = a != null ? a.bot : null;
+    TdApi.BusinessConnectedBot second = b != null ? b.bot : null;
+    if (first == null || second == null) {
+      return first == second;
+    }
+    return first.botUserId == second.botUserId && a.connectionDate == b.connectionDate &&
+      sameRecipients(first.recipients, second.recipients) &&
+      (first.rights == second.rights || (first.rights != null && second.rights != null &&
+        Arrays.equals(botRights(first.rights), botRights(second.rights))));
+  }
+
+  private void saveBusinessBot (TdApi.BusinessConnectedBotInfo expected, TdApi.BusinessConnectedBot updated) {
+    long userId = tdlib.myUserId();
+    if (busy || !isFocused() || userId == 0) {
+      return;
+    }
+    busy = true;
+    render();
+    tdlib.send(new TdApi.GetBusinessConnectedBot(), (fresh, error) -> runOnUiThreadOptional(() -> {
+      if (!isFocused() || userId != tdlib.myUserId() || error != null || !sameBotConnection(expected, fresh)) {
+        finish(error, false);
+        return;
+      }
+      tdlib.send(new TdApi.SetBusinessConnectedBot(updated), (ok, saveError) ->
+        runOnUiThreadOptional(() -> finish(saveError, saveError == null)));
     }));
   }
 

@@ -935,6 +935,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       } else {
         ownedStarAmount = null;
         quickReplyShortcuts.clear();
+        quickReplyMessages.clear();
         quickReplyShortcutOrder = null;
         incrementJobReferenceCount(JOB_ID_CLEAN_UP);
         deleteAllFiles(success -> {
@@ -7890,7 +7891,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private final java.util.concurrent.ConcurrentHashMap<Integer, TdApi.QuickReplyShortcut> quickReplyShortcuts =
     new java.util.concurrent.ConcurrentHashMap<>();
+  private final java.util.concurrent.ConcurrentHashMap<Integer, TdApi.QuickReplyMessage[]> quickReplyMessages =
+    new java.util.concurrent.ConcurrentHashMap<>();
   private volatile int[] quickReplyShortcutOrder;
+
+  public @Nullable TdApi.QuickReplyMessage[] quickReplyMessages (int shortcutId) {
+    return quickReplyMessages.get(shortcutId);
+  }
   private final java.util.concurrent.CopyOnWriteArrayList<Runnable> quickReplyListeners =
     new java.util.concurrent.CopyOnWriteArrayList<>();
 
@@ -7937,12 +7944,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateQuickReplyShortcutMessages (TdApi.UpdateQuickReplyShortcutMessages update) {
-
+    if (update.messages != null) {
+      quickReplyMessages.put(update.shortcutId, update.messages);
+    } else {
+      quickReplyMessages.remove(update.shortcutId);
+    }
   }
 
   @TdlibThread
   private void updateQuickReplyShortcutDeleted (TdApi.UpdateQuickReplyShortcutDeleted update) {
     quickReplyShortcuts.remove(update.shortcutId);
+    quickReplyMessages.remove(update.shortcutId);
     notifyQuickReplyListeners();
   }
 

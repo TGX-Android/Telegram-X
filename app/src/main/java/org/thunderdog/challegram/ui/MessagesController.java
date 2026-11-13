@@ -2358,8 +2358,117 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  private boolean sendingBusinessQuickReply;
+
+  private boolean canUseBusinessQuickReplies (long chatId) {
+    TdApi.User recipient = chat != null ? tdlib.chatUser(chat) : null;
+    return chat != null && chat.id == chatId && chat.type instanceof TdApi.ChatTypePrivate &&
+      recipient != null && recipient.type instanceof TdApi.UserTypeRegular && !tdlib.isSelfChat(chatId) &&
+      tdlib.hasPremium() && !inPreviewMode() && !areScheduledOnly() && !messagesHidden && canWriteMessages();
+  }
+
+  private void showBusinessQuickReplies () {
+    long chatId = getChatId();
+    if (sendingBusinessQuickReply || !canUseBusinessQuickReplies(chatId)) {
+      return;
+    }
+    tdlib.send(new TdApi.LoadQuickReplyShortcuts(), (ok, error) -> runOnUiThreadOptional(() -> {
+      if (!isFocused() || !canUseBusinessQuickReplies(chatId)) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      TdApi.QuickReplyShortcut[] shortcuts = tdlib.quickReplyShortcuts();
+      if (shortcuts.length == 0) {
+        UI.showToast(R.string.TgxBusinessNeedQuickReply, Toast.LENGTH_SHORT);
+        return;
+      }
+      Options.Builder options = new Options.Builder().info(Lang.getString(R.string.TgxBusinessQuickReplies));
+      for (int i = 0; i < shortcuts.length; i++) {
+        TdApi.QuickReplyShortcut shortcut = shortcuts[i];
+        options.item(new OptionItem(i + 1, "/" + shortcut.name + " · " +
+          Lang.getString(R.string.TgxBusinessQuickReplyCount, Lang.formatNumber(shortcut.messageCount)), OptionColor.NORMAL, 0));
+      }
+      options.cancelItem();
+      showOptions(options.build(), (view, id) -> {
+        if (id > 0 && id <= shortcuts.length) {
+          TdApi.QuickReplyShortcut shortcut = shortcuts[id - 1];
+          previewBusinessQuickReply(chatId, shortcut);
+        }
+        return true;
+      });
+    }));
+  }
+
+  private void previewBusinessQuickReply (long chatId, TdApi.QuickReplyShortcut shortcut) {
+    tdlib.send(new TdApi.LoadQuickReplyShortcutMessages(shortcut.id), (ok, error) -> runOnUiThreadOptional(() -> {
+      if (!isFocused() || !canUseBusinessQuickReplies(chatId)) {
+        return;
+      }
+      TdApi.QuickReplyMessage[] messages = tdlib.quickReplyMessages(shortcut.id);
+      if (error != null) {
+        UI.showError(error);
+      } else if (messages == null || messages.length != shortcut.messageCount || messages.length == 0) {
+        UI.showToast(R.string.TgxBusinessChanged, Toast.LENGTH_SHORT);
+      } else {
+        StringBuilder preview = new StringBuilder();
+        for (TdApi.QuickReplyMessage message : messages) {
+          if (preview.length() > 0) {
+            preview.append("\n\n");
+          }
+          preview.append(message.content instanceof TdApi.MessageText text ? text.text.text :
+            Lang.getString(R.string.TgxBusinessQuickReplyMedia));
+        }
+        showConfirm(Lang.getString(R.string.TgxBusinessSendShortcutConfirm, "/" + shortcut.name,
+          Lang.formatNumber(messages.length), tdlib.chatTitle(chatId), preview),
+          Lang.getString(R.string.TgxBusinessSendShortcut), () -> sendBusinessQuickReply(chatId, shortcut, messages));
+      }
+    }));
+  }
+
+  private void sendBusinessQuickReply (long chatId, TdApi.QuickReplyShortcut expected, TdApi.QuickReplyMessage[] shown) {
+    if (sendingBusinessQuickReply || !isFocused() || !canUseBusinessQuickReplies(chatId)) {
+      return;
+    }
+    sendingBusinessQuickReply = true;
+    TdApi.ChatTypePrivate recipient = (TdApi.ChatTypePrivate) chat.type;
+    tdlib.send(new TdApi.GetUserFullInfo(recipient.userId), (profile, error) -> runOnUiThreadOptional(() -> {
+      if (!isFocused() || !canUseBusinessQuickReplies(chatId) || error != null ||
+          profile.outgoingPaidMessageStarCount != 0) {
+        sendingBusinessQuickReply = false;
+        if (error != null && isFocused()) {
+          UI.showError(error);
+        } else if (isFocused() && canUseBusinessQuickReplies(chatId)) {
+          UI.showToast(R.string.TgxBusinessQuickReplyPaid, Toast.LENGTH_SHORT);
+        }
+        return;
+      }
+      for (TdApi.QuickReplyShortcut fresh : tdlib.quickReplyShortcuts()) {
+        if (fresh.id == expected.id && fresh.messageCount == expected.messageCount && fresh.name.equals(expected.name) &&
+            tdlib.quickReplyMessages(expected.id) == shown && fresh.messageCount > 0) {
+          tdlib.send(new TdApi.SendQuickReplyShortcutMessages(chatId, fresh.id, 0),
+            (messages, sendError) -> runOnUiThreadOptional(() -> {
+              sendingBusinessQuickReply = false;
+              if (sendError != null && isFocused()) {
+                UI.showError(sendError);
+              }
+            }));
+          return;
+        }
+      }
+      sendingBusinessQuickReply = false;
+      UI.showToast(R.string.TgxBusinessChanged, Toast.LENGTH_SHORT);
+    }));
+  }
+
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_businessQuickReplySend) {
+      showBusinessQuickReplies();
+      return;
+    }
     // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
     if (id == R.id.menu_forumActions) {
       if (forumTopicContext != null) {
@@ -5603,6 +5712,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
+
+    if (canUseBusinessQuickReplies(chat.id)) {
+      ids.append(R.id.btn_businessQuickReplySend);
+      strings.append(R.string.TgxBusinessQuickReplies);
+    }
 
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
 // region @MadeByLLM("gpt-6-astra", id = "forum-topics", ref = "PR #1095")
