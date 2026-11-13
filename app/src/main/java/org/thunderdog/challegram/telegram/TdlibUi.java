@@ -130,6 +130,7 @@ import org.thunderdog.challegram.ui.PasswordController;
 import org.thunderdog.challegram.ui.PeopleController;
 import org.thunderdog.challegram.ui.PhoneController;
 import org.thunderdog.challegram.ui.StarsController;
+import org.thunderdog.challegram.ui.BusinessSettingsController;
 import org.thunderdog.challegram.ui.PremiumSettingsController;
 import org.thunderdog.challegram.ui.ProfileChannelController;
 import org.thunderdog.challegram.ui.ProfileController;
@@ -5321,6 +5322,15 @@ public class TdlibUi extends Handler {
               }
               break;
             }
+            case TdApi.SettingsSectionBusiness.CONSTRUCTOR: {
+              String subsection = ((TdApi.SettingsSectionBusiness) section).subsection;
+              if (tdlib.isAuthorized() && StringUtils.isEmpty(subsection)) {
+                result = new BusinessSettingsController(context.context(), tdlib);
+              } else {
+                unsupported.run();
+              }
+              break;
+            }
             case TdApi.SettingsSectionPremium.CONSTRUCTOR: {
               result = new PremiumSettingsController(context.context(), tdlib, new TdApi.PremiumSourceSettings());
               break;
@@ -5330,7 +5340,6 @@ public class TdlibUi extends Handler {
             case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
             case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
             case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
-            case TdApi.SettingsSectionBusiness.CONSTRUCTOR:
             case TdApi.SettingsSectionInAppBrowser.CONSTRUCTOR:
             case TdApi.SettingsSectionFeatures.CONSTRUCTOR: {
               unsupported.run();

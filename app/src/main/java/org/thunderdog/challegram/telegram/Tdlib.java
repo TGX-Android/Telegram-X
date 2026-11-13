@@ -934,6 +934,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           after.run();
       } else {
         ownedStarAmount = null;
+        quickReplyShortcuts.clear();
+        quickReplyShortcutOrder = null;
         incrementJobReferenceCount(JOB_ID_CLEAN_UP);
         deleteAllFiles(success -> {
           if (success) {
@@ -7886,14 +7888,51 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   // Updates: SHORTCUTS
 
+  private final java.util.concurrent.ConcurrentHashMap<Integer, TdApi.QuickReplyShortcut> quickReplyShortcuts =
+    new java.util.concurrent.ConcurrentHashMap<>();
+  private volatile int[] quickReplyShortcutOrder;
+  private final java.util.concurrent.CopyOnWriteArrayList<Runnable> quickReplyListeners =
+    new java.util.concurrent.CopyOnWriteArrayList<>();
+
+  public TdApi.QuickReplyShortcut[] quickReplyShortcuts () {
+    int[] order = quickReplyShortcutOrder;
+    if (order == null) {
+      return new TdApi.QuickReplyShortcut[0];
+    }
+    ArrayList<TdApi.QuickReplyShortcut> shortcuts = new ArrayList<>(order.length);
+    for (int id : order) {
+      TdApi.QuickReplyShortcut shortcut = quickReplyShortcuts.get(id);
+      if (shortcut != null) {
+        shortcuts.add(shortcut);
+      }
+    }
+    return shortcuts.toArray(new TdApi.QuickReplyShortcut[0]);
+  }
+
+  public void addQuickReplyListener (Runnable listener) {
+    quickReplyListeners.addIfAbsent(listener);
+  }
+
+  public void removeQuickReplyListener (Runnable listener) {
+    quickReplyListeners.remove(listener);
+  }
+
+  private void notifyQuickReplyListeners () {
+    for (Runnable listener : quickReplyListeners) {
+      listener.run();
+    }
+  }
+
   @TdlibThread
   private void updateQuickReplyShortcuts (TdApi.UpdateQuickReplyShortcuts update) {
-
+    quickReplyShortcutOrder = update.shortcutIds.clone();
+    notifyQuickReplyListeners();
   }
 
   @TdlibThread
   private void updateQuickReplyShortcut (TdApi.UpdateQuickReplyShortcut update) {
-
+    quickReplyShortcuts.put(update.shortcut.id, update.shortcut);
+    notifyQuickReplyListeners();
   }
 
   @TdlibThread
@@ -7903,7 +7942,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateQuickReplyShortcutDeleted (TdApi.UpdateQuickReplyShortcutDeleted update) {
-
+    quickReplyShortcuts.remove(update.shortcutId);
+    notifyQuickReplyListeners();
   }
 
   // Updates: CHATS

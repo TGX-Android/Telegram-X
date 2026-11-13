@@ -747,6 +747,8 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxStarsSettings, R.drawable.baseline_stars_24, R.string.TgxStarsTitle));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tgxBusinessSettings, R.drawable.baseline_premium_star_24, R.string.TgxBusinessTitle));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_premiumSettings, R.drawable.baseline_premium_star_24, R.string.TgxPremiumTitle));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_privacySettings, R.drawable.baseline_lock_24, R.string.PrivacySettings));
@@ -1270,6 +1272,8 @@ public class SettingsController extends ViewController<Void> implements
       navigateTo(new SettingsLanguageController(context, tdlib));
     } else if (viewId == R.id.btn_tgxStarsSettings) {
       navigateTo(new StarsController(context, tdlib, false, 0, ""));
+    } else if (viewId == R.id.btn_tgxBusinessSettings) {
+      navigateTo(new BusinessSettingsController(context, tdlib));
     } else if (viewId == R.id.btn_premiumSettings) {
       tdlib.ui().openPremiumSettings(this, new TdApi.PremiumSourceSettings());
     } else if (viewId == R.id.btn_notificationSettings) {

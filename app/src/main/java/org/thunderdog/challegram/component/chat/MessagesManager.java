@@ -1746,12 +1746,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
               String subsection = ((TdApi.SettingsSectionMyStars) settings.section).subsection;
               return StringUtils.isEmpty(subsection) || "top-up".equals(subsection);
             }
+            case TdApi.SettingsSectionBusiness.CONSTRUCTOR:
+              return StringUtils.isEmpty(((TdApi.SettingsSectionBusiness) settings.section).subsection);
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
             case TdApi.SettingsSectionSearch.CONSTRUCTOR:
             case TdApi.SettingsSectionMyGrams.CONSTRUCTOR:
             case TdApi.SettingsSectionPowerSaving.CONSTRUCTOR:
             case TdApi.SettingsSectionSendGift.CONSTRUCTOR:
-            case TdApi.SettingsSectionBusiness.CONSTRUCTOR:
             case TdApi.SettingsSectionInAppBrowser.CONSTRUCTOR:
             case TdApi.SettingsSectionFeatures.CONSTRUCTOR: {
               return false;
