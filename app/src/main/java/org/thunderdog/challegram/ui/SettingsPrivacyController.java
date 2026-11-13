@@ -490,18 +490,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       if (!tdlib.canSetNewChatPrivacySettings() && tdlib.ui().showPremiumAlert(this, v, TdlibUi.PremiumFeature.NEW_CHATS_PRIVACY)) {
         return;
       }
-      if (true) {
-        context.tooltipManager()
-          .builder(v)
-          .icon(R.drawable.baseline_warning_24)
-          .controller(this)
-          .show(tdlib, "Changing message privacy is not available, please wait for the next update or try in desktop app.")
-          .hideDelayed();
-        return;
-      }
-      SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context, tdlib);
-      c.setArguments(SettingsPrivacyKeyController.Args.newChatsPrivacy());
-      navigateTo(c);
+      showNewChatPrivacyChoices();
     } else if (id == R.id.btn_privacyRule) {
       TdApi.UserPrivacySetting setting = (TdApi.UserPrivacySetting) ((ListItem) v.getTag()).getData();
       if (Td.requiresPremiumSubscription(setting) && tdlib.ui().showPremiumAlert(this, v, TdlibUi.PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES)) {
@@ -823,6 +812,65 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     privacyRules.put(privacyKey, rules);
     if (adapter != null)
       adapter.updateValuedSettingByLongId(privacyKey);
+  }
+
+  private boolean changingNewChatPrivacy;
+
+  private void showNewChatPrivacyChoices () {
+    if (changingNewChatPrivacy || !tdlib.canSetNewChatPrivacySettings()) {
+      return;
+    }
+    changingNewChatPrivacy = true;
+    tdlib.send(new TdApi.GetNewChatPrivacySettings(), (settings, error) -> runOnUiThreadOptional(() -> {
+      changingNewChatPrivacy = false;
+      if (error != null) {
+        UI.showError(error);
+      } else if (settings.incomingPaidMessageStarCount != 0) {
+        UI.showToast(R.string.NewChatsPrivacyUnavailable, Toast.LENGTH_SHORT);
+      } else {
+        showOptions(Lang.getString(R.string.NewChatsPrivacyChoicesInfo),
+          new int[] {R.id.btn_newChatsAllowAll, R.id.btn_newChatsContactsPremium, R.id.btn_cancel},
+          new String[] {Lang.getString(R.string.Everybody), Lang.getString(R.string.NewChatsContactsPremium),
+            Lang.getString(R.string.Cancel)}, null,
+          new int[] {settings.allowNewChatsFromUnknownUsers ? R.drawable.baseline_check_24 : 0,
+            !settings.allowNewChatsFromUnknownUsers ? R.drawable.baseline_check_24 : 0, R.drawable.baseline_cancel_24},
+          (view, id) -> {
+            if (id == R.id.btn_newChatsAllowAll || id == R.id.btn_newChatsContactsPremium) {
+              setAllowNewChatsFromUnknownUsers(id == R.id.btn_newChatsAllowAll);
+            }
+            return true;
+          });
+      }
+    }));
+  }
+
+  private void setAllowNewChatsFromUnknownUsers (boolean allow) {
+    if (changingNewChatPrivacy || !tdlib.canSetNewChatPrivacySettings()) {
+      return;
+    }
+    changingNewChatPrivacy = true;
+    // Re-fetch at commit time: never zero a paid-message setting changed in another client.
+    tdlib.send(new TdApi.GetNewChatPrivacySettings(), (settings, error) -> runOnUiThreadOptional(() -> {
+      if (error != null || settings.incomingPaidMessageStarCount != 0 || !tdlib.canSetNewChatPrivacySettings()) {
+        changingNewChatPrivacy = false;
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          UI.showToast(R.string.NewChatsPrivacyUnavailable, Toast.LENGTH_SHORT);
+        }
+        return;
+      }
+      TdApi.NewChatPrivacySettings updated = new TdApi.NewChatPrivacySettings(allow, settings.incomingPaidMessageStarCount);
+      tdlib.send(new TdApi.SetNewChatPrivacySettings(updated), (ok, setError) -> runOnUiThreadOptional(() -> {
+        changingNewChatPrivacy = false;
+        if (setError != null) {
+          UI.showError(setError);
+        } else {
+          setNewChatsPrivacy(updated);
+          tdlib.listeners().updateNewChatPrivacySettings(updated);
+        }
+      }));
+    }));
   }
 
   private TdApi.NewChatPrivacySettings newChatPrivacySettings;
