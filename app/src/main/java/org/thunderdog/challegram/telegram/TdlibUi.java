@@ -1315,6 +1315,43 @@ public class TdlibUi extends Handler {
     });
   }
 
+  public void setUserProfileAccentColor (int colorId) {
+    TdApi.User user = tdlib.myUser();
+    if (user == null || !tdlib.hasPremium() || colorId < -1 ||
+      colorId >= TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+      return;
+    }
+    tdlib.send(new TdApi.SetProfileAccentColor(colorId, user.profileBackgroundCustomEmojiId),
+      tdlib.typedOkHandler());
+  }
+
+  public void showUserProfileAccentColorOptions (ViewController<?> context) {
+    TdApi.User user = tdlib.myUser();
+    if (user == null || !tdlib.hasPremium()) {
+      return;
+    }
+    int count = TdlibAccentColor.BUILT_IN_COLOR_COUNT;
+    int[] ids = new int[count + 1];
+    String[] names = new String[count + 1];
+    int[] icons = new int[count + 1];
+    ids[0] = R.id.btn_chatProfileColorReset;
+    names[0] = Lang.getString(R.string.Default);
+    icons[0] = user.profileAccentColorId == -1 ? R.drawable.baseline_check_24 : 0;
+    for (int i = 0; i < count; i++) {
+      ids[i + 1] = -(i + 1);
+      names[i + 1] = TdlibAccentColor.getTextRepresentation(i);
+      icons[i + 1] = user.profileAccentColorId == i ? R.drawable.baseline_check_24 : 0;
+    }
+    context.showOptions(Lang.getString(R.string.UserProfileColorInfo), ids, names, null, icons, (view, id) -> {
+      if (id == R.id.btn_chatProfileColorReset) {
+        setUserProfileAccentColor(-1);
+      } else if (id < 0 && id >= -count) {
+        setUserProfileAccentColor(-(id + 1));
+      }
+      return true;
+    });
+  }
+
   public int getIconForSetting (@Nullable TdApi.Chat chat) {
     final int muteFor = tdlib.chatMuteFor(chat);
     return muteFor >= MUTE_MAX ? R.drawable.baseline_notifications_off_24 : muteFor > 0 ? R.drawable.baseline_notifications_paused_24 : R.drawable.baseline_notifications_24;

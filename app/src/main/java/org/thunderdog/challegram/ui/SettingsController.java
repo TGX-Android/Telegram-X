@@ -203,6 +203,8 @@ public class SettingsController extends ViewController<Void> implements
       if (tdlib.hasPremium()) {
         ids.append(R.id.btn_userAccentColor);
         names.append(R.string.UserAccentColor);
+        ids.append(R.id.btn_userProfileAccentColor);
+        names.append(R.string.ProfileColor);
       }
       ids.append(R.id.more_btn_logout);
       names.append(R.string.LogOut);
@@ -251,6 +253,8 @@ public class SettingsController extends ViewController<Void> implements
       getOwnProfileLink(id == R.id.btn_shareProfileLink);
     } else if (id == R.id.btn_userAccentColor) {
       tdlib.ui().showUserAccentColorOptions(this);
+    } else if (id == R.id.btn_userProfileAccentColor) {
+      tdlib.ui().showUserProfileAccentColorOptions(this);
     } else if (id == R.id.menu_btn_more) {
       tdlib.ui().logOut(this, true);
     } else {

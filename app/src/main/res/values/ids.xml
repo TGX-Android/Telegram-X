@@ -414,6 +414,7 @@
   <item type="id" name="btn_copyProfileLink" />
   <item type="id" name="btn_shareProfileLink" />
   <item type="id" name="btn_userAccentColor" />
+  <item type="id" name="btn_userProfileAccentColor" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
