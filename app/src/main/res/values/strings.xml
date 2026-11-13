@@ -2368,6 +2368,7 @@
   <string name="CopyProfileLink">Copy My Profile Link</string>
   <string name="ShareProfileLink">Share My Profile Link</string>
   <string name="UserAccentColor">My Name Color</string>
+  <string name="MessageAuthorProfile">View Message Author</string>
   <string name="UserProfileColorInfo">Choose your Telegram profile color. Telegram X does not yet display colored profile backgrounds; the change is visible in clients that support them. Your background emoji is kept.</string>
   <string name="PollOptionReplyUnavailable">You can’t reply to this poll answer right now.</string>
   <string name="PollOptionLinkUnavailable">A link to this poll answer is unavailable.</string>

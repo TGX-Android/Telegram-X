@@ -944,6 +944,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     // Stats
 
+    if (!isMore && messageCount == 1 && msg.lastMessageProperties().canGetAuthor) {
+      ids.append(R.id.btn_messageAuthorProfile);
+      strings.append(R.string.MessageAuthorProfile);
+      icons.append(R.drawable.baseline_account_circle_24);
+    }
+
     if (!isMore && messageCount == 1 && content instanceof TdApi.MessagePoll &&
       msg.lastMessageProperties().canGetPollVoteStatistics) {
       ids.append(R.id.btn_pollVoteStatistics);

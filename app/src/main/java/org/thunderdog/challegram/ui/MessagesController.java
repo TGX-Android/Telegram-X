@@ -6777,6 +6777,30 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }, null);
   }
 
+  private boolean loadingMessageAuthor;
+
+  private void showMessageAuthor (TGMessage selectedMessage) {
+    if (loadingMessageAuthor || selectedMessage.isDestroyed() ||
+      !selectedMessage.lastMessageProperties().canGetAuthor) {
+      return;
+    }
+    TdApi.Message message = selectedMessage.getMessage();
+    loadingMessageAuthor = true;
+    // TDLib exposes this only when the account is authorized to see the author.
+    tdlib.send(new TdApi.GetMessageAuthor(message.chatId, message.id), (author, error) ->
+      runOnUiThreadOptional(() -> {
+        loadingMessageAuthor = false;
+        if (selectedMessage.isDestroyed() || getChatId() != message.chatId) {
+          return;
+        }
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          tdlib.ui().openPrivateProfile(this, author.id, null);
+        }
+      }));
+  }
+
   private int pollOptionRequestGeneration;
   private boolean deletingPollOption;
 
@@ -7361,6 +7385,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (file != null && file.local.isDownloadingActive && !tdlib.context().player().isPlayingFileId(file.id)) {
           tdlib.files().cancelDownloadOrUploadFile(file.id, false, true);
         }
+        return true;
+      } else if (id == R.id.btn_messageAuthorProfile) {
+        showMessageAuthor(selectedMessage);
         return true;
       } else if (id == R.id.btn_pollVoteStatistics) {
         if (selectedMessage.getMessage().content instanceof TdApi.MessagePoll &&
