@@ -450,6 +450,7 @@
   <item type="id" name="btn_setEmojiPackThumbnail" />
   <item type="id" name="btn_autosaveVideoSize" />
   <item type="id" name="btn_boostWithUnusedSlot" />
+  <item type="id" name="btn_transferChatBoost" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />

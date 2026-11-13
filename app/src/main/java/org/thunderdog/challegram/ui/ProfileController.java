@@ -43,6 +43,7 @@ import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
@@ -133,7 +134,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -705,6 +708,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(R.string.ChatBoostStatusTitle);
       ids.append(R.id.btn_boostWithUnusedSlot);
       strings.append(R.string.BoostWithUnusedSlot);
+      ids.append(R.id.btn_transferChatBoost);
+      strings.append(R.string.TransferChatBoost);
     }
     if (canConfigureChatAutosave()) {
       ids.append(R.id.btn_chatAutosaveSettings);
@@ -911,6 +916,103 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           UI.showToast(R.string.UnusedBoostApplied, Toast.LENGTH_SHORT);
         }
       }));
+    }));
+  }
+
+  public static boolean canTransferBoostSlot (TdApi.ChatBoostSlot slot, long targetChatId, long now) {
+    return slot != null && slot.currentlyBoostedChatId != 0 && slot.currentlyBoostedChatId != targetChatId &&
+      slot.expirationDate > now && slot.cooldownUntilDate <= now;
+  }
+
+  private boolean canTransferBoostTo (long targetChatId) {
+    return isFocused() && chat != null && chat.id == targetChatId && supergroup != null &&
+      !supergroup.isDirectMessagesGroup;
+  }
+
+  private void offerChatBoostTransfer () {
+    if (applyingUnusedBoost || chat == null || !canTransferBoostTo(chat.id)) {
+      return;
+    }
+    final long targetChatId = chat.id;
+    applyingUnusedBoost = true;
+    tdlib.send(new TdApi.GetAvailableChatBoostSlots(), (slots, error) -> runOnUiThreadOptional(() -> {
+      applyingUnusedBoost = false;
+      if (!canTransferBoostTo(targetChatId)) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+
+      long now = tdlib.currentTimeMillis() / 1000L;
+      Map<Integer, TdApi.ChatBoostSlot> choices = new LinkedHashMap<>();
+      Options.Builder options = new Options.Builder().info(Lang.getString(R.string.TransferChatBoost));
+      for (TdApi.ChatBoostSlot slot : slots.slots) {
+        if (canTransferBoostSlot(slot, targetChatId, now)) {
+          int id = ViewCompat.generateViewId();
+          choices.put(id, slot);
+          options.item(new OptionItem(id, Lang.getString(R.string.TransferChatBoostSlot,
+            boostTransferChatName(slot.currentlyBoostedChatId), Lang.getUntilDate(slot.expirationDate, TimeUnit.SECONDS)),
+            OptionColor.NORMAL, 0));
+        }
+      }
+      if (choices.isEmpty()) {
+        UI.showToast(R.string.NoTransferableChatBoost, Toast.LENGTH_SHORT);
+        return;
+      }
+      options.cancelItem();
+      showOptions(options.build(), (view, id) -> {
+        TdApi.ChatBoostSlot selected = choices.get(id);
+        if (selected != null && canTransferBoostTo(targetChatId)) {
+          long sourceChatId = selected.currentlyBoostedChatId;
+          int slotId = selected.slotId;
+          showConfirm(Lang.getStringBold(R.string.TransferChatBoostConfirm,
+            boostTransferChatName(sourceChatId), boostTransferChatName(targetChatId)),
+            Lang.getString(R.string.TransferChatBoost),
+            () -> transferChatBoost(targetChatId, sourceChatId, slotId));
+        }
+        return true;
+      });
+    }));
+  }
+
+  private String boostTransferChatName (long chatId) {
+    TdApi.Chat boostChat = tdlib.chat(chatId);
+    return boostChat != null ? boostChat.title : Lang.getString(R.string.TransferChatBoostUnknownChat, Long.toString(chatId));
+  }
+
+  private void transferChatBoost (long targetChatId, long sourceChatId, int slotId) {
+    if (applyingUnusedBoost || !canTransferBoostTo(targetChatId)) {
+      return;
+    }
+    applyingUnusedBoost = true;
+    tdlib.send(new TdApi.GetAvailableChatBoostSlots(), (slots, error) -> runOnUiThreadOptional(() -> {
+      if (error != null || !canTransferBoostTo(targetChatId)) {
+        applyingUnusedBoost = false;
+        if (error != null && canTransferBoostTo(targetChatId)) {
+          UI.showError(error);
+        }
+        return;
+      }
+      long now = tdlib.currentTimeMillis() / 1000L;
+      for (TdApi.ChatBoostSlot slot : slots.slots) {
+        if (canTransferBoostSlot(slot, targetChatId, now) && slot.slotId == slotId &&
+            slot.currentlyBoostedChatId == sourceChatId) {
+          tdlib.send(new TdApi.BoostChat(targetChatId, new int[] {slotId}), (updated, transferError) ->
+            runOnUiThreadOptional(() -> {
+              applyingUnusedBoost = false;
+              if (transferError != null) {
+                UI.showError(transferError);
+              } else {
+                UI.showToast(R.string.ChatBoostTransferred, Toast.LENGTH_SHORT);
+              }
+            }));
+          return;
+        }
+      }
+      applyingUnusedBoost = false;
+      UI.showToast(R.string.NoTransferableChatBoost, Toast.LENGTH_SHORT);
     }));
   }
 
@@ -1201,6 +1303,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     if (id == R.id.btn_openProfileChannel) {
       openProfileChannel();
+      return;
+    }
+    if (id == R.id.btn_transferChatBoost) {
+      offerChatBoostTransfer();
       return;
     }
     if (id == R.id.btn_chatBoostStatus) {

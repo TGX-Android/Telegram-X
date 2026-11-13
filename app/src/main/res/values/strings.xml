@@ -2439,6 +2439,12 @@
   <string name="BoostWithUnusedSlot">Boost with an Unused Slot</string>
   <string name="BoostWithUnusedSlotConfirm">Apply one boost currently reported as unused to %1$s? Availability will be checked again before applying it. Active boosts are not offered for transfer and no purchase will be made. The slot will be assigned to this chat and Telegram may apply a cooldown before it can be moved again.</string>
   <string name="NoUnusedBoostSlots">No unused, unexpired boost slot is available. Slots assigned to other chats are not offered by this selector.</string>
+  <string name="TransferChatBoost">Transfer a Boost</string>
+  <string name="TransferChatBoostSlot">%1$s · expires %2$s</string>
+  <string name="TransferChatBoostUnknownChat">Chat %1$s</string>
+  <string name="TransferChatBoostConfirm">Move one boost from %1$s to %2$s? The source chat will lose this boost.</string>
+  <string name="NoTransferableChatBoost">No boost from another chat is currently available to transfer.</string>
+  <string name="ChatBoostTransferred">Boost transferred</string>
   <string name="UnusedBoostApplied">Boost applied using an unused slot</string>
   <string name="MainProfileTabInfo">Choose which tab opens first on this channel’s profile. Telegram X uses its existing media tabs; hidden or unsupported tabs fall back to the current layout. Default restores Telegram’s Posts preference, without adding a Posts renderer to Telegram X.</string>
   <string name="NoAvailableAccentColors">Telegram’s color palette is not available yet. Try again after connecting.</string>
