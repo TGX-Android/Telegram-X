@@ -2411,6 +2411,12 @@
   <string name="ChatBoostStatusInfo">Level %1$d · %2$d boosts\n%3$d more boosts needed for the next level.</string>
   <string name="ChatBoostStatusMaxInfo">Level %1$d · %2$d boosts\nNo next level is currently available.</string>
   <string name="ShareBoostLink">Share Boost Link</string>
+  <string name="ChannelSponsoredMessages">Channel Sponsored Messages</string>
+  <string name="ChannelSponsoredMessagesInfo">Allow sponsored messages in this channel? This owner setting affects the channel, not just your device. Disabling them requires Telegram’s minimum boost level.</string>
+  <string name="ChannelAdsAllowed">Allow Sponsored Messages</string>
+  <string name="ChannelAdsDisabled">Disable Sponsored Messages</string>
+  <string name="ChannelAdsBoostRequired">This channel needs boost level %1$d to disable sponsored messages.</string>
+  <string name="ChannelAdsSettingSaved">Channel sponsored-message setting saved</string>
   <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>

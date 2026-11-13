@@ -740,6 +740,90 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
+  private boolean changingChannelSponsoredMessages;
+
+  private boolean canManageChannelSponsoredMessages () {
+    return chat != null && supergroup != null && supergroup.isChannel && !supergroup.isDirectMessagesGroup &&
+      tdlib.chatStatus(chat.id) instanceof TdApi.ChatMemberStatusCreator;
+  }
+
+  private void showChannelSponsoredMessages () {
+    if (changingChannelSponsoredMessages || !canManageChannelSponsoredMessages()) {
+      return;
+    }
+    changingChannelSponsoredMessages = true;
+    final long chatId = chat.id;
+    tdlib.send(new TdApi.GetSupergroupFullInfo(supergroup.id), (info, error) -> runOnUiThreadOptional(() -> {
+      changingChannelSponsoredMessages = false;
+      if (chat == null || chat.id != chatId || !canManageChannelSponsoredMessages()) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      showOptions(Lang.getString(R.string.ChannelSponsoredMessagesInfo),
+        new int[] {R.id.btn_channelAdsEnabled, R.id.btn_channelAdsDisabled, R.id.btn_cancel},
+        new String[] {Lang.getString(R.string.ChannelAdsAllowed), Lang.getString(R.string.ChannelAdsDisabled), Lang.getString(R.string.Cancel)},
+        null, new int[] {info.canHaveSponsoredMessages ? R.drawable.baseline_check_24 : 0,
+          !info.canHaveSponsoredMessages ? R.drawable.baseline_check_24 : 0, R.drawable.baseline_cancel_24}, (view, id) -> {
+          if (id == R.id.btn_channelAdsEnabled || id == R.id.btn_channelAdsDisabled) {
+            boolean allow = id == R.id.btn_channelAdsEnabled;
+            if (allow != info.canHaveSponsoredMessages && chat != null && chat.id == chatId) {
+              changeChannelSponsoredMessages(allow);
+            }
+          }
+          return true;
+        });
+    }));
+  }
+
+  private void changeChannelSponsoredMessages (boolean allow) {
+    if (changingChannelSponsoredMessages || !canManageChannelSponsoredMessages()) {
+      return;
+    }
+    changingChannelSponsoredMessages = true;
+    final long chatId = chat.id;
+    if (allow) {
+      sendChannelSponsoredMessages(chatId, true);
+      return;
+    }
+    tdlib.send(new TdApi.GetChatBoostFeatures(true), (features, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        changingChannelSponsoredMessages = false;
+        UI.showError(error);
+        return;
+      }
+      tdlib.send(new TdApi.GetChatBoostStatus(chatId), (status, statusError) -> runOnUiThreadOptional(() -> {
+        if (statusError != null) {
+          changingChannelSponsoredMessages = false;
+          UI.showError(statusError);
+        } else if (status.level < features.minSponsoredMessageDisableBoostLevel) {
+          changingChannelSponsoredMessages = false;
+          UI.showToast(Lang.getString(R.string.ChannelAdsBoostRequired, features.minSponsoredMessageDisableBoostLevel), Toast.LENGTH_LONG);
+        } else {
+          sendChannelSponsoredMessages(chatId, false);
+        }
+      }));
+    }));
+  }
+
+  private void sendChannelSponsoredMessages (long chatId, boolean allow) {
+    if (chat == null || chat.id != chatId || !canManageChannelSponsoredMessages()) {
+      changingChannelSponsoredMessages = false;
+      return;
+    }
+    tdlib.send(new TdApi.ToggleSupergroupCanHaveSponsoredMessages(supergroup.id, allow),
+      (ok, error) -> runOnUiThreadOptional(() -> {
+        changingChannelSponsoredMessages = false;
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          UI.showToast(R.string.ChannelAdsSettingSaved, Toast.LENGTH_SHORT);
+        }
+      }));
+  }
+
   private boolean loadingBoostStatus;
 
   private void showChatBoostStatus () {
@@ -4859,6 +4943,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       added = true;
     }
 
+    if (mode == Mode.EDIT_CHANNEL && canManageChannelSponsoredMessages()) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_channelSponsoredMessages, 0, R.string.ChannelSponsoredMessages));
+      added = true;
+    }
+
     if (supergroup != null && tdlib.canRestrictMembers(chat.id)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_unrestrictBoostCount, 0, R.string.BoostUnrestrictTitle));
@@ -5759,6 +5849,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       openStats();
     } else if (viewId == R.id.btn_enabledReactions) {
       openEnabledReactions();
+    } else if (viewId == R.id.btn_channelSponsoredMessages) {
+      showChannelSponsoredMessages();
     } else if (viewId == R.id.btn_copyBoostLink) {
       tdlib.send(new TdApi.GetChatBoostLink(chat.id), (boostLink, error) -> runOnUiThreadOptional(() -> {
         if (error != null) {

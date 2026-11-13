@@ -437,6 +437,9 @@
   <item type="id" name="btn_chatAutosaveSettings" />
   <item type="id" name="btn_chatBoostStatus" />
   <item type="id" name="btn_shareBoostLink" />
+  <item type="id" name="btn_channelSponsoredMessages" />
+  <item type="id" name="btn_channelAdsEnabled" />
+  <item type="id" name="btn_channelAdsDisabled" />
   <item type="id" name="controller_stickerKeywords" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
