@@ -6367,21 +6367,59 @@ public class TdlibUi extends Handler {
     });
   }
 
+  private int folderPickerGeneration;
+
   public void showAddChatToFolderOptions (ViewController<?> context, long chatId, @Nullable Runnable after) {
-    showAddChatsToFolderOptions(context, new long[] {chatId}, after);
+    final int generation = ++folderPickerGeneration;
+    tdlib.send(new TdApi.GetChatListsToAddChat(chatId), (lists, error) -> context.runOnUiThreadOptional(() -> {
+      if (generation != folderPickerGeneration) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        showAddChatsToFolderOptions(context, new long[] {chatId}, after,
+          filterAddableChatFolders(tdlib.chatFolders(), lists.chatLists));
+      }
+    }));
+  }
+
+  public static TdApi.ChatFolderInfo[] filterAddableChatFolders (TdApi.ChatFolderInfo[] folders, TdApi.ChatList[] lists) {
+    List<TdApi.ChatFolderInfo> result = new ArrayList<>();
+    for (TdApi.ChatFolderInfo folder : folders) {
+      for (TdApi.ChatList list : lists) {
+        if (list instanceof TdApi.ChatListFolder && ((TdApi.ChatListFolder) list).chatFolderId == folder.id) {
+          result.add(folder);
+          break;
+        }
+      }
+    }
+    return result.toArray(new TdApi.ChatFolderInfo[0]);
   }
 
   public void showAddChatsToFolderOptions (ViewController<?> context, long[] chatIds, @Nullable Runnable after) {
     if (chatIds.length == 0)
       return;
+    if (chatIds.length == 1) {
+      showAddChatToFolderOptions(context, chatIds[0], after);
+      return;
+    }
+    ++folderPickerGeneration;
+    showAddChatsToFolderOptions(context, chatIds.clone(), after, tdlib.chatFolders());
+  }
 
-    TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolders();
+  private void showAddChatsToFolderOptions (ViewController<?> context, long[] chatIds, @Nullable Runnable after,
+                                           TdApi.ChatFolderInfo[] chatFolders) {
     List<ListItem> items = new ArrayList<>(chatFolders.length + 1);
     for (TdApi.ChatFolderInfo chatFolderInfo : chatFolders) {
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.chatFolder, TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), TD.toCharSequence(chatFolderInfo.name)).setIntValue(chatFolderInfo.id));
     }
     if (tdlib.canCreateChatFolder()) {
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, R.drawable.baseline_create_new_folder_24, R.string.CreateNewFolder).setTextColorId(ColorId.textNeutral));
+    }
+    if (items.isEmpty()) {
+      UI.showToast(R.string.NoAvailableChatFolders, Toast.LENGTH_SHORT);
+      return;
     }
     SettingsWrap[] settings = new SettingsWrap[1];
     settings[0] = context.showSettings(new SettingsWrapBuilder(R.id.btn_addChatToFolder)

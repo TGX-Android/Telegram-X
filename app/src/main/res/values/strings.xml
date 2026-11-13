@@ -2374,6 +2374,7 @@
   <string name="PersonalContactPhotoRemoved">Personal contact photo removed</string>
   <string name="ImportedContacts">Imported Contacts · Tap to Refresh</string>
   <string name="NewChatsContactsPremium">My Contacts and Premium Users</string>
+  <string name="NoAvailableChatFolders">No folders are available for this chat.</string>
   <string name="NewChatsPrivacyChoicesInfo">Who can start new chats with you? This does not change existing chats or your unpaid-message exceptions.</string>
   <string name="NewChatsPrivacyUnavailable">This selector requires an eligible account without paid incoming messages. Manage paid-message privacy in a client that supports it.</string>
   <string name="UserProfileColorInfo">Choose your Telegram profile color. Telegram X does not yet display colored profile backgrounds; the change is visible in clients that support them. Your background emoji is kept.</string>
