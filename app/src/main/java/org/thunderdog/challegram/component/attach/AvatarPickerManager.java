@@ -170,9 +170,44 @@ public class AvatarPickerManager extends MediaLayoutManager {
 
   /* Picker */
 
+  // External camera/gallery results belong to the picker that launched them, not the
+  // containing profile's default MODE_CHAT activity-result handler.
+  private RunnableData<String> activityPhotoCallback;
+
+  public void pickContactPhoto (RunnableData<TdApi.InputFileGenerated> callback) {
+    RunnableData<ImageGalleryFile> onPhoto = file -> {
+      if (file == null || file.isVideo()) {
+        UI.showToast(R.string.ContactPhotoStaticOnly, Toast.LENGTH_SHORT);
+        return;
+      }
+      Media.instance().post(() -> {
+        TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(file);
+        context.runOnUiThreadOptional(() -> callback.runWithData(generated));
+      });
+    };
+    openMediaView(AvatarPickerMode.PROFILE, onPhoto, null, ColorId.NONE, null,
+      path -> U.toGalleryFile(new File(path), false, onPhoto));
+  }
+
   private void openMediaView (@AvatarPickerMode int avatarPickerMode, RunnableData<ImageGalleryFile> callback, String customButtonText, @ColorId int customButtonColorId, Runnable customButtonCallback) {
+    openMediaView(avatarPickerMode, callback, customButtonText, customButtonColorId, customButtonCallback, null);
+  }
+
+  private void openMediaView (@AvatarPickerMode int avatarPickerMode, RunnableData<ImageGalleryFile> callback, String customButtonText, @ColorId int customButtonColorId, Runnable customButtonCallback, @Nullable RunnableData<String> externalPhotoCallback) {
     waitPermissionsForOpen(hasMedia -> {
       final MediaLayout mediaLayout = new MediaLayout(context) {
+        @Override
+        public void openCamera () {
+          activityPhotoCallback = externalPhotoCallback;
+          super.openCamera();
+        }
+
+        @Override
+        public void openGallery (boolean sendAsFile) {
+          activityPhotoCallback = externalPhotoCallback;
+          super.openGallery(sendAsFile);
+        }
+
         @Override
         public int getCameraButtonOffset () {
           return !StringUtils.isEmpty(customButtonText) ? super.getCameraButtonOffset() : 0;
@@ -233,6 +268,11 @@ public class AvatarPickerManager extends MediaLayoutManager {
   /* Activity Result */   // TODO: show editor
 
   public boolean handleActivityResult (int requestCode, int resultCode, Intent data, int mode, @Nullable TdApi.Chat chat, @Nullable EditHeaderView headerView) {
+    if (requestCode != Intents.ACTIVITY_RESULT_IMAGE_CAPTURE && requestCode != Intents.ACTIVITY_RESULT_GALLERY) {
+      return false;
+    }
+    RunnableData<String> photoCallback = activityPhotoCallback;
+    activityPhotoCallback = null;
     if (resultCode != Activity.RESULT_OK) {
       return false;
     }
@@ -241,7 +281,7 @@ public class AvatarPickerManager extends MediaLayoutManager {
       File image = Intents.takeLastOutputMedia();
       if (image != null) {
         U.addToGallery(image);
-        handleActivitySetPhoto(image.getPath(), mode, chat, headerView);
+        dispatchActivityPhoto(image.getPath(), mode, chat, headerView, photoCallback);
       }
       return true;
     } else if (requestCode == Intents.ACTIVITY_RESULT_GALLERY) {
@@ -258,12 +298,22 @@ public class AvatarPickerManager extends MediaLayoutManager {
             UI.showToast("Webp is not supported for profile photos", Toast.LENGTH_LONG);
             return false;
           }
-          handleActivitySetPhoto(imagePath, mode, chat, headerView);
+          dispatchActivityPhoto(imagePath, mode, chat, headerView, photoCallback);
         }
       }
       return true;
     }
     return false;
+  }
+
+  private void dispatchActivityPhoto (String path, int mode, @Nullable TdApi.Chat chat, @Nullable EditHeaderView headerView, @Nullable RunnableData<String> photoCallback) {
+    if (photoCallback != null) {
+      if (!context.isDestroyed()) {
+        photoCallback.runWithData(path);
+      }
+    } else {
+      handleActivitySetPhoto(path, mode, chat, headerView);
+    }
   }
 
   private void handleActivitySetPhoto (String path, int mode, @Nullable TdApi.Chat chat, @Nullable EditHeaderView headerView) {

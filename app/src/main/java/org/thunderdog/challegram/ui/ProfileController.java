@@ -653,6 +653,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (TD.isContact(user)) {
+      if (canSetPersonalContactPhoto()) {
+        ids.append(R.id.btn_setPersonalContactPhoto);
+        strings.append(R.string.SetPersonalContactPhoto);
+      }
       if (canSuggestContactBirthdate()) {
         ids.append(R.id.btn_suggestContactBirthdate);
         strings.append(R.string.SuggestContactBirthdate);
@@ -720,6 +724,54 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     PrivacyExceptionController c = new PrivacyExceptionController(context, tdlib);
     c.setArguments(new PrivacyExceptionController.Args(getChatId()));
     navigateTo(c);
+  }
+
+  private boolean canSetPersonalContactPhoto () {
+    return mode == Mode.USER && user != null && user.type instanceof TdApi.UserTypeRegular &&
+      !tdlib.isSelfUserId(user.id) && TD.isContact(user);
+  }
+
+  private Object contactPhotoPick;
+  private boolean changingContactPhoto;
+
+  private void pickPersonalContactPhoto () {
+    if (!canSetPersonalContactPhoto() || changingContactPhoto) {
+      return;
+    }
+    final long userId = user.id;
+    final Object pick = contactPhotoPick = new Object();
+    avatarPickerManager.pickContactPhoto(file -> {
+      if (pick != contactPhotoPick || !canSetPersonalContactPhoto() || user.id != userId) {
+        return;
+      }
+      showOptions(Lang.getString(R.string.SetPersonalContactPhotoConfirm),
+        new int[] {R.id.btn_setPersonalContactPhoto, R.id.btn_cancel},
+        new String[] {Lang.getString(R.string.Save), Lang.getString(R.string.Cancel)}, null,
+        new int[] {R.drawable.baseline_image_24, R.drawable.baseline_cancel_24}, (view, id) -> {
+          if (id == R.id.btn_setPersonalContactPhoto) {
+            setPersonalContactPhoto(userId, pick, file);
+          }
+          return true;
+        });
+    });
+  }
+
+  private void setPersonalContactPhoto (long userId, Object pick, TdApi.InputFileGenerated file) {
+    if (changingContactPhoto || file == null || pick != contactPhotoPick ||
+      !canSetPersonalContactPhoto() || user.id != userId) {
+      return;
+    }
+    changingContactPhoto = true;
+    contactPhotoPick = null;
+    tdlib.send(new TdApi.SetUserPersonalProfilePhoto(userId, new TdApi.InputChatPhotoStatic(file)),
+      (ok, error) -> runOnUiThreadOptional(() -> {
+        changingContactPhoto = false;
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          UI.showToast(R.string.PersonalContactPhotoSaved, Toast.LENGTH_SHORT);
+        }
+      }));
   }
 
   private boolean canSuggestContactBirthdate () {
@@ -847,6 +899,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_setPersonalContactPhoto) {
+      pickPersonalContactPhoto();
+      return;
+    }
     if (id == R.id.btn_suggestContactBirthdate) {
       suggestContactBirthdate();
       return;
