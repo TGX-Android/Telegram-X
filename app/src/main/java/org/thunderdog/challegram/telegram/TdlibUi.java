@@ -101,6 +101,7 @@ import org.thunderdog.challegram.ui.ChatLinksController;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.ContactsController;
 import org.thunderdog.challegram.ui.CreateChannelController;
+import org.thunderdog.challegram.ui.EditBioController;
 import org.thunderdog.challegram.ui.EditChatFolderController;
 import org.thunderdog.challegram.ui.EditChatLinkController;
 import org.thunderdog.challegram.ui.EditDeleteAccountReasonController;
@@ -4652,6 +4653,25 @@ public class TdlibUi extends Handler {
       origin.tdlib() == tdlib && origin.getArguments() == arguments && origin.getChatId() == chatId;
   }
 
+  private void openProfileEditorFromLink (ViewController<?> current, boolean editBirthday) {
+    long userId = tdlib.myUserId();
+    NavigationController navigation = current.context().navigation();
+    tdlib.send(new TdApi.GetUserFullInfo(userId), (fullInfo, error) -> current.runOnUiThreadOptional(() -> {
+      if (navigation.getCurrentStackItem() != current || !current.isFocused() || tdlib.myUserId() != userId) {
+        return;
+      }
+      if (error != null) {
+        UI.showError(error);
+      } else if (editBirthday) {
+        showBirthdatePicker(current, fullInfo.birthdate);
+      } else {
+        EditBioController editor = new EditBioController(current.context(), tdlib);
+        editor.setArguments(new EditBioController.Arguments(fullInfo.bio != null ? fullInfo.bio.text : "", 0));
+        current.navigateTo(editor);
+      }
+    }));
+  }
+
   public void openInternalLinkType (TdlibDelegate context, @Nullable String originalUrl, @NonNull TdApi.InternalLinkType linkType, @Nullable UrlOpenParameters openParameters, @Nullable RunnableBool after) {
     if (!UI.inUiThread()) {
       post(() ->
@@ -5165,6 +5185,16 @@ public class TdlibUi extends Handler {
                   result = new EditUsernameController(context.context(), tdlib);
                   break;
                 }
+                case "bio":
+                case "birthday": {
+                  ViewController<?> current = context.context().navigation().getCurrentStackItem();
+                  if (current != null && current.tdlib() == tdlib && tdlib.myUserId() != 0) {
+                    openProfileEditorFromLink(current, "birthday".equals(editProfile.subsection));
+                  } else {
+                    unsupported.run();
+                  }
+                  break;
+                }
                 case "change-number": {
                   result = new SettingsPhoneController(context.context(), context.tdlib());
                   break;
@@ -5172,8 +5202,6 @@ public class TdlibUi extends Handler {
                 case "":
                 case "set-photo":
                 case "emoji-status":
-                case "bio":
-                case "birthday":
                 case "your-color":
                 case "channel":
                 case "add-account":
