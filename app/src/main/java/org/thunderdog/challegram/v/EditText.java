@@ -192,16 +192,27 @@ public class EditText extends android.widget.EditText {
     setImeOptions(imeOptions);
   }
 
+  private boolean handledKeyboardBack;
+
   @Override
   public boolean onKeyPreIme (int keyCode, KeyEvent e) {
     if (!ignoreCustomStuff && keyCode == KeyEvent.KEYCODE_BACK) {
       switch (e.getAction()) {
         case KeyEvent.ACTION_DOWN: {
-          BaseActivity context = UI.getContext(getContext());
-          if (context != null && context.dismissLastOpenWindow(true, true, false, true)) {
+          if (e.getRepeatCount() == 0) {
+            BaseActivity context = UI.getContext(getContext());
+            handledKeyboardBack =
+              (context != null && context.dismissLastOpenWindow(true, true, false, true)) ||
+              onKeyboardBackPress();
+          }
+          if (handledKeyboardBack) {
             return true;
           }
-          if (onKeyboardBackPress()) {
+          break;
+        }
+        case KeyEvent.ACTION_UP: {
+          if (handledKeyboardBack) {
+            handledKeyboardBack = false;
             return true;
           }
           break;
