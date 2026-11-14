@@ -97,6 +97,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.Destroyable;
 import tgx.td.Td;
 
@@ -2632,6 +2633,26 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   public boolean endsWithExpandableQuote () {
     final QuoteBackground lastQuote = quotes.isEmpty() ? null : quotes.get(quotes.size() - 1);
     return lastQuote != null && lastQuote.canCollapse() && lastQuote.partEnd == parts.size();
+  }
+
+  public @Nullable int[] getSwitchedBlocks () {
+    // Blocks of the text that a user switched, by pairs of an id and Settings.MessageState flags,
+    // also those switched back: a default may change, e.g. that of a code block with the width
+    if (blockSwitches == null) {
+      return null;
+    }
+    IntList blocks = null;
+    for (int i = 0; i < quotes.size(); i++) {
+      final int blockId = quotes.get(i).entity.getQuoteId();
+      if (blockSwitches.isChosen(blockId)) {
+        if (blocks == null) {
+          blocks = new IntList(2);
+        }
+        blocks.append(blockId);
+        blocks.append(blockSwitches.isChosenOn(blockId) ? Settings.MessageState.BLOCK_ON : 0);
+      }
+    }
+    return blocks != null ? blocks.get() : null;
   }
 
   public int getLastLineWidth () {

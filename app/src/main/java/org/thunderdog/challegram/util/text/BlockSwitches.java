@@ -62,7 +62,7 @@ public final class BlockSwitches {
     return index != -1 && onStates.get(index) == 1;
   }
 
-  void choose (int blockId, boolean isOn) {
+  public void choose (int blockId, boolean isOn) {
     final int index = blockIds.indexOf(blockId);
     if (index == -1) {
       blockIds.append(blockId);

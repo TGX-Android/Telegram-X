@@ -51,6 +51,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.animator.VariableFloat;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import tgx.td.Td;
@@ -333,6 +334,21 @@ public class TGMessageText extends TGMessage {
   private boolean isSwitchingBlock () {
     final Text text = effectiveWrapper != null ? effectiveWrapper.getCurrent() : null;
     return text != null && text.isSwitchingBlock();
+  }
+
+  @Override
+  public @Nullable int[] getSwitchedBlocks () {
+    // Ids of blocks are their offsets in the text, so those of a translation aren't kept
+    final Text text = effectiveWrapper != null ? effectiveWrapper.getCurrent() : null;
+    return text != null && translatedText == null ? text.getSwitchedBlocks() : null;
+  }
+
+  @Override
+  public void restoreSwitchedBlocks (int[] blocks) {
+    for (int i = 0; i + 1 < blocks.length; i += 2) {
+      final boolean isOn = BitwiseUtils.hasFlag(blocks[i + 1], Settings.MessageState.BLOCK_ON);
+      blockSwitches.choose(blocks[i], isOn);
+    }
   }
 
   private boolean setText (TdApi.FormattedText text, boolean parseEntities) {

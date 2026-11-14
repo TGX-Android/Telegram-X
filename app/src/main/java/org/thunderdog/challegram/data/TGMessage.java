@@ -4483,6 +4483,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return isMeasuringTestHeight || manager.messageResize().isMoving(this);
   }
 
+  public @Nullable int[] getSwitchedBlocks () {
+    // Blocks that a user switched, see Settings.MessageState
+    return null;
+  }
+
+  public void restoreSwitchedBlocks (int[] blocks) {
+    // Before its first layout
+  }
+
   public int getContentX () {
     return pContentX;
   }

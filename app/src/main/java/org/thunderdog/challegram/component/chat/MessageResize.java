@@ -41,6 +41,8 @@ public final class MessageResize {
     // Kept after the move for a change back
     private int height, finalHeight;
     private boolean isFinished;
+    // A change kept while the chat was closed, whose finalTop is the top at the next change
+    private boolean isRestored;
     private float factor;
     private boolean isFinalFrameLogged;
     // The draw of the list before which a frame last set the position of the list by the message,
@@ -137,6 +139,11 @@ public final class MessageResize {
     }
     final int top = manager.getMessageTop(message);
     Move move = findMove(message);
+    if (move != null && move.isRestored) {
+      move.originTop += top - move.finalTop;
+      move.finalTop = top;
+      move.isRestored = false;
+    }
     if (isReverse && move != null && !move.isFinished) {
       // Back to where the change began, as far as the end of the list allows: a scroll in code
       // during the change, e.g. to a new message at the end, moved that place with the list
@@ -361,6 +368,29 @@ public final class MessageResize {
 
   public void forgetChanges () {
     removeFinishedMoves(null);
+  }
+
+  public @Nullable int[] getKeptChange (TGMessage message) {
+    // The change kept for a change back, as Settings.MessageState keeps it
+    final Move move = findMove(message);
+    if (move == null) {
+      return null;
+    }
+    return new int[] {move.originTop - move.finalTop, move.height, move.finalHeight};
+  }
+
+  public void restoreChange (TGMessage message, int[] change) {
+    removeFinishedMoves(null);
+    Move move = findMove(message);
+    if (move == null) {
+      move = new Move(message);
+      moves.add(move);
+    }
+    move.isFinished = move.isRestored = true;
+    move.finalTop = 0;
+    move.originTop = change[0];
+    move.height = change[1];
+    move.finalHeight = change[2];
   }
 
   private void removeFinishedMoves (@Nullable Move kept) {

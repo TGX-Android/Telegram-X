@@ -76,6 +76,10 @@ public class Config {
   // Lines of the layout that a collapsed expandable quote shows, the last of them under its fade; a
   // quote of fewer than two lines more is shown whole, so that a collapse hides at least two lines
   public static final int EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT = 4;
+  // A return to the message that a link to another message was followed from, e.g. by the button
+  // to the end of the chat, puts it where it was with its blocks as they were, e.g. an expanded
+  // quote; otherwise in the middle of the list, as the history shows it again
+  public static final boolean RETURN_TO_MESSAGE_STATE = true;
 
   // Allow stretch bounce in places where the glow looks ugly
   public static final boolean HAS_NICE_OVER_SCROLL_EFFECT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
