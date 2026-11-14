@@ -427,7 +427,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       int buttonColorId = getHeaderIconColorId();
 
       if (mode == Mode.SECRET || mode == Mode.USER) {
-        callButton = header.addButton(realMenu, R.id.menu_btn_call, R.drawable.baseline_phone_24, buttonColorId, this, Screen.dp(48f));
+        callButton = header.addButton(realMenu, R.id.menu_btn_call, R.drawable.baseline_phone_24, R.string.Call, buttonColorId, this, Screen.dp(48f));
         callButton.setAlpha(userFull != null && (userFull.canBeCalled || userFull.hasPrivateCalls) ? 1f : 0f);
       }
 
@@ -439,11 +439,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       }
       if (id == R.id.menu_profile || id == R.id.menu_profile_bot) {
-        HeaderButton button = header.addButton(realMenu, R.id.menu_btn_manage, R.drawable.baseline_edit_24, buttonColorId, this, Screen.dp(49f));
+        HeaderButton button = header.addButton(realMenu, R.id.menu_btn_manage, R.drawable.baseline_edit_24, R.string.edit, buttonColorId, this, Screen.dp(49f));
         button.setVisibility(canManageChat() ? View.VISIBLE : View.GONE);
       }
       if (id == R.id.menu_profile) {
-        HeaderButton button = header.addButton(realMenu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, buttonColorId, this, Screen.dp(49f));
+        HeaderButton button = header.addButton(realMenu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, R.string.AddMember, buttonColorId, this, Screen.dp(49f));
         button.setVisibility(canAddAnyKindOfMembers() ? View.VISIBLE : View.GONE);
       }
       HeaderButton moreButton = header.addMoreButton(realMenu, this, buttonColorId);
@@ -2174,6 +2174,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         params = FrameLayoutFix.newParams(Screen.dp(56f), getPagerTopViewHeight(), Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT);
         counterDismiss = new ImageView(context());
         counterDismiss.setImageResource(R.drawable.baseline_close_24);
+        counterDismiss.setContentDescription(Lang.getString(R.string.AccDescrClose));
         counterDismiss.setColorFilter(Theme.iconColor());
         addThemeFilterListener(counterDismiss, ColorId.icon);
         counterDismiss.setScaleType(ImageView.ScaleType.CENTER);
@@ -2210,30 +2211,35 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               shareButton = button;
               button.setId(R.id.menu_btn_forward);
               button.setImageResource(R.drawable.baseline_forward_24);
+              button.setContentDescriptionRes(R.string.Share);
               break;
             }
             case 1: {
               copyButton = button;
               button.setId(R.id.menu_btn_copy);
               button.setImageResource(R.drawable.baseline_content_copy_24);
+              button.setContentDescriptionRes(R.string.Copy);
               break;
             }
             case 2: {
               deleteButton = button;
               button.setId(R.id.menu_btn_delete);
               button.setImageResource(R.drawable.baseline_delete_24);
+              button.setContentDescriptionRes(R.string.Delete);
               break;
             }
             case 3: {
               clearButton = button;
               button.setId(R.id.menu_btn_clear);
               button.setImageResource(R.drawable.templarian_baseline_broom_24);
+              button.setContentDescriptionRes(R.string.DeleteFromCache);
               break;
             }
             case 4: {
               viewButton = button;
               button.setId(R.id.menu_btn_view);
               button.setImageResource(R.drawable.baseline_visibility_24);
+              button.setContentDescriptionRes(R.string.ShowInChat);
               break;
             }
           }
@@ -6771,6 +6777,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     super.handleLanguagePackEvent(event, arg1);
     if (baseAdapter != null) {
       baseAdapter.onLanguagePackEvent(event, arg1);
+    }
+    if (counterDismiss != null) {
+      counterDismiss.setContentDescription(Lang.getString(R.string.AccDescrClose));
     }
   }
 

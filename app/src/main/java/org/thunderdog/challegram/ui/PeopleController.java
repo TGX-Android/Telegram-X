@@ -151,7 +151,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_people) {
-      header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, getHeaderIconColorId(), this, Screen.dp(49f));
+      header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, R.string.AddContact, getHeaderIconColorId(), this, Screen.dp(49f));
       header.addSearchButton(menu, this);
     } else {
       super.fillMenuItems(id, header, menu);
