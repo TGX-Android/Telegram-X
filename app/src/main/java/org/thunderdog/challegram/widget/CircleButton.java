@@ -240,7 +240,16 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
     if (this.hideFactor != factor) {
       this.hideFactor = factor;
       updateButtonScale();
-      setAlpha(MathUtils.clamp(1f - factor));
+      setAlpha(MathUtils.clamp(1f - factor) * alphaFactor);
+    }
+  }
+
+  private float alphaFactor = 1f;
+
+  public void setAlphaFactor (float alphaFactor) {
+    if (this.alphaFactor != alphaFactor) {
+      this.alphaFactor = alphaFactor;
+      setAlpha(MathUtils.clamp(1f - hideFactor) * alphaFactor);
     }
   }
 

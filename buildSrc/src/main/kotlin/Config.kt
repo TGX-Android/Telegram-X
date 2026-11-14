@@ -59,7 +59,8 @@ data class BuildVersions(
   val targetSdkVersion: Int,
   val buildToolsVersion: String,
   val legacyNdkVersion: String,
-  val primaryNdkVersion: String
+  val primaryNdkVersion: String,
+  val rustVersion: String
 ) {
   constructor(version: Properties) : this(
     compileSdkVersion =
@@ -71,12 +72,15 @@ data class BuildVersions(
     legacyNdkVersion =
       version.getOrThrow("version.ndk_legacy"),
     primaryNdkVersion =
-      version.getOrThrow("version.ndk_primary")
+      version.getOrThrow("version.ndk_primary"),
+    rustVersion =
+      version.getOrThrow("version.rust")
   )
 }
 
 data class ApplicationConfig(
   val sdkDir: String,
+  val rustDir: String,
   val msys2Dir: String,
 
   val applicationName: String,
@@ -89,6 +93,7 @@ data class ApplicationConfig(
 
   val isExperimentalBuild: Boolean,
   val isHuaweiBuild: Boolean,
+  val googleServicesFile: String?,
   val forceOptimize: Boolean,
   val doNotObfuscate: Boolean,
   val build: BuildVersions,
@@ -229,8 +234,8 @@ data class SdkVariant(
   val isLatest: Boolean =
     flavor == "latest"
 
-  val isTens: Boolean =
-    flavor == "tens"
+  val isNop: Boolean =
+    flavor == "nop"
   val isMarshmallow: Boolean =
     flavor == "marshmallow"
   val isLollipop: Boolean =
@@ -277,7 +282,7 @@ object Sdk {
       maxSdk = 23
     )),
     Pair(NOUGAT_OREO_PIE, SdkVariant(
-      flavor = "tens",
+      flavor = "nop",
       minSdk = 24,
       maxSdk = 28,
       displayName = "nougatOreoPie"

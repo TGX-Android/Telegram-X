@@ -599,7 +599,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     LevelDB db = Settings.instance().pmc();
     db.removeByPrefix(key(NOTIFICATION_DATA_PREFIX, tdlib.id()));
     db.removeByPrefix(key(NOTIFICATION_GROUP_DATA_PREFIX, tdlib.id()));
-    db.flush();
+    if (Config.NEED_FLUSH_NOTIFICATION_DATA) {
+      db.flush();
+    }
   }
 
   public int getNotificationData (int notificationId) {
@@ -807,6 +809,10 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   public void trackNotificationChannelProblem (TdlibNotificationChannelGroup.ChannelCreationFailureException e, long specificChatId) {
+    // Channels of an account that logs out are deleted anyway: nothing for the user to fix
+    if (tdlib.account().isLoggingOut()) {
+      return;
+    }
     trackNotificationProblem(e, NotificationError.FLAG_CHANNELS, specificChatId);
   }
 

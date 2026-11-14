@@ -104,6 +104,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     pinnedMessagesBar.setPadding(Screen.dp(49.5f), 0, 0, 0);
     pinnedMessagesBar.setCollapseButtonVisible(false);
     pinnedMessagesBar.setIgnoreAlbums(true);
+    pinnedMessagesBar.setNoEmptyProgress();
     pinnedMessagesBar.setMessageListener(new PinnedMessagesBar.MessageListener() {
       @Override
       public void onCreateMessagePreview (PinnedMessagesBar view, MessagePreviewView previewView) {

@@ -22,6 +22,7 @@ import android.view.View;
 
 import androidx.annotation.Dimension;
 import androidx.annotation.NonNull;
+import androidx.core.view.ViewCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -104,7 +105,7 @@ public final class SuggestedChatsView extends View implements TGAvatars.Callback
 
   @Override
   public void onSizeChanged () {
-    if (isLaidOut()) {
+    if (ViewCompat.isLaidOut(this)) {
       text.changeMaxWidth(getTextMaxWidth());
     }
     invalidate();
@@ -141,7 +142,7 @@ public final class SuggestedChatsView extends View implements TGAvatars.Callback
   }
 
   private int getTextMaxWidth () {
-    if (!isLaidOut()) {
+    if (!ViewCompat.isLaidOut(this)) {
       return Integer.MAX_VALUE;
     }
     return getWidth() - Math.round(avatars.getAnimatedWidth()) - Screen.dp(54);

@@ -338,6 +338,7 @@
   <string name="ChatContentFile">File</string>
   <string name="ChatContentPhoto">Photo</string>
   <string name="ChatContentAnimation">GIF</string>
+  <string name="ChatContentWidget">Widget</string>
   <string name="ChatContentProximityM_one">%2$s is now within %1$s meter from %3$s</string>
   <string name="ChatContentProximityM_other">%2$s is now within %1$s meters from %3$s</string>
   <string name="ChatContentProximityKm_one">%2$s is now within %1$s kilometer from %3$s</string>
@@ -1112,6 +1113,7 @@
   <string name="MessagePreview">Message Preview</string>
   <string name="Vibrate">Vibrate</string>
   <string name="VibrateDisabled">Disabled</string>
+  <string name="VibrateEnabled">Enabled</string>
   <string name="Sound">Sound</string>
   <string name="SoundDisabled">Disabled</string>
   <string name="InChatSound">In-Chat Sounds</string>
@@ -1687,6 +1689,7 @@
   <string name="EnableNotifications2_one">Unmute %1$s chat</string>
   <string name="EnableNotifications2_other">Unmute %1$s chats</string>
   <string name="CustomNotificationsHint">These settings will override the global values in Settings&#160;&gt;&#160;Notifications.</string>
+  <string name="CallRingtoneUserHint">You can set custom ringtone for specific users on their profile page.</string>
   <string name="CustomNotifications">Custom notifications</string>
   <string name="Send">Send</string>
   <string name="ClearRecentStickers">Clear Recent Stickers</string>
@@ -1780,7 +1783,9 @@
   <string name="VoiceCalls">Voice Calls</string>
   <string name="VoiceCallPrivacyDesc">Choose exactly who can and can\'t call you.</string>
   <string name="Ringtone">Ringtone</string>
-  <string name="RingtoneDisabled">Disabled</string>
+  <string name="RingtoneSilent">Silent</string>
+  <string name="RingtoneTelegramCall">Telegram Call</string>
+  <string name="RingtoneSystemDefault">System Default</string>
   <string name="Calls">Calls</string>
   <string name="Allow">Allow</string>
   <string name="ContactAdded">Contact added</string>
@@ -1789,12 +1794,17 @@
   <string name="SuggestInvitingUserCommon_other">%2$s is not on Telegram yet. Would you like to invite them via SMS? They may have up to %1$s contacts on Telegram.</string>
   <string name="OutgoingCall">Outgoing Call</string>
   <string name="IncomingCall">Incoming Call</string>
+  <string name="CallOngoingIncoming">Ongoing Call</string>
+  <string name="CallOngoingOutgoing">Outgoing Call</string>
   <string name="MissedCall">Missed Call</string>
   <string name="CallMessageOutgoingMissed">Canceled Call</string>
   <string name="CallMessageIncomingDeclined">Declined Call</string>
   <string name="Declined">Declined</string>
   <string name="DeclineCall">Decline</string>
   <string name="AnswerCall">Answer</string>
+  <string name="CallUnlock">Unlock</string>
+  <string name="CallUnlockToAnswer">Unlock the app to answer the call</string>
+  <string name="CallTapToSeeCaller">Tap to see who is calling</string>
   <string name="OutgoingCallBusy">Outgoing Call (Busy)</string>
   <string name="Missed">Missed</string>
   <string name="Cancelled">Canceled</string>
@@ -1843,6 +1853,7 @@
   <string name="VoipUseLessData">Less Data for Calls</string>
   <string name="UseLessDataForCallsDesc">Using less data may improve your experience on bad networks, but will slightly decrease audio quality.</string>
   <string name="VoipEndCall">End call</string>
+  <string name="VoipMicrophoneOff">Microphone is off. Open the call to turn it on</string>
   <string name="HangUp">Hang up</string>
   <string name="ChatQuickActions">Swipe actions</string>
   <string name="LoopAnimatedStickers">Loop Animated Stickers</string>
@@ -2200,6 +2211,8 @@
   <string name="DescriptionEmptyHint">Enter description here</string>
   <string name="ScreenCapture">Allow Screen Capture</string>
   <string name="ScreenCaptureInfo">If enabled, you can take screenshots of the app, but the system will display your chats in the task switcher even when the passcode is on.\n\nYou may need to restart the app for this to take effect.</string>
+  <string name="PasscodeRequireForCalls">Require for Incoming Calls</string>
+  <string name="PasscodeRequireForCallsInfo">If enabled, you will not be able to answer incoming calls without unlocking the app with Passcode Lock first.</string>
   <string name="Remove">Remove</string>
   <string name="RemoveMember">Remove</string>
   <string name="RemoveCall">Remove</string>
@@ -2692,16 +2705,20 @@
   <string name="NotificationChannelCommonPrivate">Default notification settings for all private chats and mentions.</string>
   <string name="NotificationChannelCommonGroups">Default notification settings for all group chats.</string>
   <string name="NotificationChannelCommonChannels">Default notification settings for all channels.</string>
+  <string name="NotificationChannelCommonCalls">Default ringtone settings for all incoming calls.</string>
   <string name="NotificationChannelSecretChat">Custom notification settings for the Secret Chat with %1$s.</string>
   <string name="NotificationChannelUser">Custom notification settings for messages and mentions from %1$s.</string>
+  <string name="NotificationChannelUserCalls">Custom ringtone settings for calls from %1$s.</string>
   <string name="NotificationChannelGroupChat">Custom notification settings for the Group "%1$s".</string>
   <string name="NotificationChannelGroupChatPublic">Custom notification settings for the Group "%1$s" (%2$s).</string>
   <string name="NotificationChannelChannelChat">Custom notification settings for the Channel "%1$s".</string>
   <string name="NotificationChannelChannelChatPublic">Custom notification settings for the Channel "%1$s" (%2$s).</string>
   <string name="NotificationChannelCustom">Custom: %1$s</string>
+  <string name="NotificationChannelCustomCalls">Calls: %1$s</string>
   <string name="NotificationChannelPlayback">Music Player</string>
-  <string name="NotificationChannelCall">Incoming Call</string>
-  <string name="NotificationChannelOutgoingCall">Outgoing Call</string>
+  <string name="NotificationChannelIncomingCalls">Incoming Calls</string>
+  <string name="NotificationChannelOngoingCalls">Ongoing Calls</string>
+  <string name="NotificationChannelIncomingCallScreen">Incoming Call Screen</string>
   <string name="NotificationChannelMore">More settings</string>
   <string name="RingtoneCustom">Custom</string>
   <string name="IncognitoKeyboard">Incognito Keyboard</string>
@@ -3552,6 +3569,15 @@
   <string name="OpenCloudChat">Open Cloud Chat</string>
 
   <string name="SystemNotificationSettings">System Notification Settings</string>
+  <string name="FullScreenAlerts">Full screen alerts</string>
+  <string name="FullScreenNotifications">Full-screen notifications</string>
+  <string name="RequirePasscodeToAnswerDisabled">Enable Passcode to activate this feature</string>
+  <string name="CallSettingsReset">Reset to Default</string>
+  <string name="CallSettingsResetConfirm">Would you like to reset call settings to default?</string>
+  <string name="CallSettingsResetConfirmCustom_one">Would you like to reset call settings to default including %1$s custom one?</string>
+  <string name="CallSettingsResetConfirmCustom_other">Would you like to reset call settings to default including %1$s custom ones?</string>
+  <string name="CallSettingsResetOthers_one">Reset for %1$s other account</string>
+  <string name="CallSettingsResetOthers_other">Reset for %1$s other accounts</string>
   <string name="BadgeCounter">Badge Counter</string>
   <string name="BadgeCounterMuted">Include Muted Chats</string>
   <string name="BadgeCounterMessages">Count Unread Messages</string>
@@ -3672,10 +3698,10 @@
 
   <string name="ResetNotificationsConfirm">Reset all notification settings, including custom notification settings for your contacts, groups and channels?</string>
 
-  <string name="NotificationsGuideBlockedApp">Notifications from Telegram are blocked in system settings. Tap System Notification Settings to unblock them.</string>
-  <string name="NotificationsGuideBlockedCategory">Notifications for the current account are disabled in system settings.\n\nTo enable notifications:\n• Tap System Notification Settings\n• Find the "%1$s" notification category\n• Turn the toggle on to unblock notifications.</string>
-  <string name="NotificationsGuideBlockedAll">Notifications from Telegram are blocked in your device settings.\n\nTo enable notifications:\n• Tap System Notification Settings.\n• Turn on Show Notifications.</string>
-  <string name="NotificationsGuidePermission">Notifications from Telegram are blocked in your system settings.\n\nTo enable notifications:\n• Go to system settings – Applications – Telegram X.\n• Tap Notifications – Allow notifications.</string>
+  <string name="NotificationsGuideBlockedApp2">Notifications from Telegram are blocked in system settings. Incoming calls don\'t show either: they can only ring, and you answer them in the app. Tap System Notification Settings to unblock notifications.</string>
+  <string name="NotificationsGuideBlockedCategory2">Notifications for the current account are disabled in system settings. Incoming calls of this account still ring and show: Telegram X rings them by itself.\n\nTo enable notifications:\n• Tap System Notification Settings\n• Find the "%1$s" notification category\n• Turn the toggle on to unblock notifications.</string>
+  <string name="NotificationsGuideBlockedAll2">Notifications from Telegram are blocked in your device settings. Incoming calls don\'t show either: they can only ring, and you answer them in the app.\n\nTo enable notifications:\n• Tap System Notification Settings.\n• Turn on Show Notifications.</string>
+  <string name="NotificationsGuidePermission2">Notifications from Telegram are blocked in your system settings. Incoming calls don\'t show either: they can only ring, and you answer them in the app.\n\nTo enable notifications:\n• Go to system settings – Applications – Telegram X.\n• Tap Notifications – Allow notifications.</string>
   <string name="NotificationsGuideSyncGlobalOff">You have data sync turned off in system settings. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideSyncAppOff">You have data sync turned off for Telegram X. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideFirebaseUnavailable">Google Play Services are unavailable. Please check you have them installed and up-to-date.\n\nNotifications may arrive with big delays or not arrive at all without them.</string>
@@ -5112,6 +5138,22 @@
   <string name="NotificationsErrorUnselected">Notifications from this account are disabled</string>
   <string name="NotificationsErrorError">Couldn\'t display some notifications</string>
   <string name="NotificationsErrorErrorChat">Couldn\'t display notification from %1$s</string>
+  <string name="CallProblemFullScreen">Calls can\'t show on the lock screen</string>
+  <string name="CallProblemBackground">Calls may not come while the app is closed</string>
+  <string name="CallProblemFullScreenAction">Allow calls on the lock screen</string>
+  <string name="CallProblemBackgroundAction">Open battery settings</string>
+  <string name="CallProblemFullScreenGuide">While the phone is locked, incoming calls come only as a notification: **Telegram X** isn\'t allowed to turn on the screen and show them.</string>
+  <string name="CallProblemFullScreenSteps">Open **Full-screen notifications** and turn on **Allow full-screen notifications from this app** so that you don\'t miss calls while the app is closed.</string>
+  <string name="CallProblemFullScreenStepsSamsung">Open **Full screen alerts** and turn on **Allow permission** so that you don\'t miss calls while the app is closed.</string>
+  <string name="CallProblemBackgroundGuide">Background activity of **Telegram X** is restricted in the battery settings of your phone, so incoming calls may not come while the app is closed.\n\nTap **Open battery settings**, then **Battery**, and lift the background restriction of Telegram X.</string>
+  <string name="CallProblemChannel">Incoming calls are silenced</string>
+  <string name="CallProblemChannelAction">Open settings of incoming calls</string>
+  <string name="CallProblemAppChannel">Incoming calls don\'t pop up</string>
+  <string name="CallProblemOngoingChannel">Calls in progress have no notification</string>
+  <string name="CallProblemOngoingChannelAction">Open settings of ongoing calls</string>
+  <string name="CallProblemOngoingChannelGuide">Notifications of **Ongoing Calls** are turned off in the system settings, so a call in progress has no notification to go back to it or hang up.\n\nTap **Open settings of ongoing calls** and turn them on.</string>
+  <string name="CallProblemAppChannelGuide">Notifications of **Incoming Call Screen** are turned off, kept off the screen or hidden on the lock screen in the system settings, so incoming calls can\'t show over other apps and over the lock screen.\n\nTap **Open settings of incoming calls**, let them pop on screen and show them on the lock screen.</string>
+  <string name="CallProblemChannelGuide">Notifications of **Incoming Calls** of this account are silenced or turned off in the system settings, so incoming calls don\'t ring and don\'t show over the lock screen.\n\nTap **Open settings of incoming calls** and let them make sound and pop on screen.</string>
 
   <string name="TooManySelectedAccounts">At least one account must remain selected.</string>
 

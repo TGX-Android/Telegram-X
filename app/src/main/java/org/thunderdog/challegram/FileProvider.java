@@ -37,6 +37,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import org.drinkmore.Tracer;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.xmlpull.v1.XmlPullParser;
@@ -130,6 +131,24 @@ public class FileProvider extends ContentProvider {
                                   @NonNull File file) {
     final PathStrategy strategy = getPathStrategy(context, authority);
     return strategy.getUriForFile(file);
+  }
+
+  public static boolean isOwnUri (@NonNull Uri uri) {
+    // ContentResolver drops the prefix of a user, e.g. content://0@<authority>/
+    String authority = uri.getAuthority();
+    return authority != null &&
+      Config.FILE_PROVIDER_AUTHORITY.equals(authority.substring(authority.lastIndexOf('@') + 1));
+  }
+
+  public static @Nullable File getFileForUri(@NonNull Context context, @NonNull Uri uri) {
+    if (!isOwnUri(uri)) {
+      return null;
+    }
+    try {
+      return getPathStrategy(context, Config.FILE_PROVIDER_AUTHORITY).getFileForUri(uri);
+    } catch (RuntimeException e) {
+      return null;
+    }
   }
 
   /**

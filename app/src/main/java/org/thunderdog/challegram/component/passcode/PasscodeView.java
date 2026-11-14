@@ -21,6 +21,8 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.text.TextPaint;
+import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -44,6 +46,7 @@ import java.util.ArrayList;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.StringUtils;
 
 public class PasscodeView extends View {
   private static final int TEXT_PASSWORD_TOP = 114;
@@ -223,10 +226,64 @@ public class PasscodeView extends View {
     invalidate();
   }
 
+  private @Nullable String callText, shownCallText;
+  private float callTextWidth, callTextLeft;
+
+  public void setCallText (@Nullable String callText) {
+    if (!StringUtils.equalsOrBothEmpty(this.callText, callText)) {
+      this.callText = callText;
+      layoutCallText();
+      invalidate();
+    }
+  }
+
+  private void layoutCallText () {
+    if (callText == null) {
+      shownCallText = null;
+      callTextWidth = 0;
+      return;
+    }
+    TextPaint paint = Paints.getRegularTextPaint(13f);
+    float maxWidth = getMeasuredWidth() * (isInputAside() ? .5f : 1f) - Screen.dp(16f) * 2;
+    shownCallText = callText;
+    callTextWidth = U.measureText(callText, paint);
+    if (maxWidth > 0 && callTextWidth > maxWidth) {
+      shownCallText =
+        TextUtils.ellipsize(callText, paint, maxWidth, TextUtils.TruncateAt.END).toString();
+      callTextWidth = U.measureText(shownCallText, paint);
+    }
+    callTextLeft = getTextLeft(callTextWidth);
+  }
+
+  private float callFactor;
+
+  public void setCallFactor (float factor) {
+    if (this.callFactor != factor) {
+      this.callFactor = factor;
+      invalidate();
+    }
+  }
+
+  private int patternBottomInset;
+
+  public void setPatternBottomInset (int inset) {
+    if (this.patternBottomInset != inset) {
+      this.patternBottomInset = inset;
+      if (mode == Passcode.MODE_PATTERN && orientation == Configuration.ORIENTATION_LANDSCAPE &&
+        patternDots != null) {
+        layoutPattern(getMeasuredWidth(), getMeasuredHeight());
+        invalidate();
+      }
+    }
+  }
+
+  private boolean isBlocked;
+
   private void updateText () {
     String suffix = callback.makeBruteForceSuffix();
     int seconds = Settings.instance().getPasscodeBlockSeconds(suffix);
-    if (seconds > 0) {
+    isBlocked = seconds > 0;
+    if (isBlocked) {
       text = Lang.getString(R.string.format_PasscodeTooManyAttempts, Lang.plural(R.string.TryAgainSeconds, seconds));
     } else {
       text = Passcode.getActionName(mode, state, true, extraData);
@@ -240,19 +297,42 @@ public class PasscodeView extends View {
     }
     textWidth = U.measureText(text, Paints.getRegularTextPaint(13f));
     textTop = getTextTop();
-    textLeft = getTextLeft();
+    textLeft = getTextLeft(textWidth);
+    layoutCallText();
   }
 
-  private float getTextLeft () {
+  public boolean isInputAside () {
+    return orientation == Configuration.ORIENTATION_LANDSCAPE && (mode == Passcode.MODE_PINCODE ||
+      mode == Passcode.MODE_PATTERN || mode == Passcode.MODE_GESTURE ||
+      mode == Passcode.MODE_BIOMETRICS);
+  }
+
+  public float getContentTop () {
+    return textTop + Paints.getRegularTextPaint(13f).ascent();
+  }
+
+  public float getContentBottom () {
+    float bottom = textTop + Paints.getRegularTextPaint(13f).descent();
+    if (lineTop != -1) {
+      bottom = Math.max(bottom, lineTop + Screen.dp(1f));
+    }
+    if (mode == Passcode.MODE_PATTERN && !isInputAside() && patternDots != null) {
+      bottom = Math.max(bottom, patternDots[patternDots.length - 1].getY() + patternOffset);
+    }
+    return bottom;
+  }
+
+  private float getTextLeft (float width) {
     float center = (float) getMeasuredWidth() * .5f;
-    return (mode == Passcode.MODE_PINCODE || mode == Passcode.MODE_PATTERN || mode == Passcode.MODE_GESTURE || mode == Passcode.MODE_BIOMETRICS) && orientation == Configuration.ORIENTATION_LANDSCAPE ? center * .5f - textWidth * .5f : center - textWidth * .5f;
+    return isInputAside() ? center * .5f - width * .5f : center - width * .5f;
   }
 
   private void buildLayout () {
     int totalWidth = getMeasuredWidth();
     if (totalWidth == 0) return;
 
-    textLeft = getTextLeft();
+    textLeft = getTextLeft(textWidth);
+    layoutCallText();
     layoutLine();
     layoutIcon();
 
@@ -276,7 +356,16 @@ public class PasscodeView extends View {
       }
     }
     if (text != null) {
-      c.drawText(text, textLeft, textTop, Paints.getRegularTextPaint(13f, Theme.passcodeSubtitleColor()));
+      int textColor = Theme.passcodeSubtitleColor();
+      float callAlpha = shownCallText != null && !isBlocked ? callFactor : 0f;
+      if (callAlpha < 1f) {
+        int color = ColorUtils.alphaColor(1f - callAlpha, textColor);
+        c.drawText(text, textLeft, textTop, Paints.getRegularTextPaint(13f, color));
+      }
+      if (callAlpha > 0f) {
+        int color = ColorUtils.alphaColor(callAlpha, textColor);
+        c.drawText(shownCallText, callTextLeft, textTop, Paints.getRegularTextPaint(13f, color));
+      }
     }
     if (icon != null) {
       Drawables.draw(c, icon, iconLeft, iconTop, Paints.getPasscodeIconPaint());
@@ -357,6 +446,7 @@ public class PasscodeView extends View {
     if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
       paddingTop = Screen.dp(12f);
       paddingBottom = paddingTop;
+      totalHeight -= patternBottomInset;
     } else {
       paddingTop = Screen.dpf(PATTERN_TOP);
       paddingBottom = Screen.dpf(88f);

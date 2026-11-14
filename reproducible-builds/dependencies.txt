@@ -6,3 +6,4 @@ wget=1.21-1ubuntu3
 openjdk-11-jdk-headless=11.0.11+9-0ubuntu2
 make=4.3-4ubuntu1
 clang=12.0.0-1ubuntu1
+rustup

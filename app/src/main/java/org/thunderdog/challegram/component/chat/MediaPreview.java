@@ -526,12 +526,14 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
       case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
       case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
+      case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
+      case TdApi.MessageWidget.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR: {
         // No media preview.
         break;
       }
       default: {
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_37851fea();
         throw Td.unsupported(message.content);
       }
     }

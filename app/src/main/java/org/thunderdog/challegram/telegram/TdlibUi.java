@@ -115,6 +115,7 @@ import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.Settings2FAController;
+import org.thunderdog.challegram.ui.SettingsCacheController;
 import org.thunderdog.challegram.ui.SettingsController;
 import org.thunderdog.challegram.ui.SettingsDataController;
 import org.thunderdog.challegram.ui.SettingsFoldersController;
@@ -3585,7 +3586,7 @@ public class TdlibUi extends Handler {
       }
       case TdApi.InternalLinkTypeProxy.CONSTRUCTOR: {
         TdApi.Proxy proxy = ((TdApi.InternalLinkTypeProxy) linkType).proxy;
-        if (proxy != null) {
+        if (isSupportedProxy(proxy)) {
           openProxyAlert(context, proxy);
         } else {
           showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ProxyLinkUnsupported), openParameters);
@@ -4029,7 +4030,14 @@ public class TdlibUi extends Handler {
               break;
             }
             case TdApi.SettingsSectionDataAndStorage.CONSTRUCTOR: {
-              result = new SettingsDataController(context.context(), context.tdlib());
+              // region @MadeByLLM("gpt-6", id = "storage-usage-settings-link")
+              String subsection = ((TdApi.SettingsSectionDataAndStorage) section).subsection;
+              if (subsection != null && (subsection.equals("storage") || subsection.startsWith("storage/"))) {
+                result = new SettingsCacheController(context.context(), context.tdlib());
+              } else {
+                result = new SettingsDataController(context.context(), context.tdlib());
+              }
+              // endregion
               break;
             }
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:
@@ -4352,11 +4360,16 @@ public class TdlibUi extends Handler {
     });
   }
 
+  private static boolean isSupportedProxy (@Nullable TdApi.Proxy proxy) {
+    // Web proxies need a relay page in a hidden web view, which the app doesn't have
+    return proxy != null && proxy.type.getConstructor() != TdApi.ProxyTypeWeb.CONSTRUCTOR;
+  }
+
   public void openProxyAlert (TdlibDelegate context, @Nullable TdApi.Proxy proxy) {
     ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c == null)
       return;
-    if (proxy == null) {
+    if (!isSupportedProxy(proxy)) {
       // unsupported proxy
       return;
     }

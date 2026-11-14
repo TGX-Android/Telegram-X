@@ -140,6 +140,10 @@ public class PinInputLayout extends FrameLayoutFix implements View.OnClickListen
     }
   }
 
+  public int getButtonsHeight () {
+    return buttonHeight * 4;
+  }
+
   private int getButtonHeight () {
     int availableHeight = Screen.currentActualHeight() - HeaderView.getSize(false) - (UI.isLandscape() ? 0 : Screen.dp(156f) + Screen.dp(32));
     float height = Screen.dpf(BUTTON_HEIGHT);

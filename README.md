@@ -31,12 +31,14 @@ This is the complete source code and the build instructions for the official alt
 * [Homebrew](https://brew.sh)
 * git with LFS: `$ brew install git git-lfs && git lfs install`
 * JDK: `$ brew install openjdk@25`
+* [rustup](https://rustup.rs), then Rust of `version.rust` of `version.properties` with targets of Android: `$ scripts/setup-rust.sh`, which prints `rust.dir` for `local.properties`
 
 #### Ubuntu
 
 * git with LFS: `# apt install git git-lfs`
 * Run `$ git lfs install` if you just installed `git-lfs`
 * JDK: `# apt install openjdk-25-jdk`
+* rustup: `# apt install rustup`, then Rust of `version.rust` of `version.properties` with targets of Android: `$ scripts/setup-rust.sh`, which prints `rust.dir` for `local.properties`. Run it again after a change of `version.rust`
 * If multiple JDK versions are installed:<br/>`# update-java-alternatives --list`<br/>`# update-java-alternatives --set java-1.25.0-openjdk-amd64` (or other compatible version)
 
 #### Windows
@@ -46,6 +48,7 @@ This is the complete source code and the build instructions for the official alt
 * Run `pacman -S --needed git mingw-w64-ucrt-x86_64-git-lfs perl make diffutils`
 * Run `git lfs install`
 * Run `git config --global core.longpaths true`
+* [rustup](https://rustup.rs), then Rust of `version.rust` of `version.properties` with targets of Android: `scripts/setup-rust.sh`, which prints `rust.dir` for `local.properties`
 * Clone the repository
 * Set `msys2.dir` in `local.properties` after cloning
 * Note: you have to use `\\` or `/` as path separator in properties files
@@ -62,6 +65,8 @@ This is the complete source code and the build instructions for the official alt
 1. [Obtain Telegram API credentials](https://core.telegram.org/api/obtaining_api_id)
 2. Create `local.properties` file in the root project folder using any text editor:<br/><pre># Location where you have Android SDK installed
    sdk.dir=YOUR_ANDROID_SDK_FOLDER
+   \# Home of rustup with Rust of version.rust, printed by scripts/setup-rust.sh
+   rust.dir=YOUR_RUSTUP_HOME_FOLDER
    \# Telegram API credentials obtained at previous step
    telegram.api_id=YOUR_TELEGRAM_API_ID
    telegram.api_hash=YOUR_TELEGRAM_API_HASH</pre>
@@ -70,9 +75,9 @@ This is the complete source code and the build instructions for the official alt
 ### Commands
 
 <details>
-<summary>Reference of commands for building, testing and maintenance</summary>
+<summary>Reference of commands for building and maintenance</summary>
 
-`-Pabi` limits native libraries to given ABIs, separated by commas: `arm64`, `arm32`, `x64` or `x86`. Without it, all ABIs are built. `Latest` in task names can be replaced with another flavor, see [flavors](/tests/README.md#flavors).
+`-Pabi` limits native libraries to given ABIs, separated by commas: `arm64`, `arm32`, `x64` or `x86`. Without it, all ABIs are built. `Latest` in task names can be replaced with another flavor.
 
 #### Building
 
@@ -96,85 +101,16 @@ Build `legacy` flavor for Android 4.x, which requires older NDK:
 ./gradlew :app:assembleLegacyDebug -PuseLegacyNdk=true -Pabi=arm32
 ```
 
-Build libvpx and FFmpeg for all flavors and ABIs, add `-PuseLegacyNdk=true` for `legacy` flavor:
+Build libvpx, FFmpeg and tlottie for all flavors and ABIs, add `-PuseLegacyNdk=true` for `legacy` flavor:
 ```shell
 ./gradlew :app:buildLibvpx
 ./gradlew :app:buildFfmpeg
+./gradlew :app:buildTlottie
 ```
 
-#### Checking
-
-Run unit tests:
+Builds of tlottie for `arm64-v8a` are optimized by the profile of its drawing, `app/jni/tlottie/arm64-v8a.profdata`. After updates of tlottie or Rust, builds warn that it doesn't match, and it's made again from animated stickers and emoji on a connected device of the ABI, see [`GenerateTlottieProfileTask`](buildSrc/src/main/kotlin/tgx/gradle/task/GenerateTlottieProfileTask.kt):
 ```shell
-./gradlew :app:testLatestDebugUnitTest
-```
-
-Run integration tests and UI tests on emulator:
-```shell
-./gradlew :app:emulatorLatestDebugAndroidTest -Pabi=arm64
-./gradlew :tests:ui:emulatorLatestNonMinifiedReleaseAndroidTest -Pabi=arm64
-```
-
-Run one test on device, e.g. on connected one:
-```shell
-./gradlew :tests:ui:connectedLatestNonMinifiedReleaseAndroidTest -Pabi=arm64 -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.UnauthorizedLaunchTest
-```
-
-Find classes added after minSdk of each flavor in declarations and, for Android 4.x, in imports, and calls to them without version checks:
-```shell
-./gradlew checkMinSdk
-./gradlew checkMinSdk -PuseLegacyNdk=true
-./gradlew :app:lintLegacyDebug -PuseLegacyNdk=true
-```
-
-Describe results of checks before and after a change for pull request, see [tests](/tests/README.md#tests-and-checks):
-```shell
-./gradlew clearCheckResults
-# Run checks without the change
-./gradlew saveCheckResults
-# Run checks with the change
-./gradlew describeCheckResults
-```
-
-Check test tools on connected test device after changing them, see [tests](/tests/README.md#running-tests):
-```shell
-scripts/check-test-tools.sh
-```
-
-#### Performance
-
-Run benchmarks on connected device and compare results before and after a change:
-```shell
-./gradlew :tests:benchmark:connectedLatestBenchmarkReleaseAndroidTest -Pabi=arm64
-./gradlew :tests:benchmark:saveBenchmarkResults
-# Apply the change and run benchmarks again
-./gradlew :tests:benchmark:compareBenchmarkResults -Pmetric=frameDurationCpuMsP90
-```
-
-Run microbenchmarks of app code and show implementations side by side:
-```shell
-./gradlew :tests:microbenchmark:connectedLatestNonMinifiedReleaseAndroidTest -Pabi=arm64 -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.TextBenchmarks
-./gradlew :tests:microbenchmark:describeBenchmarkResults
-```
-
-Optimize `Text`: save results before a change, then run microbenchmarks after it and compare, see [tests](/tests/README.md#optimizing-code):
-```shell
-./gradlew -q :tests:microbenchmark:connectedLatestNonMinifiedReleaseAndroidTest :tests:microbenchmark:saveBenchmarkResults -Pabi=arm64 -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.TextSuite
-# Change Text and run them again
-./gradlew -q :tests:microbenchmark:connectedLatestNonMinifiedReleaseAndroidTest :tests:microbenchmark:compareBenchmarkResults -Pabi=arm64 -Pandroid.testInstrumentationRunnerArguments.class=tgx.test.TextSuite -Pimplementation=Text -Pcontrol=BoringOrStaticLayout
-```
-
-List devices and variants for which baseline profiles will be generated, without generating them, as tasks named `<device><Variant>AndroidTest`:
-```shell
-./gradlew :app:generateBaselineProfile -Pabi=arm64 -m | grep AndroidTest
-```
-
-Generate baseline profiles for all variants on emulator and connected device, keeping computer awake and saving log. ABIs must suit both devices: on x86_64 computers emulator is `x64`, unlike phones:
-```shell
-# macOS with Apple silicon
-caffeinate -i ./gradlew :app:generateBaselineProfile -Pabi=arm64 --continue 2>&1 | tee ~/baseline-profile.log
-# Ubuntu
-systemd-inhibit --what=idle:sleep ./gradlew :app:generateBaselineProfile -Pabi=arm64,x64 --continue 2>&1 | tee ~/baseline-profile.log
+ANDROID_SERIAL=<device> ./gradlew ":app:generateTlottieProfile[arm64-v8a]" -Ptlottie.samples=<samples>
 ```
 
 </details>
@@ -194,7 +130,7 @@ And update its configuration:
 2. Clone `tgx` repository to `/home/vk/tgx`
 3. Check out the specific commit you want to verify
 4. In rare cases of builds that include unmerged pull requests, you must follow actions performed by [Publisher's](https://github.com/TGX-Android/Publisher/blob/main/main.js) `fetchPr` and `squashPr` tasks
-5. `cd` into `tgx` folder and install dependencies: `# apt install $(cat reproducible-builds/dependencies.txt)`
+5. `cd` into `tgx` folder and install dependencies: `# apt install $(cat reproducible-builds/dependencies.txt)`, then Rust with its targets of Android by `scripts/setup-rust.sh` as in the requirements above
 6. Follow up the build instruction from the previous section
 7. Run `$ apkanalyzer apk compare --different-only <remote-apk> <reproduced-apk>`
 8. If only signature files and metadata differ, build reproduction is successful.

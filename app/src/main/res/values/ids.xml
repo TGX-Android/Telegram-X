@@ -607,6 +607,7 @@
   <item type="id" name="btn_pattern" />
   <item type="id" name="btn_biometrics" />
   <item type="id" name="btn_screenCapture" />
+  <item type="id" name="btn_passcodeCalls" />
   <item type="id" name="btn_notificationContent" />
   <item type="id" name="btn_passcode_change" />
   <item type="id" name="btn_passcode_auto" />
@@ -625,6 +626,9 @@
   <item type="id" name="btn_proxyHttp" />
   <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
+  <item type="id" name="btn_fullScreenAlerts" />
+  <item type="id" name="btn_resetCallSettings" />
+  <item type="id" name="btn_resetOtherAccounts" />
   <item type="id" name="btn_autoplayGIFs" />
   <item type="id" name="btn_quickTranslate" />
   <item type="id" name="btn_translate" />
@@ -826,6 +830,7 @@
   <item type="id" name="btn_installStickerSet" />
   <item type="id" name="btn_shareLink" />
   <item type="id" name="btn_disabled" />
+  <item type="id" name="btn_enabled" />
   <item type="id" name="membersList" />
   <item type="id" name="btn_default" />
 
@@ -1083,6 +1088,7 @@
   <item type="id" name="btn_notifications_priorityOrImportance" />
   <item type="id" name="btn_notifications_led" />
   <item type="id" name="btn_notifications_channel" />
+  <item type="id" name="btn_notifications_calls" />
   <item type="id" name="btn_notifications_includeDismissed" />
 
   <item type="id" name="btn_notificationMode" />
@@ -1096,6 +1102,7 @@
   <item type="id" name="btn_customChat_sound" />
   <item type="id" name="btn_customChat_calls_ringtone" />
   <item type="id" name="btn_customChat_calls_vibrate" />
+  <item type="id" name="btn_customChat_calls_channel" />
   <item type="id" name="btn_customChat_pinnedMessages" />
   <item type="id" name="btn_customChat_mentions" />
   <item type="id" name="btn_customChat_led" />
@@ -1107,6 +1114,7 @@
 
   <item type="id" name="btn_calls_ringtone" />
   <item type="id" name="btn_calls_vibrate" />
+  <item type="id" name="btn_calls_channel" />
 
   <item type="id" name="btn_previewChat" />
   <item type="id" name="btn_inApp_chatSounds" />

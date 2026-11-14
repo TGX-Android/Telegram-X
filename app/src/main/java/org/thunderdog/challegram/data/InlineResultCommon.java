@@ -694,6 +694,14 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     return this;
   }
 
+  public void updateTimes () {
+    // Descriptions of files of messages have the time of the message, and a description that the
+    // owner fixed stays
+    if (getMessage() != null && !ignoreDescriptionUpdates) {
+      updateDescription();
+    }
+  }
+
   private void updateDescription () {
     switch (getType()) {
       case TYPE_AUDIO: {
