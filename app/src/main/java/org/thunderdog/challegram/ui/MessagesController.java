@@ -729,7 +729,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     messagesView.setController(this);
     messagesView.setHasFixedSize(true);
     messagesView.setLayoutManager(messagesManager);
-    messagesView.setClipToPadding(false);
     messagesView.setLayoutParams(params);
     Views.setScrollBarPosition(messagesView);
     if (Config.HARDWARE_MESSAGES_LIST) {
@@ -873,7 +872,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
                                           oldLeft, oldTop, oldRight, oldBottom) -> {
       if (bottom - top != oldBottom - oldTop) {
         topBar.notifyItemHeightChanged(actionItem);
-        updateActionBarNoticeInset();
       }
     });
 
@@ -8226,7 +8224,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private TopBarView.Item newAddContactItem (long chatId) {
     return new TopBarView.Item(R.id.btn_addContact, R.string.AddContact, v -> {
       tdlib.ui().addContact(this, tdlib.chatUser(chatId));
-    }).setIcon(R.drawable.baseline_person_add_24).setShowDismissRight();
+    }).setIcon(R.drawable.baseline_person_add_24);
   }
 
   private static final String EMOJI_STATUS_INFO_URL = "https://telegram.org/blog/infinite-reactions-statuses#emoji-statuses";
@@ -8261,7 +8259,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         argIndex == 1 ? emoji : argIndex == 2 ? learnMore : Lang.newBoldSpan(needFakeBold),
       name, emoji, learnMore
     );
-    items.add(new TopBarView.Item(FormattedText.valueOf(text, tdlib, null)).setShowDismissRight());
+    items.add(
+      new TopBarView.Item(FormattedText.valueOf(text, tdlib, null)).setCenterNotice()
+    );
   }
 
   private TopBarView.Item newJoinRequestItem (
@@ -8284,7 +8284,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       tdlib.cache().userFirstName(tdlib.chatUserId(chatId)), joinRequest.title, learnMore
     );
     return new TopBarView.Item(FormattedText.valueOf(text, tdlib, null))
-      .setShowDismissRight()
       .setNoticeClickListener(v -> showJoinRequestInfo(joinRequest));
   }
 
@@ -8325,7 +8324,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         );
         tdlib.send(new TdApi.SetChatNotificationSettings(chatId, newSettings), tdlib.typedOkHandler());
       }
-    }).setIcon(R.drawable.baseline_unarchive_24).setShowDismissRight();
+    }).setIcon(R.drawable.baseline_unarchive_24);
   }
 
   private TopBarView.Item newReportItem (long chatId, boolean isBlock) {
@@ -8368,7 +8367,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         .setSaveColorId(ColorId.textNegative));
     })
       .setIcon(isBlock ? R.drawable.baseline_block_24 : R.drawable.baseline_report_24)
-      .setShowDismissRight()
       .setIsNegative();
   }
 
@@ -8389,6 +8387,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void checkActionBar () {
+    actionBarEmojiStatusId = 0;
     if (!needActionBar())
       return;
 
@@ -8502,17 +8501,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       actionView.setItems(items.toArray(new TopBarView.Item[0]));
     }
     topBar.setItemVisible(actionItem, !items.isEmpty(), isFocused());
-    actionBarShown = !items.isEmpty();
-    updateActionBarNoticeInset();
-  }
-
-  private boolean actionBarShown;
-
-  private void updateActionBarNoticeInset () {
-    int inset = actionBarShown ? actionView.getNoticeInset() : 0;
-    if (messagesView.getPaddingTop() != inset) {
-      Views.setPaddingTop(messagesView, inset);
-    }
   }
 
   // Callback shit
@@ -11133,7 +11121,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         checkCanSendMessagesToUser(false);
         long emojiStatusId = Td.customEmojiId(user.emojiStatus);
         if (Config.ENABLE_NEW_CHAT_ACTION_BAR && actionBarEmojiStatusId != emojiStatusId) {
-          actionBarEmojiStatusId = emojiStatusId;
           checkActionBar();
         }
       });

@@ -37,6 +37,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.FormattedText;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.CustomTextView;
 
@@ -45,23 +46,27 @@ import me.vkryl.core.lambda.Destroyable;
 
 public class TopBarView extends FrameLayoutFix implements Destroyable {
   private static final float LEGACY_HEIGHT_DP = 36f;
-  private static final float ACTIONS_HEIGHT_DP = 46f;
+  private static final float ACTIONS_HEIGHT_DP = 36f;
   private static final float DISMISS_SIZE_DP = 40f;
+  private static final float NEW_DISMISS_SIZE_DP = 48f;
+  private static final float ACTIONS_START_PADDING_DP = 31f;
+  private static final float ACTIONS_END_PADDING_DP = 18f;
+  private static final float ICON_ONLY_SLOT_DP = 34f;
   private static final float CONTENT_HORIZONTAL_PADDING_DP = 16f;
   private static final float SEPARATOR_HEIGHT_DP = 1f;
   private static final float SEPARATOR_HORIZONTAL_MARGIN_DP = 12f;
-  private static final float ACTION_ICON_SIZE_DP = 24f;
-  private static final float ACTION_ICON_TEXT_SPACING_DP = 8f;
+  private static final float ACTION_ICON_SIZE_DP = 16f;
+  private static final float ACTION_ICON_TEXT_SPACING_DP = 4f;
   private static final float ACTION_TEXT_HORIZONTAL_PADDING_DP = 4f;
   private static final float NOTICE_DISMISS_PADDING_DP = 48f;
-  private static final float NOTICE_TOP_PADDING_DP = 10f;
-  private static final float NOTICE_BOTTOM_PADDING_DP = 8f;
-  private static final float ACTION_TEXT_SIZE_SP = 15f;
-  private static final float NOTICE_TEXT_SIZE_SP = 14f;
+  private static final float NOTICE_TOP_PADDING_DP = 6f;
+  private static final float NOTICE_BOTTOM_PADDING_DP = 6f;
+  private static final float ACTION_TEXT_SIZE_SP = 14f;
+  private static final float NOTICE_TEXT_SIZE_SP = 15f;
 
   private final ImageView topDismissButton;
   private final LinearLayout actionsContainer;
-  private final LinearLayout actionsList;
+  private final ActionsRow actionsList;
   private final @Nullable Tdlib tdlib;
   private final boolean useNewLayout;
 
@@ -81,7 +86,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     boolean isNegative;
     boolean noDismiss;
     int iconRes;
-    boolean showDismissRight;
+    boolean centerNotice;
     View.OnClickListener noticeClickListener;
 
     public Item (int id, int stringRes, View.OnClickListener onClickListener) {
@@ -92,19 +97,11 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
       this.onClickListener = onClickListener;
     }
 
-    public Item (CharSequence notice) {
-      this(notice, null);
-    }
-
     public Item (FormattedText notice) {
-      this(notice.text, notice.entities);
-    }
-
-    private Item (CharSequence notice, @Nullable TextEntity[] noticeEntities) {
       this.id = 0;
       this.stringRes = 0;
-      this.notice = notice;
-      this.noticeEntities = noticeEntities;
+      this.notice = notice.text;
+      this.noticeEntities = notice.entities;
       this.onClickListener = null;
     }
 
@@ -123,8 +120,8 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
       return this;
     }
 
-    public Item setShowDismissRight () {
-      this.showDismissRight = true;
+    public Item setCenterNotice () {
+      this.centerNotice = true;
       return this;
     }
 
@@ -160,14 +157,12 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     ));
     addView(actionsContainer);
 
-    actionsList = new LinearLayout(context);
+    actionsList = new ActionsRow(context);
     actionsList.setOrientation(LinearLayout.HORIZONTAL);
-    actionsList.setLayoutParams(FrameLayoutFix.newParams(
+    actionsList.setLayoutParams(new LinearLayout.LayoutParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
-      useNewLayout ? Screen.dp(ACTIONS_HEIGHT_DP) : ViewGroup.LayoutParams.MATCH_PARENT,
-      Lang.gravity() | Gravity.TOP
+      useNewLayout ? Screen.dp(ACTIONS_HEIGHT_DP) : ViewGroup.LayoutParams.MATCH_PARENT
     ));
-    actionsContainer.addView(actionsList);
 
     topDismissButton = new ImageView(context) {
       @Override
@@ -222,47 +217,33 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     return Math.max(getMeasuredHeight(), Screen.dp(ACTIONS_HEIGHT_DP));
   }
 
-  private boolean noticeVisible;
-
-  public int getNoticeInset () {
-    return noticeVisible ? getVisualHeight() : 0;
-  }
-
   public void setItems (Item... items) {
     clearItems();
 
     int actionCount = 0;
     boolean canDismiss = false;
-    boolean showDismissRight = false;
     boolean hasNotice = false;
     for (Item item : items) {
       if (item.stringRes != 0) {
         actionCount++;
       }
       canDismiss |= !item.noDismiss;
-      showDismissRight |= item.showDismissRight;
       hasNotice |= item.notice != null;
     }
-    // Notices, icons and right-side dismiss are only supported by the new layout
-    showDismissRight &= useNewLayout;
     hasNotice &= useNewLayout;
-    noticeVisible = hasNotice;
 
-    boolean dismissInNotice = showDismissRight && actionCount == 0;
-    int actionsHeight = Screen.dp(ACTIONS_HEIGHT_DP);
-    int dismissSpace = showDismissRight && actionCount > 0 ?
-      Screen.dp(DISMISS_SIZE_DP) : 0;
-    int startPadding = useNewLayout ? Screen.dp(CONTENT_HORIZONTAL_PADDING_DP) : 0;
-    int endPadding = dismissSpace != 0 ? dismissSpace : startPadding;
+    boolean dismissInNotice = useNewLayout && actionCount == 0;
+    int startPadding = useNewLayout ? Screen.dp(ACTIONS_START_PADDING_DP) : 0;
+    int endPadding = !useNewLayout ? 0 :
+      Screen.dp(actionCount > 1 ? ACTIONS_END_PADDING_DP : ACTIONS_START_PADDING_DP);
     actionsList.setPadding(Lang.rtl() ? endPadding : startPadding, 0,
       Lang.rtl() ? startPadding : endPadding, 0);
 
     topDismissButton.setLayoutParams(FrameLayoutFix.newParams(
-      Screen.dp(DISMISS_SIZE_DP),
-      useNewLayout && actionCount > 0 ? actionsHeight :
+      Screen.dp(useNewLayout ? NEW_DISMISS_SIZE_DP : DISMISS_SIZE_DP),
+      useNewLayout && actionCount > 0 ? Screen.dp(ACTIONS_HEIGHT_DP) :
         ViewGroup.LayoutParams.MATCH_PARENT,
-      (showDismissRight ? Lang.reverseGravity() : Lang.gravity()) |
-        (useNewLayout && actionCount > 0 ? Gravity.TOP : Gravity.CENTER_VERTICAL)
+      Lang.gravity() | (useNewLayout && actionCount > 0 ? Gravity.TOP : Gravity.CENTER_VERTICAL)
     ));
 
     if (actionCount > 0) {
@@ -292,94 +273,81 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
       int textColorId = item.isNegative ? ColorId.textNegative : ColorId.textNeutral;
 
       if (item.stringRes != 0) {
-        boolean showText = !useNewLayout || actionCount <= 3;
-        LinearLayout buttonLayout = new LinearLayout(getContext());
-        buttonLayout.setId(item.id);
-        buttonLayout.setOrientation(LinearLayout.HORIZONTAL);
-        buttonLayout.setGravity(Gravity.CENTER);
-        buttonLayout.setBackgroundResource(R.drawable.bg_btn_header);
-        buttonLayout.setOnClickListener(item.onClickListener);
-        buttonLayout.setContentDescription(Lang.getString(item.stringRes));
-        buttonLayout.setLayoutParams(new LinearLayout.LayoutParams(
-          ViewGroup.LayoutParams.WRAP_CONTENT,
-          ViewGroup.LayoutParams.MATCH_PARENT,
-          2f
-        ));
-        Views.setClickable(buttonLayout);
-
         boolean hasIcon = useNewLayout && item.iconRes != 0;
+        ActionButton button = new ActionButton(getContext());
+        button.setId(item.id);
+        button.setBackgroundResource(R.drawable.bg_btn_header);
+        button.setOnClickListener(item.onClickListener);
+        button.setContentDescription(Lang.getString(item.stringRes));
+        button.setLayoutParams(useNewLayout ?
+          new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f) :
+          new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f
+          ));
+        Views.setClickable(button);
+
         ImageView iconView = null;
         if (hasIcon) {
           iconView = new ImageView(getContext());
           iconView.setImageResource(item.iconRes);
           iconView.setColorFilter(Theme.getColor(textColorId));
-          LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
+          iconView.setLayoutParams(new LinearLayout.LayoutParams(
             Screen.dp(ACTION_ICON_SIZE_DP), Screen.dp(ACTION_ICON_SIZE_DP)
-          );
-          if (showText) {
-            if (Lang.rtl()) {
-              iconParams.leftMargin = Screen.dp(ACTION_ICON_TEXT_SPACING_DP);
-            } else {
-              iconParams.rightMargin = Screen.dp(ACTION_ICON_TEXT_SPACING_DP);
-            }
-          }
-          iconView.setLayoutParams(iconParams);
+          ));
           if (themeProvider != null) {
             themeProvider.addThemeFilterListener(iconView, textColorId);
           }
         }
 
-        TextView buttonText = null;
-        if (showText) {
-          buttonText = Views.newTextView(
-            getContext(), ACTION_TEXT_SIZE_SP, Theme.getColor(textColorId),
-            hasIcon ?
-              Lang.gravity() | Gravity.CENTER_VERTICAL : Gravity.CENTER,
-            Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING
-          );
-
-          if (themeProvider != null) {
-            themeProvider.addThemeTextColorListener(buttonText, textColorId);
-          }
-
-          buttonText.setEllipsize(TextUtils.TruncateAt.END);
-          buttonText.setSingleLine(true);
+        TextView buttonText = Views.newTextView(
+          getContext(), ACTION_TEXT_SIZE_SP, Theme.getColor(textColorId),
+          hasIcon ? Lang.gravity() | Gravity.CENTER_VERTICAL : Gravity.CENTER,
+          Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING
+        );
+        if (themeProvider != null) {
+          themeProvider.addThemeTextColorListener(buttonText, textColorId);
+        }
+        buttonText.setEllipsize(TextUtils.TruncateAt.END);
+        buttonText.setSingleLine(true);
+        int iconSpacing = Screen.dp(ACTION_ICON_TEXT_SPACING_DP);
+        int textPadding = Screen.dp(ACTION_TEXT_HORIZONTAL_PADDING_DP);
+        if (hasIcon) {
           buttonText.setPadding(
-            Screen.dp(ACTION_TEXT_HORIZONTAL_PADDING_DP), 0,
-            Screen.dp(ACTION_TEXT_HORIZONTAL_PADDING_DP), 0
+            Lang.rtl() ? textPadding : iconSpacing, 0,
+            Lang.rtl() ? iconSpacing : textPadding, 0
           );
-          Views.setMediumText(buttonText, Lang.uppercase(Lang.getString(item.stringRes)));
         }
-
+        Views.setMediumText(buttonText, Lang.uppercase(Lang.getString(item.stringRes)));
         if (Lang.rtl()) {
-          if (buttonText != null) {
-            buttonLayout.addView(buttonText);
-          }
-          if (iconView != null) {
-            buttonLayout.addView(iconView);
-          }
-        } else {
-          if (iconView != null) {
-            buttonLayout.addView(iconView);
-          }
-          if (buttonText != null) {
-            buttonLayout.addView(buttonText);
-          }
+          button.addView(buttonText);
         }
-        actionsList.addView(buttonLayout);
+        if (iconView != null) {
+          button.addView(iconView);
+        }
+        if (!Lang.rtl()) {
+          button.addView(buttonText);
+        }
+        button.setLabel(
+          hasIcon ? buttonText : null,
+          Screen.dp(ACTION_ICON_SIZE_DP),
+          Screen.dp(ICON_ONLY_SLOT_DP)
+        );
+        actionsList.addView(button);
       }
 
       if (hasNotice && item.notice != null) {
         CustomTextView noticeText = new CustomTextView(getContext(), tdlib);
         noticeText.setTextColorId(ColorId.textLight);
         noticeText.setTextSize(NOTICE_TEXT_SIZE_SP);
-        noticeText.setText(item.notice, item.noticeEntities, false);
+        noticeText.setText(
+          item.notice, item.noticeEntities, item.centerNotice ? Text.FLAG_ALIGN_CENTER : 0, false
+        );
         noticeText.setContentDescription(item.notice);
         noticeText.setPadding(
-          Screen.dp(dismissInNotice && Lang.rtl() ?
+          Screen.dp(dismissInNotice && !Lang.rtl() ?
             NOTICE_DISMISS_PADDING_DP : CONTENT_HORIZONTAL_PADDING_DP),
           Screen.dp(NOTICE_TOP_PADDING_DP),
-          Screen.dp(dismissInNotice && !Lang.rtl() ?
+          Screen.dp(dismissInNotice && Lang.rtl() ?
             NOTICE_DISMISS_PADDING_DP : CONTENT_HORIZONTAL_PADDING_DP),
           Screen.dp(NOTICE_BOTTOM_PADDING_DP)
         );
@@ -415,6 +383,108 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
       actionsList.addView(offsetView);
     }
     setCanDismiss(canDismiss);
+  }
+
+  private static class ActionButton extends LinearLayout {
+    private @Nullable View hideableLabel;
+    private int iconWidth;
+    private int iconOnlyWidth;
+
+    ActionButton (Context context) {
+      super(context);
+      setOrientation(HORIZONTAL);
+      setGravity(Gravity.CENTER);
+    }
+
+    void setLabel (@Nullable View label, int iconWidth, int iconOnlyWidth) {
+      this.hideableLabel = label;
+      this.iconWidth = iconWidth;
+      this.iconOnlyWidth = iconOnlyWidth;
+    }
+
+    boolean hasHideableLabel () {
+      return hideableLabel != null;
+    }
+
+    int measureLabelWidth () {
+      int unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+      hideableLabel.measure(unspecified, unspecified);
+      return hideableLabel.getMeasuredWidth();
+    }
+
+    int measureWidthWithLabel () {
+      if (hideableLabel == null) {
+        int unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        measure(unspecified, unspecified);
+        return getMeasuredWidth();
+      }
+      return iconWidth + measureLabelWidth();
+    }
+
+    void setLabelVisible (boolean visible, boolean inSlot) {
+      if (hideableLabel == null) {
+        return;
+      }
+      hideableLabel.setVisibility(visible ? VISIBLE : GONE);
+      boolean useSlot = !visible && inSlot;
+      LayoutParams params = (LayoutParams) getLayoutParams();
+      int width = useSlot ? iconOnlyWidth : 0;
+      if (params.width != width) {
+        params.width = width;
+        params.weight = useSlot ? 0f : 1f;
+        setGravity(useSlot ? Lang.reverseGravity() | Gravity.CENTER_VERTICAL : Gravity.CENTER);
+        setLayoutParams(params);
+      }
+    }
+  }
+
+  private static class ActionsRow extends LinearLayout {
+    private int[] widths = new int[0];
+
+    ActionsRow (Context context) {
+      super(context);
+    }
+
+    @Override
+    protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+      int available = MeasureSpec.getSize(widthMeasureSpec) - getPaddingLeft() - getPaddingRight();
+      int count = getChildCount();
+      if (widths.length != count) {
+        widths = new int[count];
+      }
+      boolean hasHideableLabels = false;
+      int iconOnlyWidth = 0;
+      for (int i = 0; i < count; i++) {
+        View child = getChildAt(i);
+        if (child instanceof ActionButton) {
+          ActionButton button = (ActionButton) child;
+          widths[i] = button.measureWidthWithLabel();
+          if (button.hasHideableLabel()) {
+            hasHideableLabels = true;
+            iconOnlyWidth = button.iconOnlyWidth;
+          }
+        }
+      }
+      if (hasHideableLabels) {
+        int labelled = count;
+        for (; labelled > 0; labelled--) {
+          int cellWidth = 0;
+          for (int i = 0; i < labelled; i++) {
+            cellWidth = Math.max(cellWidth, widths[i]);
+          }
+          if (labelled * cellWidth + (count - labelled) * iconOnlyWidth <= available) {
+            break;
+          }
+        }
+        for (int i = 0; i < count; i++) {
+          View child = getChildAt(i);
+          if (child instanceof ActionButton) {
+            ((ActionButton) child).setLabelVisible(i < labelled, count > 1);
+          }
+        }
+      }
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
   }
 
   private void clearItems () {
