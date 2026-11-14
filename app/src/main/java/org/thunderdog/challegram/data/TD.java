@@ -52,6 +52,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 import androidx.annotation.StringRes;
+import androidx.annotation.WorkerThread;
 import androidx.collection.LongSparseArray;
 
 import org.drinkless.tdlib.Client;
@@ -82,6 +83,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibEntitySpan;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
@@ -116,6 +118,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -3914,6 +3917,21 @@ public class TD {
       return file;
     }
 
+    private @Nullable TdApi.File fullSizeFile;
+
+    public DownloadedFile setFullSizeFile (@Nullable TdApi.File fullSizeFile) {
+      this.fullSizeFile = fullSizeFile != null && fullSizeFile.id != file.id ? fullSizeFile : null;
+      return this;
+    }
+
+    @WorkerThread
+    public String getFullSizePath () {
+      if (fullSizeFile != null && TD.isFileLoadedAndExists(fullSizeFile)) {
+        return fullSizeFile.local.path;
+      }
+      return getPath();
+    }
+
     public static DownloadedFile valueOfPhoto (Tdlib tdlib, TdApi.File file, boolean isWebp) {
       return new DownloadedFile(tdlib, file, isWebp ? "image/webp" : "image/jpg", new TdApi.FileTypePhoto());
     }
@@ -4253,6 +4271,66 @@ public class TD {
     })) {
       return;
     }
+    for (DownloadedFile file : files) {
+      if (file.fullSizeFile != null) {
+        downloadFullSizeFiles(files, () -> saveFilesImpl(context, files));
+        return;
+      }
+    }
+    saveFilesImpl(context, files);
+  }
+
+  private static void downloadFullSizeFiles (List<DownloadedFile> files, Runnable onComplete) {
+    List<DownloadedFile> pending = new ArrayList<>();
+    for (DownloadedFile file : files) {
+      TdApi.File fullSizeFile = file.fullSizeFile;
+      if (
+        fullSizeFile != null &&
+        fullSizeFile.local.canBeDownloaded &&
+        !TD.isFileLoadedAndExists(fullSizeFile)
+      ) {
+        pending.add(file);
+      }
+    }
+    if (pending.isEmpty()) {
+      onComplete.run();
+      return;
+    }
+    AtomicInteger remaining = new AtomicInteger(pending.size());
+    AtomicBoolean isFinished = new AtomicBoolean();
+    Runnable finish = () -> {
+      if (!isFinished.compareAndSet(false, true)) {
+        return;
+      }
+      for (DownloadedFile file : pending) {
+        if (!TD.isFileLoaded(file.fullSizeFile)) {
+          file.tdlib.send(
+            new TdApi.CancelDownloadFile(file.fullSizeFile.id, false),
+            file.tdlib.typedOkHandler()
+          );
+        }
+      }
+      onComplete.run();
+    };
+    for (DownloadedFile file : pending) {
+      TdApi.File fullSizeFile = file.fullSizeFile;
+      file.tdlib.client().send(new TdApi.DownloadFile(
+        fullSizeFile.id,
+        TdlibFilesManager.PRIORITY_USER_REQUEST_DOWNLOAD,
+        0, 0, true
+      ), result -> {
+        if (result.getConstructor() == TdApi.File.CONSTRUCTOR) {
+          Td.copyTo((TdApi.File) result, fullSizeFile);
+        }
+        if (remaining.decrementAndGet() == 0) {
+          finish.run();
+        }
+      });
+    }
+    Background.instance().post(finish, (int) TimeUnit.MINUTES.toMillis(1));
+  }
+
+  private static void saveFilesImpl (BaseActivity context, List<DownloadedFile> files) {
     Background.instance().post(() -> {
       int savedCount = 0;
       int allSavedType = -1;
@@ -4270,7 +4348,7 @@ public class TD {
             break;
           }
           case TdApi.FileTypePhoto.CONSTRUCTOR: {
-            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_PHOTO, null);
+            ok = U.copyToGalleryImpl(file.getFullSizePath(), savedType = U.TYPE_PHOTO, null);
             break;
           }
           default: {
@@ -4461,9 +4539,11 @@ public class TD {
   public static @Nullable DownloadedFile getDownloadedFile (Tdlib tdlib, TdApi.Message msg) {
     switch (msg.content.getConstructor()) {
       case TdApi.MessagePhoto.CONSTRUCTOR: {
-        TdApi.PhotoSize size = MediaWrapper.buildTargetFile(((TdApi.MessagePhoto) msg.content).photo);
+        TdApi.Photo photo = ((TdApi.MessagePhoto) msg.content).photo;
+        TdApi.PhotoSize size = MediaWrapper.buildTargetFile(photo);
         if (size != null && TD.isFileLoaded(size.photo)) {
-          return DownloadedFile.valueOfPhoto(tdlib, size.photo, false);
+          TdApi.PhotoSize biggestSize = Td.findBiggest(photo);
+          return DownloadedFile.valueOfPhoto(tdlib, size.photo, false).setFullSizeFile(biggestSize != null ? biggestSize.photo : null);
         }
         return null;
       }
@@ -6757,8 +6837,11 @@ public class TD {
         content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(new TdApi.InputVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo)), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
       }
     } else {
+      final int sizeLimit = PhotoGenerationInfo.sizeLimit(
+        file, PhotoGenerationInfo.preferredResolutionLimit() != 0
+      );
       int[] size = new int[2];
-      file.getOutputSize(size);
+      file.getOutputSize(size, sizeLimit);
 
       final int width = size[0];
       final int height = size[1];
@@ -6767,7 +6850,7 @@ public class TD {
       if (asFiles && PhotoGenerationInfo.isEmpty(file)) {
         inputFile = TD.createInputFile(file.getFilePath());
       } else {
-        inputFile = PhotoGenerationInfo.newFile(file);
+        inputFile = PhotoGenerationInfo.newFile(file, sizeLimit);
       }
 
       TdApi.FormattedText caption = file.getCaption(true, !disableMarkdown);
