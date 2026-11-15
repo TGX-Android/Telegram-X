@@ -2630,6 +2630,19 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return lastQuote != null && lastQuote.isCode && lastQuote.partEnd == parts.size();
   }
 
+  // Where code blocks narrower than the text end, e.g. the end of the content of a bubble, or
+  // NO_CODE_BLOCK_END, while each block ends at its own width
+  public static final int NO_CODE_BLOCK_END = Integer.MIN_VALUE;
+  private int codeBlockEnd = NO_CODE_BLOCK_END;
+
+  public void setCodeBlockEnd (int codeBlockEnd) {
+    this.codeBlockEnd = codeBlockEnd;
+  }
+
+  public int getCodeBlockEnd () {
+    return codeBlockEnd;
+  }
+
   public boolean endsWithExpandableQuote () {
     final QuoteBackground lastQuote = quotes.isEmpty() ? null : quotes.get(quotes.size() - 1);
     return lastQuote != null && lastQuote.canCollapse() && lastQuote.partEnd == parts.size();

@@ -436,8 +436,15 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
   public final void draw (Canvas c, int startX, int endX, int endXPadding, int startY, TextColorSet colorTheme, float alpha, @Nullable ComplexReceiver textMediaReceiver) {
     final Text text = getCurrent();
     if (text != null) {
+      text.setCodeBlockEnd(codeBlockEnd);
       text.draw(c, startX, endX, endXPadding, startY, colorTheme, alpha, textMediaReceiver);
     }
+  }
+
+  private int codeBlockEnd = Text.NO_CODE_BLOCK_END;
+
+  public void setCodeBlockEnd (int codeBlockEnd) {
+    this.codeBlockEnd = codeBlockEnd;
   }
 
   @Override

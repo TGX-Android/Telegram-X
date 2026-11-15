@@ -580,7 +580,8 @@ public class QuoteBackground {
     int endXBottomPadding,
     boolean isLaidOut
   ) {
-    out.set(getBounds(startX, endX, endXBottomPadding, 0));
+    // Edges move by the widths of the code, while the bubble moves the end of a block on its own
+    out.set(getBounds(startX, endX, endXBottomPadding, 0, Text.NO_CODE_BLOCK_END));
     if (isLaidOut) {
       out.top -= topOffset;
       out.right -= rightOffset;
@@ -597,7 +598,7 @@ public class QuoteBackground {
     int endXBottomPadding
   ) {
     // Block of the layout just made, so its offsets are 0
-    final RectF laidOut = getBounds(startX, endX, endXBottomPadding, 0);
+    final RectF laidOut = getBounds(startX, endX, endXBottomPadding, 0, Text.NO_CODE_BLOCK_END);
     topDiff = Math.round(from.top - laidOut.top);
     rightDiff = Math.round(from.right - laidOut.right);
     bottomDiff = Math.round(from.bottom - laidOut.bottom);
@@ -638,13 +639,20 @@ public class QuoteBackground {
 
   private boolean hasGeometry;
   private int geometryStartX, geometryEndX, geometryEndXBottomPadding, geometryStartY;
+  private int geometryCodeBlockEnd;
   private final RectF barRect = new RectF();
   private float barRadius, iconX, iconY;
   private float textLeft, headerBottom, headerBaseline;
   private float copyIconX, copyIconY, switchIconX, switchIconY, titleRight;
   private boolean needClipTitle;
 
-  private void updateGeometry (int startX, int endX, int endXBottomPadding, int startY) {
+  private void updateGeometry (
+    int startX,
+    int endX,
+    int endXBottomPadding,
+    int startY,
+    int codeBlockEnd
+  ) {
     for (int a = partStart; a < partEnd; a++) {
       final TextPart part = parent.getTextPart(a);
       final int height = getPartHeight(part);
@@ -664,6 +672,16 @@ public class QuoteBackground {
     bounds.bottom += Screen.dp(QUOTE_VERTICAL_PADDING) + bottomAddition + bottomOffset;
     if (isCode) {
       bounds.right = bounds.left + getCodeWidth();
+      if (codeBlockEnd != Text.NO_CODE_BLOCK_END) {
+        // Not past the text, whose lines may end with a space past its maximum width, nor past
+        // the width that lines of a block that scrolls are scrolled in
+        final int textWidth = isScrollable() ?
+          parent.getMaxWidth() :
+          Math.max(parent.getMaxWidth(), parent.getWidth());
+        final int end = Math.min(codeBlockEnd, startX + textWidth);
+        bounds.left = Math.min(bounds.left, startX);
+        bounds.right = Math.max(bounds.right, end);
+      }
     } else {
       bounds.right += Screen.dp(QUOTE_RIGHT_PADDING) + rightOffset;
     }
@@ -716,15 +734,23 @@ public class QuoteBackground {
     needClipTitle = textLeft + getTitleWidth(title) > titleRight;
   }
 
-  private RectF getBounds (int startX, int endX, int endXBottomPadding, int startY) {
+  private RectF getBounds (
+    int startX,
+    int endX,
+    int endXBottomPadding,
+    int startY,
+    int codeBlockEnd
+  ) {
     final boolean isMoved =
       geometryStartX != startX ||
       geometryEndX != endX ||
       geometryEndXBottomPadding != endXBottomPadding ||
-      geometryStartY != startY;
+      geometryStartY != startY ||
+      geometryCodeBlockEnd != codeBlockEnd;
     if (!hasGeometry || isMoved) {
-      updateGeometry(startX, endX, endXBottomPadding, startY);
+      updateGeometry(startX, endX, endXBottomPadding, startY, codeBlockEnd);
       hasGeometry = true;
+      geometryCodeBlockEnd = codeBlockEnd;
       geometryStartX = startX;
       geometryEndX = endX;
       geometryEndXBottomPadding = endXBottomPadding;
@@ -734,7 +760,8 @@ public class QuoteBackground {
   }
 
   public void draw (Canvas c, int startX, int endX, int endXBottomPadding, int startY) {
-    getBounds(startX, endX, endXBottomPadding, startY);
+    final int codeBlockEnd = isCode ? parent.getCodeBlockEnd() : Text.NO_CODE_BLOCK_END;
+    getBounds(startX, endX, endXBottomPadding, startY, codeBlockEnd);
     wasDrawn = true;
 
     final int barColor;

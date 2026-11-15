@@ -560,7 +560,11 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected int getBottomLineContentWidth () {
-    return wrapper != null && Lang.rtl() == wrapper.getLastLineIsRtl() ? wrapper.getLastLineWidth() + (xBubblePaddingSmall + xBubblePadding) * 2 : BOTTOM_LINE_EXPAND_HEIGHT;
+    // A code block at the end is as wide as the bubble, so the time goes below it
+    return wrapper != null && Lang.rtl() == wrapper.getLastLineIsRtl() &&
+      !(Config.CODE_BLOCK_TIME_BELOW && wrapper.endsWithCodeBlock()) ?
+      wrapper.getLastLineWidth() + (xBubblePaddingSmall + xBubblePadding) * 2 :
+      BOTTOM_LINE_EXPAND_HEIGHT;
   }
 
   /*@Override
@@ -630,6 +634,9 @@ public class TGMessageMedia extends TGMessage {
 
     if (wrapper != null) {
       float alpha = getTranslationLoadingAlphaValue();
+      wrapper.setCodeBlockEnd(
+        useBubbles() ? getTextX(view, wrapper, true) : Text.NO_CODE_BLOCK_END
+      );
       wrapper.draw(c, getTextX(view, wrapper, false), getTextX(view, wrapper, true), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + mosaicWrapper.getHeight() + Screen.dp(TEXT_MARGIN), null, alpha, view.getTextMediaReceiver());
     }
   }

@@ -178,7 +178,9 @@ public class TGMessageFile extends TGMessage {
 
     private int calculateLastLineWidth () {
       if (captionWrapper != null) {
-        if (captionWrapper.getLastLineIsRtl() != Lang.rtl()) {
+        // A code block at the end is as wide as the bubble, so the time goes below it
+        if (captionWrapper.getLastLineIsRtl() != Lang.rtl() ||
+          (Config.CODE_BLOCK_TIME_BELOW && captionWrapper.endsWithCodeBlock())) {
           return BOTTOM_LINE_EXPAND_HEIGHT;
         }
         return captionWrapper.getLastLineWidth();
@@ -606,6 +608,9 @@ public class TGMessageFile extends TGMessage {
       entry.item.component.draw(view, c, startX, contentStartY, previewReceiver, imageReceiver, backgroundColor, useBubbles() ? ColorUtils.compositeColor(contentReplaceColor, pressColor) : contentReplaceColor, entry.getVisibility(), entry.item.getCheckFactor());
       for (ListAnimator.Entry<TextWrapper> caption : entry.item.caption) {
         int right = useBubbles() ? startX + getContentWidth() : startX + Math.max(entry.item.component.getWidth(), caption.item.getWidth());
+        caption.item.setCodeBlockEnd(useBubbles() ?
+          getActualRightContentEdge() - getBubblePaddingRight() :
+          Text.NO_CODE_BLOCK_END);
         caption.item.draw(c, startX, right, 0, contentStartY + entry.item.component.getHeight() + Screen.dp(TEXT_MARGIN), null, entry.getVisibility() * caption.getVisibility() * alpha, view.getTextMediaReceiver());
       }
     }

@@ -628,9 +628,13 @@ public class TGMessageText extends TGMessage {
     int linkPreviewY = getWebY();
     final int topTextY = startY + getTextTopOffset();
     final int bottomTextY = linkPreview == null ? topTextY : linkPreviewY + linkPreview.getHeight() + Screen.dp(6f) + Screen.dp(2f);
+    final int codeBlockEnd = useBubbles() ?
+      getActualRightContentEdge() - getBubbleContentPadding() :
+      Text.NO_CODE_BLOCK_END;
     for (int i = 0; i < visibleText.size(); i++) {
       final ListAnimator.Entry<TextWrapper> entry = visibleText.getEntry(i);
       final int startXRtl = getStartXRtl(entry.item, startX, maxWidth);
+      entry.item.setCodeBlockEnd(codeBlockEnd);
       boolean needClip = entry.getVisibility() != 1f && useBubbles();
       int saveToCount = -1;
       if (needClip) {
