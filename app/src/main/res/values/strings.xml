@@ -5169,6 +5169,9 @@
   <string name="CallProblemBackground">May not show outside the app</string>
   <string name="CallProblemBlocked">Show only in the app</string>
   <string name="CallProblemCategory">May not ring, missed ones don\'t show</string>
+  <string name="CallProblemFailed">Failed to display</string>
+  <string name="CallProblemFailedFrom">Failed to display from %1$s</string>
+  <string name="CallProblemFailedGuide">An incoming call didn\'t show: **Telegram X** was unable to display it due to an unknown system error.\n\nPlease make sure that system updates are installed and Telegram X is up-to-date. If it happens again, tap **Share Error Report** to send the details to @tgandroidtests.</string>
   <string name="CallProblemPush">May not come while app is closed</string>
   <string name="CallProblemOffForDevice">Off for this device</string>
   <string name="CallProblemFullScreenAction">Allow calls on the lock screen</string>

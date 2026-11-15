@@ -12142,8 +12142,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @ResolvableProblem
   public int findResolvableProblem () {
     final boolean haveNotificationsProblem = notifications().hasLocalNotificationProblem();
-    final boolean haveCallsProblem = CallProblems.get(this) != CallProblems.Type.NONE &&
-      !notifications().areNotificationsBlockedGlobally();
+    final boolean haveCallsProblem = (CallProblems.get(this) != CallProblems.Type.NONE &&
+      !notifications().areNotificationsBlockedGlobally()) || (settings().hasCallProblems() &&
+      CallProblems.getOfSettings(this) == CallProblems.Type.DISPLAY_FAILED);
     final TdApi.SuggestedAction singleAction = singleSettingsSuggestion();
     final boolean haveSuggestions = singleAction != null || haveAnySettingsSuggestions();
     final int totalCount = (singleAction != null ? 1 : haveSuggestions ? 2 : 0) +

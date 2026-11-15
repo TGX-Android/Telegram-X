@@ -2130,6 +2130,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             callProblem == CallProblems.Type.CHANNEL_SILENCED) {
             openChannelSettings(tdlib.notifications().getSystemCallChannelId(0));
+          } else if (callProblem == CallProblems.Type.DISPLAY_FAILED) {
+            String report = tdlib.settings().buildCallReport();
+            if (!StringUtils.isEmpty(report)) {
+              tdlib.ui().shareText(this, report);
+            }
           } else {
             CallProblems.openSettings(context, callProblem);
           }

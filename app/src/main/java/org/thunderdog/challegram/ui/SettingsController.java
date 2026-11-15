@@ -336,21 +336,32 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private @StringRes int callErrorDescriptionRes;
+  private long problematicCallChatId;
 
   private @StringRes int getCallErrorDescription () {
+    this.problematicCallChatId = 0;
     TdApi.Session session = sessions != null ? sessions.currentSession : null;
     if (session != null && !session.canAcceptCalls) {
       return R.string.CallProblemOffForDevice;
     }
-    return CallProblems.getDescription(CallProblems.getOfSettings(tdlib));
+    @CallProblems.Type int problem = CallProblems.getOfSettings(tdlib);
+    if (problem == CallProblems.Type.DISPLAY_FAILED) {
+      problematicCallChatId = tdlib.settings().getLastCallProblematicChat();
+      if (problematicCallChatId != 0) {
+        return R.string.CallProblemFailedFrom;
+      }
+    }
+    return CallProblems.getDescription(problem);
   }
 
   private void checkCallErrors (boolean updateList) {
     if (!BuildConfig.CALLS_AVAILABLE) {
       return;
     }
+    long oldProblematicCallChatId = this.problematicCallChatId;
     int callErrorDescriptionRes = getCallErrorDescription();
-    if (this.callErrorDescriptionRes != callErrorDescriptionRes) {
+    if (this.callErrorDescriptionRes != callErrorDescriptionRes ||
+      this.problematicCallChatId != oldProblematicCallChatId) {
       boolean hadDescription = this.callErrorDescriptionRes != 0;
       this.callErrorDescriptionRes = callErrorDescriptionRes;
       if (updateList) {
@@ -573,7 +584,10 @@ public class SettingsController extends ViewController<Void> implements
             }
           }
         } else if (itemId == R.id.btn_callSettings) {
-          if (callErrorDescriptionRes != 0) {
+          if (callErrorDescriptionRes == R.string.CallProblemFailedFrom) {
+            view.setData(Lang.getStringBold(callErrorDescriptionRes,
+              tdlib.chatTitle(problematicCallChatId)));
+          } else if (callErrorDescriptionRes != 0) {
             view.setData(callErrorDescriptionRes);
           }
         } else if (itemId == R.id.btn_suggestion) {

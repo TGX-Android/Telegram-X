@@ -50,7 +50,8 @@ public final class CallProblems {
     Type.ONGOING_CHANNEL_OFF,
     Type.NOTIFICATIONS_BLOCKED,
     Type.PUSH_UNAVAILABLE,
-    Type.CATEGORY_BLOCKED
+    Type.CATEGORY_BLOCKED,
+    Type.DISPLAY_FAILED
   })
   public @interface Type {
     int
@@ -62,7 +63,8 @@ public final class CallProblems {
       ONGOING_CHANNEL_OFF = 5,
       NOTIFICATIONS_BLOCKED = 6,
       PUSH_UNAVAILABLE = 7,
-      CATEGORY_BLOCKED = 8;
+      CATEGORY_BLOCKED = 8,
+      DISPLAY_FAILED = 9;
   }
 
   private CallProblems () { }
@@ -104,6 +106,9 @@ public final class CallProblems {
       case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
       case TdlibNotificationManager.Status.NOT_BLOCKED:
         break;
+    }
+    if (tdlib.settings().hasCallProblems()) {
+      return Type.DISPLAY_FAILED;
     }
     @Type int problem = get(tdlib);
     if (problem == Type.CHANNEL_SILENCED && !tdlib.notifications().canPostCallNotifications()) {
@@ -209,6 +214,8 @@ public final class CallProblems {
         return R.string.CallProblemAppChannel;
       case Type.ONGOING_CHANNEL_OFF:
         return R.string.CallProblemOngoingChannel;
+      case Type.DISPLAY_FAILED:
+        return R.string.CallProblemFailed;
       case Type.NONE:
       default:
         return 0;
@@ -227,6 +234,8 @@ public final class CallProblems {
         return R.string.CallProblemAppChannelAction;
       case Type.ONGOING_CHANNEL_OFF:
         return R.string.CallProblemOngoingChannelAction;
+      case Type.DISPLAY_FAILED:
+        return R.string.ShareNotificationError;
       case Type.NOTIFICATIONS_BLOCKED:
       case Type.CATEGORY_BLOCKED:
       case Type.PUSH_UNAVAILABLE:
@@ -248,6 +257,8 @@ public final class CallProblems {
         return R.string.CallProblemAppChannelGuide;
       case Type.ONGOING_CHANNEL_OFF:
         return R.string.CallProblemOngoingChannelGuide;
+      case Type.DISPLAY_FAILED:
+        return R.string.CallProblemFailedGuide;
       case Type.NOTIFICATIONS_BLOCKED:
       case Type.CATEGORY_BLOCKED:
       case Type.PUSH_UNAVAILABLE:

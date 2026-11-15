@@ -182,13 +182,13 @@ public class TGCallService extends Service implements
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       builder.setCategory(Notification.CATEGORY_CALL);
     }
-    Notification notification;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-      notification = builder.build();
-    } else {
-      notification = builder.getNotification();
-    }
     try {
+      Notification notification;
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+        notification = builder.build();
+      } else {
+        notification = builder.getNotification();
+      }
       U.startForeground(this, TdlibNotificationManager.ID_FOREGROUND_CALL_START, notification,
         false);
       foregroundPlaceholder = notification;
@@ -1014,10 +1014,15 @@ public class TGCallService extends Service implements
       builder.setStyle(Notification.CallStyle.forOngoingCall(caller, endCall)
         .setIsVideo(call.isVideo));
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-      ongoingCallNotification = builder.build();
-    } else {
-      ongoingCallNotification = builder.getNotification();
+    try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+        ongoingCallNotification = builder.build();
+      } else {
+        ongoingCallNotification = builder.getNotification();
+      }
+    } catch (Throwable t) {
+      onNotificationFailed(t);
+      return;
     }
     if (!startForegroundOrUpdate(TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION,
       ongoingCallNotification, true)) {
@@ -1284,10 +1289,15 @@ public class TGCallService extends Service implements
         .setStyle(Notification.CallStyle.forIncomingCall(caller, declineAction, answerAction)
           .setIsVideo(call != null && call.isVideo));
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-      incomingNotification = builder.build();
-    } else {
-      incomingNotification = builder.getNotification();
+    try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+        incomingNotification = builder.build();
+      } else {
+        incomingNotification = builder.getNotification();
+      }
+    } catch (Throwable t) {
+      onNotificationFailed(t);
+      return true;
     }
     if (isNotificationRinging) {
       incomingNotification.flags |= Notification.FLAG_INSISTENT;
@@ -1297,6 +1307,7 @@ public class TGCallService extends Service implements
       return true;
     }
     cancelForegroundPlaceholder();
+    tdlib.settings().forgetCallProblems();
     return true;
   }
 
@@ -1314,13 +1325,42 @@ public class TGCallService extends Service implements
       Log.e(Log.TAG_VOIP, "Unable to update the call in foreground", e);
       NotificationManager manager =
         (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-      manager.notify(foregroundNotificationId, notification);
+      try {
+        manager.notify(foregroundNotificationId, notification);
+      } catch (Throwable t) {
+        onNotificationFailed(t);
+        return false;
+      }
     }
     return true;
   }
 
-  private void stopWithoutForeground (RuntimeException e) {
+  private void onNotificationFailed (Throwable t) {
+    // A connected call, or one with its ongoing notification, goes on with what it has
+    if (call.isOutgoing || isInitiated() || foregroundNotificationId ==
+      TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION) {
+      Log.e(Log.TAG_VOIP, "Unable to show the notification of the call", t);
+    } else {
+      stopWithoutForeground(t);
+    }
+  }
+
+  private void stopWithoutForeground (Throwable e) {
     Log.e(Log.TAG_VOIP, "Unable to show the call in foreground", e);
+    // A ringing call shows by CallManager on Android 8+, or by the app on screen
+    boolean isShown = !isAnswered() && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ||
+      UI.getUiState() == UI.State.RESUMED);
+    if (!call.isOutgoing && !isShown) {
+      tdlib.settings().trackCallProblem(e, ChatId.fromUserId(call.userId));
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isAnswered() &&
+      foregroundNotificationId ==
+        TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION) {
+      // CallManager posts under this id, and the system's own removal could come after it
+      stopForeground(STOP_FOREGROUND_DETACH);
+      foregroundNotificationId = 0;
+      cancelIncomingNotification();
+    }
     stopRinging();
     tdlib.context().calls().continueCallWithoutService(tdlib, call);
     tdlib.cache().unsubscribeFromCallUpdates(call.id, this);
