@@ -8232,9 +8232,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private long actionBarEmojiStatusId;
 
   private void addEmojiStatusNotice (List<TopBarView.Item> items) {
-    if (!Config.ENABLE_NEW_CHAT_ACTION_BAR) {
-      return;
-    }
     TdApi.User user = tdlib.cache().user(tdlib.chatUserId(getChatId()));
     long customEmojiId = user != null ? Td.customEmojiId(user.emojiStatus) : 0;
     if (customEmojiId == 0) {
@@ -8474,9 +8471,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
           TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
-          if (Config.ENABLE_NEW_CHAT_ACTION_BAR) {
-            items.add(newJoinRequestItem(joinRequest, chatId));
-          }
+          items.add(newJoinRequestItem(joinRequest, chatId));
           break;
         }
         default: {
@@ -11120,7 +11115,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         headerCell.setEmojiStatus(user);
         checkCanSendMessagesToUser(false);
         long emojiStatusId = Td.customEmojiId(user.emojiStatus);
-        if (Config.ENABLE_NEW_CHAT_ACTION_BAR && actionBarEmojiStatusId != emojiStatusId) {
+        if (actionBarEmojiStatusId != emojiStatusId) {
           checkActionBar();
         }
       });

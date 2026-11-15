@@ -27,7 +27,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -42,13 +41,12 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.CustomTextView;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.annotation.MadeByLLM;
 import me.vkryl.core.lambda.Destroyable;
 
 public class TopBarView extends FrameLayoutFix implements Destroyable {
-  private static final float LEGACY_HEIGHT_DP = 36f;
   private static final float ACTIONS_HEIGHT_DP = 36f;
-  private static final float DISMISS_SIZE_DP = 40f;
-  private static final float NEW_DISMISS_SIZE_DP = 48f;
+  private static final float DISMISS_SIZE_DP = 48f;
   private static final float ACTIONS_START_PADDING_DP = 31f;
   private static final float ACTIONS_END_PADDING_DP = 18f;
   private static final float ICON_ONLY_SLOT_DP = 34f;
@@ -68,7 +66,6 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
   private final LinearLayout actionsContainer;
   private final ActionsRow actionsList;
   private final @Nullable Tdlib tdlib;
-  private final boolean useNewLayout;
 
   private boolean canDismiss;
 
@@ -140,11 +137,10 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
   public TopBarView (@NonNull Context context, @Nullable Tdlib tdlib) {
     super(context);
     this.tdlib = tdlib;
-    this.useNewLayout = Config.ENABLE_NEW_CHAT_ACTION_BAR && tdlib != null;
 
     setLayoutParams(FrameLayoutFix.newParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
-      useNewLayout ? ViewGroup.LayoutParams.WRAP_CONTENT : Screen.dp(LEGACY_HEIGHT_DP)
+      ViewGroup.LayoutParams.WRAP_CONTENT
     ));
     ViewSupport.setThemedBackground(this, ColorId.filling, null);
 
@@ -152,7 +148,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     actionsContainer.setOrientation(LinearLayout.VERTICAL);
     actionsContainer.setLayoutParams(FrameLayoutFix.newParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
-      useNewLayout ? ViewGroup.LayoutParams.WRAP_CONTENT : ViewGroup.LayoutParams.MATCH_PARENT,
+      ViewGroup.LayoutParams.WRAP_CONTENT,
       Lang.gravity() | Gravity.TOP
     ));
     addView(actionsContainer);
@@ -161,7 +157,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
     actionsList.setOrientation(LinearLayout.HORIZONTAL);
     actionsList.setLayoutParams(new LinearLayout.LayoutParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
-      useNewLayout ? Screen.dp(ACTIONS_HEIGHT_DP) : ViewGroup.LayoutParams.MATCH_PARENT
+      Screen.dp(ACTIONS_HEIGHT_DP)
     ));
 
     topDismissButton = new ImageView(context) {
@@ -211,9 +207,6 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
   }
 
   public int getVisualHeight () {
-    if (!useNewLayout) {
-      return Screen.dp(LEGACY_HEIGHT_DP);
-    }
     return Math.max(getMeasuredHeight(), Screen.dp(ACTIONS_HEIGHT_DP));
   }
 
@@ -230,20 +223,18 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
       canDismiss |= !item.noDismiss;
       hasNotice |= item.notice != null;
     }
-    hasNotice &= useNewLayout;
 
-    boolean dismissInNotice = useNewLayout && actionCount == 0;
-    int startPadding = useNewLayout ? Screen.dp(ACTIONS_START_PADDING_DP) : 0;
-    int endPadding = !useNewLayout ? 0 :
-      Screen.dp(actionCount > 1 ? ACTIONS_END_PADDING_DP : ACTIONS_START_PADDING_DP);
+    boolean dismissInNotice = actionCount == 0;
+    int startPadding = Screen.dp(ACTIONS_START_PADDING_DP);
+    int endPadding = Screen.dp(actionCount > 1 ? ACTIONS_END_PADDING_DP : ACTIONS_START_PADDING_DP);
     actionsList.setPadding(Lang.rtl() ? endPadding : startPadding, 0,
       Lang.rtl() ? startPadding : endPadding, 0);
 
     topDismissButton.setLayoutParams(FrameLayoutFix.newParams(
-      Screen.dp(useNewLayout ? NEW_DISMISS_SIZE_DP : DISMISS_SIZE_DP),
-      useNewLayout && actionCount > 0 ? Screen.dp(ACTIONS_HEIGHT_DP) :
+      Screen.dp(DISMISS_SIZE_DP),
+      actionCount > 0 ? Screen.dp(ACTIONS_HEIGHT_DP) :
         ViewGroup.LayoutParams.MATCH_PARENT,
-      Lang.gravity() | (useNewLayout && actionCount > 0 ? Gravity.TOP : Gravity.CENTER_VERTICAL)
+      Lang.gravity() | (actionCount > 0 ? Gravity.TOP : Gravity.CENTER_VERTICAL)
     ));
 
     if (actionCount > 0) {
@@ -261,29 +252,19 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
       actionsContainer.addView(separator);
     }
 
-    if (!useNewLayout && items.length > 1) {
-      View offsetView = new View(getContext());
-      offsetView.setLayoutParams(new LinearLayout.LayoutParams(
-        0, ViewGroup.LayoutParams.MATCH_PARENT, .75f
-      ));
-      actionsList.addView(offsetView);
-    }
-
     for (Item item : items) {
       int textColorId = item.isNegative ? ColorId.textNegative : ColorId.textNeutral;
 
       if (item.stringRes != 0) {
-        boolean hasIcon = useNewLayout && item.iconRes != 0;
+        boolean hasIcon = item.iconRes != 0;
         ActionButton button = new ActionButton(getContext());
         button.setId(item.id);
         button.setBackgroundResource(R.drawable.bg_btn_header);
         button.setOnClickListener(item.onClickListener);
         button.setContentDescription(Lang.getString(item.stringRes));
-        button.setLayoutParams(useNewLayout ?
-          new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f) :
-          new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f
-          ));
+        button.setLayoutParams(new LinearLayout.LayoutParams(
+          0, ViewGroup.LayoutParams.MATCH_PARENT, 1f
+        ));
         Views.setClickable(button);
 
         ImageView iconView = null;
@@ -375,13 +356,6 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
       }
     }
 
-    if (!useNewLayout && items.length > 1) {
-      View offsetView = new View(getContext());
-      offsetView.setLayoutParams(new LinearLayout.LayoutParams(
-        0, ViewGroup.LayoutParams.MATCH_PARENT, .75f
-      ));
-      actionsList.addView(offsetView);
-    }
     setCanDismiss(canDismiss);
   }
 
