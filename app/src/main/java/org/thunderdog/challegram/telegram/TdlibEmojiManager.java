@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import android.os.SystemClock;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -26,8 +28,11 @@ import tgx.td.Td;
 import tgx.td.TdConstants;
 
 public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticker, TdlibEmojiManager.Entry> {
+  public static final long ERROR_RETRY_DELAY_MS = 5000;
+
   public static class Entry extends AbstractEntry<Long, TdApi.Sticker> {
     public final long customEmojiId;
+    private final long receivedAt = SystemClock.uptimeMillis();
 
     public Entry (@NonNull Long key, @Nullable TdApi.Sticker value, @Nullable TdApi.Error error) {
       super(key, value, error);
@@ -40,6 +45,10 @@ public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticke
 
     public boolean isStatic () {
       return value != null && !Td.isAnimated(value.format);
+    }
+
+    public boolean isTransientError () {
+      return error != null && (error.code < 400 || error.code >= 500);
     }
   }
 
@@ -54,6 +63,12 @@ public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticke
 
   public TdlibEmojiManager (Tdlib tdlib) {
     super(tdlib);
+  }
+
+  public void retryTransientError (Entry entry) {
+    if (entry.isTransientError() && SystemClock.uptimeMillis() - entry.receivedAt >= ERROR_RETRY_DELAY_MS) {
+      forgetError(entry);
+    }
   }
 
   @Override

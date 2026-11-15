@@ -69,3 +69,9 @@ bubbleOut_fillingActiveContent: #FFF
 blockQuoteText, blockQuoteLine: #A4B9C5
 bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine: #8DA1AD
 bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine: #A6C8E3
+
+botButtonPrimary: #229AF0
+botButtonDanger: #DB4646
+botButtonSuccess: #40B135
+botButtonText: #FFF
+botButtonRipple: #FFFFFF33

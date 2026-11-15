@@ -306,6 +306,11 @@
     <item name="chatSendButton" porterDuff="true" tinted="true" />
     <item name="chatKeyboard" />
     <item name="chatKeyboardButton" />
+    <item name="botButtonPrimary" />
+    <item name="botButtonDanger" />
+    <item name="botButtonSuccess" />
+    <item name="botButtonText" porterDuff="true" />
+    <item name="botButtonRipple" />
 
     <!-- PLAIN MODE -->
 

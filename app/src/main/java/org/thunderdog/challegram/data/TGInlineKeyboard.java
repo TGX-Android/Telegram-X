@@ -35,6 +35,7 @@ import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.chat.BotButtonEmoji;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -103,6 +104,10 @@ public class TGInlineKeyboard {
   }
 
   public void clear () {
+    for (Button button : buttons) button.destroy();
+    buttons.clear();
+    activeIndex = -1;
+    this.isCustom = false;
     this.keyboard = null;
     this.messageId = 0;
   }
@@ -114,6 +119,8 @@ public class TGInlineKeyboard {
   }
 
   public void set (long replyMarkupMessageId, @NonNull TdApi.ReplyMarkupInlineKeyboard keyboard, int contentWidth, int contentMaxWidth) {
+    if (this.messageId != replyMarkupMessageId) clear();
+    this.isCustom = false;
     this.keyboard = keyboard;
     this.messageId = replyMarkupMessageId;
     int realMaxWidth = Math.max(contentWidth, findMaxColumnCount(keyboard.rows) * getSmallestDesiredWidth());
@@ -132,6 +139,7 @@ public class TGInlineKeyboard {
     button.setClickListener(listener);
     button.setViewProvider(viewProvider);
 
+    for (Button oldButton : buttons) oldButton.destroy();
     this.buttons.clear();
     this.buttons.add(button);
   }
@@ -233,26 +241,32 @@ public class TGInlineKeyboard {
           button = buttons.get(buttonCount);
           button.set(rawButton, textWidth);
         }
+        button.index = buttonCount;
         float minWidth = button.getPreferredMinWidth();
         if (minWidth != 0) {
           preferredMinWidth = Math.max(preferredMinWidth, (minWidth + buttonPadding * 2) * row.length + buttonSpacing * (row.length - 1));
         }
-        int minButtonWidth = button.wrapper.getMaxLineWidth() + buttonTextPadding * 2;
+        int minButtonWidth = button.wrapper.getMaxLineWidth() + button.iconSlot() + buttonTextPadding * 2;
         if (buttonWidth < minButtonWidth) {
           preferredMinWidth = Math.max(preferredMinWidth, minButtonWidth * row.length + buttonSpacing * (row.length - 1));
         }
         buttonCount++;
       }
     }
-    if (buttonCount < buttons.size() - 1) {
-      for (int i = buttonCount; i < buttons.size(); i++) {
-        buttons.remove(i);
-      }
+    for (int i = buttons.size() - 1; i >= buttonCount; i--) {
+      buttons.remove(i).destroy();
     }
+    if (activeIndex >= buttonCount) activeIndex = -1;
 
     if (retryWidth != 0 && retryWidth > maxWidth && preferredMinWidth > maxWidth) {
       buildLayout((int) Math.min(preferredMinWidth, retryWidth), 0);
     }
+  }
+
+  public void requestEmoji (MessageView view) {
+    int count = !isCustom && keyboard != null ? buttons.size() : 0;
+    view.trimBotButtonEmojis(count);
+    for (int i = 0; i < count; i++) view.setBotButtonEmoji(i, parent.tdlib(), buttons.get(i).state.iconCustomEmojiId);
   }
 
   private int lastStartX, lastStartY;
@@ -428,6 +442,20 @@ public class TGInlineKeyboard {
     private final Path path;
     private final Rect dirtyRect;
     private EmojiString wrapper;
+    private final BotButtonState state = new BotButtonState();
+    private int index;
+
+    private int iconSlot () {
+      return state.iconCustomEmojiId != 0 ? Screen.dp(BotButtonEmoji.SLOT_DP) : 0;
+    }
+
+    private void destroy () {
+      contextId++;
+      setViewProvider(null);
+      forceResetSelection();
+      forceHideProgress();
+      if (currentTooltip != null) currentTooltip.hideNow();
+    }
     private @Nullable TdApi.InlineKeyboardButtonType type;
     private TGInlineKeyboard context;
     private boolean needFakeBold;
@@ -447,16 +475,23 @@ public class TGInlineKeyboard {
       String text = uppercase(cleanButtonText(button.text));
       this.needFakeBold = Text.needFakeBold(text);
       TextPaint textPaint = Paints.getBoldPaint14(needFakeBold);
-      this.wrapper = new EmojiString(text, maxWidth, textPaint);
+      state.update(button, text);
+      this.wrapper = new EmojiString(text, Math.max(1, maxWidth - iconSlot()), textPaint, true);
       this.type = button.type;
-      if (type.getConstructor() == TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR) {
+      updateCurrency();
+    }
+
+    private void updateCurrency () {
+      currencyChar = null;
+      currencyCharWidth = 0;
+      if (type != null && type.getConstructor() == TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR && parent.getMessage().content instanceof TdApi.MessageInvoice) {
         currencyChar = CurrencyUtils.getCurrencyChar(((TdApi.MessageInvoice) parent.getMessage().content).currency);
         currencyCharWidth = U.measureText(currencyChar, Paints.getBoldTextPaint(CURRENCY_TEXT_SIZE_DP));
       }
     }
 
     public float getPreferredMinWidth () {
-      return wrapper.getPreferredMinWidth();
+      return wrapper.getPreferredMinWidth() != 0 ? wrapper.getPreferredMinWidth() + iconSlot() : 0;
     }
 
     public Button (TGInlineKeyboard context, @NonNull TGMessage parent, String text, @DrawableRes int iconRes, int maxWidth) {
@@ -476,29 +511,22 @@ public class TGInlineKeyboard {
     }
 
     public void set (TdApi.InlineKeyboardButton button, int maxWidth) {
-      this.type = button.type;
       String text = uppercase(cleanButtonText(button.text));
-      final boolean reset = !wrapper.getText().equals(text);
-      if (reset || wrapper.getMaxWidth() != maxWidth) {
+      final boolean actionChanged = state.update(button, text);
+      this.type = button.type;
+      updateCurrency();
+      int textWidth = Math.max(1, maxWidth - iconSlot());
+      if (!wrapper.getText().equals(text) || wrapper.getMaxWidth() != textWidth) {
         this.needFakeBold = Text.needFakeBold(text);
-        TextPaint textPaint = Paints.getBoldPaint14(needFakeBold);
-        this.wrapper = new EmojiString(uppercase(text), maxWidth, textPaint);
+        this.wrapper = new EmojiString(text, textWidth, Paints.getBoldPaint14(needFakeBold), true);
       }
-      if (reset || !Td.equalsTo(type, button.type)) {
-        if (contextId == Integer.MAX_VALUE) {
-          contextId = 0;
-        } else {
-          contextId++;
-        }
+      if (actionChanged) {
+        contextId = contextId == Integer.MAX_VALUE ? 0 : contextId + 1;
         if (currentTooltip != null) {
           currentTooltip.hideNow();
           currentTooltip = null;
         }
-      }
-      if (reset) {
-        if (isActive()) {
-          forceResetSelection();
-        }
+        if (isActive()) forceResetSelection();
         forceHideProgress();
       }
     }
@@ -529,9 +557,8 @@ public class TGInlineKeyboard {
 
       boolean isOutBubble = context.context != null && context.context.isOutgoingBubble();
 
-      if (this.row != -1 || this.column != -1) {
-        forceResetSelection();
-        forceHideProgress();
+      if (this.row != row || this.column != column) {
+        if (this.row != -1) forceResetSelection();
         this.row = row;
         this.column = column;
       }
@@ -547,11 +574,14 @@ public class TGInlineKeyboard {
       }
 
       final boolean useBubbleMode = useWhiteMode();
+      final boolean styled = state.backgroundColorId != ColorId.NONE;
       // float darkFactor = Theme.getDarkFactor();
       int inlineOutlineColor = customColorId != ColorId.NONE ? Theme.getColor(customColorId) : Theme.inlineOutlineColor(isOutBubble);
       int fillingColor = 0;
 
-      if (useBubbleMode) {
+      if (styled) {
+        c.drawRoundRect(rounder, radius, radius, Paints.fillingPaint(Theme.getColor(state.backgroundColorId)));
+      } else if (useBubbleMode) {
         c.drawRoundRect(rounder, radius, radius, Paints.fillingPaint(fillingColor = context.context.getBubbleButtonBackgroundColor()));
       } else {
         Paint paint = Paints.getInlineButtonOuterPaint();
@@ -561,7 +591,7 @@ public class TGInlineKeyboard {
 
       //noinspection ConstantConditions
       float selectionColorFactor = ALLOW_INVERSE ? (ALLOW_ALWAYS_ACTIVE && isAlwaysActive() ? selectionFactor : activeFactor) : (ALLOW_ALWAYS_ACTIVE ? selectionFactor : 0f); // : Utils.color((int) (255f * (1f - fadeFactor)), selectionChanger.getColor(inverseFactor));
-      int selectionColor = useBubbleMode ? context.context.getBubbleButtonRippleColor() : ColorUtils.fromToArgb(ColorUtils.color(0x1a, inlineOutlineColor), inlineOutlineColor, selectionColorFactor);
+      int selectionColor = styled ? Theme.getColor(ColorId.botButtonRipple) : useBubbleMode ? context.context.getBubbleButtonRippleColor() : ColorUtils.fromToArgb(ColorUtils.color(0x1a, inlineOutlineColor), inlineOutlineColor, selectionColorFactor);
       if (fadeFactor != 0f) {
         selectionColor = ColorUtils.color((int) ((float) Color.alpha(selectionColor) * (1f - fadeFactor)), selectionColor);
       }
@@ -592,9 +622,19 @@ public class TGInlineKeyboard {
 
       //noinspection ConstantConditions
       final float textColorFactor = ALLOW_INVERSE ? (selectionFactor * activeFactor * (1f - fadeFactor)) : ALLOW_ALWAYS_ACTIVE ? selectionFactor * (1f - fadeFactor) : 0f;
-      final int textColor = useBubbleMode ? context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(customColorId != ColorId.NONE ? Theme.getColor(customColorId) :Theme.inlineTextColor(isOutBubble), Theme.inlineTextActiveColor(), textColorFactor);
+      final int textColor = styled ? Theme.getColor(ColorId.botButtonText) : useBubbleMode ? context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(customColorId != ColorId.NONE ? Theme.getColor(customColorId) :Theme.inlineTextColor(isOutBubble), Theme.inlineTextActiveColor(), textColorFactor);
 
       int textX = cx + getButtonPadding();
+      int contentSave = c.save();
+      if (state.iconCustomEmojiId != 0) c.clipRect(rounder);
+      if (state.iconCustomEmojiId != 0) {
+        int slot = iconSlot(), size = Screen.dp(BotButtonEmoji.SIZE_DP);
+        int contentWidth = Math.min(wrapper.getMaxWidth(), wrapper.getMaxLineWidth());
+        int iconX = cx + (buttonWidth - contentWidth - slot) / 2;
+        if (Lang.rtl()) iconX = cx + buttonWidth - (iconX - cx) - size;
+        else textX += slot;
+        view.drawBotButtonEmoji(c, index, iconX, cy + (buttonHeight - size) / 2, textColor);
+      }
       if (customIconRes != 0) {
         Drawable drawable = view.getSparseDrawable(customIconRes, ColorId.NONE);
         int iconWidth = drawable.getMinimumWidth();
@@ -614,6 +654,7 @@ public class TGInlineKeyboard {
       }
       Paints.getBoldPaint14(needFakeBold, Theme.inlineTextColor(isOutBubble));
       wrapper.draw(c, textX, cy + Screen.dp(12f), textColor, true);
+      c.restoreToCount(contentSave);
 
       if (type != null) {
         int iconColor = Theme.inlineIconColor(isOutBubble);
@@ -641,7 +682,7 @@ public class TGInlineKeyboard {
             }
             Drawable icon = getSparseDrawable(iconRes, ColorId.NONE);
             int padding = Screen.dp(paddingDp);
-            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - padding, dirtyRect.top + padding, useBubbleMode ?
+            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - padding, dirtyRect.top + padding, (styled || useBubbleMode) ?
               (progressFactor == 0f ? Paints.getInlineBubbleIconPaint(textColor) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, textColor))) :
               textColorFactor == 0f && progressFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor))));
             drawProgress(c, useBubbleMode, textColorFactor);
@@ -649,18 +690,18 @@ public class TGInlineKeyboard {
           }
           case TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR: {
             Drawable icon = getSparseDrawable(R.drawable.deproko_baseline_link_arrow_20, ColorId.NONE);
-            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth(), dirtyRect.top, useBubbleMode ? Paints.getInlineBubbleIconPaint(textColor) : textColorFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor)));
+            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth(), dirtyRect.top, (styled || useBubbleMode) ? Paints.getInlineBubbleIconPaint(textColor) : textColorFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor)));
             break;
           }
           case TdApi.InlineKeyboardButtonTypeLoginUrl.CONSTRUCTOR: {
             Drawable icon = getSparseDrawable(R.drawable.deproko_baseline_link_arrow_20, ColorId.NONE);
-            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth(), dirtyRect.top, useBubbleMode ? Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(1f - progressFactor, textColor)) : textColorFactor == 0f && progressFactor == 1f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor))));
+            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth(), dirtyRect.top, (styled || useBubbleMode) ? Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(1f - progressFactor, textColor)) : textColorFactor == 0f && progressFactor == 1f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor))));
             drawProgress(c, useBubbleMode, textColorFactor);
             break;
           }
           case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR: {
             if (!StringUtils.isEmpty(currencyChar)) {
-              int color = ColorUtils.alphaColor(1f - progressFactor, useBubbleMode ? textColor : ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor));
+              int color = ColorUtils.alphaColor(1f - progressFactor, (styled || useBubbleMode) ? textColor : ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor));
               c.drawText(currencyChar, dirtyRect.right - Screen.dp(6f) - currencyCharWidth, dirtyRect.top + getStrokePadding() + Screen.dp(12f), Paints.getBoldTextPaint(CURRENCY_TEXT_SIZE_DP, color));
             }
             drawProgress(c, useBubbleMode, textColorFactor);
@@ -688,7 +729,7 @@ public class TGInlineKeyboard {
 
     private void drawProgress (Canvas c, boolean useBubbleMode, float textColorFactor) {
       if (progress != null) {
-        final int color = useBubbleMode ?  context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(customColorId != ColorId.NONE ? Theme.getColor(customColorId) :Theme.inlineIconColor(context.context != null && context.context.isOutgoingBubble()), Theme.inlineTextActiveColor(), textColorFactor);
+        final int color = state.backgroundColorId != ColorId.NONE ? Theme.getColor(ColorId.botButtonText) : useBubbleMode ?  context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(customColorId != ColorId.NONE ? Theme.getColor(customColorId) :Theme.inlineIconColor(context.context != null && context.context.isOutgoingBubble()), Theme.inlineTextActiveColor(), textColorFactor);
         final int progressColor = ColorUtils.color((int) ((float) Color.alpha(color) * progressFactor), color);
         progress.forceColor(progressColor);
         progress.draw(c);
