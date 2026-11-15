@@ -1897,6 +1897,7 @@
   <string name="ProxyError">Error</string>
   <string name="ProxyErrorDirect">Problems detected</string>
   <string name="ProxyChecking">Checking…</string>
+  <string name="ProxyCheckedWhenEnabled">Checked when enabled</string>
   <string name="ProxyAvailable">Available (%1$s)</string>
   <string name="ProxyNone">Without Proxy</string>
   <string name="ProxyConnections">Connections</string>

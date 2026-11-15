@@ -392,7 +392,8 @@ public class EditProxyController extends EditBaseController<EditProxyController.
       case MODE_WEB:
         type = new TdApi.ProxyTypeWeb(
           this.path.getStringValue().trim(),
-          this.secret.getStringValue().trim());
+          this.secret.getStringValue().trim()
+        );
         break;
       case MODE_HTTP:
         type = new TdApi.ProxyTypeHttp(this.username.getStringValue(), this.password.getStringValue(), !this.tcpOnly.getBoolValue());

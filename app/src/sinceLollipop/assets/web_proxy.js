@@ -14,30 +14,39 @@
  */
 function (origin, pathPrefix, bridgeName, nativeName, useArrayBuffer) {
   'use strict';
-  if (window !== window.top || location.origin !== origin) {
-    return;
-  }
-  const native = window[nativeName];
-  const maxBytes = 1048584;
-  const fail = () => native.postMessage('f');
+  const {URL, Request} = window;
+  const uncurry = Function.prototype.bind.bind(Function.prototype.call);
+  const getter = (type, name) =>
+    uncurry(Object.getOwnPropertyDescriptor(type.prototype, name).get);
+  const urlOrigin = getter(URL, 'origin');
+  const urlUsername = getter(URL, 'username');
+  const urlPassword = getter(URL, 'password');
+  const urlPathname = getter(URL, 'pathname');
+  const urlHref = getter(URL, 'href');
+  const requestUrl = getter(Request, 'url');
+  const startsWith = uncurry(String.prototype.startsWith);
+  const originUrl = new URL(origin).origin;
+  const socketOrigin = 'wss:' + originUrl.substring('https:'.length);
   const lock = (target, name, value) => {
     Object.defineProperty(target, name, {value, writable: false, configurable: false});
   };
+  const encodedSeparator = /%2e|%2f|%5c/i;
+  lock(encodedSeparator, 'exec', RegExp.prototype.exec);
+  lock(encodedSeparator, 'test', RegExp.prototype.test);
   const allowed = (value, socket) => {
     const url = new URL(value, location.href);
-    const scheme = socket ? 'wss:' : 'https:';
-    if (url.protocol !== scheme || url.host !== location.host ||
-        url.username || url.password || !url.pathname.startsWith(pathPrefix) ||
-        /%2e|%2f|%5c/i.test(url.pathname)) {
+    const path = urlPathname(url);
+    if (urlOrigin(url) !== (socket ? socketOrigin : originUrl) ||
+        urlUsername(url) || urlPassword(url) || !startsWith(path, pathPrefix) ||
+        encodedSeparator.test(path)) {
       throw new TypeError('Relay request blocked');
     }
-    return url.href;
+    return urlHref(url);
   };
-  // WebView's request callback does not cover WebSockets or service worker traffic.
   const fetch = window.fetch.bind(window);
   lock(window, 'fetch', (input, init) => {
     const request = new Request(input, init);
-    allowed(request.url, false);
+    allowed(requestUrl(request), false);
     return fetch(new Request(request, {
       redirect: 'error', credentials: 'omit', referrerPolicy: 'no-referrer'
     }));
@@ -55,13 +64,18 @@ function (origin, pathPrefix, bridgeName, nativeName, useArrayBuffer) {
   // fetch and WebSocket are the only networking APIs needed by the relay.
   for (const name of ['XMLHttpRequest', 'EventSource', 'Worker', 'SharedWorker', 'WebTransport',
     'RTCPeerConnection', 'webkitRTCPeerConnection', 'RTCDataChannel', 'Notification',
-    'localStorage', 'sessionStorage', 'indexedDB', 'caches', 'open']) {
+    'BroadcastChannel', 'localStorage', 'sessionStorage', 'indexedDB', 'caches', 'open']) {
     lock(window, name, undefined);
   }
   for (const name of ['serviceWorker', 'sendBeacon', 'mediaDevices', 'geolocation', 'credentials',
     'storage', 'permissions', 'bluetooth', 'usb', 'serial', 'hid']) {
-    lock(navigator, name, undefined);
+    lock(Navigator.prototype, name, undefined);
   }
+  Object.defineProperty(Document.prototype, 'cookie', {
+    get: () => '',
+    set: () => { },
+    configurable: false
+  });
   const policy = "default-src 'none'; script-src " + origin + pathPrefix + " 'unsafe-inline'; " +
     "style-src " + origin + pathPrefix + " 'unsafe-inline'; img-src " + origin + pathPrefix +
     "; connect-src " + origin + pathPrefix + ' ' + origin.replace('https:', 'wss:') + pathPrefix +
@@ -77,7 +91,6 @@ function (origin, pathPrefix, bridgeName, nativeName, useArrayBuffer) {
     document.head.prepend(meta);
     return true;
   };
-  // Same-origin frames keep untouched networking APIs, so scripts must not reach into them.
   for (const frame of [HTMLIFrameElement, HTMLFrameElement, HTMLObjectElement, HTMLEmbedElement]) {
     for (const name of ['contentWindow', 'contentDocument']) {
       Object.defineProperty(frame.prototype, name, {get: () => null, configurable: false});
@@ -93,6 +106,45 @@ function (origin, pathPrefix, bridgeName, nativeName, useArrayBuffer) {
       }
     });
     observer.observe(document, {childList: true, subtree: true});
+  }
+  if (window !== window.top || location.origin !== originUrl) {
+    return;
+  }
+  const native = window[nativeName];
+  const maxBytes = 1048584;
+  const fail = native.postMessage.bind(native, 'f');
+  const frameSelector = 'iframe, frame, object, embed';
+  const addedNodes = getter(MutationRecord, 'addedNodes');
+  const removedNodes = getter(MutationRecord, 'removedNodes');
+  const nodeCount = getter(NodeList, 'length');
+  const matches = uncurry(Element.prototype.matches);
+  const querySelector = uncurry(Element.prototype.querySelector);
+  const hasFrame = nodes => {
+    for (let i = 0; i < nodeCount(nodes); i++) {
+      try {
+        if (matches(nodes[i], frameSelector) || querySelector(nodes[i], frameSelector)) {
+          return true;
+        }
+      } catch (ignored) {
+      }
+    }
+    return false;
+  };
+  new MutationObserver(records => {
+    for (let i = 0; i < records.length; i++) {
+      if (hasFrame(addedNodes(records[i])) || hasFrame(removedNodes(records[i]))) {
+        fail();
+        return;
+      }
+    }
+    if (window[0]) {
+      fail();
+    }
+  }).observe(document, {childList: true, subtree: true});
+  if (document.contentType !== 'text/html') {
+    fail();
+    window.stop();
+    throw new TypeError('Relay document blocked');
   }
   let receiver = null;
   const bridge = {

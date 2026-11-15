@@ -70,6 +70,15 @@ final class TdlibWebProxy implements UI.StateListener {
   private static boolean cleanedProfiles;
   // Profile deletion can fail until WebView releases it; retry on the main thread.
   private static final List<String> pendingProfileDeletions = new ArrayList<>();
+  private static final int MAX_PROFILE_DELETION_RETRIES = 5;
+  private static final Handler profileHandler = new Handler(Looper.getMainLooper());
+  private static final Runnable profileDeletionRetry = () -> {
+    try {
+      retryProfileDeletions();
+    } catch (Throwable ignored) {
+    }
+  };
+  private static int profileDeletionRetries;
 
   private final Client client;
   private final Runnable onResume;
@@ -231,6 +240,16 @@ final class TdlibWebProxy implements UI.StateListener {
       if (!pendingProfileDeletions.contains(name)) {
         pendingProfileDeletions.add(name);
       }
+      profileDeletionRetries = 0;
+      scheduleProfileDeletionRetry();
+    }
+  }
+
+  private static void scheduleProfileDeletionRetry () {
+    profileHandler.removeCallbacks(profileDeletionRetry);
+    if (!pendingProfileDeletions.isEmpty() &&
+        profileDeletionRetries < MAX_PROFILE_DELETION_RETRIES) {
+      profileHandler.postDelayed(profileDeletionRetry, 1000L << profileDeletionRetries++);
     }
   }
 
@@ -251,6 +270,7 @@ final class TdlibWebProxy implements UI.StateListener {
         pendingProfileDeletions.remove(i);
       }
     }
+    scheduleProfileDeletionRetry();
   }
 
   @UiThread
@@ -344,7 +364,7 @@ final class TdlibWebProxy implements UI.StateListener {
       settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
       settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
       settings.setJavaScriptCanOpenWindowsAutomatically(false);
-      settings.setSupportMultipleWindows(true);
+      settings.setSupportMultipleWindows(false);
       settings.setMediaPlaybackRequiresUserGesture(true);
       view.setDownloadListener((url, agent, disposition, mime, length) -> { });
       view.setWebChromeClient(new WebChromeClient() {

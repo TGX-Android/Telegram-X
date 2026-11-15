@@ -5167,6 +5167,13 @@ public class Settings {
       return proxy == null;
     }
 
+    public boolean isAutomaticUseAllowed () {
+      return proxy == null ||
+        proxy.type.getConstructor() != TdApi.ProxyTypeWeb.CONSTRUCTOR ||
+        successfulConnectionsCount > 0 ||
+        id == Settings.instance().getEffectiveProxyId();
+    }
+
     @Override
     public String toString () {
       CharSequence name = getName();

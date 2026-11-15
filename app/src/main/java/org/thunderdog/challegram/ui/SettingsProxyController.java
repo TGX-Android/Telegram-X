@@ -327,6 +327,8 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
         out.value = Lang.getString(R.string.ProxyErrorDetailed, info.pingError == null ? "unknown" : info.pingError.code + ": " + info.pingError.message);
       else
         out.value = Lang.getString(info.id == Settings.PROXY_ID_NONE ? R.string.ProxyErrorDirect : R.string.ProxyError);
+    } else if (!info.isAutomaticUseAllowed()) {
+      out.value = Lang.getString(R.string.ProxyCheckedWhenEnabled);
     } else {
       out.value = Lang.getString(R.string.ProxyChecking);
     }
@@ -336,6 +338,9 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
   }
 
   private void pingProxy (@NonNull Settings.Proxy info, boolean allowNotify) {
+    if (!info.isAutomaticUseAllowed()) {
+      return;
+    }
     int nextPingId = info.pingCount + 1;
     tdlib.pingProxy(info, pingMs -> runOnUiThreadOptional(() -> {
       if (info.pingCount == nextPingId) {
@@ -620,11 +625,11 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
       if (proxy.id == effectiveProxyId) {
         showProxyOptions(proxy);
       } else if (proxy.proxy != null) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP &&
-          proxy.proxy.type.getConstructor() == TdApi.ProxyTypeWeb.CONSTRUCTOR) {
-          UI.showToast(R.string.ProxyWebUnsupported, Toast.LENGTH_SHORT);
-        } else {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ||
+          proxy.proxy.type.getConstructor() != TdApi.ProxyTypeWeb.CONSTRUCTOR) {
           Settings.instance().addOrUpdateProxy(proxy.proxy, null, true);
+        } else {
+          UI.showToast(R.string.ProxyWebUnsupported, Toast.LENGTH_SHORT);
         }
       }
     } else if (viewId == R.id.btn_useProxyForCalls) {
