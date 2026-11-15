@@ -7157,6 +7157,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return connectionState == ConnectionState.CONNECTED;
   }
 
+  public boolean isConnectedOrUpdating () {
+    return connectionState == ConnectionState.CONNECTED ||
+      connectionState == ConnectionState.UPDATING;
+  }
+
   public boolean isConnectingOrUpdating () {
     switch (connectionState) {
       case ConnectionState.CONNECTING:

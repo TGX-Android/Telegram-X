@@ -19,6 +19,7 @@ import androidx.media3.decoder.vp9.VpxLibrary
 import me.vkryl.core.parseLong
 import org.drinkless.tdlib.TdApi.AlternativeVideo
 import org.drinkless.tdlib.TdApi.Video
+import tgx.player.VideoDecoderSupport
 
 data class HlsPath(
   @JvmField val width: Int,
@@ -116,6 +117,21 @@ data class HlsVideo(
 
     fun AlternativeVideo.isSupported(failOnUnknownCodec: Boolean): Boolean =
       isCodecSupported(codec, failOnUnknownCodec)
+
+    fun AlternativeVideo.isClaimedBy(
+      decoders: VideoDecoderSupport,
+      inHardware: Boolean,
+      failOnUnknownCodec: Boolean
+    ): Boolean {
+      val mimeType = toSampleMimeType(codec)
+      if (mimeType == null) {
+        if (failOnUnknownCodec) {
+          error("Unexpected codec: $codec")
+        }
+        return false
+      }
+      return decoders.claimsSize(mimeType, width, height, inHardware)
+    }
   }
 
   fun AlternativeVideo.appendTo(b: StringBuilder) {
@@ -128,22 +144,40 @@ data class HlsVideo(
     b.append("${HlsPath(this)}\n")
   }
 
-  fun multivariantPlaylistData(failOnUnknownCodec: Boolean): String {
+  fun multivariantPlaylistData(decoders: VideoDecoderSupport, failOnUnknownCodec: Boolean): String {
     val playlist = StringBuilder()
     playlist.append("#EXTM3U\n")
-    var videoCount = 0
-    for (alternativeVideo in alternativeVideos) {
-      if (alternativeVideo.isSupported(failOnUnknownCodec)) {
-        alternativeVideo.appendTo(playlist)
-        videoCount++
-      }
-    }
-    if (videoCount == 0 && alternativeVideos.isNotEmpty()) {
-      error("None of codecs supported: ${alternativeVideos.joinToString { it.codec }}")
+    for (alternativeVideo in playableVideos(decoders, failOnUnknownCodec)) {
+      alternativeVideo.appendTo(playlist)
     }
     playlist.append("#EXT-X-ENDLIST\n")
     return playlist.toString()
   }
+
+  fun playableVideos(
+    decoders: VideoDecoderSupport,
+    failOnUnknownCodec: Boolean
+  ): List<AlternativeVideo> {
+    val inHardware = alternativeVideos.filter {
+      it.isClaimedBy(decoders, inHardware = true, failOnUnknownCodec)
+    }
+    if (inHardware.isNotEmpty()) {
+      return inHardware
+    }
+    val byAnyDecoder = alternativeVideos.filter {
+      it.isClaimedBy(decoders, inHardware = false, failOnUnknownCodec)
+    }
+    return byAnyDecoder.ifEmpty {
+      alternativeVideos.filter {
+        it.isSupported(failOnUnknownCodec)
+      }
+    }
+  }
+
+  fun canReplaceOriginal(decoders: VideoDecoderSupport, isConnectedOrUpdating: Boolean): Boolean =
+    isConnectedOrUpdating && alternativeVideos.any {
+      it.isClaimedBy(decoders, inHardware = true, failOnUnknownCodec = false)
+    }
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

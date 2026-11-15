@@ -196,6 +196,7 @@ import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
 import okio.Source;
+import tgx.player.VideoDecoders;
 import tgx.td.Td;
 import tgx.td.data.HlsPath;
 import tgx.td.data.HlsVideo;
@@ -725,7 +726,9 @@ public class U {
     final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ?
       DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER :
       DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
-    final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
+    final RenderersFactory renderersFactory = new DefaultRenderersFactory(context)
+      .setExtensionRendererMode(extensionMode)
+      .setEnableDecoderFallback(true);
     final MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
     final AnalyticsCollector analyticsCollector;
     if (Log.getLogLevel() > Log.LEVEL_ASSERT) {
@@ -810,6 +813,7 @@ public class U {
       public DataSource redirectDataSource (Uri uri) {
         if (uri.equals(manifestUri)) {
           String playlistData = hlsVideo.multivariantPlaylistData(
+            VideoDecoders.getVideoDecoderSupport(),
             BuildConfig.DEBUG
           );
           return new ByteArrayDataSource(playlistData.getBytes());
