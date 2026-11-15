@@ -41,7 +41,6 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.CustomTextView;
 
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.annotation.MadeByLLM;
 import me.vkryl.core.lambda.Destroyable;
 
 public class TopBarView extends FrameLayoutFix implements Destroyable {
@@ -464,15 +463,7 @@ public class TopBarView extends FrameLayoutFix implements Destroyable {
   private void clearItems () {
     clearThemeListeners(actionsContainer);
     clearThemeListeners(actionsList);
-    for (int i = 0; i < actionsContainer.getChildCount(); i++) {
-      View child = actionsContainer.getChildAt(i);
-      if (child instanceof FrameLayoutFix && ((FrameLayoutFix) child).getChildCount() > 0) {
-        child = ((FrameLayoutFix) child).getChildAt(0);
-      }
-      if (child instanceof Destroyable) {
-        ((Destroyable) child).performDestroy();
-      }
-    }
+    Views.destroy(actionsContainer);
     actionsContainer.removeAllViews();
     actionsList.removeAllViews();
   }

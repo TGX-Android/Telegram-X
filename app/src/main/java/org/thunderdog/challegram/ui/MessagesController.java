@@ -4366,6 +4366,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     pinnedMessagesBar.performDestroy();
 
+    if (actionView != null) {
+      actionView.performDestroy();
+    }
+
     if (requestsView != null) {
       requestsView.performDestroy();
     }
@@ -8227,8 +8231,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }).setIcon(R.drawable.baseline_person_add_24);
   }
 
-  private static final String EMOJI_STATUS_INFO_URL = "https://telegram.org/blog/infinite-reactions-statuses#emoji-statuses";
-
   private long actionBarEmojiStatusId;
 
   private void addEmojiStatusNotice (List<TopBarView.Item> items) {
@@ -8247,7 +8249,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     ).allClickable(this, new ClickableSpan() {
       @Override
       public void onClick (@NonNull View widget) {
-        tdlib.ui().openUrl(MessagesController.this, EMOJI_STATUS_INFO_URL, null);
+        tdlib.ui().openUrl(
+          MessagesController.this,
+          Lang.getStringSecure(R.string.url_emojiStatuses),
+          null
+        );
       }
     }, true, null);
     CharSequence text = Lang.getString(

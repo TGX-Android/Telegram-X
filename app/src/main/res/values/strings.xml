@@ -3145,6 +3145,7 @@
   <string name="url_translationsPrefix">https://translations.telegram.org/en/android_x/unsorted/</string>
   <string name="url_faqPhoneNumber">https://telegram.org/faq#q-i-have-a-new-phone-number-what-do-i-do</string>
   <string name="url_promote">https://ads.telegram.org</string>
+  <string name="url_emojiStatuses">https://telegram.org/blog/infinite-reactions-statuses#emoji-statuses</string>
   <string name="xSecondsShort_one">%1$ss</string>
   <string name="xSecondsShort_other">%1$ss</string>
   <string name="xMinutesShort_one">%1$sm</string>
