@@ -2038,8 +2038,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       if (uri == null) {
         throw new IllegalArgumentException("uri == null");
       }
+      Uri card = Uri.parse(uri.toString());
+      if (U.isInternalUri(card)) {
+        throw new IllegalArgumentException("Tried to share internal file: " + uri);
+      }
       ContentResolver cr = UI.getContext().getContentResolver();
-      try (InputStream stream = cr.openInputStream(uri)) {
+      try (InputStream stream = cr.openInputStream(card)) {
         if (stream == null) {
           throw new IllegalArgumentException("stream == null (vcard)");
         }
@@ -2206,10 +2210,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       return false;
     }
 
-    String filePath = U.tryResolveFilePath(uri);
+    String filePath = U.resolveSharedFilePath(uri);
 
-    if (StringUtils.isEmpty(filePath)) {
-      throw new IllegalArgumentException("filePath cannot be resolved for type " + mimeType + ", uri: " + uri);
+    if (filePath == null) {
+      throw new IllegalArgumentException("Tried to share internal file: " + uri);
     }
 
     if (mimeType.isEmpty()) {

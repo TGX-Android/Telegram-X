@@ -40,6 +40,7 @@ import androidx.core.app.ActivityCompat;
 
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.CallActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
@@ -86,10 +87,20 @@ public class Intents {
   public static final String ACTION_OPEN_CHAT = PACKAGE_NAME + ".OPEN_CHAT";
 
   public static final String ACTION_OPEN_CALL = PACKAGE_NAME + ".OPEN_CALL";
+  public static final String KEY_OPEN_CHAT = "open_chat";
+  public static final String KEY_ACCOUNT_ID = "account_id";
+  public static final String KEY_CALL_ID = "call_id";
 
   public static final String ACTION_END_CALL = PACKAGE_NAME + ".END_CALL";
   public static final String ACTION_DECLINE_CALL = PACKAGE_NAME + ".DECLINE_CALL";
   public static final String ACTION_ANSWER_CALL = PACKAGE_NAME + ".ANSWER_CALL";
+
+  public static final int REQUEST_CODE_CALL_SCREEN = 0;
+  public static final int REQUEST_CODE_CALL_ANSWER = 1;
+  public static final int REQUEST_CODE_CALL_FULL_SCREEN = 2;
+  public static final int REQUEST_CODE_CALL_DECLINE = 3;
+  public static final int REQUEST_CODE_CALL_END = 4;
+  public static final int REQUEST_CODE_CALL_RATING = 5;
 
   public static final String ACTION_OPEN_LOGS = PACKAGE_NAME + ".OPEN_LOGS";
   public static final String ACTION_OPEN_PLAYER = PACKAGE_NAME + ".OPEN_PLAYER";
@@ -681,10 +692,28 @@ public class Intents {
     return intent;
   }
 
-  public static Intent valueOfCall () {
+  public static Intent valueOfCall (int accountId, int callId) {
+    Intent intent = new Intent(UI.getContext(), CallActivity.class);
+    secureIntent(intent, false);
+    intent.setAction(Intents.ACTION_OPEN_CALL);
+    intent.putExtra(KEY_ACCOUNT_ID, accountId);
+    intent.putExtra(KEY_CALL_ID, callId);
+    return intent;
+  }
+
+  public static Intent valueOfCallInApp (boolean openChat) {
     Intent intent = new Intent(UI.getContext(), MainActivity.class);
     secureIntent(intent, false);
     intent.setAction(Intents.ACTION_OPEN_CALL);
+    intent.putExtra(KEY_OPEN_CHAT, openChat);
+    return intent;
+  }
+
+  public static final String KEY_ANSWER_CALL = "answer_call";
+
+  public static Intent valueOfAnswerCall (int accountId, int callId) {
+    Intent intent = valueOfCall(accountId, callId);
+    intent.putExtra(KEY_ANSWER_CALL, true);
     return intent;
   }
 

@@ -6,6 +6,10 @@ set -e
 # shellcheck source=set-env.sh
 IGNORE_SDK=1 source "$(dirname "$0")"/set-env.sh
 
+if [ "$PLATFORM" = windows ] && ! command -v rustup > /dev/null; then
+  # MSYS2 doesn't inherit PATH of Windows, where rustup-init adds its folder
+  PATH="$(cygpath -u "${CARGO_HOME:-$USERPROFILE/.cargo}")/bin:$PATH"
+fi
 if ! command -v rustup > /dev/null; then
   echo -e "${STYLE_ERROR}rustup not found, e.g. on Ubuntu: # apt install rustup${STYLE_END}" >&2
   exit 1
@@ -17,6 +21,10 @@ TARGETS=aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-
 rustup toolchain install "$RUST_VERSION" --profile minimal --target "$TARGETS"
 
 RUST_DIR=$(rustup show home)
+if [ "$PLATFORM" = windows ]; then
+  # local.properties takes / as a separator
+  RUST_DIR=$(cygpath -m "$RUST_DIR")
+fi
 TOOLCHAIN=$(find "$RUST_DIR/toolchains" -maxdepth 1 -name "$RUST_VERSION-*" | head -n 1)
 if [ -z "$TOOLCHAIN" ]; then
   echo -e "${STYLE_ERROR}Rust $RUST_VERSION not found in $RUST_DIR/toolchains${STYLE_END}" >&2

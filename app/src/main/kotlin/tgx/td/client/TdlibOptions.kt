@@ -17,12 +17,10 @@ package tgx.td.client
 import android.os.SystemClock
 import androidx.annotation.IntDef
 import me.vkryl.core.BitwiseUtils
-import me.vkryl.core.clamp
 import org.drinkless.tdlib.TdApi.*
 import org.thunderdog.challegram.Log
 import tgx.td.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.roundToLong
 
 data class TdlibOptions(
   @JvmField var version: String = "",
@@ -35,15 +33,16 @@ data class TdlibOptions(
   @JvmField var authenticationToken: String = "",
 
   @JvmField var expectBlocking: Boolean = false,
+  @JvmField var enabledProxyId: Int = 0,
 
   @JvmField var canIgnoreSensitiveContentRestrictions: Boolean = false,
   @JvmField var ignoreSensitiveContentRestrictions: Boolean = false,
 
   @JvmField var canSetNewChatPrivacySettings: Boolean = false,
   @JvmField var canArchiveAndMuteNewChatsFromUnknownUsers: Boolean = false,
-  @JvmField var canEditFactCheck: Boolean = false,
   @JvmField var canWithdrawChatRevenue: Boolean = false,
   @JvmField var canGiftStars: Boolean = false,
+  @JvmField var canCraftFromWithdrawnFirstGift: Boolean = false,
   @JvmField var canEnablePaidMessages: Boolean = false,
   @JvmField var canPreloadWeather: Boolean = false,
 
@@ -71,6 +70,11 @@ data class TdlibOptions(
   @JvmField var thousandStarToUsdRate: Long = 0,
   @JvmField var millionGramToUsdRate: Long = 0,
 
+  @JvmField var canUseTonWallet: Boolean = false,
+  @JvmField var tonWalletTransferAmountMin: Long = 100000000L,
+  @JvmField var tonWalletGaslessTransferAmountMin: Long = 100000000L,
+  @JvmField var tonWalletGaslessTransferDailyCountMax: Int = 5,
+
   @JvmField var giftTextLengthMax: Int = 128,
   @JvmField var pinnedGiftCountMax: Int = 6,
 
@@ -83,6 +87,7 @@ data class TdlibOptions(
   @JvmField var giftResaleStarEarningsPerMille: Int = 800,
   @JvmField var giftResaleGramEarningsPerMille: Int = 900,
 
+  @JvmField var starTopUpDisabled: Boolean = false,
   @JvmField var starWithdrawalCountMin: Long = 1000L,
   @JvmField var starWithdrawalCountMax: Long = 25000000L,
   @JvmField var paidReactionStarCountMax: Long = 2500L,
@@ -90,7 +95,6 @@ data class TdlibOptions(
   @JvmField var paidMessageStarCountMax: Long = 10000L,
   @JvmField var paidGroupCallMessageStarCountMax: Long = 35000L,
   @JvmField var paidMediaMessageStarCountMax: Long = 10000L,
-  @JvmField var subscriptionStarCountMin: Long = 10000L,
   @JvmField var subscriptionStarCountMax: Long = 10000L,
   @JvmField var directChannelMessageStarCountDefault: Long = 10L,
   @JvmField var welcomeMessageCountMax: Int = 3,
@@ -121,19 +125,20 @@ data class TdlibOptions(
 
   @JvmField var animationSearchBotUsername: String = "gif",
   @JvmField var venueSearchBotUsername: String = "foursquare",
+  @JvmField var audioSearchBotUsername: String = "",
   @JvmField var photoSearchBotUsername: String = "pic",
 
   @JvmField var antiSpamBotUserId: Long = 0L,
   @JvmField var channelBotUserId: Long = TELEGRAM_CHANNEL_BOT_ACCOUNT_ID,
   @JvmField var groupAnonymousBotUserId: Long = 0L,
-  @JvmField var repliesBotUserId: Long = TELEGRAM_REPLIES_BOT_ACCOUNT_ID,
 
-  @JvmField var repliesBotChatId: Long = fromUserId(repliesBotUserId),
+  @JvmField var repliesBotChatId: Long = fromUserId(TELEGRAM_REPLIES_BOT_ACCOUNT_ID),
   @JvmField var telegramServiceNotificationsChatId: Long = fromUserId(TELEGRAM_ACCOUNT_ID),
   @JvmField var verificationCodesBotChatId: Long = fromUserId(VERIFICATION_CODES_BOT_ACCOUNT_ID),
 
   @JvmField var botMediaPreviewCountMax: Int = 12,
   @JvmField var botVerificationCustomDescriptionLengthMax: Int = 70,
+  @JvmField var secondaryBotUsernameCountMax: Int = 2,
 
   @JvmField var canUseLoginPasskey: Boolean = false,
   @JvmField var loginPasskeyCountMax: Int = 5,
@@ -154,7 +159,6 @@ data class TdlibOptions(
   @JvmField var suggestedVideoNoteVideoBitrate: Long = 1000L,
   @JvmField var suggestedVideoNoteAudioBitrate: Long = 64L,
   @JvmField var suggestedVideoNoteLength: Long = 384L,
-  @JvmField var videoNoteMaxSize: Long = 12582912L,
 
   @JvmField var forwardedMessageCountMax: Int = 100,
   @JvmField var favoriteStickersLimit: Int = 5,
@@ -237,33 +241,17 @@ data class TdlibOptions(
   @JvmField var youtubePipDisabled: Boolean = false,
   @JvmField var richMessagePostingDisabled: Boolean = false,
 
-  @JvmField var qrLoginCamera: Boolean = true,
-
   @JvmField var stickersEmojiSuggestOnlyApi: Boolean = false,
-  @JvmField var emojiesAnimatedZoom: Float = DEFAULT_EMOJIES_ANIMATED_ZOOM.toFloat(),
-
-  @JvmField var dialogFiltersEnabled: Boolean = true,
-  @JvmField var dialogFiltersTooltip: Boolean = true,
-
-  @JvmField var giveawayGiftsPurchaseAvailable: Boolean = true,
-  @JvmField var starsPurchaseBlocked: Boolean = false,
-  @JvmField var starGiftsBlocked: Boolean = false,
 
   @JvmField var premiumPlayMarketDirectCurrencyList: List<String> = listOf(),
 
-  @JvmField var storyExpirePeriod: Long = 0,
-  @JvmField var storyPostingEnabled: Boolean = true,
   @JvmField var storyAllHidden: Boolean = false,
 
   @JvmField var translationsManualEnabled: Boolean = true,
   @JvmField var translationsAutoEnabled: Boolean = true,
 
-  @JvmField var starRefProgramAllowed: Boolean = false,
-  @JvmField var starRefConnectAllowed: Boolean = false,
-
   @JvmField var isDeveloper: Boolean = false,
 
-  @JvmField var groupCallVideoParticipantsMax: Int = 10000,
   @JvmField var rtcServers: List<RtcServer> = listOf()
 ) {
   private val map: MutableMap<String, OptionValue> = mutableMapOf()
@@ -291,6 +279,8 @@ data class TdlibOptions(
 
       "expect_blocking" ->
         expectBlocking = value.boolValue()
+      "enabled_proxy_id" ->
+        enabledProxyId = value.intValue()
 
       "show_message_edit_date_by_default" ->
         showMessageEditDateByDefault = value.boolValue()
@@ -304,12 +294,12 @@ data class TdlibOptions(
         canArchiveAndMuteNewChatsFromUnknownUsers = value.boolValue()
       "can_set_new_chat_privacy_settings" ->
         canSetNewChatPrivacySettings = value.boolValue()
-      "can_edit_fact_check" ->
-        canEditFactCheck = value.boolValue()
       "can_withdraw_chat_revenue" ->
         canWithdrawChatRevenue = value.boolValue()
       "can_gift_stars" ->
         canGiftStars = value.boolValue()
+      "can_craft_from_withdrawn_first_gift" ->
+        canCraftFromWithdrawnFirstGift = value.boolValue()
       "can_enable_paid_messages" ->
         canEnablePaidMessages = value.boolValue()
       "can_preload_weather" ->
@@ -354,6 +344,15 @@ data class TdlibOptions(
       "million_gram_to_usd_rate" ->
         millionGramToUsdRate = value.longValue()
 
+      "can_use_ton_wallet" ->
+        canUseTonWallet = value.boolValue()
+      "ton_wallet_transfer_amount_min" ->
+        tonWalletTransferAmountMin = value.longValue()
+      "ton_wallet_gasless_transfer_amount_min" ->
+        tonWalletGaslessTransferAmountMin = value.longValue()
+      "ton_wallet_gasless_transfer_daily_count_max" ->
+        tonWalletGaslessTransferDailyCountMax = value.intValue()
+
       "gift_text_length_max" ->
         giftTextLengthMax = value.intValue()
       "pinned_gift_count_max" ->
@@ -381,6 +380,8 @@ data class TdlibOptions(
       "gift_resale_gram_earnings_per_mille" ->
         giftResaleGramEarningsPerMille = value.intValue()
 
+      "star_top_up_disabled" ->
+        starTopUpDisabled = value.boolValue()
       "star_withdrawal_count_min" ->
         starWithdrawalCountMin = value.longValue()
       "star_withdrawal_count_max" ->
@@ -395,8 +396,6 @@ data class TdlibOptions(
         paidGroupCallMessageStarCountMax = value.longValue()
       "paid_media_message_star_count_max" ->
         paidMediaMessageStarCountMax = value.longValue()
-      "subscription_star_count_min" ->
-        subscriptionStarCountMin = value.longValue()
       "subscription_star_count_max" ->
         subscriptionStarCountMax = value.longValue()
       "direct_channel_message_star_count_default" ->
@@ -452,6 +451,8 @@ data class TdlibOptions(
         animationSearchBotUsername = value.stringValue()
       "venue_search_bot_username" ->
         venueSearchBotUsername = value.stringValue()
+      "audio_search_bot_username" ->
+        audioSearchBotUsername = value.stringValue()
       "photo_search_bot_username" ->
         photoSearchBotUsername = value.stringValue()
 
@@ -461,8 +462,6 @@ data class TdlibOptions(
         channelBotUserId = value.longValue()
       "group_anonymous_bot_user_id" ->
         groupAnonymousBotUserId = value.longValue()
-      "replies_bot_user_id" ->
-        repliesBotUserId = value.longValue()
 
       "replies_bot_chat_id" ->
         repliesBotChatId = value.longValue()
@@ -475,6 +474,8 @@ data class TdlibOptions(
         botMediaPreviewCountMax = value.intValue()
       "bot_verification_custom_description_length_max" ->
         botVerificationCustomDescriptionLengthMax = value.intValue()
+      "secondary_bot_username_count_max" ->
+        secondaryBotUsernameCountMax = value.intValue()
 
       "can_use_login_passkey" ->
         canUseLoginPasskey = value.boolValue()
@@ -690,25 +691,8 @@ data class TdlibOptions(
       "rich_message_posting" ->
         richMessagePostingDisabled = value.stringValue() == "disabled"
 
-      "qr_login_camera" ->
-        qrLoginCamera = value.boolValue()
-
       "stickers_emoji_suggest_only_api" ->
         stickersEmojiSuggestOnlyApi = value.boolValue()
-      "emojies_animated_zoom" ->
-        emojiesAnimatedZoom = maxOf(DEFAULT_EMOJIES_ANIMATED_ZOOM, clamp(value.numberValue())).toFloat()
-
-      "dialog_filters_enabled" ->
-        dialogFiltersEnabled = value.boolValue()
-      "dialog_filters_tooltip" ->
-        dialogFiltersTooltip = value.boolValue()
-
-      "giveaway_gifts_purchase_available" ->
-        giveawayGiftsPurchaseAvailable = value.boolValue()
-      "stars_purchase_blocked" ->
-        starsPurchaseBlocked = value.boolValue()
-      "stargifts_blocked" ->
-        starGiftsBlocked = value.boolValue()
 
       "premium_playmarket_direct_currency_list" ->
         premiumPlayMarketDirectCurrencyList = value.let {
@@ -723,10 +707,6 @@ data class TdlibOptions(
           }
         }
 
-      "story_expire_period" ->
-        storyExpirePeriod = value.longValue()
-      "stories_posting" ->
-        storyPostingEnabled = value.stringValue() == "enabled"
       "stories_all_hidden" ->
         storyAllHidden = value.boolValue()
 
@@ -735,16 +715,9 @@ data class TdlibOptions(
       "translations_auto_enabled" ->
         translationsAutoEnabled = value.stringValue() == "enabled"
 
-      "starref_program_allowed" ->
-        starRefProgramAllowed = value.boolValue()
-      "starref_connect_allowed" ->
-        starRefConnectAllowed = value.boolValue()
-
       "dev" ->
         isDeveloper = value.boolValue()
 
-      "groupcall_video_participants_max" ->
-        groupCallVideoParticipantsMax = value.intValue()
       "rtc_servers" ->
         rtcServers = value.let {
           if (it is JsonValueArray) {
@@ -760,34 +733,12 @@ data class TdlibOptions(
           }
         }
 
-      "round_video_encoding" -> {
-        if (value is JsonValueObject) {
-          for (property in value.members) {
-            if (property.value !is JsonValueNumber)
-              continue
-            val number = property.value.numberValue().roundToLong()
-            when (property.key) {
-              "diameter" ->
-                suggestedVideoNoteLength = number
-              "video_bitrate" ->
-                suggestedVideoNoteVideoBitrate = number
-              "audio_bitrate" ->
-                suggestedVideoNoteAudioBitrate = number
-              "max_size" ->
-                videoNoteMaxSize = number
-            }
-          }
-        }
-      }
-
-      "community_peers_limit",
       "ios_disable_parallel_channel_reset",
       "small_queue_max_active_operations_count",
       "large_queue_max_active_operations_count",
       "lite_battery_min_pct",
       "lite_device_class",
-      "lite_app_options",
-      "test" -> {
+      "lite_app_options" -> {
         // Nothing to do
       }
       else -> {
@@ -895,5 +846,3 @@ data class RtcServer(
     map["password"]?.stringValue() ?: ""
   )
 }
-
-const val DEFAULT_EMOJIES_ANIMATED_ZOOM = .75

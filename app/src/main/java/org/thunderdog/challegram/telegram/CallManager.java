@@ -16,9 +16,13 @@ package org.thunderdog.challegram.telegram;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.CancellationSignal;
@@ -27,6 +31,8 @@ import android.widget.Toast;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.core.content.ContextCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -38,12 +44,14 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.receiver.CallBroadcastReceiver;
 import org.thunderdog.challegram.service.TGCallService;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.unsorted.AppContext;
+import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPServerConfig;
@@ -53,11 +61,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.SdkVersion;
 import me.vkryl.core.reference.ReferenceList;
+import tgx.td.ChatId;
 
-public class CallManager implements GlobalCallListener {
+public class CallManager implements GlobalCallListener, UI.StateListener {
   public interface CurrentCallListener {
     void onCurrentCallChanged (Tdlib tdlib, @Nullable TdApi.Call call);
   }
@@ -68,6 +78,208 @@ public class CallManager implements GlobalCallListener {
 
   CallManager (TdlibManager context) {
     context.global().addCallListener(this);
+    UI.addStateListener(this);
+  }
+
+  private boolean isWaitingForService;
+  private int callIdWithoutService;
+
+  public boolean isShownWithoutService (Tdlib tdlib, int callId) {
+    return callIdWithoutService == callId && currentCallTdlib != null &&
+      currentCallTdlib.id() == tdlib.id();
+  }
+
+  public boolean isAnotherCallShownWithoutService (Tdlib tdlib, int callId) {
+    return callIdWithoutService != 0 && !isShownWithoutService(tdlib, callId);
+  }
+
+  @Override
+  public void onUiStateChanged (int newState) {
+    if (newState == UI.State.RESUMED) {
+      startServiceIfMissing();
+    }
+  }
+
+  private void startServiceIfMissing () {
+    startServiceIfMissing(false);
+  }
+
+  private void startServiceIfMissing (boolean isAnswered) {
+    // Without its service an answered call hangs on connecting, e.g. after Android refused its
+    // start from background, which it allows while the app is visible
+    if (currentCall == null || currentCallTdlib == null || TD.isFinished(currentCall) ||
+      UI.getUiState() != UI.State.RESUMED || TGCallService.currentInstance() != null) {
+      return;
+    }
+    // Started before the answer, the service would add a second notification to the ringing one
+    if (!isAnswered && !currentCall.isOutgoing &&
+      currentCall.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR &&
+      isShownWithoutService(currentCallTdlib, currentCall.id)) {
+      return;
+    }
+    Log.i(Log.TAG_VOIP, "#%d: starting the missing service of the call", currentCall.id);
+    Intent intent = new Intent(AppContext.get(), TGCallService.class);
+    intent.putExtra(Intents.KEY_ACCOUNT_ID, currentCallTdlib.id());
+    intent.putExtra(Intents.KEY_CALL_ID, currentCall.id);
+    UI.startService(intent, false, true, serviceCancellationSignal);
+  }
+
+  private void showIncomingCallWithoutService (Tdlib tdlib, TdApi.Call call) {
+    // Android 12+ refuses to start the service from background outside its exemptions: the call
+    // rings by its notification alone, under the id of the service's, which ends it as its own
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+      return;
+    }
+    Context context = AppContext.get();
+    NotificationManager manager =
+      (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+    String channelId = tdlib.notifications().ensureCallChannel(ChatId.fromUserId(call.userId));
+    if (channelId == null || !tdlib.notifications().canShowOnCallChannel(channelId)) {
+      channelId = U.getIncomingCallsInAppNotificationChannel();
+    }
+    TdApi.User user = tdlib.cache().user(call.userId);
+    Intent declineIntent = new Intent();
+    Intents.secureIntent(declineIntent, false);
+    declineIntent.setAction(Intents.ACTION_DECLINE_CALL);
+    declineIntent.putExtra(Intents.KEY_ACCOUNT_ID, tdlib.id());
+    declineIntent.putExtra(Intents.KEY_CALL_ID, call.id);
+    int flags = PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(false);
+    // Extras don't make a pending intent another one, so those of an earlier call are replaced
+    int callFlags = flags | PendingIntent.FLAG_UPDATE_CURRENT;
+    // Not one-shot: the notification isn't posted again while it rings, so its taps work again
+    int reusableFlags = PendingIntent.FLAG_UPDATE_CURRENT | Intents.mutabilityFlags(false);
+    // "Answer" by a broadcast needs no PIN of the phone, and its tap lets the service of the call
+    // start from background with the microphone; only an activity asks for the microphone
+    boolean isLocked = Passcode.instance().isLockedForIncomingCalls();
+    Intent callIntent = Intents.valueOfCall(tdlib.id(), call.id);
+    PendingIntent answerAction;
+    if (isLocked) {
+      answerAction = PendingIntent.getActivity(context, Intents.REQUEST_CODE_CALL_ANSWER,
+        callIntent, reusableFlags);
+    } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+      PackageManager.PERMISSION_GRANTED) {
+      Intent answerIntent = new Intent(context, CallBroadcastReceiver.class);
+      answerIntent.setAction(Intents.ACTION_ANSWER_CALL);
+      answerIntent.putExtra(Intents.KEY_ACCOUNT_ID, tdlib.id());
+      answerIntent.putExtra(Intents.KEY_CALL_ID, call.id);
+      answerAction = PendingIntent.getBroadcast(context, Intents.REQUEST_CODE_CALL_ANSWER,
+        answerIntent, reusableFlags);
+    } else {
+      answerAction = PendingIntent.getActivity(context, Intents.REQUEST_CODE_CALL_ANSWER,
+        Intents.valueOfAnswerCall(tdlib.id(), call.id), reusableFlags);
+    }
+    PendingIntent declineAction = PendingIntent.getBroadcast(context,
+      Intents.REQUEST_CODE_CALL_DECLINE, declineIntent, callFlags);
+    PendingIntent screenAction = PendingIntent.getActivity(context,
+      Intents.REQUEST_CODE_CALL_SCREEN, callIntent, reusableFlags);
+    PendingIntent fullScreenAction = PendingIntent.getActivity(context,
+      Intents.REQUEST_CODE_CALL_FULL_SCREEN, callIntent, callFlags);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      // Only this style rings at the volume of calls; posted without it if the system refuses it
+      Bitmap icon = user != null && !isLocked ? TdlibNotificationUtils.buildLargeIcon(tdlib,
+        ChatId.fromUserId(user.id), user.profilePhoto != null ? user.profilePhoto.small : null,
+        tdlib.cache().userAccentColor(user), TD.getLetters(user), false, true) : null;
+      try {
+        android.app.Person caller =
+          TdlibNotificationUtils.newCallPerson(tdlib, user, isLocked, icon);
+        Notification.Builder builder = newIncomingCallBuilder(context, channelId, tdlib, user,
+          isLocked, screenAction, fullScreenAction)
+          .setContentTitle(caller.getName())
+          .setContentText(Lang.getString(
+            isLocked ? R.string.CallUnlockToAnswer : R.string.CallBrandingIncoming
+          ))
+          .setLargeIcon(icon)
+          .setStyle(Notification.CallStyle.forIncomingCall(caller, declineAction, answerAction)
+            .setIsVideo(call.isVideo));
+        manager.notify(TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION,
+          newIncomingCallNotification(builder));
+        callIdWithoutService = call.id;
+        return;
+      } catch (IllegalArgumentException e) {
+        Log.e(Log.TAG_VOIP, "The style of calls refused", e);
+      }
+    }
+    Notification.Builder builder = newIncomingCallBuilder(context, channelId, tdlib, user,
+      isLocked, screenAction, fullScreenAction)
+      .setContentText(isLocked ? Lang.getString(R.string.CallUnlockToAnswer) :
+        user != null ? TD.getUserName(user) : null)
+      .addAction(R.drawable.round_call_end_24_white, Lang.getString(R.string.DeclineCall),
+        declineAction)
+      .addAction(R.drawable.round_call_24_white,
+        Lang.getString(isLocked ? R.string.CallUnlock : R.string.AnswerCall), answerAction);
+    manager.notify(TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION,
+      newIncomingCallNotification(builder));
+    callIdWithoutService = call.id;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private static Notification.Builder newIncomingCallBuilder (
+    Context context,
+    String channelId,
+    Tdlib tdlib,
+    @Nullable TdApi.User user,
+    boolean isLocked,
+    PendingIntent screenAction,
+    PendingIntent fullScreenAction
+  ) {
+    Notification.Builder builder = new Notification.Builder(context, channelId)
+      .setContentTitle(Lang.getString(
+        isLocked ? R.string.IncomingCall : R.string.CallBrandingIncoming
+      ))
+      .setSmallIcon(R.drawable.baseline_phone_24_white)
+      .setCategory(Notification.CATEGORY_CALL)
+      .setOngoing(true)
+      .setContentIntent(screenAction)
+      .setFullScreenIntent(fullScreenAction, true)
+      // Even when the process that posted it is gone: a call rings 90 s at most on Telegram
+      .setTimeoutAfter(TimeUnit.SECONDS.toMillis(90));
+    if (user != null) {
+      TdlibNotificationUtils.addCallPerson(builder, tdlib, user, isLocked);
+    }
+    return builder;
+  }
+
+  private static Notification newIncomingCallNotification (Notification.Builder builder) {
+    Notification notification = builder.build();
+    notification.flags |= Notification.FLAG_INSISTENT;
+    return notification;
+  }
+
+  public void cancelIncomingCallWithoutService () {
+    NotificationManager manager =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    manager.cancel(TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION);
+  }
+
+  public void declineCallWithoutService (Tdlib tdlib, int callId) {
+    // In a process started by the broadcast TDLib may not know the call yet
+    if (TGCallService.currentInstance() == null) {
+      TdApi.Call call = tdlib.cache().getCall(callId);
+      if (call == null) {
+        tdlib.client().send(new TdApi.DiscardCall(callId, false, null, 0, false, 0),
+          tdlib.silentHandler());
+      } else if (!call.isOutgoing &&
+        call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
+        hangUp(tdlib, callId);
+      }
+    }
+    cancelIncomingCallWithoutService();
+  }
+
+  public void answerCallWithoutService (Context context, Tdlib tdlib, int callId) {
+    // A call that this process doesn't know, e.g. one of a process now gone, no longer rings
+    TdApi.Call call = tdlib.cache().getCall(callId);
+    if (call == null || call.isOutgoing ||
+      call.state.getConstructor() != TdApi.CallStatePending.CONSTRUCTOR) {
+      cancelIncomingCallWithoutService();
+    } else if (!Passcode.instance().isLockedForIncomingCalls()) {
+      // The tap on the notification lets the service start in foreground from background
+      Intent intent = new Intent(context, TGCallService.class);
+      intent.putExtra(Intents.KEY_ACCOUNT_ID, tdlib.id());
+      intent.putExtra(Intents.KEY_CALL_ID, callId);
+      UI.startService(intent, true, false, null);
+      acceptCall(context, tdlib, callId);
+    }
   }
 
   private Tdlib currentCallTdlib;
@@ -99,20 +311,33 @@ public class CallManager implements GlobalCallListener {
         serviceCancellationSignal.cancel();
         serviceCancellationSignal = null;
       }
+      callIdWithoutService = 0;
       if (call != null) {
         Intent intent = new Intent(AppContext.get(), TGCallService.class);
         intent.putExtra("account_id", tdlib.id());
         intent.putExtra("call_id", call.id);
         serviceCancellationSignal = new CancellationSignal();
-        UI.startService(intent, UI.getUiState() != UI.State.RESUMED, true, serviceCancellationSignal);
+        boolean isStarted = UI.startService(intent, UI.getUiState() != UI.State.RESUMED, true,
+          serviceCancellationSignal);
+        isWaitingForService = !isStarted;
+        if (!isStarted && !call.isOutgoing) {
+          showIncomingCallWithoutService(tdlib, call);
+        }
 
         navigateToCallController(currentCallTdlib, currentCall);
+      } else if (isWaitingForService) {
+        isWaitingForService = false;
+        cancelIncomingCallWithoutService();
       }
     } else if (currentCallTdlib.id() != tdlib.id() || currentCall.id != call.id) {
       discardCall(tdlib, call.id, call.isVideo);
     } else {
       currentCallTdlib = tdlib;
       currentCall = call;
+      if (call.state.getConstructor() != TdApi.CallStatePending.CONSTRUCTOR) {
+        cancelIncomingCallWithoutService();
+      }
+      startServiceIfMissing();
     }
   }
 
@@ -208,6 +433,12 @@ public class CallManager implements GlobalCallListener {
       VoIPServerConfig.setConfig(((TdApi.CallStateReady) call.state).config);
     }
     if (TD.isFinished(call)) {
+      // The end of another call leaves the current one, unless it's gone from its account's cache
+      boolean isOtherCall = currentCall != null &&
+        (currentCallTdlib.id() != tdlib.id() || currentCall.id != call.id);
+      if (isOtherCall && currentCallTdlib.cache().getCall(currentCall.id) != null) {
+        return;
+      }
       setCurrentCall(null, null);
 
       Runnable act;
@@ -312,21 +543,19 @@ debugCall id:long debug:string = Ok;
     discardCall(tdlib, callId, isVideo);
   }
 
-  public boolean checkRecordPermissions (final Context context, final Tdlib tdlib, final @Nullable TdApi.Call call, final long userId, final @Nullable ViewController<?> makeCallContext) {
+  public boolean checkRecordPermissions (final Context context, final Tdlib tdlib,
+    final @Nullable TdApi.Call call) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       if (AppContext.get().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = UI.getUiContext();
         if (activity != null) {
           activity.requestMicPermissionForCall((code, permissions, grantResults, grantCount) -> {
             if (grantCount == permissions.length) {
-              if (makeCallContext != null) {
-                makeCall(makeCallContext, userId, null, false);
-              } else {
-                if (call != null) {
-                  TdApi.Call updatedCall = tdlib.cache().getCall(call.id);
-                  if (updatedCall != null && updatedCall.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
-                    acceptCall(context, tdlib, call.id);
-                  }
+              if (call != null) {
+                TdApi.Call updatedCall = tdlib.cache().getCall(call.id);
+                if (updatedCall != null &&
+                  updatedCall.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
+                  acceptCall(context, tdlib, call.id);
                 }
               }
             } else {
@@ -473,7 +702,7 @@ debugCall id:long debug:string = Ok;
       // UI.getCurrentStackItem(context);
       return;
     }
-    if (!checkRecordPermissions(context.context(), context.tdlib(), null, userId, null)) {
+    if (!checkRecordPermissions(context.context(), context.tdlib(), null)) {
       return;
     }
     context.context().closeAllMedia(false);
@@ -518,10 +747,11 @@ debugCall id:long debug:string = Ok;
 
   public void acceptCall (Context context, Tdlib tdlib, final int callId) {
     if (checkConnection(context, tdlib)) {
-      if (!checkRecordPermissions(context, tdlib, tdlib.cache().getCall(callId), 0, null)) {
+      if (!checkRecordPermissions(context, tdlib, tdlib.cache().getCall(callId))) {
         return;
       }
       Log.v(Log.TAG_VOIP, "#%d: AcceptCall requested", callId);
+      startServiceIfMissing(true);
       tdlib.client().send(new TdApi.AcceptCall(callId, VoIP.getProtocol()), object -> Log.v(Log.TAG_VOIP, "#%d: AcceptCall completed: %s", callId, object));
     }
   }

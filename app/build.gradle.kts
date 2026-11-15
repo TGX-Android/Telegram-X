@@ -1,7 +1,6 @@
 @file:Suppress("UnstableApiUsage", "AvoidApplyPluginMethod")
 
 import androidx.baselineprofile.gradle.consumer.BaselineProfileConsumerExtension
-import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.impl.VariantOutputImpl
 import com.android.build.gradle.tasks.ExternalNativeBuildTask
@@ -9,7 +8,6 @@ import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
 import tgx.gradle.source.GitInformationSource
 import tgx.gradle.task.*
-import tgx.test.configureTests
 import java.util.*
 
 plugins {
@@ -21,6 +19,20 @@ plugins {
 }
 
 val config = tgxConfig.config.get()
+val customGoogleServices = config.googleServicesFile?.let { rootDir.resolve(it) }
+val usedGoogleServices = customGoogleServices ?: file("google-services.json")
+if (customGoogleServices != null && !customGoogleServices.exists()) {
+  fatal("google_services.file: ${customGoogleServices.path} doesn't exist")
+}
+val hasFirebaseMessaging = (customGoogleServices != null || !config.isExperimentalBuild) &&
+  hasGoogleServicesClient(usedGoogleServices, config.applicationId)
+if (!hasFirebaseMessaging && customGoogleServices != null) {
+  val problem = "${customGoogleServices.path} has no client of ${config.applicationId}"
+  if (config.applicationId == "org.thunderdog.challegram") {
+    fatal("$problem: notifications in the app won't work")
+  }
+  logger.warn("$problem: pushes of Firebase are off")
+}
 val useLegacyPackaging = tgxConfig.useLegacyPackaging.get()
 val useLegacyNdk = tgxConfig.useLegacyNdk.get()
 val globalAbiFilters = tgxConfig.abiFilters.get()
@@ -134,9 +146,7 @@ val validateApiTokens = tasks.register<ValidateApiTokensTask>("validateApiTokens
   applicationId.set(
     config.applicationId
   )
-  googleServicesJson.set(layout.projectDirectory.file(
-    "google-services.json"
-  ))
+  googleServicesJson.fileValue(usedGoogleServices)
 }
 val fetchLocalizedStrings = tasks.register<FetchLocalizedStringsTask>("fetchLocalizedStrings") {
   group = "Setup"
@@ -428,6 +438,13 @@ android {
     resValue("string", "AppName", config.applicationName)
     resValue("string", "account_type", "${config.applicationId}.sync.account")
     resValue("string", "content_authority", "${config.applicationId}.sync.provider")
+
+    if (hasFirebaseMessaging && customGoogleServices != null) {
+      googleServicesValues(customGoogleServices, config.applicationId).forEach { (name, value) ->
+        resValue("string", name, value)
+      }
+    }
+    buildConfigBool("FIREBASE_MESSAGING_ENABLED", hasFirebaseMessaging)
 
     buildConfigString("PROJECT_NAME", config.applicationName)
     buildConfigString("SAFETYNET_API_KEY", config.safetyNetToken)
@@ -981,27 +998,14 @@ android {
           "src/google/$folderName/AndroidManifest.xml"
         )
       }
-
-      if (variant.isMinifyEnabled) {
-        val variantName = variant.name.uppercaseFirstChar()
-        val copyTask = project.tasks.register<Copy>(
-          "copy${variantName}MappingFile"
-        ) {
-          description = "Creates a copy of mapping.txt with a build name"
-          from(variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE))
-          into(project.layout.buildDirectory.dir("outputs/mapping/${variant.name}"))
-          val mappingFileName = "${config.outputFileNamePrefix}-$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$buildTypeSuffix"
-          rename("mapping.txt", "$mappingFileName.txt")
-        }
-        project.afterEvaluate {
-          project.tasks.findByName("assemble$variantName")?.finalizedBy(copyTask)
-        }
-      }
     }
   }
 }
 
-configureTests()
+val hasTests = rootDir.resolve("tests/.git").exists()
+if (hasTests) {
+  apply(plugin = "tgx-tests-app")
+}
 
 extensions.configure<BaselineProfileConsumerExtension> {
   mergeIntoMain = false
@@ -1009,10 +1013,12 @@ extensions.configure<BaselineProfileConsumerExtension> {
   saveInSrc = true
   warnings.disabledVariants = false
   warnings.variantHasNoBaselineProfileDependency = false
-  Sdk.VARIANTS.values.filter {
-    it.usesBaselineProfile
-  }.forEach { variant ->
-    variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
+  if (hasTests) {
+    Sdk.VARIANTS.values.filter {
+      it.usesBaselineProfile
+    }.forEach { variant ->
+      variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
+    }
   }
 }
 
@@ -1256,13 +1262,16 @@ dependencies {
   compileOnly(libs.annotations.jsr305)
   compileOnly(libs.annotations.kotlin)
 
-  // Tests: tests/README.md
-  testImplementation(libs.bundles.unit.test)
-  androidTestImplementation(project(":tests:core"))
+  if (hasTests) {
+    testImplementation(libs.bundles.unit.test)
+    androidTestImplementation(project(":tests:core"))
+  }
 }
 
 if (!config.isExperimentalBuild) {
-  apply(plugin = libs.plugins.google.services.get().pluginId)
+  if (customGoogleServices == null) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
+  }
   if (config.isHuaweiBuild) {
     apply(plugin = libs.huawei.agconnect.get().group)
   }

@@ -91,6 +91,19 @@ public abstract class BaseForegroundService extends Service {
     TDLib.Tag.notifications("%s.onTimeout(%d) received for service", getClass().getSimpleName(), startId);
   }
 
+  @Override
+  @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+  public void onTimeout (int startId, int fgsType) {
+    // Android 15 limits the time of a dataSync service and crashes the app unless it stops within
+    // seconds: its tasks end unfinished, and their work goes on or runs again without it
+    TDLib.Tag.notifications("%s.onTimeout(%d, %d) received for service, %d tasks ended",
+      getClass().getSimpleName(), startId, fgsType, tasks.size());
+    synchronized (BaseForegroundService.class) {
+      tasks.clear();
+      finishService();
+    }
+  }
+
   private static class TaskInfo {
     public final CharSequence title, text;
     public final String channelId;
@@ -185,7 +198,8 @@ public abstract class BaseForegroundService extends Service {
       title = Lang.getString(R.string.RetrievingMessages);
       text = null;
       channelId = U.getOtherNotificationChannel();
-      iconRes = 0;
+      // A notification without an icon is refused by startForeground
+      iconRes = R.drawable.baseline_sync_white_24;
     }
 
     if (StringUtils.isEmpty(channelId))

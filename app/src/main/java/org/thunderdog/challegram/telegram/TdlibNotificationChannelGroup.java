@@ -37,6 +37,8 @@ import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -78,8 +80,41 @@ public class TdlibNotificationChannelGroup {
   private static final String CUSTOM_SUFFIX = "_chat_";
   private final LongSparseArray<ChannelEntry> customChannels = new LongSparseArray<>();
 
+  private static final String CALLS_SUFFIX = "_calls";
+  private static final String CALLS_USER_SUFFIX = "_user_";
+  private static final String LEGACY_CALL_PREFIX = "call_";
+
   private static String makePrefix (long accountUserId, int globalVersion) {
     return accountUserId + "_" + globalVersion;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  public static long[] findUserCallChatIds (long accountUserId, int globalVersion) {
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    if (m == null) {
+      return new long[0];
+    }
+    String prefix = makePrefix(accountUserId, globalVersion) + CALLS_SUFFIX + CALLS_USER_SUFFIX;
+    Set<Long> chatIds = new HashSet<>();
+    for (android.app.NotificationChannel channel : m.getNotificationChannels()) {
+      String id = channel.getId();
+      if (id.startsWith(prefix)) {
+        int end = id.indexOf('_', prefix.length());
+        long chatId = StringUtils.parseLong(
+          end == -1 ? id.substring(prefix.length()) : id.substring(prefix.length(), end)
+        );
+        if (chatId != 0) {
+          chatIds.add(chatId);
+        }
+      }
+    }
+    long[] result = new long[chatIds.size()];
+    int i = 0;
+    for (long chatId : chatIds) {
+      result[i++] = chatId;
+    }
+    return result;
   }
 
   public TdlibNotificationChannelGroup (Tdlib tdlib, long accountUserId, boolean isDebugAccount, int globalVersion, @Nullable TdApi.User account) throws ChannelCreationFailureException {
@@ -118,6 +153,41 @@ public class TdlibNotificationChannelGroup {
     createCommonChannel(tdlib, m, tdlib.notifications().scopePrivate());
     createCommonChannel(tdlib, m, tdlib.notifications().scopeGroup());
     createCommonChannel(tdlib, m, tdlib.notifications().scopeChannel());
+    long callChannelVersion = tdlib.notifications().getCallChannelVersion(0);
+    Object callChannel =
+      makeCallChannel(tdlib, accountUserId, isDebug, globalVersion, 0, callChannelVersion);
+    try {
+      createChannel(m, callChannel);
+    } catch (ChannelCreationFailureException e) {
+      // Channels of messages stay usable: without its channel a call rings by the app
+      TDLib.Tag.notifications("Unable to create call channel:\n%s", Log.toString(e));
+      tdlib.settings().trackNotificationChannelProblem(e, 0);
+    }
+  }
+
+  private static void createChannel (NotificationManager m, Object channel)
+    throws ChannelCreationFailureException {
+    try {
+      m.createNotificationChannel((android.app.NotificationChannel) channel);
+    } catch (Throwable t) {
+      throw new ChannelCreationFailureException(t);
+    }
+  }
+
+  private static void deleteChannel (NotificationManager m, String channelId) {
+    try {
+      m.deleteNotificationChannel(channelId);
+    } catch (Throwable t) {
+      TDLib.Tag.notifications("Unable to delete channel %s:\n%s", channelId, Log.toString(t));
+    }
+  }
+
+  private static void deleteChannelGroup (NotificationManager m, String groupId) {
+    try {
+      m.deleteNotificationChannelGroup(groupId);
+    } catch (Throwable t) {
+      TDLib.Tag.notifications("Unable to delete channel group %s:\n%s", groupId, Log.toString(t));
+    }
   }
 
   private Object createCommonChannel (Tdlib tdlib, NotificationManager m, TdApi.NotificationSettingsScope scope) throws ChannelCreationFailureException {
@@ -295,6 +365,141 @@ public class TdlibNotificationChannelGroup {
     return channel;
   }
 
+  private static Object newCallChannel (
+    String channelId,
+    String channelName,
+    String groupId,
+    int vibrateMode,
+    @Nullable String ringtone
+  ) {
+    android.app.NotificationChannel channel = new android.app.NotificationChannel(
+      channelId,
+      channelName,
+      NotificationManager.IMPORTANCE_HIGH
+    );
+    channel.setGroup(groupId);
+    // Set also without vibration, for one turned on in the system; before enableVibration, as a
+    // pattern turns vibration on
+    channel.setVibrationPattern(TdlibNotificationManager.VIBRATE_CALL_LONG_PATTERN);
+    channel.enableVibration(vibrateMode != TdlibNotificationManager.VIBRATE_MODE_DISABLED);
+    if (ringtone != null && ringtone.isEmpty()) {
+      channel.setSound(null, null);
+    } else {
+      Uri sound = ringtone != null ?
+        Uri.parse(ringtone) :
+        TdlibNotificationManager.getTelegramCallRingtone();
+      channel.setSound(sound, new android.media.AudioAttributes.Builder()
+        .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .build());
+    }
+    return channel;
+  }
+
+  private static Object makeCallChannel (
+    Tdlib tdlib,
+    long accountUserId,
+    boolean isDebug,
+    int globalVersion,
+    long userChatId,
+    long channelVersion
+  ) {
+    String channelId = makeCallChannelId(accountUserId, globalVersion, userChatId, channelVersion);
+    String groupId = makeGroupId(accountUserId, isDebug);
+    TdlibNotificationManager notifications = tdlib.notifications();
+    if (userChatId == 0) {
+      Object channel = newCallChannel(
+        channelId,
+        Lang.getString(R.string.NotificationChannelIncomingCalls),
+        groupId,
+        notifications.getSavedCallVibrateMode(),
+        notifications.getSavedCallRingtone()
+      );
+      setCallChannelDescription(tdlib, channel, 0);
+      return channel;
+    }
+    String customRingtone = notifications.getCustomCallRingtone(userChatId);
+    int customVibrateMode = notifications.getCustomCallVibrateModeForChat(userChatId);
+    boolean inheritRingtone = customRingtone == null;
+    boolean inheritVibration = customVibrateMode == TdlibNotificationManager.VIBRATE_MODE_DEFAULT;
+    Object channel = newCallChannel(
+      channelId,
+      getCallChannelName(tdlib.chatTitle(userChatId)),
+      groupId,
+      inheritVibration ? notifications.getCallVibrateMode() : customVibrateMode,
+      inheritRingtone ? notifications.getCallRingtone() : customRingtone
+    );
+    setCallChannelDescription(tdlib, channel, userChatId);
+    Object accountChannel = notifications.getSystemCallChannel(0);
+    if (accountChannel != null) {
+      inheritCallChannel(channel, accountChannel, inheritRingtone, inheritVibration);
+    }
+    return channel;
+  }
+
+  private static void inheritCallChannel (
+    Object channelObj,
+    Object parentChannelObj,
+    boolean inheritRingtone,
+    boolean inheritVibration
+  ) {
+    android.app.NotificationChannel channel = (android.app.NotificationChannel) channelObj;
+    android.app.NotificationChannel parent = (android.app.NotificationChannel) parentChannelObj;
+    channel.setImportance(parent.getImportance());
+    channel.enableLights(parent.shouldShowLights());
+    channel.setLightColor(parent.getLightColor());
+    channel.setLockscreenVisibility(parent.getLockscreenVisibility());
+    channel.setShowBadge(parent.canShowBadge());
+    channel.setBypassDnd(parent.canBypassDnd());
+    if (inheritRingtone) {
+      channel.setSound(parent.getSound(), parent.getAudioAttributes());
+    }
+    if (inheritVibration) {
+      long[] vibrationPattern = parent.getVibrationPattern();
+      if (vibrationPattern != null) {
+        channel.setVibrationPattern(vibrationPattern);
+      }
+      channel.enableVibration(parent.shouldVibrate());
+    }
+    if (channel.shouldVibrate() && channel.getVibrationPattern() == null) {
+      channel.setVibrationPattern(TdlibNotificationManager.VIBRATE_CALL_LONG_PATTERN);
+    }
+  }
+
+  private static String getCallChannelName (String chatTitle) {
+    return Lang.getString(R.string.NotificationChannelCustomCalls, chatTitle);
+  }
+
+  private static void setCallChannelDescription (Tdlib tdlib, Object channelObj, long userChatId) {
+    android.app.NotificationChannel channel = (android.app.NotificationChannel) channelObj;
+    if (userChatId != 0) {
+      String userName = tdlib.cache().userName(ChatId.toUserId(userChatId));
+      channel.setDescription(Lang.getString(R.string.NotificationChannelUserCalls, userName));
+    } else {
+      channel.setDescription(Lang.getString(R.string.NotificationChannelCommonCalls));
+    }
+  }
+
+  public static boolean canRing (int importance) {
+    return importance >= NotificationManager.IMPORTANCE_HIGH;
+  }
+
+  public static boolean canShowCall (int importance, int lockscreenVisibility) {
+    return importance >= NotificationManager.IMPORTANCE_HIGH &&
+      lockscreenVisibility != Notification.VISIBILITY_SECRET;
+  }
+
+  public static int getCallVibrateMode (boolean shouldVibrate, @Nullable long[] vibrationPattern) {
+    if (!shouldVibrate) {
+      return TdlibNotificationManager.VIBRATE_MODE_DISABLED;
+    }
+    if (Arrays.equals(vibrationPattern, TdlibNotificationManager.VIBRATE_CALL_SHORT_PATTERN)) {
+      return TdlibNotificationManager.VIBRATE_MODE_SHORT;
+    }
+    // The pattern of "Default" and of a long one saved before
+    return TdlibNotificationManager.VIBRATE_MODE_DEFAULT;
+  }
+
   private static Object makeCustomChannel (Tdlib tdlib, long accountUserId, boolean isDebug, int globalVersion, long chatId, long channelVersion) {
     int priority = tdlib.notifications().getEffectivePriorityOrImportance(chatId);
     int vibrateMode = tdlib.notifications().getEffectiveVibrateMode(chatId);
@@ -393,6 +598,45 @@ public class TdlibNotificationChannelGroup {
     return b.toString();
   }
 
+  public static String makeCallChannelId (
+    long accountUserId,
+    int globalVersion,
+    long userChatId,
+    long channelVersion
+  ) {
+    StringBuilder b = new StringBuilder(makePrefix(accountUserId, globalVersion));
+    b.append(CALLS_SUFFIX);
+    if (userChatId != 0) {
+      b.append(CALLS_USER_SUFFIX);
+      b.append(userChatId);
+    }
+    if (channelVersion != 0) {
+      b.append('_');
+      b.append(channelVersion);
+    }
+    return b.toString();
+  }
+
+  static boolean isCallChannelId (String data) {
+    return data.startsWith(CALLS_SUFFIX);
+  }
+
+  static long parseCallChannelUserChatId (String data) {
+    int start = CALLS_SUFFIX.length() + CALLS_USER_SUFFIX.length();
+    if (!data.startsWith(CALLS_USER_SUFFIX, CALLS_SUFFIX.length())) {
+      return 0;
+    }
+    int end = data.indexOf('_', start);
+    return StringUtils.parseLong(data.substring(start, end != -1 ? end : data.length()));
+  }
+
+  static long parseCallChannelVersion (String data) {
+    int versionIndex = data.startsWith(CALLS_USER_SUFFIX, CALLS_SUFFIX.length()) ?
+      data.indexOf('_', CALLS_SUFFIX.length() + CALLS_USER_SUFFIX.length()) :
+      data.indexOf('_', CALLS_SUFFIX.length());
+    return versionIndex != -1 ? StringUtils.parseLong(data.substring(versionIndex + 1)) : 0;
+  }
+
   public static void updateGroup (@NonNull TdApi.User user, boolean isDebug) {
     NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
@@ -430,7 +674,11 @@ public class TdlibNotificationChannelGroup {
           boolean ok = false;
           if (!StringUtils.isEmpty(id) && id.startsWith(prefix)) {
             String data = id.substring(prefix.length());
-            if (data.startsWith(PRIVATE_SUFFIX)) {
+            if (isCallChannelId(data)) {
+              long userChatId = parseCallChannelUserChatId(data);
+              long currentVersion = tdlib.notifications().getCallChannelVersion(userChatId);
+              ok = parseCallChannelVersion(data) == currentVersion;
+            } else if (data.startsWith(PRIVATE_SUFFIX)) {
               int versionIndex = data.indexOf('_', PRIVATE_SUFFIX.length());
               long version = versionIndex != -1 ? StringUtils.parseLong(data.substring(versionIndex + 1)) : 0;
               long currentVersion = tdlib.notifications().getChannelVersion(tdlib.notifications().scopePrivate(), 0);
@@ -457,12 +705,26 @@ public class TdlibNotificationChannelGroup {
             if (removedChannels == null)
               removedChannels = new ArrayList<>();
             removedChannels.add(id);
-            m.deleteNotificationChannel(id);
+            deleteChannel(m, id);
           }
         }
         if (removedChannels != null) {
           TDLib.Tag.notifications( "Removed deprecated channels: %s", Strings.join(", ", removedChannels));
         }
+      }
+    }
+  }
+
+  public static void deleteLegacyCallChannels () {
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    if (m == null) {
+      return;
+    }
+    for (android.app.NotificationChannel channel : m.getNotificationChannels()) {
+      String channelId = channel.getId();
+      if (channelId.startsWith(LEGACY_CALL_PREFIX) && StringUtils.isEmpty(channel.getGroup())) {
+        deleteChannel(m, channelId);
       }
     }
   }
@@ -486,7 +748,7 @@ public class TdlibNotificationChannelGroup {
             if (!StringUtils.isEmpty(groupId) && groupId.startsWith(prefix)) {
               long userId = StringUtils.parseLong(groupId.substring(prefix.length()));
               if (userId == 0 || !userIds.contains(userId)) {
-                m.deleteNotificationChannelGroup(groupId);
+                deleteChannelGroup(m, groupId);
               }
             }
           }
@@ -522,6 +784,202 @@ public class TdlibNotificationChannelGroup {
     }
   }
 
+  public static String ensureCallChannel (
+    Tdlib tdlib,
+    long accountUserId,
+    boolean isDebug,
+    int globalVersion,
+    long userChatId,
+    long channelVersion
+  ) throws ChannelCreationFailureException {
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    if (m == null) {
+      throw new ChannelCreationFailureException("Notification service unavailable");
+    }
+    String channelId = makeCallChannelId(accountUserId, globalVersion, userChatId, channelVersion);
+    if (m.getNotificationChannel(channelId) == null) {
+      TdApi.User account = tdlib.myUser();
+      if (account != null) {
+        updateGroup(account, isDebug);
+      }
+      Object channel =
+        makeCallChannel(tdlib, accountUserId, isDebug, globalVersion, userChatId, channelVersion);
+      createChannel(m, channel);
+    }
+    return channelId;
+  }
+
+  public static long[] updateCallChannelSettings (
+    Tdlib tdlib,
+    long accountUserId,
+    boolean isDebug,
+    int globalVersion,
+    long userChatId,
+    long channelVersion,
+    boolean isRingtoneChanged
+  ) throws ChannelCreationFailureException {
+    long[] followingChatIds = new long[0];
+    if (accountUserId == 0) {
+      return followingChatIds;
+    }
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    if (m != null) {
+      Set<String> channelIds = new HashSet<>();
+      for (android.app.NotificationChannel channel : m.getNotificationChannels()) {
+        channelIds.add(channel.getId());
+      }
+      Set<String> ringingChannelIds = getActiveChannelIds(m);
+      if (userChatId == 0 || tdlib.notifications().hasCustomCallSettings(userChatId)) {
+        Object channel =
+          makeCallChannel(tdlib, accountUserId, isDebug, globalVersion, userChatId, channelVersion);
+        long previousVersion =
+          channelVersion == Long.MIN_VALUE ? Long.MAX_VALUE : channelVersion - 1;
+        String previousChannelId =
+          makeCallChannelId(accountUserId, globalVersion, userChatId, previousVersion);
+        Object previousChannel = m.getNotificationChannel(previousChannelId);
+        if (previousChannel != null) {
+          inheritCallChannel(channel, previousChannel, !isRingtoneChanged, isRingtoneChanged);
+        }
+        createChannel(m, channel);
+        if (userChatId == 0 && previousChannel != null) {
+          followingChatIds = followAccountCallChannel(tdlib, m, channelIds, ringingChannelIds,
+            accountUserId, isDebug, globalVersion, channel, previousChannel, isRingtoneChanged);
+        }
+      }
+      deleteOldCallChannels(m, channelIds, ringingChannelIds, accountUserId, globalVersion,
+        userChatId, channelVersion);
+    }
+    return followingChatIds;
+  }
+
+  private static long[] followAccountCallChannel (
+    Tdlib tdlib,
+    NotificationManager m,
+    Set<String> channelIds,
+    Set<String> ringingChannelIds,
+    long accountUserId,
+    boolean isDebug,
+    int globalVersion,
+    Object accountChannelObj,
+    Object previousChannelObj,
+    boolean isRingtoneChanged
+  ) throws ChannelCreationFailureException {
+    // A channel of a user keeps what the account had when it was made: what was changed neither
+    // in the app nor in the system follows the account
+    android.app.NotificationChannel account = (android.app.NotificationChannel) accountChannelObj;
+    android.app.NotificationChannel previous = (android.app.NotificationChannel) previousChannelObj;
+    TdlibNotificationManager notifications = tdlib.notifications();
+    long[] userChatIds = findUserCallChatIds(accountUserId, globalVersion);
+    int count = 0;
+    for (long userChatId : userChatIds) {
+      String userChannelId = makeCallChannelId(accountUserId, globalVersion, userChatId,
+        notifications.getCallChannelVersion(userChatId));
+      android.app.NotificationChannel userChannel = m.getNotificationChannel(userChannelId);
+      if (userChannel == null) {
+        continue;
+      }
+      boolean isInherited = isRingtoneChanged ?
+        notifications.getSavedCustomCallRingtone(userChatId) == null &&
+          TdlibNotificationManager.isSameCallSound(userChannel.getSound(), previous.getSound()) :
+        notifications.getSavedCustomCallVibrateMode(userChatId) ==
+          TdlibNotificationManager.VIBRATE_MODE_DEFAULT &&
+          getCallVibrateMode(userChannel.shouldVibrate(), userChannel.getVibrationPattern()) ==
+            getCallVibrateMode(previous.shouldVibrate(), previous.getVibrationPattern());
+      if (!isInherited) {
+        continue;
+      }
+      long channelVersion = notifications.incrementCallChannelVersion(userChatId);
+      android.app.NotificationChannel channel = (android.app.NotificationChannel)
+        makeCallChannel(tdlib, accountUserId, isDebug, globalVersion, userChatId, channelVersion);
+      inheritCallChannel(channel, userChannel, true, true);
+      // Its name as it was, also while the chat isn't loaded
+      channel.setName(userChannel.getName());
+      channel.setDescription(userChannel.getDescription());
+      if (isRingtoneChanged) {
+        channel.setSound(account.getSound(), account.getAudioAttributes());
+      } else {
+        channel.setVibrationPattern(account.getVibrationPattern());
+        channel.enableVibration(account.shouldVibrate());
+      }
+      createChannel(m, channel);
+      deleteOldCallChannels(m, channelIds, ringingChannelIds, accountUserId, globalVersion,
+        userChatId, channelVersion);
+      userChatIds[count++] = userChatId;
+    }
+    return Arrays.copyOf(userChatIds, count);
+  }
+
+  private static void deleteOldCallChannels (
+    NotificationManager m,
+    Set<String> channelIds,
+    Set<String> ringingChannelIds,
+    long accountUserId,
+    int globalVersion,
+    long userChatId,
+    long channelVersion
+  ) {
+    while (channelVersion > 0) {
+      String channelId =
+        makeCallChannelId(accountUserId, globalVersion, userChatId, --channelVersion);
+      if (channelIds.contains(channelId) && !ringingChannelIds.contains(channelId)) {
+        deleteChannel(m, channelId);
+      }
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  public static void resetCallChannels (
+    Tdlib tdlib,
+    long accountUserId,
+    boolean isDebug,
+    int globalVersion,
+    long channelVersion
+  ) throws ChannelCreationFailureException {
+    if (accountUserId == 0) {
+      return;
+    }
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    if (m == null) {
+      return;
+    }
+    String channelId = makeCallChannelId(accountUserId, globalVersion, 0, channelVersion);
+    String prefix = makePrefix(accountUserId, globalVersion);
+    Set<String> ringingChannelIds = getActiveChannelIds(m);
+    for (android.app.NotificationChannel channel : m.getNotificationChannels()) {
+      String id = channel.getId();
+      if (!id.startsWith(prefix + CALLS_SUFFIX) || id.equals(channelId)) {
+        continue;
+      }
+      if (!ringingChannelIds.contains(id)) {
+        deleteChannel(m, id);
+        continue;
+      }
+      // One that rings now goes with its call, as a stale version
+      long userChatId = parseCallChannelUserChatId(id.substring(prefix.length()));
+      if (userChatId != 0) {
+        tdlib.notifications().incrementCallChannelVersion(userChatId);
+      }
+    }
+    createChannel(m,
+      makeCallChannel(tdlib, accountUserId, isDebug, globalVersion, 0, channelVersion));
+  }
+
+  private static Set<String> getActiveChannelIds (NotificationManager m) {
+    Set<String> channelIds = new HashSet<>();
+    try {
+      for (android.service.notification.StatusBarNotification notification :
+        m.getActiveNotifications()) {
+        channelIds.add(notification.getNotification().getChannelId());
+      }
+    } catch (Throwable t) {
+      TDLib.Tag.notifications("Unable to get active notifications:\n%s", Log.toString(t));
+    }
+    return channelIds;
+  }
+
   public static void updateChat (Tdlib tdlib, long accountUserId, TdApi.Chat chat) throws ChannelCreationFailureException {
     if (accountUserId == 0) {
       return;
@@ -538,6 +996,16 @@ public class TdlibNotificationChannelGroup {
           m.createNotificationChannel(channel);
         } catch (Throwable t) {
           throw new ChannelCreationFailureException(t);
+        }
+      }
+      if (ChatId.isPrivate(chat.id)) {
+        Object callChannel = tdlib.notifications().getSystemCallChannel(chat.id);
+        if (callChannel != null) {
+          ((android.app.NotificationChannel) callChannel).setName(
+            getCallChannelName(tdlib.chatTitle(chat))
+          );
+          setCallChannelDescription(tdlib, callChannel, chat.id);
+          createChannel(m, callChannel);
         }
       }
     }
@@ -557,7 +1025,7 @@ public class TdlibNotificationChannelGroup {
           String channelGroupId = channel.getGroup();
           String channelId = channel.getId();
           if (StringUtils.equalsOrBothEmpty(channelGroupId, groupId)) {
-            m.deleteNotificationChannel(channelId);
+            deleteChannel(m, channelId);
           }
         }
       }
@@ -566,7 +1034,7 @@ public class TdlibNotificationChannelGroup {
         for (int i = groups.size() - 1; i >= 0; i--) {
           android.app.NotificationChannelGroup group = groups.get(i);
           if (StringUtils.equalsOrBothEmpty(group.getId(), groupId)) {
-            m.deleteNotificationChannelGroup(groupId);
+            deleteChannelGroup(m, groupId);
           }
         }
       }

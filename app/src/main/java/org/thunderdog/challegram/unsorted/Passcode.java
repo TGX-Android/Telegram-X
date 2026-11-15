@@ -83,7 +83,7 @@ public class Passcode implements UI.StateListener {
   private static final String SALT_NEW = "VGhpcyBpcyB0aGUgbW9yZSBzZWN1cmUgc2FsdCBvZiBUZWxlZ3JhbSBY";
 
   private int mode;
-  private Boolean _visible, _allowScreenshots, _displayNotifications;
+  private Boolean _visible, _allowScreenshots, _displayNotifications, _requireForCalls;
 
   private int autolockMode;
   private long autolockTime;
@@ -102,6 +102,7 @@ public class Passcode implements UI.StateListener {
   private static final String KEY_PASSCODE_AUTOLOCK_MODE = "pc_al_mode";
   private static final String KEY_PASSCODE_AUTOLOCK_TIME = "pc_time";
   private static final String KEY_PASSCODE_DISPLAY_NOTIFICATIONS = "pc_notifications";
+  private static final String KEY_PASSCODE_REQUIRE_FOR_CALLS = "pc_calls";
   public static final String KEY_PASSCODE_BIOMETRICS_HASH = "pc_finger_hash";
 
   public static final String KEY_PASSCODE_BIOMETRICS_OPTIONS = "pc_biometrics";
@@ -274,6 +275,25 @@ public class Passcode implements UI.StateListener {
     } else {
       Settings.instance().remove(KEY_PASSCODE_ALLOW_SCREENSHOTS);
     }
+  }
+
+  public boolean requireForIncomingCalls () {
+    if (_requireForCalls == null)
+      _requireForCalls = Settings.instance().getBoolean(KEY_PASSCODE_REQUIRE_FOR_CALLS, true);
+    return _requireForCalls;
+  }
+
+  public void setRequireForIncomingCalls (boolean require) {
+    this._requireForCalls = require;
+    if (require) {
+      Settings.instance().remove(KEY_PASSCODE_REQUIRE_FOR_CALLS);
+    } else {
+      Settings.instance().putBoolean(KEY_PASSCODE_REQUIRE_FOR_CALLS, false);
+    }
+  }
+
+  public boolean isLockedForIncomingCalls () {
+    return requireForIncomingCalls() && isLocked();
   }
 
   public boolean shouldDisallowScreenshots () {

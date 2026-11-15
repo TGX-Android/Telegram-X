@@ -14,7 +14,6 @@ import org.gradle.kotlin.dsl.*
 import tgx.gradle.*
 import tgx.gradle.source.AppBuildVersionSource
 import tgx.gradle.source.KeystoreSource
-import tgx.test.configureMinSdkCheck
 import java.io.File
 
 @Suppress("UnstableApiUsage")
@@ -88,8 +87,9 @@ open class ModulePlugin : Plugin<Project> {
     }
 
     val androidExt = project.extensions.getByName("android")
-    if (androidExt !is TestExtension && !project.path.startsWith(":tests:")) {
-      project.configureMinSdkCheck()
+    if (androidExt !is TestExtension && !project.path.startsWith(":tests:") &&
+      project.rootDir.resolve("tests/.git").exists()) {
+      project.pluginManager.apply("tgx-tests-module")
     }
     val keystore = config?.keystorePropertiesPath?.let { keystorePropertiesPath ->
       project.providers.of(KeystoreSource::class) {

@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -29,6 +30,7 @@ import android.text.TextPaint;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
@@ -37,6 +39,7 @@ import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageCache;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -84,8 +87,53 @@ public class TdlibNotificationUtils {
   public static String getPersonUri (Tdlib tdlib, TdApi.User user) {
     return !StringUtils.isEmpty(user.phoneNumber) ?
       "tel:+" + user.phoneNumber :
-      "tg://user?local_id=" + tdlib.settings().getLocalChatId(ChatId.fromUserId(user.id)) +
-        "&account_id=" + tdlib.id();
+      getLocalPersonUri(tdlib, user);
+  }
+
+  public static String getLocalPersonUri (Tdlib tdlib, TdApi.User user) {
+    return "tg://user?local_id=" + tdlib.settings().getLocalChatId(ChatId.fromUserId(user.id)) +
+      "&account_id=" + tdlib.id();
+  }
+
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+  public static void addCallPerson (
+    Notification.Builder builder,
+    Tdlib tdlib,
+    TdApi.User user,
+    boolean isLocked
+  ) {
+    // Do not disturb lets starred contacts and repeat callers ring
+    String uri = isLocked ? getLocalPersonUri(tdlib, user) : getPersonUri(tdlib, user);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      android.app.Person.Builder person = new android.app.Person.Builder().setUri(uri);
+      if (!isLocked) {
+        person.setName(TD.getUserName(user));
+      }
+      builder.addPerson(person.build());
+    } else {
+      builder.addPerson(uri);
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.S)
+  public static android.app.Person newCallPerson (
+    Tdlib tdlib,
+    @Nullable TdApi.User user,
+    boolean isLocked,
+    @Nullable Bitmap icon
+  ) {
+    // Notification.CallStyle refuses a person without a name
+    String name = user != null && !isLocked ? TD.getUserName(user) : null;
+    android.app.Person.Builder person = new android.app.Person.Builder()
+      .setName(StringUtils.isEmpty(name) ? Lang.getString(R.string.VoipBranding) : name)
+      .setImportant(true);
+    if (user != null) {
+      person.setUri(isLocked ? getLocalPersonUri(tdlib, user) : getPersonUri(tdlib, user));
+    }
+    if (icon != null) {
+      person.setIcon(android.graphics.drawable.Icon.createWithBitmap(icon));
+    }
+    return person.build();
   }
 
   public static Bitmap buildSelfIcon (Tdlib tdlib, long chatId) {

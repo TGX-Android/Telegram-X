@@ -6995,7 +6995,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return !Td.equalsTo(oldText, newText);
         }
         default: {
-          Td.assertMessageContent_cc875c63();
+          Td.assertMessageContent_37851fea();
           break;
         }
       }
@@ -7411,7 +7411,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       default: {
-        Td.assertMessageContent_cc875c63();
+        Td.assertMessageContent_37851fea();
         throw Td.unsupported(editContext.message.content);
       }
     }
@@ -10203,7 +10203,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case Intents.ACTIVITY_RESULT_GALLERY_FILE: {
         final Uri path = data != null ? data.getData() : null;
         if (path == null) break;
-        String imagePath = U.tryResolveFilePath(path);
+        String imagePath = U.resolveSharedFilePath(path);
+        if (imagePath == null) {
+          break;
+        }
 
         if (inPreviewMode) {
           if (previewMode == PREVIEW_MODE_WALLPAPER) {
@@ -10229,7 +10232,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (showSlowModeRestriction(mediaButton, null) || showRestriction(mediaButton, RightId.SEND_AUDIO)) {
           return;
         }
-        final String audioPath = U.tryResolveFilePath(path);
+        final String audioPath = U.resolveSharedFilePath(path);
         if (audioPath != null) {
           final long chatId = chat.id;
           final boolean disableNotification = obtainSilentMode();

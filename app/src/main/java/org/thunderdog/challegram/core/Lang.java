@@ -1355,9 +1355,10 @@ public class Lang {
       case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
       case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
       case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
+      case TdApi.MessageWidget.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_cc875c63();
+        Td.assertMessageContent_37851fea();
         throw Td.unsupported(message.content);
     }
     if (format == null) {
@@ -1815,7 +1816,12 @@ public class Lang {
   }
 
   public static TdApi.LanguagePackStringValueOrdinary getBuiltinStringValue (String key) {
-    return new TdApi.LanguagePackStringValueOrdinary(getStringImpl(null, getStringResourceIdentifier(key), false));
+    return new TdApi.LanguagePackStringValueOrdinary(getBuiltinStringByKey(key));
+  }
+
+  private static String getBuiltinStringByKey (String key) {
+    int resId = getStringResourceIdentifier(key);
+    return resId != 0 ? getStringImpl(null, resId, false) : "";
   }
 
   public static String getBuiltinString (int resId) {
@@ -1827,22 +1833,22 @@ public class Lang {
     for (PluralizationForm form : forms) {
       switch (form.form) {
         case PluralForm.FEW:
-          pluralized.fewValue = getStringImpl(null, getStringResourceIdentifier(key + "_few"), false);
+          pluralized.fewValue = getBuiltinStringByKey(key + "_few");
           break;
         case PluralForm.MANY:
-          pluralized.manyValue = getStringImpl(null, getStringResourceIdentifier(key + "_many"), false);
+          pluralized.manyValue = getBuiltinStringByKey(key + "_many");
           break;
         case PluralForm.ONE:
-          pluralized.oneValue = getStringImpl(null, getStringResourceIdentifier(key + "_one"), false);
+          pluralized.oneValue = getBuiltinStringByKey(key + "_one");
           break;
         case PluralForm.OTHER:
-          pluralized.otherValue = getStringImpl(null, getStringResourceIdentifier(key + "_other"), false);
+          pluralized.otherValue = getBuiltinStringByKey(key + "_other");
           break;
         case PluralForm.TWO:
-          pluralized.twoValue = getStringImpl(null, getStringResourceIdentifier(key + "_two"), false);
+          pluralized.twoValue = getBuiltinStringByKey(key + "_two");
           break;
         case PluralForm.ZERO:
-          pluralized.zeroValue = getStringImpl(null, getStringResourceIdentifier(key + "_zero"), false);
+          pluralized.zeroValue = getBuiltinStringByKey(key + "_zero");
           break;
         default:
           throw new IllegalArgumentException("form == " + form);

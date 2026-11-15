@@ -692,14 +692,20 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       Runnable act = () -> UI.execute(() -> {
         if (task.isPending()) {
           startForeground(success -> {
+            if (success) {
+              foregroundShowing = true;
+            }
             if (task.isPending()) {
               if (success) {
-                foregroundShowing = true;
                 Background.instance().post(task);
               } else {
                 Log.w(Log.TAG_CONTACT, "Unable to start dataSync service to import contacts");
                 setState(STATE_NOT_STARTED);
               }
+            } else if (success) {
+              // The sync was cancelled while its service started: nothing else would stop it,
+              // and Android 15 crashes the app when it runs out of the time of dataSync
+              stopForeground();
             }
           });
         }

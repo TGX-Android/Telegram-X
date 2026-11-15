@@ -517,10 +517,11 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
             case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
             case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
+            case TdApi.MessageWidget.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_cc875c63();
+              Td.assertMessageContent_37851fea();
               throw Td.unsupported(message.content);
           }
           if (format == null) {

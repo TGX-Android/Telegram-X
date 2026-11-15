@@ -20,6 +20,7 @@ import android.text.NoCopySpan;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.CharacterStyle;
+import android.text.style.ParagraphStyle;
 import android.text.style.SuggestionSpan;
 import android.text.style.URLSpan;
 
@@ -47,11 +48,11 @@ public class CharacterStyleFilter implements InputFilter {
   public CharSequence filter (CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
     if (source instanceof Spanned) {
       Spanned spanned = (Spanned) source;
-      CharacterStyle[] spans = spanned.getSpans(start, end, CharacterStyle.class);
+      Object[] spans = spanned.getSpans(start, end, Object.class);
 
-      List<CharacterStyle> spansToRemove = null;
+      List<Object> spansToRemove = null;
       if (spans != null) {
-        for (CharacterStyle span : spans) {
+        for (Object span : spans) {
           if (shouldRemoveSpan(spanned, span)) {
             if (spansToRemove == null) {
               spansToRemove = new ArrayList<>();
@@ -62,7 +63,7 @@ public class CharacterStyleFilter implements InputFilter {
       }
       if (spansToRemove != null) {
         SpannableStringBuilder b = new SpannableStringBuilder(source, start, end);
-        for (CharacterStyle span : spansToRemove) {
+        for (Object span : spansToRemove) {
           b.removeSpan(span);
         }
         return b;
@@ -71,7 +72,11 @@ public class CharacterStyleFilter implements InputFilter {
     return null;
   }
 
-  protected boolean isServiceSpan (Spanned spanned, CharacterStyle span) {
+  private static boolean isStyleSpan (Object span) {
+    return span instanceof CharacterStyle || span instanceof ParagraphStyle;
+  }
+
+  protected boolean isServiceSpan (Spanned spanned, Object span) {
     return
       span instanceof SuggestionSpan ||
       span instanceof NoCopySpan ||
@@ -79,11 +84,12 @@ public class CharacterStyleFilter implements InputFilter {
       BitwiseUtils.hasFlag(spanned.getSpanFlags(span), Spanned.SPAN_COMPOSING);
   }
 
-  protected boolean shouldRemoveSpan (Spanned spanned, CharacterStyle span) {
-    return !isServiceSpan(spanned, span) && !(allowTelegramEntities && canConvertToTelegramEntity(spanned, span));
+  protected boolean shouldRemoveSpan (Spanned spanned, Object span) {
+    return isStyleSpan(span) && !isServiceSpan(spanned, span) &&
+      !(allowTelegramEntities && canConvertToTelegramEntity(spanned, span));
   }
 
-  private static boolean canConvertToTelegramEntity (Spanned spanned, CharacterStyle span) {
+  private static boolean canConvertToTelegramEntity (Spanned spanned, Object span) {
     if (TD.canConvertToEntityType(span)) {
       if (span instanceof URLSpan) {
         int start = spanned.getSpanStart(span);

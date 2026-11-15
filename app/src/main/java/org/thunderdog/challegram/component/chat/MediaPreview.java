@@ -527,12 +527,13 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
       case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
       case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
+      case TdApi.MessageWidget.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR: {
         // No media preview.
         break;
       }
       default: {
-        Td.assertMessageContent_cc875c63();
+        Td.assertMessageContent_37851fea();
         throw Td.unsupported(message.content);
       }
     }

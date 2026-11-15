@@ -115,6 +115,7 @@ import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.Settings2FAController;
+import org.thunderdog.challegram.ui.SettingsCacheController;
 import org.thunderdog.challegram.ui.SettingsController;
 import org.thunderdog.challegram.ui.SettingsDataController;
 import org.thunderdog.challegram.ui.SettingsFoldersController;
@@ -4029,7 +4030,14 @@ public class TdlibUi extends Handler {
               break;
             }
             case TdApi.SettingsSectionDataAndStorage.CONSTRUCTOR: {
-              result = new SettingsDataController(context.context(), context.tdlib());
+              // region @MadeByLLM("gpt-6", id = "storage-usage-settings-link")
+              String subsection = ((TdApi.SettingsSectionDataAndStorage) section).subsection;
+              if (subsection != null && (subsection.equals("storage") || subsection.startsWith("storage/"))) {
+                result = new SettingsCacheController(context.context(), context.tdlib());
+              } else {
+                result = new SettingsDataController(context.context(), context.tdlib());
+              }
+              // endregion
               break;
             }
             case TdApi.SettingsSectionQrCode.CONSTRUCTOR:

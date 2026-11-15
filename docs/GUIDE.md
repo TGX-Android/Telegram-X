@@ -394,7 +394,7 @@ view.setPreviewActionListProvider(new BaseView.ActionListProvider() {
 
 **Telegram X** heavily uses custom views with custom drawing methods to reduce layout structure complexity, easily implement animations of any kind, improve frame rate, etc.
 
-For that reason, there're many utilties built for custom drawings.
+For that reason, there're many utilities built for custom drawings.
 
 -- TODO
 
@@ -438,7 +438,7 @@ Unless working with heavily optimized custom `ViewGroup`, you shall avoid layout
 ### 7.3: Avoid rudimentary object allocations
 
 1. Never allocate any objects inside drawing methods, such as `onDraw`, `draw`, etc. Make sure methods you call there don't allocate them too;
-2. Whenever possible, allocate as few objects as possible and avoid heavy work while scrolling lists (e.g. when `onBindViewHolder` gets called). There are still a lot of lowend devices that benifit from such optimizations.
+2. Whenever possible, allocate as few objects as possible and avoid heavy work while scrolling lists (e.g. when `onBindViewHolder` gets called). There are still a lot of lowend devices that benefit from such optimizations.
 
 ### 7.4: Use single animator per one transition
 
@@ -579,7 +579,7 @@ Like with Emoji Set setting, it's possible to add an ability to change icon set,
 
 There could be two formats:
 
-1. Single big xml or json file with svg data for each overriden icon
+1. Single big xml or json file with svg data for each overridden icon
 2. Archive with svg files
 
 The first one is more preferable, as the second one is more dangerous, since there could be a danger of zip-bombs, if not implemented properly (given custom icon pack files would be allowed), etc.
@@ -630,7 +630,7 @@ Or, in completely custom format:
 @@
 ```
 
-Since `viewportWidth` and `viewportHeight` have to be `24x24`, overriden svg instruction set could be applied to all `baseline_group` display resolutions: `baseline_group_16.xml`, `baseline_group_24.xml`, `baseline_group_56.xml`, `baseline_group_96.xml`, etc.
+Since `viewportWidth` and `viewportHeight` have to be `24x24`, overridden svg instruction set could be applied to all `baseline_group` display resolutions: `baseline_group_16.xml`, `baseline_group_24.xml`, `baseline_group_56.xml`, `baseline_group_96.xml`, etc.
 
 Based on these icon requirements, it would be also pretty easy to implement in-app interface to view and edit all icons and see them immediately in action.
 
