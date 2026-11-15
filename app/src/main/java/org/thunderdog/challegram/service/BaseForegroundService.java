@@ -63,10 +63,12 @@ public abstract class BaseForegroundService extends Service {
   private CharSequence activeText;
   private String activeChannelId;
   private int activeIconRes;
+  private int lastStartId;
 
   @Override
   public int onStartCommand (Intent intent, int flags, int startId) {
     synchronized (BaseForegroundService.class) {
+      lastStartId = startId;
       String callbackId = intent != null ? intent.getStringExtra(EXTRA_CALLBACK_ID) : null;
       String action = intent != null ? intent.getAction() : null;
       TDLib.Tag.notifications("%s: handling %s, startId=%d", getClass().getSimpleName(), action, startId);
@@ -160,7 +162,11 @@ public abstract class BaseForegroundService extends Service {
 
   private void finishService () {
     stopForeground(true);
-    stopSelf();
+    // Not stopSelf(): a start that came meanwhile still waits for its startForeground
+    if (!stopSelfResult(lastStartId)) {
+      TDLib.Tag.notifications("%s: Started again after startId=%d, not stopping",
+        getClass().getSimpleName(), lastStartId);
+    }
 
     activeTitle = null;
     activeText = null;
