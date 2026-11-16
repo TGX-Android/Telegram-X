@@ -75,6 +75,7 @@ import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.leolin.shortcutbadger.ShortcutBadger;
@@ -748,6 +749,8 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   // Common notification
 
+  private static final AtomicBoolean loggedShortcutRefusal = new AtomicBoolean();
+
   @RequiresApi(api = Build.VERSION_CODES.R)
   protected final String createShortcut (NotificationCompat.Builder builder, Context context, @NonNull TdlibNotificationGroup group, CharSequence visualChatTitle, long chatId, Bitmap icon) {
     long localChatId = tdlib.settings().getLocalChatId(chatId);
@@ -769,7 +772,14 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       .setIcon(chatIcon)
       .build();
 
-    ShortcutManagerCompat.pushDynamicShortcut(context, shortcut);
+    try {
+      ShortcutManagerCompat.pushDynamicShortcut(context, shortcut);
+    } catch (Throwable t) {
+      if (loggedShortcutRefusal.compareAndSet(false, true)) {
+        Log.e("Unable to push the shortcut of a notification", t);
+      }
+      return null;
+    }
     builder.setShortcutInfo(shortcut);
 
     // TODO: Uncomment to support bubbles. Not usable at the moment.
