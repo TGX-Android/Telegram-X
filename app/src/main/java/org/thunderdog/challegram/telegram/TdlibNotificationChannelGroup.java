@@ -86,6 +86,7 @@ public class TdlibNotificationChannelGroup {
   private static final String CALLS_SUFFIX = "_calls";
   private static final String CALLS_USER_SUFFIX = "_user_";
   private static final String LEGACY_CALL_PREFIX = "call_";
+  private static final String LEGACY_INCOMING_CALL = "voip_incoming";
 
   private static final String CONVERSATION_COPY_SEPARATOR = " : ";
 
@@ -856,7 +857,9 @@ public class TdlibNotificationChannelGroup {
     }
     for (android.app.NotificationChannel channel : m.getNotificationChannels()) {
       String channelId = channel.getId();
-      if (channelId.startsWith(LEGACY_CALL_PREFIX) && StringUtils.isEmpty(channel.getGroup())) {
+      boolean isLegacy =
+        channelId.startsWith(LEGACY_CALL_PREFIX) || LEGACY_INCOMING_CALL.equals(channelId);
+      if (isLegacy && StringUtils.isEmpty(channel.getGroup())) {
         deleteChannel(m, channelId);
       }
     }
