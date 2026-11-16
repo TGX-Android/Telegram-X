@@ -123,6 +123,16 @@ public abstract class BaseForegroundService extends Service {
     }
   }
 
+  private int indexOfTask (long pushId, int accountId) {
+    for (int i = 0; i < tasks.size(); i++) {
+      TaskInfo task = tasks.get(i);
+      if (task.pushId == pushId && task.accountId == accountId) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   private boolean handleStart (@NonNull Intent intent) {
     CharSequence title = intent.getCharSequenceExtra(EXTRA_TITLE);
     if (StringUtils.isEmpty(title)) {
@@ -134,7 +144,12 @@ public abstract class BaseForegroundService extends Service {
     long pushId        = intent.getLongExtra(EXTRA_PUSH_ID, 0);
     int accountId      = intent.getIntExtra(EXTRA_ACCOUNT_ID, TdlibAccount.NO_ID);
     TaskInfo info = new TaskInfo(title, text, channelId, iconRes, pushId, accountId);
-    this.tasks.add(info);
+    if (indexOfTask(pushId, accountId) != -1) {
+      // One push sends one stop, also when it asked for its start again
+      TDLib.Tag.notifications(pushId, accountId, "Task of this push already runs");
+    } else {
+      this.tasks.add(info);
+    }
 
     TDLib.Tag.notifications(pushId, accountId, "%s.handleStart() Title: %s  ChannelId: %s  Text: %s", getClass().getSimpleName(), title, channelId, text);
 
@@ -178,12 +193,13 @@ public abstract class BaseForegroundService extends Service {
     int accountId    = intent.getIntExtra(EXTRA_ACCOUNT_ID, TdlibAccount.NO_ID);
     TDLib.Tag.notifications(pushId, accountId, "%s.handleStop()", getClass().getSimpleName());
 
-    TaskInfo lastTask;
-    if (tasks.isEmpty()) {
+    int index = indexOfTask(pushId, accountId);
+    TaskInfo task;
+    if (index == -1) {
       TDLib.Tag.notifications(pushId, accountId, "Bug: %s.handleStop() without handleStart()", getClass().getSimpleName());
-      lastTask = null;
+      task = null;
     } else {
-      lastTask = tasks.remove(tasks.size() - 1);
+      task = tasks.remove(index);
     }
 
     CharSequence title, text;
@@ -195,11 +211,11 @@ public abstract class BaseForegroundService extends Service {
       text = activeText;
       channelId = activeChannelId;
       iconRes = activeIconRes;
-    } else if (lastTask != null) {
-      title = lastTask.title;
-      text = lastTask.text;
-      channelId = lastTask.channelId;
-      iconRes = lastTask.iconRes;
+    } else if (task != null) {
+      title = task.title;
+      text = task.text;
+      channelId = task.channelId;
+      iconRes = task.iconRes;
     } else {
       title = Lang.getString(R.string.RetrievingMessages);
       text = null;
@@ -277,8 +293,6 @@ public abstract class BaseForegroundService extends Service {
     if (after != null) {
       String callbackId = keyOf(accountId, pushId);
       if (putCallback(callbackId, after) != null) {
-        // The start of the same task is still on its way and answers this callback, while one
-        // more start would leave the service a task that no stop ends
         TDLib.Tag.notifications(pushId, accountId, "Waiting for the pending start of this task");
         return true;
       }
