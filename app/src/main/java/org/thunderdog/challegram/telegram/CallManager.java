@@ -212,6 +212,16 @@ public class CallManager implements GlobalCallListener, UI.StateListener {
     callIdWithoutService = call.id;
   }
 
+  public void continueCallWithoutService (Tdlib tdlib, TdApi.Call call) {
+    if (currentCall == null || currentCallTdlib.id() != tdlib.id() || currentCall.id != call.id) {
+      return;
+    }
+    isWaitingForService = true;
+    if (!call.isOutgoing && call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
+      showIncomingCallWithoutService(tdlib, call);
+    }
+  }
+
   @RequiresApi(Build.VERSION_CODES.O)
   private static Notification.Builder newIncomingCallBuilder (
     Context context,

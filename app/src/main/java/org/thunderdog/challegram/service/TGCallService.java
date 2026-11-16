@@ -143,6 +143,7 @@ public class TGCallService extends Service implements
       Log.w(Log.TAG_VOIP, "TGCallService.onStartCommand: failed because call or other party not found, call: %s, user: %s", call, user);
       U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_CALL_START);
       isForegroundPlaceholderShown = false;
+      foregroundNotificationId = 0;
       stopSelf();
       return START_NOT_STICKY;
     }
@@ -157,6 +158,7 @@ public class TGCallService extends Service implements
   }
 
   private boolean isForegroundPlaceholderShown;
+  private int foregroundNotificationId;
   private Notification foregroundPlaceholder;
 
   private void startForegroundAtOnce () {
@@ -191,6 +193,7 @@ public class TGCallService extends Service implements
         false);
       foregroundPlaceholder = notification;
       isForegroundPlaceholderShown = true;
+      foregroundNotificationId = TdlibNotificationManager.ID_FOREGROUND_CALL_START;
     } catch (Throwable t) {
       Log.e(Log.TAG_VOIP, "Unable to start the service of calls in foreground", t);
     }
@@ -303,11 +306,11 @@ public class TGCallService extends Service implements
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
           if (incomingNotification != null) {
-            U.startForeground(TGCallService.this,
+            startForegroundOrUpdate(
               TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION,
               incomingNotification, true);
           } else if (isForegroundPlaceholderShown) {
-            U.startForeground(TGCallService.this, TdlibNotificationManager.ID_FOREGROUND_CALL_START,
+            startForegroundOrUpdate(TdlibNotificationManager.ID_FOREGROUND_CALL_START,
               foregroundPlaceholder, true);
           }
         }
@@ -776,7 +779,7 @@ public class TGCallService extends Service implements
         intent.putExtra(Intents.KEY_ACCOUNT_ID, tdlib.id());
         intent.putExtra(Intents.KEY_CALL_ID, call.id);
         startService(intent);
-        U.startForeground(this, TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION,
+        startForegroundOrUpdate(TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION,
           ongoingCallNotification, true);
       }
       scheduleMicrophoneCheck(1000);
@@ -808,6 +811,7 @@ public class TGCallService extends Service implements
       // Added again, as an update doesn't open its full-screen intent
       U.stopForeground(this, true,
         TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION);
+      foregroundNotificationId = 0;
       incomingNotification = null;
       showIncomingNotification();
     }
@@ -1015,7 +1019,10 @@ public class TGCallService extends Service implements
     } else {
       ongoingCallNotification = builder.getNotification();
     }
-    U.startForeground(this, TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION, ongoingCallNotification, true);
+    if (!startForegroundOrUpdate(TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION,
+      ongoingCallNotification, true)) {
+      return;
+    }
     cancelForegroundPlaceholder();
     cancelIncomingNotification();
     // The capabilities of the process follow the service a moment later
@@ -1077,6 +1084,7 @@ public class TGCallService extends Service implements
   }
 
   private void stopForegroundOfCall () {
+    foregroundNotificationId = 0;
     if (canCancelIncomingNotification()) {
       U.stopForeground(this, true,
         TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION,
@@ -1284,9 +1292,40 @@ public class TGCallService extends Service implements
     if (isNotificationRinging) {
       incomingNotification.flags |= Notification.FLAG_INSISTENT;
     }
-    U.startForeground(this, TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION, incomingNotification, false);
+    if (!startForegroundOrUpdate(TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION,
+      incomingNotification, false)) {
+      return true;
+    }
     cancelForegroundPlaceholder();
     return true;
+  }
+
+  private boolean startForegroundOrUpdate (int notificationId, Notification notification,
+    boolean callAnswered) {
+    try {
+      U.startForeground(this, notificationId, notification, callAnswered);
+      foregroundNotificationId = notificationId;
+    } catch (IllegalStateException | SecurityException e) {
+      if (foregroundNotificationId == 0) {
+        stopWithoutForeground(e);
+        return false;
+      }
+      // The service stays in the foreground: replace its notification under its id
+      Log.e(Log.TAG_VOIP, "Unable to update the call in foreground", e);
+      NotificationManager manager =
+        (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+      manager.notify(foregroundNotificationId, notification);
+    }
+    return true;
+  }
+
+  private void stopWithoutForeground (RuntimeException e) {
+    Log.e(Log.TAG_VOIP, "Unable to show the call in foreground", e);
+    stopRinging();
+    tdlib.context().calls().continueCallWithoutService(tdlib, call);
+    tdlib.cache().unsubscribeFromCallUpdates(call.id, this);
+    setCall(null);
+    stopSelf();
   }
 
   private void startRinging () {
@@ -1494,7 +1533,10 @@ public class TGCallService extends Service implements
   }
 
   private void stopRinging () {
-    stopForegroundOfCall();
+    // Android 12+ may refuse to start the foreground again in background
+    if (foregroundNotificationId == 0 || !isAnswered()) {
+      stopForegroundOfCall();
+    }
     incomingNotification = ongoingCallNotification = null;
     isAppRinging = isNotificationRinging = isShownByCallManager = false;
     if (ringtonePlayer != null) {
@@ -1510,6 +1552,15 @@ public class TGCallService extends Service implements
       ringChannelId = null;
       tdlib.notifications().deleteStaleChannels();
     }
+  }
+
+  private boolean isAnswered () {
+    if (call == null) {
+      return false;
+    }
+    int state = call.state.getConstructor();
+    return state == TdApi.CallStateExchangingKeys.CONSTRUCTOR ||
+      state == TdApi.CallStateReady.CONSTRUCTOR;
   }
 
   private void updateCurrentSound () {
