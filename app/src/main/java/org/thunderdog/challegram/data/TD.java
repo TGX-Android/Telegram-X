@@ -148,6 +148,8 @@ public class TD {
   public static final int COMBINE_MODE_MEDIA = 1;
   public static final int COMBINE_MODE_AUDIO = 2;
   public static final int COMBINE_MODE_FILES = 3;
+  // Of files not read yet: a video that goes as media or as a document, as only reading it tells
+  public static final int COMBINE_MODE_MEDIA_OR_FILES = 4;
 
   public static boolean isValidRight (@RightId int rightId) {
     switch (rightId) {
@@ -1257,7 +1259,7 @@ public class TD {
   public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean allowAudio, boolean allowAnimation, boolean allowVideo, boolean allowDocs, boolean showCaptionAboveMedia, boolean hasSpoiler) {
     if (!StringUtils.isEmpty(info.mimeType)) {
       boolean isContent = filePath.startsWith("content://");
-      boolean isAudio = info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg");
+      boolean isAudio = isAudioMimeType(info.mimeType);
       boolean isVideo = info.mimeType.startsWith("video/");
       boolean isPhoto = info.mimeType.startsWith("image/");
 
@@ -1389,6 +1391,96 @@ public class TD {
       return new TdApi.InputMessageDocument(new TdApi.InputDocument(inputFile, null, false), caption);
     }
     return null;
+  }
+
+  public static boolean isAudioMimeType (String mimeType) {
+    return mimeType.startsWith("audio/") && !mimeType.equals("audio/ogg");
+  }
+
+  public static int getCombineMode (
+    String path,
+    @Nullable String fileName,
+    boolean allowAudio,
+    boolean allowVideos,
+    boolean allowAnimations
+  ) {
+    // The kind of message toInputMessageContent makes of a file, by its name, without reading it
+    String mimeType = getMimeType(path, fileName);
+    if (!StringUtils.isEmpty(mimeType)) {
+      if (allowAudio && isAudioMimeType(mimeType)) {
+        return COMBINE_MODE_AUDIO;
+      }
+      if (mimeType.startsWith("video/")) {
+        boolean isContent = path.startsWith("content://");
+        if (allowVideos && !isContent) {
+          return COMBINE_MODE_MEDIA;
+        }
+        // Providers of documents give no size or length of a video, which then goes as a
+        // document, and only a short one without sound goes as a GIF
+        boolean canBeAnimation =
+          allowAnimations && (!isContent || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q);
+        if (allowVideos || canBeAnimation) {
+          return COMBINE_MODE_MEDIA_OR_FILES;
+        }
+      }
+    }
+    return COMBINE_MODE_FILES;
+  }
+
+  public static boolean needsReading (List<String> paths, @Nullable List<String> fileNames) {
+    // Media need their metadata for their messages or thumbnails, while other files go as
+    // documents, whose data TDLib takes once their messages exist
+    for (int i = 0; i < paths.size(); i++) {
+      String mimeType = getMimeType(paths.get(i), fileNames != null ? fileNames.get(i) : null);
+      boolean isMedia = !StringUtils.isEmpty(mimeType) && (
+        mimeType.startsWith("audio/") ||
+        mimeType.startsWith("video/") ||
+        mimeType.startsWith("image/")
+      );
+      if (isMedia) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static String getMimeType (String path, @Nullable String fileName) {
+    return TGMimeType.mimeTypeForExtension(U.getExtension(fileName != null ? fileName : path));
+  }
+
+  public static int getMessageCount (int[] combineModes, boolean needGroupMedia) {
+    // The fewest messages toFunctions may make of the contents: a file of either kind goes with
+    // the media or the documents next to it
+    int[] modes = combineModes.clone();
+    for (int i = 0; i < modes.length; i++) {
+      if (modes[i] == COMBINE_MODE_MEDIA_OR_FILES) {
+        int next = i + 1;
+        while (next < modes.length && modes[next] == COMBINE_MODE_MEDIA_OR_FILES) {
+          next++;
+        }
+        int previousMode = i > 0 ? modes[i - 1] : COMBINE_MODE_NONE;
+        int nextMode = next < modes.length ? modes[next] : COMBINE_MODE_NONE;
+        modes[i] = previousMode == COMBINE_MODE_MEDIA || previousMode == COMBINE_MODE_FILES ?
+          previousMode :
+          nextMode == COMBINE_MODE_FILES ? COMBINE_MODE_FILES : COMBINE_MODE_MEDIA;
+      }
+    }
+    int count = 0;
+    int i = 0;
+    while (i < modes.length) {
+      int next = i + 1;
+      while (
+        needGroupMedia &&
+        next < modes.length &&
+        modes[next] == modes[i] &&
+        next - i < TdConstants.MAX_MESSAGE_GROUP_SIZE
+      ) {
+        next++;
+      }
+      count++;
+      i = next;
+    }
+    return count;
   }
 
   public static TdApi.InputFile createInputFile (String path) {
@@ -1569,7 +1661,8 @@ public class TD {
     }
     if (out != null) {
       try {
-        String fileName = Uri.parse(path).getLastPathSegment();
+        // Not by Uri, which ends a name of a local file at "#" or "?"
+        String fileName = U.getFileName(path);
         out.title = fileName;
         if (StringUtils.isEmpty(out.mimeType)) {
           String mimeType = TGMimeType.mimeTypeForExtension(U.getExtension(fileName));
@@ -1578,6 +1671,21 @@ public class TD {
       } catch (Throwable ignored) {}
     }
     return new TdApi.InputFileLocal(path);
+  }
+
+  public static TdApi.InputFile createDocumentFile (
+    String path,
+    @Nullable String fileName,
+    @NonNull FileInfo out
+  ) {
+    // By the name the system picker gave, so that its provider, e.g. a slow one of Drive, is asked
+    // only once TDLib generates the file
+    if (fileName == null || !path.startsWith("content://")) {
+      return createInputFile(path, null, out);
+    }
+    out.title = fileName;
+    out.mimeType = getMimeType(path, fileName);
+    return newGeneratedFile(fileName, path, 0, System.currentTimeMillis());
   }
 
   public static TdApi.InputFileGenerated createFileCopy (TdApi.File file) {

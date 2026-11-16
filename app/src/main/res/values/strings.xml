@@ -4912,6 +4912,8 @@
   <string name="SlowModeOff">Off</string>
   <string name="SlowModeMinutesShort_one">%1$sm</string>
   <string name="SlowModeMinutesShort_other">%1$sm</string>
+  <string name="SlowModeSingleMessage">Slow mode is active. You can send only one message at a time</string>
+  <string name="SlowModeTextTooLong">Slow mode is active. This text is too long to send as one message</string>
 
   <string name="InviteLinks">Invite Links</string>
   <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>

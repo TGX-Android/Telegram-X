@@ -8780,7 +8780,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
               return false;
             }
 
-            final @RightId int rightId = file.isVideo() ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS;
+            final @RightId int rightId;
+            if (file.isVideo()) {
+              rightId = RightId.SEND_VIDEOS;
+            } else {
+              rightId = asFiles ? RightId.SEND_DOCS : RightId.SEND_PHOTOS;
+            }
             if (m.showSlowModeRestriction(sendButton, options)) {
               return false;
             }
