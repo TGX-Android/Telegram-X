@@ -4544,6 +4544,16 @@ public class TdlibUi extends Handler {
     return true;
   }
 
+  // Calls
+
+  public void openCallSettings (ViewController<?> context) {
+    SettingsNotificationController c = new SettingsNotificationController(context.context(), tdlib);
+    c.setArguments(new SettingsNotificationController.Args(
+      SettingsNotificationController.Section.CALLS, 0
+    ));
+    context.navigateTo(c);
+  }
+
   // Proxy
 
   /**

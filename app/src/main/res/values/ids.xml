@@ -34,6 +34,7 @@
   <item type="id" name="menu_chatBulkActions" />
   <item type="id" name="menu_search" />
   <item type="id" name="menu_archive" />
+  <item type="id" name="menu_calls" />
   <item type="id" name="menu_clear" />
   <item type="id" name="menu_emoji" />
   <item type="id" name="menu_editLangPack" />

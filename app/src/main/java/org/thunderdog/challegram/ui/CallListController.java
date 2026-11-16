@@ -19,12 +19,15 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
@@ -38,8 +41,11 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.CallProblems;
 import org.thunderdog.challegram.telegram.DateChangeListener;
+import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.MessageListener;
+import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.theme.ColorId;
@@ -72,7 +78,9 @@ public class CallListController extends RecyclerViewController<Void> implements
   MoreDelegate,
   DateChangeListener,
   View.OnLongClickListener,
-  BaseView.ActionListProvider, TdlibOptionListener {
+  BaseView.ActionListProvider, TdlibOptionListener,
+  SessionListener,
+  GlobalTokenStateListener {
   public CallListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -87,27 +95,89 @@ public class CallListController extends RecyclerViewController<Void> implements
     return Lang.getString(R.string.Calls);
   }
 
+  private boolean canDeleteCallHistory () {
+    return Config.ENABLE_DELETE_CALL_HISTORY && hasRecentCalls();
+  }
+
   @Override
   protected int getMenuId () {
-    if (Config.ENABLE_DELETE_CALL_HISTORY) {
-      return messages != null && !messages.isEmpty() ? R.id.menu_btn_more : 0;
-    } else {
-      return 0;
-    }
+    return BuildConfig.CALLS_AVAILABLE || canDeleteCallHistory() ? R.id.menu_calls : 0;
   }
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    if (id == R.id.menu_btn_more) {
-      header.addMoreButton(menu, this);
+    if (id == R.id.menu_calls) {
+      if (BuildConfig.CALLS_AVAILABLE) {
+        header.addButton(
+          menu,
+          R.id.menu_btn_settings,
+          getCallSettingsIcon(),
+          49f,
+          this,
+          getHeaderIconColorId()
+        );
+      }
+      if (canDeleteCallHistory()) {
+        header.addMoreButton(menu, this);
+      }
+    }
+  }
+
+  private @DrawableRes int getCallSettingsIcon () {
+    boolean hasProblem = CallProblems.isOffForDevice(tdlib) ||
+      CallProblems.getOfSettings(tdlib) != CallProblems.Type.NONE;
+    return hasProblem ? R.drawable.baseline_settings_alert_24 : R.drawable.baseline_settings_24;
+  }
+
+  private void updateCallSettingsButton () {
+    if (BuildConfig.CALLS_AVAILABLE && headerView != null) {
+      headerView.updateButton(
+        getMenuId(),
+        R.id.menu_btn_settings,
+        View.VISIBLE,
+        getCallSettingsIcon()
+      );
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    if (id == R.id.menu_btn_more) {
+    if (id == R.id.menu_btn_settings) {
+      tdlib.ui().openCallSettings(this);
+    } else if (id == R.id.menu_btn_more) {
       showMore(new int[] {R.id.more_btn_delete}, new String[] {Lang.getString(R.string.DeleteCallHistory)});
     }
+  }
+
+  private void loadSessions (boolean allowCached) {
+    tdlib.getSessions(allowCached, sessions ->
+      runOnUiThreadOptional(this::updateCallSettingsButton)
+    );
+  }
+
+  @Override
+  public void onSessionListChanged (Tdlib tdlib, boolean isWeakGuess) {
+    loadSessions(true);
+  }
+
+  @Override
+  public void onSessionCanAcceptCallsChanged (Tdlib tdlib, long sessionId, boolean canAcceptCalls) {
+    runOnUiThreadOptional(this::updateCallSettingsButton);
+  }
+
+  @Override
+  public void onTokenStateChanged (
+    int newState,
+    @Nullable String error,
+    @Nullable Throwable fullError
+  ) {
+    runOnUiThreadOptional(this::updateCallSettingsButton);
+  }
+
+  @Override
+  public void onActivityResume () {
+    super.onActivityResume();
+    updateCallSettingsButton();
   }
 
   @Override
@@ -207,6 +277,8 @@ public class CallListController extends RecyclerViewController<Void> implements
     tdlib.client().send(new TdApi.GetTopChats(new TdApi.TopChatCategoryCalls(), 30), this);
     tdlib.listeners().subscribeForGlobalUpdates(this);
     tdlib.context().dateManager().addListener(this);
+    tdlib.context().global().addTokenStateListener(this);
+    loadSessions(false);
   }
 
   @Override
@@ -217,6 +289,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   @Override
   public void onPrepareToShow () {
     super.onPrepareToShow();
+    updateCallSettingsButton();
     if (Settings.instance().chatFoldersEnabled() && getParentOrSelf() == this) {
       setDoneIcon(R.drawable.baseline_phone_24);
       setDoneVisible(true, false);
@@ -638,6 +711,7 @@ public class CallListController extends RecyclerViewController<Void> implements
     super.destroy();
     tdlib.listeners().unsubscribeFromGlobalUpdates(this);
     tdlib.context().dateManager().removeListener(this);
+    tdlib.context().global().removeTokenStateListener(this);
   }
 
   @Override

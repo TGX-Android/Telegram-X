@@ -1240,11 +1240,7 @@ public class SettingsController extends ViewController<Void> implements
     } else if (viewId == R.id.btn_notificationSettings) {
       navigateTo(new SettingsNotificationController(context, tdlib));
     } else if (viewId == R.id.btn_callSettings) {
-      SettingsNotificationController c = new SettingsNotificationController(context, tdlib);
-      c.setArguments(new SettingsNotificationController.Args(
-        SettingsNotificationController.Section.CALLS, 0
-      ));
-      navigateTo(c);
+      tdlib.ui().openCallSettings(this);
     } else if (viewId == R.id.btn_devices) {
       navigateTo(new SettingsSessionsController(context, tdlib));
     } else if (viewId == R.id.btn_checkUpdates) {
