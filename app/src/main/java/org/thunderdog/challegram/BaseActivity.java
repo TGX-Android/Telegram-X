@@ -390,6 +390,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   }
 
   private void runEmulatorChecksImpl (boolean force, @Nullable RunnableData<Settings.EmulatorDetectionResult> after) {
+    if (tdlib == null) {
+      return;
+    }
     if (ranEmulatorChecks) {
       addEmulatorChecksCallback(after);
       return;
