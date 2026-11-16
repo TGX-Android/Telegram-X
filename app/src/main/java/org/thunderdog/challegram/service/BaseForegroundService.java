@@ -276,8 +276,18 @@ public abstract class BaseForegroundService extends Service {
     intent.putExtra(EXTRA_ACCOUNT_ID, accountId);
     if (after != null) {
       String callbackId = keyOf(accountId, pushId);
-      addCallback(callbackId, after);
+      if (putCallback(callbackId, after) != null) {
+        // The start of the same task is still on its way and answers this callback, while one
+        // more start would leave the service a task that no stop ends
+        TDLib.Tag.notifications(pushId, accountId, "Waiting for the pending start of this task");
+        return true;
+      }
       intent.putExtra(EXTRA_CALLBACK_ID, callbackId);
+      if (!startForegroundService(context, intent, pushId, accountId)) {
+        removeCallback(callbackId, after);
+        return false;
+      }
+      return true;
     }
     return startForegroundService(context, intent, pushId, accountId);
   }
@@ -314,10 +324,16 @@ public abstract class BaseForegroundService extends Service {
   }
 
   private static final Map<String, RunnableBool> callbacks = new LinkedHashMap<>();
-  private static void addCallback (String key, RunnableBool callback) {
+  private static RunnableBool putCallback (String key, RunnableBool callback) {
     synchronized (callbacks) {
-      if (callbacks.putIfAbsent(key, callback) != null) {
-        throw new IllegalStateException("Callback already present: " + key);
+      return callbacks.put(key, callback);
+    }
+  }
+
+  private static void removeCallback (String key, RunnableBool callback) {
+    synchronized (callbacks) {
+      if (callbacks.get(key) == callback) {
+        callbacks.remove(key);
       }
     }
   }
