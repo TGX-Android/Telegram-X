@@ -973,9 +973,16 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     if (spoilers == null || spoilerEntity == null) {
       return null;
     }
-    for (int i = 0; i < spoilers.size(); i++) {
-      Spoiler spoiler = spoilers.valueAt(i);
-      if (spoilerEntity.offset >= spoiler.offset && spoilerEntity.offset < spoiler.offset + spoiler.length) {
+    // Keys sort spoilers by offset; only parts of one spoiler, revealed together, overlap
+    int low = 0, high = spoilers.size() - 1;
+    while (low <= high) {
+      int middle = (low + high) >>> 1;
+      Spoiler spoiler = spoilers.valueAt(middle);
+      if (spoilerEntity.offset < spoiler.offset) {
+        high = middle - 1;
+      } else if (spoilerEntity.offset >= spoiler.offset + spoiler.length) {
+        low = middle + 1;
+      } else {
         return spoiler;
       }
     }

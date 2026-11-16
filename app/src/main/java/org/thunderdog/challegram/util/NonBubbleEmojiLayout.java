@@ -16,6 +16,7 @@ package org.thunderdog.challegram.util;
 
 import android.text.Spannable;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -26,6 +27,7 @@ import org.thunderdog.challegram.emoji.EmojiSpan;
 import java.util.ArrayList;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
 
 public class NonBubbleEmojiLayout {
   public final ArrayList<Item> items = new ArrayList<>();
@@ -93,50 +95,114 @@ public class NonBubbleEmojiLayout {
   }
 
   private static boolean isValidTextBlock (String text, @Nullable NonBubbleEmojiLayout layout) {
-    CharSequence parsed = Emoji.instance().replaceEmoji(text);
-    if (!(parsed instanceof Spannable)) {
+    FoundEmoji found = new FoundEmoji(text);
+    Emoji.instance().replaceEmoji(found);
+    if (!found.hasSpans) {
       return isValidAllowedSymbols(text, layout);
     }
 
-    Spannable spannable = (Spannable) parsed;
-    for (int index = 0; index < spannable.length(); ) {
-      EmojiSpan[] spans = spannable.getSpans(index, index, EmojiSpan.class);
-      if (spans == null || spans.length == 0) {
+    // Emoji come in the order of their starts
+    int next = 0;
+    for (int index = 0; index < text.length(); ) {
+      while (next < found.spans.size() && found.starts.get(next) < index) {
+        next++;
+      }
+      if (next < found.spans.size() && found.starts.get(next) == index) {
+        EmojiSpan span = found.spans.get(next);
+        int end = found.ends.get(next);
+        next++;
+        if (index == end) {
+          return false;
+        }
+        if (layout != null) {
+          String emoji = text.substring(index, end);
+          layout.addSpan(emoji, span.getCustomEmojiId(), span.getBuiltInEmojiInfo());
+        }
+        index = end;
+      } else {
         if (!isValidAllowedSymbols(text.substring(index, index + 1), layout)) {
           return false;
         }
-        index += 1;
-      } else {
-        boolean spanIsFound = false;
-        for (EmojiSpan span : spans) {
-          int start = spannable.getSpanStart(span);
-          int end = spannable.getSpanEnd(span);
-          if (start < index) {
-            continue;
-          }
-          if (index == end) {
-            return false;
-          }
-          index = end;
-          if (spanIsFound) {
-            return false;
-          }
-          spanIsFound = true;
-          if (layout != null) {
-            layout.addSpan(text.substring(start, end), span.getCustomEmojiId(), span.getBuiltInEmojiInfo());
-          }
-        }
-        if (!spanIsFound) {
-          if (isValidAllowedSymbols(text.substring(index, index + 1), layout)) {
-            index++;
-          } else {
-            return false;
-          }
-        }
+        index++;
       }
     }
 
     return true;
+  }
+
+  // Spans in lists: a SpannableString searches all of them for each one set or looked for
+  private static final class FoundEmoji implements Spannable {
+    private final String text;
+    private final ArrayList<EmojiSpan> spans = new ArrayList<>();
+    private final IntList starts = new IntList(10), ends = new IntList(10);
+    private boolean hasSpans;
+
+    FoundEmoji (String text) {
+      this.text = text;
+    }
+
+    @Override
+    public void setSpan (Object what, int start, int end, int flags) {
+      hasSpans = true;
+      if (what instanceof EmojiSpan) {
+        spans.add((EmojiSpan) what);
+        starts.append(start);
+        ends.append(end);
+      }
+    }
+
+    @Override
+    public void removeSpan (Object what) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T> T[] getSpans (int start, int end, Class<T> type) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getSpanStart (Object tag) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getSpanEnd (Object tag) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getSpanFlags (Object tag) {
+      throw new UnsupportedOperationException();
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    public int nextSpanTransition (int start, int limit, Class type) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int length () {
+      return text.length();
+    }
+
+    @Override
+    public char charAt (int index) {
+      return text.charAt(index);
+    }
+
+    @NonNull
+    @Override
+    public CharSequence subSequence (int start, int end) {
+      return text.subSequence(start, end);
+    }
+
+    @NonNull
+    @Override
+    public String toString () {
+      return text;
+    }
   }
 
   private static boolean isValidAllowedSymbols (String text, @Nullable NonBubbleEmojiLayout layout) {

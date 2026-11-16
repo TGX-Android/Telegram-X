@@ -34,12 +34,18 @@ public final class CodeLanguageDetector {
   // So that one repeated construction doesn't decide
   private static final int MAX_MATCHES = 3;
 
+  private static Pattern compileLines (String regex) {
+    // ^\s* would run through blank lines: whitespace of the line, without the line breaks of ICU
+    String indent = "^[^\\S\\n\\u000B\\u000C\\r\\u0085\\u2028\\u2029]*";
+    return Pattern.compile(regex.replace("^\\s*", indent), Pattern.MULTILINE);
+  }
+
   private static final class Feature {
     final Pattern pattern;
     final int weight;
 
     Feature (String regex, int weight) {
-      this.pattern = Pattern.compile(regex, Pattern.MULTILINE);
+      this.pattern = compileLines(regex);
       this.weight = weight;
     }
   }
@@ -296,17 +302,16 @@ public final class CodeLanguageDetector {
     )
   };
 
-  private static final Pattern LOG_LIKE_LINE = Pattern.compile(
+  private static final Pattern LOG_LIKE_LINE = compileLines(
     "^\\s*(\\[?\\d{2,4}[-./]\\d{1,2}[-./]\\d{1,4}|\\[?\\d{1,2}:\\d{2}(:\\d{2})?|" +
       "[VDIWEF]/[\\w.-]+|\\[?(INFO|WARN|WARNING|ERROR|DEBUG|TRACE|FATAL)\\]?\\b|" +
       "at\\s+[\\w$.]+\\([\\w.]*(:\\d+)?\\)|" +
-      "Traceback \\(most recent call last\\)|File \"[^\"]+\", line \\d+|[\\w.-]+\\s+\\|\\s)",
-    Pattern.MULTILINE
+      "Traceback \\(most recent call last\\)|File \"[^\"]+\", line \\d+|[\\w.-]+\\s+\\|\\s)"
   );
   // Only logs have these lines, while LOG_LIKE_LINE also matches tables and lists: lines of logcat,
   // frames of glibc ("app(+0x15a1)[0x5565cfe2d652]"), of tombstones and gdb ("#00 pc 0004b2c8",
   // "#1 0x00007f in main ()"), of lldb ("frame #") and of exceptions of Java
-  private static final Pattern LOG_LINE = Pattern.compile(
+  private static final Pattern LOG_LINE = compileLines(
     "^\\s*(\\[?\\d{2,4}[-./]\\d{1,2}[-./]\\d{1,4}[ T]\\d{1,2}:\\d{2}|\\[?\\d{1,2}:\\d{2}:\\d{2}|" +
       "[VDIWEF]/[\\w.-]+.*:|\\[?(INFO|WARN|WARNING|ERROR|DEBUG|TRACE|FATAL)\\]?\\b|" +
       "at\\s+[\\w$.<>]+\\([\\w.]*(:\\d+)?\\)|Traceback \\(most recent call last\\)|" +
@@ -314,11 +319,10 @@ public final class CodeLanguageDetector {
       "\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\s+\\d+\\s+\\d+\\s+[VDIWEF]\\s|" +
       "[^\\s(]+\\([^)\\n]*\\)\\s*\\[0x[\\da-fA-F]+\\]|" +
       "#\\d+\\s+(pc\\s+[\\da-fA-F]+|0x[\\da-fA-F]+)\\b|frame #\\d+: 0x|" +
-      "Caused by: |Exception in thread )",
-    Pattern.MULTILINE
+      "Caused by: |Exception in thread )"
   );
   private static final Pattern LIST_LINE =
-    Pattern.compile("^\\s*([-*•]|\\d+[.)])\\s+\\S", Pattern.MULTILINE);
+    compileLines("^\\s*([-*•]|\\d+[.)])\\s+\\S");
   private static final Pattern YAML_KEY = Pattern.compile(
     "^([ \\t]*)(- )?[a-z_][\\w.-]*:([ \\t]+[^\\s{}\\[\\];][^;{}\\n]*)?[ \\t]*$",
     Pattern.MULTILINE
