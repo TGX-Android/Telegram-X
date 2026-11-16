@@ -1100,6 +1100,13 @@ dependencies {
     libs.androidx.exifinterface.latest
   )
   implementation(libs.androidx.biometric)
+  Sdk.VARIANTS.values
+    .filter {
+      "sinceMarshmallowPreQ" in findExtraFolders(it)
+    }
+    .forEach {
+      "${it.flavor}CompileOnly"(project(":stub:fingerprint"))
+    }
   flavorImplementation(
     libs.androidx.palette.legacy,
     libs.androidx.palette.legacy,
