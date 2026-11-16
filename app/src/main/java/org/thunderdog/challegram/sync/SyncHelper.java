@@ -17,11 +17,15 @@ package org.thunderdog.challegram.sync;
 import android.content.Context;
 
 import org.thunderdog.challegram.TDLib;
+import org.thunderdog.challegram.core.Background;
 
 public class SyncHelper {
   public static void register (Context context, int accountId) {
     TDLib.Tag.notifications( "SyncHelper.register, accountId:%d", accountId);
-    SyncAdapter.register(context);
+    Background.instance().post(() -> {
+      SyncAdapter.register(context);
+      TDLib.Tag.notifications( "SyncHelper.register finished, accountId:%d", accountId);
+    });
     // SyncWorker.register(accountId);
   }
 
