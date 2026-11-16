@@ -1609,7 +1609,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private boolean canGoPip () {
     MediaItem current = stack.getCurrent();
-    return current != null && current.isVideo() && !current.isGifType();
+    return (mode == MODE_MESSAGES || mode == MODE_SIMPLE) &&
+      current != null && current.isVideo() && !current.isGifType();
   }
 
   private boolean canEdit () {
