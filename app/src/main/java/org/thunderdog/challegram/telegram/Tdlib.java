@@ -4185,10 +4185,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       chatId == ChatId.fromUserId(TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID);
   }
 
-  public boolean hasMessageThreads (long chatId) {
-    return ChatId.isSupergroup(chatId) && !ChatId.isMonoforumChat(chatId) && !isChannel(chatId);
-  }
-
   public boolean isServiceNotificationsChat (long chatId) {
     return (options.telegramServiceNotificationsChatId != 0 && options.telegramServiceNotificationsChatId == chatId) || (chatId == ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID));
   }

@@ -10933,12 +10933,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
       topicId = editContext.getExistingMessage().topicId;
     } else {
       topicId = getMessageTopicId(reply);
-      if (topicId == null && reply != null) {
-        topicId = reply.message.message.topicId != null ?
-          reply.message.message.topicId :
-          tdlib.hasMessageThreads(reply.message.message.chatId) ?
-          new TdApi.MessageTopicThread(reply.message.message.id) :
-          null;
+      TdApi.MessageTopic replyTopicId = reply != null && reply.message.message.chatId == chat.id ?
+        reply.message.message.topicId :
+        null;
+      if (topicId == null && replyTopicId != null) {
+        switch (replyTopicId.getConstructor()) {
+          case TdApi.MessageTopicForum.CONSTRUCTOR:
+          case TdApi.MessageTopicDirectMessages.CONSTRUCTOR:
+            topicId = replyTopicId;
+            break;
+          // Other apps show typing of a thread only in the view of that thread
+          case TdApi.MessageTopicThread.CONSTRUCTOR:
+          case TdApi.MessageTopicSavedMessages.CONSTRUCTOR:
+            break;
+          default:
+            Td.assertMessageTopic_98b4a9a3();
+            throw Td.unsupported(replyTopicId);
+        }
       }
     }
     if (set) {
