@@ -26,7 +26,6 @@ bubbleOut_fillingActive: #F9946826
 codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
 bubbleOut_codeBlockBackground: #870C0312
 bubbleOut_codeBlockLine: #A33310
-// TODO: review the colors of code blocks and syntax
 codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
 bubbleOut_codeBlockRipple: #870C0324
 syntaxComment, syntaxBlockComment, syntaxProlog, syntaxDoctype, syntaxCdata: #666F78

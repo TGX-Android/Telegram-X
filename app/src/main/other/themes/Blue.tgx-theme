@@ -211,7 +211,6 @@ codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
 bubbleOut_codeBlockBackground: #0A558414
 codeBlockHeader, bubbleIn_codeBlockHeader, bubbleOut_codeBlockHeader: #0000000A
 bubbleOut_codeBlockLine: #196696
-// TODO: review the colors of code blocks and syntax
 codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
 bubbleOut_codeBlockRipple: #0A558429
 syntaxComment, syntaxBlockComment, syntaxProlog, syntaxDoctype, syntaxCdata: #6C7680

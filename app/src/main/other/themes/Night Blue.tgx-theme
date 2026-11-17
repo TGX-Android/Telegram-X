@@ -89,6 +89,5 @@ syntaxEntity: #6D9CBE
 syntaxUrl: #287BDE
 syntaxInserted: #629755
 syntaxDeleted: #F06A6A
-// TODO: review the colors of code blocks and syntax
 codeBlockRipple, bubbleIn_codeBlockRipple: #A8C8EB1F
 bubbleOut_codeBlockRipple: #B4D2F01F

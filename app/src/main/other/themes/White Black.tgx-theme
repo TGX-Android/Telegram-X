@@ -6,5 +6,4 @@ time: 1601809494
 parentTheme: 1
 #
 codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
-// TODO: review the colors of code blocks and syntax
 codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
