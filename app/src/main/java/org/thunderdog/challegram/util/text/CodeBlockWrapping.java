@@ -44,10 +44,7 @@ public final class CodeBlockWrapping {
     boolean hasWideLine = false;
     // Line break at the end of code doesn't start a line
     for (int lineStart = start; lineStart < end; ) {
-      int lineEnd = text.indexOf('\n', lineStart);
-      if (lineEnd == -1 || lineEnd > end) {
-        lineEnd = end;
-      }
+      final int lineEnd = findLineEnd(text, lineStart, end);
       final float lineWidth = (lineEnd - lineStart) * charWidth;
       hasWideLine |= lineWidth > width;
       wrappedLineCount += Math.max(1, (int) Math.ceil(lineWidth / width));
@@ -64,12 +61,18 @@ public final class CodeBlockWrapping {
     return wrappedLineCount > MAX_WRAPPED_LINE_COUNT;
   }
 
+  private static int findLineEnd (String text, int lineStart, int end) {
+    // Not by indexOf, which would read past the block
+    int lineEnd = lineStart;
+    while (lineEnd < end && text.charAt(lineEnd) != '\n') {
+      lineEnd++;
+    }
+    return lineEnd;
+  }
+
   public static boolean hasWideLine (String text, int start, int end, float charWidth, int width) {
     for (int lineStart = start; lineStart < end; ) {
-      int lineEnd = text.indexOf('\n', lineStart);
-      if (lineEnd == -1 || lineEnd > end) {
-        lineEnd = end;
-      }
+      final int lineEnd = findLineEnd(text, lineStart, end);
       if ((lineEnd - lineStart) * charWidth > width) {
         return true;
       }

@@ -791,7 +791,13 @@ final class TextPieces {
       final SyntaxLines lines =
         part.getLine() == text.getText() ? text.findCodeLinesAt(part.getStart()) : null;
       if (lines == null || !lines.copyAdvances(paint, part.getStart(), part.getEnd(), widths)) {
-        paint.getTextWidths(part.getLine(), part.getStart(), part.getEnd(), widths);
+        // Paint copies all of a String to measure a part of it
+        final char[] chars = text.getDrawnChars(part.getLine());
+        if (chars != null) {
+          paint.getTextWidths(chars, part.getStart(), length, widths);
+        } else {
+          paint.getTextWidths(part.getLine(), part.getStart(), part.getEnd(), widths);
+        }
       }
       for (int i = 0; i < length; i++) {
         offsets[i + 1] = offsets[i] + widths[i];

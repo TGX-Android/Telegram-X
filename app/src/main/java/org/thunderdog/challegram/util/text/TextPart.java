@@ -166,6 +166,19 @@ public class TextPart {
     return TextEntity.equals(this.entity, entity, TextEntity.COMPARE_MODE_SPOILER, source.getText());
   }
 
+  private boolean isFormatOnly () {
+    // Marks of direction, joiners and other format characters draw nothing without width
+    if (width != 0 || media != null || emojiInfo != null) {
+      return false;
+    }
+    for (int i = start; i < end; i++) {
+      if (Character.getType(line.charAt(i)) != Character.FORMAT) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   public boolean isWhitespace () {
     return entity == null && (this.end - this.start) == Strings.countCharacters(line, start, end, (c) -> c == ' ');
   }
@@ -358,6 +371,9 @@ public class TextPart {
   }
 
   public void draw (int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider, @Nullable ComplexReceiver receiver) {
+    if (isFormatOnly()) {
+      return;
+    }
     final int y = startY + this.y;
     final int x = makeX(startX, endX, endXBottomPadding);
     final TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
@@ -422,10 +438,14 @@ public class TextPart {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && BiDiUtils.isValid(bidiEntity)) {
         final boolean isRtl = BiDiUtils.isRtl(bidiEntity);
         final char[] chars = source.getDrawnChars(line);
+        // As layout measures it: Canvas looks for the ends of words in the whole context
+        final int contextStart = Math.max(0, start - Text.MEASURE_CONTEXT_LENGTH);
+        final int contextEnd = Math.min(line.length(), end + Text.MEASURE_CONTEXT_LENGTH);
         if (chars != null) {
-          c.drawTextRun(chars, start, end - start, 0, chars.length, x, textY, isRtl, textPaint);
+          c.drawTextRun(chars, start, end - start, contextStart, contextEnd - contextStart,
+            x, textY, isRtl, textPaint);
         } else {
-          c.drawTextRun(line, start, end, 0, line.length(), x, textY, isRtl, textPaint);
+          c.drawTextRun(line, start, end, contextStart, contextEnd, x, textY, isRtl, textPaint);
         }
       } else {
         drawText(c, end, x, textY, textPaint);

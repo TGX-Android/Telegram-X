@@ -78,10 +78,12 @@ import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
@@ -284,6 +286,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   }
 
   private String originalText;
+  private static final int MAX_DEBUG_CHECKED_LENGTH = 4096;
   private ArrayList<TextPart> parts;
   // Of lines that collapsed quotes hide, their media loaded, so that they fade with their lines
   private @Nullable ArrayList<TextPart> hiddenParts;
@@ -870,6 +873,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
         quotes = new ArrayList<>();
       }
     }
+    previousQuoteIndex = 0;
     blocksWithoutTokens = null;
     hiddenParts = null;
     clearMedia();
@@ -924,15 +928,18 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     }
   }
 
-  private boolean isMediaOfHiddenPart (TextMedia media) {
-    if (hiddenParts != null) {
-      for (TextPart part : hiddenParts) {
-        if (part.getMedia() == media) {
-          return true;
-        }
+  private Set<TextMedia> findMediaOfHiddenParts () {
+    if (hiddenParts == null) {
+      return Collections.emptySet();
+    }
+    final Set<TextMedia> result = new HashSet<>();
+    for (TextPart part : hiddenParts) {
+      final TextMedia media = part.getMedia();
+      if (media != null) {
+        result.add(media);
       }
     }
-    return false;
+    return result;
   }
 
   @Nullable TextPart findHiddenPart (TextPart shownPart) {
@@ -1033,9 +1040,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
     reset();
     hasCodeBlocks = allowQuotes() && hasCodeBlockEntities();
+    codeBlockEnds = null;
     startMeasuredWords(in);
+    final int layoutLength = getLayoutLength(in);
 
-    if ((textFlags & FLAG_ALL_BOLD) != 0 && Text.needFakeBold(in, 0, in.length())) {
+    if ((textFlags & FLAG_ALL_BOLD) != 0 && Text.needFakeBold(in, 0, layoutLength)) {
       textFlags |= FLAG_FAKE_BOLD;
     } else {
       textFlags &= ~FLAG_FAKE_BOLD;
@@ -1065,17 +1074,17 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
     paragraphStart = 0;
     paragraphEnd = in.length();
-    bidiProcessTextStart(in);
+    bidiProcessTextStart(in, layoutLength);
 
     try {
       boolean prevIsNewLine = false;
-      final int totalLength = in.length();
+      final int totalLength = layoutLength;
       for (int index = 0; index < totalLength; ) {
         int indexOfNewLine;
         if (BitwiseUtils.hasFlag(textFlags, Text.FLAG_ALWAYS_BREAK)) {
-          indexOfNewLine = indexOfSpaceOrNewLine(in, index);
+          indexOfNewLine = indexOfSpaceOrNewLine(in, index, totalLength);
         } else {
-          indexOfNewLine = indexOfParagraphSeparator(in, index); //in.indexOf('\n', index);
+          indexOfNewLine = indexOfParagraphSeparator(in, index, totalLength);
         }
 
         int length = indexOfNewLine == -1 ? totalLength - index : indexOfNewLine - index;
@@ -1111,6 +1120,27 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
           prevIsNewLine = true;
           index++;
         }
+      }
+      if (totalLength < in.length()) {
+        // The rest isn't read: an ellipsis ends the text, or is all of it when nothing read shows
+        if (out.isEmpty()) {
+          final TextPart ellipsis = new TextPart(
+            this, Strings.ELLIPSIS, 0, Strings.ELLIPSIS.length(), getLineCount(), paragraphCount
+          );
+          ellipsis.setXY(currentX, currentY);
+          ellipsis.setWidth(U.measureText(Strings.ELLIPSIS, getTextPaint(null)));
+          ellipsis.setBidiEntity(getBidiEntity(totalLength - 1));
+          out.add(ellipsis);
+          currentX += (int) Math.ceil(ellipsis.getWidth());
+          currentWidth = Math.max(currentWidth, currentX);
+          addLine(currentX, getCurrentLineHeight());
+          currentY += getCurrentLineHeight();
+          textFlags |= FLAG_ELLIPSIZED;
+          throw new LimitReachedException();
+        }
+        do {
+          newLineOrEllipsis(out, in);
+        } while (true);
       }
       do {
         TextEntity entity = findEntity(totalLength, totalLength);
@@ -1154,7 +1184,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     // Backgrounds of entities follow the parts, e.g. after a switch of a code block
     this.backgrounds = null;
 
-    if (BuildConfig.DEBUG && maxLineCount == -1) {
+    // The diff costs the length times its differences, so only up to the length of messages
+    if (BuildConfig.DEBUG && maxLineCount == -1 && in.length() <= MAX_DEBUG_CHECKED_LENGTH) {
       StringBuilder debug = new StringBuilder();
       for (TextPart part : parts) {
         debug.append(part.getLine(), part.getStart(), part.getEnd());
@@ -1178,6 +1209,25 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       }
     }
   }
+
+  private int getLayoutLength (String in) {
+    // Lines show fewer than MAX_CHARS_PER_EM characters per em of their width, so a limited text
+    // reads no more, even of marks of direction without width
+    final int length = in.length();
+    final int textSize = textStyleProvider.getTextSizeInPixels();
+    if (maxLineCount < 1 || maxWidth <= 0 || textSize <= 0) {
+      return length;
+    }
+    final long maxLength = (long) maxLineCount * (maxWidth / textSize + 1) * MAX_CHARS_PER_EM;
+    if (maxLength >= length) {
+      return length;
+    }
+    final int end = (int) maxLength;
+    return Character.isHighSurrogate(in.charAt(end - 1)) ? end + 1 : end;
+  }
+
+  // Above the longest emoji, 15 characters in about 1.3 em
+  private static final int MAX_CHARS_PER_EM = 16;
 
   private static int findMoreSpaces (String in, int start) {
     final int length = in.length();
@@ -1212,7 +1262,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return BiDiUtils.measureTextRun(bidiEntity, in, start, end, contextStart, contextEnd, paint);
   }
 
-  private static final int MEASURE_CONTEXT_LENGTH = 32;
+  static final int MEASURE_CONTEXT_LENGTH = 32;
 
   // A layout of the same text, e.g. after a switch of a block, takes words measured by the last one
   private @Nullable MeasuredWords measuredWords, lastMeasuredWords;
@@ -1299,9 +1349,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return width;
   }
 
-  private static int indexOfParagraphSeparator (String in, int start) {
-    final int length = in.length();
-    for (int index = start; index < length; index++) {
+  private static int indexOfParagraphSeparator (String in, int start, int end) {
+    for (int index = start; index < end; index++) {
       // All characters of Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR
       final char c = in.charAt(index);
       if (c == '\n' || c == '\r' || (c >= 0x1C && c <= 0x1E) || c == 0x85 || c == 0x2029) {
@@ -1311,9 +1360,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return -1;
   }
 
-  private static int indexOfSpaceOrNewLine (String in, int start) {
-    final int length = in.length();
-    for (int index = start; index < length; ) {
+  private static int indexOfSpaceOrNewLine (String in, int start, int end) {
+    for (int index = start; index < end; ) {
       int codePoint = in.codePointAt(index);
       int size = Character.charCount(codePoint);
       if (codePoint == '\n' || codePoint == ' ') {
@@ -1342,7 +1390,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
   private void processLine (String in, int start, int end, ArrayList<TextPart> out, Emoji.Callback emojiCallback) {
     if (start == end) {
-      processEntities(in, start, end, out, emojiCallback, false);
+      processEntities(in, start, end, out, emojiCallback);
       return;
     }
 
@@ -1372,31 +1420,49 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       } else if (lastIsSpace == isSpace) {
         count += size;
       } else {
-        processEntities(in, start, start + count, out, emojiCallback, false);
+        processEntities(in, start, start + count, out, emojiCallback);
         start += count;
         count = size;
         lastIsSpace = isSpace;
       }
       i += size;
     }
-    processEntities(in, start, start + count, out, emojiCallback, false);
+    processEntities(in, start, start + count, out, emojiCallback);
     if (start + count < end) {
-      processEntities(in, start + count, end, out, emojiCallback, false);
+      processEntities(in, start + count, end, out, emojiCallback);
     }
 
     bidiProcessLineComplete();
   }
 
-  private int processEntities (String in, int start, int end, ArrayList<TextPart> out, Emoji.Callback emojiCallback, boolean isChild) {
+  private void processEntities (
+    String in,
+    int start,
+    int end,
+    ArrayList<TextPart> out,
+    Emoji.Callback emojiCallback
+  ) {
     if (start != end) {
-      final int bidiRunEnd = findBidiRunEnd(start);
+      int bidiRunEnd = findBidiRunEnd(start);
       if (bidiRunEnd != -1 && bidiRunEnd < end) {
-        processEntities(in, start, bidiRunEnd, out, emojiCallback, false);
-        processEntities(in, bidiRunEnd, end, out, emojiCallback, false);
-        return -1;
+        do {
+          processRunEntities(in, start, bidiRunEnd, out, emojiCallback, false);
+          start = bidiRunEnd;
+          bidiRunEnd = findBidiRunEnd(start);
+        } while (bidiRunEnd < end);
       }
     }
+    processRunEntities(in, start, end, out, emojiCallback, false);
+  }
 
+  private int processRunEntities (
+    String in,
+    int start,
+    int end,
+    ArrayList<TextPart> out,
+    Emoji.Callback emojiCallback,
+    boolean isChild
+  ) {
     TextEntity entity = findEntity(start, end);
     TextColorSet theme = pickTheme(null, entity);
 
@@ -1424,7 +1490,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       } else {
         int newStart = entityEnd;
         do {
-          newStart = processEntities(in, newStart, end, out, emojiCallback, true);
+          newStart = processRunEntities(in, newStart, end, out, emojiCallback, true);
         } while (newStart != -1 && newStart < end);
       }
     } else {
@@ -2087,6 +2153,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   // A layout of text without code blocks skips checks of entities for them
   private boolean hasCodeBlocks;
 
+  // Found at the first blank line, which most texts with code blocks don't have
+  private @Nullable int[] codeBlockEnds;
+
   private boolean hasCodeBlockEntities () {
     if (entities != null) {
       for (TextEntity entity : entities) {
@@ -2098,16 +2167,32 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return false;
   }
 
+  private int[] findCodeBlockEnds () {
+    int count = 0;
+    for (TextEntity entity : entities) {
+      if (entity.isCodeBlock()) {
+        count++;
+      }
+    }
+    final int[] ends = new int[count];
+    int index = 0;
+    for (TextEntity entity : entities) {
+      if (entity.isCodeBlock()) {
+        ends[index++] = entity.getEnd();
+      }
+    }
+    Arrays.sort(ends);
+    return ends;
+  }
+
   private boolean endsCodeBlockWithNewLine (String in, int index) {
     if (index == 0 || in.charAt(index - 1) != '\n' || entities == null) {
       return false;
     }
-    for (TextEntity entity : entities) {
-      if (entity.isCodeBlock() && entity.getEnd() == index) {
-        return true;
-      }
+    if (codeBlockEnds == null) {
+      codeBlockEnds = findCodeBlockEnds();
     }
-    return false;
+    return Arrays.binarySearch(codeBlockEnds, index) >= 0;
   }
 
   private int getBlockEnd (TextEntity entity) {
@@ -2115,7 +2200,18 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     int end = entity.getEnd();
     if (entities != null) {
       final int quoteId = entity.getQuoteId();
-      for (TextEntity next : entities) {
+      // Entities go by their starts
+      int low = 0, high = entities.length;
+      while (low < high) {
+        final int mid = (low + high) >>> 1;
+        if (entities[mid].getStart() < end) {
+          low = mid + 1;
+        } else {
+          high = mid;
+        }
+      }
+      for (int i = low; i < entities.length && entities[i].getStart() <= end; i++) {
+        final TextEntity next = entities[i];
         if (next.getStart() == end && next.getQuoteId() == quoteId) {
           end = next.getEnd();
         }
@@ -2835,14 +2931,26 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return null;
   }
 
-  @Nullable QuoteBackground findBlockOfPart (int partIndex) {
-    for (int i = 0; i < quotes.size(); i++) {
-      final QuoteBackground quote = quotes.get(i);
-      if (quote.clipsContent() && partIndex >= quote.partStart && partIndex < quote.partEnd) {
+  private @Nullable QuoteBackground findQuoteOfPart (int partIndex) {
+    // Blocks go in the order of their parts, and no part is in two of them
+    int low = 0, high = quotes.size() - 1;
+    while (low <= high) {
+      final int mid = (low + high) >>> 1;
+      final QuoteBackground quote = quotes.get(mid);
+      if (partIndex < quote.partStart) {
+        high = mid - 1;
+      } else if (partIndex >= quote.partEnd) {
+        low = mid + 1;
+      } else {
         return quote;
       }
     }
     return null;
+  }
+
+  @Nullable QuoteBackground findBlockOfPart (int partIndex) {
+    final QuoteBackground quote = findQuoteOfPart(partIndex);
+    return quote != null && quote.clipsContent() ? quote : null;
   }
 
   @Nullable QuoteBackground findBlockById (int quoteId) {
@@ -2997,12 +3105,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     }
     long maxMediaId = -1;
     int mediaCount = 0;
+    final Set<TextMedia> mediaOfHiddenParts = findMediaOfHiddenParts();
     for (Map.Entry<String, TextMedia> entry : media.entrySet()) {
       TextMedia media = entry.getValue();
       if (media.id >= maxKeyCount)
         throw new IllegalArgumentException();
       media.setDisplayMediaKeyOffset(keyOffset);
-      if (!media.attachedToParts.isEmpty() || isMediaOfHiddenPart(media)) {
+      if (!media.attachedToParts.isEmpty() || mediaOfHiddenParts.contains(media)) {
         media.requestFiles(textMediaReceiver);
       } else {
         textMediaReceiver.clearReceivers(media.getDisplayMediaKey());
@@ -3053,14 +3162,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   }
 
   private @Nullable QuoteBackground findBlockOfBackgrounds (int partIndex) {
-    for (int i = 0; i < quotes.size(); i++) {
-      final QuoteBackground block = quotes.get(i);
-      if ((block.isScrollable() || block.isCollapsed()) && partIndex >= block.partStart &&
-        partIndex < block.partEnd) {
-        return block;
-      }
-    }
-    return null;
+    final QuoteBackground block = findQuoteOfPart(partIndex);
+    return block != null && (block.isScrollable() || block.isCollapsed()) ? block : null;
   }
 
   private static void drawBackgrounds (
@@ -3495,8 +3598,24 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       return;
     }
     boolean saved = false;
-    for (int i = 0; i < spoilers.size(); i++) {
+    // Spoilers go in the order of their parts
+    int i = 0;
+    if (block != null) {
+      int high = spoilers.size();
+      while (i < high) {
+        final int mid = (i + high) >>> 1;
+        if (spoilers.valueAt(mid).startPartIndex < block.partStart) {
+          i = mid + 1;
+        } else {
+          high = mid;
+        }
+      }
+    }
+    for (; i < spoilers.size(); i++) {
       Spoiler spoiler = spoilers.valueAt(i);
+      if (block != null && spoiler.startPartIndex >= block.partEnd) {
+        break;
+      }
       if (spoiler.willDraw() && findCollapsedQuote(spoiler.startPartIndex) == block) {
         if (!saved) {
           saved = true;
@@ -3523,13 +3642,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   }
 
   private @Nullable QuoteBackground findCollapsedQuote (int partIndex) {
-    for (int i = 0; i < quotes.size(); i++) {
-      final QuoteBackground quote = quotes.get(i);
-      if (quote.isCollapsed() && partIndex >= quote.partStart && partIndex < quote.partEnd) {
-        return quote;
-      }
-    }
-    return null;
+    final QuoteBackground quote = findQuoteOfPart(partIndex);
+    return quote != null && quote.isCollapsed() ? quote : null;
   }
 
   public static final long CHANGE_DURATION = 220L;
@@ -4717,15 +4831,16 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   private int bidiStart;
   private int bidiLength;
   private int bidiIndex;
+  private int bidiRunIndex;
   private int bidiParagraphCount;
 
-  private void bidiProcessTextStart (String in) {
+  private void bidiProcessTextStart (String in, int length) {
     if (!useGlobalBidiObject()) {
       return;
     }
 
     bidiStart = 0;
-    bidiLength = in.length();
+    bidiLength = length;
     bidiRequired = BiDiUtils.requiresBidi(in, 0, bidiLength);
 
     if (bidiRequired) {
@@ -4820,6 +4935,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     bidiStart = 0;
     bidiLength = 0;
     bidiIndex = 0;
+    bidiRunIndex = 0;
     bidiParagraphCount = 0;
   }
 
@@ -4844,8 +4960,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
     final int runsCount = bidi.getRunCount();
     if (runsCount > 1) {
-      for (int a = 0; a < runsCount; a++) {
-        int runEnd = bidiStart + bidi.getRunLimit(a);
+      // Layout goes forward, so the search goes on from the last run found
+      if (bidiRunIndex >= runsCount || start < bidiStart + bidi.getRunStart(bidiRunIndex)) {
+        bidiRunIndex = 0;
+      }
+      for (; bidiRunIndex < runsCount; bidiRunIndex++) {
+        int runEnd = bidiStart + bidi.getRunLimit(bidiRunIndex);
         if (start < runEnd) {
           return runEnd;
         }
@@ -4938,6 +5058,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
   private ArrayList<QuoteBackground> quotes = new ArrayList<>();
   private @Nullable ArrayList<QuoteBackground> previousQuotes, blocksWithoutTokens;
+  private int previousQuoteIndex;
 
   private static String languageOf (TextEntity entity) {
     final String language = entity.getCodeLanguage();
@@ -5017,10 +5138,18 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     quoteBackground.calcHeightAddition();
     QuoteBackground previousBlock = null;
     if (previousQuotes != null && quoteBackground.clipsContent()) {
+      // Blocks of both layouts go in the order of the text
       final int start = quoteBackground.entity.getStart();
-      for (QuoteBackground previousQuote : previousQuotes) {
-        if (previousQuote.isCode == quoteBackground.isCode &&
-          previousQuote.entity.getStart() == start) {
+      while (previousQuoteIndex < previousQuotes.size() &&
+        previousQuotes.get(previousQuoteIndex).entity.getStart() < start) {
+        previousQuoteIndex++;
+      }
+      for (int i = previousQuoteIndex; i < previousQuotes.size(); i++) {
+        final QuoteBackground previousQuote = previousQuotes.get(i);
+        if (previousQuote.entity.getStart() != start) {
+          break;
+        }
+        if (previousQuote.isCode == quoteBackground.isCode) {
           previousBlock = previousQuote;
           break;
         }
