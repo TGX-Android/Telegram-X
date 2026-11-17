@@ -115,6 +115,13 @@ public class TGStickerSetInfo {
       }
       if (gifType != -1) {
         this.previewAnimation = new GifFile(tdlib, info.thumbnail.file, gifType);
+        if (info.thumbnail.format.getConstructor() == TdApi.ThumbnailFormatWebm.CONSTRUCTOR) {
+          this.previewAnimation.setMaxSourceSize(
+            info.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR ?
+              GifFile.MAX_VIDEO_EMOJI_SIZE :
+              GifFile.MAX_VIDEO_STICKER_SIZE
+          );
+        }
         this.previewImage = null;
       } else {
         this.previewImage = TD.toImageFile(tdlib, info.thumbnail);
@@ -127,7 +134,7 @@ public class TGStickerSetInfo {
       this.needThemedColorFilter = TD.needThemedColorFilter(info.covers[0]);
       if (Td.isAnimated(info.covers[0].format)) {
         this.previewImage = null;
-        this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, info.covers[0].format);
+        this.previewAnimation = new GifFile(tdlib, info.covers[0]);
         this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
       } else if (info.covers[0].thumbnail != null) {
         this.previewImage = TD.toImageFile(tdlib, info.covers[0].thumbnail);

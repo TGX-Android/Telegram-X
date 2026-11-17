@@ -300,6 +300,10 @@ target_link_libraries(${NATIVE_LIB}
   cpufeatures
 )
 
+# Limits of sizes of decoders of animations, see gif.cpp
+target_link_options(${NATIVE_LIB} PRIVATE "-Wl,--wrap=vp9_alloc_context_buffers"
+  "-Wl,--wrap=av_image_check_size" "-Wl,--wrap=av_image_check_size2")
+
 target_link_options(${NATIVE_LIB} PRIVATE
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-Wl,--gc-sections,--icf=safe>"
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-Wl,--exclude-libs,ALL>"

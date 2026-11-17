@@ -19,6 +19,7 @@
 #include <limits>
 #include <string>
 #include <utility>
+#include <vector>
 #include <tlottie.h>
 #include <algorithm>
 #include <cmath>
@@ -26,6 +27,7 @@
 #include <cstring>
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavutil/cpu.h>
 #include <libavutil/eval.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
@@ -40,11 +42,55 @@ extern "C" {
 #include "bridge.h"
 
 #define MAX_GIF_SIZE 920
+// The limit of Telegram for Android
+#define MAX_ANIMATION_SIDE 3840
+// So that differences of timestamps don't overflow
+#define MAX_TIMESTAMP_MS ((double) std::numeric_limits<int32_t>::max())
+#define MAX_FRAME_RATE 1000.0
+#define MAX_PROBED_PACKETS 64
+// Each thread keeps frames of its own
+#define MAX_DECODER_THREADS 4
+// Valid files give a frame within a few packets of video, packets that an edit list drops count
+// only in the second limit
+#define MAX_VIDEO_PACKETS_WITHOUT_FRAME 64
+#define MAX_PACKETS_WITHOUT_FRAME 1024
+#define ANIMATION_CODECS "h264,mpeg4,gif,libvpx-vp9"
+// Telegram makes them only as WebM of VP9
+#define VIDEO_STICKER_CODECS "libvpx-vp9"
+#define VIDEO_STICKER_FORMATS "matroska"
+// As many as files of cameras and editors have
+#define MAX_ANIMATION_STREAMS 16
 #define BITMAP_TARGET_FORMAT AV_PIX_FMT_RGBA
 // Changed with each update that affects cache contents
 // Updates: tlottie, frame-0-fix
 #define LOTTIE_CACHE_MAGIC 0xf0ebaef5
 #define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef6
+
+static thread_local int decodedMaxSide = 0;
+
+class DecodedBy {
+ public:
+  explicit DecodedBy (int maxSide) : previous(decodedMaxSide) {
+    decodedMaxSide = maxSide;
+  }
+  ~DecodedBy () {
+    decodedMaxSide = previous;
+  }
+  DecodedBy (const DecodedBy &) = delete;
+  DecodedBy &operator= (const DecodedBy &) = delete;
+ private:
+  const int previous;
+};
+
+extern "C" int __real_vp9_alloc_context_buffers (void *common, int width, int height);
+
+extern "C" int __wrap_vp9_alloc_context_buffers (void *common, int width, int height) {
+  // libvpx allocates for each frame, hidden ones too, before FFmpeg checks max_pixels
+  if (decodedMaxSide > 0 && std::max(width, height) > decodedMaxSide) {
+    return 1;
+  }
+  return __real_vp9_alloc_context_buffers(common, width, height);
+}
 
 static const std::string av_make_error_str (int errnum) {
   char errbuf[AV_ERROR_MAX_STRING_SIZE];
@@ -190,6 +236,7 @@ struct VideoInfo {
   AVPixelFormat frameScaleFormat = AV_PIX_FMT_NONE;
   AVFrame *frame = nullptr;
   int srcWidth = -1, srcHeight = -1;
+  int maxSide = MAX_ANIMATION_SIDE;
   AVPixelFormat srcFormat = AV_PIX_FMT_NONE;
   int dstWidth = -1, dstHeight = -1;
   int frameRate = -1;
@@ -204,7 +251,46 @@ struct VideoInfo {
   AVPacket *packet = nullptr;
 };
 
-int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx, enum AVMediaType type) {
+extern "C" int __real_av_image_check_size (unsigned int width, unsigned int height,
+                                           int logOffset, void *logContext);
+
+extern "C" int __wrap_av_image_check_size (unsigned int width, unsigned int height,
+                                           int logOffset, void *logContext) {
+  // Decoders check headers by it before they allocate, but it takes no max_pixels
+  if (logContext != nullptr &&
+      *static_cast<const AVClass *const *>(logContext) == avcodec_get_class()) {
+    return av_image_check_size2(width, height,
+                                static_cast<const AVCodecContext *>(logContext)->max_pixels,
+                                AV_PIX_FMT_NONE, logOffset, logContext);
+  }
+  return __real_av_image_check_size(width, height, logOffset, logContext);
+}
+
+extern "C" int __real_av_image_check_size2 (unsigned int width, unsigned int height,
+                                            int64_t maxPixels, AVPixelFormat format,
+                                            int logOffset, void *logContext);
+
+extern "C" int __wrap_av_image_check_size2 (unsigned int width, unsigned int height,
+                                            int64_t maxPixels, AVPixelFormat format,
+                                            int logOffset, void *logContext) {
+  // Frames are allocated at the coded size, also in probing, and a pixel of H.264 takes up to 6
+  // bytes, so bytes are bounded, at 2 a pixel as of 4:2:2 of 8 bits
+  if (logContext != nullptr &&
+      *static_cast<const AVClass *const *>(logContext) == avcodec_get_class()) {
+    const auto *context = static_cast<const AVCodecContext *>(logContext);
+    if ((context->codec_id == AV_CODEC_ID_H264 || context->codec_id == AV_CODEC_ID_MPEG4) &&
+        av_image_get_buffer_size(context->pix_fmt, std::max((int) width, context->coded_width),
+                                 std::max((int) height, context->coded_height), 1) >
+        maxPixels * 2) {
+      return AVERROR(EINVAL);
+    }
+  }
+  return __real_av_image_check_size2(width, height, maxPixels, format, logOffset, logContext);
+}
+
+int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx,
+                        enum AVMediaType type, int maxSide, int64_t maxPixels,
+                        const char *codecs) {
   int ret;
   AVStream *st;
   AVDictionary *opts = nullptr;
@@ -216,6 +302,13 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
   } else {
     *stream_idx = ret;
     st = fmt_ctx->streams[*stream_idx];
+
+    const int width = st->codecpar->width;
+    const int height = st->codecpar->height;
+    if (width <= 0 || height <= 0 || std::max(width, height) > maxSide) {
+      loge(TAG_GIF_LOADER, "can't play %dx%d", width, height);
+      return -1;
+    }
 
     const AVCodec *dec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!dec) {
@@ -235,7 +328,8 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
     }
 
     auto context = *dec_ctx;
-    context->thread_count = 0;
+    context->max_pixels = maxPixels;
+    context->thread_count = std::max(1, std::min(av_cpu_count(), MAX_DECODER_THREADS));
     if (dec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
       context->thread_type = FF_THREAD_FRAME;
     } else if (dec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
@@ -245,7 +339,11 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
     }
 
     av_dict_set(&opts, "refcounted_frames", "1", 0);
-    if ((ret = avcodec_open2(*dec_ctx, dec, &opts)) < 0) {
+    av_dict_set(&opts, "codec_whitelist", codecs, 0);
+    av_dict_set(&opts, "export_side_data", "film_grain", 0);
+    ret = avcodec_open2(*dec_ctx, dec, &opts);
+    av_dict_free(&opts);
+    if (ret < 0) {
       loge(TAG_GIF_LOADER, "failed to open %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
       return -1;
     }
@@ -262,25 +360,56 @@ static SwsContext *getScaleContext (int srcWidth, int srcHeight, AVPixelFormat s
                         BITMAP_TARGET_FORMAT, flags, nullptr, nullptr, nullptr);
 }
 
-JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaTimestamp) {
+JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaTimestamp,
+         jint maxSourceSize) {
+  const int maxSide = maxSourceSize > 0 ? std::min((int) maxSourceSize, MAX_ANIMATION_SIDE) :
+    MAX_ANIMATION_SIDE;
+  // Decoders align frames to blocks of up to 64 pixels
+  const int64_t maxPixels = (int64_t) FFALIGN(maxSide, 64) * FFALIGN(maxSide, 64);
+  const char *codecs = maxSourceSize > 0 ? VIDEO_STICKER_CODECS : ANIMATION_CODECS;
+  DecodedBy decoded(maxSide);
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
+  info->maxSide = maxSide;
 
   int ret;
-  if ((ret = avformat_open_input(&info->fmt_ctx, info->path.c_str(), nullptr, nullptr)) < 0) {
+  AVDictionary *options = nullptr;
+  av_dict_set(&options, "codec_whitelist", codecs, 0);
+  av_dict_set_int(&options, "max_streams", MAX_ANIMATION_STREAMS, 0);
+  av_dict_set_int(&options, "max_probe_packets", MAX_PROBED_PACKETS, 0);
+  // A few bytes of an index give millions of packets
+  av_dict_set(&options, "fflags", "+nobuffer", 0);
+  if (maxSourceSize > 0) {
+    av_dict_set(&options, "format_whitelist", VIDEO_STICKER_FORMATS, 0);
+  }
+  ret = avformat_open_input(&info->fmt_ctx, info->path.c_str(), nullptr, &options);
+  av_dict_free(&options);
+  if (ret < 0) {
     loge(TAG_GIF_LOADER, "can't open source file %s, %s", info->path.c_str(), av_err2str(ret));
     delete info;
     return 0;
   }
 
-  if ((ret = avformat_find_stream_info(info->fmt_ctx, nullptr)) < 0) {
+  // Probing decodes first frames
+  std::vector<AVDictionary *> streamOptions(info->fmt_ctx->nb_streams, nullptr);
+  for (AVDictionary *&streamOption : streamOptions) {
+    av_dict_set_int(&streamOption, "max_pixels", maxPixels, 0);
+    // Otherwise H.264 makes a second frame of each picture with the grain
+    av_dict_set(&streamOption, "export_side_data", "film_grain", 0);
+  }
+  ret = avformat_find_stream_info(info->fmt_ctx, streamOptions.data());
+  for (AVDictionary *&streamOption : streamOptions) {
+    av_dict_free(&streamOption);
+  }
+  if (ret < 0) {
     loge(TAG_GIF_LOADER, "can't find stream information %s, %s", info->path.c_str(),
          av_err2str(ret));
     delete info;
     return 0;
   }
 
-  if (open_codec_context(&info->video_stream_idx, &info->video_dec_ctx, info->fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
+  if (open_codec_context(&info->video_stream_idx, &info->video_dec_ctx, info->fmt_ctx,
+                         AVMEDIA_TYPE_VIDEO, maxSide, maxPixels, codecs) >= 0) {
     info->video_stream = info->fmt_ctx->streams[info->video_stream_idx];
   }
 
@@ -300,62 +429,60 @@ JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaT
   info->packet = av_packet_alloc();
   if (info->packet == nullptr) {
     loge(TAG_GIF_LOADER, "can't allocate packet %s", info->path.c_str());
+    delete info;
     return 0;
   }
 
   const int srcWidth = info->srcWidth = info->video_dec_ctx->width;
   const int srcHeight = info->srcHeight = info->video_dec_ctx->height;
-  info->srcFormat = info->video_dec_ctx->pix_fmt;
+  const AVPixelFormat srcFormat = info->srcFormat = info->video_dec_ctx->pix_fmt;
+  if (srcWidth <= 0 || srcHeight <= 0 || std::max(srcWidth, srcHeight) > maxSide ||
+      srcFormat == AV_PIX_FMT_NONE) {
+    loge(TAG_GIF_LOADER, "can't play %dx%d, format: %d, %s", srcWidth, srcHeight, srcFormat,
+         info->path.c_str());
+    delete info;
+    return 0;
+  }
 
   int dstWidth = srcWidth;
   int dstHeight = srcHeight;
+  if (std::max(srcWidth, srcHeight) > MAX_GIF_SIZE) {
+    const float scale = std::min((float) MAX_GIF_SIZE / (float) srcWidth,
+                                 (float) MAX_GIF_SIZE / (float) srcHeight);
+    dstWidth = (int) ((float) srcWidth * scale);
+    dstHeight = (int) ((float) srcHeight * scale);
+    dstWidth = std::max(1, dstWidth - dstWidth % 2);
+    dstHeight = std::max(1, dstHeight - dstHeight % 2);
+  }
 
-  if (dstWidth > 0 && dstHeight > 0) {
-    int newWidth, newHeight;
-    if (std::max(dstWidth, dstHeight) > MAX_GIF_SIZE) {
-      float scaleW = (float) MAX_GIF_SIZE / (float) dstWidth;
-      float scaleH = (float) MAX_GIF_SIZE / (float) dstHeight;
-      float scale = scaleW < scaleH ? scaleW : scaleH;
-      newWidth = (int) ((float) dstWidth * scale);
-      newHeight = (int) ((float) dstHeight * scale);
-
-      newWidth -= newWidth % 2;
-      newHeight -= newHeight % 2;
-    } else {
-      newWidth = dstWidth;
-      newHeight = dstHeight;
-    }
-
-    if (newWidth > 0 && newHeight > 0) {
-      AVPixelFormat fmt = info->video_dec_ctx->pix_fmt;
-      if (fmt != AV_PIX_FMT_NONE && fmt != AV_PIX_FMT_YUVA420P && (fmt != BITMAP_TARGET_FORMAT || newWidth != srcWidth || newHeight != srcHeight)) {
-        info->scale_ctx = getScaleContext(srcWidth, srcHeight, fmt, newWidth, newHeight);
-        if (info->scale_ctx != nullptr) {
-          dstWidth = newWidth;
-          dstHeight = newHeight;
-          logi(TAG_GIF_LOADER, "Created scale context %dx%d -> %dx%d, format: %d -> %d", srcWidth, srcHeight, dstWidth, dstHeight, fmt, BITMAP_TARGET_FORMAT);
-        }
-      }
+  // Frames with alpha are scaled by scaleChangedFrame
+  if (srcFormat != AV_PIX_FMT_YUVA420P &&
+      (srcFormat != BITMAP_TARGET_FORMAT || dstWidth != srcWidth || dstHeight != srcHeight)) {
+    info->scale_ctx = getScaleContext(srcWidth, srcHeight, srcFormat, dstWidth, dstHeight);
+    if (info->scale_ctx == nullptr) {
+      loge(TAG_GIF_LOADER, "can't scale %dx%d to %dx%d, format: %d, %s", srcWidth, srcHeight,
+           dstWidth, dstHeight, srcFormat, info->path.c_str());
+      delete info;
+      return 0;
     }
   }
 
-  long frameRate = (long) (1000.0 * av_q2d(info->video_stream->avg_frame_rate));
-  long duration = (long) (1000.0 * av_q2d(info->video_stream->time_base) * (double) info->video_stream->duration);
+  const double framesPerSecond = av_q2d(info->video_stream->avg_frame_rate);
+  const long frameRate = std::isfinite(framesPerSecond) && framesPerSecond > 0 ?
+    (long) (1000.0 * std::min(framesPerSecond, MAX_FRAME_RATE)) : 0;
 
   info->dstWidth = dstWidth;
   info->dstHeight = dstHeight;
   info->frameRate = frameRate;
 
-  if (startMediaTimestamp != 0) {
-    int ret = 0;
-    int64_t ts = (int64_t) (startMediaTimestamp * (double) AV_TIME_BASE);
-    ret = avformat_seek_file(
-      info->fmt_ctx, -1,
-      std::numeric_limits<int64_t>::min(), ts,
-      std::numeric_limits<int64_t>::max(), 0);
-    if (ret < 0) {
-      loge(TAG_GIF_LOADER, "can't seek to startMediaTimestamp %s, %s", info->path.c_str(), av_err2str(ret));
-    }
+  const int64_t ts = (int64_t) (startMediaTimestamp * (double) AV_TIME_BASE);
+  ret = avformat_seek_file(
+    info->fmt_ctx, -1,
+    std::numeric_limits<int64_t>::min(), ts,
+    std::numeric_limits<int64_t>::max(), 0);
+  if (ret < 0) {
+    loge(TAG_GIF_LOADER, "can't seek to startMediaTimestamp %s, %s", info->path.c_str(),
+         av_err2str(ret));
   }
 
   jlong *dataArr = env->GetLongArrayElements(data, 0);
@@ -510,7 +637,10 @@ static bool to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jlo
       bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
     jlong *dataArr = env->GetLongArrayElements(data, 0);
     if (dataArr != nullptr) {
-      jlong timestamp = (jlong) (1000.0 * ((double) info->frame->pts * av_q2d(info->video_stream->time_base)));
+      const double ms =
+        1000.0 * (double) info->frame->pts * av_q2d(info->video_stream->time_base);
+      const jlong timestamp = std::isfinite(ms) ?
+        (jlong) std::clamp(ms, -MAX_TIMESTAMP_MS, MAX_TIMESTAMP_MS) : dataArr[3];
       if (timestamp > dataArr[3]) {
           dataArr[4] = timestamp - dataArr[3];
       }
@@ -546,12 +676,14 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
   if (info->is_broken) {
     return 0;
   }
+  DecodedBy decoded(info->maxSide);
 
   bool gotFrame = false;
   bool hasLooped = false;
   bool fatalError = false;
   size_t errorCount = 0;
   size_t maxErrorCount = round(std::min(120.0, (double) info->frameRate / 1000.0) * 2.5);
+  size_t packetCount = 0, videoPacketCount = 0;
 
   do {
     int ret;
@@ -574,6 +706,11 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
     }
 
     if (info->eof_reached) {
+      if (hasLooped) {
+        loge(TAG_GIF_LOADER, "no frames in a whole loop of %s", info->path.c_str());
+        fatalError = true;
+        break;
+      }
       ret = avformat_seek_file(
         info->fmt_ctx, -1,
         std::numeric_limits<int64_t>::min(), 0,
@@ -611,6 +748,19 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
       loge(TAG_GIF_LOADER, "av_read_frame fatal error for %s: %s", info->path.c_str(), av_err2str(ret));
       fatalError = true;
       break;
+    }
+    const bool isVideo = info->packet->stream_index == info->video_stream_idx;
+    const bool isDropped = (info->packet->flags & AV_PKT_FLAG_DISCARD) != 0;
+    if (++packetCount > MAX_PACKETS_WITHOUT_FRAME ||
+        (isVideo && !isDropped && ++videoPacketCount > MAX_VIDEO_PACKETS_WITHOUT_FRAME)) {
+      loge(TAG_GIF_LOADER, "no frame in %zu packets of %s", packetCount, info->path.c_str());
+      av_packet_unref(info->packet);
+      fatalError = true;
+      break;
+    }
+    if (!isVideo) {
+      av_packet_unref(info->packet);
+      continue;
     }
     ret = avcodec_send_packet(info->video_dec_ctx, info->packet);
     if (ret != 0) {
@@ -659,6 +809,14 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
   } while (!info->is_broken && !fatalError && !gotFrame);
 
   if (fatalError) {
+    info->is_broken = true;
+  }
+
+  if (gotFrame && std::max(info->frame->width, info->frame->height) > info->maxSide) {
+    loge(TAG_GIF_LOADER, "frame of %dx%d above %d, %s", info->frame->width, info->frame->height,
+         info->maxSide, info->path.c_str());
+    av_frame_unref(info->frame);
+    gotFrame = false;
     info->is_broken = true;
   }
 

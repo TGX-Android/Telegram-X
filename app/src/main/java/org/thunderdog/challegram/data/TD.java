@@ -713,6 +713,9 @@ public class TD {
             GifFile.TYPE_WEBM :
             GifFile.TYPE_MPEG4
         );
+        if (thumbnail.format.getConstructor() == TdApi.ThumbnailFormatWebm.CONSTRUCTOR) {
+          gifFile.setMaxSourceSize(GifFile.MAX_VIDEO_STICKER_SIZE);
+        }
         gifFile.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
         return gifFile;
       }

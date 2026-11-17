@@ -34,6 +34,7 @@ import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.filegen.TdlibFileGenerationManager;
+import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.svg.SvgRender;
 import org.thunderdog.challegram.support.Mp3Support;
 import org.thunderdog.challegram.tool.UI;
@@ -664,7 +665,8 @@ public class ImageReader {
 
   public static Bitmap decodeVideoFrame (String path, int maxSize) {
     long[] metadata = new long[N.DECODER_METADATA_ARRAY_SIZE];
-    long ptr = N.createDecoder(path, metadata, 0);
+    // Called only for video stickers
+    long ptr = N.createDecoder(path, metadata, 0, GifFile.MAX_VIDEO_STICKER_SIZE);
     if (ptr == 0)
       return null;
     int rotation = U.getVideoRotation(path);
