@@ -18,6 +18,7 @@ import androidx.annotation.Nullable;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * A wrong language is worse than none, so text that isn't clearly code of one language gets none
@@ -34,10 +35,21 @@ public final class CodeLanguageDetector {
   // So that one repeated construction doesn't decide
   private static final int MAX_MATCHES = 3;
 
+  private static final String INDENT = findIndent();
+
+  private static String findIndent () {
+    // ^\s* would run through blank lines: whitespace of the line, without the line breaks of ICU,
+    // which \h matches as fast as \s, where ICU has it
+    try {
+      Pattern.compile("\\h");
+      return "^\\h*";
+    } catch (PatternSyntaxException e) {
+      return "^[^\\S\\n\\u000B\\u000C\\r\\u0085\\u2028\\u2029]*";
+    }
+  }
+
   private static Pattern compileLines (String regex) {
-    // ^\s* would run through blank lines: whitespace of the line, without the line breaks of ICU
-    String indent = "^[^\\S\\n\\u000B\\u000C\\r\\u0085\\u2028\\u2029]*";
-    return Pattern.compile(regex.replace("^\\s*", indent), Pattern.MULTILINE);
+    return Pattern.compile(regex.replace("^\\s*", INDENT), Pattern.MULTILINE);
   }
 
   private static final class Feature {
