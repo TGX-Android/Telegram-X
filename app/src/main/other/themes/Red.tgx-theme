@@ -26,11 +26,11 @@ unread: #FFEBEE
 waveformInactive: #FFCDD2
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #E5393533
 bubbleOut_fillingActive: #D340401A
-codeBlockBackground, bubbleIn_codeBlockBackground: #881A0B13
+codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
 bubbleOut_codeBlockBackground: #8F090B12
 bubbleOut_codeBlockLine: #AB2825
 // TODO: review the colors of code blocks and syntax
-codeBlockRipple, bubbleIn_codeBlockRipple: #881A0B26
+codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
 bubbleOut_codeBlockRipple: #8F090B24
 syntaxComment, syntaxBlockComment, syntaxProlog, syntaxDoctype, syntaxCdata: #67707A
 syntaxPunctuation: #7A8189

@@ -20,9 +20,9 @@ messageSelection: #4DD0E110
 seekReady: #C9F0F5
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #00BCD433
 bubbleOut_fillingActive: #6FC8C226
-codeBlockBackground, bubbleIn_codeBlockBackground: #07677616
+codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
 bubbleOut_codeBlockBackground: #086E7C16
 bubbleOut_codeBlockLine: #006B79
 // TODO: review the colors of code blocks and syntax
-codeBlockRipple, bubbleIn_codeBlockRipple: #0767762C
+codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
 bubbleOut_codeBlockRipple: #086E7C2C

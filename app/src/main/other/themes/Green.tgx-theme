@@ -22,9 +22,9 @@ togglerActiveBackground: #A5D6A7
 unread: #E8F5E9
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #4CAF5033
 bubbleOut_fillingActive: #97CB422C
-codeBlockBackground, bubbleIn_codeBlockBackground: #084D0413
+codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
 bubbleOut_codeBlockBackground: #4A810218
 bubbleOut_codeBlockLine: #2D7130
 // TODO: review the colors of code blocks and syntax
-codeBlockRipple, bubbleIn_codeBlockRipple: #084D0426
+codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
 bubbleOut_codeBlockRipple: #4A810230

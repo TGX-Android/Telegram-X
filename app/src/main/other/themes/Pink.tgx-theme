@@ -18,11 +18,11 @@ headerBadgeFailed: #ffd307
 seekReady: #FBD8E4
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #E91E6333
 bubbleOut_fillingActive: #D954801A
-codeBlockBackground, bubbleIn_codeBlockBackground: #800A1712
+codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
 bubbleOut_codeBlockBackground: #820B3512
 bubbleOut_codeBlockLine: #B3144E
 // TODO: review the colors of code blocks and syntax
-codeBlockRipple, bubbleIn_codeBlockRipple: #800A1724
+codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
 bubbleOut_codeBlockRipple: #820B3524
 syntaxComment, syntaxBlockComment, syntaxProlog, syntaxDoctype, syntaxCdata: #67717A
 syntaxPunctuation: #7A8189
