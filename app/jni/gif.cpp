@@ -49,7 +49,7 @@ extern "C" {
 #define MAX_FRAME_RATE 1000.0
 #define MAX_PROBED_PACKETS 64
 // Each thread keeps frames of its own
-#define MAX_DECODER_THREADS 4
+#define MAX_DECODER_THREADS 6
 // Valid files give a frame within a few packets of video, packets that an edit list drops count
 // only in the second limit
 #define MAX_VIDEO_PACKETS_WITHOUT_FRAME 64
