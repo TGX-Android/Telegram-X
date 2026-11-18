@@ -245,6 +245,8 @@ struct VideoInfo {
   bool had_invalid_frames = false;
   bool eof_reached = false;
   bool draining = false;
+  bool has_pending_frame = false;
+  bool pending_frame_looped = false;
   size_t loop_count = 0;
   size_t drained_count = 0;
 
@@ -525,12 +527,20 @@ JNI_FUNC(jboolean, destroyLottieDecoder, jlong ptr) {
   return JNI_FALSE;
 }
 
+static void drop_pending_frame (VideoInfo *info) {
+  if (info->has_pending_frame) {
+    info->has_pending_frame = false;
+    av_frame_unref(info->frame);
+  }
+}
+
 JNI_FUNC(jboolean, seekVideoToStart, jlong ptr) {
   if (ptr == 0) {
     return JNI_FALSE;
   }
 
   VideoInfo *info = jni::jlong_to_ptr<VideoInfo *>(ptr);
+  drop_pending_frame(info);
 
   int ret = 0;
   ret = avformat_seek_file(
@@ -628,26 +638,28 @@ static bool copyFrame (const AVFrame *frame, void *pixels, const AndroidBitmapIn
   }
 }
 
-static bool to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jlongArray data) {
+static void update_timestamps (JNIEnv *env, VideoInfo *info, jlongArray data) {
+  jlong *dataArr = env->GetLongArrayElements(data, 0);
+  if (dataArr != nullptr) {
+    const double ms =
+      1000.0 * (double) info->frame->pts * av_q2d(info->video_stream->time_base);
+    const jlong timestamp = std::isfinite(ms) ?
+      (jlong) std::clamp(ms, -MAX_TIMESTAMP_MS, MAX_TIMESTAMP_MS) : dataArr[3];
+    if (timestamp > dataArr[3]) {
+        dataArr[4] = timestamp - dataArr[3];
+    }
+    dataArr[3] = timestamp;
+    env->ReleaseLongArrayElements(data, dataArr, 0);
+  }
+}
+
+static bool to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap) {
   AndroidBitmapInfo bitmapInfo;
   bool drawn = false;
 
   if (AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) == ANDROID_BITMAP_RESULT_SUCCESS &&
       bitmapInfo.format == ANDROID_BITMAP_FORMAT_RGBA_8888 &&
       bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
-    jlong *dataArr = env->GetLongArrayElements(data, 0);
-    if (dataArr != nullptr) {
-      const double ms =
-        1000.0 * (double) info->frame->pts * av_q2d(info->video_stream->time_base);
-      const jlong timestamp = std::isfinite(ms) ?
-        (jlong) std::clamp(ms, -MAX_TIMESTAMP_MS, MAX_TIMESTAMP_MS) : dataArr[3];
-      if (timestamp > dataArr[3]) {
-          dataArr[4] = timestamp - dataArr[3];
-      }
-      dataArr[3] = timestamp;
-      env->ReleaseLongArrayElements(data, dataArr, 0);
-    }
-
     AVFrame *frame = info->frame;
 
     void *pixels;
@@ -668,14 +680,31 @@ static bool to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jlo
   return drawn;
 }
 
+static jint draw_frame (JNIEnv *env, VideoInfo *info, jobject bitmap, bool hasLooped) {
+  const bool drawn = to_android_bitmap(env, info, bitmap);
+  if (!drawn) {
+    loge(TAG_GIF_LOADER, "can't draw frame %dx%d, format: %d, %s", info->frame->width,
+         info->frame->height, info->frame->format, info->path.c_str());
+    info->is_broken = true;
+  }
+  av_frame_unref(info->frame);
+  return drawn ? (hasLooped ? 2 : 1) : 0;
+}
+
+// Without a bitmap, the frame is only decoded, and the next call draws it or skips it
 JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
-  if (ptr == 0 || bitmap == nullptr) {
+  if (ptr == 0) {
     return 0;
   }
   VideoInfo *info = jni::jlong_to_ptr<VideoInfo *>(ptr);
   if (info->is_broken) {
     return 0;
   }
+  if (info->has_pending_frame && bitmap != nullptr) {
+    info->has_pending_frame = false;
+    return draw_frame(env, info, bitmap, info->pending_frame_looped);
+  }
+  drop_pending_frame(info);
   DecodedBy decoded(info->maxSide);
 
   bool gotFrame = false;
@@ -821,17 +850,14 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
   }
 
   if (gotFrame) {
-    const bool drawn = to_android_bitmap(env, info, bitmap, data);
-    if (!drawn) {
-      loge(TAG_GIF_LOADER, "can't draw frame %dx%d, format: %d, %s", info->frame->width,
-           info->frame->height, info->frame->format, info->path.c_str());
-      info->is_broken = true;
-    }
+    update_timestamps(env, info, data);
     info->has_decoded_frames = true;
-    av_frame_unref(info->frame);
-    if (drawn) {
+    if (bitmap == nullptr) {
+      info->has_pending_frame = true;
+      info->pending_frame_looped = hasLooped;
       return hasLooped ? 2 : 1;
     }
+    return draw_frame(env, info, bitmap, hasLooped);
   }
 
   return 0;

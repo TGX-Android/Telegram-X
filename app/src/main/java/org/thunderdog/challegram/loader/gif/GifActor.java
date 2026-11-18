@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.loader.gif;
 
 import android.graphics.Bitmap;
+import android.os.SystemClock;
 import android.view.View;
 
 import androidx.annotation.IntDef;
@@ -413,14 +414,22 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   private long totalFrameCount;
   private double frameRate;
 
+  // A clock of frames further from now restarts from it, e.g. after a pause
+  private static final long MAX_FRAME_CLOCK_DRIFT_MS = 100;
+  // Lower rates, 0 too, would skip frames that are shown
+  private static final double MIN_SCREEN_FRAME_RATE = 30.0;
+  private volatile double nextFrameTime;
+  private volatile long nextFrameRequestTime;
+  private long videoDrawTime;
+
   // GifStage thread
   public void onGifLoaded (GifState gif) {
     synchronized (gifLock) {
       this.gif = gif;
     }
     if (!isPlaybackFrozen) {
-      thread.prepareNextFrame(this);
       scheduleNext(false);
+      requestNextFrame();
     } else {
       GifBridge.instance().dispatchGifFrameChanged(file, gif, false);
     }
@@ -495,16 +504,24 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       double desiredNextFrameNo;
       if (isLottie) {
         double frameDelta = frameDelta();
-        desiredNextFrameNo = lastFrameNo + frameDelta;
+        double lateDelta = frameDelta * countLateLottieFrames();
+        if (isPlayOnce) {
+          double framesLeft = totalFrameCount - 1 - lastFrameNo - frameDelta;
+          lateDelta = Math.max(0,
+            Math.min(lateDelta, frameDelta * Math.floor(framesLeft / frameDelta)));
+        }
+        desiredNextFrameNo = lastFrameNo + frameDelta + lateDelta;
         if ((long) desiredNextFrameNo >= totalFrameCount) {
           file.onLoop();
-          desiredNextFrameNo = 0;
+          // On the steps of frameDelta, e.g. a cache without odd frames
+          desiredNextFrameNo = lateDelta > 0 ?
+            frameDelta * Math.floor(desiredNextFrameNo % totalFrameCount / frameDelta) : 0;
           file.onFrameChange(0, 0);
         } else {
           if ((long) (desiredNextFrameNo + frameDelta) >= totalFrameCount && isPlayOnce) {
             file.setLooped(true);
           }
-          file.onFrameChange(desiredNextFrameNo, frameDelta);
+          file.onFrameChange(desiredNextFrameNo - lateDelta, frameDelta + lateDelta);
         }
       } else {
         desiredNextFrameNo = 0;
@@ -605,7 +622,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
           }
         }
       } else {
-        int ret = N.getVideoFrame(nativePtr, free.bitmap, metadata);
+        int ret = decodeVideoFrame(free.bitmap, !gifRestarted && !isPlayingRoundVideo);
         if (ret != 0) {
           free.no = metadata[3];
           success = true;
@@ -650,8 +667,77 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     return Math.max(1.0, frameRate / maxFrameRate());
   }
 
+  private void requestNextFrame () {
+    nextFrameRequestTime = SystemClock.uptimeMillis();
+    thread.prepareNextFrame(this);
+  }
+
+  private int decodeVideoFrame (Bitmap bitmap, boolean skipLateFrames) {
+    final double startFrameTime = nextFrameTime;
+    double frameTime = startFrameTime;
+    if (!skipLateFrames || frameTime == 0) {
+      return N.getVideoFrame(nativePtr, bitmap, metadata);
+    }
+    long startTime = SystemClock.uptimeMillis();
+    final long requestDelay = startTime - nextFrameRequestTime;
+    // Decoded first and drawn only if not skipped. Skipped when even the next frame is due before
+    // it can be drawn and shown, while the decoder keeps up, for one frame of time at most
+    int ret = N.getVideoFrame(nativePtr, null, metadata);
+    final double showDelay = videoDrawTime + 1000.0 / screenFrameRate();
+    final long skipStartTime = SystemClock.uptimeMillis();
+    long now = skipStartTime;
+    while (ret == 1 && frameTime + 2 * metadata[4] <= now + showDelay &&
+      requestDelay < metadata[4] && now - startTime < metadata[4] &&
+      now - skipStartTime < metadata[4]) {
+      startTime = now;
+      ret = N.getVideoFrame(nativePtr, null, metadata);
+      frameTime += metadata[4];
+      now = SystemClock.uptimeMillis();
+    }
+    advanceFrameTime(startFrameTime, frameTime);
+    if (ret == 0) {
+      return 0;
+    }
+    ret = N.getVideoFrame(nativePtr, bitmap, metadata);
+    videoDrawTime = SystemClock.uptimeMillis() - now;
+    return ret;
+  }
+
+  private static double screenFrameRate () {
+    final double rate = Screen.refreshRate();
+    return rate > MIN_SCREEN_FRAME_RATE ? rate : MIN_SCREEN_FRAME_RATE;
+  }
+
+  private int countLateLottieFrames () {
+    final double screenFrameRateDelay = 1000.0 / screenFrameRate();
+    final double frameDelay = Math.max(screenFrameRateDelay,
+      1000.0 / Math.min(maxFrameRate(), frameRate));
+    final double startFrameTime = nextFrameTime;
+    double frameTime = startFrameTime;
+    int count = 0;
+    if (frameTime != 0) {
+      // As for videos, a lag of one frame is kept
+      final long now = SystemClock.uptimeMillis();
+      while (frameTime + 2 * frameDelay <= now + screenFrameRateDelay) {
+        frameTime += frameDelay;
+        count++;
+      }
+      advanceFrameTime(startFrameTime, frameTime);
+    }
+    return count;
+  }
+
+  private void advanceFrameTime (double from, double to) {
+    synchronized (this) {
+      // Unless scheduleNext moved it meanwhile
+      if (to != from && nextFrameTime == from) {
+        nextFrameTime = to;
+      }
+    }
+  }
+
   private double maxFrameRate () {
-    double maxFrameRate = Math.min(Screen.refreshRate(), this.maxFrameRate);
+    double maxFrameRate = Math.min(screenFrameRate(), this.maxFrameRate);
     if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_LIMIT_STICKERS_FPS)) {
       maxFrameRate = Math.min(maxFrameRate, REDUCED_MAX_FRAME_RATE);
     }
@@ -666,8 +752,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     final double frameDelay;
     final long nextTimeStamp;
 
-    final float screenFrameRate = Screen.refreshRate();
-    final double screenFrameRateDelay = 1000.0 / screenFrameRate;
+    final double screenFrameRateDelay = 1000.0 / screenFrameRate();
 
     final double avgFrameRate;
     if (isLottie) {
@@ -680,23 +765,24 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       frameDelay = Math.max(screenFrameRateDelay, avgFrameRateDelay);
       nextTimeStamp = 0;
     } else {
-      final long lastTimeStamp = this.lastTimeStamp;
       nextTimeStamp = metadata[3];
-
-      if (nextTimeStamp > lastTimeStamp) {
-        final long differenceMs = nextTimeStamp - lastTimeStamp;
-        frameDelay = Math.max(differenceMs, screenFrameRateDelay);
-      } else {
-        final long remainingDurationMs = metadata[4];
-        frameDelay = Math.max(remainingDurationMs, Math.max(avgFrameRateDelay, screenFrameRateDelay));
-      }
+      frameDelay = metadata[4] > 0 ? metadata[4] : avgFrameRateDelay;
     }
 
-    final long frameDelayMs = Math.max(file.hasOptimizations() ? 5 : frameRate <= 30.0 ? 4 : 1, (long) (frameDelay - Math.floor(screenFrameRateDelay)));
+    final long now = SystemClock.uptimeMillis();
+    double frameTime = this.nextFrameTime;
+    if (force || Math.abs(now - frameTime) > MAX_FRAME_CLOCK_DRIFT_MS) {
+      frameTime = now;
+    }
+    frameTime += frameDelay;
+
+    final long frameDelayMs = Math.max(file.hasOptimizations() ? 5 : frameRate <= 30.0 ? 4 : 1,
+      (long) (frameTime - now - Math.floor(screenFrameRateDelay)));
 
     synchronized (this) {
       if ((flags & FLAG_CANCELLED) == 0) {
         if (GifBridge.instance().scheduleNextFrame(this, file.getFileId(), force ? 0 : frameDelayMs, force)) {
+          this.nextFrameTime = frameTime;
           if (gif == null || !gif.isFrozen()) {
             this.lastTimeStamp = nextTimeStamp;
           }
@@ -803,8 +889,8 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
           return false;
         }
         if (GifBridge.instance().canScheduleNextFrame(this, file.getFileId())) {
-          thread.prepareNextFrame(this);
           scheduleNext(false);
+          requestNextFrame();
           return true;
         }
       }
