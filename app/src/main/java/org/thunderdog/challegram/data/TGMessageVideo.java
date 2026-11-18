@@ -158,6 +158,14 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   }
 
   @Override
+  protected boolean isSupportedMessageContent (
+    TdApi.Message message,
+    TdApi.MessageContent content
+  ) {
+    return content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR;
+  }
+
+  @Override
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
     setNotViewed(!((TdApi.MessageVideoNote) newContent).isViewed, true);
     if (TD.isSelfDestructTypeImmediately(message)) {
