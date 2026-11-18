@@ -51,7 +51,6 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.animator.VariableFloat;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import tgx.td.Td;
@@ -60,56 +59,39 @@ public class TGMessageText extends TGMessage {
   private TdApi.FormattedText text;
 
   private final BlockSwitches blockSwitches =
-    new BlockSwitches(new BlockSwitches.Listener() {
+    new BlockSwitches(new BlockSwitchListener() {
       @Override
-      public void onBlockSwitchStart (Text text, boolean isReverse) {
-        // The height at the end is measured with the time at its final place
+      protected boolean hasContentAbove () {
+        return replyData != null || isForward() ||
+          (linkPreview != null && linkPreviewAboveText.getValue());
+      }
+
+      @Override
+      protected boolean hasContentBelow () {
+        return linkPreview != null && !linkPreviewAboveText.getValue();
+      }
+
+      @Override
+      protected int measureFinalHeight (Text text, boolean isReverse) {
         final float timeExpand =
           isReverse ? switchTimeExpand.get() : getTimeExpand(calculateTextLastLineWidth());
         final int finalLastLineWidth = calculateTextLastLineWidth(text.getLastLineWidth());
         final float finalTimeExpand = getTimeExpand(finalLastLineWidth);
         switchTimeExpand.set(finalTimeExpand);
         rebuildContentDimensions();
-        final int finalHeight = getHeight() + text.getChangeRemainingHeight();
+        final int finalHeight = super.measureFinalHeight(text, isReverse);
         switchTimeExpand.set(timeExpand);
         switchTimeExpand.setTo(finalTimeExpand);
         rebuildContentDimensions();
-        // A reply or a forward is above the text, a link preview above or below it
-        final int[] block = text.getSwitchBlock();
-        final boolean isPreviewAbove = linkPreviewAboveText.getValue();
-        if (replyData != null || isForward() || (linkPreview != null && isPreviewAbove)) {
-          block[2] = 0;
+        return finalHeight;
+      }
+
+      @Override
+      protected void onSwitchFrame (Text text) {
+        if (text.isSwitchingBlock()) {
+          switchTimeExpand.applyAnimation(text.getChangeProgress());
         }
-        if (linkPreview != null && !isPreviewAbove) {
-          block[3] = 0;
-        }
-        manager().messageResize().start(
-          TGMessageText.this,
-          finalHeight,
-          isReverse,
-          block,
-          text::getSwitchLines
-        );
-      }
-
-      @Override
-      public void onTextSizeChanged (Text text) {
-        TGMessageText.this.onTextSizeChanged(text);
-      }
-
-      @Override
-      public void onBlockSwitchStopped (Text text) {
-        manager().messageResize().stop(TGMessageText.this);
-      }
-
-      @Override
-      public boolean findVisiblePart (Text text, boolean atEnd, int[] range) {
-        return manager().messageResize().findVisiblePart(TGMessageText.this, atEnd, range);
-      }
-
-      @Override
-      public int getListHeight (Text text) {
-        return manager().getCodeBlockListHeight();
+        visibleText.measure(false);
       }
     });
   // Time below the last line of the text, 1f, or after it, 0f, while a block switches
@@ -311,44 +293,29 @@ public class TGMessageText extends TGMessage {
     return pendingMessageText != null;
   }
 
-  private void onTextSizeChanged (Text text) {
-    if (text.isSwitchingBlock()) {
-      switchTimeExpand.applyAnimation(text.getChangeProgress());
-    }
-    visibleText.measure(false);
-    onAnimatedHeightFrame(text.getChangeProgress());
+  @Override
+  protected int getSwitchingTextCount () {
+    return 1;
   }
 
   @Override
-  public boolean isAnimatingHeight () {
-    final Text text = effectiveWrapper != null ? effectiveWrapper.getCurrent() : null;
-    return super.isAnimatingHeight() || text != null && text.isAnimatingChange();
+  protected @Nullable Text getSwitchingText (int index) {
+    return effectiveWrapper != null ? effectiveWrapper.getCurrent() : null;
   }
 
   @Override
-  protected boolean keepsTopOnHeightChange () {
-    // The height at the end of a switch is measured before MessageResize moves the message
-    return isSwitchingBlock() || super.keepsTopOnHeightChange();
+  protected BlockSwitches getBlockSwitches (int index) {
+    return blockSwitches;
+  }
+
+  @Override
+  protected boolean isSwitchingTextTranslated (int index) {
+    return translatedText != null;
   }
 
   private boolean isSwitchingBlock () {
-    final Text text = effectiveWrapper != null ? effectiveWrapper.getCurrent() : null;
+    final Text text = getSwitchingText(0);
     return text != null && text.isSwitchingBlock();
-  }
-
-  @Override
-  public @Nullable int[] getSwitchedBlocks () {
-    // Ids of blocks are their offsets in the text, so those of a translation aren't kept
-    final Text text = effectiveWrapper != null ? effectiveWrapper.getCurrent() : null;
-    return text != null && translatedText == null ? text.getSwitchedBlocks() : null;
-  }
-
-  @Override
-  public void restoreSwitchedBlocks (int[] blocks) {
-    for (int i = 0; i + 1 < blocks.length; i += 2) {
-      final boolean isOn = BitwiseUtils.hasFlag(blocks[i + 1], Settings.MessageState.BLOCK_ON);
-      blockSwitches.choose(blocks[i], isOn);
-    }
   }
 
   private boolean setText (TdApi.FormattedText text, boolean parseEntities) {

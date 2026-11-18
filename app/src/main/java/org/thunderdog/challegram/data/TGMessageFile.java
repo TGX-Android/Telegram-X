@@ -40,6 +40,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.text.BlockSwitches;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -76,6 +77,17 @@ public class TGMessageFile extends TGMessage {
     private TdApi.FormattedText effectiveCaption;
     public final ReplaceAnimator<TextWrapper> caption;
     private TextWrapper captionWrapper;
+    private final BlockSwitches blockSwitches = new BlockSwitches(new BlockSwitchListener() {
+      @Override
+      protected boolean hasContentBelow () {
+        return filesList.get(filesList.size() - 1) != CaptionedFile.this;
+      }
+
+      @Override
+      protected void onSwitchFrame (Text text) {
+        files.measure(false);
+      }
+    });
     private long captionMediaKeyOffset;
     private final VariableFloat lastLineWidth = new VariableFloat(0);
     private final VariableFloat needBottomLineExpand = new VariableFloat(1f);
@@ -137,6 +149,7 @@ public class TGMessageFile extends TGMessage {
             .setHighlightText(getHighlightedText(Highlight.Pool.KEY_FILE_CAPTION, caption.text))
             .addTextFlags(Text.FLAG_BIG_EMOJI)
             .setClickCallback(clickCallback());
+          wrapper.setBlockSwitches(blockSwitches);
           wrapper.setViewProvider(currentViews);
           wrapper.prepare(getContentMaxWidth());
         } else {
@@ -178,9 +191,10 @@ public class TGMessageFile extends TGMessage {
 
     private int calculateLastLineWidth () {
       if (captionWrapper != null) {
-        // A code block at the end is as wide as the bubble, so the time goes below it
+        // Time goes below a code block or an expandable quote at the end
         if (captionWrapper.getLastLineIsRtl() != Lang.rtl() ||
-          (Config.CODE_BLOCK_TIME_BELOW && captionWrapper.endsWithCodeBlock())) {
+          (Config.CODE_BLOCK_TIME_BELOW && captionWrapper.endsWithCodeBlock()) ||
+          captionWrapper.endsWithExpandableQuote()) {
           return BOTTOM_LINE_EXPAND_HEIGHT;
         }
         return captionWrapper.getLastLineWidth();
@@ -658,6 +672,32 @@ public class TGMessageFile extends TGMessage {
   @Override
   protected int getBottomLineContentWidth () {
     return BOTTOM_LINE_DEFINE_BY_FACTOR;
+  }
+
+  @Override
+  protected int getSwitchingTextCount () {
+    return filesList.size();
+  }
+
+  @Override
+  protected @Nullable Text getSwitchingText (int index) {
+    final TextWrapper wrapper = filesList.get(index).captionWrapper;
+    return wrapper != null ? wrapper.getCurrent() : null;
+  }
+
+  @Override
+  protected BlockSwitches getBlockSwitches (int index) {
+    return filesList.get(index).blockSwitches;
+  }
+
+  @Override
+  protected boolean isSwitchingTextTranslated (int index) {
+    return filesList.get(index).translatedCaption != null;
+  }
+
+  @Override
+  protected long getSwitchingTextMessageId (int index) {
+    return filesList.get(index).messageId;
   }
 
   @Override

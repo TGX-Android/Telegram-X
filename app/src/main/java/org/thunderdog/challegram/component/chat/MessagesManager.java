@@ -2956,10 +2956,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (blocks == null && resize == null && !hasPosition) {
       return null;
     }
-    final TdApi.Message content = message.findDescendantOrSelf(messageId);
     return new Settings.MessageState(
       messageId,
-      content != null ? content.editDate : 0,
+      message.isDescendantOrSelf(messageId) ? message.getEditDate() : 0,
       offsetPixels,
       blocks,
       resize
@@ -2988,9 +2987,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (returnState != null && message.isDescendantOrSelf(returnState.messageId)) {
       state = returnState;
     }
-    final TdApi.Message content =
-      state != null ? message.findDescendantOrSelf(state.messageId) : null;
-    return content != null && content.editDate == state.editDate ? state : null;
+    // The newest edit of an album, whose caption may be on another message than this id
+    return state != null && message.isDescendantOrSelf(state.messageId) &&
+      message.getEditDate() == state.editDate ? state : null;
   }
 
   private void restoreChanges (List<TGMessage> items) {

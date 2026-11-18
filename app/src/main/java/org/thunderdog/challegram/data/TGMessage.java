@@ -113,6 +113,7 @@ import org.thunderdog.challegram.util.LanguageDetector;
 import org.thunderdog.challegram.util.NonBubbleEmojiLayout;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
+import org.thunderdog.challegram.util.text.BlockSwitches;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Letters;
@@ -156,6 +157,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -4468,8 +4470,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public boolean isAnimatingHeight () {
     // By frames of onAnimatedHeightFrame, each of which requests layout
-    return Config.ENABLE_TEST_HOOKS && testHeightAnimator != null &&
-      testHeightAnimator.isAnimating();
+    if (Config.ENABLE_TEST_HOOKS && testHeightAnimator != null &&
+      testHeightAnimator.isAnimating()) {
+      return true;
+    }
+    for (int i = 0; i < getSwitchingTextCount(); i++) {
+      final Text text = getSwitchingText(i);
+      if (text != null && text.isAnimatingChange()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private int getTestLineAfter (int y) {
@@ -4479,17 +4490,152 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected boolean keepsTopOnHeightChange () {
-    // MessageResize moves it in place of onMessageHeightChanged
-    return isMeasuringTestHeight || manager.messageResize().isMoving(this);
+    // MessageResize moves the message while a block switches
+    if (isMeasuringTestHeight || manager.messageResize().isMoving(this)) {
+      return true;
+    }
+    for (int i = 0; i < getSwitchingTextCount(); i++) {
+      final Text text = getSwitchingText(i);
+      if (text != null && text.isSwitchingBlock()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  protected int getSwitchingTextCount () {
+    // Texts with expandable quotes or code blocks that switch
+    return 0;
+  }
+
+  protected @Nullable Text getSwitchingText (int index) {
+    return null;
+  }
+
+  protected @Nullable BlockSwitches getBlockSwitches (int index) {
+    return null;
+  }
+
+  protected boolean isSwitchingTextTranslated (int index) {
+    return false;
+  }
+
+  protected long getSwitchingTextMessageId (int index) {
+    return getId();
+  }
+
+  // Block ids are offsets in a text; the bits above them tell the texts apart
+  private static final int TEXT_KEY_SHIFT = 16;
+  private static final int TEXT_KEY_MASK = 0x7fff;
+
+  private int getSwitchingTextKey (int index) {
+    // Local ids differ above their 3 bits of type
+    final long messageId = getSwitchingTextMessageId(index);
+    final long serverMessageId = MessageId.toServerMessageId(messageId);
+    return (int) ((serverMessageId != 0 ? serverMessageId : messageId >> 3) & TEXT_KEY_MASK);
   }
 
   public @Nullable int[] getSwitchedBlocks () {
-    // Blocks that a user switched, see Settings.MessageState
-    return null;
+    // Blocks switched by the user, except in translations
+    final int count = getSwitchingTextCount();
+    IntList blocks = null;
+    for (int i = 0; i < count; i++) {
+      final Text text = isSwitchingTextTranslated(i) ? null : getSwitchingText(i);
+      final int[] textBlocks = text != null ? text.getSwitchedBlocks() : null;
+      if (textBlocks == null) {
+        continue;
+      }
+      if (count == 1) {
+        return textBlocks;
+      }
+      if (blocks == null) {
+        blocks = new IntList(textBlocks.length);
+      }
+      final int key = getSwitchingTextKey(i) << TEXT_KEY_SHIFT;
+      for (int j = 0; j + 1 < textBlocks.length; j += 2) {
+        blocks.append(key | textBlocks[j]);
+        blocks.append(textBlocks[j + 1]);
+      }
+    }
+    return blocks != null ? blocks.get() : null;
   }
 
   public void restoreSwitchedBlocks (int[] blocks) {
     // Before its first layout
+    final int count = getSwitchingTextCount();
+    for (int i = 0; i + 1 < blocks.length; i += 2) {
+      final boolean isOn = BitwiseUtils.hasFlag(blocks[i + 1], Settings.MessageState.BLOCK_ON);
+      for (int j = 0; j < count; j++) {
+        final BlockSwitches blockSwitches = getBlockSwitches(j);
+        if (blockSwitches == null) {
+          continue;
+        }
+        if (count == 1) {
+          blockSwitches.choose(blocks[i], isOn);
+        } else if (getSwitchingTextKey(j) == blocks[i] >>> TEXT_KEY_SHIFT) {
+          blockSwitches.choose(blocks[i] & ((1 << TEXT_KEY_SHIFT) - 1), isOn);
+        }
+      }
+    }
+  }
+
+  // Keeps the lines being read in place while a block switches, by default of a caption below media
+  protected class BlockSwitchListener implements BlockSwitches.Listener {
+    protected boolean hasContentAbove () {
+      return true;
+    }
+
+    protected boolean hasContentBelow () {
+      return false;
+    }
+
+    protected int measureFinalHeight (Text text, boolean isReverse) {
+      // The text has its final height already, the message that of the last frame. The time of a
+      // caption stays below it or after its last line, which a switch doesn't change
+      return getHeight() + text.getChangeRemainingHeight();
+    }
+
+    protected void onSwitchFrame (Text text) { }
+
+    @Override
+    public void onBlockSwitchStart (Text text, boolean isReverse) {
+      final int finalHeight = measureFinalHeight(text, isReverse);
+      final int[] block = text.getSwitchBlock();
+      if (hasContentAbove()) {
+        block[2] = 0;
+      }
+      if (hasContentBelow()) {
+        block[3] = 0;
+      }
+      manager.messageResize().start(
+        TGMessage.this,
+        finalHeight,
+        isReverse,
+        block,
+        text::getSwitchLines
+      );
+    }
+
+    @Override
+    public void onTextSizeChanged (Text text) {
+      onSwitchFrame(text);
+      onAnimatedHeightFrame(text.getChangeProgress());
+    }
+
+    @Override
+    public void onBlockSwitchStopped (Text text) {
+      manager.messageResize().stop(TGMessage.this);
+    }
+
+    @Override
+    public boolean findVisiblePart (Text text, boolean atEnd, int[] range) {
+      return manager.messageResize().findVisiblePart(TGMessage.this, atEnd, range);
+    }
+
+    @Override
+    public int getListHeight (Text text) {
+      return manager.getCodeBlockListHeight();
+    }
   }
 
   public int getContentX () {

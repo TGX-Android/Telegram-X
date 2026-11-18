@@ -41,6 +41,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.text.BlockSwitches;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -56,6 +57,7 @@ import tgx.td.Td;
 public class TGMessageMedia extends TGMessage {
   // private MediaWrapper mediaWrapper;
   private @Nullable TextWrapper wrapper;
+  private final BlockSwitches blockSwitches = new BlockSwitches(new BlockSwitchListener());
 
   // Timer stuff
 
@@ -355,6 +357,7 @@ public class TGMessageMedia extends TGMessage {
           .setHighlightText(getHighlightedText(Highlight.Pool.KEY_MEDIA_CAPTION, fText.text))
           .addTextFlags(Text.FLAG_BIG_EMOJI)
           .setClickCallback(clickCallback());
+        this.wrapper.setBlockSwitches(blockSwitches);
         this.wrapper.setViewProvider(currentViews);
         if (Config.USE_NONSTRICT_TEXT_ALWAYS || !useBubbles()) {
           this.wrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);
@@ -560,11 +563,32 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected int getBottomLineContentWidth () {
-    // A code block at the end is as wide as the bubble, so the time goes below it
+    // Time goes below a code block or an expandable quote at the end
     return wrapper != null && Lang.rtl() == wrapper.getLastLineIsRtl() &&
-      !(Config.CODE_BLOCK_TIME_BELOW && wrapper.endsWithCodeBlock()) ?
+      !(Config.CODE_BLOCK_TIME_BELOW && wrapper.endsWithCodeBlock()) &&
+      !wrapper.endsWithExpandableQuote() ?
       wrapper.getLastLineWidth() + (xBubblePaddingSmall + xBubblePadding) * 2 :
       BOTTOM_LINE_EXPAND_HEIGHT;
+  }
+
+  @Override
+  protected int getSwitchingTextCount () {
+    return 1;
+  }
+
+  @Override
+  protected @Nullable Text getSwitchingText (int index) {
+    return wrapper != null ? wrapper.getCurrent() : null;
+  }
+
+  @Override
+  protected BlockSwitches getBlockSwitches (int index) {
+    return blockSwitches;
+  }
+
+  @Override
+  protected boolean isSwitchingTextTranslated (int index) {
+    return translatedText != null;
   }
 
   /*@Override
