@@ -22,6 +22,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -29,16 +30,41 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.FormattedText;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.widget.CustomTextView;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.lambda.Destroyable;
 
-public class TopBarView extends FrameLayoutFix {
+public class TopBarView extends FrameLayoutFix implements Destroyable {
+  private static final float ACTIONS_HEIGHT_DP = 36f;
+  private static final float DISMISS_SIZE_DP = 48f;
+  private static final float ACTIONS_START_PADDING_DP = 31f;
+  private static final float ACTIONS_END_PADDING_DP = 18f;
+  private static final float ICON_ONLY_SLOT_DP = 34f;
+  private static final float CONTENT_HORIZONTAL_PADDING_DP = 16f;
+  private static final float SEPARATOR_HEIGHT_DP = 1f;
+  private static final float SEPARATOR_HORIZONTAL_MARGIN_DP = 12f;
+  private static final float ACTION_ICON_SIZE_DP = 16f;
+  private static final float ACTION_ICON_TEXT_SPACING_DP = 4f;
+  private static final float ACTION_TEXT_HORIZONTAL_PADDING_DP = 4f;
+  private static final float NOTICE_DISMISS_PADDING_DP = 48f;
+  private static final float NOTICE_TOP_PADDING_DP = 6f;
+  private static final float NOTICE_BOTTOM_PADDING_DP = 6f;
+  private static final float ACTION_TEXT_SIZE_SP = 14f;
+  private static final float NOTICE_TEXT_SIZE_SP = 15f;
+
   private final ImageView topDismissButton;
-  private final LinearLayout actionsList;
+  private final LinearLayout actionsContainer;
+  private final ActionsRow actionsList;
+  private final @Nullable Tdlib tdlib;
 
   private boolean canDismiss;
 
@@ -49,15 +75,30 @@ public class TopBarView extends FrameLayoutFix {
   public static class Item {
     final int id;
     final int stringRes;
+    final @Nullable CharSequence notice;
+    final @Nullable TextEntity[] noticeEntities;
     final View.OnClickListener onClickListener;
 
     boolean isNegative;
     boolean noDismiss;
+    int iconRes;
+    boolean centerNotice;
+    View.OnClickListener noticeClickListener;
 
     public Item (int id, int stringRes, View.OnClickListener onClickListener) {
       this.id = id;
       this.stringRes = stringRes;
+      this.notice = null;
+      this.noticeEntities = null;
       this.onClickListener = onClickListener;
+    }
+
+    public Item (FormattedText notice) {
+      this.id = 0;
+      this.stringRes = 0;
+      this.notice = notice.text;
+      this.noticeEntities = notice.entities;
+      this.onClickListener = null;
     }
 
     public Item setIsNegative () {
@@ -69,20 +110,54 @@ public class TopBarView extends FrameLayoutFix {
       this.noDismiss = true;
       return this;
     }
+
+    public Item setIcon (@DrawableRes int iconRes) {
+      this.iconRes = iconRes;
+      return this;
+    }
+
+    public Item setCenterNotice () {
+      this.centerNotice = true;
+      return this;
+    }
+
+    public Item setNoticeClickListener (View.OnClickListener noticeClickListener) {
+      this.noticeClickListener = noticeClickListener;
+      return this;
+    }
   }
 
   private DismissListener dismissListener;
 
   public TopBarView (@NonNull Context context) {
-    super(context);
+    this(context, null);
+  }
 
-    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(36f)));
+  public TopBarView (@NonNull Context context, @Nullable Tdlib tdlib) {
+    super(context);
+    this.tdlib = tdlib;
+
+    setLayoutParams(FrameLayoutFix.newParams(
+      ViewGroup.LayoutParams.MATCH_PARENT,
+      ViewGroup.LayoutParams.WRAP_CONTENT
+    ));
     ViewSupport.setThemedBackground(this, ColorId.filling, null);
 
-    actionsList = new LinearLayout(context);
+    actionsContainer = new LinearLayout(context);
+    actionsContainer.setOrientation(LinearLayout.VERTICAL);
+    actionsContainer.setLayoutParams(FrameLayoutFix.newParams(
+      ViewGroup.LayoutParams.MATCH_PARENT,
+      ViewGroup.LayoutParams.WRAP_CONTENT,
+      Lang.gravity() | Gravity.TOP
+    ));
+    addView(actionsContainer);
+
+    actionsList = new ActionsRow(context);
     actionsList.setOrientation(LinearLayout.HORIZONTAL);
-    actionsList.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Lang.gravity() | Gravity.TOP));
-    addView(actionsList);
+    actionsList.setLayoutParams(new LinearLayout.LayoutParams(
+      ViewGroup.LayoutParams.MATCH_PARENT,
+      Screen.dp(ACTIONS_HEIGHT_DP)
+    ));
 
     topDismissButton = new ImageView(context) {
       @Override
@@ -98,7 +173,11 @@ public class TopBarView extends FrameLayoutFix {
     topDismissButton.setScaleType(ImageView.ScaleType.CENTER);
     topDismissButton.setColorFilter(Theme.iconColor());
     topDismissButton.setImageResource(R.drawable.baseline_close_18);
-    topDismissButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40f), ViewGroup.LayoutParams.MATCH_PARENT, Lang.gravity() | Gravity.TOP));
+    topDismissButton.setLayoutParams(FrameLayoutFix.newParams(
+      Screen.dp(DISMISS_SIZE_DP),
+      ViewGroup.LayoutParams.MATCH_PARENT,
+      Lang.gravity() | Gravity.TOP
+    ));
     topDismissButton.setBackgroundResource(R.drawable.bg_btn_header);
     Views.setClickable(topDismissButton);
     topDismissButton.setVisibility(View.INVISIBLE);
@@ -126,44 +205,284 @@ public class TopBarView extends FrameLayoutFix {
     }
   }
 
+  public int getVisualHeight () {
+    return Math.max(getMeasuredHeight(), Screen.dp(ACTIONS_HEIGHT_DP));
+  }
+
   public void setItems (Item... items) {
-    for (int i = 0; i < actionsList.getChildCount(); i++) {
-      View view = actionsList.getChildAt(i);
-      if (view != null && themeProvider != null) {
-        themeProvider.removeThemeListenerByTarget(view);
-      }
-    }
-    actionsList.removeAllViews();
-    if (items.length > 1) {
-      View offsetView = new View(getContext());
-      offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, .75f));
-      actionsList.addView(offsetView);
-    }
+    clearItems();
+
+    int actionCount = 0;
     boolean canDismiss = false;
+    boolean hasNotice = false;
     for (Item item : items) {
-      if (!item.noDismiss) {
-        canDismiss = true;
+      if (item.stringRes != 0) {
+        actionCount++;
       }
+      canDismiss |= !item.noDismiss;
+      hasNotice |= item.notice != null;
+    }
+
+    boolean dismissInNotice = actionCount == 0;
+    int startPadding = Screen.dp(ACTIONS_START_PADDING_DP);
+    int endPadding = Screen.dp(actionCount > 1 ? ACTIONS_END_PADDING_DP : ACTIONS_START_PADDING_DP);
+    actionsList.setPadding(Lang.rtl() ? endPadding : startPadding, 0,
+      Lang.rtl() ? startPadding : endPadding, 0);
+
+    topDismissButton.setLayoutParams(FrameLayoutFix.newParams(
+      Screen.dp(DISMISS_SIZE_DP),
+      actionCount > 0 ? Screen.dp(ACTIONS_HEIGHT_DP) :
+        ViewGroup.LayoutParams.MATCH_PARENT,
+      Lang.gravity() | (actionCount > 0 ? Gravity.TOP : Gravity.CENTER_VERTICAL)
+    ));
+
+    if (actionCount > 0) {
+      actionsContainer.addView(actionsList);
+    }
+    if (actionCount > 0 && hasNotice) {
+      View separator = new View(getContext());
+      LinearLayout.LayoutParams separatorParams = new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(SEPARATOR_HEIGHT_DP)
+      );
+      separatorParams.leftMargin = Screen.dp(SEPARATOR_HORIZONTAL_MARGIN_DP);
+      separatorParams.rightMargin = Screen.dp(SEPARATOR_HORIZONTAL_MARGIN_DP);
+      separator.setLayoutParams(separatorParams);
+      ViewSupport.setThemedBackground(separator, ColorId.separator, themeProvider);
+      actionsContainer.addView(separator);
+    }
+
+    for (Item item : items) {
       int textColorId = item.isNegative ? ColorId.textNegative : ColorId.textNeutral;
-      TextView button = Views.newTextView(getContext(), 15f, Theme.getColor(textColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
-      button.setId(item.id);
-      if (themeProvider != null) {
-        themeProvider.addThemeTextColorListener(button, textColorId);
+
+      if (item.stringRes != 0) {
+        boolean hasIcon = item.iconRes != 0;
+        ActionButton button = new ActionButton(getContext());
+        button.setId(item.id);
+        button.setBackgroundResource(R.drawable.bg_btn_header);
+        button.setOnClickListener(item.onClickListener);
+        button.setContentDescription(Lang.getString(item.stringRes));
+        button.setLayoutParams(new LinearLayout.LayoutParams(
+          0, ViewGroup.LayoutParams.MATCH_PARENT, 1f
+        ));
+        Views.setClickable(button);
+
+        ImageView iconView = null;
+        if (hasIcon) {
+          iconView = new ImageView(getContext());
+          iconView.setImageResource(item.iconRes);
+          iconView.setColorFilter(Theme.getColor(textColorId));
+          iconView.setLayoutParams(new LinearLayout.LayoutParams(
+            Screen.dp(ACTION_ICON_SIZE_DP), Screen.dp(ACTION_ICON_SIZE_DP)
+          ));
+          if (themeProvider != null) {
+            themeProvider.addThemeFilterListener(iconView, textColorId);
+          }
+        }
+
+        TextView buttonText = Views.newTextView(
+          getContext(), ACTION_TEXT_SIZE_SP, Theme.getColor(textColorId),
+          hasIcon ? Lang.gravity() | Gravity.CENTER_VERTICAL : Gravity.CENTER,
+          Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING
+        );
+        if (themeProvider != null) {
+          themeProvider.addThemeTextColorListener(buttonText, textColorId);
+        }
+        buttonText.setEllipsize(TextUtils.TruncateAt.END);
+        buttonText.setSingleLine(true);
+        int iconSpacing = Screen.dp(ACTION_ICON_TEXT_SPACING_DP);
+        int textPadding = Screen.dp(ACTION_TEXT_HORIZONTAL_PADDING_DP);
+        if (hasIcon) {
+          buttonText.setPadding(
+            Lang.rtl() ? textPadding : iconSpacing, 0,
+            Lang.rtl() ? iconSpacing : textPadding, 0
+          );
+        }
+        Views.setMediumText(buttonText, Lang.uppercase(Lang.getString(item.stringRes)));
+        if (Lang.rtl()) {
+          button.addView(buttonText);
+        }
+        if (iconView != null) {
+          button.addView(iconView);
+        }
+        if (!Lang.rtl()) {
+          button.addView(buttonText);
+        }
+        button.setLabel(
+          hasIcon ? buttonText : null,
+          Screen.dp(ACTION_ICON_SIZE_DP),
+          Screen.dp(ICON_ONLY_SLOT_DP)
+        );
+        actionsList.addView(button);
       }
-      button.setEllipsize(TextUtils.TruncateAt.END);
-      button.setSingleLine(true);
-      button.setBackgroundResource(R.drawable.bg_btn_header);
-      button.setOnClickListener(item.onClickListener);
-      Views.setMediumText(button, Lang.uppercase(Lang.getString(item.stringRes)));
-      Views.setClickable(button);
-      button.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
-      actionsList.addView(button);
+
+      if (hasNotice && item.notice != null) {
+        CustomTextView noticeText = new CustomTextView(getContext(), tdlib);
+        noticeText.setTextColorId(ColorId.textLight);
+        noticeText.setTextSize(NOTICE_TEXT_SIZE_SP);
+        noticeText.setText(
+          item.notice, item.noticeEntities, item.centerNotice ? Text.FLAG_ALIGN_CENTER : 0, false
+        );
+        noticeText.setContentDescription(item.notice);
+        noticeText.setPadding(
+          Screen.dp(dismissInNotice && !Lang.rtl() ?
+            NOTICE_DISMISS_PADDING_DP : CONTENT_HORIZONTAL_PADDING_DP),
+          Screen.dp(NOTICE_TOP_PADDING_DP),
+          Screen.dp(dismissInNotice && Lang.rtl() ?
+            NOTICE_DISMISS_PADDING_DP : CONTENT_HORIZONTAL_PADDING_DP),
+          Screen.dp(NOTICE_BOTTOM_PADDING_DP)
+        );
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(noticeText);
+        }
+        if (item.noticeClickListener != null) {
+          FrameLayoutFix noticeLayout = new FrameLayoutFix(getContext());
+          noticeLayout.setBackgroundResource(R.drawable.bg_btn_header);
+          noticeLayout.setOnClickListener(item.noticeClickListener);
+          noticeLayout.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+          ));
+          noticeText.setLayoutParams(FrameLayoutFix.newParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+          ));
+          noticeLayout.addView(noticeText);
+          actionsContainer.addView(noticeLayout);
+        } else {
+          noticeText.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+          ));
+          actionsContainer.addView(noticeText);
+        }
+      }
     }
-    if (items.length > 1) {
-      View offsetView = new View(getContext());
-      offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, .75f));
-      actionsList.addView(offsetView);
-    }
+
     setCanDismiss(canDismiss);
+  }
+
+  private static class ActionButton extends LinearLayout {
+    private @Nullable View hideableLabel;
+    private int iconWidth;
+    private int iconOnlyWidth;
+
+    ActionButton (Context context) {
+      super(context);
+      setOrientation(HORIZONTAL);
+      setGravity(Gravity.CENTER);
+    }
+
+    void setLabel (@Nullable View label, int iconWidth, int iconOnlyWidth) {
+      this.hideableLabel = label;
+      this.iconWidth = iconWidth;
+      this.iconOnlyWidth = iconOnlyWidth;
+    }
+
+    boolean hasHideableLabel () {
+      return hideableLabel != null;
+    }
+
+    int measureLabelWidth () {
+      int unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+      hideableLabel.measure(unspecified, unspecified);
+      return hideableLabel.getMeasuredWidth();
+    }
+
+    int measureWidthWithLabel () {
+      if (hideableLabel == null) {
+        int unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        measure(unspecified, unspecified);
+        return getMeasuredWidth();
+      }
+      return iconWidth + measureLabelWidth();
+    }
+
+    void setLabelVisible (boolean visible, boolean inSlot) {
+      if (hideableLabel == null) {
+        return;
+      }
+      hideableLabel.setVisibility(visible ? VISIBLE : GONE);
+      boolean useSlot = !visible && inSlot;
+      LayoutParams params = (LayoutParams) getLayoutParams();
+      int width = useSlot ? iconOnlyWidth : 0;
+      if (params.width != width) {
+        params.width = width;
+        params.weight = useSlot ? 0f : 1f;
+        setGravity(useSlot ? Lang.reverseGravity() | Gravity.CENTER_VERTICAL : Gravity.CENTER);
+        setLayoutParams(params);
+      }
+    }
+  }
+
+  private static class ActionsRow extends LinearLayout {
+    private int[] widths = new int[0];
+
+    ActionsRow (Context context) {
+      super(context);
+    }
+
+    @Override
+    protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+      int available = MeasureSpec.getSize(widthMeasureSpec) - getPaddingLeft() - getPaddingRight();
+      int count = getChildCount();
+      if (widths.length != count) {
+        widths = new int[count];
+      }
+      boolean hasHideableLabels = false;
+      int iconOnlyWidth = 0;
+      for (int i = 0; i < count; i++) {
+        View child = getChildAt(i);
+        if (child instanceof ActionButton) {
+          ActionButton button = (ActionButton) child;
+          widths[i] = button.measureWidthWithLabel();
+          if (button.hasHideableLabel()) {
+            hasHideableLabels = true;
+            iconOnlyWidth = button.iconOnlyWidth;
+          }
+        }
+      }
+      if (hasHideableLabels) {
+        int labelled = count;
+        for (; labelled > 0; labelled--) {
+          int cellWidth = 0;
+          for (int i = 0; i < labelled; i++) {
+            cellWidth = Math.max(cellWidth, widths[i]);
+          }
+          if (labelled * cellWidth + (count - labelled) * iconOnlyWidth <= available) {
+            break;
+          }
+        }
+        for (int i = 0; i < count; i++) {
+          View child = getChildAt(i);
+          if (child instanceof ActionButton) {
+            ((ActionButton) child).setLabelVisible(i < labelled, count > 1);
+          }
+        }
+      }
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+  }
+
+  private void clearItems () {
+    clearThemeListeners(actionsContainer);
+    clearThemeListeners(actionsList);
+    Views.destroy(actionsContainer);
+    actionsContainer.removeAllViews();
+    actionsList.removeAllViews();
+  }
+
+  private void clearThemeListeners (View view) {
+    if (themeProvider == null) {
+      return;
+    }
+    themeProvider.removeThemeListenerByTarget(view);
+    if (view instanceof ViewGroup) {
+      ViewGroup viewGroup = (ViewGroup) view;
+      for (int i = 0; i < viewGroup.getChildCount(); i++) {
+        clearThemeListeners(viewGroup.getChildAt(i));
+      }
+    }
+  }
+
+  @Override
+  public void performDestroy () {
+    clearItems();
   }
 }
