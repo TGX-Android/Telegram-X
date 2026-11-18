@@ -4098,8 +4098,6 @@ public class TdlibUi extends Handler {
         if (userId != 0) {
           openPrivateChat(context, userId,
             new ChatOpenParameters().keepStack().urlOpenParameters(openParameters));
-        } else {
-          unsupported.run();
         }
         break;
       }
