@@ -822,46 +822,61 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   private static final int VIBRATE_SIMPLE = 2;
   private static final int VIBRATE_NONE = 0;
 
+  private long lastAppliedFrameNo = -1;
+
   @Override
   public void onApplyNextFrame (long frameNo) {
     if (isLottie) {
+      final long lastFrameNo = lastAppliedFrameNo;
+      lastAppliedFrameNo = frameNo;
       int vibrationPattern = file.getVibrationPattern();
       if (vibrationPattern == Emoji.VIBRATION_PATTERN_NONE)
         return;
-      double ms = (frameNo % frameRate) / frameRate;
-      double seconds = (int) (frameNo / frameRate);
+      // Each frame advanced since the last one applied, as skipped ones may hold a vibration
       int vibrateMode = VIBRATE_NONE;
-      switch (vibrationPattern) {
-        case Emoji.VIBRATION_PATTERN_HEARTBEAT: {
-          vibrateMode = ms == 0 || ms == .2 ? VIBRATE_SIMPLE : VIBRATE_NONE;
-          break;
+      long fromFrameNo = lastFrameNo < 0 ? frameNo : lastFrameNo + 1;
+      if (frameNo < lastFrameNo) {
+        for (long no = fromFrameNo; no < totalFrameCount; no++) {
+          vibrateMode = Math.max(vibrateMode, vibrateMode(vibrationPattern, no));
         }
-        case Emoji.VIBRATION_PATTERN_HEART_CUPID: {
-          if (seconds == 1) {
-            vibrateMode = ms == .2 ? 5 : ms == .8 || ms == .6 ? VIBRATE_SIMPLE : VIBRATE_NONE;
-          }
-          break;
-        }
-        case Emoji.VIBRATION_PATTERN_BROKEN_HEART: {
-          if (seconds == 0) {
-            vibrateMode = ms == .8 ? VIBRATE_SIMPLE : VIBRATE_NONE;
-          } else if (seconds == 1) {
-            vibrateMode = ms == .6 ? VIBRATE_MAIN : VIBRATE_NONE;
-          }
-          break;
-        }
-        case Emoji.VIBRATION_PATTERN_CAT_IN_LOVE: {
-          vibrateMode = (seconds == 0 && (ms == .2 || ms == .4)) || (seconds == 1 && (ms == 0 || ms == .2 || ms == .8)) || (seconds == 2 && ms == 0) ? VIBRATE_SIMPLE : VIBRATE_NONE;
-          break;
-        }
+        fromFrameNo = 0;
+      }
+      for (long no = Math.max(fromFrameNo, frameNo - (long) frameRate); no <= frameNo; no++) {
+        vibrateMode = Math.max(vibrateMode, vibrateMode(vibrationPattern, no));
       }
       if (vibrateMode != VIBRATE_NONE) {
-        View view = GifBridge.instance().findAnyView(file);;
+        View view = GifBridge.instance().findAnyView(file);
         if (view != null) {
           ViewUtils.hapticVibrate(view, vibrateMode == VIBRATE_MAIN, true);
         }
       }
     }
+  }
+
+  private int vibrateMode (int vibrationPattern, long frameNo) {
+    double ms = (frameNo % frameRate) / frameRate;
+    double seconds = (int) (frameNo / frameRate);
+    switch (vibrationPattern) {
+      case Emoji.VIBRATION_PATTERN_HEARTBEAT:
+        return ms == 0 || ms == .2 ? VIBRATE_SIMPLE : VIBRATE_NONE;
+      case Emoji.VIBRATION_PATTERN_HEART_CUPID:
+        if (seconds == 1) {
+          return ms == .2 ? 5 : ms == .8 || ms == .6 ? VIBRATE_SIMPLE : VIBRATE_NONE;
+        }
+        return VIBRATE_NONE;
+      case Emoji.VIBRATION_PATTERN_BROKEN_HEART:
+        if (seconds == 0) {
+          return ms == .8 ? VIBRATE_SIMPLE : VIBRATE_NONE;
+        } else if (seconds == 1) {
+          return ms == .6 ? VIBRATE_MAIN : VIBRATE_NONE;
+        }
+        return VIBRATE_NONE;
+      case Emoji.VIBRATION_PATTERN_CAT_IN_LOVE:
+        return (seconds == 0 && (ms == .2 || ms == .4)) ||
+          (seconds == 1 && (ms == 0 || ms == .2 || ms == .8)) ||
+          (seconds == 2 && ms == 0) ? VIBRATE_SIMPLE : VIBRATE_NONE;
+    }
+    return VIBRATE_NONE;
   }
 
   @UiThread
