@@ -12,6 +12,10 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import androidx.annotation.Nullable;
+
+import org.thunderdog.challegram.theme.ThemeDelegate;
+
 public class TextColorSetOverride implements TextColorSet {
   private final TextColorSet colorSet;
 
@@ -21,6 +25,12 @@ public class TextColorSetOverride implements TextColorSet {
 
   public TextColorSet originalColorSet () {
     return colorSet;
+  }
+
+  @Nullable
+  @Override
+  public ThemeDelegate forcedTheme () {
+    return colorSet.forcedTheme();
   }
 
   @Override

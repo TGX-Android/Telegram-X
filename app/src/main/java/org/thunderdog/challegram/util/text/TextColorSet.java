@@ -13,15 +13,30 @@
 package org.thunderdog.challegram.util.text;
 
 import androidx.annotation.ColorInt;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeDelegate;
+import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.BitwiseUtils;
 
 public interface TextColorSet {
+  @Nullable
+  default ThemeDelegate forcedTheme () {
+    return null;
+  }
+
+  @NonNull
+  default ThemeDelegate colorTheme () {
+    ThemeDelegate forcedTheme = forcedTheme();
+    return forcedTheme != null ? forcedTheme : ThemeManager.instance().currentTheme();
+  }
+
   @ColorInt
   int defaultTextColor ();
   @ColorInt

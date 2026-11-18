@@ -56,7 +56,6 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.EmojiBidUtil;
 import org.thunderdog.challegram.tool.EmojiBidUtilLegacy;
@@ -4679,7 +4678,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     TextColorSet theme = pickTheme(defaultTheme, entity);
     boolean isClickable = isClickable(entity);
     boolean isQuote = entity != null && entity.isQuote();
-    return isClickable ? theme.clickableTextColor(isPressed) : (isQuote ? Theme.getColor(theme.quoteTextColorId()): theme.defaultTextColor());
+    return isClickable ?
+      theme.clickableTextColor(isPressed) :
+      (isQuote ? theme.colorTheme().getColor(theme.quoteTextColorId()) : theme.defaultTextColor());
   }
 
   public long getMediaTextComplexColor () {
@@ -4690,6 +4691,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   @ColorInt
   public int getTextColor () {
     return getTextColor(null, null, BitwiseUtils.hasFlag(textFlags, FLAG_ALL_CLICKABLE), false);
+  }
+
+  @NonNull
+  public ThemeDelegate getColorTheme () {
+    return this.defaultTextColorSet.colorTheme();
   }
 
   @PorterDuffColorId

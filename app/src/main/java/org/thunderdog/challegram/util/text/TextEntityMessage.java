@@ -32,7 +32,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -262,7 +261,9 @@ public class TextEntityMessage extends TextEntity {
         monospaceColorSet = new TextColorSetOverride(defaultColorSet) {
           @Override
           public int defaultTextColor () {
-            return syntaxColorId != 0 ? Theme.getColor(syntaxColorId) : super.defaultTextColor();
+            return syntaxColorId != 0 ?
+              colorTheme().getColor(syntaxColorId) :
+              super.defaultTextColor();
           }
 
           @Override
