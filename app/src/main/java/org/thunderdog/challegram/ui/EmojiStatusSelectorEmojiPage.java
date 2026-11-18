@@ -540,9 +540,9 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       clearButton.setButtonBackground(controller.getBackButtonResource());
       clearButton.setOnClickListener(headerView);
 
-      searchButton = headerView.genButton(R.id.menu_btn_search, R.drawable.baseline_search_24, controller.getHeaderIconColorId(), controller, Screen.dp(52f), headerView);
-      emojiButton = headerView.genButton(R.id.menu_btn_emoji, R.drawable.baseline_emoticon_outline_24, controller.getHeaderIconColorId(), controller, Screen.dp(52f), headerView);
-      keyboardButton = headerView.genButton(R.id.menu_btn_emoji_close, R.drawable.baseline_keyboard_24, controller.getHeaderIconColorId(), controller, Screen.dp(52f), headerView);
+      searchButton = headerView.genButton(R.id.menu_btn_search, R.drawable.baseline_search_24, R.string.Search, controller.getHeaderIconColorId(), controller, Screen.dp(52f), headerView);
+      emojiButton = headerView.genButton(R.id.menu_btn_emoji, R.drawable.baseline_emoticon_outline_24, R.string.FilterByEmoji, controller.getHeaderIconColorId(), controller, Screen.dp(52f), headerView);
+      keyboardButton = headerView.genButton(R.id.menu_btn_emoji_close, R.drawable.baseline_keyboard_24, R.string.AccDescrKeyboard, controller.getHeaderIconColorId(), controller, Screen.dp(52f), headerView);
 
       addView(clearButton);
       addView(searchButton);
