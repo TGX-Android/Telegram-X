@@ -5469,6 +5469,7 @@ public class TD {
       return indexes.containsKey(span) ? Spanned.SPAN_EXCLUSIVE_EXCLUSIVE : 0;
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public int nextSpanTransition (int start, int limit, Class type) {
       int next = limit;
