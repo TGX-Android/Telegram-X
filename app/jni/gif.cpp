@@ -15,6 +15,7 @@
 #include <log.h>
 #include <libyuv.h>
 #include <android/bitmap.h>
+#include <atomic>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -36,6 +37,7 @@ extern "C" {
 }
 
 #include <lz4.h>
+#include <malloc.h>
 #include <unistd.h>
 #include <pthread.h>
 
@@ -60,27 +62,223 @@ extern "C" {
 #define VIDEO_STICKER_FORMATS "matroska"
 // As many as files of cameras and editors have
 #define MAX_ANIMATION_STREAMS 16
+// What FFmpeg allocates for a decoder opening its file and grows later, ~1M samples of MP4
+#define MAX_DECODER_MEMORY ((int64_t) 64 * 1024 * 1024)
+// Smaller blocks are never refused: FFmpeg doesn't check them all
+#define MIN_REFUSED_BLOCK (64 * 1024)
 #define BITMAP_TARGET_FORMAT AV_PIX_FMT_RGBA
 // Changed with each update that affects cache contents
 // Updates: tlottie, frame-0-fix
 #define LOTTIE_CACHE_MAGIC 0xf0ebaef5
 #define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef6
 
+// A decoder's blocks: all while it opens its file, then those grown by av_realloc
+struct DecoderMemory {
+  std::atomic<int64_t> used{0};
+  std::atomic<bool> opening{true};
+  // The decoder and its blocks not freed yet
+  std::atomic<int> references{1};
+
+  bool take (int64_t bytes, int64_t blockSize) {
+    int64_t current = used.load();
+    do {
+      if (blockSize >= MIN_REFUSED_BLOCK && bytes > MAX_DECODER_MEMORY - current) {
+        return false;
+      }
+    } while (!used.compare_exchange_weak(current, current + bytes));
+    return true;
+  }
+
+  void release () {
+    if (references.fetch_sub(1) == 1) {
+      delete this;
+    }
+  }
+};
+
+struct BlockHeaderSecrets {
+  uintptr_t memory;
+  uint64_t check;
+};
+
+static const BlockHeaderSecrets &blockHeaderSecrets () {
+  static const BlockHeaderSecrets secrets = [] {
+    BlockHeaderSecrets made {};
+    arc4random_buf(&made, sizeof(made));
+    return made;
+  }();
+  return secrets;
+}
+
+static uint64_t mixBits (uint64_t x) {
+  x = (x ^ (x >> 33)) * 0xff51afd7ed558ccdULL;
+  x = (x ^ (x >> 33)) * 0xc4ceb9fe1a85ec53ULL;
+  return x ^ (x >> 33);
+}
+
 static thread_local int decodedMaxSide = 0;
+static thread_local DecoderMemory *decodedMemory = nullptr;
+// Checked as headers are: variables of threads are on the heap before Android 10
+static thread_local uint32_t decodedMemoryCheck = 0;
+
+static uint32_t decoderMemoryCheck (DecoderMemory *memory) {
+  return (uint32_t) mixBits(~blockHeaderSecrets().check ^ reinterpret_cast<uintptr_t>(memory));
+}
+
+static DecoderMemory *checkedDecodedMemory () {
+  DecoderMemory *memory = decodedMemory;
+  if (memory != nullptr && decodedMemoryCheck != decoderMemoryCheck(memory)) {
+    abort();
+  }
+  return memory;
+}
 
 class DecodedBy {
  public:
-  explicit DecodedBy (int maxSide) : previous(decodedMaxSide) {
+  DecodedBy (int maxSide, DecoderMemory *memory) :
+    previousMaxSide(decodedMaxSide), previousMemory(checkedDecodedMemory()) {
     decodedMaxSide = maxSide;
+    decodedMemory = memory;
+    decodedMemoryCheck = decoderMemoryCheck(memory);
   }
   ~DecodedBy () {
-    decodedMaxSide = previous;
+    decodedMaxSide = previousMaxSide;
+    decodedMemory = previousMemory;
+    decodedMemoryCheck = decoderMemoryCheck(previousMemory);
   }
   DecodedBy (const DecodedBy &) = delete;
   DecodedBy &operator= (const DecodedBy &) = delete;
  private:
-  const int previous;
+  const int previousMaxSide;
+  DecoderMemory *const previousMemory;
 };
+
+// The alignment of av_malloc, which the header takes
+#if defined(__i386__) || defined(__x86_64__)
+#define FFMPEG_ALIGNMENT 64
+#else
+#define FFMPEG_ALIGNMENT 16
+#endif
+
+struct BlockHeader {
+  DecoderMemory *memory;
+  int64_t size;
+};
+
+// The decoder hidden by a secret, and a keyed check of the header and its place, as scudo's
+struct StoredBlockHeader {
+  uintptr_t memory;
+  uint32_t size;
+  uint32_t check;
+};
+static_assert(sizeof(StoredBlockHeader) <= FFMPEG_ALIGNMENT, "the header within the alignment");
+
+static uint32_t blockHeaderCheck (const void *base, uintptr_t memory, uint32_t size) {
+  uint64_t x = mixBits(blockHeaderSecrets().check ^ (uint64_t) memory);
+  x = mixBits(x ^ (uint64_t) reinterpret_cast<uintptr_t>(base));
+  x = mixBits(x ^ size);
+  return (uint32_t) (x ^ (x >> 32));
+}
+
+static BlockHeader readBlockHeader (void *block) {
+  uint8_t *place = static_cast<uint8_t *>(block) - sizeof(StoredBlockHeader);
+  StoredBlockHeader stored {};
+  memcpy(&stored, place, sizeof(stored));
+  if (stored.check != blockHeaderCheck(place, stored.memory, stored.size)) {
+    abort();
+  }
+  return BlockHeader {
+    reinterpret_cast<DecoderMemory *>(stored.memory ^ blockHeaderSecrets().memory),
+    (int64_t) stored.size
+  };
+}
+
+static void *writeBlockHeader (void *base, DecoderMemory *memory, int64_t size) {
+  StoredBlockHeader stored {};
+  stored.memory = reinterpret_cast<uintptr_t>(memory) ^ blockHeaderSecrets().memory;
+  stored.size = (uint32_t) size;
+  uint8_t *block = static_cast<uint8_t *>(base) + FFMPEG_ALIGNMENT;
+  // Right before the block, where any write before it lands first
+  uint8_t *place = block - sizeof(StoredBlockHeader);
+  stored.check = blockHeaderCheck(place, stored.memory, stored.size);
+  memcpy(place, &stored, sizeof(stored));
+  return block;
+}
+
+extern "C" void *tgx_ff_malloc (size_t size) {
+  // All blocks of FFmpeg, built with --malloc-prefix=tgx_ff_
+  if (size > std::numeric_limits<uint32_t>::max() - FFMPEG_ALIGNMENT) {
+    return nullptr;
+  }
+  const size_t blockSize = size + FFMPEG_ALIGNMENT;
+  DecoderMemory *memory = checkedDecodedMemory();
+  if (memory != nullptr && !memory->opening) {
+    memory = nullptr;
+  }
+  if (memory != nullptr && !memory->take((int64_t) blockSize, (int64_t) blockSize)) {
+    return nullptr;
+  }
+#if __ANDROID_API__ >= 17
+  void *base = nullptr;
+  if (posix_memalign(&base, FFMPEG_ALIGNMENT, blockSize) != 0) {
+    base = nullptr;
+  }
+#else
+  void *base = memalign(FFMPEG_ALIGNMENT, blockSize);
+#endif
+  if (base == nullptr) {
+    if (memory != nullptr) {
+      memory->used -= (int64_t) blockSize;
+    }
+    return nullptr;
+  }
+  if (memory != nullptr) {
+    memory->references++;
+  }
+  return writeBlockHeader(base, memory, (int64_t) blockSize);
+}
+
+extern "C" void *tgx_ff_realloc (void *block, size_t size) {
+  if (size > std::numeric_limits<uint32_t>::max() - FFMPEG_ALIGNMENT) {
+    return nullptr;
+  }
+  const BlockHeader header = block != nullptr ? readBlockHeader(block) : BlockHeader {};
+  DecoderMemory *memory = header.memory != nullptr ? header.memory : checkedDecodedMemory();
+  const int64_t blockSize = (int64_t) (size + FFMPEG_ALIGNMENT);
+  const int64_t more = blockSize - (header.memory != nullptr ? header.size : 0);
+  if (memory != nullptr && more > 0 && !memory->take(more, blockSize)) {
+    return nullptr;
+  }
+  uint8_t *previous = block != nullptr ? static_cast<uint8_t *>(block) - FFMPEG_ALIGNMENT : nullptr;
+  void *base = realloc(previous, (size_t) blockSize);
+  if (base == nullptr) {
+    if (memory != nullptr && more > 0) {
+      memory->used -= more;
+    }
+    return nullptr;
+  }
+  if (memory != nullptr) {
+    if (more < 0) {
+      memory->used += more;
+    }
+    if (header.memory == nullptr) {
+      memory->references++;
+    }
+  }
+  return writeBlockHeader(base, memory, blockSize);
+}
+
+extern "C" void tgx_ff_free (void *block) {
+  if (block == nullptr) {
+    return;
+  }
+  const BlockHeader header = readBlockHeader(block);
+  free(static_cast<uint8_t *>(block) - FFMPEG_ALIGNMENT);
+  if (header.memory != nullptr) {
+    header.memory->used -= header.size;
+    header.memory->release();
+  }
+}
 
 extern "C" int __real_vp9_alloc_context_buffers (void *common, int width, int height);
 
@@ -224,8 +422,10 @@ struct VideoInfo {
     }
     video_stream_idx = -1;
     video_stream = nullptr;
+    memory->release();
   }
 
+  DecoderMemory *const memory = new DecoderMemory();
   AVFormatContext *fmt_ctx = nullptr;
   int video_stream_idx = -1;
   AVStream *video_stream = nullptr;
@@ -369,10 +569,10 @@ JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaT
   // Decoders align frames to blocks of up to 64 pixels
   const int64_t maxPixels = (int64_t) FFALIGN(maxSide, 64) * FFALIGN(maxSide, 64);
   const char *codecs = maxSourceSize > 0 ? VIDEO_STICKER_CODECS : ANIMATION_CODECS;
-  DecodedBy decoded(maxSide);
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
   info->maxSide = maxSide;
+  DecodedBy decoded(maxSide, info->memory);
 
   int ret;
   AVDictionary *options = nullptr;
@@ -385,6 +585,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaT
     av_dict_set(&options, "format_whitelist", VIDEO_STICKER_FORMATS, 0);
   }
   ret = avformat_open_input(&info->fmt_ctx, info->path.c_str(), nullptr, &options);
+  info->memory->opening = false;
   av_dict_free(&options);
   if (ret < 0) {
     loge(TAG_GIF_LOADER, "can't open source file %s, %s", info->path.c_str(), av_err2str(ret));
@@ -541,6 +742,7 @@ JNI_FUNC(jboolean, seekVideoToStart, jlong ptr) {
 
   VideoInfo *info = jni::jlong_to_ptr<VideoInfo *>(ptr);
   drop_pending_frame(info);
+  DecodedBy decoded(info->maxSide, info->memory);
 
   int ret = 0;
   ret = avformat_seek_file(
@@ -705,7 +907,7 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
     return draw_frame(env, info, bitmap, info->pending_frame_looped);
   }
   drop_pending_frame(info);
-  DecodedBy decoded(info->maxSide);
+  DecodedBy decoded(info->maxSide, info->memory);
 
   bool gotFrame = false;
   bool hasLooped = false;

@@ -279,6 +279,8 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
         "--disable-programs",
         "--enable-runtime-cpudetect",
         "--enable-pthreads",
+        // Limits of decoders, see tgx_ff_malloc in gif.cpp
+        "--malloc-prefix=tgx_ff_",
 
         "--enable-hwaccels",
         "--disable-vulkan",
