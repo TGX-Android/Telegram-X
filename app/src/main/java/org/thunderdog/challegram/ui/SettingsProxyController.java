@@ -15,8 +15,10 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -325,6 +327,8 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
         out.value = Lang.getString(R.string.ProxyErrorDetailed, info.pingError == null ? "unknown" : info.pingError.code + ": " + info.pingError.message);
       else
         out.value = Lang.getString(info.id == Settings.PROXY_ID_NONE ? R.string.ProxyErrorDirect : R.string.ProxyError);
+    } else if (!info.isAutomaticUseAllowed()) {
+      out.value = Lang.getString(R.string.ProxyCheckedWhenEnabled);
     } else {
       out.value = Lang.getString(R.string.ProxyChecking);
     }
@@ -334,6 +338,9 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
   }
 
   private void pingProxy (@NonNull Settings.Proxy info, boolean allowNotify) {
+    if (!info.isAutomaticUseAllowed()) {
+      return;
+    }
     int nextPingId = info.pingCount + 1;
     tdlib.pingProxy(info, pingMs -> runOnUiThreadOptional(() -> {
       if (info.pingCount == nextPingId) {
@@ -618,7 +625,12 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
       if (proxy.id == effectiveProxyId) {
         showProxyOptions(proxy);
       } else if (proxy.proxy != null) {
-        Settings.instance().addOrUpdateProxy(proxy.proxy, null, true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ||
+          proxy.proxy.type.getConstructor() != TdApi.ProxyTypeWeb.CONSTRUCTOR) {
+          Settings.instance().addOrUpdateProxy(proxy.proxy, null, true);
+        } else {
+          UI.showToast(R.string.ProxyWebUnsupported, Toast.LENGTH_SHORT);
+        }
       }
     } else if (viewId == R.id.btn_useProxyForCalls) {
       Settings.instance().setProxySetting(Settings.PROXY_FLAG_USE_FOR_CALLS, adapter.toggleView(v));

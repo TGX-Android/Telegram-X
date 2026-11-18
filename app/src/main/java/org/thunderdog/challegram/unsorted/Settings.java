@@ -4899,6 +4899,10 @@ public class Settings {
           type = new TdApi.ProxyTypeMtproto(blob.readString());
           break;
         }
+        case Proxy.TYPE_WEB: {
+          type = new TdApi.ProxyTypeWeb(blob.readString(), blob.readString());
+          break;
+        }
         case Proxy.TYPE_HTTP: {
           TdApi.ProxyTypeHttp http = new TdApi.ProxyTypeHttp("", "", false);
           int flags = blob.readByte();
@@ -4928,6 +4932,7 @@ public class Settings {
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return ((TdApi.ProxyTypeHttp) type).username;
       case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
+      case TdApi.ProxyTypeWeb.CONSTRUCTOR:
         return null;
       default: {
         Td.assertProxyType_40673e07();
@@ -4943,6 +4948,7 @@ public class Settings {
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return ((TdApi.ProxyTypeHttp) type).password;
       case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
+      case TdApi.ProxyTypeWeb.CONSTRUCTOR:
         return null;
       default: {
         Td.assertProxyType_40673e07();
@@ -4959,6 +4965,8 @@ public class Settings {
         return 2;
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return 3;
+      case TdApi.ProxyTypeWeb.CONSTRUCTOR:
+        return 4;
       default:
         Td.assertProxyType_40673e07();
         throw Td.unsupported(type);
@@ -4973,6 +4981,8 @@ public class Settings {
         return Proxy.TYPE_MTPROTO;
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return Proxy.TYPE_HTTP;
+      case TdApi.ProxyTypeWeb.CONSTRUCTOR:
+        return Proxy.TYPE_WEB;
       default:
         Td.assertProxyType_40673e07();
         throw Td.unsupported(type);
@@ -5003,6 +5013,11 @@ public class Settings {
 
         break;
       }
+      case Proxy.TYPE_WEB: {
+        TdApi.ProxyTypeWeb web = (TdApi.ProxyTypeWeb) proxy.type;
+        size += Blob.sizeOf(web.path, true) + Blob.sizeOf(web.secret, true);
+        break;
+      }
       case Proxy.TYPE_HTTP: {
         TdApi.ProxyTypeHttp http = (TdApi.ProxyTypeHttp) proxy.type;
 
@@ -5029,6 +5044,12 @@ public class Settings {
 
         blob.writeString(mtproto.secret != null ? mtproto.secret : "");
 
+        break;
+      }
+      case Proxy.TYPE_WEB: {
+        TdApi.ProxyTypeWeb web = (TdApi.ProxyTypeWeb) proxy.type;
+        blob.writeString(web.path);
+        blob.writeString(web.secret);
         break;
       }
       case Proxy.TYPE_HTTP: {
@@ -5257,7 +5278,8 @@ public class Settings {
     @IntDef({
       TYPE_SOCKS5,
       TYPE_MTPROTO,
-      TYPE_HTTP
+      TYPE_HTTP,
+      TYPE_WEB
     })
     public @interface Type {
     }
@@ -5265,6 +5287,7 @@ public class Settings {
     private static final int TYPE_SOCKS5 = 1;
     private static final int TYPE_MTPROTO = 2;
     private static final int TYPE_HTTP = 3;
+    private static final int TYPE_WEB = 4;
 
     private static final int ORDER_UNSET = -1;
 
@@ -5314,7 +5337,16 @@ public class Settings {
       if (proxy == null) {
         return null;
       }
-      final String name = StringUtils.isEmpty(description) ? proxy.server + ":" + proxy.port : description;
+      String name = StringUtils.isEmpty(description)
+        ? proxy.server + ":" + proxy.port
+        : description;
+      if (StringUtils.isEmpty(description) &&
+        proxy.type.getConstructor() == TdApi.ProxyTypeWeb.CONSTRUCTOR) {
+        String path = ((TdApi.ProxyTypeWeb) proxy.type).path;
+        if (!StringUtils.isEmpty(path)) {
+          name += "/" + path;
+        }
+      }
       int stringRes;
       switch (proxy.type.getConstructor()) {
         case TdApi.ProxyTypeSocks5.CONSTRUCTOR: {
@@ -5331,6 +5363,9 @@ public class Settings {
           break;
         case TdApi.ProxyTypeHttp.CONSTRUCTOR:
           stringRes = R.string.ProxyHttp;
+          break;
+        case TdApi.ProxyTypeWeb.CONSTRUCTOR:
+          stringRes = R.string.ProxyWeb;
           break;
         default:
           Td.assertProxyType_40673e07();
@@ -5353,6 +5388,13 @@ public class Settings {
 
     public boolean isDirect () {
       return proxy == null;
+    }
+
+    public boolean isAutomaticUseAllowed () {
+      return proxy == null ||
+        proxy.type.getConstructor() != TdApi.ProxyTypeWeb.CONSTRUCTOR ||
+        successfulConnectionsCount > 0 ||
+        id == Settings.instance().getEffectiveProxyId();
     }
 
     @Override

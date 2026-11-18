@@ -15,6 +15,7 @@ androidx-annotation = "1.11.0"
 androidx-biometric = "1.1.0"
 androidx-collection = "1.7.0"
 androidx-interpolator = "1.0.0"
+androidx-webkit = "1.14.0" # Last release supporting Android 5.0
 
 google-zxing = "3.5.4"
 google-play-app-update = "2.1.0"
@@ -147,6 +148,7 @@ google-play-services-mlkit-barcode-scanning-legacy = "16.2.1" # 18.3.0+ requires
 google-mlkit-language-id-legacy = "16.1.1"
 
 [libraries]
+androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "androidx-webkit" }
 desugaring = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugaring" }
 androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "androidx-multidex" }
 
