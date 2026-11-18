@@ -7882,7 +7882,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void getCurrentLocation (final boolean destroyKeyboard, @Nullable GoogleApiClient client) {
     if (client != null && USE_GOOGLE_LOCATION) {
-      getCurrentLocationViaGoogleApiClient(destroyKeyboard, client);
+      getCurrentLocationViaGoogleApiClient(destroyKeyboard);
     } else {
       shareCurrentLocationViaManager(destroyKeyboard);
     }
@@ -7893,7 +7893,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final boolean USE_LAST_KNOWN_LOCATION = false;
 
   @SuppressWarnings("deprecation")
-  private void getCurrentLocationViaGoogleApiClient (final boolean destroyKeyboard, final @NonNull GoogleApiClient client) {
+  private void getCurrentLocationViaGoogleApiClient (final boolean destroyKeyboard) {
     final CancellableRunnable[] timeout = new CancellableRunnable[1];
     final boolean[] sent = new boolean[1];
     final LocationListener listener = location -> {
@@ -7913,20 +7913,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
           } catch (Throwable t) {
             Log.w("Error removeLocationUpdates", t);
           }
-          Location location = null;
           try {
-            location = LocationServices.FusedLocationApi.getLastLocation(client);
-          } catch (SecurityException ignored) { }
-            catch (Throwable t) {
+            LocationServices.getFusedLocationProviderClient((Context) context())
+              .getLastLocation()
+              .addOnCompleteListener(task ->
+                shareLastLocation(destroyKeyboard, task.isSuccessful() ? task.getResult() : null)
+              );
+          } catch (Throwable t) {
             Log.w("getLastLocation error", t);
-          }
-          if (location == null && USE_LAST_KNOWN_LOCATION) {
-            location = U.getLastKnownLocation(context(), false);
-          }
-          if (location != null) {
-            shareCurrentLocation(destroyKeyboard, location);
-          } else {
-            getCustomCurrentLocation(destroyKeyboard, false, true);
+            shareLastLocation(destroyKeyboard, null);
           }
         }
       }
@@ -7942,6 +7937,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
       Log.w("requestLocationUpdates error", t);
       sent[0] = true;
       shareCurrentLocationViaManager(destroyKeyboard);
+    }
+  }
+
+  private void shareLastLocation (boolean destroyKeyboard, @Nullable Location location) {
+    if (location == null && USE_LAST_KNOWN_LOCATION) {
+      location = U.getLastKnownLocation(context(), false);
+    }
+    if (location != null) {
+      shareCurrentLocation(destroyKeyboard, location);
+    } else {
+      getCustomCurrentLocation(destroyKeyboard, false, true);
     }
   }
 
