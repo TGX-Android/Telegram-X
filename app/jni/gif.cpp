@@ -961,6 +961,10 @@ JNI_FUNC(void, getLottieSize, jlong ptr, jintArray data) {
 }
 
 #define MAX_COMPRESSED_BUFFER_SIZE (1024 * 1024 * 15 /*15 MiB*/)
+// Holds stickers uncompressed: 180 frames of 384x384
+#define MAX_LOTTIE_CACHE_SIZE (1024 * 1024 * 128)
+// 10 seconds at 60 frames a second; stickers and effects last 3
+#define MAX_LOTTIE_CACHE_FRAMES 600
 
 JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFrame, jobject bitmap, jboolean allowCreate, jboolean limitFps) {
   if (jCachePath == nullptr) {
@@ -984,6 +988,12 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
   uint32_t frameCount = tlottie_frame_count(info->animation);
   uint32_t maxCompressedFrameSize = 0;
   uint32_t firstFrameSize = 0;
+
+  if (frameCount > MAX_LOTTIE_CACHE_FRAMES ||
+      (uint64_t) frameCount * (uint64_t) LZ4_compressBound((int) uncompressedSize) >
+      MAX_LOTTIE_CACHE_SIZE) {
+    return 2;
+  }
 
   const uint32_t magic = skipOdd ? LOTTIE_CACHE_MAGIC_REDUCED : LOTTIE_CACHE_MAGIC;
   info->headerSize = sizeof(magic) + sizeof(frameCount) + sizeof(maxCompressedFrameSize); // index table?
