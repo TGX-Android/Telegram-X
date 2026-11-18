@@ -2341,8 +2341,12 @@ public class TdlibUi extends Handler {
   }
 
   public void openChatProfile (final TdlibDelegate context, final @NonNull TdApi.Chat chat, final @Nullable ThreadInfo threadInfo, final @Nullable UrlOpenParameters openParameters) {
+    openChatProfile(context, chat, threadInfo, openParameters, false);
+  }
+
+  public void openChatProfile (final TdlibDelegate context, final @NonNull TdApi.Chat chat, final @Nullable ThreadInfo threadInfo, final @Nullable UrlOpenParameters openParameters, boolean openGroupsInCommon) {
     if (TdlibManager.inBackgroundThread()) {
-      tdlib.runOnUiThread(() -> openChatProfile(context, chat, threadInfo, openParameters));
+      tdlib.runOnUiThread(() -> openChatProfile(context, chat, threadInfo, openParameters, openGroupsInCommon));
       return;
     }
     int accessState = tdlib.chatAccessState(chat);
@@ -2357,6 +2361,9 @@ public class TdlibUi extends Handler {
     ProfileController profileController = new ProfileController(context.context(), context.tdlib());
     try {
       profileController.setArguments(new ProfileController.Args(chat, threadInfo, false));
+      if (openGroupsInCommon) {
+        profileController.setOpenGroupsInCommon();
+      }
     } catch (Throwable t) {
       Log.e("Unable to open profile", t);
       return;
