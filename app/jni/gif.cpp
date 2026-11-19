@@ -62,7 +62,7 @@ extern "C" {
 #define VIDEO_STICKER_FORMATS "matroska"
 // As many as files of cameras and editors have
 #define MAX_ANIMATION_STREAMS 16
-// What FFmpeg allocates for a decoder opening its file and grows later, ~1M samples of MP4
+// ~1M samples of MP4
 #define MAX_DECODER_MEMORY ((int64_t) 64 * 1024 * 1024)
 // Smaller blocks are never refused: FFmpeg doesn't check them all
 #define MIN_REFUSED_BLOCK (64 * 1024)
@@ -72,10 +72,9 @@ extern "C" {
 #define LOTTIE_CACHE_MAGIC 0xf0ebaef5
 #define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef6
 
-// A decoder's blocks: all while it opens its file, then those grown by av_realloc
+// A decoder's blocks on its thread: all outside its codec's calls, those of av_realloc in them
 struct DecoderMemory {
   std::atomic<int64_t> used{0};
-  std::atomic<bool> opening{true};
   // The decoder and its blocks not freed yet
   std::atomic<int> references{1};
 
@@ -120,6 +119,8 @@ static thread_local int decodedMaxSide = 0;
 static thread_local DecoderMemory *decodedMemory = nullptr;
 // Checked as headers are: variables of threads are on the heap before Android 10
 static thread_local uint32_t decodedMemoryCheck = 0;
+// Counted by the wraps below, also in the calls that probing makes inside FFmpeg
+static thread_local int codecCalls = 0;
 
 static uint32_t decoderMemoryCheck (DecoderMemory *memory) {
   return (uint32_t) mixBits(~blockHeaderSecrets().check ^ reinterpret_cast<uintptr_t>(memory));
@@ -211,10 +212,7 @@ extern "C" void *tgx_ff_malloc (size_t size) {
     return nullptr;
   }
   const size_t blockSize = size + FFMPEG_ALIGNMENT;
-  DecoderMemory *memory = checkedDecodedMemory();
-  if (memory != nullptr && !memory->opening) {
-    memory = nullptr;
-  }
+  DecoderMemory *memory = codecCalls == 0 ? checkedDecodedMemory() : nullptr;
   if (memory != nullptr && !memory->take((int64_t) blockSize, (int64_t) blockSize)) {
     return nullptr;
   }
@@ -288,6 +286,40 @@ extern "C" int __wrap_vp9_alloc_context_buffers (void *common, int width, int he
     return 1;
   }
   return __real_vp9_alloc_context_buffers(common, width, height);
+}
+
+extern "C" int __real_avcodec_open2 (AVCodecContext *context, const AVCodec *codec,
+                                     AVDictionary **options);
+extern "C" int __real_avcodec_send_packet (AVCodecContext *context, const AVPacket *packet);
+extern "C" int __real_avcodec_receive_frame (AVCodecContext *context, AVFrame *frame);
+extern "C" void __real_avcodec_flush_buffers (AVCodecContext *context);
+
+extern "C" int __wrap_avcodec_open2 (AVCodecContext *context, const AVCodec *codec,
+                                     AVDictionary **options) {
+  codecCalls++;
+  const int result = __real_avcodec_open2(context, codec, options);
+  codecCalls--;
+  return result;
+}
+
+extern "C" int __wrap_avcodec_send_packet (AVCodecContext *context, const AVPacket *packet) {
+  codecCalls++;
+  const int result = __real_avcodec_send_packet(context, packet);
+  codecCalls--;
+  return result;
+}
+
+extern "C" int __wrap_avcodec_receive_frame (AVCodecContext *context, AVFrame *frame) {
+  codecCalls++;
+  const int result = __real_avcodec_receive_frame(context, frame);
+  codecCalls--;
+  return result;
+}
+
+extern "C" void __wrap_avcodec_flush_buffers (AVCodecContext *context) {
+  codecCalls++;
+  __real_avcodec_flush_buffers(context);
+  codecCalls--;
 }
 
 static const std::string av_make_error_str (int errnum) {
@@ -585,7 +617,6 @@ JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaT
     av_dict_set(&options, "format_whitelist", VIDEO_STICKER_FORMATS, 0);
   }
   ret = avformat_open_input(&info->fmt_ctx, info->path.c_str(), nullptr, &options);
-  info->memory->opening = false;
   av_dict_free(&options);
   if (ret < 0) {
     loge(TAG_GIF_LOADER, "can't open source file %s, %s", info->path.c_str(), av_err2str(ret));
