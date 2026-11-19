@@ -672,7 +672,7 @@ public class TGMessageMedia extends TGMessage {
       if (useBubbles())
         return (getActualRightContentEdge() - xBubblePadding - xBubblePaddingSmall);
       if (useFullWidth())
-        return view.getMeasuredWidth() - getRealContentX();
+        return getRealContentX() + getRealContentMaxWidth();
       int startX = getContentX();
       return Math.max(startX + mosaicWrapper.getWidth(), startX + wrapper.getWidth());
     } else {

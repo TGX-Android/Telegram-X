@@ -652,6 +652,9 @@ public class QuoteBackground {
     int startY,
     int codeBlockEnd
   ) {
+    // At the left of left-aligned text, also beside right-to-left lines
+    final boolean isStartAligned = !isCode && !parent.alignRight();
+    int left = Integer.MAX_VALUE;
     for (int a = partStart; a < partEnd; a++) {
       final TextPart part = parent.getTextPart(a);
       final int height = getPartHeight(part);
@@ -664,9 +667,10 @@ public class QuoteBackground {
       } else {
         bounds.union(x, y, x + (int) part.getWidth(), y + height);
       }
+      left = Math.min(left, isStartAligned ? part.makeX(startX, startX, 0) : x);
     }
 
-    bounds.left -= Screen.dp(QUOTE_LEFT_PADDING);
+    bounds.left = left - Screen.dp(QUOTE_LEFT_PADDING);
     bounds.top -= Screen.dp(QUOTE_VERTICAL_PADDING) + topAddition + headerHeight - topOffset;
     bounds.bottom += Screen.dp(QUOTE_VERTICAL_PADDING) + bottomAddition + bottomOffset;
     if (isCode) {
@@ -682,15 +686,16 @@ public class QuoteBackground {
         bounds.right = Math.max(bounds.right, end);
       }
     } else {
-      bounds.right += Screen.dp(QUOTE_RIGHT_PADDING) + rightOffset;
-    }
-    // A collapsed quote is as wide as when expanded
-    if (isCollapsed() && bounds.width() < hiddenWidth) {
-      if (parent.getTextPart(partStart).isRtl()) {
-        bounds.left = bounds.right - hiddenWidth;
-      } else {
-        bounds.right = bounds.left + hiddenWidth;
+      bounds.right += Screen.dp(QUOTE_RIGHT_PADDING);
+      // A collapsed quote is as wide as when expanded
+      if (isCollapsed() && bounds.width() < hiddenWidth) {
+        if (!isStartAligned && parent.getTextPart(partStart).isRtl()) {
+          bounds.left = bounds.right - hiddenWidth;
+        } else {
+          bounds.right = bounds.left + hiddenWidth;
+        }
       }
+      bounds.right += rightOffset;
     }
 
     ripple.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
