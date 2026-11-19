@@ -12222,6 +12222,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     });
   }
 
+  public void setChatFolderIconColor (int chatFolderId, int colorId) {
+    send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> {
+      if (chatFolder != null && chatFolder.colorId != colorId) {
+        chatFolder.colorId = colorId;
+        send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, setColorError) -> {
+          if (setColorError != null) {
+            UI.showError(setColorError);
+          }
+        });
+      }
+    });
+  }
+
   public String chatFolderIconName (TdApi.ChatFolder chatFolder) {
     TdApi.ChatFolderIcon icon = chatFolderIcon(chatFolder);
     return icon != null ? icon.name : "";

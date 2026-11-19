@@ -17,9 +17,11 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -32,6 +34,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -53,10 +56,11 @@ public class ChatFolderIconSelector {
   private final View popupView;
   private final GridLayoutManager layoutManager;
   private final @Nullable String selectedIconName;
+  private final @Nullable View colorSelector;
 
   private PopupLayout popupLayout;
 
-  public ChatFolderIconSelector (ViewController<?> owner, @Nullable String selectedIconName, boolean isDefault, Delegate delegate) {
+  public ChatFolderIconSelector (ViewController<?> owner, @Nullable String selectedIconName, int selectedColorId, boolean canSelectColor, boolean isDefault, Delegate delegate) {
     this.context = owner.context();
     this.delegate = delegate;
     this.selectedIconName = selectedIconName;
@@ -127,9 +131,27 @@ public class ChatFolderIconSelector {
     shadowView.setSimpleTopShadow(true);
     owner.addThemeInvalidateListener(shadowView);
 
+    if (canSelectColor) {
+      ColorSelectorView colorSelector = new ColorSelectorView(context, selectedColorId, colorId -> {
+        delegate.onColorSelected(colorId);
+        hide(/* animated */ true);
+      });
+      owner.addThemeInvalidateListener(colorSelector);
+      this.colorSelector = colorSelector;
+    } else {
+      this.colorSelector = null;
+    }
+
+    LinearLayout content = new LinearLayout(context);
+    content.setOrientation(LinearLayout.VERTICAL);
+    content.addView(recyclerView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    if (this.colorSelector != null) {
+      content.addView(this.colorSelector, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f)));
+    }
+
     FrameLayoutFix popupView = new FrameLayoutFix(context);
     popupView.addView(shadowView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(7f), Gravity.TOP));
-    popupView.addView(recyclerView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP, 0, Screen.dp(7f), 0, 0));
+    popupView.addView(content, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP, 0, Screen.dp(7f), 0, 0));
     popupView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
     this.popupView = popupView;
   }
@@ -138,7 +160,7 @@ public class ChatFolderIconSelector {
     int itemCount = layoutManager.getItemCount();
     int spanCount = layoutManager.getSpanCount();
     int rowCount = (itemCount + spanCount - 1) / spanCount;
-    int popupHeight = rowCount * (Screen.currentWidth() / spanCount) + Screen.dp(7f);
+    int popupHeight = rowCount * (Screen.currentWidth() / spanCount) + Screen.dp(7f) + (colorSelector != null ? Screen.dp(56f) : 0);
 
     popupLayout = new PopupLayout(context) {
       @Override
@@ -183,6 +205,11 @@ public class ChatFolderIconSelector {
   public interface Delegate {
     void onIconClick (@Nullable TdApi.ChatFolderIcon icon);
 
+    /**
+     * @param colorId New chat folder icon color; from -1 (no color) to 6.
+     */
+    default void onColorSelected (int colorId) {}
+
     default void onShow () {}
 
     default void onDismiss () {}
@@ -195,13 +222,78 @@ public class ChatFolderIconSelector {
       icon = owner.tdlib().chatFolderIcon(chatFolder);
       isDefault = true;
     }
-    return show(owner, icon, isDefault, delegate);
+    boolean canSelectColor = owner.tdlib().areChatFolderTagsEnabled() && owner.tdlib().hasPremium();
+    return show(owner, icon, canSelectColor ? chatFolder.colorId : -1, canSelectColor, isDefault, delegate);
   }
 
   public static ChatFolderIconSelector show (ViewController<?> owner, @Nullable TdApi.ChatFolderIcon selectedIcon, boolean isDefault, Delegate delegate) {
+    return show(owner, selectedIcon, -1, false, isDefault, delegate);
+  }
+
+  public static ChatFolderIconSelector show (ViewController<?> owner, @Nullable TdApi.ChatFolderIcon selectedIcon, int selectedColorId, boolean canSelectColor, boolean isDefault, Delegate delegate) {
     String iconName = selectedIcon != null && !StringUtils.isEmpty(selectedIcon.name) ? selectedIcon.name : null;
-    ChatFolderIconSelector selector = new ChatFolderIconSelector(owner, iconName, isDefault || StringUtils.isEmpty(iconName), delegate);
+    ChatFolderIconSelector selector = new ChatFolderIconSelector(owner, iconName, selectedColorId, canSelectColor, isDefault || StringUtils.isEmpty(iconName), delegate);
     selector.show();
     return selector;
+  }
+
+  private static final class ColorSelectorView extends View {
+    private interface OnColorSelected {
+      void onColorSelected (int colorId);
+    }
+
+    private static final int CELL_COUNT = TdlibAccentColor.BUILT_IN_COLOR_COUNT + 1;
+
+    private final OnColorSelected listener;
+    private final int selectedColorId;
+
+    ColorSelectorView (Context context, int selectedColorId, OnColorSelected listener) {
+      super(context);
+      this.selectedColorId = selectedColorId;
+      this.listener = listener;
+      Views.setClickable(this);
+    }
+
+    @Override
+    protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+      setMeasuredDimension(getMeasuredWidth(), Screen.dp(56f));
+    }
+
+    @Override
+    protected void onDraw (Canvas canvas) {
+      float cellWidth = getWidth() / (float) CELL_COUNT;
+      float centerY = getHeight() / 2f;
+      for (int i = 0; i < CELL_COUNT; i++) {
+        int colorId = colorIdAt(i);
+        float centerX = cellWidth * i + cellWidth / 2f;
+        if (colorId == selectedColorId) {
+          canvas.drawCircle(centerX, centerY, Screen.dp(20f), Paints.fillingPaint(Theme.fillingColor()));
+        }
+        canvas.drawCircle(centerX, centerY, Screen.dp(12f), Paints.fillingPaint(Theme.getColor(tintIdAt(colorId))));
+      }
+    }
+
+    @Override
+    public boolean onTouchEvent (MotionEvent event) {
+      if (event.getAction() == MotionEvent.ACTION_UP) {
+        int cellWidth = getWidth() / CELL_COUNT;
+        int index = cellWidth > 0 ? (int) (event.getX() / cellWidth) : -1;
+        if (index >= 0 && index < CELL_COUNT) {
+          performClick();
+          listener.onColorSelected(colorIdAt(index));
+        }
+        return true;
+      }
+      return super.onTouchEvent(event);
+    }
+
+    private static int colorIdAt (int index) {
+      return index - 1;
+    }
+
+    private static @ColorId int tintIdAt (int colorId) {
+      return colorId < 0 ? ColorId.icon : TdlibAccentColor.getBuiltInPrimaryColorId(colorId);
+    }
   }
 }

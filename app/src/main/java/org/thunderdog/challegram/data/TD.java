@@ -6387,6 +6387,13 @@ public class TD {
     }
   }
 
+  public static @ColorId int folderIconColorId (int colorId) {
+    if (colorId >= 0 && colorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+      return TdlibAccentColor.getBuiltInPrimaryColorId(colorId);
+    }
+    return ColorId.NONE;
+  }
+
   public static @Nullable String getIconName (@Nullable TdApi.ChatFolderInfo info) {
     return info != null && info.icon != null ? info.icon.name : null;
   }

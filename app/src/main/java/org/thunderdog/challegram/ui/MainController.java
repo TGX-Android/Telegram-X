@@ -2503,9 +2503,17 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           if (error != null) {
             UI.showError(error);
           } else {
-            ChatFolderIconSelector.show(this, chatFolder, selectedIcon ->
-              tdlib.setChatFolderIcon(chatFolderId, selectedIcon, Config.CHAT_FOLDERS_UNSET_DEFAULT_ICONS)
-            );
+            ChatFolderIconSelector.show(this, chatFolder, new ChatFolderIconSelector.Delegate() {
+              @Override
+              public void onIconClick (@Nullable TdApi.ChatFolderIcon icon) {
+                tdlib.setChatFolderIcon(chatFolderId, icon, Config.CHAT_FOLDERS_UNSET_DEFAULT_ICONS);
+              }
+
+              @Override
+              public void onColorSelected (int colorId) {
+                tdlib.setChatFolderIconColor(chatFolderId, colorId);
+              }
+            });
           }
         }));
       } else if (id == R.id.btn_shareFolder) {
@@ -2988,7 +2996,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private ViewPagerTopView.Item buildSectionItem (long pagerItemId, int pagerItemPosition, TdApi.ChatList chatList, TdApi.ChatFolderInfo chatFolderInfo, @ChatFolderStyle int chatFolderStyle) {
     CharSequence sectionName = getFolderSectionName(pagerItemId, TD.toCharSequence(chatFolderInfo.name), chatFolderStyle);
     int iconResource = TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24);
-    return buildSectionItem(pagerItemId, pagerItemPosition, chatList, sectionName, iconResource, chatFolderStyle);
+    ViewPagerTopView.Item item = buildSectionItem(pagerItemId, pagerItemPosition, chatList, sectionName, iconResource, chatFolderStyle);
+    item.setIconColorId(TD.folderIconColorId(chatFolderInfo.colorId));
+    return item;
   }
 
   private ViewPagerTopView.Item buildSectionItem (long pagerItemId, int pagerItemPosition, TdApi.ChatList chatList, CharSequence sectionName, @DrawableRes int iconResource, @ChatFolderStyle int chatFolderStyle) {
