@@ -265,6 +265,14 @@ public final class TdlibAccentColor {
     return accentColorIdToAppColorId(InternalId.INACTIVE, useCase);
   }
 
+  /**
+   * Resolves a built-in accent color to the primary {@link ColorId} used by the app.
+   * Used by features that only have a built-in color id available, such as chat folder icon colors.
+   */
+  public static @ColorId int getBuiltInPrimaryColorId (@BuiltInId int builtInAccentColorId) {
+    return accentColorIdToAppColorId(builtInAccentColorId, UseCase.PRIMARY);
+  }
+
   // Get color
 
   private boolean isBuiltInOrInternalTheme () {

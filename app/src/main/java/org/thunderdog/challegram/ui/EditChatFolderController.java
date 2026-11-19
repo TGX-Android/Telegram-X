@@ -1090,17 +1090,26 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   private void showIconSelector () {
-    ChatFolderIconSelector.show(this, editedChatFolder, selectedIcon -> {
-      TdApi.ChatFolderIcon newIcon = selectedIcon;
-      if (Config.CHAT_FOLDERS_UNSET_DEFAULT_ICONS) {
-        TdApi.ChatFolderIcon defaultIcon = tdlib.defaultChatFolderIcon(editedChatFolder);
-        if (Td.equalsTo(selectedIcon, defaultIcon)) {
-          newIcon = null;
+    ChatFolderIconSelector.show(this, editedChatFolder, new ChatFolderIconSelector.Delegate() {
+      @Override
+      public void onIconClick (@Nullable TdApi.ChatFolderIcon selectedIcon) {
+        TdApi.ChatFolderIcon newIcon = selectedIcon;
+        if (Config.CHAT_FOLDERS_UNSET_DEFAULT_ICONS) {
+          TdApi.ChatFolderIcon defaultIcon = tdlib.defaultChatFolderIcon(editedChatFolder);
+          if (Td.equalsTo(selectedIcon, defaultIcon)) {
+            newIcon = null;
+          }
         }
+        editedChatFolder.icon = newIcon;
+        updateFolderIcon();
+        updateDoneButton();
       }
-      editedChatFolder.icon = newIcon;
-      updateFolderIcon();
-      updateDoneButton();
+
+      @Override
+      public void onColorSelected (int colorId) {
+        editedChatFolder.colorId = colorId;
+        updateDoneButton();
+      }
     });
   }
 
