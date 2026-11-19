@@ -1119,21 +1119,25 @@ dependencies {
   flavorImplementation(
     libs.androidx.camera.camera2.legacy,
     libs.androidx.camera.camera2.legacy,
+    libs.androidx.camera.camera2.marshmallow,
     libs.androidx.camera.camera2.latest
   )
   flavorImplementation(
     libs.androidx.camera.video.legacy,
     libs.androidx.camera.video.legacy,
+    libs.androidx.camera.video.marshmallow,
     libs.androidx.camera.video.latest
   )
   flavorImplementation(
     libs.androidx.camera.lifecycle.legacy,
     libs.androidx.camera.lifecycle.legacy,
+    libs.androidx.camera.lifecycle.marshmallow,
     libs.androidx.camera.lifecycle.latest
   )
   flavorImplementation(
     libs.androidx.camera.view.legacy,
     libs.androidx.camera.view.legacy,
+    libs.androidx.camera.view.marshmallow,
     libs.androidx.camera.view.latest
   )
   // Google Play Services: https://developers.google.com/android/guides/releases
