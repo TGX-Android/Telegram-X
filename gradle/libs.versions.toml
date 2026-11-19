@@ -35,7 +35,7 @@ subsampling-scale-image-view = "3.10.0"
 mp4parser-isoparser = "1.0.6" # Do not upgrade.
 
 annotations-checkerframework = "4.4.0"
-annotations-errorprone = "2.52.0"
+annotations-errorprone = "2.53.0"
 annotations-j2objc = "3.1"
 annotations-jsr305 = "3.0.2"
 annotations-kotlin = "2.4.21"
