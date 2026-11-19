@@ -731,6 +731,10 @@
   <item type="id" name="btn_chatListStyle1" />
   <item type="id" name="btn_chatListStyle2" />
   <item type="id" name="btn_chatListStyle3" />
+  <item type="id" name="btn_dualPaneMode" />
+  <item type="id" name="btn_dualPaneModeAuto" />
+  <item type="id" name="btn_dualPaneModeForce" />
+  <item type="id" name="btn_dualPaneModeOff" />
   <item type="id" name="btn_customVibrations" />
   <item type="id" name="btn_hqRounds" />
   <item type="id" name="btn_rearRounds" />

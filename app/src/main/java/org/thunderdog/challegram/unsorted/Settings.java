@@ -239,6 +239,7 @@ public class Settings {
   private static final String KEY_TUTORIAL_PSA = "settings_tutorial_psa";
   private static final String KEY_CHAT_FONT_SIZE = "settings_font_size";
   private static final String KEY_CHAT_LIST_MODE = "settings_chat_list_mode";
+  private static final String KEY_DUAL_PANE_MODE = "settings_dual_pane_mode";
   private static final String KEY_CHAT_TRANSLATE_MODE = "settings_chat_translate_mode";
   private static final String KEY_CHAT_DO_NOT_TRANSLATE_MODE = "settings_chat_do_not_translate_mode";
   private static final String KEY_CHAT_DO_NOT_TRANSLATE_LIST = "settings_chat_do_not_translate_list";
@@ -1306,6 +1307,15 @@ public class Settings {
   public void removeChatListModeListener (ChatListModeChangeListener listModeChangeListener) {
     if (chatListModeListeners != null)
       chatListModeListeners.remove(listModeChangeListener);
+  }
+
+  /** {@link org.thunderdog.challegram.navigation.DualPaneLayout#MODE_AUTO}, MODE_FORCE or MODE_OFF. */
+  public int getDualPaneMode () {
+    return pmc.getInt(KEY_DUAL_PANE_MODE, org.thunderdog.challegram.navigation.DualPaneLayout.MODE_AUTO);
+  }
+
+  public void setDualPaneMode (int mode) {
+    pmc.putInt(KEY_DUAL_PANE_MODE, mode);
   }
 
   public void setChatListMode (int mode) {

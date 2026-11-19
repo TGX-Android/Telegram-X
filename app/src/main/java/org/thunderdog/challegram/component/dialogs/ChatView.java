@@ -487,6 +487,16 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     }
   }
 
+  private boolean isOpened;
+
+  /** Chat is currently open in the detail pane of the dual-pane layout. */
+  public void setIsOpened (boolean isOpened) {
+    if (this.isOpened != isOpened) {
+      this.isOpened = isOpened;
+      invalidate();
+    }
+  }
+
   private boolean isDragging;
 
   public void setIsDragging (boolean isDragging) {
@@ -574,6 +584,8 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
     if (isDragging) {
       c.drawColor(ColorUtils.alphaColor(.8f, Theme.fillingColor()));
+    } else if (isOpened) {
+      c.drawColor(Theme.getColor(ColorId.fillingPressed));
     }
 
     c.drawText(chat.getTime(), (rtl ? viewWidth - chat.getTimeLeft() - chat.getTimeWidth() : chat.getTimeLeft()), getTitleTop(chatListMode), timePaint);

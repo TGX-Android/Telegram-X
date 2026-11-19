@@ -41,6 +41,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.LocationHelper;
+import org.thunderdog.challegram.navigation.DualPaneLayout;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -216,6 +217,19 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           v.getToggler().setRadioEnabled(Settings.instance().useSystemFonts(), isUpdate);
         } else if (itemId == R.id.btn_secret_batmanTransitions) {
           v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS), isUpdate);
+        } else if (itemId == R.id.btn_dualPaneMode) {
+          switch (Settings.instance().getDualPaneMode()) {
+            case DualPaneLayout.MODE_FORCE:
+              v.setData(R.string.DualPaneModeForce);
+              break;
+            case DualPaneLayout.MODE_OFF:
+              v.setData(R.string.DualPaneModeOff);
+              break;
+            case DualPaneLayout.MODE_AUTO:
+            default:
+              v.setData(R.string.DualPaneModeAuto);
+              break;
+          }
         } else if (itemId == R.id.btn_chatListStyle) {
           switch (Settings.instance().getChatListMode()) {
             case Settings.CHAT_MODE_3LINE_BIG:
@@ -394,6 +408,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatListStyle, 0, R.string.ChatListStyle));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_dualPaneMode, 0, R.string.DualPaneMode));
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatBackground, 0, R.string.Wallpaper));
@@ -1198,6 +1214,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       Settings.instance().setNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS, adapter.toggleView(v));
     } else if (viewId == R.id.btn_chatListStyle) {
       showChatListOptions();
+    } else if (viewId == R.id.btn_dualPaneMode) {
+      showDualPaneOptions();
     } else if (viewId == R.id.btn_instantViewMode) {
       showInstantViewOptions();
     } else if (viewId == R.id.btn_chatSwipes) {
@@ -1681,6 +1699,26 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         tdlib.ui().postDelayed(() -> getRecyclerView().setItemAnimator(animator), 100);
       }
     }
+  }
+
+  private void showDualPaneOptions () {
+    int mode = Settings.instance().getDualPaneMode();
+    showSettings(new SettingsWrapBuilder(R.id.btn_dualPaneMode).setRawItems(new ListItem[] {
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_dualPaneModeAuto, 0, R.string.DualPaneModeAuto, R.id.btn_dualPaneMode, mode == DualPaneLayout.MODE_AUTO),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_dualPaneModeForce, 0, R.string.DualPaneModeForce, R.id.btn_dualPaneMode, mode == DualPaneLayout.MODE_FORCE),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_dualPaneModeOff, 0, R.string.DualPaneModeOff, R.id.btn_dualPaneMode, mode == DualPaneLayout.MODE_OFF),
+    }).setIntDelegate((id, result) -> {
+      int resultId = result.get(R.id.btn_dualPaneMode);
+      int newMode = resultId == R.id.btn_dualPaneModeForce ? DualPaneLayout.MODE_FORCE :
+        resultId == R.id.btn_dualPaneModeOff ? DualPaneLayout.MODE_OFF :
+        DualPaneLayout.MODE_AUTO;
+      Settings.instance().setDualPaneMode(newMode);
+      adapter.updateValuedSettingById(R.id.btn_dualPaneMode);
+      DualPaneLayout dualPane = context().getDualPaneLayout();
+      if (dualPane != null) {
+        dualPane.update();
+      }
+    }).setAllowResize(false));
   }
 
   private void showChatListOptions () {

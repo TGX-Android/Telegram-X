@@ -113,6 +113,10 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
     if (startY <= 0f) //HeaderView.getSize()
       return false;
 
+    DualPaneLayout dualPane = UI.getContext(navigation.getContext()).getDualPaneLayout();
+    if (dualPane != null && dualPane.isInListPane(startX))
+      return false; // touches in the list pane must not drive the detail pane's swipe-back
+
     ViewController<?> c = navigation.getCurrentStackItem();
 
     if (c == null || c.isIntercepted())
