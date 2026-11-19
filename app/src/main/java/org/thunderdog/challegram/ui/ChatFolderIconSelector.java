@@ -222,7 +222,7 @@ public class ChatFolderIconSelector {
       icon = owner.tdlib().chatFolderIcon(chatFolder);
       isDefault = true;
     }
-    boolean canSelectColor = owner.tdlib().areChatFolderTagsEnabled() && owner.tdlib().hasPremium();
+    boolean canSelectColor = owner.tdlib().hasPremium();
     return show(owner, icon, canSelectColor ? chatFolder.colorId : -1, canSelectColor, isDefault, delegate);
   }
 
