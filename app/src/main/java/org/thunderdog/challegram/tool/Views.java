@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.tool;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.app.Dialog;
 import android.content.Context;
@@ -673,51 +674,56 @@ public class Views {
 
       final int fromZ = Screen.dp(1.5f);
       final int toZ = Screen.dp(3f);
-      final int diffZ = toZ - fromZ;
 
-      ValueAnimator obj;
-
-      obj = AnimatorUtils.simpleValueAnimator();
-      obj.setDuration(180l);
-      obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-      obj.addUpdateListener(animation -> {
-        float z = fromZ + (float) diffZ * AnimatorUtils.getFraction(animation);
-        if (z < view.getTranslationZ()) {
-          view.setTranslationZ(z);
-          if (view.getTag() instanceof View) {
-            ((View) view.getTag()).setTranslationZ(z);
-          }
-        } else {
-          if (view.getTag() instanceof View) {
-            ((View) view.getTag()).setTranslationZ(z);
-          }
-          view.setTranslationZ(z);
-        }
-      });
-      animator.addState(new int[] {android.R.attr.state_pressed}, obj);
-
-      obj = AnimatorUtils.simpleValueAnimator();
-      obj.setDuration(180l);
-      obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-      obj.addUpdateListener(animation -> {
-        float z = toZ - (float) diffZ * AnimatorUtils.getFraction(animation);
-        if (z < view.getTranslationZ()) {
-          view.setTranslationZ(z);
-          if (view.getTag() instanceof View) {
-            ((View) view.getTag()).setTranslationZ(z);
-          }
-        } else {
-          if (view.getTag() instanceof View) {
-            ((View) view.getTag()).setTranslationZ(z);
-          }
-          view.setTranslationZ(z);
-        }
-      });
-
-      animator.addState(new int[] {}, obj);
+      animator.addState(
+        new int[] {android.R.attr.state_pressed},
+        newTranslationZAnimator(view, fromZ, toZ)
+      );
+      animator.addState(new int[] {}, newTranslationZAnimator(view, toZ, fromZ));
 
       view.setStateListAnimator(animator);
     }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+  private static ValueAnimator newTranslationZAnimator (
+    final View view,
+    final int fromZ,
+    final int toZ
+  ) {
+    final ValueAnimator obj = AnimatorUtils.simpleValueAnimator();
+    obj.setDuration(180l);
+    obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
+    // NaN until the first frame of a run, which below Android 7 comes before its start listeners
+    final float[] startZ = {Float.NaN};
+    obj.addListener(new AnimatorListenerAdapter() {
+      @Override
+      public void onAnimationEnd (Animator animation) {
+        startZ[0] = Float.NaN;
+      }
+    });
+    obj.addUpdateListener(animation -> {
+      if (Float.isNaN(startZ[0])) {
+        // From the Z the view has, e.g. halfway after a short press. A view at neither Z, e.g. a
+        // new one in the first state it gets when its screen opens, takes toZ at once: animating
+        // it would redraw its parents on every frame of that opening
+        final float z = view.getTranslationZ();
+        startZ[0] = z >= Math.min(fromZ, toZ) && z <= Math.max(fromZ, toZ) ? z : toZ;
+      }
+      float z = startZ[0] + (toZ - startZ[0]) * AnimatorUtils.getFraction(animation);
+      if (z < view.getTranslationZ()) {
+        view.setTranslationZ(z);
+        if (view.getTag() instanceof View) {
+          ((View) view.getTag()).setTranslationZ(z);
+        }
+      } else {
+        if (view.getTag() instanceof View) {
+          ((View) view.getTag()).setTranslationZ(z);
+        }
+        view.setTranslationZ(z);
+      }
+    });
+    return obj;
   }
 
   public static void initCircleButton (final View view, final float size, final float padding) {
