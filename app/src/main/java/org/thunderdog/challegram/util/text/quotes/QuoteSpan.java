@@ -28,10 +28,12 @@ import android.text.style.LineHeightSpan;
 import android.text.style.MetricAffectingSpan;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -57,6 +59,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
   public int start, end, flags;
   public boolean rtl;
   private final boolean isExpandable;
+  private @Nullable ThemeDelegate colorTheme;
 
   public QuoteSpan (boolean isExpandable) {
     this.styleSpan = new QuoteStyleSpan(this);
@@ -65,6 +68,14 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
 
   public boolean isExpandable () {
     return isExpandable;
+  }
+
+  public void setColorTheme (@Nullable ThemeDelegate theme) {
+    this.colorTheme = theme;
+  }
+
+  private int getColor (@ColorId int colorId) {
+    return colorTheme != null ? colorTheme.getColor(colorId) : Theme.getColor(colorId);
   }
 
   @Override
@@ -91,7 +102,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       if (tp == null) {
         return;
       }
-      tp.setColor(Theme.getColor(ColorId.blockQuoteText));
+      tp.setColor(span.getColor(ColorId.blockQuoteText));
 
       final float size = tp.getTextSize();
       tp.setTextSize(size - 1);
@@ -268,7 +279,8 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       canvas.translate(offsetX, offsetY);
 
       tmpRect.set(-Screen.dp(3), top, 0, bottom);
-      canvas.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), Paints.fillingPaint(Theme.getColor(ColorId.blockQuoteLine)));
+      final Paint paint = Paints.fillingPaint(span.getColor(ColorId.blockQuoteLine));
+      canvas.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), paint);
 
       Views.restore(canvas, s);
     }

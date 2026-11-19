@@ -95,6 +95,7 @@ import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
@@ -1798,6 +1799,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   private int lastText2Length;
   private int quoteUpdatesTries;
   private boolean[] quoteUpdateLayout;
+  private @Nullable ThemeDelegate forcedTheme;
+
+  public void setForcedTheme (@Nullable ThemeDelegate theme) {
+    this.forcedTheme = theme;
+    invalidateQuotes(true);
+    invalidate();
+  }
 
   public void invalidateQuotes(boolean force) {
     int newTextLength = (getLayout() == null || getLayout().getText() == null) ? 0 : getLayout().getText().length();
@@ -1811,6 +1819,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
       quoteUpdateLayout[0] = false;
       quoteBlocks = QuoteSpan.updateQuoteBlocks(getLayout(), quoteBlocks, quoteUpdateLayout);
+      // Null while the constructor of TextView sets the text
+      final int blockCount = quoteBlocks != null ? quoteBlocks.size() : 0;
+      for (int i = 0; i < blockCount; i++) {
+        quoteBlocks.get(i).span.setColorTheme(forcedTheme);
+      }
       if (quoteUpdateLayout[0]) {
         resetFontMetricsCache();
       }
