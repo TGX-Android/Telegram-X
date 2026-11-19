@@ -29,6 +29,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGChat;
+import org.thunderdog.challegram.navigation.DualPaneLayout;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.v.ChatsRecyclerView;
@@ -188,6 +189,8 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
         TGChat currentChat = getChatByItemPosition(position);
         TGChat nextChat = getChatByItemPosition(position + 1);
         holder.setChat(currentChat, false, nextChat != null && currentChat.isPinnedOrSpecial() && !nextChat.isPinnedOrSpecial(), context.isChatSelected(currentChat));
+        DualPaneLayout dualPane = context.context().getDualPaneLayout();
+        ((ChatView) holder.itemView).setIsOpened(dualPane != null && dualPane.isOpenedInListPane(context, currentChat.getChatId()));
         break;
       }
       case VIEW_TYPE_INFO: {
