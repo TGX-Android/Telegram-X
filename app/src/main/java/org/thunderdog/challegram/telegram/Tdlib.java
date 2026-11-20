@@ -958,9 +958,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private boolean shouldPause () {
     if (instancePaused)
       return false; // Instance already paused
-    if (authorizationStatus() == Status.UNKNOWN)
+    @Status int authorizationStatus = authorizationStatus();
+    if (authorizationStatus == Status.UNKNOWN)
       return false; // TDLib takes too long to launch. Give it a chance to initialize
-    if ((authorizationState != null && authorizationState.getConstructor() != TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR))
+    if (authorizationStatus == Status.UNAUTHORIZED && (authorizationState != null && authorizationState.getConstructor() != TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR))
       return false; // User has started authorization process. Give them a chance to complete it.
     /*if (context().hasUi()) {
         // TODO limit couple most recent used accounts?
