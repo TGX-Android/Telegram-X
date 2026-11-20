@@ -62,8 +62,8 @@ extern "C" {
 #define VIDEO_STICKER_FORMATS "matroska"
 // As many as files of cameras and editors have
 #define MAX_ANIMATION_STREAMS 16
-// ~1M samples of MP4
-#define MAX_DECODER_MEMORY ((int64_t) 64 * 1024 * 1024)
+// Indexes of ~500K samples of MP4
+#define MAX_DECODER_MEMORY ((int64_t) 32 * 1024 * 1024)
 // Smaller blocks are never refused: FFmpeg doesn't check them all
 #define MIN_REFUSED_BLOCK (64 * 1024)
 #define BITMAP_TARGET_FORMAT AV_PIX_FMT_RGBA
@@ -72,7 +72,7 @@ extern "C" {
 #define LOTTIE_CACHE_MAGIC 0xf0ebaef5
 #define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef6
 
-// A decoder's blocks on its thread: all outside its codec's calls, those of av_realloc in them
+// Blocks of the decoder's thread: all outside codec calls, and those of av_realloc in them
 struct DecoderMemory {
   std::atomic<int64_t> used{0};
   // The decoder and its blocks not freed yet
@@ -119,7 +119,7 @@ static thread_local int decodedMaxSide = 0;
 static thread_local DecoderMemory *decodedMemory = nullptr;
 // Checked as headers are: variables of threads are on the heap before Android 10
 static thread_local uint32_t decodedMemoryCheck = 0;
-// Counted by the wraps below, also in the calls that probing makes inside FFmpeg
+// Codec calls, also those of probing inside FFmpeg, as they are wrapped at link time
 static thread_local int codecCalls = 0;
 
 static uint32_t decoderMemoryCheck (DecoderMemory *memory) {
@@ -294,32 +294,37 @@ extern "C" int __real_avcodec_send_packet (AVCodecContext *context, const AVPack
 extern "C" int __real_avcodec_receive_frame (AVCodecContext *context, AVFrame *frame);
 extern "C" void __real_avcodec_flush_buffers (AVCodecContext *context);
 
+class InCodecCall {
+ public:
+  InCodecCall () {
+    codecCalls++;
+  }
+  ~InCodecCall () {
+    codecCalls--;
+  }
+  InCodecCall (const InCodecCall &) = delete;
+  InCodecCall &operator= (const InCodecCall &) = delete;
+};
+
 extern "C" int __wrap_avcodec_open2 (AVCodecContext *context, const AVCodec *codec,
                                      AVDictionary **options) {
-  codecCalls++;
-  const int result = __real_avcodec_open2(context, codec, options);
-  codecCalls--;
-  return result;
+  InCodecCall call;
+  return __real_avcodec_open2(context, codec, options);
 }
 
 extern "C" int __wrap_avcodec_send_packet (AVCodecContext *context, const AVPacket *packet) {
-  codecCalls++;
-  const int result = __real_avcodec_send_packet(context, packet);
-  codecCalls--;
-  return result;
+  InCodecCall call;
+  return __real_avcodec_send_packet(context, packet);
 }
 
 extern "C" int __wrap_avcodec_receive_frame (AVCodecContext *context, AVFrame *frame) {
-  codecCalls++;
-  const int result = __real_avcodec_receive_frame(context, frame);
-  codecCalls--;
-  return result;
+  InCodecCall call;
+  return __real_avcodec_receive_frame(context, frame);
 }
 
 extern "C" void __wrap_avcodec_flush_buffers (AVCodecContext *context) {
-  codecCalls++;
+  InCodecCall call;
   __real_avcodec_flush_buffers(context);
-  codecCalls--;
 }
 
 static const std::string av_make_error_str (int errnum) {
