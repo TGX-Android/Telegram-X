@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import org.thunderdog.challegram.component.chat.StickyElements;
+
 import me.vkryl.core.collection.IntList;
 
 /**
@@ -39,6 +41,19 @@ public final class BlockSwitches {
     default int getListHeight (Text text) {
       // Without the keyboard, 0 when there's no list
       return 0;
+    }
+
+    default float placeStickyElement (
+      Text text,
+      StickyElements.Element element,
+      float x,
+      float minY,
+      float maxY,
+      float padding,
+      boolean atTop
+    ) {
+      // Where the text draws it, or NaN when the list draws it
+      return atTop ? minY : maxY;
     }
   }
 
@@ -95,5 +110,17 @@ public final class BlockSwitches {
 
   int getListHeight (Text text) {
     return listener.getListHeight(text);
+  }
+
+  float placeStickyElement (
+    Text text,
+    StickyElements.Element element,
+    float x,
+    float minY,
+    float maxY,
+    float padding,
+    boolean atTop
+  ) {
+    return listener.placeStickyElement(text, element, x, minY, maxY, padding, atTop);
   }
 }

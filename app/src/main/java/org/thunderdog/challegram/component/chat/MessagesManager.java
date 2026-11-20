@@ -2031,7 +2031,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     // The list moves up above bars of a reply and of files and with the keyboard
     rules.listTop = controller.getTopOffset() - Math.round(parent.getTranslationY());
     rules.endBottom = parent.getMeasuredHeight() - parent.getPaddingBottom();
-    rules.visibleBottom = rules.endBottom - getExtraScrollSpacing();
+    rules.visibleBottom = getVisibleBottom(parent);
     rules.top = view.getTop();
     rules.height = MessagesHolder.findMessageView(view).getHeight();
     rules.finalHeight = finalHeight;
@@ -2063,12 +2063,38 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return false;
     }
     final ViewGroup parent = (ViewGroup) view.getParent();
-    final int listTop = controller.getTopOffset() - Math.round(parent.getTranslationY());
-    final int visibleBottom =
-      parent.getMeasuredHeight() - parent.getPaddingBottom() - getExtraScrollSpacing();
-    range[0] = listTop - view.getTop();
-    range[1] = visibleBottom - view.getTop();
+    range[0] = getVisibleTop(parent) - view.getTop();
+    range[1] = getVisibleBottom(parent) - view.getTop();
     return true;
+  }
+
+  public int getVisibleTop (ViewGroup list) {
+    return controller.getTopOffset() - Math.round(list.getTranslationY());
+  }
+
+  public int getVisibleBottom (ViewGroup list) {
+    return list.getMeasuredHeight() - list.getPaddingBottom() - controller.getBottomCover();
+  }
+
+  public void invalidateStickyElements () {
+    if (manager == null) {
+      return;
+    }
+    for (int i = 0; i < manager.getChildCount(); i++) {
+      final View view = manager.getChildAt(i);
+      final MessageView messageView = MessagesHolder.findMessageView(view);
+      final TGMessage message = messageView != null ? messageView.getMessage() : null;
+      if (message == null) {
+        continue;
+      }
+      final ViewGroup list = (ViewGroup) view.getParent();
+      final int top = StickyElements.topOf(view);
+      if (message.hasStuckStickyElements() ||
+        message.needsStickyDrawAgain(getVisibleTop(list) - top, getVisibleBottom(list) - top)) {
+        list.invalidate();
+        return;
+      }
+    }
   }
 
   private int measureBelowHeight (int position) {

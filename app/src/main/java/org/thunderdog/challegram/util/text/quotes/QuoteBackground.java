@@ -41,6 +41,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.StickyElements;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -52,6 +53,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.text.KeptOnScreen;
 import org.thunderdog.challegram.util.text.RippleDrawable;
 import org.thunderdog.challegram.util.text.SyntaxLines;
 import org.thunderdog.challegram.util.text.Text;
@@ -61,9 +63,10 @@ import org.thunderdog.challegram.util.text.TextPart;
 import java.util.Locale;
 
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 
-public class QuoteBackground {
+public class QuoteBackground implements StickyElements.Element {
   public static final int QUOTE_LEFT_PADDING = 11;
   public static final int QUOTE_RIGHT_PADDING = 27;
   public static final int QUOTE_VERTICAL_PADDING = 2;
@@ -565,9 +568,12 @@ public class QuoteBackground {
     return needInvalidate;
   }
 
-  // While the text changes, edges move from where they were by the differences to the layout
+  // While the text changes, edges move by their differences to the layout, which the top and the
+  // bottom keep at the end when they're off the screen
   private int topOffset, rightOffset, bottomOffset;
   private int topDiff, rightDiff, bottomDiff;
+  private int topEndDiff, bottomEndDiff;
+  private float layoutTop, layoutBottom;
   // Where the icon of the switch goes on from, e.g. in the middle of a switch, or -1
   private float changeStartSwitchFactor = -1f;
   private int changeStartContentShift = -1;
@@ -601,8 +607,25 @@ public class QuoteBackground {
     topDiff = Math.round(from.top - laidOut.top);
     rightDiff = Math.round(from.right - laidOut.right);
     bottomDiff = Math.round(from.bottom - laidOut.bottom);
+    topEndDiff = bottomEndDiff = 0;
+    layoutTop = laidOut.top;
+    layoutBottom = laidOut.bottom;
     changeStartSwitchFactor = fromSwitchFactor;
     changeStartContentShift = fromContentShift;
+  }
+
+  public void addChangeOnScreen (KeptOnScreen kept, RectF drawn) {
+    kept.add(drawn.top, layoutTop);
+    kept.add(drawn.bottom, layoutBottom);
+  }
+
+  public void keepChangeOnScreen (KeptOnScreen kept, RectF drawn) {
+    final float top = kept.to(drawn.top, layoutTop);
+    final float bottom = kept.to(drawn.bottom, layoutBottom);
+    topDiff = Math.round(kept.from(drawn.top, layoutTop, top) - layoutTop);
+    topEndDiff = Math.round(top - layoutTop);
+    bottomDiff = Math.round(kept.from(drawn.bottom, layoutBottom, bottom) - layoutBottom);
+    bottomEndDiff = Math.round(bottom - layoutBottom);
   }
 
   public float getChangeStartSwitchFactor () {
@@ -610,14 +633,14 @@ public class QuoteBackground {
   }
 
   public void applyChange (float factor) {
-    topOffset = Math.round(topDiff * (1f - factor));
+    topOffset = Math.round(topDiff * (1f - factor) + topEndDiff * factor);
     rightOffset = Math.round(rightDiff * (1f - factor));
-    bottomOffset = Math.round(bottomDiff * (1f - factor));
+    bottomOffset = Math.round(bottomDiff * (1f - factor) + bottomEndDiff * factor);
     hasGeometry = false;
   }
 
   public void finishChange () {
-    topDiff = rightDiff = bottomDiff = 0;
+    topDiff = rightDiff = bottomDiff = topEndDiff = bottomEndDiff = 0;
     topOffset = rightOffset = bottomOffset = 0;
     changeStartSwitchFactor = -1f;
     changeStartContentShift = -1;
@@ -640,7 +663,7 @@ public class QuoteBackground {
   private int geometryStartX, geometryEndX, geometryEndXBottomPadding, geometryStartY;
   private int geometryCodeBlockEnd;
   private final RectF barRect = new RectF();
-  private float barRadius, iconX, iconY;
+  private float barRadius, iconX, iconY, collapsedHeight;
   private float textLeft, headerBottom, headerBaseline;
   private float copyIconX, copyIconY, switchIconX, switchIconY, titleRight;
   private boolean needClipTitle;
@@ -706,6 +729,10 @@ public class QuoteBackground {
     if (!isCode) {
       iconX = bounds.right - Screen.dp(19);
       iconY = bounds.top + Screen.dp(3.5f);
+      // Of the layout, without the offsets of a change
+      final float laidHeight = bounds.height() + topOffset - bottomOffset;
+      collapsedHeight = canCollapse && !isCollapsed() ?
+        laidHeight - getHiddenHeight(findCollapsedEnd()) : laidHeight;
       return;
     }
     textLeft = bounds.left + Screen.dp(QUOTE_LEFT_PADDING);
@@ -792,20 +819,32 @@ public class QuoteBackground {
       }
       Drawables.draw(c, quoteDrawable, iconX, iconY, Paints.getPorterDuffPaint(lineColorId, theme));
       if (canCollapse) {
-        // Below the quote mark, as far from the bottom as the mark is from the top
+        // As far from the bottom as the quote mark is from the top; at the bottom of the list
+        // while the end of an expanded quote is below it, never above its place when collapsed
         final float center = Screen.dp(8f);
-        DrawAlgorithms.drawCollapse(
-          c,
+        final float padding = iconY - bounds.top + center;
+        final float y = parent.placeStickyElement(
+          this,
           iconX + center,
-          bounds.bottom - (iconY - bounds.top) - center,
-          lineColor,
-          parent.getSwitchFactor(this),
-          0f
+          bounds.top + collapsedHeight - padding,
+          bounds.bottom - padding,
+          padding,
+          false
         );
+        if (!Float.isNaN(y)) {
+          drawSticky(c, iconX + center, y, 1f);
+        }
       }
       barColor = lineColor;
     }
     c.drawRoundRect(barRect, barRadius, barRadius, Paints.fillingPaint(barColor));
+  }
+
+  @Override
+  public void drawSticky (Canvas c, float x, float y, float alpha) {
+    final int color = parent.getColorTheme().getColor(parent.getQuoteLineColorId());
+    final float switchFactor = parent.getSwitchFactor(this);
+    DrawAlgorithms.drawCollapse(c, x, y, ColorUtils.alphaColor(alpha, color), switchFactor, 0f);
   }
 
   private void drawCodeHeader (Canvas c, ThemeDelegate theme, int lineColorId, int rippleColor) {

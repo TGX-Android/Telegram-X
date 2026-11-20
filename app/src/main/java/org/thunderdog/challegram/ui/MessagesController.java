@@ -6019,9 +6019,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     float bottomButtonFactor = bottomBarVisible.getFloatValue();
     float detachFactor = scrollToBottomVisible.getFloatValue();
-    int barHeight = Screen.dp(48f) + extraBottomInset;
-    int baseY = needSearchControlsTranslate() ? (int) ((float) barHeight * MathUtils.clamp(searchControlsFactor)) : 0;
-    float fromY = bottomButtonFactor == 1f ? baseY : baseY + (int) ((float) barHeight * (1f - bottomButtonFactor));
+    float fromY = getBottomBarY();
     float alpha = (1f - 1f * detachFactor * (1f - bottomButtonFactor)) * (1f - searchControlsFactor);
     int moveBy = Screen.dp(74f) - Screen.dp(16f);
     float toY = -getButtonsOffset() - Screen.dp(16f) - moveBy - moveBy * mentionButtonFactor + (bottomWrap.getVisibility() == View.VISIBLE ? 0 : extraBottomInsetWithoutIme); //  -getReplyOffset() - (Screen.dp(74f) - Screen.dp(48f)) / 2f;
@@ -6034,6 +6032,39 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (bottomBar.getVisibility() != desiredVisibility) {
       bottomBar.setVisibility(desiredVisibility);
     }
+    final int bottomCover = getBottomCover();
+    if (this.bottomCover != bottomCover) {
+      this.bottomCover = bottomCover;
+      manager.invalidateStickyElements();
+    }
+  }
+
+  private float getBottomBarY () {
+    final float bottomButtonFactor = bottomBarVisible.getFloatValue();
+    final int barHeight = Screen.dp(48f) + extraBottomInset;
+    final int baseY = needSearchControlsTranslate() ?
+      (int) ((float) barHeight * MathUtils.clamp(searchControlsFactor)) : 0;
+    return bottomButtonFactor == 1f ? baseY :
+      baseY + (int) ((float) barHeight * (1f - bottomButtonFactor));
+  }
+
+  private int bottomCover;
+
+  public int getBottomCover () {
+    // The list ends above the bottom inset
+    if (bottomBar == null || bottomWrap == null || bottomWrap.getVisibility() == View.VISIBLE) {
+      return 0;
+    }
+    final int height = Screen.dp(48f);
+    final float detachFactor = scrollToBottomVisible.getFloatValue();
+    final float barCover = (height - getBottomBarY()) * (1f - detachFactor);
+    float searchCover = 0f;
+    if (searchControlsFactor > 0f) {
+      searchCover = needSearchControlsTranslate() ?
+        height - (Screen.dp(49f) + extraBottomInset) * (1f - searchControlsFactor) :
+        height * searchControlsFactor;
+    }
+    return Math.round(Math.max(0f, Math.min(height, Math.max(barCover, searchCover))));
   }
 
   private static final int ANIMATOR_BOTTOM_BUTTON = 12;

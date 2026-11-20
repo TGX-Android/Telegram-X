@@ -20,7 +20,6 @@ import android.text.TextPaint;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.quotes.QuoteBackground;
 
@@ -90,6 +89,27 @@ final class TextPieces {
       this.source = source;
     }
 
+    Piece withY (float fromY, float toY) {
+      return new Piece(
+        part,
+        partIndex,
+        start,
+        end,
+        isWhole,
+        isMatchable,
+        fromX,
+        fromY,
+        fromAlpha,
+        toX,
+        toY,
+        toAlpha,
+        block,
+        lines,
+        style,
+        source
+      );
+    }
+
     Piece atFactor (float factor) {
       final float x = MathUtils.fromTo(fromX, toX, factor);
       final float y = MathUtils.fromTo(fromY, toY, factor);
@@ -157,15 +177,18 @@ final class TextPieces {
 
   static TextPieces change (
     TextPieces from,
+    @Nullable TextPieces drawn,
     Text text,
     int startX,
     int endX,
     int endXBottomPadding,
     @Nullable int[] visible,
-    float startFactor
+    float startFactor,
+    @Nullable KeptOnScreen kept
   ) {
     // visible: top and bottom of the part on the screen where the change starts at startFactor
-    // and where it ends, null when unknown; only pieces seen in between are made
+    // and where it ends, null when unknown; only pieces seen in between are made. drawn: pieces
+    // of a change that this one reverses on this frame
     final String fromText = from.text, newText = text.getText();
     final TextMatching matching = TextMatching.match(fromText, newText);
     final int[] fromPieces = new int[fromText.length()];
@@ -176,8 +199,10 @@ final class TextPieces {
       }
     }
     final boolean[] isTaken = new boolean[fromText.length()];
-    // A line and a bar of the chat beyond, e.g. of a pinned message that hides meanwhile
-    final int margin = text.getLineHeight() + Screen.dp(48f);
+    final int margin = text.getChangeMargin();
+    // Characters of the same string find where the reversed change draws them
+    final int[] drawnPieces = drawn != null && drawn.text == newText ? drawn.mapDrawn() : null;
+    final StartY startY = new StartY(drawn, drawnPieces, startFactor);
 
     final Builder builder = new Builder(text);
     for (int index = 0; index < text.getPartCount(); index++) {
@@ -194,7 +219,7 @@ final class TextPieces {
         y,
         y + Builder.getChangeShift(block),
         visible,
-        startFactor,
+        startY,
         margin
       );
       if (!isSeen) {
@@ -268,8 +293,11 @@ final class TextPieces {
       final Piece old = from.pieces[i];
       final QuoteBackground block = text.findBlockById(old.part.getQuoteEntityId());
       final float toY = old.toY - Builder.getChangeShift(block);
-      if (visible != null && !isSeen(visible, startFactor, old.toY, old.toY, toY, margin)) {
-        continue;
+      if (visible != null) {
+        final float start = startY.of(old.part.getLine(), old.start, old.end, old.toY, toY);
+        if (!isSeen(visible, start, start, toY, margin)) {
+          continue;
+        }
       }
       builder.source = i;
       if (old.isWhole) {
@@ -301,7 +329,75 @@ final class TextPieces {
         start = end;
       }
     }
-    return builder.build();
+    final TextPieces result = builder.build();
+    if (kept != null) {
+      result.keepOnScreen(kept, startY);
+    }
+    return result;
+  }
+
+  private void keepOnScreen (KeptOnScreen kept, StartY startY) {
+    final float[] drawnY = new float[pieces.length];
+    for (int i = 0; i < pieces.length; i++) {
+      final Piece piece = pieces[i];
+      drawnY[i] = startY.of(piece.part.getLine(), piece.start, piece.end, piece.fromY, piece.toY);
+      kept.add(drawnY[i], piece.toY);
+    }
+    for (int i = 0; i < pieces.length; i++) {
+      final Piece piece = pieces[i];
+      final float toY = kept.to(drawnY[i], piece.toY);
+      final float fromY = kept.from(drawnY[i], piece.toY, toY);
+      if (fromY != piece.fromY || toY != piece.toY) {
+        pieces[i] = piece.withY(fromY, toY);
+      }
+    }
+  }
+
+  private int[] mapDrawn () {
+    final int[] result = new int[text.length()];
+    Arrays.fill(result, -1);
+    for (int i = 0; i < pieces.length; i++) {
+      if (pieces[i].part.getLine() == text) {
+        Arrays.fill(result, pieces[i].start, pieces[i].end, i);
+      }
+    }
+    return result;
+  }
+
+  private static final class StartY {
+    // Where a piece is at startFactor: where the reversed change draws it, also off its way
+    private final @Nullable TextPieces drawn;
+    private final @Nullable int[] drawnPieces;
+    final float startFactor;
+
+    StartY (@Nullable TextPieces drawn, @Nullable int[] drawnPieces, float startFactor) {
+      this.drawn = drawn;
+      this.drawnPieces = drawnPieces;
+      this.startFactor = startFactor;
+    }
+
+    float of (String line, int start, int end, float fromY, float toY) {
+      final int piece = find(line, start, end, false);
+      return piece != -1 ? drawn.pieces[piece].fromY : MathUtils.fromTo(fromY, toY, startFactor);
+    }
+
+    float ofLast (String line, int start, int end, float fromY, float toY) {
+      final int piece = find(line, start, end, true);
+      return piece != -1 ? drawn.pieces[piece].fromY : MathUtils.fromTo(fromY, toY, startFactor);
+    }
+
+    private int find (String line, int start, int end, boolean fromEnd) {
+      if (drawnPieces == null || line != drawn.text) {
+        return -1;
+      }
+      for (int i = 0; i < end - start; i++) {
+        final int piece = drawnPieces[fromEnd ? end - 1 - i : start + i];
+        if (piece != -1) {
+          return piece;
+        }
+      }
+      return -1;
+    }
   }
 
   private static boolean isPartSeen (
@@ -313,17 +409,21 @@ final class TextPieces {
     float y,
     float fadeFromY,
     int[] visible,
-    float startFactor,
+    StartY startY,
     int margin
   ) {
-    float fromTop = Math.min(y, fadeFromY), fromBottom = Math.max(y, fadeFromY);
+    final float fadeStart = MathUtils.fromTo(fadeFromY, y, startY.startFactor);
+    float startTop = Math.min(y, fadeStart), startBottom = Math.max(y, fadeStart);
     if (part.getLine() == newText && part.getEnd() > part.getStart()) {
-      final float first = findFromY(from, fromPieces, matching, part.getStart(), fadeFromY);
-      final float last = findFromY(from, fromPieces, matching, part.getEnd() - 1, fadeFromY);
-      fromTop = Math.min(y, Math.min(first, last));
-      fromBottom = Math.max(y, Math.max(first, last));
+      final int start = part.getStart(), end = part.getEnd();
+      final float first = startY.of(newText, start, end,
+        findFromY(from, fromPieces, matching, start, fadeFromY), y);
+      final float last = startY.ofLast(newText, start, end,
+        findFromY(from, fromPieces, matching, end - 1, fadeFromY), y);
+      startTop = Math.min(y, Math.min(first, last));
+      startBottom = Math.max(y, Math.max(first, last));
     }
-    return isSeen(visible, startFactor, fromTop, fromBottom, y, margin);
+    return isSeen(visible, startTop, startBottom, y, margin);
   }
 
   private static float findFromY (
@@ -340,19 +440,17 @@ final class TextPieces {
 
   private static boolean isSeen (
     int[] visible,
-    float startFactor,
-    float fromTop,
-    float fromBottom,
+    float startTop,
+    float startBottom,
     float toY,
     int margin
   ) {
     // Pieces and the visible part move by the same factor, so a piece is seen when it's seen at
     // either end or passes the visible part in between
-    final float startTop = MathUtils.fromTo(fromTop, toY, startFactor) - visible[0];
-    final float startBottom = MathUtils.fromTo(fromBottom, toY, startFactor) - visible[0];
+    final float top = startTop - visible[0], bottom = startBottom - visible[0];
     final float end = toY - visible[2];
     final int height = Math.max(visible[1] - visible[0], visible[3] - visible[2]);
-    return Math.min(startTop, end) <= height + margin && Math.max(startBottom, end) >= -margin;
+    return Math.min(top, end) <= height + margin && Math.max(bottom, end) >= -margin;
   }
 
   private static void markTaken (TextMatching matching, boolean[] isTaken, int start, int end) {

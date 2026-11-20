@@ -46,6 +46,7 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.chat.StickyElements;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
@@ -3651,12 +3652,29 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   private @Nullable TextPieces changePieces;
   private float changeFactor, changeStartFactor;
   private @Nullable QuoteBackground switchingBlock;
-  // Size before the change minus after it, and the part of it left on this frame
-  private int changeWidthDiff, changeWidthOffset, changeHeightDiff, changeHeightOffset;
+  // Width before the change minus after it, and the part of it left on this frame
+  private int changeWidthDiff, changeWidthOffset;
+  // Height at the factors 0 and 1 of the change, and what this frame adds to the layout's
+  private float changeHeightFrom, changeHeightTo;
+  private int changeHeightOffset;
   private int blockSwitchesVersion;
 
   public boolean isSwitchingBlock () {
     return switchingBlock != null;
+  }
+
+  public float placeStickyElement (
+    StickyElements.Element element,
+    float x,
+    float minY,
+    float maxY,
+    float padding,
+    boolean atTop
+  ) {
+    if (blockSwitches == null) {
+      return atTop ? minY : maxY;
+    }
+    return blockSwitches.placeStickyElement(this, element, x, minY, maxY, padding, atTop);
   }
 
   public float getSwitchFactor (QuoteBackground block) {
@@ -3891,7 +3909,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   }
 
   public int getChangeRemainingHeight () {
-    return -Math.round(changeHeightDiff * (1f - changeFactor));
+    return currentY - getHeight();
+  }
+
+  int getChangeMargin () {
+    // A line and a bar of the chat, e.g. of a pinned message that hides meanwhile
+    return getLineHeight() + Screen.dp(48f);
   }
 
   public boolean needLayoutForBlockSwitches () {
@@ -3915,10 +3938,15 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     final TextPieces from = isReverse || changePieces == null ?
       TextPieces.ofLayout(this, lastStartX, lastEndX, lastEndXBottomPadding) :
       changePieces.atFactor(factor);
+    // A change back starts where the pieces are drawn, maybe off their layout's way
+    final TextPieces drawn =
+      isReverse && changePieces != null ? changePieces.atFactor(factor) : null;
+    final float startFactor = isReverse ? 1f - factor : 0f;
     final int widthBefore = isReverse ? currentWidth : getWidth();
-    final int heightBefore = isReverse ? currentY : getHeight();
+    final int heightBefore = getHeight();
     final int[] blockIds = new int[quotes.size()];
     final RectF[] blockBounds = new RectF[quotes.size()];
+    final RectF[] blockDrawn = new RectF[quotes.size()];
     final float[] blockSwitchFactors = new float[quotes.size()];
     final int[] blockContentShifts = new int[quotes.size()];
     for (int i = 0; i < quotes.size(); i++) {
@@ -3927,6 +3955,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       quotes.get(i).getChangeStart(
         blockBounds[i], lastStartX, lastEndX, lastEndXBottomPadding, isReverse
       );
+      if (isReverse) {
+        blockDrawn[i] = new RectF();
+        quotes.get(i).getChangeStart(
+          blockDrawn[i], lastStartX, lastEndX, lastEndXBottomPadding, false
+        );
+      } else {
+        blockDrawn[i] = blockBounds[i];
+      }
       blockSwitchFactors[i] = getSwitchFactor(quotes.get(i));
       blockContentShifts[i] = quotes.get(i).getContentShift();
     }
@@ -3960,7 +3996,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     }
     switchingBlock = block != null ? findBlockById(block.entity.getQuoteId()) : null;
     changeWidthDiff = widthBefore - currentWidth;
-    changeHeightDiff = heightBefore - currentY;
+    changeHeightTo = currentY;
+    changeHeightFrom = startFactor < 1f ?
+      (heightBefore - startFactor * currentY) / (1f - startFactor) : currentY;
+    changeHeightOffset = heightBefore - currentY;
     for (int i = 0; i < quotes.size(); i++) {
       final QuoteBackground quote = quotes.get(i);
       final int index = ArrayUtils.indexOf(blockIds, quote.entity.getQuoteId());
@@ -3996,7 +4035,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
         }
       );
     }
-    final float startFactor = isReverse ? 1f - factor : 0f;
     changeFactor = changeStartFactor = startFactor;
     if (switchingBlock != null) {
       blockSwitches.notifyBlockSwitchStart(this, isReverse);
@@ -4005,15 +4043,26 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     } else {
       visible = null;
     }
+    // A huge block changes at the speed of what's seen of it, a change back from where it's drawn
+    final KeptOnScreen kept = visible != null || isReverse ?
+      new KeptOnScreen(visible, getChangeMargin(), getLineHeight(), startFactor) : null;
+    if (kept != null) {
+      addChangeOnScreen(kept, heightBefore, blockIds, blockDrawn);
+    }
     changePieces = TextPieces.change(
       from,
+      drawn,
       this,
       lastStartX,
       lastEndX,
       lastEndXBottomPadding,
       visible,
-      startFactor
+      startFactor,
+      kept
     );
+    if (kept != null) {
+      keepChangeOnScreen(kept, heightBefore, blockIds, blockDrawn);
+    }
     // The first frame is drawn before the animator changes its value
     changeAnimator.setForcedValue(startFactor);
     applyChange(startFactor);
@@ -4026,7 +4075,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     }
     changeFactor = factor;
     changeWidthOffset = Math.round(changeWidthDiff * (1f - factor));
-    changeHeightOffset = Math.round(changeHeightDiff * (1f - factor));
+    // The last frame has the layout's height, which an end kept on the screen gets at once
+    changeHeightOffset = factor == 1f ? 0 : Math.round(
+      (changeHeightFrom - currentY) * (1f - factor) + (changeHeightTo - currentY) * factor
+    );
     for (int i = 0; i < quotes.size(); i++) {
       quotes.get(i).applyChange(factor);
     }
@@ -4034,6 +4086,37 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       blockSwitches.notifyTextSizeChanged(this);
     }
     invalidateViews();
+  }
+
+  private void addChangeOnScreen (
+    KeptOnScreen kept,
+    int drawnHeight,
+    int[] blockIds,
+    RectF[] blockDrawn
+  ) {
+    kept.add(drawnHeight, currentY);
+    for (int i = 0; i < quotes.size(); i++) {
+      final int index = ArrayUtils.indexOf(blockIds, quotes.get(i).entity.getQuoteId());
+      if (index != -1) {
+        quotes.get(i).addChangeOnScreen(kept, blockDrawn[index]);
+      }
+    }
+  }
+
+  private void keepChangeOnScreen (
+    KeptOnScreen kept,
+    int drawnHeight,
+    int[] blockIds,
+    RectF[] blockDrawn
+  ) {
+    changeHeightTo = kept.to(drawnHeight, currentY);
+    changeHeightFrom = kept.from(drawnHeight, currentY, changeHeightTo);
+    for (int i = 0; i < quotes.size(); i++) {
+      final int index = ArrayUtils.indexOf(blockIds, quotes.get(i).entity.getQuoteId());
+      if (index != -1) {
+        quotes.get(i).keepChangeOnScreen(kept, blockDrawn[index]);
+      }
+    }
   }
 
   private void onChangeStopped () {
@@ -4051,7 +4134,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     switchingBlock = null;
     changePieces = null;
     changeFactor = changeStartFactor = 0f;
-    changeWidthDiff = changeWidthOffset = changeHeightDiff = changeHeightOffset = 0;
+    changeWidthDiff = changeWidthOffset = changeHeightOffset = 0;
+    changeHeightFrom = changeHeightTo = 0f;
   }
 
   void invalidateViews () {

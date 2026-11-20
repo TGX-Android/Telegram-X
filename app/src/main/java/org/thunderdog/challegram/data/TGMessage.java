@@ -39,6 +39,8 @@ import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
@@ -64,6 +66,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
+import org.thunderdog.challegram.component.chat.StickyElements;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -1966,6 +1969,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (Config.ENABLE_TEST_HOOKS) {
       manager.messageResize().logFrame(this);
     }
+    if (stickyElements != null) {
+      stickyElements.clear();
+    }
+    isStickyMoving = false;
+    final ViewParent viewParent = view.getParent();
+    if (viewParent instanceof MessagesRecyclerView) {
+      stickyListChild = view;
+    } else if (viewParent instanceof MessageViewGroup &&
+      viewParent.getParent() instanceof MessagesRecyclerView) {
+      stickyListChild = (View) viewParent;
+    } else {
+      stickyListChild = null;
+    }
     final int viewWidth = view.getMeasuredWidth();
     final int viewHeight = view.getMeasuredHeight();
 
@@ -1978,6 +1994,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     checkEdges();
 
     final float isHiddenFactor = isHiddenByFilter.getFloatValue();
+    stickyAlpha = 1f - isHiddenFactor;
     if (isHiddenFactor == 1f) {
       drawHiddenMessage(view, c, isHiddenFactor);
       return;
@@ -2026,6 +2043,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       c.save();
       c.translate(contentOffset * (Lang.rtl() ? -1 : 1), 0);
     }
+    stickyOffsetX = translation + contentOffset * (Lang.rtl() ? -1 : 1);
 
     boolean hasBubble = useBubbles && useBubble();
     float lineFactor = 0f;
@@ -4599,6 +4617,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     @Override
     public void onBlockSwitchStart (Text text, boolean isReverse) {
+      isStickyMoving = true;
       final int finalHeight = measureFinalHeight(text, isReverse);
       final int[] block = text.getSwitchBlock();
       if (hasContentAbove()) {
@@ -4635,6 +4654,84 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     @Override
     public int getListHeight (Text text) {
       return manager.getCodeBlockListHeight();
+    }
+
+    @Override
+    public float placeStickyElement (
+      Text text,
+      StickyElements.Element element,
+      float x,
+      float minY,
+      float maxY,
+      float padding,
+      boolean atTop
+    ) {
+      // The list draws stuck ones, so that a scroll redraws the message only when a state changes
+      final View child = stickyListChild;
+      if (child == null) {
+        return atTop ? minY : maxY;
+      }
+      final ViewGroup list = (ViewGroup) child.getParent();
+      final int top = StickyElements.topOf(child);
+      final float y = StickyElements.place(
+        minY,
+        maxY,
+        padding,
+        atTop,
+        manager.getVisibleTop(list) - top,
+        manager.getVisibleBottom(list) - top
+      );
+      final int state = StickyElements.stateOf(y, minY, maxY);
+      if (text.isAnimatingChange()) {
+        isStickyMoving = true;
+      }
+      if (stickyElements == null) {
+        stickyElements = new StickyElements();
+      }
+      stickyElements.add(element, x + stickyOffsetX, minY, maxY, padding, atTop, state);
+      return state == StickyElements.STUCK ? Float.NaN : y;
+    }
+  }
+
+  // Added by the last draw, in the list
+  private @Nullable StickyElements stickyElements;
+  private @Nullable View stickyListChild;
+  private float stickyOffsetX, stickyAlpha;
+  // From the start of a change of a text to its last draw
+  private boolean isStickyMoving;
+
+  public final boolean hasStickyElements () {
+    return stickyElements != null && !stickyElements.isEmpty();
+  }
+
+  public final boolean hasStuckStickyElements () {
+    return stickyElements != null && stickyElements.hasStuck();
+  }
+
+  public final void invalidateStickyElements () {
+    // Only while one is stuck or a change may make one stick, not for e.g. animated emoji
+    if (stickyElements != null && (isStickyMoving || stickyElements.hasStuck())) {
+      final View list = manager.controller().getMessagesView();
+      if (list != null) {
+        list.invalidate();
+      }
+    }
+  }
+
+  public final boolean needsStickyDrawAgain (int visibleTop, int visibleBottom) {
+    return stickyElements != null && stickyElements.needsDrawAgain(visibleTop, visibleBottom);
+  }
+
+  public final void drawStickyElements (
+    Canvas c,
+    float dx,
+    float dy,
+    int visibleTop,
+    int visibleBottom,
+    float alpha
+  ) {
+    if (stickyElements != null) {
+      stickyElements.draw(c, dx, dy, visibleTop, visibleBottom, alpha * stickyAlpha);
     }
   }
 

@@ -25,9 +25,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.chat.CustomTouchHelper;
+import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesAdapter;
+import org.thunderdog.challegram.component.chat.MessagesHolder;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.MessagesTouchHelperCallback;
+import org.thunderdog.challegram.component.chat.StickyElements;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.HeaderView;
@@ -351,6 +354,45 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
     protected float lastAlpha;
 
     @Override
+    public void onDraw (Canvas c, RecyclerView parent, State state) {
+      // Before the messages, so that a changed state is drawn on this frame
+      final int visibleTop = manager.getVisibleTop(parent);
+      final int visibleBottom = manager.getVisibleBottom(parent);
+      for (int i = 0; i < parent.getChildCount(); i++) {
+        final View view = parent.getChildAt(i);
+        final MessageView messageView = MessagesHolder.findMessageView(view);
+        final TGMessage message = messageView != null ? messageView.getMessage() : null;
+        final int top = StickyElements.topOf(view);
+        if (message != null &&
+          message.needsStickyDrawAgain(visibleTop - top, visibleBottom - top)) {
+          messageView.invalidate();
+        }
+      }
+    }
+
+    private void drawStickyElements (Canvas c, RecyclerView parent) {
+      // Over the messages that added them as they drew, under the dates
+      final int visibleTop = manager.getVisibleTop(parent);
+      final int visibleBottom = manager.getVisibleBottom(parent);
+      for (int i = 0; i < parent.getChildCount(); i++) {
+        final View view = parent.getChildAt(i);
+        final MessageView messageView = MessagesHolder.findMessageView(view);
+        final TGMessage message = messageView != null ? messageView.getMessage() : null;
+        if (message != null && message.hasStickyElements()) {
+          final int top = StickyElements.topOf(view);
+          message.drawStickyElements(
+            c,
+            view.getLeft() + view.getTranslationX(),
+            top,
+            visibleTop - top,
+            visibleBottom - top,
+            view.getAlpha()
+          );
+        }
+      }
+    }
+
+    @Override
     public void onDrawOver (Canvas c, RecyclerView parent, State state) {
       this.lastMessage = null;
       this.lastTop = 0;
@@ -360,6 +402,8 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
       if (adapter.getMessageCount() == 0) {
         return;
       }
+
+      drawStickyElements(c, parent);
 
       final int centerX = parent.getMeasuredWidth() / 2;
 
