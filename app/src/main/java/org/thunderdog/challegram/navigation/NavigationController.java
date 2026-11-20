@@ -1294,10 +1294,10 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       Views.setLayerType(floatingButton, type == View.LAYER_TYPE_HARDWARE && SimpleShapeDrawable.USE_SOFTWARE_SHADOW ? View.LAYER_TYPE_SOFTWARE : type);
     }
     if (left != null && left.allowLayerTypeChanges()) {
-      Views.setLayerType(left.getValue(), type);
+      Views.setLayerType(left.getNavigationLayerView(), type);
     }
     if (right != null && right.allowLayerTypeChanges()) {
-      Views.setLayerType(right.getValue(), type);
+      Views.setLayerType(right.getNavigationLayerView(), type);
     }
   }
 
