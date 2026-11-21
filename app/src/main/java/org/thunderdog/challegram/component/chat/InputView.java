@@ -1550,6 +1550,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         } else {
           return false;
         }
+        Uri uri = Uri.parse(inputContentInfo.getContentUri().toString());
+        if (U.isInternalUri(uri)) {
+          return false;
+        }
 
         // read and display inputContentInfo asynchronously
         boolean needPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1 && (flags &
@@ -1561,7 +1565,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             return false; // return false if failed
           }
         }
-        Uri uri = inputContentInfo.getContentUri();
         long timestamp = System.currentTimeMillis();
         MessagesController.ReplyInfo replyInfo = controller.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
