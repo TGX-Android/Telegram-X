@@ -2976,7 +2976,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   }
 
   private Paint.FontMetricsInt getFontMetrics () {
-    return getFontMetrics(textStyleProvider.getTextSize());
+    return getFontMetrics(textStyleProvider.getTextSizeInPixels());
   }
 
   int getAscent (float textSizePx) {
