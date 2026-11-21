@@ -523,10 +523,22 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     }
   }
 
+  private int avatarLeft = -1, avatarTop, avatarSize;
+
   private void layoutReceiver () {
     int chatListMode = getChatListMode();
-    int left = Lang.rtl() ? getMeasuredWidth() - getAvatarLeft(chatListMode) - getAvatarSize(chatListMode) : getAvatarLeft(chatListMode);
-    avatarReceiver.setBounds(left, getAvatarTop(chatListMode), left + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
+    int size = getAvatarSize(chatListMode);
+    int left = getAvatarLeft(chatListMode);
+    if (Lang.rtl()) {
+      left = getMeasuredWidth() - left - size;
+    }
+    int top = getAvatarTop(chatListMode);
+    if (left != avatarLeft || top != avatarTop || size != avatarSize) {
+      avatarLeft = left;
+      avatarTop = top;
+      avatarSize = size;
+      avatarReceiver.setBounds(left, top, left + size, top + size);
+    }
   }
 
   public TGChat getChat () {
