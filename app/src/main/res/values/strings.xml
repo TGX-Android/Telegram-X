@@ -2186,6 +2186,7 @@
   <string name="EditGroupRestrictions">Edit Group Restrictions</string>
   <string name="EditChannelRestrictions">Edit Channel Restrictions</string>
   <string name="RestrictUser">Restrict user</string>
+  <string name="BlockForever">Block forever</string>
   <string name="BanChat">Ban group</string>
   <string name="BanChannel">Ban channel</string>
   <string name="BanChatHint">Granular control over permissions is not available when restricting groups.</string>
