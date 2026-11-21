@@ -67,6 +67,7 @@ bubbleIn_fillingActiveContent: #FFF
 bubbleOut_fillingActive: #91AFC826
 bubbleOut_fillingActiveContent: #FFF
 blockQuoteText, blockQuoteLine: #A4B9C5
+blockQuoteTextHidden: #7D8E98
 bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine: #8DA1AD
 bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine, bubbleOut_codeBlockLine, bubbleOut_codeBlockBar: #A6C8E3
 codeBlockBackground: #00070F6A

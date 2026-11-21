@@ -9141,6 +9141,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     captionView.setHighlightColor(ColorUtils.alphaColor(0.2f, Theme.fillingTextSelectionColor()));
     captionView.setHighlightColor(getForcedTheme().getColor(ColorId.textSelectionHighlight));
     captionView.setForcedTheme(getForcedTheme());
+    captionView.setOverMedia(true);
     // addThemeHighlightColorListener(captionView, ColorId.textSelectionHighlight);
     captionView.setMaxCodePointCount(tdlib.maxCaptionLength());
     captionView.setIgnoreCustomStuff(false);

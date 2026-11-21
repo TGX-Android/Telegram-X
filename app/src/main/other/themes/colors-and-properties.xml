@@ -565,6 +565,7 @@
 
     <item name="blockQuoteText" porterDuff="true" fallback="text"/>
     <item name="blockQuoteLine" porterDuff="true" fallback="text"/>
+    <item name="blockQuoteTextHidden" fallback="textLight"/>
     <item name="bubbleIn_blockQuoteText" porterDuff="true" fallback="bubbleIn_time"/>
     <item name="bubbleIn_blockQuoteLine" porterDuff="true" fallback="bubbleIn_time"/>
     <item name="bubbleOut_blockQuoteText" porterDuff="true" fallback="bubbleOut_time"/>

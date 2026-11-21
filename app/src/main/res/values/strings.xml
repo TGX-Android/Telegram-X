@@ -5690,6 +5690,10 @@
   <string name="LinkPreviewMinimized">Link preview media will be minimized</string>
   <string name="LinkPreviewShowAbove">Link preview will appear above the text</string>
   <string name="LinkPreviewShowBelow">Link preview will appear below the text</string>
+  <string name="InputQuoteCollapsedHint">Quote will appear collapsed in the message</string>
+  <string name="InputQuoteExpandedHint">Quote will appear expanded in the message</string>
+  <string name="InputQuoteCollapsedTutorial">Quote will appear collapsed in the message. Tap to change.</string>
+  <string name="InputQuoteExpandedTutorial">Quote will appear expanded in the message. Tap to change.</string>
 
   <string name="ReplyMessageDeletedHint">This message is a reply to the message that was deleted.</string>
   <string name="AnotherChatReplyHint">This message is from another chat. Tap again to view.</string>

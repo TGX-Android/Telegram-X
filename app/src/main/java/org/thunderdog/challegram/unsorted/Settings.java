@@ -527,6 +527,7 @@ public class Settings {
   public static final long TUTORIAL_MULTIPLE_LINK_PREVIEWS = 1 << 20;
   public static final long TUTORIAL_PLAYBACK_SPEED_HOLD = 1 << 21;
   public static final long TUTORIAL_PLAYBACK_SPEED_SWIPE = 1 << 22;
+  public static final long TUTORIAL_INPUT_QUOTE_BUTTON = 1 << 23;
 
   @Nullable
   private Long _tutorialFlags;

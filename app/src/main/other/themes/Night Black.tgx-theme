@@ -70,6 +70,7 @@ avatarRed, avatarRed_big, nameRed: #CC5049
 avatarViolet, avatarViolet_big: #955CDB
 avatarYellow, avatarYellow_big, nameYellow: #F9C84A
 blockQuoteText, blockQuoteLine: #A0A0A0
+blockQuoteTextHidden: #6A6A6A
 bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine: #A0A0A0
 bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine, bubbleOut_codeBlockLine, bubbleOut_codeBlockBar: #A0A0A0
 codeBlockBackground: #0000006F

@@ -71,6 +71,9 @@ public class QuoteBackground implements StickyElements.Element {
   public static final int QUOTE_RIGHT_PADDING = 27;
   public static final int QUOTE_VERTICAL_PADDING = 2;
   public static final int QUOTE_VERTICAL_MARGIN = 8;
+  // The quote mark: its left edge from the quote's right, and its size
+  public static final int QUOTE_ICON_RIGHT = 19;
+  public static final int QUOTE_ICON_SIZE = 16;
   public static final int CODE_RIGHT_PADDING = 11;
   private static final int CODE_HEADER_HEIGHT = 30;
   private static final float CODE_ICON_BUTTON_RADIUS = 14f;
@@ -727,7 +730,7 @@ public class QuoteBackground implements StickyElements.Element {
     barRadius = Screen.dp(1.5f);
 
     if (!isCode) {
-      iconX = bounds.right - Screen.dp(19);
+      iconX = bounds.right - Screen.dp(QUOTE_ICON_RIGHT);
       iconY = bounds.top + Screen.dp(3.5f);
       // Of the layout, without the offsets of a change
       final float laidHeight = bounds.height() + topOffset - bottomOffset;
@@ -821,7 +824,7 @@ public class QuoteBackground implements StickyElements.Element {
       if (canCollapse) {
         // As far from the bottom as the quote mark is from the top; at the bottom of the list
         // while the end of an expanded quote is below it, never above its place when collapsed
-        final float center = Screen.dp(8f);
+        final float center = Screen.dp(QUOTE_ICON_SIZE / 2f);
         final float padding = iconY - bounds.top + center;
         final float y = parent.placeStickyElement(
           this,
