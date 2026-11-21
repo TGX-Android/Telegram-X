@@ -3723,7 +3723,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean chatNeedsMuteIcon (TdApi.Chat chat) {
-    return chat != null && TD.needMuteIcon(chat.notificationSettings, scopeNotificationSettings(chat.id));
+    return chat != null &&
+      TD.needMuteIcon(chat.notificationSettings, scopeNotificationSettings(chat));
   }
 
   public boolean chatNotificationsEnabled (long chatId) {
