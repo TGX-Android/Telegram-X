@@ -840,7 +840,13 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   private static ArrayList<RingtoneItem> getRingtones (Context context, int type,
     @Nullable String defaultRingtone) {
     ArrayList<RingtoneItem> ringtoneItems = new ArrayList<>();
-    Uri defaultRingtoneUri = RingtoneManager.getActualDefaultRingtoneUri(context, type);
+    Uri defaultRingtoneUri;
+    try {
+      defaultRingtoneUri = RingtoneManager.getActualDefaultRingtoneUri(context, type);
+    } catch (SecurityException e) {
+      Log.w("Unable to get the default ringtone", e);
+      defaultRingtoneUri = null;
+    }
     String customDefaultRingtoneUri = defaultRingtone;
     if (type == RingtoneManager.TYPE_RINGTONE) {
       Uri telegramCall = TdlibNotificationManager.getTelegramCallRingtone();
