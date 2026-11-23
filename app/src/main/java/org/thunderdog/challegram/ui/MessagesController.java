@@ -7072,7 +7072,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return !Td.equalsTo(oldText, newText);
         }
         default: {
-          Td.assertMessageContent_37851fea();
+          Td.assertMessageContent_e4738066();
           break;
         }
       }
@@ -7497,7 +7497,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       default: {
-        Td.assertMessageContent_37851fea();
+        Td.assertMessageContent_e4738066();
         throw Td.unsupported(editContext.message.content);
       }
     }
@@ -8468,8 +8468,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
           // TODO
           break;
         }
+        case TdApi.ChatActionBarBotInvite.CONSTRUCTOR: {
+          TdApi.ChatActionBarBotInvite botInvite = (TdApi.ChatActionBarBotInvite) actionBar;
+          items.add(newReportItem(chatId, false));
+          if (botInvite.canUnarchive) {
+            items.add(newUnarchiveItem(chatId));
+          }
+          break;
+        }
         default: {
-          Td.assertChatActionBar_eedc82ed();
+          Td.assertChatActionBar_8cc14ec5();
           throw Td.unsupported(actionBar);
         }
       }

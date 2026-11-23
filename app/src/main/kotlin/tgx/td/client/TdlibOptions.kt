@@ -42,7 +42,11 @@ data class TdlibOptions(
   @JvmField var canArchiveAndMuteNewChatsFromUnknownUsers: Boolean = false,
   @JvmField var canWithdrawChatRevenue: Boolean = false,
   @JvmField var canGiftStars: Boolean = false,
-  @JvmField var canCraftFromWithdrawnFirstGift: Boolean = false,
+  @JvmField var canCraftWithMintedFirstGift: Boolean = false,
+  @JvmField var canBuyOnChainGifts: Boolean = false,
+  @JvmField var canBuyOnChainFixedPriceGifts: Boolean = false,
+  @JvmField var onChainGiftOffersEnabled: Boolean = true,
+  @JvmField var canRecognizeSpeech: Boolean = true,
   @JvmField var canEnablePaidMessages: Boolean = false,
   @JvmField var canPreloadWeather: Boolean = false,
 
@@ -86,6 +90,10 @@ data class TdlibOptions(
   @JvmField var giftResaleGramCentCountMin: Long = 700L,
   @JvmField var giftResaleStarEarningsPerMille: Int = 800,
   @JvmField var giftResaleGramEarningsPerMille: Int = 900,
+  @JvmField var showGiftResaleStarFilter: Boolean = true,
+  @JvmField var selectGiftResaleStarFilterByDefault: Boolean = true,
+  @JvmField var showGiftResaleGramFilter: Boolean = true,
+  @JvmField var selectGiftResaleGramFilterByDefault: Boolean = true,
 
   @JvmField var starTopUpDisabled: Boolean = false,
   @JvmField var starWithdrawalCountMin: Long = 1000L,
@@ -298,8 +306,14 @@ data class TdlibOptions(
         canWithdrawChatRevenue = value.boolValue()
       "can_gift_stars" ->
         canGiftStars = value.boolValue()
-      "can_craft_from_withdrawn_first_gift" ->
-        canCraftFromWithdrawnFirstGift = value.boolValue()
+      "can_craft_with_minted_first_gift" ->
+        canCraftWithMintedFirstGift = value.boolValue()
+      "can_buy_on_chain_gifts" ->
+        canBuyOnChainGifts = value.boolValue()
+      "can_buy_on_chain_fixed_price_gifts" ->
+        canBuyOnChainFixedPriceGifts = value.boolValue()
+      "can_recognize_speech" ->
+        canRecognizeSpeech = value.boolValue()
       "can_enable_paid_messages" ->
         canEnablePaidMessages = value.boolValue()
       "can_preload_weather" ->
@@ -379,6 +393,14 @@ data class TdlibOptions(
         giftResaleGramCentCountMin = value.longValue()
       "gift_resale_gram_earnings_per_mille" ->
         giftResaleGramEarningsPerMille = value.intValue()
+      "show_gift_resale_star_filter" ->
+        showGiftResaleStarFilter = value.boolValue()
+      "select_gift_resale_star_filter_by_default" ->
+        selectGiftResaleStarFilterByDefault = value.boolValue()
+      "show_gift_resale_gram_filter" ->
+        showGiftResaleGramFilter = value.boolValue()
+      "select_gift_resale_gram_filter_by_default" ->
+        selectGiftResaleGramFilterByDefault = value.boolValue()
 
       "star_top_up_disabled" ->
         starTopUpDisabled = value.boolValue()
@@ -709,6 +731,9 @@ data class TdlibOptions(
 
       "stories_all_hidden" ->
         storyAllHidden = value.boolValue()
+
+      "onchain_stargift_offers_enabled" ->
+        onChainGiftOffersEnabled = value.boolValue()
 
       "translations_manual_enabled" ->
         translationsManualEnabled = value.stringValue() == "enabled"

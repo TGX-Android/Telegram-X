@@ -8864,6 +8864,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageUpgradedGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
         case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+        case TdApi.MessageUpgradedGiftOnChainPurchaseOffer.CONSTRUCTOR:
         case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
         case TdApi.MessageStakeDice.CONSTRUCTOR:
 
@@ -8880,6 +8881,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
         case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
         case TdApi.MessageWidget.CONSTRUCTOR:
+        case TdApi.MessageBotInvite.CONSTRUCTOR:
           break;
 
         case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -8892,7 +8894,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         default: {
-          Td.assertMessageContent_37851fea();
+          Td.assertMessageContent_e4738066();
           throw Td.unsupported(msg.content);
         }
       }

@@ -495,6 +495,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageUpgradedGift.CONSTRUCTOR:
             case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
             case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+            case TdApi.MessageUpgradedGiftOnChainPurchaseOffer.CONSTRUCTOR:
             case TdApi.MessageStakeDice.CONSTRUCTOR:
             case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
             case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
@@ -510,6 +511,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
             case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
             case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+            case TdApi.MessageBotInvite.CONSTRUCTOR:
             case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
             case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
             case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
@@ -521,7 +523,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_37851fea();
+              Td.assertMessageContent_e4738066();
               throw Td.unsupported(message.content);
           }
           if (format == null) {

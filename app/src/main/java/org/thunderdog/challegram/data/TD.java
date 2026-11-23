@@ -3899,7 +3899,7 @@ public class TD {
         // TODO rich message
         break;
       default:
-        Td.assertMessageContent_37851fea();
+        Td.assertMessageContent_e4738066();
         break;
     }
     return false;
@@ -6332,7 +6332,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_37851fea();
+        Td.assertMessageContent_e4738066();
         break;
     }
     return false;
