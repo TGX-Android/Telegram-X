@@ -479,6 +479,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   protected void onTdlibChanged () {
     Tdlib tdlib = currentTdlib();
     setShowOptimizing(tdlib.isOptimizing());
+    CallProblems.refresh(tdlib);
     tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
     updateCounter();
   }
@@ -1753,8 +1754,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
   @Override
   public void onResume () {
-    // Before the drawer and the screens read it on their resume
-    CallProblems.refresh(this);
+    CallProblems.refresh(tdlib);
     super.onResume();
     Log.i("MainActivity.onResume");
     if (pendingAnswerIntent != null) {

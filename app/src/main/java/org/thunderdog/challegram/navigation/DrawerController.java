@@ -47,6 +47,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalCountersListener;
+import org.thunderdog.challegram.telegram.GlobalCallProblemsListener;
 import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -94,7 +95,11 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import tgx.td.ChatId;
 
-public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener, GlobalTokenStateListener, SystemBackEventListener {
+public class DrawerController extends ViewController<Void> implements
+  View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener,
+  BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener,
+  TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener,
+  GlobalTokenStateListener, SystemBackEventListener, GlobalCallProblemsListener {
   private int currentWidth, shadowWidth;
 
   private boolean isVisible;
@@ -184,6 +189,11 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
   @Override
   public void onTokenStateChanged (int newState, @Nullable String error, @Nullable Throwable fullError) {
+    checkSettingsClickBait();
+  }
+
+  @Override
+  public void onCallProblemsChanged () {
     checkSettingsClickBait();
   }
 
@@ -531,6 +541,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     TdlibManager.instance().global().addAccountListener(this);
     TdlibManager.instance().global().addCountersListener(this);
     TdlibManager.instance().global().addTokenStateListener(this);
+    TdlibManager.instance().global().addCallProblemsListener(this);
 
     return contentView;
   }
@@ -546,6 +557,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     TdlibManager.instance().global().removeAccountListener(this);
     TdlibManager.instance().global().removeCountersListener(this);
     TdlibManager.instance().global().removeTokenStateListener(this);
+    TdlibManager.instance().global().removeCallProblemsListener(this);
   }
 
   @Override

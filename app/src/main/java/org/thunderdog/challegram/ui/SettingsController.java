@@ -58,6 +58,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.CallProblems;
 import org.thunderdog.challegram.telegram.ConnectionListener;
+import org.thunderdog.challegram.telegram.GlobalCallProblemsListener;
 import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.StickersListener;
@@ -107,7 +108,7 @@ public class SettingsController extends ViewController<Void> implements
   Menu, MoreDelegate, OptionDelegate,
   TdlibCache.MyUserDataChangeListener, ConnectionListener, StickersListener, MediaLayout.MediaGalleryCallback,
   ActivityResultHandler, View.OnLongClickListener, SessionListener, GlobalTokenStateListener, TdlibCache.UserDataChangeListener,
-  TdlibOptionListener {
+  TdlibOptionListener, GlobalCallProblemsListener {
 
   private final AvatarPickerManager avatarPickerManager;
   private ComplexHeaderView headerCell;
@@ -142,6 +143,7 @@ public class SettingsController extends ViewController<Void> implements
       tdlib.listeners().subscribeToStickerUpdates(this);
     } else {
       // Problems may have been fixed on the screens opened from here
+      CallProblems.refresh(tdlib);
       checkErrors(true);
       loadActiveSessions();
     }
@@ -818,6 +820,7 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.listeners().addOptionsListener(this);
     TGLegacyManager.instance().addEmojiListener(adapter);
     TdlibManager.instance().global().addTokenStateListener(this);
+    TdlibManager.instance().global().addCallProblemsListener(this);
 
     loadActiveSessions();
 
@@ -832,6 +835,11 @@ public class SettingsController extends ViewController<Void> implements
   @Override
   public void onSessionCanAcceptCallsChanged (Tdlib tdlib, long sessionId, boolean canAcceptCalls) {
     runOnUiThreadOptional(() -> checkCallErrors(true));
+  }
+
+  @Override
+  public void onCallProblemsChanged () {
+    checkCallErrors(true);
   }
 
   private boolean loadingActiveSessions;
@@ -1017,6 +1025,7 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.listeners().removeOptionListener(this);
     TGLegacyManager.instance().removeEmojiListener(adapter);
     TdlibManager.instance().global().removeTokenStateListener(this);
+    TdlibManager.instance().global().removeCallProblemsListener(this);
     headerCell.performDestroy();
   }
 

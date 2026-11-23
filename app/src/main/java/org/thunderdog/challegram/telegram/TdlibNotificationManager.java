@@ -1508,6 +1508,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       tdlib.settings().trackNotificationChannelProblem(e, 0);
     }
     tdlib.listeners().updateNotificationChannel(scopePrivate());
+    CallProblems.refresh(tdlib);
   }
 
   public TdlibNotificationChannelGroup getChannelCache () throws TdlibNotificationChannelGroup.ChannelCreationFailureException {
@@ -1572,6 +1573,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       boolean isDebug = tdlib.account().isDebug();
       TdlibNotificationChannelGroup.deleteChannels(tdlib, user.id, isDebug, user, recreate);
     }
+    CallProblems.refresh(tdlib);
   }
 
   @AnyThread
@@ -1832,6 +1834,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       tdlib.listeners().updateNotificationChannel(userChatId);
     } else {
       tdlib.listeners().updateNotificationChannel(scopePrivate());
+      CallProblems.refresh(tdlib);
     }
   }
 
@@ -3233,8 +3236,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @NotificationThread
   private void onUpdateMyUserIdImpl (long userId) {
     this.myUserId = userId;
-    if (userId == 0)
+    if (userId == 0) {
       myUser = null;
+    } else {
+      CallProblems.refresh(tdlib);
+    }
   }
 
   @NotificationThread

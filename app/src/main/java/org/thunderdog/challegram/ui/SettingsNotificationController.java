@@ -63,6 +63,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.sync.SyncAdapter;
 import org.thunderdog.challegram.telegram.CallProblems;
 import org.thunderdog.challegram.telegram.ChatListener;
+import org.thunderdog.challegram.telegram.GlobalCallProblemsListener;
 import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -120,7 +121,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   ViewController.SettingsStringDelegate,
   NotificationSettingsListener, TdlibOptionListener, ActivityResultHandler,
   PopupLayout.DismissListener, MoreDelegate, TdlibSettingsManager.NotificationProblemListener,
-  GlobalTokenStateListener, ChatListener {
+  GlobalTokenStateListener, ChatListener, GlobalCallProblemsListener {
   public static class Args {
     public final long chatId;
     public final TdApi.NotificationSettingsScope scope;
@@ -1685,6 +1686,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     tdlib.listeners().subscribeToSettingsUpdates(this);
     tdlib.settings().addNotificationProblemAvailabilityChangeListener(this);
     tdlib.context().global().addTokenStateListener(this);
+    tdlib.context().global().addCallProblemsListener(this);
     if (customChatId != 0) {
       tdlib.listeners().subscribeToChatUpdates(customChatId, this);
     }
@@ -1778,7 +1780,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   private boolean hasCallProblem (int itemId) {
     if (itemId == R.id.btn_fullScreenAlerts) {
-      return CallProblems.isFullScreenIntentDenied(context);
+      return CallProblems.isFullScreenIntentDenied(tdlib);
     }
     if (itemId == R.id.btn_calls_channel) {
       return !tdlib.notifications().canCallChannelRing(0);
@@ -1858,7 +1860,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   private boolean isFullScreenAlertsShown () {
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
-      CallProblems.isFullScreenIntentDenied(context);
+      CallProblems.isFullScreenIntentDenied(tdlib);
   }
 
   private static void addFullScreenAlerts (List<ListItem> items) {
@@ -2881,6 +2883,14 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   @Override
+  public void onCallProblemsChanged () {
+    if (specificSection == Section.CALLS && adapter != null) {
+      updateFullScreenAlerts();
+      checkInErrorMode();
+    }
+  }
+
+  @Override
   public void onFocus () {
     super.onFocus();
     wasFocused = true;
@@ -2896,6 +2906,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       adapter.updateValuedSettingById(R.id.btn_passcode);
       adapter.updateValuedSettingById(R.id.btn_passcodeCalls);
       updateCallSettingsReset();
+      CallProblems.refresh(tdlib);
     }
   }
 
@@ -3160,6 +3171,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     tdlib.listeners().unsubscribeFromSettingsUpdates(this);
     tdlib.settings().removeNotificationProblemAvailabilityChangeListener(this);
     tdlib.context().global().removeTokenStateListener(this);
+    tdlib.context().global().removeCallProblemsListener(this);
     if (customChatId != 0) {
       tdlib.listeners().unsubscribeFromChatUpdates(customChatId, this);
     }
