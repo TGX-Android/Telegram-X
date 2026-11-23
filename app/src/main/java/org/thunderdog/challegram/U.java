@@ -98,6 +98,7 @@ import androidx.media3.exoplayer.hls.DefaultHlsExtractorFactory;
 import androidx.media3.exoplayer.hls.HlsExtractorFactory;
 import androidx.media3.exoplayer.hls.HlsMediaChunkExtractor;
 import androidx.media3.exoplayer.hls.HlsMediaSource;
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.source.ProgressiveMediaSource;
@@ -726,6 +727,14 @@ public class U {
   }
 
   public static ExoPlayer newExoPlayer (Context context, boolean preferExtensions) {
+    return newExoPlayer(context, preferExtensions, MediaCodecSelector.DEFAULT);
+  }
+
+  public static ExoPlayer newExoPlayer (
+    Context context,
+    boolean preferExtensions,
+    MediaCodecSelector decoderSelector
+  ) {
     // new AdaptiveVideoTrackSelection.Factory(new DefaultBandwidthMeter())
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
@@ -734,7 +743,8 @@ public class U {
       DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
     final RenderersFactory renderersFactory = new DefaultRenderersFactory(context)
       .setExtensionRendererMode(extensionMode)
-      .setEnableDecoderFallback(true);
+      .setEnableDecoderFallback(true)
+      .setMediaCodecSelector(decoderSelector);
     final MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
     final AnalyticsCollector analyticsCollector;
     if (Log.getLogLevel() > Log.LEVEL_ASSERT) {

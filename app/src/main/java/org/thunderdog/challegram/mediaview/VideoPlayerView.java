@@ -39,6 +39,8 @@ import androidx.media3.common.VideoSize;
 import androidx.media3.exoplayer.ExoPlaybackException;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.analytics.AnalyticsListener;
+import androidx.media3.exoplayer.mediacodec.MediaCodecDecoderException;
+import androidx.media3.exoplayer.mediacodec.MediaCodecInfo;
 import androidx.media3.exoplayer.source.ClippingMediaSource;
 import androidx.media3.exoplayer.source.MediaSource;
 
@@ -73,6 +75,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import tgx.player.OriginalVideoFailures;
+import tgx.player.VideoDecoderSelector;
 import tgx.player.VideoDecoders;
 import tgx.td.data.HlsVideo;
 
@@ -155,6 +158,10 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
   // HLS of the original that plays, while it may still give way to it
   private @Nullable HlsVideo alternativesOfOriginal;
   private boolean hasOriginalFailed;
+
+  private final VideoDecoderSelector decoderSelector = new VideoDecoderSelector();
+  private @Nullable MediaItem failedDecodersItem;
+  private boolean hasFailedDecodersOfHls;
 
   private static boolean hasFailedInHardware (HlsVideo hlsVideo) {
     return originalFailures.isRemembered(hlsVideo.video.video.remote.uniqueId);
@@ -263,6 +270,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
 
     // String path;
     MediaSource source;
+    boolean isHls = false;
 
     boolean forcePlay = false;
 
@@ -279,6 +287,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
           ((hasOriginalFailed || hasFailedInHardware(hlsVideo)) &&
             canReplaceOriginal(mediaItem, hlsVideo)))) {
           source = U.newMediaSource(mediaItem.tdlib().id(), hlsVideo);
+          isHls = true;
         } else {
           long durationMs = mediaItem.getVideoDuration(false, TimeUnit.MILLISECONDS);
           source = U.newMediaSource(mediaItem.tdlib().id(), targetFile, TdlibFilesManager.PRIORITY_STREAMING_VIDEO, TdlibDataSource.Flag.OPTIMIZE_CHUNKS, durationMs);
@@ -298,8 +307,14 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       }
     }
 
+    if (failedDecodersItem != mediaItem || hasFailedDecodersOfHls != isHls) {
+      failedDecodersItem = mediaItem;
+      hasFailedDecodersOfHls = isHls;
+      decoderSelector.clear();
+    }
+
     if (player == null) {
-      this.player = U.newExoPlayer(context, preferExtensions);
+      this.player = U.newExoPlayer(context, preferExtensions, decoderSelector);
       this.player.addListener(this);
       checkMuted();
       this.player.setVideoTextureView(renderView);
@@ -615,10 +630,25 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       error.errorCode <= PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED;
   }
 
+  private boolean playByNextDecoder (PlaybackException error) {
+    // ExoPlayer falls back only from decoders that fail to start
+    MediaCodecInfo decoder = error.getCause() instanceof MediaCodecDecoderException ?
+      ((MediaCodecDecoderException) error.getCause()).codecInfo : null;
+    if (player == null || decoder == null || !decoderSelector.leaveOut(decoder)) {
+      return false;
+    }
+    Log.w(Log.TAG_VIDEO, "Video decoder %s failed, playing by the next one", error, decoder.name);
+    player.prepare();
+    return true;
+  }
+
   @Override
   public void onPlayerError (@NonNull PlaybackException error) {
     if (alternativesOfOriginal != null && isVideoDecoderError(error) &&
       replaceFailedOriginal(error)) {
+      return;
+    }
+    if (isVideoDecoderError(error) && playByNextDecoder(error)) {
       return;
     }
     if (U.isRenderError(error) && preferExtensions == Config.PREFER_RENDER_EXTENSIONS) {
