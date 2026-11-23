@@ -1,0 +1,50 @@
+name: Build debug APK
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/android/sdk/ndk /opt/hostedtoolcache/CodeQL
+          df -h /
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Fetch submodules (shallow)
+        run: git submodule update --init --recursive --depth=1
+      - name: Android SDK pieces
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-37.1" "build-tools;37.0.0" "cmake;3.22.1" "ndk;23.2.8568313"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Rust toolchain
+        run: |
+          scripts/setup-rust.sh | tee rust.log
+      - name: local.properties
+        env:
+          API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        run: |
+          RUST_DIR=$(grep -oP '(?<=rust.dir=).*' rust.log | tail -1 || true)
+          RUST_DIR=${RUST_DIR:-$HOME/.rustup}
+          {
+            echo "sdk.dir=$ANDROID_HOME"
+            echo "rust.dir=$RUST_DIR"
+            echo "telegram.api_id=$API_ID"
+            echo "telegram.api_hash=$API_HASH"
+          } > local.properties
+      - name: Validate and build
+        run: |
+          ./gradlew :app:validateGitSetup
+          ./gradlew assembleLatestDebug -Pabi=arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m0-debug-apk
+          path: app/build/outputs/apk/**/*.apk
+          retention-days: 3
