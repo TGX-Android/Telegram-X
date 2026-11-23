@@ -97,10 +97,24 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
         gestureDetector.onTouchEvent(event);
         return true;
       }
+      case MotionEvent.ACTION_CANCEL: {
+        gestureDetector.onTouchEvent(event);
+        return onTouchCancel();
+      }
       default: {
         return gestureDetector.onTouchEvent(event);
       }
     }
+  }
+
+  private boolean onTouchCancel () {
+    if (slidingBack) {
+      navigation.closePreview(0f);
+    } else if (slidingDrawer && drawer != null) {
+      drawer.drop();
+    }
+    clear(true);
+    return false;
   }
 
   public boolean onDown (MotionEvent event) {
