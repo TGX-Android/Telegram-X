@@ -14,8 +14,6 @@
  */
 package org.thunderdog.challegram.loader.gif;
 
-import android.os.SystemClock;
-
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
@@ -30,6 +28,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
@@ -83,7 +82,8 @@ public class GifFile {
   private double startMediaTimestamp;
   private int maxSourceSize;
 
-  private final long creationTime;
+  private static final AtomicLong lastInstanceId = new AtomicLong();
+  private final long instanceId;
 
   public GifFile (Tdlib tdlib, TdApi.Animation gif) {
     this(tdlib, gif.animation,
@@ -120,7 +120,7 @@ public class GifFile {
     this.tdlib = tdlib;
     this.file = file;
     this.type = type;
-    this.creationTime = SystemClock.uptimeMillis();
+    this.instanceId = lastInstanceId.incrementAndGet();
   }
 
   public boolean isLottie () {
@@ -430,7 +430,7 @@ public class GifFile {
       b.append(",f").append(fitzpatrickType);
     }
     if (isUnique() || (isPlayOnce() && StringUtils.isEmpty(playOnceId))) {
-      b.append(",o").append(creationTime);
+      b.append(",o").append(instanceId);
     } else if (isPlayOnce()) {
       b.append(",p").append(playOnceId);
     }

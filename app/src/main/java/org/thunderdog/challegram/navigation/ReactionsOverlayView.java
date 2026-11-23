@@ -112,10 +112,11 @@ public class ReactionsOverlayView extends ViewGroup {
 
 
   public void removeOverlay (ReactionInfo info) {
-    activePopups.remove(info);
-    info.detach();
-    info.performDestroy();
-    invalidate();
+    if (activePopups.remove(info)) {
+      info.detach();
+      info.performDestroy();
+      invalidate();
+    }
   }
 
 
@@ -129,7 +130,11 @@ public class ReactionsOverlayView extends ViewGroup {
 
 
   public static class ReactionInfo implements Destroyable, FactorAnimator.Target {
+    private static final long MAX_DURATION_MS = 7500;
+
     private final ReactionsOverlayView parentView;
+    private final Runnable finishRunnable = this::finish;
+    private boolean isFinished;
 
     private final ImageReceiver imageReceiver;
     private final GifReceiver gifReceiver;
@@ -282,16 +287,21 @@ public class ReactionsOverlayView extends ViewGroup {
     }
 
     private ReactionInfo setRemoveListener (Runnable listener) {
-      if (animation != null && positionAnimator == null) {
-        animation.addLoopListener(() -> {
-          if (endAnimationListener != null) {
-            endAnimationListener.onAnimationFinish();
-          }
-          removeRunnable.run();
-        });
-      }
       this.removeRunnable = listener;
+      if (animation != null && positionAnimator == null) {
+        animation.addLoopListener(finishRunnable);
+      }
       return this;
+    }
+
+    private void finish () {
+      if (!isFinished) {
+        isFinished = true;
+        if (endAnimationListener != null) {
+          endAnimationListener.onAnimationFinish();
+        }
+        removeRunnable.run();
+      }
     }
 
     public void draw (Canvas canvas) {
@@ -357,6 +367,8 @@ public class ReactionsOverlayView extends ViewGroup {
       gifReceiver.attach();
       if (positionAnimator != null) {
         positionAnimator.animateTo(1f);
+      } else {
+        parentView.postDelayed(finishRunnable, MAX_DURATION_MS);
       }
       if (animatedEmojiEffect != null) {
         animatedEmojiEffect.setView(parentView);
@@ -368,6 +380,8 @@ public class ReactionsOverlayView extends ViewGroup {
       gifReceiver.detach();
       if (positionAnimator != null) {
         positionAnimator.cancel();
+      } else {
+        parentView.removeCallbacks(finishRunnable);
       }
       if (animatedEmojiEffect != null) {
         animatedEmojiEffect.removeView();
