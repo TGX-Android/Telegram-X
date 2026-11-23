@@ -20,7 +20,7 @@ import java.util.*
 object Config {
   const val MIN_SDK_VERSION = 16
   const val MIN_SDK_VERSION_HUAWEI = 17
-  val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_21
+  val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_25
   val ANDROIDX_MEDIA_EXTENSIONS = arrayOf(
     "decoder_ffmpeg",
     "decoder_flac",
@@ -36,7 +36,6 @@ object Config {
     "avfilter",
     "avutil"
   )
-  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
 }
 
 data class PullRequest (
@@ -60,7 +59,8 @@ data class BuildVersions(
   val targetSdkVersion: Int,
   val buildToolsVersion: String,
   val legacyNdkVersion: String,
-  val primaryNdkVersion: String
+  val primaryNdkVersion: String,
+  val rustVersion: String
 ) {
   constructor(version: Properties) : this(
     compileSdkVersion =
@@ -72,12 +72,16 @@ data class BuildVersions(
     legacyNdkVersion =
       version.getOrThrow("version.ndk_legacy"),
     primaryNdkVersion =
-      version.getOrThrow("version.ndk_primary")
+      version.getOrThrow("version.ndk_primary"),
+    rustVersion =
+      version.getOrThrow("version.rust")
   )
 }
 
 data class ApplicationConfig(
   val sdkDir: String,
+  val rustDir: String,
+  val msys2Dir: String,
 
   val applicationName: String,
   val applicationId: String,
@@ -89,6 +93,7 @@ data class ApplicationConfig(
 
   val isExperimentalBuild: Boolean,
   val isHuaweiBuild: Boolean,
+  val googleServicesFile: String?,
   val forceOptimize: Boolean,
   val doNotObfuscate: Boolean,
   val useNTgCalls: Boolean,
@@ -132,56 +137,94 @@ data class Keystore(
   )
 }
 
-class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
-  init {
-    if (filters.isEmpty())
-      fatal("Empty filters passed")
-    for (filter in filters) {
-      if (!Config.SUPPORTED_ABI.contains(filter))
-        fatal("Unsupported abi filter: $filter")
-    }
-  }
+enum class Abi(
+  val versionCode: Int
+) {
+  // do not change: multi-abi APKs intentionally share the same version code
+  UNIVERSAL(0),
+  ARM(0),
+  INTEL(0),
 
-  val is64Bit: Boolean
-    get() {
-      for (filter in filters) {
-        if (filter != "arm64-v8a" && filter != "x86_64") {
-          return false
+  ARMEABI_V7A(1),
+  ARM64_V8A(2),
+  X86(3),
+  X64(4);
+
+  val isSingleAbi: Boolean
+    get() =
+      when (this) {
+        UNIVERSAL, ARM, INTEL -> false
+        else -> true
+      }
+
+  fun toDisplayName(): String =
+    name.lowercase().replace("_", "-")
+
+  companion object {
+    val FILTERS = listOf(
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64",
+      "x86"
+    )
+
+    fun toFilters(abi: String): List<String> =
+      if (abi.isEmpty() || abi == "all") {
+        FILTERS
+      } else {
+        val abiFilters = abi
+          .split(',')
+          .flatMap {
+            toFilters(fromFilter(it.trim()))
+          }
+        FILTERS.filter {
+          it in abiFilters
         }
       }
-      return true
-    }
 
-  val isTestingLab: Boolean
-    get() {
-      return flavor == Abi.VARIANTS[Abi.LAB]!!.flavor
-    }
+    fun toFilters(abi: Abi): List<String> =
+      FILTERS.let { abiFilters ->
+        abiFilters.filter { abiFilter ->
+          when (abiFilter) {
+            "arm64-v8a" -> abi == ARM64_V8A || abi == ARM || abi == UNIVERSAL
+            "armeabi-v7a" -> abi == ARMEABI_V7A || abi == ARM || abi == UNIVERSAL
+            "x86_64" -> abi == X64 || abi == INTEL || abi == UNIVERSAL
+            "x86" -> abi == X86 || abi == INTEL || abi == UNIVERSAL
+            else -> {
+              fatal("Unknown abi argument: $abi")
+            }
+          }
+        }
+      }
 
-  val minSdk: Int
-    get() = if (is64Bit) {
-      21
-    } else {
-      16
-    }
-}
+    fun fromFilters(abiFilters: List<String>): Abi =
+      if (abiFilters.isEmpty() || abiFilters.size > 1) {
+        when (abiFilters.size) {
+          2 if abiFilters.containsAll(listOf("arm64-v8a", "armeabi-v7a")) ->
+            ARM
+          2 if abiFilters.containsAll(listOf("x86", "x86_64")) ->
+            INTEL
+          else ->
+            UNIVERSAL
+        }
+      } else {
+        fromFilter(abiFilters[0])
+      }
 
-@Suppress("MemberVisibilityCanBePrivate")
-object Abi {
-  const val UNIVERSAL = 0
-  const val ARMEABI_V7A = 1
-  const val ARM64_V8A = 2
-  const val X86 = 3
-  const val X64 = 4
-  const val LAB = 5
-
-  val VARIANTS = mapOf(
-    Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "armeabi-v7a"))),
-    Pair(ARMEABI_V7A, AbiVariant("arm32", "armeabi-v7a")),
-    Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
-    Pair(X86, AbiVariant("x86", "x86")),
-    Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64")),
-    Pair(LAB, AbiVariant("lab", displayName = "testing", filters = arrayOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86"))),
-  )
+    fun fromFilter(abiFilter: String): Abi =
+      when (abiFilter) {
+        "arm32", "armeabi-v7a" -> ARMEABI_V7A
+        "arm64", "arm64-v8a" -> ARM64_V8A
+        "x86" -> X86
+        "x64", "x86_64" -> X64
+        "all", "universal" -> UNIVERSAL
+        "arm" -> ARM
+        "intel" -> INTEL
+        else -> {
+          fatal("Unknown abi filter: $abiFilter")
+        }
+      }
+  }
 }
 
 data class SdkVariant(
@@ -192,6 +235,9 @@ data class SdkVariant(
 ) {
   val isLatest: Boolean =
     flavor == "latest"
+
+  val isNop: Boolean =
+    flavor == "nop"
   val isMarshmallow: Boolean =
     flavor == "marshmallow"
   val isLollipop: Boolean =
@@ -200,17 +246,26 @@ data class SdkVariant(
     flavor == "legacy"
 
   val jetpackMediaFlavor: String =
-    flavor.takeIf { !isMarshmallow } ?: "latest"
+    flavor.takeIf { isLegacy || isLollipop } ?: "latest"
 
   val usesLegacyNdk: Boolean =
     isLegacy
+
+  fun supportsSdk(sdk: Int): Boolean =
+    (maxSdk ?: Int.MAX_VALUE) >= sdk
+
+  // ART uses baseline profiles starting with Android 7.0
+  val usesBaselineProfile: Boolean =
+    supportsSdk(24)
 }
 
 object Sdk {
   const val LEGACY = 0
   const val LOLLIPOP = 1
   const val MARSHMALLOW = 2
-  const val LATEST = 3
+  const val NOUGAT_OREO_PIE = 3
+  const val Q_R_S = 4
+  const val LATEST = 5
 
   val VARIANTS = mapOf(
     Pair(LEGACY, SdkVariant(
@@ -228,9 +283,21 @@ object Sdk {
       minSdk = 23,
       maxSdk = 23
     )),
+    Pair(NOUGAT_OREO_PIE, SdkVariant(
+      flavor = "nop",
+      minSdk = 24,
+      maxSdk = 28,
+      displayName = "nougatOreoPie"
+    )),
+    Pair(Q_R_S, SdkVariant(
+      flavor = "qrs",
+      minSdk = 29,
+      maxSdk = 32,
+      displayName = "QRS"
+    )),
     Pair(LATEST, SdkVariant(
       flavor = "latest",
-      minSdk = 24,
+      minSdk = 33,
       displayName = null
     ))
   )

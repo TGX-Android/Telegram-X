@@ -29,6 +29,7 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 public class WatchDogObserver {
   // private static final Uri INTERNAL_CONTENT_URI = MediaStore.Files.getContentUri("internal");
@@ -124,7 +125,7 @@ public class WatchDogObserver {
     if (!isRegistered) {
       isRegistered = true;
 
-      Context context = UI.getAppContext();
+      Context context = AppContext.get();
       ContentResolver resolver = context.getContentResolver();
 
       register(resolver, MediaStore.Images.Media.INTERNAL_CONTENT_URI, imageObserverInternal);
@@ -147,7 +148,7 @@ public class WatchDogObserver {
     if (isRegistered) {
       isRegistered = false;
 
-      Context context = UI.getAppContext();
+      Context context = AppContext.get();
       ContentResolver resolver = context.getContentResolver();
 
       unregister(resolver, imageObserverInternal);
@@ -194,7 +195,7 @@ public class WatchDogObserver {
           MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
           MediaStore.Images.Media.TITLE
         };
-        Cursor c = UI.getAppContext().getContentResolver().query(uri, projection, null, null, MediaStore.Images.Media.DATE_ADDED + " DESC LIMIT 1");
+        Cursor c = AppContext.get().getContentResolver().query(uri, projection, null, null, MediaStore.Images.Media.DATE_ADDED + " DESC LIMIT 1");
 
         if (c != null) {
           if (c.getCount() > 0) {

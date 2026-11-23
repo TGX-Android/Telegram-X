@@ -24,7 +24,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -90,7 +89,7 @@ public class PageBlockWrapView extends FrameLayoutFix implements ViewPager.OnPag
       this.context = context;
     }
 
-    @JavascriptInterface
+    @android.webkit.JavascriptInterface
     public final void postEvent (final String eventName, final String eventData) {
       UI.post(() -> {
         if ("resize_frame".equals(eventName)) {

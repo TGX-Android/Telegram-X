@@ -55,6 +55,7 @@ import org.thunderdog.challegram.theme.ThemeProperties;
 import org.thunderdog.challegram.theme.ThemeSet;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.xmlpull.v1.XmlSerializer;
 
@@ -1037,7 +1038,7 @@ public final class TdlibFileGenerationManager {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && maxSize <= BIG_THUMB_RESOLUTION && info.getCropState() == null && info.getPaintState() == null) {
       android.graphics.ImageDecoder.Source source;
       if (uri != null) {
-        source = android.graphics.ImageDecoder.createSource(UI.getAppContext().getContentResolver(), uri);
+        source = android.graphics.ImageDecoder.createSource(AppContext.get().getContentResolver(), uri);
       } else {
         source = android.graphics.ImageDecoder.createSource(new File(originalPath));
       }
@@ -1381,7 +1382,7 @@ public final class TdlibFileGenerationManager {
         // int rotation = ImageReader.getRotation(originalPath);
         android.graphics.ImageDecoder.Source source;
         if (uri != null) {
-          source = android.graphics.ImageDecoder.createSource(UI.getAppContext().getContentResolver(), uri);
+          source = android.graphics.ImageDecoder.createSource(AppContext.get().getContentResolver(), uri);
         } else {
           source = android.graphics.ImageDecoder.createSource(new File(originalPath));
         }

@@ -1,13 +1,17 @@
 cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 project(tgx VERSION 1.0.0 LANGUAGES C CXX)
-message(STATUS "Building ${PROJECT_NAME} ndk: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION}) platform: ${ANDROID_PLATFORM} abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
+message(STATUS "Building ${PROJECT_NAME} ndk: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION}) platform: ${ANDROID_PLATFORM} (${ANDROID_MIN_SDK_VERSION}) abi: ${ANDROID_ABI} type: ${CMAKE_BUILD_TYPE} flavor: ${TGX_FLAVOR} (${PROJECT_SOURCE_DIR})")
 
 if(NOT ANDROID_NDK_MAJOR OR NOT ANDROID_NDK_REVISION)
   message(FATAL_ERROR "Unknown NDK: r${ANDROID_NDK_MAJOR} (${ANDROID_NDK_REVISION})")
 endif()
 
-if (NOT TGX_FLAVOR MATCHES "^(legacy|lollipop|marshmallow|latest)$")
-  message(FATAL_ERROR "Unknown flavor: ${TGX_FLAVOR}")
+if (NOT DEFINED ANDROID_MIN_SDK_VERSION)
+  message(FATAL_ERROR "ANDROID_MIN_SDK_VERSION is not set")
+endif()
+
+if(NOT EXISTS "${ANDROID_NDK}")
+  message(FATAL_ERROR "ANDROID_NDK is not set")
 endif()
 
 # == Include ==
@@ -23,10 +27,11 @@ set(TDLIB_DIR "${TGX_ROOT_DIR}/tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
 # ENABLE_TGVOIP may be passed by gradle depending on app.ntgcalls
-if(${TGX_FLAVOR} STREQUAL "legacy")
-  set(ENABLE_TGVOIP no)
-elseif(NOT DEFINED ENABLE_TGVOIP)
+if(DEFINED ENABLE_TGVOIP)
+elseif(ANDROID_MIN_SDK_VERSION GREATER_EQUAL 21)
   set(ENABLE_TGVOIP yes)
+else()
+  set(ENABLE_TGVOIP no)
 endif()
 
 # Using webp only if building for 32-bit platform
@@ -69,30 +74,59 @@ add_compile_options(
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto=full>"
 )
 
+file(REAL_PATH "${ANDROID_NDK}" ANDROID_NDK_REAL_PATH) # @MadeByLLM("opus-5.5")
+
+add_compile_options(
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${TGX_ROOT_DIR}/=>"
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${ANDROID_NDK}/=ndk/>"
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${ANDROID_NDK_REAL_PATH}/=ndk/>" # @MadeByLLM("opus-5.5")
+  "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${CMAKE_BINARY_DIR}=.cxx>"
+)
+
+if (${ANDROID_ABI} STREQUAL "arm64-v8a")
+  add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-mbranch-protection=standard>")
+endif()
+
+if (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 30)
+  add_link_options(
+    "-Wl,--pack-dyn-relocs=android+relr"
+    "-Wl,--no-use-android-relr-tags"
+  )
+elseif (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 28)
+  add_link_options(
+    "-Wl,--pack-dyn-relocs=android+relr"
+    "-Wl,--use-android-relr-tags"
+  )
+elseif (ANDROID_MIN_SDK_VERSION GREATER_EQUAL 23)
+  add_link_options(
+    "-Wl,--pack-dyn-relocs=android"
+  )
+endif()
+
 # == Libraries ==
 
 # tdjni
 
 add_library(crypto SHARED IMPORTED)
 set_target_properties(crypto PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/lib/libcryptox.so
+  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/lib/libcryptox.so
 )
 add_library(ssl SHARED IMPORTED)
 set_target_properties(ssl PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/lib/libsslx.so
+  ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/lib/libsslx.so
 )
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
   target_include_directories(crypto INTERFACE
-    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/include
+    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/include
   )
   target_include_directories(ssl INTERFACE
-    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/include
+    ${TDLIB_DIR}/openssl/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/include
   )
 endif()
 
 add_library(tdjni SHARED IMPORTED)
 set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/src/main/libs/${ANDROID_NDK_REVISION}/${ANDROID_ABI}/libtdjni.so
+  ${TDLIB_DIR}/src/main/libs/${ANDROID_NDK_REVISION}/${ANDROID_PLATFORM}/${ANDROID_ABI}/libtdjni.so
 )
 target_link_libraries(tdjni INTERFACE crypto ssl)
 
@@ -126,11 +160,21 @@ endif()
 # opusfile
 include("${PROJECT_SOURCE_DIR}/BuildOpusfile.cmake")
 
-# rlottie
-include("${PROJECT_SOURCE_DIR}/BuildRlottie.cmake")
+# tlottie
+set(TLOTTIE_LIB_PATH "${TLOTTIE_DIR}/${ANDROID_ABI}/lib/libtlottie.a")
+add_library(tlottie STATIC IMPORTED)
+set_target_properties(tlottie PROPERTIES IMPORTED_LOCATION "${TLOTTIE_LIB_PATH}")
+target_include_directories(tlottie INTERFACE "${THIRDPARTY_DIR}/tlottie/include")
+if(NOT EXISTS "${TLOTTIE_LIB_PATH}")
+  message(WARNING
+    "Missing dependency: tlottie. Run :app:buildTlottie or Refresh Linked C++ Projects")
+endif()
 
 # lz4
 include("${PROJECT_SOURCE_DIR}/BuildLz4.cmake")
+
+# libprisma
+include("${PROJECT_SOURCE_DIR}/BuildPrisma.cmake")
 
 # webp
 if (${USE_WEBP})
@@ -176,6 +220,7 @@ set(NATIVE_SOURCES
   gif.cpp
   views.c
   bridge.cpp
+  syntax.cpp
 )
 if(EXISTS "${ANDROIDX_MEDIA_DIR}")
   list(APPEND NATIVE_SOURCES
@@ -190,6 +235,12 @@ else()
 endif()
 
 add_library(${NATIVE_LIB} SHARED ${NATIVE_SOURCES})
+# Types of libprisma have virtual functions in headers, so their users need RTTI too
+set_source_files_properties(syntax.cpp PROPERTIES
+  COMPILE_DEFINITIONS "PRISMA_GRAMMARS=\"${PRISMA_GRAMMARS}\""
+  COMPILE_OPTIONS "-frtti"
+  OBJECT_DEPENDS "${PRISMA_GRAMMARS}"
+)
 target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
   "${ANDROIDX_MEDIA_DIR}"
@@ -233,8 +284,9 @@ target_link_libraries(${NATIVE_LIB}
   ogg
   opusfile
   opus
-  rlottie
+  tlottie
   lz4
+  prisma
 )
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)
@@ -253,6 +305,12 @@ target_link_libraries(${NATIVE_LIB}
   android
   cpufeatures
 )
+
+# Limits of sizes of decoders of animations, see gif.cpp
+target_link_options(${NATIVE_LIB} PRIVATE "-Wl,--wrap=vp9_alloc_context_buffers"
+  "-Wl,--wrap=av_image_check_size" "-Wl,--wrap=av_image_check_size2"
+  "-Wl,--wrap=avcodec_open2" "-Wl,--wrap=avcodec_send_packet" "-Wl,--wrap=avcodec_receive_frame"
+  "-Wl,--wrap=avcodec_flush_buffers")
 
 target_link_options(${NATIVE_LIB} PRIVATE
   "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-Wl,--gc-sections,--icf=safe>"

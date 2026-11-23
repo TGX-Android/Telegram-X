@@ -248,7 +248,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   @Override
   public void setPaintAlpha (float alpha) {
     this.savedAlpha = this.alpha;
-    this.alpha = alpha;
+    this.alpha = savedAlpha * alpha;
   }
 
   @Override

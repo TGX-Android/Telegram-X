@@ -212,7 +212,7 @@ public class Drawables {
       drawable.draw(canvas);
       return bitmap;
     } else {
-      return BitmapFactory.decodeResource(UI.getAppContext().getResources(), res);
+      return BitmapFactory.decodeResource(UI.getResources(), res);
     }
   }
 

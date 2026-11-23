@@ -5,3 +5,7 @@ plugins {
   alias(libs.plugins.google.services) apply false
   alias(libs.plugins.androidx.baselineprofile) apply false
 }
+
+if (rootDir.resolve("tests/.git").exists()) {
+  apply(plugin = "tgx-tests-root")
+}

@@ -21,12 +21,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import org.thunderdog.challegram.push.FirebaseDeviceTokenRetriever
 import org.thunderdog.challegram.service.PushHandler
-import org.thunderdog.challegram.telegram.TdlibNotificationUtils
-import org.thunderdog.challegram.tool.UI
+import org.thunderdog.challegram.telegram.TdlibManager
+import org.thunderdog.challegram.unsorted.AppContext
+import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance
 import org.thunderdog.challegram.unsorted.Settings
-import tgx.bridge.DeviceTokenRetriever
-import tgx.bridge.DeviceTokenRetrieverFactory
-import tgx.bridge.PushManagerBridge
+import org.thunderdog.challegram.util.text.CodeHighlighter
+import tgx.bridge.*
 import tgx.extension.TelegramXExtension
 import tgx.flavor.TgxApplication
 
@@ -42,7 +42,10 @@ class BaseApplication : TgxApplication(), Configuration.Provider {
     PushManagerBridge.initialize(
       scope,
 
-      PushHandler(),
+      object : PushManagerFactory {
+        override fun onCreatePushManager(): PushManager =
+          PushHandler()
+      },
       object : DeviceTokenRetrieverFactory {
         override fun onCreateNewTokenRetriever(context: Context): DeviceTokenRetriever {
           val defaultTokenRetriever = FirebaseDeviceTokenRetriever()
@@ -57,15 +60,21 @@ class BaseApplication : TgxApplication(), Configuration.Provider {
       }
     )
 
-    UI.initApp(applicationContext)
+    AppContext.init(applicationContext)
 
     if (!BuildConfig.EXPERIMENTAL) {
-      val deviceTokenRetriever = TdlibNotificationUtils.getDeviceTokenRetriever()
+      val deviceTokenRetriever = DeviceTokenRetrieverInstance.get()
       TelegramXExtension.configure(this, deviceTokenRetriever)
       if (deviceTokenRetriever !is FirebaseDeviceTokenRetriever) {
         FirebaseMessaging.getInstance().isAutoInitEnabled = false
       }
     }
+  }
+
+  override fun onTrimMemory(level: Int) {
+    super.onTrimMemory(level)
+    TdlibManager.trimMemory(level)
+    CodeHighlighter.trimMemory(level)
   }
 
   override val workManagerConfiguration: Configuration

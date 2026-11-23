@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.receiver;
 
-import android.app.RemoteInput;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -33,12 +32,14 @@ public abstract class TGBaseReplyReceiver extends BroadcastReceiver {
   @Override
   @RequiresApi(Build.VERSION_CODES.KITKAT_WATCH)
   public void onReceive (Context context, Intent intent) {
-    final Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
-    if (remoteInput == null) {
-      return;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+      final Bundle remoteInput = android.app.RemoteInput.getResultsFromIntent(intent);
+      if (remoteInput == null) {
+        return;
+      }
+      final CharSequence text = remoteInput.getCharSequence(EXTRA_VOICE_REPLY);
+      TdlibNotificationExtras extras = TdlibNotificationExtras.parse(intent.getExtras());
+      TdlibManager.performExternalReply(context, text, extras);
     }
-    final CharSequence text = remoteInput.getCharSequence(EXTRA_VOICE_REPLY);
-    TdlibNotificationExtras extras = TdlibNotificationExtras.parse(intent.getExtras());
-    TdlibManager.performExternalReply(context, text, extras);
   }
 }

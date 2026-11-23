@@ -495,6 +495,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
   public static final float MAX_STICKER_FORWARD_SIZE = 120f;
   public static final float MAX_STICKER_SIZE = 190f;
+  private static final float ANIMATED_EMOJI_ZOOM = .75f;
 
   @Nullable
   private TdApi.Sticker getBaseSticker () {
@@ -520,7 +521,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     final TdApi.Sticker sticker = getBaseSticker();
     float max = Screen.dp(useForward() ? MAX_STICKER_FORWARD_SIZE : MAX_STICKER_SIZE);
     if (specialType != SPECIAL_TYPE_NONE || (sticker != null && sticker.setId == TdConstants.TELEGRAM_ANIMATED_EMOJI_STICKER_SET_ID)) { // TODO check for dice sticker set id
-      max *= tdlib.emojiesAnimatedZoom();
+      max *= ANIMATED_EMOJI_ZOOM;
     }
     if (sticker != null) {
       float ratio = Math.min(max / (float) sticker.width, max / (float) sticker.height);
@@ -865,6 +866,10 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     final boolean isAnimatedEmojiStickerSet = sticker != null && sticker.setId == TdConstants.TELEGRAM_ANIMATED_EMOJI_STICKER_SET_ID;
 
     GifFile animatedFile = view.getComplexReceiver().getGifReceiver(0).getCurrentFile();
+    if (animatedFile != null && sticker != null && specialType == SPECIAL_TYPE_ANIMATED_EMOJI &&
+      Td.customEmojiId(sticker) == 0) {
+      animatedFile.setVibrationPattern(Emoji.instance().getVibrationPatternType(sticker.emoji));
+    }
     if (animatedFile != null && (noLoopSettingEnabled || isAnimatedEmojiStickerSet) && animatedFile.setLooped(false)) {
       invalidate();
       return true;

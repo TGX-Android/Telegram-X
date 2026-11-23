@@ -33,6 +33,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
 import android.text.style.StrikethroughSpan;
@@ -92,6 +93,7 @@ import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.HashtagController;
 import org.thunderdog.challegram.ui.ShareController;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.text.Letters;
@@ -104,16 +106,22 @@ import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
 import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import me.vkryl.android.html.HtmlEncoder;
 import me.vkryl.android.html.HtmlParser;
@@ -143,6 +151,8 @@ public class TD {
   public static final int COMBINE_MODE_MEDIA = 1;
   public static final int COMBINE_MODE_AUDIO = 2;
   public static final int COMBINE_MODE_FILES = 3;
+  // Of files not read yet: a video that goes as media or as a document, as only reading it tells
+  public static final int COMBINE_MODE_MEDIA_OR_FILES = 4;
 
   public static boolean isValidRight (@RightId int rightId) {
     switch (rightId) {
@@ -656,6 +666,7 @@ public class TD {
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
       // Only because custom emoji aren't displayed in the notification
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
@@ -679,7 +690,7 @@ public class TD {
         return allowInternal;
 
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
     }
   }
@@ -705,6 +716,9 @@ public class TD {
             GifFile.TYPE_WEBM :
             GifFile.TYPE_MPEG4
         );
+        if (thumbnail.format.getConstructor() == TdApi.ThumbnailFormatWebm.CONSTRUCTOR) {
+          gifFile.setMaxSourceSize(GifFile.MAX_VIDEO_STICKER_SIZE);
+        }
         gifFile.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
         return gifFile;
       }
@@ -1251,7 +1265,7 @@ public class TD {
   public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean allowAudio, boolean allowAnimation, boolean allowVideo, boolean allowDocs, boolean showCaptionAboveMedia, boolean hasSpoiler) {
     if (!StringUtils.isEmpty(info.mimeType)) {
       boolean isContent = filePath.startsWith("content://");
-      boolean isAudio = info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg");
+      boolean isAudio = isAudioMimeType(info.mimeType);
       boolean isVideo = info.mimeType.startsWith("video/");
       boolean isPhoto = info.mimeType.startsWith("image/");
 
@@ -1383,6 +1397,96 @@ public class TD {
       return new TdApi.InputMessageDocument(new TdApi.InputDocument(inputFile, null, false), caption);
     }
     return null;
+  }
+
+  public static boolean isAudioMimeType (String mimeType) {
+    return mimeType.startsWith("audio/") && !mimeType.equals("audio/ogg");
+  }
+
+  public static int getCombineMode (
+    String path,
+    @Nullable String fileName,
+    boolean allowAudio,
+    boolean allowVideos,
+    boolean allowAnimations
+  ) {
+    // The kind of message toInputMessageContent makes of a file, by its name, without reading it
+    String mimeType = getMimeType(path, fileName);
+    if (!StringUtils.isEmpty(mimeType)) {
+      if (allowAudio && isAudioMimeType(mimeType)) {
+        return COMBINE_MODE_AUDIO;
+      }
+      if (mimeType.startsWith("video/")) {
+        boolean isContent = path.startsWith("content://");
+        if (allowVideos && !isContent) {
+          return COMBINE_MODE_MEDIA;
+        }
+        // Providers of documents give no size or length of a video, which then goes as a
+        // document, and only a short one without sound goes as a GIF
+        boolean canBeAnimation =
+          allowAnimations && (!isContent || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q);
+        if (allowVideos || canBeAnimation) {
+          return COMBINE_MODE_MEDIA_OR_FILES;
+        }
+      }
+    }
+    return COMBINE_MODE_FILES;
+  }
+
+  public static boolean needsReading (List<String> paths, @Nullable List<String> fileNames) {
+    // Media need their metadata for their messages or thumbnails, while other files go as
+    // documents, whose data TDLib takes once their messages exist
+    for (int i = 0; i < paths.size(); i++) {
+      String mimeType = getMimeType(paths.get(i), fileNames != null ? fileNames.get(i) : null);
+      boolean isMedia = !StringUtils.isEmpty(mimeType) && (
+        mimeType.startsWith("audio/") ||
+        mimeType.startsWith("video/") ||
+        mimeType.startsWith("image/")
+      );
+      if (isMedia) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static String getMimeType (String path, @Nullable String fileName) {
+    return TGMimeType.mimeTypeForExtension(U.getExtension(fileName != null ? fileName : path));
+  }
+
+  public static int getMessageCount (int[] combineModes, boolean needGroupMedia) {
+    // The fewest messages toFunctions may make of the contents: a file of either kind goes with
+    // the media or the documents next to it
+    int[] modes = combineModes.clone();
+    for (int i = 0; i < modes.length; i++) {
+      if (modes[i] == COMBINE_MODE_MEDIA_OR_FILES) {
+        int next = i + 1;
+        while (next < modes.length && modes[next] == COMBINE_MODE_MEDIA_OR_FILES) {
+          next++;
+        }
+        int previousMode = i > 0 ? modes[i - 1] : COMBINE_MODE_NONE;
+        int nextMode = next < modes.length ? modes[next] : COMBINE_MODE_NONE;
+        modes[i] = previousMode == COMBINE_MODE_MEDIA || previousMode == COMBINE_MODE_FILES ?
+          previousMode :
+          nextMode == COMBINE_MODE_FILES ? COMBINE_MODE_FILES : COMBINE_MODE_MEDIA;
+      }
+    }
+    int count = 0;
+    int i = 0;
+    while (i < modes.length) {
+      int next = i + 1;
+      while (
+        needGroupMedia &&
+        next < modes.length &&
+        modes[next] == modes[i] &&
+        next - i < TdConstants.MAX_MESSAGE_GROUP_SIZE
+      ) {
+        next++;
+      }
+      count++;
+      i = next;
+    }
+    return count;
   }
 
   public static TdApi.InputFile createInputFile (String path) {
@@ -1563,7 +1667,8 @@ public class TD {
     }
     if (out != null) {
       try {
-        String fileName = Uri.parse(path).getLastPathSegment();
+        // Not by Uri, which ends a name of a local file at "#" or "?"
+        String fileName = U.getFileName(path);
         out.title = fileName;
         if (StringUtils.isEmpty(out.mimeType)) {
           String mimeType = TGMimeType.mimeTypeForExtension(U.getExtension(fileName));
@@ -1572,6 +1677,21 @@ public class TD {
       } catch (Throwable ignored) {}
     }
     return new TdApi.InputFileLocal(path);
+  }
+
+  public static TdApi.InputFile createDocumentFile (
+    String path,
+    @Nullable String fileName,
+    @NonNull FileInfo out
+  ) {
+    // By the name the system picker gave, so that its provider, e.g. a slow one of Drive, is asked
+    // only once TDLib generates the file
+    if (fileName == null || !path.startsWith("content://")) {
+      return createInputFile(path, null, out);
+    }
+    out.title = fileName;
+    out.mimeType = getMimeType(path, fileName);
+    return newGeneratedFile(fileName, path, 0, System.currentTimeMillis());
   }
 
   public static TdApi.InputFileGenerated createFileCopy (TdApi.File file) {
@@ -2751,6 +2871,30 @@ public class TD {
     return call != null && !call.isOutgoing && call.state.getConstructor() == TdApi.CallStateDiscarded.CONSTRUCTOR && ((TdApi.CallStateDiscarded) call.state).reason.getConstructor() == TdApi.CallDiscardReasonMissed.CONSTRUCTOR;
   }
 
+  public static boolean canRateCall (TdApi.Call call) {
+    // A call ends hung up or disconnected only once answered
+    if (call == null || call.state.getConstructor() != TdApi.CallStateDiscarded.CONSTRUCTOR) {
+      return false;
+    }
+    switch (((TdApi.CallStateDiscarded) call.state).reason.getConstructor()) {
+      case TdApi.CallDiscardReasonHungUp.CONSTRUCTOR:
+      case TdApi.CallDiscardReasonDisconnected.CONSTRUCTOR:
+        return true;
+    }
+    return false;
+  }
+
+  public static boolean isFreshMissedCall (@Nullable TdApi.Chat chat, long currentUnixTime) {
+    TdApi.Message message = chat != null ? chat.lastMessage : null;
+    if (message == null || message.isOutgoing || message.id <= chat.lastReadInboxMessageId ||
+      message.content.getConstructor() != TdApi.MessageCall.CONSTRUCTOR) {
+      return false;
+    }
+    TdApi.CallDiscardReason reason = ((TdApi.MessageCall) message.content).discardReason;
+    return reason.getConstructor() == TdApi.CallDiscardReasonMissed.CONSTRUCTOR &&
+      currentUnixTime - message.date <= TimeUnit.MINUTES.toSeconds(5);
+  }
+
   public static String getCallState2 (TdApi.Call call, TdApi.CallState prevState, long callDuration, boolean needShort) {
     switch (prevState.getConstructor()) {
       case TdApi.CallStatePending.CONSTRUCTOR:
@@ -3160,11 +3304,11 @@ public class TD {
     if (allowExternal) {
       String state = Environment.getExternalStorageState();
       if (Environment.MEDIA_MOUNTED.equals(state) && !Environment.isExternalStorageEmulated()) {
-        dir = UI.getAppContext().getExternalCacheDir();
+        dir = AppContext.get().getExternalCacheDir();
       }
     }
     if (dir == null) {
-      dir = UI.getAppContext().getCacheDir();
+      dir = AppContext.get().getCacheDir();
     }
     return dir;
   }
@@ -3178,7 +3322,7 @@ public class TD {
       String dirPath = Environment.getExternalStorageDirectory().getPath() + "/Challegram";
       dir = new File(dirPath);
     } else {
-      dir = new File(UI.getAppContext().getFilesDir().getPath() + "/Challegram");
+      dir = new File(AppContext.get().getFilesDir().getPath() + "/Challegram");
     }
 
     if (!FileUtils.createDirectory(dir)) {
@@ -3755,7 +3899,7 @@ public class TD {
         // TODO rich message
         break;
       default:
-        Td.assertMessageContent_af730a78();
+        Td.assertMessageContent_e4738066();
         break;
     }
     return false;
@@ -3768,7 +3912,11 @@ public class TD {
 
   public static String getTextFromMessageSpoilerless (TdApi.MessageContent content) {
     TdApi.FormattedText formattedText = Td.textOrCaption(content);
-    return formattedText != null ? TD.toCharSequence(formattedText, TextEntityOption.NONE, false).toString() : null;
+    if (formattedText == null || formattedText.entities == null) {
+      return formattedText != null ? formattedText.text : null;
+    }
+    final HiddenSpoilers spoilers = HiddenSpoilers.valueOf(formattedText);
+    return spoilers != null ? spoilers.text : formattedText.text;
   }
 
   public static @Nullable TdApi.File getFile (TdApi.LinkPreview linkPreview) {
@@ -4513,7 +4661,7 @@ public class TD {
       return destFile;
     }
 
-    final DownloadManager downloadManager = (DownloadManager) UI.getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
+    final DownloadManager downloadManager = (DownloadManager) AppContext.get().getSystemService(Context.DOWNLOAD_SERVICE);
     String name = destFile.getName();
     String mimeType = file.mimeType;
     if (StringUtils.isEmpty(mimeType)) {
@@ -4554,7 +4702,7 @@ public class TD {
     if (!FileUtils.copy(sourceFile, destFile))
       return;
     UI.post(() -> {
-      final DownloadManager downloadManager = (DownloadManager) UI.getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
+      final DownloadManager downloadManager = (DownloadManager) AppContext.get().getSystemService(Context.DOWNLOAD_SERVICE);
       if (downloadManager != null) {
         Background.instance().post(() -> {
           try {
@@ -4679,72 +4827,79 @@ public class TD {
   }
 
   private static HtmlTag toHtmlTag (TdApi.TextEntityType entityType) {
-    switch (entityType.getConstructor()) {
-      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
-        return new HtmlTag("b");
-      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
-        return new HtmlTag("i");
-      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-        return new HtmlTag("code");
-      case TdApi.TextEntityTypePre.CONSTRUCTOR:
-        return new HtmlTag("pre");
-      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
-        return new HtmlTag("spoiler");
-      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
-        return new HtmlTag("s");
-      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
-        return new HtmlTag("u");
-      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
-        return new HtmlTag("blockquote");
-      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
-        return new HtmlTag("details");
-      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-        return new HtmlTag(
-          "<tg-user-mention data-user-id=\"" + ((TdApi.TextEntityTypeMentionName) entityType).userId + "\">",
-          "</tg-user-mention>"
+    return switch (entityType.getConstructor()) {
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR -> new HtmlTag(
+        "<tg-emoji emoji-id=\"" + ((TdApi.TextEntityTypeCustomEmoji) entityType).customEmojiId + "\">",
+        "</tg-emoji>"
+      );
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR -> new HtmlTag(
+        "<tg-time unix=\"" + ((TdApi.TextEntityTypeDateTime) entityType).unixTime + "\">",
+        "</tg-time>"
+      );
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR ->
+        new HtmlTag("b");
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR ->
+        new HtmlTag("i");
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR ->
+        new HtmlTag("s");
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR ->
+        new HtmlTag("u");
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR ->
+        new HtmlTag("spoiler");
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR ->
+        new HtmlTag(
+          "<a href=\"tg://user?id=" + ((TdApi.TextEntityTypeMentionName) entityType).userId + "\">",
+          "</a>"
         );
-      case TdApi.TextEntityTypePreCode.CONSTRUCTOR: {
+      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR -> new HtmlTag(
+        "<a href=\"" + escapeHtmlAttribute(((TdApi.TextEntityTypeTextUrl) entityType).url) + "\">",
+        "</a>"
+      );
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR ->
+        new HtmlTag("blockquote");
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR ->
+        new HtmlTag(
+          "<blockquote expandable>",
+          "</blockquote>"
+        );
+      // Code, Pre, PreCode
+      case TdApi.TextEntityTypePre.CONSTRUCTOR ->
+        new HtmlTag("pre");
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR ->
+        new HtmlTag("code");
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR -> {
         String language = ((TdApi.TextEntityTypePreCode) entityType).language;
-        return new HtmlTag(
-          "<tg-pre-code data-language=\"" + (language != null ? Html.escapeHtml(language) : "") + "\">",
-          "</tg-pre-code>"
-        );
-      }
-      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
-        return new HtmlTag(
-          // intentionally matching tag to other apps to allow cross-app copy/paste
-          "<animated-emoji data-document-id=\"" + ((TdApi.TextEntityTypeCustomEmoji) entityType).customEmojiId + "\">",
-          "</animated-emoji>"
-        );
-      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR: {
-        String hrefAttribute = Html.escapeHtml(((TdApi.TextEntityTypeTextUrl) entityType).url);
-        return new HtmlTag(
-          "<a href=\"" + hrefAttribute + "\">",
-          "</a>"
-        );
-      }
-      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR: {
-        String dateUrl = Html.escapeHtml(toUri((TdApi.TextEntityTypeDateTime) entityType).toString());
-        return new HtmlTag(
-          "<a href=\"" + dateUrl + "\">",
-          "</a>"
+        StringBuilder openTag = new StringBuilder("<pre>");
+        if (!StringUtils.isEmpty(language)) {
+          openTag
+            .append("<code class=\"language-")
+            .append(escapeHtmlAttribute(language))
+            .append("\">");
+        } else {
+          openTag.append("<code>");
+        }
+        yield new HtmlTag(
+          openTag.toString(),
+          "</code></pre>"
         );
       }
       // automatically highlighted
-      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
-      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
-      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
-      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
-      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
-      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
-      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-        return null;
-      default:
-        Td.assertTextEntityType_aefd8e69();
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR,
+           TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR,
+           TdApi.TextEntityTypeTonAddress.CONSTRUCTOR,
+           TdApi.TextEntityTypeBotCommand.CONSTRUCTOR,
+           TdApi.TextEntityTypeCashtag.CONSTRUCTOR,
+           TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR,
+           TdApi.TextEntityTypeMention.CONSTRUCTOR,
+           TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR,
+           TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR,
+           TdApi.TextEntityTypeUrl.CONSTRUCTOR ->
+        null;
+      default -> {
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(entityType);
-    }
+      }
+    };
   }
 
   private static HtmlTag[] toHtmlTag (Object span) {
@@ -4770,57 +4925,340 @@ public class TD {
     return encodeResult.tagCount > 0 ? encodeResult.htmlText : null;
   }
 
+  private static final Pattern PATTERN_TG_USER_ID = Pattern.compile("tg://user\\?id=(\\d+)", Pattern.CASE_INSENSITIVE);
+  private static final Pattern PATTERN_CODE_LANGUAGE = Pattern.compile("[a-zA-Z]+");
+  private static final Pattern PATTERN_WHITESPACE = Pattern.compile("\\s+");
+  private static final Pattern PATTERN_PRE = Pattern.compile("(?is)(<pre\\b[^>]*>)(.*?)(</pre>)");
+  private static final Pattern PATTERN_PRE_FIRST_LINE_BREAK =
+    Pattern.compile("^((?:<[^/][^>]*>)*)\\r?\\n");
+  private static final Pattern PATTERN_PRE_LAST_LINE_BREAK =
+    Pattern.compile("\\r?\\n((?:</[^>]+>)*)$");
+  private static final Pattern PATTERN_HTML_TAG_BOUNDARY = Pattern.compile("(?=<)|(?<=>)");
+  private static final Pattern PATTERN_BLOCKQUOTE_START = Pattern.compile("(?i)<blockquote\\b");
+  private static final Pattern PATTERN_BLOCKQUOTE_END = Pattern.compile("(?i)</blockquote\\s*>");
+
+  private static class CodeInsidePre { }
+
+  private static class SpanStyle {
+    final List<TdApi.TextEntityType> types;
+
+    SpanStyle (List<TdApi.TextEntityType> types) {
+      this.types = types;
+    }
+  }
+
+  private static String escapeHtmlAttribute (String value) {
+    return Html.escapeHtml(value).replace("\"", "&quot;");
+  }
+
+  private static boolean isHtmlCodeTag (String tag) {
+    return tag.equalsIgnoreCase("code") || tag.equalsIgnoreCase("tt") ||
+      tag.equalsIgnoreCase("kbd") || tag.equalsIgnoreCase("samp");
+  }
+
+  private static boolean hasHtmlMark (Spanned text, Class<?> kind) {
+    return text.getSpans(0, text.length(), kind).length > 0;
+  }
+
+  private static boolean isHtmlPreOrCodeTag (String tag) {
+    return tag.equalsIgnoreCase("pre") || tag.equalsIgnoreCase("tg-pre") ||
+      tag.equalsIgnoreCase("tg-pre-code") || isHtmlCodeTag(tag);
+  }
+
+  private static boolean hasHtmlClass (@Nullable String htmlClass, String name) {
+    if (htmlClass != null) {
+      for (String className : PATTERN_WHITESPACE.split(htmlClass.trim())) {
+        if (className.equals(name)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private static @Nullable String getHtmlCodeLanguage (@Nullable String htmlClass) {
+    if (htmlClass != null) {
+      for (String name : PATTERN_WHITESPACE.split(htmlClass.trim())) {
+        if (name.startsWith("language-") && name.length() > 9) {
+          return name.substring(9);
+        }
+        if (name.startsWith("lang-") && name.length() > 5) {
+          return name.substring(5);
+        }
+      }
+    }
+    return null;
+  }
+
+  private static @Nullable String getCssValue (@Nullable String style, String property) {
+    String value = null;
+    if (style != null) {
+      for (String declaration : style.split(";")) {
+        int colon = declaration.indexOf(':');
+        if (colon != -1 && declaration.substring(0, colon).trim().equalsIgnoreCase(property)) {
+          value = declaration.substring(colon + 1).replace("!important", "").trim()
+            .toLowerCase(Locale.ROOT);
+        }
+      }
+    }
+    return value;
+  }
+
+  private static boolean isCssBold (@Nullable String fontWeight) {
+    return fontWeight != null && (fontWeight.equals("bold") || fontWeight.equals("bolder") ||
+      StringUtils.parseInt(fontWeight) >= 600);
+  }
+
+  private static boolean isCssNotBold (@Nullable String fontWeight) {
+    if (fontWeight == null) {
+      return false;
+    }
+    int weight = StringUtils.parseInt(fontWeight);
+    return fontWeight.equals("normal") || fontWeight.equals("lighter") ||
+      (weight > 0 && weight < 600);
+  }
+
+  private static boolean hasCssDecoration (@Nullable String style, String decoration) {
+    for (String property : new String[] {"text-decoration", "text-decoration-line"}) {
+      String value = getCssValue(style, property);
+      if (value != null && Arrays.asList(PATTERN_WHITESPACE.split(value)).contains(decoration)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static List<TdApi.TextEntityType> getHtmlSpanTypes (
+    @Nullable String style,
+    @Nullable String htmlClass
+  ) {
+    // Not code by a monospace font, as browsers copy the font of every text
+    List<TdApi.TextEntityType> types = new ArrayList<>();
+    if (isCssBold(getCssValue(style, "font-weight"))) {
+      types.add(new TdApi.TextEntityTypeBold());
+    }
+    String fontStyle = getCssValue(style, "font-style");
+    if (fontStyle != null && (fontStyle.equals("italic") || fontStyle.startsWith("oblique"))) {
+      types.add(new TdApi.TextEntityTypeItalic());
+    }
+    if (hasCssDecoration(style, "underline")) {
+      types.add(new TdApi.TextEntityTypeUnderline());
+    }
+    if (hasCssDecoration(style, "line-through")) {
+      types.add(new TdApi.TextEntityTypeStrikethrough());
+    }
+    if (hasHtmlClass(htmlClass, "tg-spoiler")) {
+      types.add(new TdApi.TextEntityTypeSpoiler());
+    }
+    return types;
+  }
+
+  private static String keepSpacesOfPre (String htmlText) {
+    // HTML parsers of Android collapse spaces and line breaks also inside <pre>, so its text keeps
+    // them as &nbsp; and <br/>, which blocks of code turn back into spaces. <pre> also becomes
+    // <tg-pre>: TagSoup closes inline tags such as <b> before a block it knows and reopens them
+    // inside it, which splits their spans in two, but keeps them open around unknown tags
+    Matcher pre = PATTERN_PRE.matcher(htmlText);
+    StringBuffer out = new StringBuffer();
+    while (pre.find()) {
+      // A line break right after the start of the block or right before its end, e.g. of code of
+      // markdown, is no line of it, as browsers show it
+      String content = PATTERN_PRE_FIRST_LINE_BREAK.matcher(pre.group(2)).replaceFirst("$1");
+      content = PATTERN_PRE_LAST_LINE_BREAK.matcher(content).replaceFirst("$1");
+      StringBuilder body = new StringBuilder();
+      for (String part : PATTERN_HTML_TAG_BOUNDARY.split(content)) {
+        if (part.startsWith("<")) {
+          body.append(part);
+        } else {
+          body.append(part.replace("\r\n", "\n").replace("\n", "<br/>").replace(" ", "&nbsp;"));
+        }
+      }
+      String block = "<tg-pre" + pre.group(1).substring(4) + body + "</tg-pre>";
+      pre.appendReplacement(out, Matcher.quoteReplacement(block));
+    }
+    pre.appendTail(out);
+    return out.toString();
+  }
+
   @Nullable
   public static CharSequence htmlToCharSequence (String htmlText) {
+    htmlText = keepSpacesOfPre(htmlText);
+    // TagSoup would split spans around a quote as around <pre>, see keepSpacesOfPre
+    htmlText = PATTERN_BLOCKQUOTE_START.matcher(htmlText).replaceAll("<tg-blockquote");
+    htmlText = PATTERN_BLOCKQUOTE_END.matcher(htmlText).replaceAll("</tg-blockquote>");
     HtmlParser.Replacer<TdApi.TextEntityType> entityReplacer = (text, start, end, mark) -> {
+      if (Td.isMonospaceTextOrBlock(mark)) {
+        // Runs of spaces come as &nbsp;, see keepSpacesOfPre and HtmlEncoder, while code needs
+        // spaces, e.g. in indents
+        for (int i = start; i < end; i++) {
+          if (text.charAt(i) == '\u00A0') {
+            ((Editable) text).replace(i, i + 1, " ");
+          }
+        }
+      }
       Object span = toSpan(mark);
       if (span != null) {
         text.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
     };
+    AtomicInteger openCodeTags = new AtomicInteger();
+    AtomicInteger openCodeInsidePre = new AtomicInteger();
     CharSequence result = HtmlParser.fromHtml(htmlText, null, (opening, tag, output, xmlReader, attributes) -> {
-      // <tg-user-mention data-user-id="ID">...</tg-user-mention>
-      // <tg-pre-code data-language="LANG">...</tg-pre-code>
-      // <animated-emoji data-document-id="ID">...</animated-emoji>
+      // <tg-emoji emoji-id="ID">...</tg-emoji>
+      // <tg-time unix="1647531900">22:45 tomorrow</tg-time>
+      // <blockquote expandable></blockquote>
       // <spoiler>...</spoiler>
       // <pre>...</pre>
       // <code>...</code>
-      // <tg-pre-code language="...">...</tg-pre-code>
+      // <pre><code class="language-kotlin">...</code></pre>
+      // Supported tags generated by DrKLO/Telegram (https://github.com/DrKLO/Telegram/blob/master/TMessagesProj/src/main/java/org/telegram/messenger/utils/CustomHtml.java):
+      // <animated-emoji data-document-id="ID">...</animated-emoji>
+      // <pre lang="LANG">...</pre>
+      // Supported tags of the Bot API, browsers and Google Docs:
+      // <tg-spoiler>...</tg-spoiler>, <span class="tg-spoiler">...</span>
+      // <span style="font-weight: 700; font-style: italic; text-decoration: line-through">
+      // <ins>, <kbd>, <samp>, <pre class="language-LANG">, <code class="hljs lang-LANG">
+      // Tags of earlier builds of Telegram X:
+      // <tg-pre-code data-language="LANG">...</tg-pre-code>
+      // <details>...</details>
       if (opening) {
+        String htmlClass = attributes.getValue("", "class");
         if (tag.equalsIgnoreCase("tg-user-mention")) {
           long userId = StringUtils.parseLong(attributes.getValue("", "data-user-id"));
           TdApi.TextEntityTypeMentionName mention = new TdApi.TextEntityTypeMentionName(userId);
           HtmlParser.start(output, mention);
-        } else if (tag.equalsIgnoreCase("animated-emoji")) {
+        } else if (tag.equalsIgnoreCase("tg-emoji")) {
+          long customEmojiId = StringUtils.parseLong(attributes.getValue("", "emoji-id"));
+          TdApi.TextEntityTypeCustomEmoji customEmoji = new TdApi.TextEntityTypeCustomEmoji(customEmojiId);
+          HtmlParser.start(output, customEmoji);
+        } else if (tag.equalsIgnoreCase("animated-emoji")) { // Pasting from app6
           long customEmojiId = StringUtils.parseLong(attributes.getValue("", "data-document-id"));
           TdApi.TextEntityTypeCustomEmoji customEmoji = new TdApi.TextEntityTypeCustomEmoji(customEmojiId);
           HtmlParser.start(output, customEmoji);
-        } else if (tag.equalsIgnoreCase("spoiler")) {
+        } else if (tag.equalsIgnoreCase("tg-time")) {
+          String attr = attributes.getValue("", "unix");
+          if (attr == null) {
+            return false;
+          }
+          int unixTime = StringUtils.parseInt(attr);
+          TdApi.TextEntityTypeDateTime dateTime = new TdApi.TextEntityTypeDateTime(unixTime, null);
+          HtmlParser.start(output, dateTime);
+        } else if (tag.equalsIgnoreCase("s") || tag.equalsIgnoreCase("del") || tag.equalsIgnoreCase("strike")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeStrikethrough());
+        } else if (tag.equalsIgnoreCase("spoiler") || tag.equalsIgnoreCase("tg-spoiler")) {
           HtmlParser.start(output, new TdApi.TextEntityTypeSpoiler());
-        } else if (tag.equalsIgnoreCase("pre")) {
-          HtmlParser.start(output, new TdApi.TextEntityTypePre());
-        } else if (tag.equalsIgnoreCase("code")) {
-          HtmlParser.start(output, new TdApi.TextEntityTypeCode());
+        } else if (tag.equalsIgnoreCase("ins")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeUnderline());
+        } else if (tag.equalsIgnoreCase("span")) {
+          String style = attributes.getValue("", "style");
+          List<TdApi.TextEntityType> types = openCodeTags.get() > 0 ?
+            new ArrayList<>() :
+            getHtmlSpanTypes(style, htmlClass);
+          HtmlParser.start(output, new SpanStyle(types));
+        } else if (tag.equalsIgnoreCase("b") || tag.equalsIgnoreCase("strong")) {
+          // Google Docs puts all the text into <b style="font-weight:normal">
+          return isCssNotBold(getCssValue(attributes.getValue("", "style"), "font-weight"));
+        } else if (tag.equalsIgnoreCase("pre") || tag.equalsIgnoreCase("tg-pre")) {
+          String language = attributes.getValue("", "lang"); // Pasting from app6: <pre lang="...">
+          if (language == null) {
+            language = attributes.getValue("", "language");
+          }
+          if (language == null) {
+            language = attributes.getValue("", "lng");
+          }
+          if (language == null) {
+            language = getHtmlCodeLanguage(htmlClass);
+          }
+          TdApi.TextEntityType entity;
+          if (!StringUtils.isEmpty(language)) {
+            entity = new TdApi.TextEntityTypePreCode(language);
+          } else {
+            entity = new TdApi.TextEntityTypePre();
+          }
+          HtmlParser.start(output, entity);
+          openCodeTags.incrementAndGet();
         } else if (tag.equalsIgnoreCase("tg-pre-code")) {
           String language = attributes.getValue("", "data-language");
-          HtmlParser.start(output, new TdApi.TextEntityTypePreCode(language != null ? language : ""));
-        } else if (tag.equalsIgnoreCase("blockquote")) {
-          HtmlParser.start(output, new TdApi.TextEntityTypeBlockQuote());
+          if (language == null) {
+            language = "";
+          }
+          HtmlParser.start(output, new TdApi.TextEntityTypePreCode(language));
+          openCodeTags.incrementAndGet();
+        } else if (isHtmlCodeTag(tag)) {
+          String language = getHtmlCodeLanguage(htmlClass);
+          if (language == null && tag.equalsIgnoreCase("code") && htmlClass != null &&
+            !htmlClass.equals("hljs") && PATTERN_CODE_LANGUAGE.matcher(htmlClass).matches()) {
+            // highlight.js adds hljs to code of any language
+            language = htmlClass;
+          }
+          // Any open <pre>, not only one at the end, as whitespace may stand between <pre> and
+          // <code>
+          TdApi.TextEntityTypePre[] pres =
+            output.getSpans(0, output.length(), TdApi.TextEntityTypePre.class);
+          if (language != null && pres.length > 0) {
+            TdApi.TextEntityTypePre pre = pres[pres.length - 1];
+            int start = output.getSpanStart(pre);
+            output.removeSpan(pre);
+            TdApi.TextEntityTypePreCode preCode = new TdApi.TextEntityTypePreCode(language);
+            output.setSpan(preCode, start, start, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+          }
+          if (openCodeTags.get() > 0) {
+            HtmlParser.start(output, new CodeInsidePre());
+            openCodeInsidePre.incrementAndGet();
+          } else {
+            HtmlParser.start(output, new TdApi.TextEntityTypeCode());
+          }
+          openCodeTags.incrementAndGet();
+        } else if (tag.equalsIgnoreCase("tg-blockquote")) {
+          boolean isExpandable =
+            attributes.getIndex("expandable") != -1 ||
+            attributes.getIndex("collapsed") != -1 ||
+            attributes.getIndex("data-collapsed") != -1 ||
+            hasHtmlClass(htmlClass, "telegram-collapsed-quote");
+          TdApi.TextEntityType entity;
+          if (isExpandable) {
+            entity = new TdApi.TextEntityTypeExpandableBlockQuote();
+          } else {
+            entity = new TdApi.TextEntityTypeBlockQuote();
+          }
+          HtmlParser.start(output, entity);
         } else if (tag.equalsIgnoreCase("details")) {
           HtmlParser.start(output, new TdApi.TextEntityTypeExpandableBlockQuote());
         } else {
           return false;
         }
         return true;
+      }
+      if (isHtmlPreOrCodeTag(tag) && openCodeTags.get() > 0) {
+        openCodeTags.decrementAndGet();
+      }
+      if (isHtmlCodeTag(tag) && openCodeInsidePre.get() > 0) {
+        openCodeInsidePre.decrementAndGet();
+        HtmlParser.end(output, CodeInsidePre.class, (text, start, end, mark) -> { });
+        return true;
+      } else if (tag.equalsIgnoreCase("span")) {
+        HtmlParser.end(output, SpanStyle.class, (text, start, end, mark) -> {
+          for (TdApi.TextEntityType type : mark.types) {
+            text.setSpan(toSpan(type), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          }
+        });
+        return true;
       } else if (
-        tag.equalsIgnoreCase("blockquote") ||
-        tag.equalsIgnoreCase("details") ||
-        tag.equalsIgnoreCase("tg-user-mention") ||
-        tag.equalsIgnoreCase("animated-emoji") ||
+        tag.equalsIgnoreCase("s") ||
+        tag.equalsIgnoreCase("del") ||
+        tag.equalsIgnoreCase("strike") ||
         tag.equalsIgnoreCase("spoiler") ||
-        tag.equalsIgnoreCase("pre") ||
-        tag.equalsIgnoreCase("code") ||
-        tag.equalsIgnoreCase("tg-pre-code")
+        tag.equalsIgnoreCase("tg-spoiler") ||
+        tag.equalsIgnoreCase("ins") ||
+        tag.equalsIgnoreCase("tg-user-mention") ||
+        tag.equalsIgnoreCase("tg-emoji") ||
+        tag.equalsIgnoreCase("animated-emoji") ||
+        // <tg-time> without unix started nothing
+        (tag.equalsIgnoreCase("tg-time") &&
+          hasHtmlMark(output, TdApi.TextEntityTypeDateTime.class)) ||
+        tag.equalsIgnoreCase("tg-blockquote") ||
+        tag.equalsIgnoreCase("details") ||
+        isHtmlPreOrCodeTag(tag)
       ) {
         HtmlParser.end(output, TdApi.TextEntityType.class, entityReplacer);
         return true;
@@ -4828,15 +5266,69 @@ public class TD {
         return false;
       }
     });
-    if (result instanceof Editable) {
-      QuoteSpan.normalizeQuotes((Editable) result);
+    if (result instanceof Editable editable) {
+      replaceLinks(editable);
+      mergePreCode(editable);
+      // A line break that Android adds after the last paragraph, or the whitespace after the text,
+      // e.g. of a whole document of a browser
+      int end = editable.length();
+      while (end > 0 && Character.isWhitespace(editable.charAt(end - 1))) {
+        end--;
+      }
+      editable.delete(end, editable.length());
+      QuoteSpan.normalizeQuotes(editable);
     }
 
     return result;
   }
 
+  private static void replaceLinks (Spannable text) {
+    for (URLSpan link : text.getSpans(0, text.length(), URLSpan.class)) {
+      int start = text.getSpanStart(link);
+      int end = text.getSpanEnd(link);
+
+      TdApi.TextEntityType type = toLinkEntityType(text, start, end, link.getURL());
+      if (type == null || type.getConstructor() != TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
+        text.removeSpan(link);
+        Object span = type != null ? toSpan(type) : null;
+        if (span != null) {
+          text.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+      }
+    }
+  }
+
+  private static void mergePreCode (Spannable text) {
+    CustomTypefaceSpan[] spans = text.getSpans(0, text.length(), CustomTypefaceSpan.class);
+    final Set<Long> preCodeRanges = new HashSet<>();
+    for (CustomTypefaceSpan preCode : spans) {
+      if (hasEntityType(preCode, TdApi.TextEntityTypePreCode.CONSTRUCTOR)) {
+        preCodeRanges.add(rangeOf(text, preCode));
+      }
+    }
+    if (preCodeRanges.isEmpty()) {
+      return;
+    }
+    for (CustomTypefaceSpan pre : spans) {
+      if (hasEntityType(pre, TdApi.TextEntityTypePre.CONSTRUCTOR) &&
+        preCodeRanges.contains(rangeOf(text, pre))) {
+        text.removeSpan(pre);
+      }
+    }
+  }
+
+  private static long rangeOf (Spanned text, Object span) {
+    return BitwiseUtils.mergeLong(text.getSpanStart(span), text.getSpanEnd(span));
+  }
+
+  private static boolean hasEntityType (CustomTypefaceSpan span, @TdApi.TextEntityType.Constructors int constructor) {
+    TdApi.TextEntityType type = span.getTextEntityType();
+    return type != null && type.getConstructor() == constructor;
+  }
+
   public static CharSequence toCopyText (TdApi.FormattedText text) {
-    return toCharSequence(text);
+    // Not a SpannableString, which goes over all of its spans to find one
+    return toSpanned(text, TextEntityOption.ALLOW_INTERNAL, true);
   }
 
   public static CharSequence toCharSequence (TdApi.ChatFolderName name) {
@@ -4848,51 +5340,212 @@ public class TD {
   }
 
   public static CharSequence toCharSequence (TdApi.FormattedText text, @TextEntityOption int options, boolean allowSpoilerContent) {
+    final CharSequence result = toSpanned(text, options, allowSpoilerContent);
+    return result instanceof SpannableStringBuilder ? SpannableString.valueOf(result) : result;
+  }
+
+  private static CharSequence toSpanned (
+    TdApi.FormattedText text,
+    @TextEntityOption int options,
+    boolean allowSpoilerContent
+  ) {
     if (text == null)
       return null;
     if (text.entities == null || text.entities.length == 0)
       return text.text;
-    SpannableStringBuilder b = null;
-    boolean hasSpoilers = false;
-
-    int offset = 0;
-    for (TdApi.TextEntity entity : text.entities) {
-      final int entityOffset = entity.offset + offset;
-      boolean isSpoiler = Td.isSpoiler(entity.type);
-      if (isSpoiler) {
-        hasSpoilers = true;
+    // Spoilers hidden and code blocks merged first: each edit of a Spannable updates all spans
+    final HiddenSpoilers spoilers = allowSpoilerContent ? null : HiddenSpoilers.valueOf(text);
+    final Object[] spans = new Object[text.entities.length];
+    final long[] ranges = new long[text.entities.length];
+    Set<Long> preCodeRanges = null;
+    for (int i = 0; i < text.entities.length; i++) {
+      final TdApi.TextEntity entity = text.entities[i];
+      if (!allowSpoilerContent && Td.isSpoiler(entity.type)) {
+        continue;
       }
-      Object span = isSpoiler && !allowSpoilerContent ? null : toSpan(entity.type, options);
-      if (span != null) {
-        if (b == null)
-          b = new SpannableStringBuilder(text.text);
-        b.setSpan(span, entityOffset, entityOffset + entity.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      ranges[i] = spoilers != null ?
+        spoilers.rangeOf(entity) :
+        BitwiseUtils.mergeLong(entity.offset, entity.offset + entity.length);
+      spans[i] = ranges[i] != -1 ? toSpan(entity.type, options) : null;
+      if (spans[i] instanceof CustomTypefaceSpan span &&
+        hasEntityType(span, TdApi.TextEntityTypePreCode.CONSTRUCTOR)) {
+        if (preCodeRanges == null) {
+          preCodeRanges = new HashSet<>();
+        }
+        preCodeRanges.add(ranges[i]);
       }
     }
-    if (!allowSpoilerContent && hasSpoilers) {
-      StringBuilder builder = b != null ? null : new StringBuilder(text.text);
-      for (int i = text.entities.length - 1; i >= 0; i--) {
-        TdApi.TextEntity entity = text.entities[i];
-        final int entityOffset = entity.offset + offset;
-        if (Td.isSpoiler(entity.type)) {
-          String replacement = StringUtils.multiply(SPOILER_REPLACEMENT_CHAR, entity.length);
-          if (b != null) {
-            b.delete(entityOffset, entityOffset + entity.length);
-            b.insert(entityOffset, replacement);
-          } else {
-            builder.delete(entityOffset, entityOffset + entity.length);
-            builder.insert(entityOffset, replacement);
+    int count = 0;
+    for (int i = 0; i < text.entities.length; i++) {
+      // Pre and PreCode on one range, as in the clipboard, are one block of the field
+      final boolean isMerged = preCodeRanges != null &&
+        spans[i] instanceof CustomTypefaceSpan span &&
+        hasEntityType(span, TdApi.TextEntityTypePre.CONSTRUCTOR) &&
+        preCodeRanges.contains(ranges[i]);
+      if (spans[i] != null && !isMerged) {
+        spans[count] = spans[i];
+        ranges[count] = ranges[i];
+        count++;
+      }
+    }
+    final String in = spoilers != null ? spoilers.text : text.text;
+    if (count == 0) {
+      return in;
+    }
+    // All spans at once, as setSpan of the builder goes over all of its spans each time
+    final SpannableStringBuilder b = new SpannableStringBuilder(
+      new SpanList(in, Arrays.copyOf(spans, count), Arrays.copyOf(ranges, count))
+    );
+    QuoteSpan.normalizeQuotesWithoutMerge(b);
+    return b;
+  }
+
+  private static final class SpanList implements Spanned {
+    private final String text;
+    private final Object[] spans;
+    private final long[] ranges;
+    private final Map<Object, Integer> indexes;
+
+    SpanList (String text, Object[] spans, long[] ranges) {
+      this.text = text;
+      this.spans = spans;
+      this.ranges = ranges;
+      this.indexes = new IdentityHashMap<>(spans.length);
+      for (int i = 0; i < spans.length; i++) {
+        indexes.put(spans[i], i);
+      }
+    }
+
+    @Override
+    public int length () {
+      return text.length();
+    }
+
+    @Override
+    public char charAt (int index) {
+      return text.charAt(index);
+    }
+
+    @NonNull
+    @Override
+    public CharSequence subSequence (int start, int end) {
+      return text.subSequence(start, end);
+    }
+
+    @NonNull
+    @Override
+    public String toString () {
+      return text;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T[] getSpans (int start, int end, Class<T> type) {
+      final List<T> result = new ArrayList<>();
+      for (int i = 0; i < spans.length; i++) {
+        final int spanStart = BitwiseUtils.splitLongToFirstInt(ranges[i]);
+        final int spanEnd = BitwiseUtils.splitLongToSecondInt(ranges[i]);
+        if (spanStart <= end && spanEnd >= start && type.isInstance(spans[i])) {
+          result.add((T) spans[i]);
+        }
+      }
+      return result.toArray((T[]) Array.newInstance(type, result.size()));
+    }
+
+    @Override
+    public int getSpanStart (Object span) {
+      final Integer index = indexes.get(span);
+      return index != null ? BitwiseUtils.splitLongToFirstInt(ranges[index]) : -1;
+    }
+
+    @Override
+    public int getSpanEnd (Object span) {
+      final Integer index = indexes.get(span);
+      return index != null ? BitwiseUtils.splitLongToSecondInt(ranges[index]) : -1;
+    }
+
+    @Override
+    public int getSpanFlags (Object span) {
+      return indexes.containsKey(span) ? Spanned.SPAN_EXCLUSIVE_EXCLUSIVE : 0;
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    public int nextSpanTransition (int start, int limit, Class type) {
+      int next = limit;
+      for (int i = 0; i < spans.length; i++) {
+        if (type == null || type.isInstance(spans[i])) {
+          final int spanStart = BitwiseUtils.splitLongToFirstInt(ranges[i]);
+          final int spanEnd = BitwiseUtils.splitLongToSecondInt(ranges[i]);
+          if (spanStart > start && spanStart < next) {
+            next = spanStart;
+          }
+          if (spanEnd > start && spanEnd < next) {
+            next = spanEnd;
           }
         }
       }
-      if (builder != null) {
-        return builder.toString();
+      return next;
+    }
+  }
+
+  private static final class HiddenSpoilers {
+    private final String text;
+    // Sorted, as entities go by their starts
+    private final int[] starts, ends;
+
+    private HiddenSpoilers (String text, int[] starts, int[] ends) {
+      this.text = text;
+      this.starts = starts;
+      this.ends = ends;
+    }
+
+    @Nullable
+    static HiddenSpoilers valueOf (TdApi.FormattedText text) {
+      int count = 0;
+      for (TdApi.TextEntity entity : text.entities) {
+        if (Td.isSpoiler(entity.type)) {
+          count++;
+        }
       }
+      if (count == 0) {
+        return null;
+      }
+      final int[] starts = new int[count], ends = new int[count];
+      final char[] chars = text.text.toCharArray();
+      int i = 0;
+      for (TdApi.TextEntity entity : text.entities) {
+        if (Td.isSpoiler(entity.type)) {
+          starts[i] = entity.offset;
+          ends[i] = entity.offset + entity.length;
+          Arrays.fill(chars, starts[i], ends[i], SPOILER_REPLACEMENT_CHAR.charAt(0));
+          i++;
+        }
+      }
+      return new HiddenSpoilers(new String(chars), starts, ends);
     }
-    if (b != null) {
-      QuoteSpan.normalizeQuotesWithoutMerge(b);
+
+    long rangeOf (TdApi.TextEntity entity) {
+      // The span as edits that replace spoilers from the last one would leave it: -1 within one,
+      // else without the spoilers at its edges
+      int start = entity.offset, end = entity.offset + entity.length;
+      int i = Arrays.binarySearch(starts, start);
+      final int last = i >= 0 ? i : -i - 2;
+      if (last >= 0 && ends[last] >= end) {
+        return -1;
+      }
+      while ((i = Arrays.binarySearch(ends, end)) >= 0 && start < starts[i] && starts[i] < end) {
+        end = starts[i];
+      }
+      i = Arrays.binarySearch(starts, start);
+      if (i >= 0) {
+        if (ends[i] >= end) {
+          return -1;
+        }
+        start = ends[i];
+      }
+      return BitwiseUtils.mergeLong(start, end);
     }
-    return b != null ? SpannableString.valueOf(b) : text.text;
   }
 
   public static Object toDisplaySpan (TdApi.TextEntityType type) {
@@ -4940,6 +5593,7 @@ public class TD {
         break;
       // automatically detected
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
@@ -4950,7 +5604,7 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
     }
     if (span instanceof TdlibEntitySpan) {
@@ -5011,6 +5665,7 @@ public class TD {
         return true;
       // auto-detected entities
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTonAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
       case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
@@ -5021,7 +5676,7 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return false;
       default:
-        Td.assertTextEntityType_aefd8e69();
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
     }
   }
@@ -5037,6 +5692,88 @@ public class TD {
     int
       ALLOW_INTERNAL = 1,
       DISABLE_ANIMATIONS = 1 << 1;
+  }
+
+  private static final String DATE_TIME_URL_PREFIX = CalendarContract.CONTENT_URI + "/time/";
+  private static final long MAX_DATE_TIME_MILLIS =
+    TimeUnit.SECONDS.toMillis(Integer.MAX_VALUE + 1L);
+
+  @Nullable
+  private static TdApi.TextEntityTypeDateTime toDateTime (@Nullable String url) {
+    // A date of the field is a link to the calendar, see toSpan, which must come back as a date
+    return isDateTimeUrl(url) ? toDateTime(Uri.parse(url)) : null;
+  }
+
+  private static boolean isDateTimeUrl (@Nullable String url) {
+    // Without Uri.parse, as it's checked for each span on each change of the field
+    if (url == null || url.length() == DATE_TIME_URL_PREFIX.length() ||
+      !url.startsWith(DATE_TIME_URL_PREFIX)) {
+      return false;
+    }
+    long millis = 0;
+    for (int i = DATE_TIME_URL_PREFIX.length(); i < url.length(); i++) {
+      char c = url.charAt(i);
+      if (c < '0' || c > '9') {
+        return false;
+      }
+      millis = millis * 10 + (c - '0');
+      if (millis >= MAX_DATE_TIME_MILLIS) {
+        return false;
+      }
+    }
+    return millis >= TimeUnit.SECONDS.toMillis(1);
+  }
+
+  @Nullable
+  public static TdApi.TextEntityTypeDateTime toDateTime (Uri uri) {
+    if (uri == null ||
+      CalendarContract.CONTENT_URI == null ||
+      !StringUtils.equalsOrBothEmpty(CalendarContract.CONTENT_URI.getScheme(), uri.getScheme()) ||
+      !CalendarContract.AUTHORITY.equals(uri.getAuthority())) {
+      return null;
+    }
+    List<String> segments = uri.getPathSegments();
+    if (segments.size() != 2 || !"time".equals(segments.get(0))) {
+      return null;
+    }
+    long seconds;
+    try {
+      seconds = TimeUnit.MILLISECONDS.toSeconds(Long.parseLong(segments.get(1)));
+    } catch (NumberFormatException e) {
+      return null;
+    }
+    if (seconds <= 0 || seconds > Integer.MAX_VALUE) {
+      return null;
+    }
+    return new TdApi.TextEntityTypeDateTime((int) seconds, null);
+  }
+
+  @Nullable
+  private static TdApi.TextEntityType toLinkEntityType (CharSequence text, int start, int end, @Nullable String url) {
+    url = StringUtils.trim(url);
+    if (!StringUtils.isEmpty(url)) {
+      Matcher matcher = PATTERN_TG_USER_ID.matcher(url);
+      long userId = matcher.matches() ? StringUtils.parseLong(matcher.group(1)) : 0;
+      if (userId != 0) {
+        // <a href="tg://user?id=$userId">
+        return new TdApi.TextEntityTypeMentionName(userId);
+      } else if (Strings.isValidLink(url)) {
+        boolean isSameUrl = end - start == url.length() &&
+          TextUtils.regionMatches(text, start, url, 0, url.length());
+        if (!isSameUrl) {
+          return new TdApi.TextEntityTypeTextUrl(url);
+        } else {
+          // No need in TextEntityTypeTextUrl with URL same as text
+        }
+      } else {
+        // Conversion back from toDateUri(unixTime)
+        try {
+          Uri uri = Uri.parse(url);
+          return toDateTime(uri);
+        } catch (Throwable ignored) { }
+      }
+    }
+    return null;
   }
 
   public static Uri toDateUri (int unixTime) {
@@ -5056,53 +5793,70 @@ public class TD {
     boolean forceDisableAnimations = BitwiseUtils.hasFlag(options, TextEntityOption.DISABLE_ANIMATIONS);
     if (type == null)
       return null;
-    switch (type.getConstructor()) {
-      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
-        return new StyleSpan(Typeface.BOLD);
-      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
-        return new StyleSpan(Typeface.ITALIC);
-      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypePre.CONSTRUCTOR:
-        return Fonts.FORCE_BUILTIN_MONO ? new TypefaceSpan(Fonts.getRobotoMono()) : new TypefaceSpan("monospace");
-      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
-        return new URLSpan(((TdApi.TextEntityTypeTextUrl) type).url);
-      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR:
-        return new URLSpan(toUri((TdApi.TextEntityTypeDateTime) type).toString());
-      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
-        return new StrikethroughSpan();
-      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
-        return Config.SUPPORT_SYSTEM_UNDERLINE_SPAN ? new UnderlineSpan() : toDisplaySpan(type);
-      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
-        return new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR);
-      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+    return switch (type.getConstructor()) {
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR ->
+        new StyleSpan(Typeface.BOLD);
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR ->
+        new StyleSpan(Typeface.ITALIC);
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR ->
+        Fonts.FORCE_BUILTIN_MONO ?
+          new TypefaceSpan(Fonts.getRobotoMono()) :
+          new TypefaceSpan("monospace");
+      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR ->
+        new URLSpan(((TdApi.TextEntityTypeTextUrl) type).url);
+      case TdApi.TextEntityTypeDateTime.CONSTRUCTOR ->
+        new URLSpan(toUri((TdApi.TextEntityTypeDateTime) type).toString());
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR ->
+        new StrikethroughSpan();
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR ->
+        Config.SUPPORT_SYSTEM_UNDERLINE_SPAN ?
+          new UnderlineSpan() :
+          toDisplaySpan(type);
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR ->
+        new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR);
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR -> {
         if (allowInternal) {
           CustomTypefaceSpan span = new CustomTypefaceSpan(null, ColorId.textLink);
           span.setTextEntityType(type);
-          return span;
+          yield span;
         }
-        return null;
-      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
-        return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId, forceDisableAnimations);
-      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
-        return new QuoteSpan.EmptySpan(false);
-      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
-        return new QuoteSpan.EmptySpan(true);
+        yield null;
+      }
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR ->
+        new CustomEmojiId(
+          ((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId,
+          forceDisableAnimations
+        );
+      // Only built-in
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR, TdApi.TextEntityTypePre.CONSTRUCTOR -> {
+        if (allowInternal) {
+          Typeface typeface = Fonts.FORCE_BUILTIN_MONO ?
+            Fonts.getRobotoMono() :
+            Typeface.MONOSPACE;
+          CustomTypefaceSpan span = new CustomTypefaceSpan(typeface, 0);
+          span.setTextEntityType(type);
+          yield span;
+        }
+        yield Fonts.FORCE_BUILTIN_MONO ?
+          new TypefaceSpan(Fonts.getRobotoMono()) :
+          new TypefaceSpan("monospace");
+      }
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR ->
+        new QuoteSpan.EmptySpan(false);
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR ->
+        new QuoteSpan.EmptySpan(true);
       // auto-detected entities
-      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
-      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
-      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
-      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
-      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
-      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
-      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
-      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-        return null;
-      default:
-        Td.assertTextEntityType_aefd8e69();
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR,
+           TdApi.TextEntityTypeTonAddress.CONSTRUCTOR, TdApi.TextEntityTypeBotCommand.CONSTRUCTOR,
+           TdApi.TextEntityTypeCashtag.CONSTRUCTOR, TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR,
+           TdApi.TextEntityTypeHashtag.CONSTRUCTOR, TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR,
+           TdApi.TextEntityTypeMention.CONSTRUCTOR, TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR,
+           TdApi.TextEntityTypeUrl.CONSTRUCTOR -> null;
+      default -> {
+        Td.assertTextEntityType_b8214790();
         throw Td.unsupported(type);
-    }
+      }
+    };
   }
 
   public static Object[] toSpans (TextEntity entity, @TextEntityOption int options, boolean allowQuotes) {
@@ -5167,6 +5921,10 @@ public class TD {
       return new TdApi.TextEntityType[] {((CustomTypefaceSpan) span).getTextEntityType()};
     if (span instanceof URLSpan) {
       String url = ((URLSpan) span).getURL();
+      TdApi.TextEntityTypeDateTime dateTime = toDateTime(url);
+      if (dateTime != null) {
+        return new TdApi.TextEntityType[] {dateTime};
+      }
       if (!Strings.isValidLink(url))
         return null;
       return new TdApi.TextEntityType[]{new TdApi.TextEntityTypeTextUrl(url)};
@@ -5304,8 +6062,10 @@ public class TD {
     }
     if (span instanceof CustomTypefaceSpan)
       return ((CustomTypefaceSpan) span).getTextEntityType() != null;
-    if (span instanceof URLSpan)
-      return Strings.isValidLink(((URLSpan) span).getURL());
+    if (span instanceof URLSpan) {
+      String url = ((URLSpan) span).getURL();
+      return isDateTimeUrl(url) || Strings.isValidLink(url);
+    }
     if (span instanceof StyleSpan) {
       StyleSpan styleSpan = (StyleSpan) span;
       switch (styleSpan.getStyle()) {
@@ -5382,12 +6142,23 @@ public class TD {
   }
 
   private static int splitEntities (List<TdApi.TextEntity> entities, int startIndex) {
-    for (int i = Math.max(startIndex, 1); i < entities.size(); i++) {
-      for (int j = i - 1; j >= 0; j--) {
-        TdApi.TextEntity prev = entities.get(j);
-        TdApi.TextEntity entity = entities.get(i);
-        if (entity.offset >= prev.offset + prev.length || entity.offset + entity.length <= prev.offset + prev.length)
+    // Entities go by offsets: one that ends before an entity starts ends before later ones too
+    final int firstIndex = Math.max(startIndex, 1);
+    if (firstIndex >= entities.size()) {
+      return -1;
+    }
+    final List<TdApi.TextEntity> previous = new ArrayList<>(entities.subList(0, firstIndex));
+    for (int i = firstIndex; i < entities.size(); i++) {
+      TdApi.TextEntity entity = entities.get(i);
+      for (int j = previous.size() - 1; j >= 0; j--) {
+        TdApi.TextEntity prev = previous.get(j);
+        if (entity.offset >= prev.offset + prev.length) {
+          previous.remove(j);
           continue;
+        }
+        if (entity.offset + entity.length <= prev.offset + prev.length) {
+          continue;
+        }
         int length = prev.offset + prev.length - entity.offset;
         entities.remove(i);
         entities.addAll(i, Arrays.asList(
@@ -5396,6 +6167,7 @@ public class TD {
         ));
         return i;
       }
+      previous.add(entity);
     }
     return -1;
   }
@@ -5560,7 +6332,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_af730a78();
+        Td.assertMessageContent_e4738066();
         break;
     }
     return false;
@@ -6055,9 +6827,11 @@ public class TD {
       case TdApi.InputMessageRichMessage.CONSTRUCTOR:
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
       case TdApi.InputMessageStakeDice.CONSTRUCTOR:
+      case TdApi.InputMessageWidget.CONSTRUCTOR:
+      case TdApi.InputMessageSharedWidget.CONSTRUCTOR:
         return null;
       default:
-        Td.assertInputMessageContent_7c412303();
+        Td.assertInputMessageContent_758b3691();
         throw Td.unsupported(content);
     }
   }
@@ -6095,9 +6869,11 @@ public class TD {
       case TdApi.InputMessageRichMessage.CONSTRUCTOR:
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
       case TdApi.InputMessageStakeDice.CONSTRUCTOR:
+      case TdApi.InputMessageWidget.CONSTRUCTOR:
+      case TdApi.InputMessageSharedWidget.CONSTRUCTOR:
         return null;
       default:
-        Td.assertInputMessageContent_7c412303();
+        Td.assertInputMessageContent_758b3691();
         throw Td.unsupported(content);
     }
   }
@@ -6143,9 +6919,11 @@ public class TD {
       case TdApi.InputMessageRichMessage.CONSTRUCTOR:
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
       case TdApi.InputMessageStakeDice.CONSTRUCTOR:
+      case TdApi.InputMessageWidget.CONSTRUCTOR:
+      case TdApi.InputMessageSharedWidget.CONSTRUCTOR:
         return;
       default:
-        Td.assertInputMessageContent_7c412303();
+        Td.assertInputMessageContent_758b3691();
         throw Td.unsupported(content);
     }
   }
@@ -6182,9 +6960,11 @@ public class TD {
       case TdApi.InputMessageRichMessage.CONSTRUCTOR:
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
       case TdApi.InputMessageStakeDice.CONSTRUCTOR:
+      case TdApi.InputMessageWidget.CONSTRUCTOR:
+      case TdApi.InputMessageSharedWidget.CONSTRUCTOR:
         return null;
       default:
-        Td.assertInputMessageContent_7c412303();
+        Td.assertInputMessageContent_758b3691();
         throw Td.unsupported(content);
     }
   }

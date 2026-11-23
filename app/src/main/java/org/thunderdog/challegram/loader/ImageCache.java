@@ -26,6 +26,7 @@ import androidx.annotation.Nullable;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
@@ -71,11 +72,21 @@ public class ImageCache {
 
     @Override
     protected void entryRemoved (boolean evicted, String key, Bitmap oldValue, Bitmap newValue) {
+      recycleUnreferenced(key, oldValue);
+    }
+  }
+
+  private void recycleUnreferenced (String key, Bitmap bitmap) {
+    if (!UI.inUiThread()) {
+      UI.post(() -> recycleUnreferenced(key, bitmap));
+      return;
+    }
+    synchronized (counters) {
       if (!counters.containsKey(key)) {
         if (Log.isEnabled(Log.TAG_IMAGE_LOADER)) {
-          Log.v(Log.TAG_IMAGE_LOADER, "#%s: recycling bitmap in entryRemoved", key);
+          Log.v(Log.TAG_IMAGE_LOADER, "#%s: recycling bitmap", key);
         }
-        U.recycle(oldValue);
+        U.recycle(bitmap);
       }
     }
   }
@@ -97,7 +108,7 @@ public class ImageCache {
 
   private int getMemcacheSize () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-      int mib = Math.min(15, ((ActivityManager) UI.getAppContext().getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass() / 7);
+      int mib = Math.min(15, ((ActivityManager) AppContext.get().getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass() / 7);
       return (int) ByteUnit.MIB.toBytes(mib);
     } else {
       return (int) ByteUnit.MIB.toBytes(3);
@@ -145,10 +156,7 @@ public class ImageCache {
           if (result == 0) {
             counters.remove(key);
             if (!hasInMemcache(key)) {
-              if (Log.isEnabled(Log.TAG_IMAGE_LOADER)) {
-                Log.v(Log.TAG_IMAGE_LOADER, "#%s: recycling bitmap in removeReference", key);
-              }
-              U.recycle(bitmap);
+              recycleUnreferenced(key, bitmap);
             }
             if (ALLOW_REFERENCES) {
               references.remove(key);

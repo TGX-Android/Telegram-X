@@ -23,3 +23,24 @@ togglerActiveBackground: #FFAB91
 unread: #FBE9E7
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #FF572233
 bubbleOut_fillingActive: #F9946826
+codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
+bubbleOut_codeBlockBackground: #870C0312
+bubbleOut_codeBlockLine: #A33310
+codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
+bubbleOut_codeBlockRipple: #870C0324
+syntaxComment, syntaxBlockComment, syntaxProlog, syntaxDoctype, syntaxCdata: #666F78
+syntaxPunctuation: #798087
+syntaxOperator: #435971
+syntaxKeyword, syntaxBoolean, syntaxAtrule: #1B54A4
+syntaxNumber: #962E21
+syntaxString, syntaxChar, syntaxAttrValue: #1E6926
+syntaxFunction: #643F99
+syntaxClassName: #00696A
+syntaxConstant, syntaxProperty, syntaxSymbol: #872F70
+syntaxAnnotation: #6E5300
+syntaxTag, syntaxSelector: #004F7A
+syntaxAttrName, syntaxEntity: #834500
+syntaxBuiltin: #005E4C
+syntaxUrl: #025B91
+syntaxInserted: #1E6926
+syntaxDeleted: #962C2C

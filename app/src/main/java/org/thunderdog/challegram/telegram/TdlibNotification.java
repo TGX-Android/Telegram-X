@@ -39,7 +39,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -150,6 +150,11 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
 
   public boolean isVisuallySilent () { // Display bell icon
     return notification.isSilent;
+  }
+
+  public boolean isCall () {
+    TdApi.Message message = findMessage();
+    return message != null && message.content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR;
   }
 
   public TdApi.Message findMessage () {
@@ -581,7 +586,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
                 b = new SpannableStringBuilder(text);
               }
               ImageSpan imageSpan = new ImageSpan(
-                UI.getAppContext(),
+                AppContext.get(),
                 bitmap,
                 ImageSpan.ALIGN_BASELINE
               );

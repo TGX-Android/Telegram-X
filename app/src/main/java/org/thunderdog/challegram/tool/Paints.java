@@ -28,6 +28,7 @@ import android.os.Looper;
 import android.text.TextPaint;
 
 import androidx.annotation.ColorInt;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 import androidx.annotation.UiThread;
@@ -35,7 +36,9 @@ import androidx.collection.SparseArrayCompat;
 
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
@@ -682,6 +685,28 @@ public class Paints {
     }
 
     return porterDuffPaint;
+  }
+
+  private static SparseArrayCompat<Paint> themePorterDuffPaints;
+
+  public static Paint getPorterDuffPaint (
+    @PorterDuffColorId int colorId,
+    @NonNull ThemeDelegate theme
+  ) {
+    if (theme == ThemeManager.instance().currentTheme()) {
+      return PorterDuffPaint.get(colorId);
+    }
+    // Another theme, e.g. a forced one: a paint for each color
+    final int color = theme.getColor(colorId);
+    if (themePorterDuffPaints == null) {
+      themePorterDuffPaints = new SparseArrayCompat<>();
+    }
+    Paint paint = themePorterDuffPaints.get(color);
+    if (paint == null) {
+      paint = createPorterDuffPaint(null, color);
+      themePorterDuffPaints.put(color, paint);
+    }
+    return paint;
   }
 
   private static int lastProgressColor;

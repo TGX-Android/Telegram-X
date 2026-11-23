@@ -389,7 +389,28 @@ public class Counter implements FactorAnimator.Target, CounterAnimator.Callback<
     boolean outlineAffectsBackgroundSize = needBackground && BitwiseUtils.hasFlag(flags, FLAG_OUTLINE_AFFECTS_BACKGROUND_SIZE);
     if (textAlpha * getVisibility() > 0f || (needBackground && backgroundAlpha * getVisibility() > 0f)) {
       Drawable drawable = getDrawable(drawableProvider, drawableColorId);
-      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, textAlpha * getVisibility(), needBackground, outlineAffectsBackgroundSize, Screen.dp(backgroundPadding), this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), backgroundAlpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue(), outputDrawRect);
+      DrawAlgorithms.drawCounter(
+        c,
+        cx,
+        cy,
+        gravity,
+        counter,
+        textSize,
+        textAlpha * getVisibility(),
+        needBackground,
+        outlineAffectsBackgroundSize,
+        Screen.dp(backgroundPadding),
+        this,
+        drawable,
+        drawableRes,
+        drawableGravity,
+        drawableColorId,
+        Screen.dp(drawableMarginDp),
+        backgroundAlpha * getVisibility(),
+        drawableAlpha * getVisibility(),
+        isVisible.getFloatValue(),
+        outputDrawRect
+      );
     }
   }
 

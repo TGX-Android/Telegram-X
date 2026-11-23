@@ -17,7 +17,6 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
-import android.media.MediaMuxer;
 import android.os.Build;
 
 import androidx.annotation.Nullable;
@@ -287,7 +286,7 @@ public class VideoData {
   public boolean editMovie (String outPath, boolean mute, int rotateBy, double startTime, double endTime, @Nullable RunnableLong onProgress, @Nullable AtomicBoolean isCancelled) {
     if (extractor != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
       boolean success = false;
-      MediaMuxer muxer = null;
+      android.media.MediaMuxer muxer = null;
       try {
         SparseLongArray trackMap = new SparseLongArray();
         int orientationHint = rotateBy;
@@ -305,11 +304,11 @@ public class VideoData {
             break;
           }
           if (muxer == null) {
-            int outputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
+            int outputFormat = android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && ("video/x-vnd.on2.vp8".equals(mimeType) || "video/x-vnd.on2.vp9".equals(mimeType))) {
-              outputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM;
+              outputFormat = android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM;
             }
-            muxer = new MediaMuxer(outPath, outputFormat);
+            muxer = new android.media.MediaMuxer(outPath, outputFormat);
           }
           boolean isVideo = mimeType.startsWith("video/");
           if (rotateBy != 0 && isVideo) {

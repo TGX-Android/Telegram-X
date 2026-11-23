@@ -20,7 +20,7 @@ import android.content.Intent;
 
 import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.tool.Intents;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 public class TGSecretCodeReceiver extends BroadcastReceiver {
   @Override
@@ -33,7 +33,7 @@ public class TGSecretCodeReceiver extends BroadcastReceiver {
 
       String[] sep = uri.split("://");
       if (sep.length > 0 && sep[1].equals("83534726")) {
-        Intent launchIntent = new Intent(UI.getAppContext(), MainActivity.class);
+        Intent launchIntent = new Intent(AppContext.get(), MainActivity.class);
         launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         launchIntent.setAction(Intents.randomAction(Intents.ACTION_OPEN_LOGS));
         context.startActivity(launchIntent);

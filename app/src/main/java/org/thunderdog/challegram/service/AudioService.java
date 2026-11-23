@@ -22,7 +22,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.media.AudioManager;
-import android.media.MediaMetadata;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -35,7 +34,6 @@ import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.media3.common.C;
 import androidx.media3.extractor.metadata.id3.ApicFrame;
 
@@ -57,7 +55,7 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,7 +107,7 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
   public void onCreate () {
     super.onCreate();
 
-    UI.initApp(getApplicationContext());
+    AppContext.init(getApplicationContext());
 
     this.handler = new EventHandler(this);
 
@@ -548,27 +546,40 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
     emptyCover = tryCreatePlaceholder();
   }
 
-  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void setSessionMetadata () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
       TdApi.Audio audio = ((TdApi.MessageAudio) currentTrack.content).audio;
       android.media.session.MediaSession session = (android.media.session.MediaSession) mediaSession;
-      MediaMetadata.Builder b = new MediaMetadata.Builder();
-      b.putString(MediaMetadata.METADATA_KEY_TITLE, TD.getTitle(audio));
-      b.putString(MediaMetadata.METADATA_KEY_ARTIST, TD.getSubtitle(audio));
+      android.media.MediaMetadata.Builder b = new android.media.MediaMetadata.Builder();
+      b.putString(
+        android.media.MediaMetadata.METADATA_KEY_TITLE,
+        TD.getTitle(audio)
+      );
+      b.putString(
+        android.media.MediaMetadata.METADATA_KEY_ARTIST,
+        TD.getSubtitle(audio)
+      );
       if (playDuration != C.TIME_UNSET && playDuration > 0) {
-        b.putLong(MediaMetadata.METADATA_KEY_DURATION, playDuration);
+        b.putLong(
+          android.media.MediaMetadata.METADATA_KEY_DURATION,
+          playDuration
+        );
       }
       if (currentCover != null) {
-        b.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, currentCover);
+        b.putBitmap(
+          android.media.MediaMetadata.METADATA_KEY_ALBUM_ART,
+          currentCover
+        );
       } else if (Config.USE_OLD_COVER && oldCover != null) {
-        b.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, oldCover);
+        b.putBitmap(
+          android.media.MediaMetadata.METADATA_KEY_ALBUM_ART,
+          oldCover
+        );
       }
       session.setMetadata(b.build());
     }
   }
 
-  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void setSessionPlayState () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
       android.media.session.MediaSession session = (android.media.session.MediaSession) mediaSession;

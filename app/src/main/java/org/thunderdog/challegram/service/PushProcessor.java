@@ -146,6 +146,7 @@ public class PushProcessor {
 
   private void processPush (final TdlibManager manager, final long pushId, final String payload, final int accountId) {
     TDLib.trackPushState(pushId, true);
+    TDLib.Tag.notifications(pushId, accountId, "Begin processing push");
 
     // Checking current environment
     final boolean doze = inIdleMode();
@@ -160,16 +161,19 @@ public class PushProcessor {
 
     final boolean inRecoveryMode = manager.inRecoveryMode();
     final boolean shown;
+    final AtomicBoolean foregroundNotificationMayBeShown = new AtomicBoolean(false);
 
     if ((Build.VERSION.SDK_INT < Build.VERSION_CODES.S && (doze || !network)) || inRecoveryMode) {
       synchronized (foregroundLock) {
         TDLib.Tag.notifications(pushId, accountId, "Trying to start a foreground task because we may be operating in a constrained environment, doze: %b, network: %b, recovery: %b", doze, network, inRecoveryMode);
-        if (showForegroundNotification(manager, inRecoveryMode, pushId, accountId, false, foregroundServiceLatch)) {
+        int showStatus = showForegroundNotification(manager, inRecoveryMode, pushId, accountId, false, foregroundServiceLatch);
+        shown = showStatus == ShowStatus.OK;
+        if (showStatus != ShowStatus.NOT_SHOWN) {
+          foregroundNotificationMayBeShown.set(true);
+        }
+        if (shown) {
           state.set(State.VISIBLE);
           latch.countDown();
-          shown = true;
-        } else {
-          shown = false;
         }
       }
     } else {
@@ -184,11 +188,20 @@ public class PushProcessor {
           TDLib.Tag.notifications(pushId, accountId, "Stopping a foreground task");
           FetchNotificationService.stopForegroundTask(context, pushId, accountId);
           SyncTask.cancel(accountId);
+        } else if (foregroundNotificationMayBeShown.get() && state.compareAndSet(State.DEADLINE_REACHED, State.FINISHED)) {
+          TDLib.Tag.notifications(pushId, accountId, "Foreground task was requested, but it did not launch yet. Requesting to stop it so it would hide immediately after being shown.");
+          FetchNotificationService.stopForegroundTask(context, pushId, accountId);
+          SyncTask.cancel(accountId);
         } else {
           int currentState = state.get();
           TDLib.Tag.notifications(pushId, accountId, "Finishing without a foreground task, state: %s", stateToString(currentState));
           state.set(State.FINISHED);
           latch.countDown();
+          if (foregroundNotificationMayBeShown.get()) {
+            // A start that wasn't refused at once may run, e.g. one that answers after the wait
+            TDLib.Tag.notifications(pushId, accountId, "Foreground task requested, stopping it");
+            FetchNotificationService.stopForegroundTask(context, pushId, accountId);
+          }
 
           CancellableRunnable act = timeout.get();
           if (act != null) {
@@ -211,7 +224,11 @@ public class PushProcessor {
                 if (timeout.compareAndSet(this, null) && state.get() == State.RUNNING) {
                   String lastPushState = TDLib.lastPushState(pushId);
                   TDLib.Tag.notifications(pushId, accountId, "Trying to start a foreground task because the job is running too long: %dms, lastPushState: %s", SystemClock.uptimeMillis() - startTimeMs, lastPushState);
-                  if (showForegroundNotification(manager, inRecoveryMode, pushId, accountId, true, foregroundServiceLatch)) {
+                  int showStatus = showForegroundNotification(manager, inRecoveryMode, pushId, accountId, true, foregroundServiceLatch);
+                  if (showStatus != ShowStatus.NOT_SHOWN) {
+                    foregroundNotificationMayBeShown.set(true);
+                  }
+                  if (showStatus == ShowStatus.OK) {
                     state.set(State.VISIBLE);
                     latch.countDown();
                   } else {
@@ -273,15 +290,30 @@ public class PushProcessor {
     }
   }
 
-  private boolean showForegroundNotification (TdlibManager manager, boolean inRecovery, long pushId, int accountId, boolean critical, CountDownLatch foregroundServiceLatch) {
+  @IntDef({
+    ShowStatus.NOT_SHOWN,
+    ShowStatus.OK,
+    ShowStatus.MAYBE
+  })
+  @Retention(RetentionPolicy.SOURCE)
+  public @interface ShowStatus {
+    int
+      NOT_SHOWN = 0,
+      OK = 1,
+      MAYBE = 2;
+  }
+
+  @ShowStatus
+  private int showForegroundNotification (TdlibManager manager, boolean inRecovery, long pushId, int accountId, boolean critical, CountDownLatch foregroundServiceLatch) {
     if (!allowForegroundService) {
       TDLib.Tag.notifications(pushId, accountId, "Can't show foreground notification, because user didn't provide explicit permission. inRecovery: %b", inRecovery);
-      return false;
+      return ShowStatus.NOT_SHOWN;
     }
     return showForegroundNotification(context, manager, inRecovery, pushId, accountId, critical, foregroundServiceLatch);
   }
 
-  public static boolean showForegroundNotification (Context context, TdlibManager manager, boolean inRecovery, long pushId, int accountId, boolean critical, CountDownLatch foregroundServiceLatch) {
+  @ShowStatus
+  public static int showForegroundNotification (Context context, TdlibManager manager, boolean inRecovery, long pushId, int accountId, boolean critical, CountDownLatch foregroundServiceLatch) {
     String text;
     if (accountId != TdlibAccount.NO_ID && manager.isMultiUser()) {
       text = Lang.getString(R.string.RetrievingText, manager.account(accountId).getLongName());
@@ -300,6 +332,7 @@ public class PushProcessor {
         foregroundServiceLatch.countDown();
       }
     )) {
+      TDLib.Tag.notifications(pushId, accountId, "Foreground service start requested, waiting for notification to appear first");
       try {
         long seconds = critical ? 10 : 5;
         TDLib.Tag.notifications(pushId, accountId, "Giving %d seconds for foreground service to start. critical: %b, inRecovery: %b", seconds, critical, inRecovery);
@@ -311,11 +344,14 @@ public class PushProcessor {
           } else {
             TDLib.Tag.notifications(pushId, accountId, "Foreground service was not started in %dms. critical: %b, inRecovery: %b", (SystemClock.uptimeMillis() - time), critical, inRecovery);
           }
-          return result;
+          return result ? ShowStatus.OK : ShowStatus.MAYBE;
         }
         TDLib.Tag.notifications(pushId, accountId, "Foreground service did not start within %d seconds. critical: %b, inRecovery: %b", seconds, critical, inRecovery);
       } catch (InterruptedException ignored) { }
+      return ShowStatus.MAYBE;
+    } else {
+      TDLib.Tag.notifications(pushId, accountId, "startForegroundTask() failed");
     }
-    return false;
+    return ShowStatus.NOT_SHOWN;
   }
 }

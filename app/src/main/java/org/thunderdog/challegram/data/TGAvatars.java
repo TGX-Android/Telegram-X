@@ -267,7 +267,7 @@ public final class TGAvatars implements FactorAnimator.Target {
       receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), outline, Paints.getErasePaint());
 
       if (alpha != 1f) {
-        receiver.setPaintAlpha(receiver.getPaintAlpha() * alpha);
+        receiver.setPaintAlpha(alpha);
       }
       receiver.setBounds(cx - radius, cy - radius, cx + radius, cy + radius);
       if (receiver.needPlaceholder()) {

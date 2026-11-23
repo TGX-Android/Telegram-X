@@ -21,7 +21,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
@@ -47,7 +46,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomStateListDrawable;
 
@@ -64,7 +63,7 @@ public class Theme {
   @SuppressWarnings("DiscouragedApi")
   public static int getIdResourceIdentifier (@NonNull String key) {
     try {
-      Context context = UI.getAppContext();
+      Context context = AppContext.get();
       return context.getResources().getIdentifier(key, "id", context.getPackageName());
     } catch (Throwable ignored) {
       return 0;
@@ -735,7 +734,7 @@ public class Theme {
   // Transparent drawable
 
   public static Drawable filteredDrawable (@DrawableRes int res, @ColorId int colorId, @Nullable ViewController<?> themeProvider) {
-    Drawable drawable = ViewSupport.getDrawableFilter(UI.getAppContext(), res, new PorterDuffColorFilter(Theme.getColor(colorId), PorterDuff.Mode.MULTIPLY));
+    Drawable drawable = ViewSupport.getDrawableFilter(AppContext.get(), res, new PorterDuffColorFilter(Theme.getColor(colorId), PorterDuff.Mode.MULTIPLY));
     if (themeProvider != null) {
       themeProvider.addThemeSpecialFilterListener(drawable, colorId);
     }
@@ -983,7 +982,7 @@ public class Theme {
         new int[][]{StateSet.WILD_CARD},
         new int[]{pressedColor}
       );
-      return new RippleDrawable(colorStateList, defaultDrawable, pressedDrawable);
+      return new android.graphics.drawable.RippleDrawable(colorStateList, defaultDrawable, pressedDrawable);
     } else {
       StateListDrawable stateListDrawable = new StateListDrawable();
       stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, pressedDrawable);
@@ -1006,7 +1005,7 @@ public class Theme {
         new int[][]{StateSet.WILD_CARD},
         new int[]{(color & 0x00ffffff) | 0x19000000}
       );
-      return new RippleDrawable(colorStateList, null, maskDrawable);
+      return new android.graphics.drawable.RippleDrawable(colorStateList, null, maskDrawable);
     } else {
       StateListDrawable stateListDrawable = new StateListDrawable();
       stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, createRoundRectDrawable(Screen.dp(3), (color & 0x00ffffff) | 0x19000000));

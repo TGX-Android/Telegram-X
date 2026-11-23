@@ -20,6 +20,7 @@ import android.view.inputmethod.CompletionInfo;
 import android.view.inputmethod.InputMethodManager;
 
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 
 public class Keyboard {
@@ -30,7 +31,7 @@ public class Keyboard {
 
         InputMethodManager manager;
 
-        manager = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        manager = (InputMethodManager) AppContext.get().getSystemService(Context.INPUT_METHOD_SERVICE);
         manager.showSoftInput(view, 0);
       } catch (Throwable throwable) {
         Log.e("Cannot show keyboard", throwable);
@@ -43,7 +44,7 @@ public class Keyboard {
       try {
         InputMethodManager manager;
 
-        manager = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        manager = (InputMethodManager) AppContext.get().getSystemService(Context.INPUT_METHOD_SERVICE);
         manager.displayCompletions(view, suggestions);
       } catch (Throwable throwable) {
         Log.e("Cannot show suggestions", throwable);
@@ -55,7 +56,7 @@ public class Keyboard {
     if (view != null) {
       InputMethodManager manager;
 
-      manager = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+      manager = (InputMethodManager) AppContext.get().getSystemService(Context.INPUT_METHOD_SERVICE);
       manager.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
   }

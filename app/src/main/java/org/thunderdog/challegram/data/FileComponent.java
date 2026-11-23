@@ -701,8 +701,8 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
         layoutPath(startX - padding, startY - padding, startX + previewSize + padding, startY + previewSize + padding);
         ViewSupport.clipPath(c, path);
       }*/
-      preview.setPaintAlpha(alpha * preview.getAlpha());
-      receiver.setPaintAlpha(alpha * receiver.getAlpha());
+      preview.setPaintAlpha(alpha);
+      receiver.setPaintAlpha(alpha);
       if (mayBeTransparent) {
         c.drawCircle(startX + previewSize / 2f, startY + previewSize / 2f, previewSize / 2f, Paints.fillingPaint(ColorUtils.alphaColor(alpha, Color.WHITE)));
       }

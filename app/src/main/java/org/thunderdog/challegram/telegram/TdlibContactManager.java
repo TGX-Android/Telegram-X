@@ -45,6 +45,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.text.Letters;
@@ -631,7 +632,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       text = null;
     }
     SyncContactsService.startForegroundTask(
-      UI.getAppContext(),
+      AppContext.get(),
       Lang.getString(R.string.SyncContactsProgress),
       text,
       U.getOtherNotificationChannel(), 0,
@@ -648,7 +649,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       if (Config.FOREGROUND_CONTACTS_SYNC_DEMO) {
         UI.post(() -> {
           SyncContactsService.stopForegroundTask(
-            UI.getAppContext(),
+            AppContext.get(),
             0,
             tdlib.accountId()
           );
@@ -656,7 +657,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
         }, 3000L);
       } else {
         boolean result = SyncContactsService.stopForegroundTask(
-          UI.getAppContext(),
+          AppContext.get(),
           0,
           tdlib.accountId()
         );
@@ -691,14 +692,20 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       Runnable act = () -> UI.execute(() -> {
         if (task.isPending()) {
           startForeground(success -> {
+            if (success) {
+              foregroundShowing = true;
+            }
             if (task.isPending()) {
               if (success) {
-                foregroundShowing = true;
                 Background.instance().post(task);
               } else {
                 Log.w(Log.TAG_CONTACT, "Unable to start dataSync service to import contacts");
                 setState(STATE_NOT_STARTED);
               }
+            } else if (success) {
+              // The sync was cancelled while its service started: nothing else would stop it,
+              // and Android 15 crashes the app when it runs out of the time of dataSync
+              stopForeground();
             }
           });
         }
@@ -932,7 +939,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
 
   private boolean hasChanges () {
     Cursor c = null;
-    Context context = UI.getAppContext();
+    Context context = AppContext.get();
     ContentResolver resolver = context.getContentResolver();
     boolean ok = false;
     try {
@@ -988,7 +995,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   private void importContactsImpl (CancellableRunnable cancellationSignal, RunnableBool after) {
     Cursor c = null;
     int count;
-    Context context = UI.getAppContext();
+    Context context = AppContext.get();
     TdApi.ImportedContact[] result = null;
     long maxModificationDate = 0;
     try {

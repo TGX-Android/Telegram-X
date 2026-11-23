@@ -43,6 +43,8 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.ListItem;
+import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.EmptyTextView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -51,23 +53,13 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public class MessagesHolder extends RecyclerView.ViewHolder {
-  public static final int TYPE_EMPTY = 0;
-
-  public static final int TYPE_MESSAGE = 1;
-  public static final int TYPE_MESSAGE_MEDIA = 2;
-  public static final int TYPE_MESSAGE_COMPLEX_MEDIA = 3;
-  public static final int TYPE_MESSAGE_VIEW_GROUP = 10;
-
-  public static final int TYPE_SECRET_CHAT_INFO = 100;
-  public static final int TYPE_SECRET_CHAT_INFO_BUBBLE = 101;
-
   public MessagesHolder (View view) {
     super(view);
   }
 
   public void setMessage (TGMessage message) {
     final int viewType = getItemViewType();
-    if (viewType >= TYPE_MESSAGE_VIEW_GROUP) {
+    if (viewType >= ListItem.TYPE_MESSAGE_VIEW_GROUP) {
       ((MessageViewGroup) itemView).setMessage(message);
     } else {
       ((MessageView) itemView).setMessage(message);
@@ -85,21 +77,13 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
   }
 
   public static boolean isMessageType (int type) {
-    switch (type) {
-      case TYPE_MESSAGE:
-      case TYPE_MESSAGE_MEDIA:
-      case TYPE_MESSAGE_COMPLEX_MEDIA:
-        return true;
-      default: {
-        return type >= TYPE_MESSAGE_VIEW_GROUP && type < TYPE_SECRET_CHAT_INFO && isMessageType(type - TYPE_MESSAGE_VIEW_GROUP);
-      }
-    }
+    return SettingHolder.isMessageViewType(type);
   }
 
   public void attach () {
     final int viewType = getItemViewType();
     if (isMessageType(viewType)) {
-      if (viewType >= TYPE_MESSAGE_VIEW_GROUP) {
+      if (viewType >= ListItem.TYPE_MESSAGE_VIEW_GROUP) {
         ((MessageViewGroup) itemView).attach();
       } else {
         ((MessageView) itemView).onAttachedToRecyclerView();
@@ -110,7 +94,7 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
   public void detach () {
     final int viewType = getItemViewType();
     if (isMessageType(viewType)) {
-      if (viewType >= TYPE_MESSAGE_VIEW_GROUP) {
+      if (viewType >= ListItem.TYPE_MESSAGE_VIEW_GROUP) {
         ((MessageViewGroup) itemView).detach();
       } else {
         ((MessageView) itemView).onDetachedFromRecyclerView();
@@ -118,41 +102,10 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
     }
   }
 
-  private static MessageView createMessageView (Context context, int type, MessagesManager manager, @Nullable ViewController<?> themeProvider) {
-    switch (type) {
-      case TYPE_MESSAGE: {
-        MessageView view = new MessageView(context);
-        view.setManager(manager);
-        if (themeProvider != null) {
-          themeProvider.addThemeInvalidateListener(view);
-        }
-        return view;
-      }
-      case TYPE_MESSAGE_MEDIA: {
-        MessageView view = new MessageView(context);
-        view.setManager(manager);
-        if (themeProvider != null) {
-          themeProvider.addThemeInvalidateListener(view);
-        }
-        view.setUseReceivers();
-        return view;
-      }
-      case TYPE_MESSAGE_COMPLEX_MEDIA: {
-        MessageView view = new MessageView(context);
-        view.setManager(manager);
-        if (themeProvider != null) {
-          themeProvider.addThemeInvalidateListener(view);
-        }
-        view.setUseComplexReceiver();
-        return view;
-      }
-    }
-    throw new IllegalArgumentException("");
-  }
-
   public static MessagesHolder create (Context context, final MessagesManager manager, int type, @Nullable ViewController<?> themeProvider) {
+    // TODO migrate to SettingHolder.create
     switch (type) {
-      case TYPE_EMPTY: {
+      case ListItem.TYPE_CHAT_EMPTY: {
         final EmptyTextView view = new EmptyTextView(context) {
           @Override
           protected void onDraw (Canvas c) {
@@ -174,8 +127,8 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
         }
         return new MessagesHolder(view);
       }
-      case TYPE_SECRET_CHAT_INFO:
-      case TYPE_SECRET_CHAT_INFO_BUBBLE: {
+      case ListItem.TYPE_SECRET_CHAT_INFO:
+      case ListItem.TYPE_SECRET_CHAT_INFO_BUBBLE: {
         FrameLayoutFix contentView;
 
         contentView = new FrameLayoutFix(context) {
@@ -192,7 +145,7 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
         };
         contentView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        final boolean forBubble = type == TYPE_SECRET_CHAT_INFO_BUBBLE;
+        final boolean forBubble = type == ListItem.TYPE_SECRET_CHAT_INFO_BUBBLE;
 
         final ImageView[] imageViewHolder = new ImageView[1];
         final TextView[] textViewHolder = new TextView[2];
@@ -323,12 +276,12 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
         return new MessagesHolder(contentView);
       }
       default: {
-        if (type >= TYPE_MESSAGE_VIEW_GROUP) {
+        if (type >= ListItem.TYPE_MESSAGE_VIEW_GROUP) {
           MessageViewGroup viewGroup = new MessageViewGroup(context);
-          viewGroup.initWithView(createMessageView(context, type - TYPE_MESSAGE_VIEW_GROUP, manager, themeProvider), manager, themeProvider);
+          viewGroup.initWithView(SettingHolder.createMessageView(context, type - ListItem.TYPE_MESSAGE_VIEW_GROUP, manager, themeProvider), manager, themeProvider);
           return new MessagesHolder(viewGroup);
         } else {
-          MessageView messageView = createMessageView(context, type, manager, themeProvider);
+          MessageView messageView = SettingHolder.createMessageView(context, type, manager, themeProvider);
           return new MessagesHolder(messageView);
         }
       }

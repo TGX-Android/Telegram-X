@@ -24,7 +24,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 
@@ -268,7 +267,7 @@ public class Test {
   }
 
   public static File getTestDBDir () {
-    File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
+    File pmcDir = new File(AppContext.get().getFilesDir(), "pmc");
     if (!FileUtils.createDirectory(pmcDir)) {
       throw new IllegalStateException("Unable to create working directory");
     }

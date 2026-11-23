@@ -50,12 +50,19 @@ public class TdlibEditMediaManager implements MessageEditMediaPending.Callback {
 
   public boolean hasPendingMessageMedia (long chatId, long messageId) {
     synchronized (pendingMessageMedia) {
+      if (pendingMessageMedia.isEmpty()) {
+        return false;
+      }
       return pendingMessageMedia.containsKey(toKey(chatId, messageId));
     }
   }
 
   public MessageEditMediaPending getPendingMessageMedia (long chatId, long messageId) {
     synchronized (pendingMessageMedia) {
+      // Asked for each message shown, so no key is made while nothing waits
+      if (pendingMessageMedia.isEmpty()) {
+        return null;
+      }
       return pendingMessageMedia.get(toKey(chatId, messageId));
     }
   }

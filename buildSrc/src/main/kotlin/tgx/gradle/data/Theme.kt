@@ -6,7 +6,7 @@ import tgx.gradle.task.normalizeArgbHex
 import tgx.gradle.task.unwrapDoubleQuotes
 import java.io.File
 
-class Theme (file: File) {
+class Theme (val file: File) {
   enum class Section {
     UNKNOWN, SETTINGS, PROPERTIES, COLORS
   }

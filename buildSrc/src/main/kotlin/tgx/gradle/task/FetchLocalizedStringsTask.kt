@@ -24,9 +24,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.*
 import tgx.gradle.fatal
+import tgx.gradle.requireFile
 import tgx.gradle.validateDir
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
@@ -34,8 +35,15 @@ import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
 abstract class FetchLocalizedStringsTask : DefaultTask() {
+  @get:InputFile
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val builtinStringsFile: RegularFileProperty
+
   @get:OutputDirectory
   abstract val resOutputDir: DirectoryProperty
+
+  @get:OutputFile
+  abstract val localeFiltersOutputFile: RegularFileProperty
 
   @TaskAction
   fun fetchLanguages () {
@@ -53,83 +61,21 @@ abstract class FetchLocalizedStringsTask : DefaultTask() {
       Pair("zh-hant", arrayOf("zh-rTW", "zh-rHK", "zh-rMO")) // Chinese (Traditional)
     )
 
+    val keyRegex = Regex("^[a-zA-Z][a-zA-Z0-9_]*$")
+    val builtInStrings = requireFile(builtinStringsFile.get().asFile).readLines().map {
+      it.trim()
+    }.filter {
+      it.isNotEmpty()
+    }.onEach { key ->
+      if (!keyRegex.matches(key)) {
+        fatal("Invalid key: $key")
+      }
+    }.toTypedArray()
+
     val requiredKeys = arrayOf(
       rtlKey,
       nameKey,
-
-      "StartMessaging",
-
-      "Page1Title",
-      "Page1Message",
-      "Page2Title",
-      "Page2Message",
-      "Page3Title",
-      "Page3Message",
-      "Page4Title",
-      "Page4Message",
-      "Page5Title",
-      "Page5Message",
-      "Page6Title",
-      "Page6Message",
-
-      "network_WaitingForNetwork",
-      "network_Connecting",
-      "network_Updating",
-      "Connected",
-      "ConnectingToProxy",
-
-      "LoginErrorOffline",
-      "LoginErrorAirplane",
-      "LoginErrorLongConnecting",
-
-      "email_LoginTooLong_text",
-      "email_LoginTooLong_subject",
-      "HelpEmailError",
-
-      "Settings",
-      "Help",
-
-      "ProxyAdd",
-      "AddMtprotoProxy",
-      "AddSocks5Proxy",
-      "AddHttpProxy",
-      "ProxyInfo",
-      "Socks5Proxy",
-      "MtprotoProxy",
-      "HttpProxy",
-      "Connection",
-      "UseProxyServer",
-      "UseProxyPort",
-      "HttpProxyTransparent",
-      "HttpProxyTransparentHint",
-      "ProxyCredentialsOptional",
-      "ProxyUsernameHint",
-      "ProxyPasswordHint",
-      "ProxyCredentials",
-      "ProxySecretHint",
-
-      "LaunchTitle",
-      "LaunchApp",
-      "LaunchAppShareError",
-      "LaunchAppViewError",
-      "LaunchSubtitleDiskFull",
-      "LaunchAppGuideDiskFull",
-      "LaunchSubtitleDatabaseBroken",
-      "LaunchAppGuideDatabaseBroken",
-      "LaunchSubtitleExternalError",
-      "LaunchAppGuideExternalError",
-      "LaunchSubtitleTdlibIssue",
-      "LaunchAppGuideTdlibIssue",
-
-      "ExperimentalBuildTitle",
-      "ExperimentalBuildInfo",
-
-      "SyncHintTitle2",
-      "SyncBtn",
-      "SyncLearnMore",
-      "SyncHint3",
-      "SyncHintRetry2",
-      "SyncHintUnavailable2"
+      *builtInStrings
     )
 
     // 1. Setup OkHttp
@@ -166,7 +112,7 @@ abstract class FetchLocalizedStringsTask : DefaultTask() {
     val defaultStrings = mutableMapOf<String, String>()
     val threeDotFixKeysList = mutableListOf<Pair<String, List<String>>>()
 
-    val allFolders = mutableListOf<String>()
+    val allFolders = mutableSetOf(defaultLanguageCode)
 
     val latch = CountDownLatch(languageCodes.size)
 
@@ -284,13 +230,27 @@ abstract class FetchLocalizedStringsTask : DefaultTask() {
 
     latch.await()
 
+    builtInStrings.filter {
+      !defaultStrings.contains(it)
+    }.takeIf {
+      it.isNotEmpty()
+    }?.let {
+      fatal("Unknown keys: ${it.joinToString(", ")}")
+    }
+
+    localeFiltersOutputFile.get().asFile.writeText(
+      allFolders.sorted().joinToString("\n") {
+        it.substringAfter("values-")
+      }
+    )
+
     if (threeDotFixKeysList.isNotEmpty()) {
       val message = StringBuilder("In ${threeDotFixKeysList.size} language(s) \"...\" could be replaced with \"…\" in these keys:")
       for (pair in threeDotFixKeysList) {
         message.append("\n\n")
         message.append(pair.first).append(": ").append(pair.second)
       }
-      logger.warn(message.toString())
+      logger.error(message.toString())
     }
 
     logger.lifecycle("Updated all languages")

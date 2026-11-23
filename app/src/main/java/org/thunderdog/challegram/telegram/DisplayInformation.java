@@ -21,7 +21,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFileLocal;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -404,10 +404,10 @@ public class DisplayInformation {
     if (!StringUtils.isEmpty(relativePath) && !relativePath.startsWith("/")) {
       if (relativePath.startsWith(EXTERNAL_PREFIX)) {
         String externalRelativePath = relativePath.substring(EXTERNAL_PREFIX.length());
-        File parentDir = UI.getAppContext().getExternalFilesDir(null);
+        File parentDir = AppContext.get().getExternalFilesDir(null);
         if (parentDir == null) {
           // Assuming that external storage path was the same as internal one
-          parentDir = UI.getAppContext().getFilesDir();
+          parentDir = AppContext.get().getFilesDir();
         }
         if (parentDir != null) {
           File file = new File(parentDir, externalRelativePath);
@@ -420,7 +420,7 @@ public class DisplayInformation {
       }
       if (relativePath.startsWith(INTERNAL_PREFIX)) {
         String internalRelativePath = relativePath.substring(INTERNAL_PREFIX.length());
-        File parentDir = UI.getAppContext().getFilesDir();
+        File parentDir = AppContext.get().getFilesDir();
         if (parentDir != null) {
           File file = new File(parentDir, internalRelativePath);
           try {
@@ -436,7 +436,7 @@ public class DisplayInformation {
 
   private static String toRelativePath (String absoluteFilePath) {
     if (!StringUtils.isEmpty(absoluteFilePath) && absoluteFilePath.startsWith("/") && !absoluteFilePath.contains("://")) {
-      File externalDir = UI.getAppContext().getExternalFilesDir(null);
+      File externalDir = AppContext.get().getExternalFilesDir(null);
       if (externalDir != null) {
         final String prefix = externalDir.getAbsolutePath() + "/";
         if (absoluteFilePath.startsWith(prefix)) {
@@ -444,7 +444,7 @@ public class DisplayInformation {
           return EXTERNAL_PREFIX + externalRelativePath;
         }
       }
-      File internalDir = UI.getAppContext().getFilesDir();
+      File internalDir = AppContext.get().getFilesDir();
       if (internalDir != null) {
         final String prefix = internalDir.getAbsolutePath() + "/";
         if (absoluteFilePath.startsWith(prefix)) {

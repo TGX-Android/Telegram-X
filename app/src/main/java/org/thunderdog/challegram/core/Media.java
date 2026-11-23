@@ -36,6 +36,7 @@ import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -287,7 +288,7 @@ public class Media {
     }
     Cursor cursor = null;
     try {
-      ContentResolver resolver = UI.getAppContext().getContentResolver();
+      ContentResolver resolver = AppContext.get().getContentResolver();
 
       Uri contentUri = allowVideos ? MediaStore.Files.getContentUri("external") : MediaStore.Images.Media.getContentUri("external");
 
@@ -490,7 +491,7 @@ public class Media {
                 updatedSizes.put(MediaStore.Images.Media.WIDTH, width);
                 updatedSizes.put(MediaStore.Images.Media.HEIGHT, height);
                 ms = SystemClock.uptimeMillis();
-                UI.getAppContext().getContentResolver().update(MediaStore.Images.Media.getContentUri("external"), updatedSizes, MediaStore.Images.Media._ID + " = " + imageId, null);
+                AppContext.get().getContentResolver().update(MediaStore.Images.Media.getContentUri("external"), updatedSizes, MediaStore.Images.Media._ID + " = " + imageId, null);
                 Log.i("updated size for imageId = %d to %dx%d in %dms", imageId, width, height, SystemClock.uptimeMillis() - ms);
               } catch (Throwable t) {
                 Log.i("Unable to update content resolver data", t);

@@ -301,6 +301,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     CharSequence description = needFullDescription ? TD.getMemberDescription(new TdlibContext(null, tdlib), memberInfo, false) : null;
     if (!StringUtils.isEmpty(description)) {
       setSubtitle(description);
+      hasOwnSubtitle = true;
       return;
     }
     if (userId != 0) {
@@ -320,6 +321,15 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     } else {
       setSubtitle(tdlib.status().chatStatus(chatId));
       setOnline(false);
+    }
+    hasOwnSubtitle = true;
+  }
+
+  public void updateTimes () {
+    // A subtitle that the wrapper made itself has times, e.g. of the last visit of the user or of
+    // a ban of the member, and one set by its owner is the owner's to change
+    if (hasOwnSubtitle) {
+      updateSubtitle();
     }
   }
 
@@ -384,6 +394,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   private CharSequence forcedSubtitle;
+  private boolean hasOwnSubtitle;
 
   public void setForcedSubtitle (CharSequence newSubtitle) {
     this.forcedSubtitle  = newSubtitle;
@@ -392,6 +403,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   public void setSubtitle (CharSequence newSubtitle) {
+    hasOwnSubtitle = false;
     if (!StringUtils.isEmpty(forcedSubtitle)) {
       newSubtitle = forcedSubtitle;
     }

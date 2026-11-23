@@ -33,6 +33,7 @@ import org.thunderdog.challegram.data.TGMessagePoll;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 
 import java.util.ArrayList;
@@ -91,12 +92,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
   @Override
   public void onBindViewHolder (MessagesHolder holder, int position) {
     switch (holder.getItemViewType()) {
-      case MessagesHolder.TYPE_EMPTY: {
+      case ListItem.TYPE_CHAT_EMPTY: {
         manager.setEmptyText((TextView) holder.itemView, items != null);
         break;
       }
-      case MessagesHolder.TYPE_SECRET_CHAT_INFO:
-      case MessagesHolder.TYPE_SECRET_CHAT_INFO_BUBBLE: {
+      case ListItem.TYPE_SECRET_CHAT_INFO:
+      case ListItem.TYPE_SECRET_CHAT_INFO_BUBBLE: {
         break;
       }
       default: {
@@ -140,7 +141,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
 
   public boolean updateLocale () {
     final int firstItemViewType = getItemViewType(0);
-    if (firstItemViewType == MessagesHolder.TYPE_EMPTY || firstItemViewType == MessagesHolder.TYPE_SECRET_CHAT_INFO) {
+    if (firstItemViewType == ListItem.TYPE_CHAT_EMPTY || firstItemViewType == ListItem.TYPE_SECRET_CHAT_INFO) {
       notifyItemChanged(0);
       return true;
     }
@@ -159,18 +160,18 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
   @Override
   public int getItemViewType (int position) {
     if (items == null || items.isEmpty() || position >= items.size() || position < 0) {
-      return items != null && manager.isSecretChat() ? (manager.useBubbles() ? MessagesHolder.TYPE_SECRET_CHAT_INFO_BUBBLE : MessagesHolder.TYPE_SECRET_CHAT_INFO) : MessagesHolder.TYPE_EMPTY;
+      return items != null && manager.isSecretChat() ? (manager.useBubbles() ? ListItem.TYPE_SECRET_CHAT_INFO_BUBBLE : ListItem.TYPE_SECRET_CHAT_INFO) : ListItem.TYPE_CHAT_EMPTY;
     } else {
       int viewType;
       TGMessage msg = items.get(position);
       if (msg.needComplexReceiver() || msg instanceof TGMessageMedia || (msg instanceof TGMessagePoll && !((TGMessagePoll) msg).isAnonymous())) {
-        viewType = /*msg.hasReply() ? MessagesHolder.TYPE_MESSAGE_COMPLEX_MEDIA_REPLY :*/ MessagesHolder.TYPE_MESSAGE_COMPLEX_MEDIA;
+        viewType = /*msg.hasReply() ? MessagesHolder.TYPE_MESSAGE_COMPLEX_MEDIA_REPLY :*/ ListItem.TYPE_MESSAGE_COMPLEX_MEDIA;
       } else {
         boolean isMedia = msg.needGifReceiver() || msg.needImageReceiver();
-        viewType = isMedia ? (/*msg.hasReply() ? MessagesHolder.TYPE_MESSAGE_MEDIA_REPLY :*/ MessagesHolder.TYPE_MESSAGE_MEDIA) : (/*msg.hasReply() ? MessagesHolder.TYPE_MESSAGE_REPLY :*/ MessagesHolder.TYPE_MESSAGE);
+        viewType = isMedia ? (/*msg.hasReply() ? MessagesHolder.TYPE_MESSAGE_MEDIA_REPLY :*/ ListItem.TYPE_MESSAGE_MEDIA) : (/*msg.hasReply() ? MessagesHolder.TYPE_MESSAGE_REPLY :*/ ListItem.TYPE_MESSAGE);
       }
       if (msg.needViewGroup()) {
-        viewType += MessagesHolder.TYPE_MESSAGE_VIEW_GROUP;
+        viewType += ListItem.TYPE_MESSAGE_VIEW_GROUP;
       }
       return viewType;
     }
@@ -433,16 +434,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
     return false;
   }
 
-  public int indexOfMessageWithUnreadSeparator () {
+  public int indexOfMessageWithUnreadSeparator (int fromIndex, int toIndex) {
     if (items == null) {
       return -1;
     }
-    int i = 0;
-    for (TGMessage item : items) {
-      if (item.hasUnreadBadge()) {
+    for (int i = Math.max(0, fromIndex); i <= toIndex && i < items.size(); i++) {
+      if (items.get(i).hasUnreadBadge()) {
         return i;
       }
-      i++;
     }
     return -1;
   }
@@ -461,8 +460,26 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
     }
   }
 
+  private boolean hasMessageContainer (long messageId) {
+    if (items == null) {
+      return false;
+    }
+    final boolean isOrderedByIds = !manager.needSort();
+    for (TGMessage item : items) {
+      if (item.isDescendantOrSelf(messageId)) {
+        return true;
+      }
+      // Sponsored messages have ids out of the order of the others, and a sorted list, e.g. of
+      // scheduled messages, is ordered by dates
+      if (isOrderedByIds && !item.isSponsoredMessage() && item.getBiggestId() < messageId) {
+        return false;
+      }
+    }
+    return false;
+  }
+
   public boolean addMessageImpl (TGMessage message, boolean top, boolean needScrollToBottom) {
-    if (manager.needRemoveDuplicates() && indexOfMessageContainer(message.getId()) != -1)
+    if (manager.needRemoveDuplicates() && hasMessageContainer(message.getId()))
       return false;
 
     if (manager.needSort() && items != null && !items.isEmpty()) {

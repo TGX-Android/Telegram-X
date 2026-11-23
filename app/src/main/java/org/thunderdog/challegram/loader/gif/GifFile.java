@@ -40,6 +40,9 @@ public class GifFile {
   public static final int TYPE_WEBM = 2;
   public static final int TYPE_TG_LOTTIE = 3;
 
+  // Telegram makes video stickers 512 on the longer side and emoji 100x100
+  public static final int MAX_VIDEO_STICKER_SIZE = 576, MAX_VIDEO_EMOJI_SIZE = 128;
+
   public static final int FIT_CENTER = 1;
   public static final int CENTER_CROP = 2;
 
@@ -49,6 +52,9 @@ public class GifFile {
   public static final int FLAG_UNIQUE = 1 << 3;
   public static final int FLAG_DECODE_LAST_FRAME = 1 << 4;
   public static final int FLAG_HIGH_PRIORITY_FOR_DECODE = 1 << 5;
+
+  private static final String KEY_PREFIX_DEBUG = "debug_";
+  private static final String KEY_PREFIX_UNIQUE_ID = "unique_";
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
@@ -75,6 +81,7 @@ public class GifFile {
   private int vibrationPattern = Emoji.VIBRATION_PATTERN_NONE;
   private int fitzpatrickType;
   private double startMediaTimestamp;
+  private int maxSourceSize;
 
   private final long creationTime;
 
@@ -97,10 +104,16 @@ public class GifFile {
 
   public GifFile (Tdlib tdlib, TdApi.Sticker sticker) {
     this(tdlib, sticker.sticker, sticker.format);
+    if (sticker.fullType.getConstructor() == TdApi.StickerFullTypeCustomEmoji.CONSTRUCTOR) {
+      this.maxSourceSize = MAX_VIDEO_EMOJI_SIZE;
+    }
   }
 
   public GifFile (Tdlib tdlib, TdApi.File file, TdApi.StickerFormat format) {
     this(tdlib, file, toFileType(format));
+    if (format.getConstructor() == TdApi.StickerFormatWebm.CONSTRUCTOR) {
+      this.maxSourceSize = MAX_VIDEO_STICKER_SIZE;
+    }
   }
 
   public GifFile (Tdlib tdlib, TdApi.File file, int type) {
@@ -136,6 +149,14 @@ public class GifFile {
 
   public double getStartMediaTimestamp () {
     return startMediaTimestamp;
+  }
+
+  public int getMaxSourceSize () {
+    return maxSourceSize;
+  }
+
+  public void setMaxSourceSize (int maxSourceSize) {
+    this.maxSourceSize = maxSourceSize;
   }
 
   public interface FrameChangeListener {
@@ -348,6 +369,32 @@ public class GifFile {
 
   public int getFileId () {
     return file.id;
+  }
+
+  private String fileKey;
+
+  public String getFileKey () {
+    if (fileKey == null) {
+      fileKey = toFileKey(tdlib, file);
+    }
+    return fileKey;
+  }
+
+  static String toFileKey (Tdlib tdlib, TdApi.File file) {
+    StringBuilder b = new StringBuilder();
+    if (tdlib != null && tdlib.account().isDebug()) {
+      b.append(KEY_PREFIX_DEBUG);
+    }
+    if (!StringUtils.isEmpty(file.remote.uniqueId)) {
+      b.append(KEY_PREFIX_UNIQUE_ID).append(file.remote.uniqueId);
+    } else {
+      b.append(accountId(tdlib)).append('_').append(file.id);
+    }
+    return b.toString();
+  }
+
+  static int accountId (Tdlib tdlib) {
+    return tdlib != null ? tdlib.accountId() : TdlibAccount.NO_ID;
   }
 
   /*public String getPersistentId () {

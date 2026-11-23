@@ -4,7 +4,6 @@ import Config
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.*
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile

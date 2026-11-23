@@ -195,13 +195,13 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
     }
 
     if (backgroundFileState != -1 && backgroundFileState != TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED) {
-      preview.setPaintAlpha(alpha + preview.getAlpha());
+      preview.setPaintAlpha(alpha);
       preview.setBounds(startX, startY, right, bottom);
       preview.draw(c);
       preview.restorePaintAlpha();
     } else if (imageFilePrimary != null) {
-      preview.setPaintAlpha(alpha + preview.getAlpha());
-      receiver.setPaintAlpha(alpha + receiver.getAlpha());
+      preview.setPaintAlpha(alpha);
+      receiver.setPaintAlpha(alpha);
       DrawAlgorithms.drawReceiver(c, preview, receiver, true, true, startX, startY, right, bottom);
       receiver.restorePaintAlpha();
       preview.restorePaintAlpha();

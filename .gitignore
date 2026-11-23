@@ -17,6 +17,8 @@ obj
 /captures
 /local.properties
 
+/tests
+
 libc++_shared.so
 *.jks
 keystore.properties

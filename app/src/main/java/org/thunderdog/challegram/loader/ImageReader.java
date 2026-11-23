@@ -34,9 +34,11 @@ import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.filegen.TdlibFileGenerationManager;
+import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.svg.SvgRender;
 import org.thunderdog.challegram.support.Mp3Support;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -49,6 +51,8 @@ import java.nio.channels.FileChannel;
 import me.vkryl.core.StringUtils;
 
 public class ImageReader {
+  private static final int MAX_WEBP_SIZE = 4096;
+
   private static ImageReader instance;
 
   public static ImageReader instance () {
@@ -140,8 +144,10 @@ public class ImageReader {
   private void readContentUri (ImageFile file, Listener listener) {
     Bitmap bitmap;
 
-    try (InputStream is = UI.getAppContext().getContentResolver().openInputStream(Uri.parse(file.getFilePath()))) {
-      bitmap = BitmapFactory.decodeStream(is);
+    try {
+      try (InputStream is = AppContext.get().getContentResolver().openInputStream(Uri.parse(file.getFilePath()))) {
+        bitmap = BitmapFactory.decodeStream(is);
+      }
     } catch (Exception e) {
       e.printStackTrace();
       bitmap = null;
@@ -276,12 +282,29 @@ public class ImageReader {
 
           BitmapFactory.Options bmOptions = new BitmapFactory.Options();
           bmOptions.inJustDecodeBounds = true;
-          N.loadWebpImage(null, buffer, buffer.limit(), bmOptions, true);
-          bitmap = Bitmap.createBitmap(bmOptions.outWidth, bmOptions.outHeight, Bitmap.Config.ARGB_8888);
+          if (!N.loadWebpImage(null, buffer, buffer.limit(), bmOptions, true)) {
+            throw new IllegalArgumentException("WebP image is too large");
+          }
+          int size = file.getSize();
+          int sampleSize = size != 0 ? calculateInSampleSize(bmOptions, size, size) : 1;
+          // A divisor of both sides, so pixels average whole blocks
+          while (sampleSize > 1 &&
+            (bmOptions.outWidth % sampleSize != 0 || bmOptions.outHeight % sampleSize != 0)) {
+            sampleSize--;
+          }
+          int maxSide = Math.max(bmOptions.outWidth, bmOptions.outHeight);
+          while ((maxSide + sampleSize - 1) / sampleSize > MAX_WEBP_SIZE) {
+            sampleSize++;
+          }
+          int width = (bmOptions.outWidth + sampleSize - 1) / sampleSize;
+          int height = (bmOptions.outHeight + sampleSize - 1) / sampleSize;
+          bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
           N.loadWebpImage(bitmap, buffer, buffer.limit(), null, !opts.inPurgeable);
         } catch (Throwable t) {
           Log.e(Log.TAG_IMAGE_LOADER, "#%s: Cannot load bitmap, config: %s", t, file.toString(), opts.inPreferredConfig.toString());
           webpDecoderFailed = true;
+          U.recycle(bitmap);
+          bitmap = null;
         }
       }
 
@@ -534,7 +557,7 @@ public class ImageReader {
       }
       if (!U.isValidBitmap(bitmap)) {
         try {
-          bitmap = MediaStore.Video.Thumbnails.getThumbnail(UI.getAppContext().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+          bitmap = MediaStore.Video.Thumbnails.getThumbnail(AppContext.get().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
         } catch (Throwable t) {
           t.printStackTrace();
         }
@@ -542,12 +565,13 @@ public class ImageReader {
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, imageId);
       try {
-        bitmap = UI.getAppContext().getContentResolver().loadThumbnail(uri, new android.util.Size(512, 512), actor.getCancellationSignal());
+        bitmap = AppContext.get().getContentResolver().loadThumbnail(uri, new android.util.Size(512, 512), actor.getCancellationSignal());
       } catch (OperationCanceledException | IOException e) {
         bitmap = null;
       }
-      if (bitmap == null)
-        bitmap = MediaStore.Images.Thumbnails.getThumbnail(UI.getAppContext().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+      if (bitmap == null) {
+        bitmap = MediaStore.Images.Thumbnails.getThumbnail(AppContext.get().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+      }
       if (bitmap == null && Config.MODERN_IMAGE_DECODER_ENABLED) {
         try {
           android.graphics.ImageDecoder.Source source = android.graphics.ImageDecoder.createSource(new File(file.getFilePath()));
@@ -584,7 +608,7 @@ public class ImageReader {
       }
     } else {
       try {
-        bitmap = MediaStore.Images.Thumbnails.getThumbnail(UI.getAppContext().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+        bitmap = MediaStore.Images.Thumbnails.getThumbnail(AppContext.get().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
       } catch (Throwable t) {
         t.printStackTrace();
         bitmap = null;
@@ -660,7 +684,8 @@ public class ImageReader {
 
   public static Bitmap decodeVideoFrame (String path, int maxSize) {
     long[] metadata = new long[N.DECODER_METADATA_ARRAY_SIZE];
-    long ptr = N.createDecoder(path, metadata, 0);
+    // Called only for video stickers
+    long ptr = N.createDecoder(path, metadata, 0, GifFile.MAX_VIDEO_STICKER_SIZE);
     if (ptr == 0)
       return null;
     int rotation = U.getVideoRotation(path);

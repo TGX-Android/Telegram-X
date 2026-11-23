@@ -6,6 +6,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.tasks.*
 import org.gradle.process.ExecOperations
+import tgx.gradle.requireDir
 import tgx.gradle.validateDir
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -13,6 +14,9 @@ import javax.inject.Inject
 
 @CacheableTask
 abstract class PatchOpusTask : DefaultTask() {
+  @get:Internal
+  abstract val msys2Dir: DirectoryProperty
+
   @get:Internal
   abstract val inputDir: DirectoryProperty
 
@@ -31,7 +35,7 @@ abstract class PatchOpusTask : DefaultTask() {
 
   @TaskAction
   fun patchOpus() {
-    val input = validateDir(inputDir.get().asFile, mustExist = true)
+    val input = requireDir(inputDir.get().asFile)
     val output = validateDir(outputDir.get().asFile)
 
     val converter = input.resolve("celt/arm/arm2gnu.pl")
@@ -82,10 +86,16 @@ abstract class PatchOpusTask : DefaultTask() {
   private fun convert(converter: File, input: File, output: File) {
     val out = ByteArrayOutputStream()
     exec.exec {
-      commandLine("perl", converter.absolutePath, input.absolutePath)
+      commandLine(
+        resolveBinary("perl", msys2Dir),
+        converter.toPosixPath(),
+        input.toPosixPath()
+      )
       standardOutput = out
     }
-    val patched = out.toString().replace(Regex("[-_]gnu\\.S", RegexOption.IGNORE_CASE), "_gnu.s")
+    val patched = out.toString()
+      .fixNewLines()
+      .replace(Regex("[-_]gnu\\.S", RegexOption.IGNORE_CASE), "_gnu.s")
     writeToFile(output) { s ->
       s.append(patched)
     }

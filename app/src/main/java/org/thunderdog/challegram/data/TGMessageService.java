@@ -495,6 +495,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageUpgradedGift.CONSTRUCTOR:
             case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
             case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+            case TdApi.MessageUpgradedGiftOnChainPurchaseOffer.CONSTRUCTOR:
             case TdApi.MessageStakeDice.CONSTRUCTOR:
             case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
             case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
@@ -510,14 +511,19 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
             case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
             case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+            case TdApi.MessageBotInvite.CONSTRUCTOR:
             case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
             case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
             case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
             case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
+            case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
+            case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
+            case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
+            case TdApi.MessageWidget.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_af730a78();
+              Td.assertMessageContent_e4738066();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
@@ -1496,7 +1502,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
       }
     });
     setDisplayMessage(msg.chatId, pollMessageId, message -> {
-      if (Td.isPoll(message.content)) {
+      if (!Td.isPoll(message.content)) {
         return false;
       }
       setTextCreator(() -> {

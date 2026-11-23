@@ -35,6 +35,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.LocationHelper;
 import org.thunderdog.challegram.service.LiveLocationService;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -97,7 +98,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
   public LiveLocationManager (TdlibManager context) {
     // this.context = context;
     this.handler = new UiHandler(this);
-    this.helper = new LocationHelper(UI.getAppContext(), this, false, true);
+    this.helper = new LocationHelper(AppContext.get(), this, false, true);
     this.isResumed = UI.getUiState() == UI.State.RESUMED;
     UI.addStateListener(this);
   }
@@ -139,8 +140,8 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
         if (msg.isOutgoing) {
           msg = messages.get(1);
         }
-        TdApi.Location l1 = myLocation != null ? myLocation : ((TdApi.MessageLocation) outputMessage.content).location;
-        TdApi.Location l2 = ((TdApi.MessageLocation) msg.content).location;
+        TdApi.Location l1 = myLocation != null ? myLocation : ((TdApi.MessageLiveLocation) outputMessage.content).location.location;
+        TdApi.Location l2 = ((TdApi.MessageLiveLocation) msg.content).location.location;
         float distance = U.distanceBetween(l1.latitude, l1.longitude, l2.latitude, l2.longitude);
         return Lang.lowercase(Lang.shortDistanceToPerson(distance));
       }
@@ -272,7 +273,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
           serviceLaunchCancellationSignal.cancel();
           serviceLaunchCancellationSignal = null;
         }
-        Intent serviceIntent = new Intent(UI.getAppContext(), LiveLocationService.class);
+        Intent serviceIntent = new Intent(AppContext.get(), LiveLocationService.class);
         if (isFull) {
           serviceLaunchCancellationSignal = new CancellationSignal();
           UI.startService(serviceIntent, true, true, serviceLaunchCancellationSignal);
@@ -283,7 +284,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
           }
           dispatchLocation(location, heading);
         } else {
-          UI.getAppContext().stopService(serviceIntent);
+          AppContext.get().stopService(serviceIntent);
           cancelLocationWorker();
           dispatchLocation(null, 0);
         }

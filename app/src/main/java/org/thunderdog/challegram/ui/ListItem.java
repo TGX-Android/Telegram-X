@@ -165,6 +165,15 @@ public class ListItem {
   public static final int TYPE_HEADER_WITH_TEXT_BUTTON = 143;
   public static final int TYPE_HEADER_WITH_CHECKBOX = 144;
 
+  public static final int TYPE_CHAT_EMPTY = 1000;
+  public static final int TYPE_MESSAGE = 1001;
+  public static final int TYPE_MESSAGE_MEDIA = 1002;
+  public static final int TYPE_MESSAGE_COMPLEX_MEDIA = 1003;
+  public static final int TYPE_MESSAGE_VIEW_GROUP = 1010;
+
+  public static final int TYPE_SECRET_CHAT_INFO = 1100;
+  public static final int TYPE_SECRET_CHAT_INFO_BUBBLE = 1101;
+
   private static final int FLAG_SELECTED = 1;
   private static final int FLAG_BOOL_VALUE = 1 << 1;
   private static final int FLAG_USE_SELECTION_INDEX = 1 << 2;

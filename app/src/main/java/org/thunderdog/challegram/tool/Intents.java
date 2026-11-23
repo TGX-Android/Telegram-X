@@ -40,6 +40,7 @@ import androidx.core.app.ActivityCompat;
 
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.CallActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
@@ -52,6 +53,7 @@ import org.thunderdog.challegram.receiver.TGShareBroadcastReceiver;
 import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.util.Permissions;
 
 import java.io.File;
@@ -79,16 +81,30 @@ public class Intents {
   public static final int ACTIVITY_RESULT_VIDEO_CAPTURE = 109;
   public static final int ACTIVITY_RESULT_MANAGE_STORAGE = 110;
 
-  private static final String PACKAGE_NAME = BuildConfig.APPLICATION_ID; // UI.getAppContext().getPackageName();
+  private static final String PACKAGE_NAME = BuildConfig.APPLICATION_ID; // AppContext.get().getPackageName();
 
   // "chat_id" -> long
   public static final String ACTION_OPEN_CHAT = PACKAGE_NAME + ".OPEN_CHAT";
 
   public static final String ACTION_OPEN_CALL = PACKAGE_NAME + ".OPEN_CALL";
+  public static final String KEY_OPEN_CHAT = "open_chat";
+  public static final String KEY_ACCOUNT_ID = "account_id";
+  public static final String KEY_CALL_ID = "call_id";
 
   public static final String ACTION_END_CALL = PACKAGE_NAME + ".END_CALL";
   public static final String ACTION_DECLINE_CALL = PACKAGE_NAME + ".DECLINE_CALL";
   public static final String ACTION_ANSWER_CALL = PACKAGE_NAME + ".ANSWER_CALL";
+  public static final String ACTION_CALL_BACK = PACKAGE_NAME + ".CALL_BACK";
+  public static final String KEY_USER_ID = "user_id";
+  private static final String KEY_CALL_BACK_TOKEN = "call_back_token";
+
+  public static final int REQUEST_CODE_CALL_SCREEN = 0;
+  public static final int REQUEST_CODE_CALL_ANSWER = 1;
+  public static final int REQUEST_CODE_CALL_FULL_SCREEN = 2;
+  public static final int REQUEST_CODE_CALL_DECLINE = 3;
+  public static final int REQUEST_CODE_CALL_END = 4;
+  public static final int REQUEST_CODE_CALL_RATING = 5;
+  public static final int REQUEST_CODE_CALL_BACK = 6;
 
   public static final String ACTION_OPEN_LOGS = PACKAGE_NAME + ".OPEN_LOGS";
   public static final String ACTION_OPEN_PLAYER = PACKAGE_NAME + ".OPEN_PLAYER";
@@ -118,7 +134,7 @@ public class Intents {
 
   @RequiresApi(Build.VERSION_CODES.O)
   public static String newSimpleChannel (String channelId, @StringRes int channelName) {
-    NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
       android.app.NotificationChannel channel = new android.app.NotificationChannel(channelId, Lang.getString(channelName), NotificationManager.IMPORTANCE_LOW);
       channel.enableVibration(false);
@@ -203,7 +219,7 @@ public class Intents {
     try {
       intent.setData(Uri.parse("https://www.example.com/"));
 
-      PackageManager packageManager = UI.getAppContext().getPackageManager();
+      PackageManager packageManager = AppContext.get().getPackageManager();
       List<ResolveInfo> activities = packageManager.queryIntentActivities(intent, 0); // PackageManager.MATCH_ALL
       List<Intent> targetIntents = new ArrayList<>();
       String[] blackList = {BuildConfig.APPLICATION_ID, "org.telegram.messenger"};
@@ -325,7 +341,7 @@ public class Intents {
   private static void revokeFileReadPermission (Uri uri) {
     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
       try {
-        UI.getAppContext().revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        AppContext.get().revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
       } catch (Throwable e) {
         Log.e("Cannot revokeUriPermission", e);
       }
@@ -387,7 +403,7 @@ public class Intents {
         intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
       }
 
-      PackageManager pm = UI.getAppContext().getPackageManager();
+      PackageManager pm = AppContext.get().getPackageManager();
 
       // Workaround for Android bug.
       // grantUriPermission also needed for KITKAT,
@@ -396,7 +412,7 @@ public class Intents {
         List<ResolveInfo> resInfoList = pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
         for (ResolveInfo resolveInfo : resInfoList) {
           String packageName = resolveInfo.activityInfo.packageName;
-          UI.getAppContext().grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+          AppContext.get().grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         }
         synchronized (Intents.class) {
           if (openedFiles == null) {
@@ -507,7 +523,7 @@ public class Intents {
       intent = new Intent();
       intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
       intent.addCategory(Intent.CATEGORY_DEFAULT);
-      intent.setData(Uri.parse("package:" + UI.getAppContext().getPackageName()));
+      intent.setData(Uri.parse("package:" + AppContext.get().getPackageName()));
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
       intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
       intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
@@ -676,15 +692,55 @@ public class Intents {
     if (allowStopped) {
       intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
     }
-    // intent.setClass(UI.getAppContext(), MainActivity.class);
+    // intent.setClass(AppContext.get(), MainActivity.class);
     return intent;
   }
 
-  public static Intent valueOfCall () {
+  public static Intent valueOfCall (int accountId, int callId) {
+    Intent intent = new Intent(UI.getContext(), CallActivity.class);
+    secureIntent(intent, false);
+    intent.setAction(Intents.ACTION_OPEN_CALL);
+    intent.putExtra(KEY_ACCOUNT_ID, accountId);
+    intent.putExtra(KEY_CALL_ID, callId);
+    return intent;
+  }
+
+  public static Intent valueOfCallInApp (boolean openChat) {
     Intent intent = new Intent(UI.getContext(), MainActivity.class);
     secureIntent(intent, false);
     intent.setAction(Intents.ACTION_OPEN_CALL);
+    intent.putExtra(KEY_OPEN_CHAT, openChat);
     return intent;
+  }
+
+  public static final String KEY_ANSWER_CALL = "answer_call";
+
+  public static Intent valueOfAnswerCall (int accountId, int callId) {
+    Intent intent = valueOfCall(accountId, callId);
+    intent.putExtra(KEY_ANSWER_CALL, true);
+    return intent;
+  }
+
+  public static Intent valueOfCallBack (int accountId, long userId) {
+    Intent intent = new Intent(UI.getContext(), MainActivity.class);
+    secureIntent(intent, false);
+    intent.setAction(ACTION_CALL_BACK + "." + accountId + "." + userId);
+    intent.putExtra(KEY_ACCOUNT_ID, accountId);
+    intent.putExtra(KEY_USER_ID, userId);
+    intent.putExtra(KEY_CALL_BACK_TOKEN, callBackToken());
+    return intent;
+  }
+
+  private static long callBackToken () {
+    return org.thunderdog.challegram.unsorted.Settings.instance().getCallBackToken();
+  }
+
+  public static boolean isCallBackTrusted (Intent intent) {
+    return intent.getLongExtra(KEY_CALL_BACK_TOKEN, 0) == callBackToken();
+  }
+
+  public static void removeCallBackToken (Intent intent) {
+    intent.removeExtra(KEY_CALL_BACK_TOKEN);
   }
 
   public static Intent valueOfPlayer (int accountId) {
