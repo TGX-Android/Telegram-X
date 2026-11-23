@@ -643,7 +643,7 @@ public class PageBlockRichText extends PageBlock {
           ImageReceiver r = iconReceiver.getImageReceiver(Integer.MAX_VALUE);
           r.setBounds(cx - avatarSize / 2, cy - avatarSize / 2, cx + avatarSize / 2, cy + avatarSize / 2);
           r.setRadius(avatarSize / 2f);
-          r.setPaintAlpha(r.getPaintAlpha() * subtitleFactor);
+          r.setPaintAlpha(subtitleFactor);
           r.draw(c);
           r.restorePaintAlpha();
         } else if (avatarPlaceholder != null) {

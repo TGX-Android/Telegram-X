@@ -1474,9 +1474,21 @@ public class CameraController extends ViewController<Void> implements CameraDele
     return m != null && m.isSecretChat();
   }
 
-  private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler, boolean isHd) {
+  private boolean onSendMedia (
+    View view,
+    ImageGalleryFile file,
+    TdApi.MessageSendOptions options,
+    boolean disableMarkdown,
+    boolean asFiles,
+    boolean showCaptionAboveMedia,
+    boolean hasSpoiler,
+    boolean isHd
+  ) {
     MessagesController m = findOutputController();
     if (m != null) {
+      if (m.showSendAsFileRestriction(view, file, asFiles)) {
+        return false;
+      }
       context.forceCloseCamera();
       return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler, isHd);
     }
@@ -1551,7 +1563,16 @@ public class CameraController extends ViewController<Void> implements CameraDele
         @Override
         public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
           ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
-          return onSendMedia(galleryFile, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler, isSendHdEnabled());
+          return onSendMedia(
+            view,
+            galleryFile,
+            options,
+            disableMarkdown,
+            asFiles,
+            showCaptionAboveMedia,
+            hasSpoiler,
+            isSendHdEnabled()
+          );
         }
       }, stack, m != null && m.areScheduledOnly()).setAvatarPickerMode(avatarPickerMode);
       if (m != null) {

@@ -20,10 +20,10 @@ import java.io.FileInputStream;
 
 public class ImageFormatDetector {
   public static String getImageFormat (String filePath) {
-    byte[] buffer = new byte[8];
+    byte[] buffer = new byte[12];
     boolean isRead = false;
     try (FileInputStream fis = new FileInputStream(filePath)) {
-      if (fis.read(buffer, 0, 8) == 8) {
+      if (fis.read(buffer, 0, buffer.length) == buffer.length) {
         isRead = true;
       }
     } catch (Throwable t) {

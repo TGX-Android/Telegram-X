@@ -115,8 +115,8 @@ public class DoubleImageReceiver implements Receiver {
 
   @Override
   public void setPaintAlpha (float alpha) {
-    preview.setPaintAlpha(alpha * preview.getPaintAlpha());
-    receiver.setPaintAlpha(alpha * receiver.getPaintAlpha());
+    preview.setPaintAlpha(alpha);
+    receiver.setPaintAlpha(alpha);
   }
 
   @Override
@@ -163,7 +163,7 @@ public class DoubleImageReceiver implements Receiver {
       draw(c);
     } else {
       preview.draw(c);
-      receiver.setPaintAlpha(receiver.getPaintAlpha() * fullAllowance);
+      receiver.setPaintAlpha(fullAllowance);
       receiver.draw(c);
       receiver.restorePaintAlpha();
     }

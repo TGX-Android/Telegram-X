@@ -19,7 +19,6 @@ add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/platform/android/AndroidInterface.cpp"
   "${TGCALLS_DIR}/tgcalls/platform/android/VideoCameraCapturer.cpp"
   "${TGCALLS_DIR}/tgcalls/platform/android/VideoCapturerInterfaceImpl.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/StreamingAudioRendererTest.cpp"
 
   "${TGCALLS_DIR}/tgcalls/Manager.cpp"
   "${TGCALLS_DIR}/tgcalls/MediaManager.cpp"
@@ -43,18 +42,14 @@ add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/VideoCaptureInterface.cpp"
   "${TGCALLS_DIR}/tgcalls/VideoCaptureInterfaceImpl.cpp"
 
-  "${TGCALLS_DIR}/tgcalls/group/AudioStreamingPart.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/AudioStreamingPartInternal.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/AudioStreamingPartPersistentDecoder.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/AVIOContextImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/group/GroupAudioCapturePostProcessor.cpp"
+  "${TGCALLS_DIR}/tgcalls/group/GroupExternalAudio.cpp"
   "${TGCALLS_DIR}/tgcalls/group/GroupFrameTransformer.cpp"
   "${TGCALLS_DIR}/tgcalls/group/GroupInstanceCustomImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/group/GroupInstanceReferenceImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/group/GroupJoinPayloadInternal.cpp"
   "${TGCALLS_DIR}/tgcalls/group/GroupNetworkManager.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/StreamingMediaContext.cpp"
-  "${TGCALLS_DIR}/tgcalls/group/VideoStreamingPart.cpp"
+  "${TGCALLS_DIR}/tgcalls/group/ScreencastSendParameters.cpp"
 
   "${TGCALLS_DIR}/tgcalls/v2/ContentNegotiation.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/DirectNetworkingImpl.cpp"
@@ -72,6 +67,7 @@ add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/v2/SignalingConnection.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/SignalingSctpConnection.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/CustomDcSctpSocket.cpp"
+  "${TGCALLS_DIR}/tgcalls/v2/VideoStatsLog.cpp"
 )
 
 target_include_directories(tgcalls PRIVATE

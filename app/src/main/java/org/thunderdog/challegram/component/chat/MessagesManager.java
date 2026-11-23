@@ -14,11 +14,14 @@
  */
 package org.thunderdog.challegram.component.chat;
 
+import android.content.res.Configuration;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
@@ -68,9 +71,11 @@ import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.ScrollJumpCompensator;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
+import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,6 +106,32 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessagesSearchManagerMiddleware searchMiddleware;
 
   private final MessagesLoader loader;
+  private final MessageResize messageResize = new MessageResize(new MessageResize.Messages() {
+    @Override
+    public int getMessageTop (TGMessage message) {
+      return MessagesManager.this.getMessageTop(message);
+    }
+
+    @Override
+    public boolean setMessageTop (TGMessage message, int top) {
+      return MessagesManager.this.setMessageTop(message, top);
+    }
+
+    @Override
+    public boolean measureResize (TGMessage message, int finalHeight, MessageResizeRules rules) {
+      return MessagesManager.this.measureResize(message, finalHeight, rules);
+    }
+
+    @Override
+    public boolean findVisiblePart (TGMessage message, int[] range) {
+      return MessagesManager.this.findVisiblePart(message, range);
+    }
+
+    @Override
+    public ViewTreeObserver getViewTreeObserver () {
+      return controller.getMessagesView().getViewTreeObserver();
+    }
+  });
 
   private String eventLogQuery;
   private long[] eventLogUserIds;
@@ -125,6 +156,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       @Override
       public void onScrollStateChanged (RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+          messageResize.setListDragged(true);
           controller.collapsePinnedMessagesBar(true);
           if (Settings.instance().needHideChatKeyboardOnScroll()) {
             controller.hideAllKeyboards();
@@ -140,6 +172,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           }
         }
         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+          messageResize.setListDragged(false);
           saveScrollPosition();
         }
         ((MessagesRecyclerView) recyclerView).setIsScrolling(newState != RecyclerView.SCROLL_STATE_IDLE);
@@ -148,8 +181,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       @Override
       public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
         viewMessages(true);
+        if (dy != 0) {
+          messageResize.onListScrolled(dy);
+        }
         if (dy == 0) {
-          saveScrollPosition();
+          saveScrollPositionOnLayout();
           ((MessagesRecyclerView) recyclerView).showDateForcely();
         }
         if (dy != 0 && !hasScrolled && loader.getChatId() != 0) {
@@ -314,7 +350,26 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public void onViewportMeasure () {
     viewMessages(false);
-    saveScrollPosition();
+    saveScrollPositionOnLayout();
+  }
+
+  private void saveScrollPositionOnLayout () {
+    // A message whose height animates requests layout on each of its frames, so the position is
+    // saved once, on the layout after its last frame
+    if (!hasAnimatingHeight()) {
+      saveScrollPosition();
+    }
+  }
+
+  private boolean hasAnimatingHeight () {
+    for (int i = 0; manager != null && i < manager.getChildCount(); i++) {
+      final MessageView messageView = MessagesHolder.findMessageView(manager.getChildAt(i));
+      final TGMessage message = messageView != null ? messageView.getMessage() : null;
+      if (message != null && message.isAnimatingHeight()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private long lastViewedMentionMessageId;
@@ -538,6 +593,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void destroy (ViewController<?> context) {
     resetScroll();
     returnToMessageIds = null;
+    returnToStates = null;
+    returnState = null;
     highlightMode = 0;
     tdlib.settings().removePinnedMessageDismissListener(this);
     highlightMessageId = null;
@@ -817,6 +874,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private void revokeReturnMessages () {
     if (hasReturnMessage()) {
       returnToMessageIds = null;
+      returnToStates = null;
       saveScrollPosition();
     }
   }
@@ -843,7 +901,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       height -= offset;
     }*/
 
-    int actualOffset = height / 2 - fullHeight / 2 + scrollMessage.findTopEdge();
+    final Settings.MessageState state = Settings.MessageState.find(returnToStates, messageId);
+    int actualOffset = state != null ? state.offsetPixels - scrollMessage.getExtraPadding() :
+      height / 2 - fullHeight / 2 + scrollMessage.findTopEdge();
 
     int scrollBy = calculateScrollBy(index, actualOffset);
 
@@ -857,6 +917,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     if (hasReturnMessage() && !force) {
+      returnState = Settings.MessageState.find(
+        returnToStates,
+        returnToMessageIds[returnToMessageIds.length - 1]
+      );
       highlightMessage(new MessageId(highlightMessageId.getChatId(), returnToMessageIds[returnToMessageIds.length - 1]),
         HIGHLIGHT_MODE_NORMAL,
         returnToMessageIds.length == 1 ? null : ArrayUtils.removeElement(returnToMessageIds, returnToMessageIds.length - 1),
@@ -939,7 +1003,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsoredMessage()) {
         controller.setScrollToBottomVisible(false, false, false);
         if (controller.canWriteMessages()) {
-          manager.scrollToPosition(1);
+          scrollToPositionImpl(1);
         } else {
           scrollToPositionWithOffsetImpl(1, getExtraScrollSpacing());
         }
@@ -1231,6 +1295,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     switch (mode) {
       case MessagesLoader.MODE_INITIAL:
       case MessagesLoader.MODE_REPEAT_INITIAL: {
+        restoreChanges(items);
         if (mode == MessagesLoader.MODE_REPEAT_INITIAL) {
           adapter.resetMessages(items);
         } else {
@@ -1269,7 +1334,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         int currentOffset = view == null ? 0 : calculateOffsetInPixels(view, 0);
         insertExtraSponsoredMessages(items, false);
         adapter.addMessages(items, false);
-        scrollToPositionWithOffsetImpl(firstIndex + items.size(), currentOffset);
+        manager.scrollToPositionWithOffset(firstIndex + items.size(), currentOffset);
         break;
       }
     }
@@ -1396,14 +1461,23 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (newIndex == -1) {
         newIndex = firstIndex;
       }
-      scrollToPositionWithOffsetImpl(newIndex, currentOffset - (message != null ? message.getExtraPadding() : 0));
+      final int extraPadding = message != null ? message.getExtraPadding() : 0;
+      manager.scrollToPositionWithOffset(newIndex, currentOffset - extraPadding);
       return true;
     }
     return false;
   }
 
   private void scrollToPositionWithOffsetImpl (int position, int offset) {
+    // Moving messages go with the list; scrolls that keep what's shown in place, as switches of
+    // blocks place their messages, call the manager itself
+    messageResize.onListScrolled();
     manager.scrollToPositionWithOffset(position, offset);
+  }
+
+  private void scrollToPositionImpl (int position) {
+    messageResize.onListScrolled();
+    manager.scrollToPosition(position);
   }
 
   private CancellationSignal sponsoredContext;
@@ -1596,6 +1670,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case TdApi.InternalLinkTypePremiumFeaturesPage.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGiftPurchase.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRequestManagedBot.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeBotInvite.CONSTRUCTOR:
       case TdApi.InternalLinkTypeSavedMessages.CONSTRUCTOR:
       case TdApi.InternalLinkTypeSearch.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
@@ -1654,7 +1729,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
 
       default:
-        Td.assertInternalLinkType_c232a5d5();
+        Td.assertInternalLinkType_166bd314();
         break;
     }
     return true;
@@ -1884,7 +1959,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void onMessageHeightChanged (final long chatId, final long messageId, final int oldHeight, final int newHeight) {
     final long playingRoundVideoId = TdlibManager.instance().player().getMessageId();
     final boolean isPlayingRoundVideo = playingRoundVideoId == messageId;
-    if (isPlayingRoundVideo) {
+    if (isPlayingRoundVideo || messageResize.isPlacing()) {
       return;
     }
 
@@ -1938,6 +2013,139 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public MessageResize messageResize () {
+    return messageResize;
+  }
+
+  int getMessageTop (TGMessage message) {
+    final View view = findMessageChild(message);
+    return view != null ? view.getTop() : Integer.MIN_VALUE;
+  }
+
+  boolean measureResize (TGMessage message, int finalHeight, MessageResizeRules rules) {
+    final View view = findMessageChild(message);
+    if (view == null) {
+      return false;
+    }
+    final ViewGroup parent = (ViewGroup) view.getParent();
+    final View lastView = findBottomView();
+    // The list moves up above bars of a reply and of files and with the keyboard
+    rules.listTop = controller.getTopOffset() - Math.round(parent.getTranslationY());
+    rules.endBottom = parent.getMeasuredHeight() - parent.getPaddingBottom();
+    rules.visibleBottom = getVisibleBottom(parent);
+    rules.top = view.getTop();
+    rules.height = MessagesHolder.findMessageView(view).getHeight();
+    rules.finalHeight = finalHeight;
+    rules.belowHeight = lastView != null ? lastView.getBottom() - view.getBottom() :
+      measureBelowHeight(manager.getPosition(view));
+    final boolean useBubbles = message.useBubbles();
+    rules.spaceAbove = useBubbles ? message.getTopContentEdge() : 0;
+    rules.spaceBelow = useBubbles ? rules.height - message.getBottomContentEdge() : 0;
+    return true;
+  }
+
+  public int getCodeBlockListHeight () {
+    // By the configuration alone, so that a block gets the same default at every layout and in
+    // every chat of the same size, whatever the keyboard and bars of the chat
+    final Configuration configuration = controller.context().getResources().getConfiguration();
+    int height = Screen.dp(configuration.screenHeightDp);
+    if (controller.isInForceTouchMode()) {
+      height -= ForceTouchView.getMatchParentTopMargin() +
+        ForceTouchView.getMatchParentBottomMargin() + Screen.dp(ForceTouchView.HEADER_HEIGHT);
+    } else {
+      height -= Size.getHeaderPortraitSize() + Screen.dp(49f);
+    }
+    return Math.max(0, height);
+  }
+
+  boolean findVisiblePart (TGMessage message, int[] range) {
+    final View view = findMessageChild(message);
+    if (view == null) {
+      return false;
+    }
+    final ViewGroup parent = (ViewGroup) view.getParent();
+    range[0] = getVisibleTop(parent) - view.getTop();
+    range[1] = getVisibleBottom(parent) - view.getTop();
+    return true;
+  }
+
+  public int getVisibleTop (ViewGroup list) {
+    return controller.getTopOffset() - Math.round(list.getTranslationY());
+  }
+
+  public int getVisibleBottom (ViewGroup list) {
+    return list.getMeasuredHeight() - list.getPaddingBottom() - controller.getBottomCover();
+  }
+
+  public void invalidateStickyElements () {
+    if (manager == null) {
+      return;
+    }
+    for (int i = 0; i < manager.getChildCount(); i++) {
+      final View view = manager.getChildAt(i);
+      final MessageView messageView = MessagesHolder.findMessageView(view);
+      final TGMessage message = messageView != null ? messageView.getMessage() : null;
+      if (message == null) {
+        continue;
+      }
+      final ViewGroup list = (ViewGroup) view.getParent();
+      final int top = StickyElements.topOf(view);
+      if (message.hasStuckStickyElements() ||
+        message.needsStickyDrawAgain(getVisibleTop(list) - top, getVisibleBottom(list) - top)) {
+        list.invalidate();
+        return;
+      }
+    }
+  }
+
+  private int measureBelowHeight (int position) {
+    // So that a message that shrinks above them knows where the end of the list stops it
+    if (loader.canLoadBottom()) {
+      return -1;
+    }
+    final int width = getRecyclerWidth();
+    int height = 0;
+    for (int i = 0; i < position; i++) {
+      final TGMessage message = adapter.getMessage(i);
+      if (message == null || message.getWidth() != width) {
+        return -1;
+      }
+      height += message.getHeight();
+    }
+    return height;
+  }
+
+  boolean setMessageTop (TGMessage message, int top) {
+    // Offset in the reversed list is of the bottom of the message, at its height on this frame,
+    // and its position is in the adapter, which a message added since the last layout has moved
+    final View view = findMessageChild(message);
+    if (view != null) {
+      final RecyclerView parent = (RecyclerView) view.getParent();
+      final int position = parent.getChildAdapterPosition(view);
+      if (position != RecyclerView.NO_POSITION) {
+        final int listBottom = parent.getMeasuredHeight() - parent.getPaddingBottom();
+        final int offset = listBottom - top - message.getHeight();
+        manager.scrollToPositionWithOffset(position, offset);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private @Nullable View findMessageChild (TGMessage message) {
+    if (manager == null) {
+      return null;
+    }
+    for (int i = 0; i < manager.getChildCount(); i++) {
+      final View view = manager.getChildAt(i);
+      final MessageView messageView = MessagesHolder.findMessageView(view);
+      if (messageView != null && messageView.getMessage() == message) {
+        return view;
+      }
+    }
+    return null;
+  }
+
   private void scrollCompensation (View view, int offset) {
     ScrollJumpCompensator listener = new ScrollJumpCompensator(controller.getMessagesView(), view, offset);
     listener.add();
@@ -1950,6 +2158,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     recyclerView.removeOnScrollListener(listener);
     recyclerView.addOnScrollListener(listener);
     recyclerView.setAdapter(adapter);
+    messageResize.setList(recyclerView);
   }
 
   public boolean isSecretChat () {
@@ -2010,7 +2219,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (!adapter.addMessage(message, false, scrollToBottom)) {
           if (message.isSponsoredMessage() && bottomFullyVisible) {
             if (controller.canWriteMessages()) {
-              manager.scrollToPosition(1);
+              scrollToPositionImpl(1);
             } else {
               scrollToPositionWithOffsetImpl(1, getExtraScrollSpacing());
             }
@@ -2084,6 +2293,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (index >= 0) {
         this.returnToMessageIds[index] = newMessageId;
         Arrays.sort(this.returnToMessageIds);
+        for (int i = 0; returnToStates != null && i < returnToStates.length; i++) {
+          if (returnToStates[i].messageId == oldMessageId) {
+            returnToStates[i] = returnToStates[i].withMessageId(newMessageId);
+          }
+        }
         saveScrollPosition();
       }
     }
@@ -2567,11 +2781,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
         Log.i(Log.TAG_MESSAGES_LOADER, "MessagesManager isFocused -> %b", isFocused);
       }
-      this.isFocused = isFocused;
       if (isFocused) {
+        this.isFocused = true;
         onFocus();
       } else {
+        // The position is saved while the chat is still focused
         onBlur();
+        this.isFocused = false;
       }
     }
   }
@@ -2716,15 +2932,100 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         new MessageId(scrollMessageChatId, scrollMessageId, scrollMessageOtherIds),
         scrollOffsetInPixels,
         returnToMessageIds,
-        readFully, topEndMessageId
+        readFully, topEndMessageId,
+        findVisibleStates(),
+        returnToStates
       );
       Settings.instance().setScrollMessageId(accountId,
         chatId, topicId,
         savedMessageId
       );
+      if (Config.ENABLE_TEST_HOOKS) {
+        // Builds of tests: checks count the saves while a message changes its height
+        android.util.Log.i("ScrollPosition", "saved " + chatId);
+      }
 
       if (pinnedMessages != null && chatId == scrollMessageChatId) {
         pinnedMessages.ensureMessageAvailability(scrollMessageId);
+      }
+    }
+  }
+
+  private @Nullable Settings.MessageState[] findVisibleStates () {
+    // Of messages on the screen, so that the chat opens with them as they are, e.g. at the same
+    // height when a code block wraps its lines
+    final int first = manager.findFirstVisibleItemPosition();
+    final int last = manager.findLastVisibleItemPosition();
+    ArrayList<Settings.MessageState> states = null;
+    for (int i = first; first != RecyclerView.NO_POSITION && i <= last; i++) {
+      final TGMessage message = adapter.getMessage(i);
+      final Settings.MessageState state =
+        message != null ? findState(message, message.getId(), 0, false) : null;
+      if (state != null) {
+        if (states == null) {
+          states = new ArrayList<>();
+        }
+        states.add(state);
+      }
+    }
+    return states != null ? states.toArray(new Settings.MessageState[0]) : null;
+  }
+
+  private @Nullable Settings.MessageState findState (
+    TGMessage message,
+    long messageId,
+    int offsetPixels,
+    boolean hasPosition
+  ) {
+    // States that a user left, or null without them unless the position is kept
+    final int[] blocks = message.getSwitchedBlocks();
+    final int[] resize = messageResize.getKeptChange(message);
+    if (blocks == null && resize == null && !hasPosition) {
+      return null;
+    }
+    return new Settings.MessageState(
+      messageId,
+      message.isDescendantOrSelf(messageId) ? message.getEditDate() : 0,
+      offsetPixels,
+      blocks,
+      resize
+    );
+  }
+
+  @AnyThread
+  @Nullable Settings.MessageState[] findKeptStates () {
+    // Kept with the position of the chat, for the messages that it loads first
+    final Settings.SavedMessageId saved = isEventLog() ? null : Settings.instance()
+      .getScrollMessageId(tdlib.id(), loader.getChatId(), loader.getMessageTopicId());
+    return saved != null ? saved.states : null;
+  }
+
+  @AnyThread
+  @Nullable Settings.MessageState findKeptState (
+    TGMessage message,
+    @Nullable Settings.MessageState[] states
+  ) {
+    // A message of a basic group of the history of a supergroup may have the same id
+    if (message.getChatId() != loader.getChatId()) {
+      return null;
+    }
+    final Settings.MessageState returnState = this.returnState;
+    Settings.MessageState state = Settings.MessageState.find(states, message.getId());
+    if (returnState != null && message.isDescendantOrSelf(returnState.messageId)) {
+      state = returnState;
+    }
+    // The newest edit of an album, whose caption may be on another message than this id
+    return state != null && message.isDescendantOrSelf(state.messageId) &&
+      message.getEditDate() == state.editDate ? state : null;
+  }
+
+  private void restoreChanges (List<TGMessage> items) {
+    // Blocks are restored by the loader before the layout of the messages
+    final Settings.MessageState[] states = findKeptStates();
+    for (TGMessage message : items) {
+      final Settings.MessageState state = findKeptState(message, states);
+      if (state != null && state.resize != null) {
+        messageResize.restoreChange(message, state.resize);
       }
     }
   }
@@ -3127,6 +3428,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void scrollToMessage (int index, TGMessage scrollMessage, int highlightMode, boolean smooth, boolean blocking) {
+    final Settings.MessageState returnState = this.returnState;
+    this.returnState = null;
+    if (returnState != null && highlightMode == HIGHLIGHT_MODE_NORMAL &&
+      scrollMessage.isDescendantOrSelf(returnState.messageId)) {
+      final int offset = returnState.offsetPixels - scrollMessage.getExtraPadding();
+      scrollToPositionWithOffset(index, offset, smooth);
+      return;
+    }
     if (highlightMode == HIGHLIGHT_MODE_START) {
       scrollToPositionWithOffset(index, 0, false);
       return;
@@ -3136,6 +3445,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageTopicId());
       int offset = messageId != null ? messageId.offsetPixels - scrollMessage.getExtraPadding() : 0;
       this.returnToMessageIds = messageId != null ? messageId.returnToMessageIds : null;
+      this.returnToStates =
+        messageId != null && Config.RETURN_TO_MESSAGE_STATE ? messageId.returnToStates : null;
       scrollToPositionWithOffset(index, offset, false);
       checkScrollToBottomButton();
       return;
@@ -3199,12 +3510,59 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }*/
 
   private long[] returnToMessageIds;
+  // Of messages to return to, with their positions, and of the one that a return goes to until
+  // the list is scrolled to it
+  private @Nullable Settings.MessageState[] returnToStates;
+  private volatile @Nullable Settings.MessageState returnState;
 
   public long[] extendReturnToMessageIdStack (MessageId addMessageId) {
+    final long[] stack;
     if (!hasReturnMessage() || !highlightMessageId.compareTo(addMessageId)) {
-      return new long[] {addMessageId.getMessageId()};
+      stack = new long[] {addMessageId.getMessageId()};
+    } else {
+      stack = ArrayUtils.addElement(returnToMessageIds, addMessageId.getMessageId());
     }
-    return ArrayUtils.addElement(returnToMessageIds, addMessageId.getMessageId());
+    if (Config.RETURN_TO_MESSAGE_STATE) {
+      returnToStates = withReturnState(stack, addMessageId.getMessageId());
+    }
+    return stack;
+  }
+
+  private @Nullable Settings.MessageState[] withReturnState (long[] stack, long messageId) {
+    // The message that a link is followed from as it's on the screen now
+    final ArrayList<Settings.MessageState> states = new ArrayList<>();
+    final Settings.MessageState[] kept = retainStates(returnToStates, stack);
+    if (kept != null) {
+      for (Settings.MessageState state : kept) {
+        if (state.messageId != messageId) {
+          states.add(state);
+        }
+      }
+    }
+    final int index = adapter.indexOfMessageContainer(messageId);
+    final TGMessage message = adapter.getMessage(index);
+    final View view = index != -1 ? manager.findViewByPosition(index) : null;
+    if (message != null && view != null && view.getParent() != null) {
+      final int offset = calculateOffsetInPixels(view, message.getExtraPadding());
+      states.add(findState(message, messageId, offset, true));
+    }
+    return states.isEmpty() ? null : states.toArray(new Settings.MessageState[0]);
+  }
+
+  private static @Nullable Settings.MessageState[] retainStates (
+    @Nullable Settings.MessageState[] states,
+    @Nullable long[] messageIds
+  ) {
+    if (states == null || messageIds == null) {
+      return null;
+    }
+    final ArrayList<Settings.MessageState> kept = new ArrayList<>(states.length);
+    for (Settings.MessageState state : states) {
+      if (ArrayUtils.indexOf(messageIds, state.messageId) != -1) {
+        kept.add(state);
+      }
+    }
+    return kept.isEmpty() ? null : kept.toArray(new Settings.MessageState[0]);
   }
 
   public void highlightMessage (MessageId messageId, int highlightMode, long[] returnToMessageIds, boolean allowSmooth) {
@@ -3216,6 +3574,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     this.highlightMode = highlightMode;
     if (!Arrays.equals(this.returnToMessageIds, returnToMessageIds)) {
       this.returnToMessageIds = returnToMessageIds;
+      this.returnToStates = retainStates(returnToStates, returnToMessageIds);
       saveScrollPosition();
       checkScrollToBottomButton();
     }

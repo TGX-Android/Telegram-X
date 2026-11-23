@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.telegram;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -31,6 +32,11 @@ import android.text.TextPaint;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.app.Person;
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.graphics.drawable.IconCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
@@ -53,9 +59,15 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance;
 import org.thunderdog.challegram.util.DeviceTokenType;
 import org.thunderdog.challegram.util.text.Letters;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.StringUtils;
 import tgx.bridge.DeviceTokenRetriever;
@@ -324,6 +336,239 @@ public class TdlibNotificationUtils {
 
   static Intent newCoreIntent (int accountId, long forLocalChatId, long specificMessageId) {
     return forLocalChatId != 0 ? Intents.valueOfLocalChatId(accountId, forLocalChatId, specificMessageId) : Intents.valueOfMain(accountId);
+  }
+
+  private static final String KEY_PREFIX_SHORTCUT = "tgx_ns_";
+  private static final String KEY_PREFIX_CUSTOM_SHORTCUT = "tgx_nsc_";
+
+  private static String makeShortcutIdPrefix (int accountId, boolean isCustom) {
+    return (isCustom ? KEY_PREFIX_CUSTOM_SHORTCUT : KEY_PREFIX_SHORTCUT) + accountId + "_";
+  }
+
+  private static String makeShortcutId (int accountId, long localChatId, boolean isCustom) {
+    return makeShortcutIdPrefix(accountId, isCustom) + localChatId;
+  }
+
+  @Nullable
+  static String findChatShortcutId (Tdlib tdlib, long chatId) {
+    long localChatId = tdlib.settings().findLocalChatId(chatId);
+    return localChatId != 0 ? makeShortcutId(tdlib.id(), localChatId, false) : null;
+  }
+
+  static String makeCustomShortcutId (Tdlib tdlib, long chatId) {
+    return makeShortcutId(tdlib.id(), tdlib.settings().getLocalChatId(chatId), true);
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  static ShortcutInfoCompat newChatShortcut (
+    Context context,
+    int accountId,
+    String shortcutId,
+    CharSequence title,
+    long localChatId,
+    long messageId,
+    @Nullable Bitmap icon
+  ) {
+    IconCompat chatIcon = U.isValidBitmap(icon) ? IconCompat.createWithBitmap(icon) : null;
+    Person person = new Person.Builder()
+      .setName(title)
+      .setIcon(chatIcon)
+      .setKey(shortcutId)
+      .build();
+    return new ShortcutInfoCompat.Builder(context, shortcutId)
+      .setPerson(person)
+      .setIsConversation()
+      .setLongLived(true)
+      .setShortLabel(title)
+      .setIntent(newCoreIntent(accountId, localChatId, messageId))
+      .setIcon(chatIcon)
+      .build();
+  }
+
+  private static final AtomicBoolean loggedShortcutRefusal = new AtomicBoolean();
+
+  static boolean pushShortcut (Context context, ShortcutInfoCompat shortcut) {
+    try {
+      ShortcutManagerCompat.pushDynamicShortcut(context, shortcut);
+      return true;
+    } catch (Throwable t) {
+      if (loggedShortcutRefusal.compareAndSet(false, true)) {
+        Log.e("Unable to push the shortcut of a notification", t);
+      }
+      return false;
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  private static List<android.content.pm.ShortcutInfo> findShortcuts (Context context, int flags) {
+    android.content.pm.ShortcutManager manager =
+      context.getSystemService(android.content.pm.ShortcutManager.class);
+    try {
+      return manager.getShortcuts(flags);
+    } catch (IllegalStateException e) {
+      return Collections.emptyList();
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  private static List<android.content.pm.ShortcutInfo> findShortcuts (Context context) {
+    return findShortcuts(context, android.content.pm.ShortcutManager.FLAG_MATCH_DYNAMIC |
+      android.content.pm.ShortcutManager.FLAG_MATCH_CACHED);
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  @Nullable
+  private static android.content.pm.ShortcutInfo findShortcut (Context context, String id) {
+    for (android.content.pm.ShortcutInfo shortcut : findShortcuts(context)) {
+      if (id.equals(shortcut.getId())) {
+        return shortcut;
+      }
+    }
+    return null;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  static boolean hasPlaceForShortcut (Context context, String shortcutId, int keptPlaces) {
+    // Over the limit a push removes the oldest dynamic shortcut, an uncached one with its channels
+    int dynamicCount = 0;
+    for (android.content.pm.ShortcutInfo shortcut : findShortcuts(context)) {
+      if (shortcut.isDynamic()) {
+        if (shortcutId.equals(shortcut.getId())) {
+          return true;
+        }
+        dynamicCount++;
+      }
+    }
+    return dynamicCount + 1 + keptPlaces <=
+      ShortcutManagerCompat.getMaxShortcutCountPerActivity(context);
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  static boolean isCachedShortcut (Context context, String shortcutId) {
+    android.content.pm.ShortcutInfo shortcut = findShortcut(context, shortcutId);
+    return shortcut != null && shortcut.isCached();
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  static boolean canPost (Context context, @Nullable String channelId, String shortcutId) {
+    // The system caches the shortcut only of a post that it doesn't refuse
+    if (channelId == null || !NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+      return false;
+    }
+    NotificationManager m =
+      (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+    android.app.NotificationChannel channel = m.getNotificationChannel(channelId, shortcutId);
+    if (channel == null || channel.getImportance() == NotificationManager.IMPORTANCE_NONE) {
+      return false;
+    }
+    android.app.NotificationChannelGroup group =
+      channel.getGroup() != null ? m.getNotificationChannelGroup(channel.getGroup()) : null;
+    return group == null || !group.isBlocked();
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  static void pushCustomShortcut (Tdlib tdlib, TdApi.Chat chat) {
+    // The system's settings name a conversation by its shortcut, else only after a notification
+    Context context = AppContext.get();
+    String shortcutId = makeCustomShortcutId(tdlib, chat.id);
+    if (findShortcut(context, shortcutId) != null ||
+      !hasPlaceForShortcut(context, shortcutId, 1)) {
+      return;
+    }
+    pushShortcut(context, newChatShortcut(
+      context,
+      tdlib.id(),
+      shortcutId,
+      tdlib.chatTitle(chat),
+      tdlib.settings().getLocalChatId(chat.id),
+      0,
+      buildLargeIcon(tdlib, chat, false)
+    ));
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  static void removeCustomShortcut (Tdlib tdlib, long chatId) {
+    // Launchers list it while it's dynamic
+    long localChatId = tdlib.settings().findLocalChatId(chatId);
+    if (localChatId != 0) {
+      removeShortcuts(Collections.singletonList(makeShortcutId(tdlib.id(), localChatId, true)));
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  static void removeAccountShortcuts (Tdlib tdlib, boolean isLogOut) {
+    // Local ids of chats restart after a log out, so they would open other chats
+    String prefix = makeShortcutIdPrefix(tdlib.id(), false);
+    String customPrefix = makeShortcutIdPrefix(tdlib.id(), true);
+    List<String> shortcutIds = new ArrayList<>();
+    List<String> pinnedIds = new ArrayList<>();
+    for (android.content.pm.ShortcutInfo shortcut : findShortcuts(AppContext.get(),
+      android.content.pm.ShortcutManager.FLAG_MATCH_DYNAMIC |
+        android.content.pm.ShortcutManager.FLAG_MATCH_CACHED |
+        android.content.pm.ShortcutManager.FLAG_MATCH_PINNED)) {
+      String shortcutId = shortcut.getId();
+      if (!shortcutId.startsWith(prefix) && !shortcutId.startsWith(customPrefix)) {
+        continue;
+      }
+      if (shortcut.isDynamic() || shortcut.isCached()) {
+        shortcutIds.add(shortcutId);
+      }
+      if (shortcut.isPinned()) {
+        pinnedIds.add(shortcutId);
+      }
+    }
+    if (!shortcutIds.isEmpty()) {
+      removeShortcuts(shortcutIds);
+    }
+    if (isLogOut && !pinnedIds.isEmpty()) {
+      android.content.pm.ShortcutManager manager =
+        AppContext.get().getSystemService(android.content.pm.ShortcutManager.class);
+      try {
+        manager.disableShortcuts(pinnedIds);
+      } catch (IllegalStateException e) {
+        Log.e("Unable to disable pinned shortcuts of conversations", e);
+      }
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  private static void removeShortcuts (List<String> shortcutIds) {
+    android.content.pm.ShortcutManager manager =
+      AppContext.get().getSystemService(android.content.pm.ShortcutManager.class);
+    try {
+      manager.removeLongLivedShortcuts(shortcutIds);
+    } catch (IllegalStateException e) {
+      Log.e("Unable to remove shortcuts of conversations", e);
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  static String findShortcutId (int accountId, long localChatId, @Nullable String channelId) {
+    if (TdlibNotificationChannelGroup.isCustomChannelId(channelId)) {
+      String customShortcutId = makeShortcutId(accountId, localChatId, true);
+      NotificationManager m =
+        (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+      android.app.NotificationChannel channel =
+        m != null ? m.getNotificationChannel(channelId) : null;
+      if (channel != null && customShortcutId.equals(channel.getConversationId())) {
+        return customShortcutId;
+      }
+    }
+    return makeShortcutId(accountId, localChatId, false);
+  }
+
+  public static long findShortcutChatId (Tdlib tdlib, @Nullable String shortcutId) {
+    long chatId = findShortcutChatId(tdlib, shortcutId, false);
+    return chatId != 0 ? chatId : findShortcutChatId(tdlib, shortcutId, true);
+  }
+
+  static long findShortcutChatId (Tdlib tdlib, @Nullable String shortcutId, boolean isCustom) {
+    String prefix = makeShortcutIdPrefix(tdlib.id(), isCustom);
+    if (shortcutId == null || !shortcutId.startsWith(prefix)) {
+      return 0;
+    }
+    long localChatId = StringUtils.parseLong(shortcutId.substring(prefix.length()));
+    return localChatId != 0 ? tdlib.settings().getRemoteChatId(localChatId) : 0;
   }
 
   public static class NotificationInitializationFailedError extends RuntimeException {

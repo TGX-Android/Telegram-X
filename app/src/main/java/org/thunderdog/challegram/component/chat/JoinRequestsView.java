@@ -246,7 +246,7 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
       }
 
       if (alpha != 1f)
-        receiver.setPaintAlpha(receiver.getPaintAlpha() * alpha);
+        receiver.setPaintAlpha(alpha);
       receiver.setBounds((int) (cx - radius), (int) (cy - radius), (int) (cx + radius), (int) (cy + radius));
 
       receiver.drawPlaceholderRounded(c, radius, Screen.dp(AVATAR_OUTLINE) * alpha * .5f, clearPaint);

@@ -19,6 +19,10 @@
 #ifndef NO_WEBP
 #include <webp/decode.h>
 #endif
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#define USE_NEON_WEBP_AVERAGING
+#endif
 
 #include "utils.h"
 #include "image.h"
@@ -453,6 +457,82 @@ JNIEXPORT jboolean Java_org_thunderdog_challegram_N_hasBuiltInWebpSupport (JNIEn
 }
 
 #define USE_CUSTOM_WEBP_DECODING
+// libwebp decodes lossless images and alpha whole, whatever the size of the bitmap
+#define MAX_WHOLE_WEBP_PIXELS (4096 * 4096)
+
+#if !defined(NO_WEBP) && defined(USE_CUSTOM_WEBP_DECODING)
+// Lossy images are scaled by libwebp from this reduction, lossless ones always averaged
+#define MIN_WEBP_SCALING_REDUCTION 4
+// Up to this side the 32-bit fixed-point average is exact
+#define MAX_WEBP_BLOCK_SIDE 16
+
+static int averageWebpBlocks (const uint8_t *src, int srcWidth, uint8_t *dst,
+                              int dstWidth, int dstHeight, int dstStride, int scaleX, int scaleY) {
+  size_t rowLength = (size_t) srcWidth * 4;
+  uint16_t *sums = malloc(rowLength * sizeof(uint16_t));
+  if (!sums) {
+    return 0;
+  }
+  uint32_t count = (uint32_t) (scaleX * scaleY);
+  uint32_t scale = ((1u << 24) + count - 1) / count;
+  for (int y = 0; y < dstHeight; y++) {
+    const uint8_t *row = src + (size_t) y * scaleY * rowLength;
+    uint8_t *out = dst + (size_t) y * dstStride;
+    int x = 0;
+#ifdef USE_NEON_WEBP_AVERAGING
+    if (scaleX == 2 && scaleY == 2) {
+      // Two pixels of the bitmap from four pixels of each of the two rows
+      const uint8_t *next = row + rowLength;
+      for (; x + 2 <= dstWidth; x += 2) {
+        uint8x16_t a = vld1q_u8(row + x * 8);
+        uint8x16_t b = vld1q_u8(next + x * 8);
+        uint16x8_t first = vaddl_u8(vget_low_u8(a), vget_low_u8(b));
+        uint16x8_t second = vaddl_u8(vget_high_u8(a), vget_high_u8(b));
+        uint16x4_t left = vadd_u16(vget_low_u16(first), vget_high_u16(first));
+        uint16x4_t right = vadd_u16(vget_low_u16(second), vget_high_u16(second));
+        vst1_u8(out + x * 4, vrshrn_n_u16(vcombine_u16(left, right), 2));
+      }
+      if (x == dstWidth) {
+        continue;
+      }
+    }
+#endif
+    size_t from = (size_t) x * scaleX * 4;
+    for (size_t i = from; i < rowLength; i++) {
+      sums[i] = row[i];
+    }
+    for (int r = 1; r < scaleY; r++) {
+      const uint8_t *next = row + (size_t) r * rowLength;
+      for (size_t i = from; i < rowLength; i++) {
+        sums[i] += next[i];
+      }
+    }
+    for (; x < dstWidth; x++) {
+      const uint16_t *sum = sums + (size_t) x * scaleX * 4;
+#ifdef USE_NEON_WEBP_AVERAGING
+      uint32x4_t total = vmovl_u16(vld1_u16(sum));
+      for (int column = 1; column < scaleX; column++) {
+        total = vaddw_u16(total, vld1_u16(sum + column * 4));
+      }
+      uint16x4_t value = vmovn_u32(vrshrq_n_u32(vmulq_n_u32(total, scale), 24));
+      uint8x8_t pixel = vqmovn_u16(vcombine_u16(value, value));
+      vst1_lane_u32((uint32_t *) (out + x * 4), vreinterpret_u32_u8(pixel), 0);
+#else
+      for (int channel = 0; channel < 4; channel++) {
+        uint32_t total = 0;
+        for (int column = 0; column < scaleX; column++) {
+          total += sum[column * 4 + channel];
+        }
+        uint32_t value = (total * scale + (1u << 23)) >> 24;
+        out[x * 4 + channel] = (uint8_t) (value > 255 ? 255 : value);
+      }
+#endif
+    }
+  }
+  free(sums);
+  return 1;
+}
+#endif
 
 JNIEXPORT jboolean Java_org_thunderdog_challegram_N_loadWebpImage (JNIEnv *env, jclass class, jobject outputBitmap, jobject buffer, jint len, jobject options, jboolean unpin) {
 #ifdef NO_WEBP
@@ -475,7 +555,6 @@ JNIEXPORT jboolean Java_org_thunderdog_challegram_N_loadWebpImage (JNIEnv *env, 
 
     int count = snprintf(NULL, 0, fmt, code);
     char buffer[count + 1];
-    buffer[count + 1] = '\0';
     snprintf(buffer, count + 1, fmt, code);
 
     (*env)->ThrowNew(env, jclass_RuntimeException, buffer);
@@ -485,11 +564,18 @@ JNIEXPORT jboolean Java_org_thunderdog_challegram_N_loadWebpImage (JNIEnv *env, 
 
   int bitmapWidth = features.width;
   int bitmapHeight = features.height;
+  int tooLarge = (features.format != 1 || features.has_alpha) &&
+                 (uint64_t) bitmapWidth * (uint64_t) bitmapHeight > MAX_WHOLE_WEBP_PIXELS;
 
   if (options && (*env)->GetBooleanField(env, options, jclass_Options_inJustDecodeBounds) == JNI_TRUE) {
     (*env)->SetIntField(env, options, jclass_Options_outWidth, bitmapWidth);
     (*env)->SetIntField(env, options, jclass_Options_outHeight, bitmapHeight);
-    return 1;
+    return !tooLarge;
+  }
+
+  if (tooLarge) {
+    (*env)->ThrowNew(env, jclass_RuntimeException, "WebP image is too large");
+    return 0;
   }
 
   if (!outputBitmap) {
@@ -526,9 +612,42 @@ JNIEXPORT jboolean Java_org_thunderdog_challegram_N_loadWebpImage (JNIEnv *env, 
 
   config.options.no_fancy_upsampling = 1;
   config.options.bypass_filtering = 1;
+  uint8_t *whole = NULL;
+  int width = (int) bitmapInfo.width;
+  int height = (int) bitmapInfo.height;
+  int scaleX = 1, scaleY = 1;
+  if (width != bitmapWidth || height != bitmapHeight) {
+    scaleX = bitmapWidth / width;
+    scaleY = bitmapHeight / height;
+    int averaged = scaleX * width == bitmapWidth && scaleY * height == bitmapHeight &&
+                   scaleX <= MAX_WEBP_BLOCK_SIDE && scaleY <= MAX_WEBP_BLOCK_SIDE &&
+                   (uint64_t) bitmapWidth * (uint64_t) bitmapHeight <= MAX_WHOLE_WEBP_PIXELS &&
+                   (features.format != 1 ||
+                    (scaleX < MIN_WEBP_SCALING_REDUCTION && scaleY < MIN_WEBP_SCALING_REDUCTION));
+    if (averaged) {
+      whole = malloc((size_t) bitmapWidth * bitmapHeight * 4);
+      if (!whole) {
+        AndroidBitmap_unlockPixels(env, outputBitmap);
+        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to allocate webp image");
+        return 0;
+      }
+      config.output.u.RGBA.rgba = whole;
+      config.output.u.RGBA.stride = bitmapWidth * 4;
+      config.output.u.RGBA.size = (size_t) bitmapWidth * bitmapHeight * 4;
+    } else {
+      config.options.use_scaling = 1;
+      config.options.scaled_width = width;
+      config.options.scaled_height = height;
+    }
+  }
   // config.options.use_threads = 1;
 
-  if (WebPDecode(data, data_size, &config) != VP8_STATUS_OK) {
+  int decoded = WebPDecode(data, data_size, &config) == VP8_STATUS_OK;
+  if (decoded && whole) {
+    decoded = averageWebpBlocks(whole, bitmapWidth, rgba, width, height, stride, scaleX, scaleY);
+  }
+  free(whole);
+  if (!decoded) {
     AndroidBitmap_unlockPixels(env, outputBitmap);
     (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to decode webp image");
     return 0;

@@ -309,7 +309,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     if (isImage()) {
       ImageReceiver image = receiver.getImageReceiver(displayMediaKey);
       image.setBounds(left, top, right, bottom);
-      image.setPaintAlpha(image.getPaintAlpha() * alpha);
+      image.setPaintAlpha(alpha);
       content = image;
     } else if (isAnimated()) {
       GifReceiver gif = receiver.getGifReceiver(displayMediaKey);

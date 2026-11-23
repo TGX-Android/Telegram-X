@@ -26,3 +26,24 @@ unread: #FFEBEE
 waveformInactive: #FFCDD2
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #E5393533
 bubbleOut_fillingActive: #D340401A
+codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
+bubbleOut_codeBlockBackground: #8F090B12
+bubbleOut_codeBlockLine: #AB2825
+codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
+bubbleOut_codeBlockRipple: #8F090B24
+syntaxComment, syntaxBlockComment, syntaxProlog, syntaxDoctype, syntaxCdata: #67707A
+syntaxPunctuation: #7A8189
+syntaxOperator: #445A72
+syntaxKeyword, syntaxBoolean, syntaxAtrule: #1B55A5
+syntaxNumber: #972E22
+syntaxString, syntaxChar, syntaxAttrValue: #1E6A27
+syntaxFunction: #66409A
+syntaxClassName: #006A6B
+syntaxConstant, syntaxProperty, syntaxSymbol: #883071
+syntaxAnnotation: #6F5400
+syntaxTag, syntaxSelector: #004F7B
+syntaxAttrName, syntaxEntity: #854600
+syntaxBuiltin: #005F4D
+syntaxUrl: #025C93
+syntaxInserted: #1E6A27
+syntaxDeleted: #972C2C

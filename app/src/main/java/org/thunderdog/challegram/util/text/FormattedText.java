@@ -148,12 +148,47 @@ public class FormattedText {
       }
       return new FormattedText(text, entities);
     }
-    List<TextEntity> newEntities = new ArrayList<>();
-    Collections.addAll(newEntities, entities);
-    for (Highlight.Part part : highlight.parts) {
-      addHighlight(newEntities, part, highlight.getColorSet());
+    if (!isInOrder(entities, highlight.parts)) {
+      List<TextEntity> newEntities = new ArrayList<>();
+      Collections.addAll(newEntities, entities);
+      for (Highlight.Part part : highlight.parts) {
+        addHighlight(newEntities, part, highlight.getColorSet());
+      }
+      return new FormattedText(text, newEntities.toArray(new TextEntity[0]));
     }
-    return new FormattedText(text, newEntities.toArray(new TextEntity[0]));
+    // Parts and entities go by the text, so entities that end before a part stay as they are
+    final List<TextEntity> result = new ArrayList<>(entities.length + highlight.parts.size());
+    final List<TextEntity> window = new ArrayList<>();
+    int next = 0;
+    for (Highlight.Part part : highlight.parts) {
+      while (next < entities.length && entities[next].start <= part.end) {
+        window.add(entities[next++]);
+      }
+      int passed = 0;
+      while (passed < window.size() && window.get(passed).end < part.start) {
+        passed++;
+      }
+      result.addAll(window.subList(0, passed));
+      window.subList(0, passed).clear();
+      addHighlight(window, part, highlight.getColorSet());
+    }
+    result.addAll(window);
+    result.addAll(Arrays.asList(entities).subList(next, entities.length));
+    return new FormattedText(text, result.toArray(new TextEntity[0]));
+  }
+
+  private static boolean isInOrder (TextEntity[] entities, List<Highlight.Part> parts) {
+    for (int i = 1; i < entities.length; i++) {
+      if (entities[i].start < entities[i - 1].start) {
+        return false;
+      }
+    }
+    for (int i = 1; i < parts.size(); i++) {
+      if (parts.get(i).start < parts.get(i - 1).end) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private void addHighlight (List<TextEntity> out, Highlight.Part part, @NonNull TextColorSet highlightColorSet) {

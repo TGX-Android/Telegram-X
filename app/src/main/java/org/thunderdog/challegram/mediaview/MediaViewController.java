@@ -1609,7 +1609,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private boolean canGoPip () {
     MediaItem current = stack.getCurrent();
-    return current != null && current.isVideo() && !current.isGifType();
+    return (mode == MODE_MESSAGES || mode == MODE_SIMPLE) &&
+      current != null && current.isVideo() && !current.isGifType();
   }
 
   private boolean canEdit () {
@@ -4226,7 +4227,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private int desiredThumbScrollByX;
 
   private void ensureThumbsPosition (boolean scrollBy, boolean onlyMeasure) {
-    if (thumbsRecyclerView.getMeasuredWidth() > 0) {
+    if (thumbsRecyclerView.getMeasuredWidth() > 0 && thumbsAdapter.items != null) {
       ensureThumbsPosition(scrollBy, onlyMeasure, thumbsAdapter.items.getFocusItemPosition());
     }
   }
@@ -8779,7 +8780,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
               return false;
             }
 
-            final @RightId int rightId = file.isVideo() ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS;
+            final @RightId int rightId;
+            if (file.isVideo()) {
+              rightId = RightId.SEND_VIDEOS;
+            } else {
+              rightId = asFiles ? RightId.SEND_DOCS : RightId.SEND_PHOTOS;
+            }
             if (m.showSlowModeRestriction(sendButton, options)) {
               return false;
             }
@@ -9153,6 +9159,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     captionView.setHighlightColor(ColorUtils.alphaColor(0.2f, Theme.fillingTextSelectionColor()));
     captionView.setHighlightColor(getForcedTheme().getColor(ColorId.textSelectionHighlight));
+    captionView.setForcedTheme(getForcedTheme());
+    captionView.setOverMedia(true);
     // addThemeHighlightColorListener(captionView, ColorId.textSelectionHighlight);
     captionView.setMaxCodePointCount(tdlib.maxCaptionLength());
     captionView.setIgnoreCustomStuff(false);

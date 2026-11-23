@@ -618,7 +618,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
         }
         float alpha = wallpaper.getPatternIntensity();
         if (alpha != 1f) {
-          receiver.setPaintAlpha(alpha * receiver.getPaintAlpha());
+          receiver.setPaintAlpha(alpha);
         }
         receiver.draw(c);
         if (alpha != 1f) {

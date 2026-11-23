@@ -45,7 +45,9 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
       "-fvisibility=hidden",
       "-fvisibility-inlines-hidden",
       "-fno-strict-aliasing",
-      "-fomit-frame-pointer"
+      "-fomit-frame-pointer",
+      "-fstack-protector-strong",
+      "-D_FORTIFY_SOURCE=2"
     )
     val ldFlags = mutableListOf(
       "-L${requireDir(
@@ -56,7 +58,10 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
     when (abi) {
       "arm64-v8a" -> {
         ndkAbi = "aarch64-linux-android"
-        cFlags += "-march=armv8-a"
+        cFlags.addAll(listOf(
+          "-march=armv8-a",
+          "-mbranch-protection=standard"
+        ))
         extraParams += "--enable-neon"
       }
       "armeabi-v7a" -> {
@@ -207,7 +212,8 @@ abstract class BuildLibvpxTask : BuildNativeLibraryTask() {
           "--disable-tools",
           "--disable-debug",
           "--disable-unit-tests",
-          "--disable-libyuv"
+          "--disable-libyuv",
+          "--size-limit=8192x8192"
         )
       )
     )

@@ -154,6 +154,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.lang.ref.SoftReference;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
@@ -195,6 +196,7 @@ import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
 import okio.Source;
+import tgx.player.VideoDecoders;
 import tgx.td.Td;
 import tgx.td.data.HlsPath;
 import tgx.td.data.HlsVideo;
@@ -214,8 +216,14 @@ public class U {
     return 0;
   }
 
+  private static final long MAX_GZIP_CONTENT_SIZE = 16 * 1024 * 1024;
+
   public static String gzipFileToString (String path) {
     try (BufferedSource buffer = Okio.buffer(Okio.source(new GZIPInputStream(new FileInputStream(path))))) {
+      if (buffer.request(MAX_GZIP_CONTENT_SIZE + 1)) {
+        Log.w(Log.TAG_GIF_LOADER, "Unpacked gzip is too large, path: %s", path);
+        return null;
+      }
       return buffer.readString(StringUtils.UTF_8);
     } catch (Throwable t) {
       Log.w(Log.TAG_GIF_LOADER, "Cannot decode gzip, path: %s", t, path);
@@ -724,7 +732,9 @@ public class U {
     final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ?
       DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER :
       DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
-    final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
+    final RenderersFactory renderersFactory = new DefaultRenderersFactory(context)
+      .setExtensionRendererMode(extensionMode)
+      .setEnableDecoderFallback(true);
     final MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
     final AnalyticsCollector analyticsCollector;
     if (Log.getLogLevel() > Log.LEVEL_ASSERT) {
@@ -809,6 +819,7 @@ public class U {
       public DataSource redirectDataSource (Uri uri) {
         if (uri.equals(manifestUri)) {
           String playlistData = hlsVideo.multivariantPlaylistData(
+            VideoDecoders.getVideoDecoderSupport(),
             BuildConfig.DEBUG
           );
           return new ByteArrayDataSource(playlistData.getBytes());
@@ -1346,13 +1357,33 @@ public class U {
     UI.showToast(R.string.NoAppToOpen, Toast.LENGTH_SHORT);
   }
 
+  private static Method hiddenDurationScale;
+  private static boolean noHiddenDurationScale;
+
   public static float getAnimationScale (Context context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       return ValueAnimator.getDurationScale();
     }
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O && !noHiddenDurationScale) {
+      // Unlike the setting, it's 0 while battery saver of Android 5.0–7.1 turns animators off
+      try {
+        if (hiddenDurationScale == null) {
+          hiddenDurationScale = ValueAnimator.class.getMethod("getDurationScale");
+        }
+        return (Float) hiddenDurationScale.invoke(null);
+      } catch (Throwable t) {
+        noHiddenDurationScale = true;
+      }
+    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
       try {
         return Settings.Global.getFloat(context.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE, 1.0f);
+      } catch (Throwable ignored) { }
+    } else {
+      try {
+        @SuppressWarnings("deprecation")
+        String key = Settings.System.ANIMATOR_DURATION_SCALE;
+        return Settings.System.getFloat(context.getContentResolver(), key, 1.0f);
       } catch (Throwable ignored) { }
     }
     return 1.0f;
@@ -2288,7 +2319,15 @@ public class U {
     return measureText(in, p);
   }
 
-  public static float measureTextRun (@Nullable CharSequence in, int start, int end, @NonNull Paint p, boolean isRtl) {
+  public static float measureTextRun (
+    @Nullable CharSequence in,
+    int start,
+    int end,
+    int contextStart,
+    int contextEnd,
+    @NonNull Paint p,
+    boolean isRtl
+  ) {
     final int count = end - start;
 
     if (StringUtils.isEmpty(in) || count <= 0) {
@@ -2296,7 +2335,7 @@ public class U {
     }
 
     if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      return p.getRunAdvance(in, start, end, 0, in.length(), isRtl, end);
+      return p.getRunAdvance(in, start, end, contextStart, contextEnd, isRtl, end);
     }
 
     return measureText(in, start, end, p);

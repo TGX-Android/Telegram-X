@@ -866,6 +866,10 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     final boolean isAnimatedEmojiStickerSet = sticker != null && sticker.setId == TdConstants.TELEGRAM_ANIMATED_EMOJI_STICKER_SET_ID;
 
     GifFile animatedFile = view.getComplexReceiver().getGifReceiver(0).getCurrentFile();
+    if (animatedFile != null && sticker != null && specialType == SPECIAL_TYPE_ANIMATED_EMOJI &&
+      Td.customEmojiId(sticker) == 0) {
+      animatedFile.setVibrationPattern(Emoji.instance().getVibrationPatternType(sticker.emoji));
+    }
     if (animatedFile != null && (noLoopSettingEnabled || isAnimatedEmojiStickerSet) && animatedFile.setLooped(false)) {
       invalidate();
       return true;

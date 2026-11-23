@@ -646,7 +646,19 @@ public class Emoji {
     if (StringUtils.isEmpty(codeCs)) {
       return null;
     }
-    String code = codeCs.toString();
+    int length = codeCs.length();
+    if (allowRetry) {
+      // Drops at once what the retries below would drop one by one
+      while (length > Emojis.MAX_EMOJI_LENGTH && (codeCs.charAt(length - 1) == '\u200D' ||
+        codeCs.charAt(length - 1) == '\uFE0F')) {
+        length--;
+      }
+    }
+    if (length > Emojis.MAX_EMOJI_LENGTH) {
+      logMissingEmoji(codeCs);
+      return null;
+    }
+    String code = codeCs.toString().substring(0, length);
     EmojiInfo info = rects.get(code);
     if (info == null) {
       String newCode = EmojiData.instance().getEmojiAlias(code);
@@ -671,11 +683,17 @@ public class Emoji {
       }
     }*/
     if (info == null) {
-      Log.i("Warning. No drawable for emoji: %s", StringUtils.toUtfString(code));
+      logMissingEmoji(code);
       return null;
     }
 
     return info;
+  }
+
+  private static void logMissingEmoji (CharSequence code) {
+    if (Log.checkLogLevel(Log.LEVEL_INFO)) {
+      Log.i("Warning. No drawable for emoji: %s", StringUtils.toUtfString(code));
+    }
   }
 
   @Nullable
@@ -698,7 +716,7 @@ public class Emoji {
       return null;
     if (info == null) {
       info = getEmojiInfo(code);
-      if (info == null) {
+      if (info == null && Log.checkLogLevel(Log.LEVEL_INFO)) {
         Log.i("Invalid or unknown server emoji: %s", StringUtils.toUtfString(code));
         // Ignore that we don't know this emoji to preserve custom emoji entity
       }
@@ -755,7 +773,7 @@ public class Emoji {
     char c;
     int startIndex = -1;
     int startLength = 0;
-    int previousGoodIndex = 0;
+    int previousGoodIndex = start;
     StringBuilder emojiCode = emojiText.get();
     if (emojiCode == null) {
       emojiCode = new StringBuilder(16);
@@ -765,10 +783,65 @@ public class Emoji {
     }
     boolean doneEmoji = false;
     boolean abort = false;
+    boolean cut = false;
 
     try {
       for (int i = start; i < end; i++) {
         c = cs.charAt(i);
+        int addedLength = Character.isHighSurrogate(c) ? 2 : 1;
+        boolean full = emojiCode.length() + addedLength > Emojis.MAX_EMOJI_LENGTH;
+        if (startIndex != -1 && (cut || full)) {
+          // Longer than any emoji: take the longest one at its start and read on after it
+          String code = emojiCode.toString();
+          int codeLength = code.length();
+          EmojiInfo info = null;
+          while (codeLength > 0 && info == null) {
+            info = getEmojiInfo(code.substring(0, codeLength), false);
+            if (info == null) {
+              codeLength--;
+            }
+          }
+          int next = startIndex + 1;
+          if (info != null) {
+            // Selectors aren't in the code
+            next = startIndex;
+            for (int found = 0; found < codeLength && next < end; next++) {
+              char sourceChar = cs.charAt(next);
+              if (sourceChar < 0xFE00 || sourceChar > 0xFE0F) {
+                found++;
+              }
+            }
+            while (next < end && cs.charAt(next) == '\uFE0F') {
+              next++;
+            }
+            String foundCode = code.substring(0, codeLength);
+            if (callback != null) {
+              callback.onEmojiFound(cs, foundCode, info, startIndex, next - startIndex);
+            } else {
+              EmojiSpan span = newSpan(foundCode, info);
+              if (spannable == null) {
+                spannable = Spannable.Factory.getInstance().newSpannable(
+                  start == 0 && end == cs.length() ? cs : cs.subSequence(start, end)
+                );
+              }
+              spannable.setSpan(
+                span, startIndex - start, next - start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+              );
+            }
+            emojiCount++;
+            if (countLimiter != null && !countLimiter.incrementEmojiCount()) {
+              break;
+            }
+          }
+          startLength = 0;
+          startIndex = -1;
+          emojiCode.setLength(0);
+          doneEmoji = false;
+          cut = false;
+          buf = 0;
+          i = next - 1;
+          continue;
+        }
         if (c >= 0xD83C && c <= 0xD83E || (buf != 0 && (buf & 0xFFFFFFFF00000000L) == 0 && (buf & 0xFFFF) == 0xD83C && (c >= 0xDDE6 && c <= 0xDDFF))) {
           if (startIndex == -1) {
             startIndex = i;
@@ -880,6 +953,7 @@ public class Emoji {
           startIndex = -1;
           emojiCode.setLength(0);
           doneEmoji = false;
+          buf = 0;
         }/* else if (c != 0xfe0f) {
           if (emojiOnly != null) {
             emojiOnly[0] = 0;
@@ -891,17 +965,26 @@ public class Emoji {
           if (next == 0xD83C) {
             next = cs.charAt(i + 2);
             if (next >= 0xDFFB && next <= 0xDFFF) {
-              emojiCode.append(cs, i + 1, i + 3);
-              startLength += 2;
-              i += 2;
+              if (emojiCode.length() + 2 > Emojis.MAX_EMOJI_LENGTH) {
+                cut = true;
+              } else {
+                emojiCode.append(cs, i + 1, i + 3);
+                startLength += 2;
+                i += 2;
+              }
             }
           } else if (emojiCode.length() >= 2 && emojiCode.charAt(0) == 0xD83C && emojiCode.charAt(1) == 0xDFF4 && next == 0xDB40) {
             i++;
             while (true) {
+              if (emojiCode.length() + 2 > Emojis.MAX_EMOJI_LENGTH) {
+                cut = true;
+                i--;
+                break;
+              }
               emojiCode.append(cs, i, i + 2);
               startLength += 2;
               i += 2;
-              if (i >= cs.length() || cs.charAt(i) != 0xDB40) {
+              if (i + 1 >= end || cs.charAt(i) != 0xDB40) {
                 i--;
                 break;
               }
@@ -926,10 +1009,15 @@ public class Emoji {
           c = cs.charAt(i + 1);
           if (a == 1) {
             if (c == 0x200D && emojiCode.length() > 0) {
-              emojiCode.append(c);
-              i++;
-              startLength++;
-              doneEmoji = i + 1 == end;
+              // A joiner and at least one more character
+              if (emojiCode.length() + 2 > Emojis.MAX_EMOJI_LENGTH) {
+                cut = true;
+              } else {
+                emojiCode.append(c);
+                i++;
+                startLength++;
+                doneEmoji = i + 1 == end;
+              }
             }
           } else {
             if (c >= 0xFE00 && c <= 0xFE0F) {
@@ -941,12 +1029,16 @@ public class Emoji {
         if (doneEmoji && i + 2 < end && cs.charAt(i + 1) == 0xD83C) {
           char next = cs.charAt(i + 2);
           if (next >= 0xDFFB && next <= 0xDFFF) {
-            emojiCode.append(cs, i + 1, i + 3);
-            startLength += 2;
-            i += 2;
+            if (emojiCode.length() + 2 > Emojis.MAX_EMOJI_LENGTH) {
+              cut = true;
+            } else {
+              emojiCode.append(cs, i + 1, i + 3);
+              startLength += 2;
+              i += 2;
+            }
           }
         }
-        if (doneEmoji) {
+        if (doneEmoji && !cut) {
           // SAME CODE BEGIN
           final String code = emojiCode.toString();
           final EmojiInfo info = getEmojiInfo(code, false);
@@ -1020,6 +1112,7 @@ public class Emoji {
           startIndex = -1;
           emojiCode.setLength(0);
           doneEmoji = false;
+          buf = 0;
         } else if (startIndex == -1) {
           startLength = 0;
         }

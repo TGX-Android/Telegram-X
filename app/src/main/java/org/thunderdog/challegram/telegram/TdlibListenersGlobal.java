@@ -36,6 +36,8 @@ public class TdlibListenersGlobal {
   private final ReferenceList<GlobalTokenStateListener> tokenStateListeners = new ReferenceList<>(true);
   private final ReferenceList<GlobalProxyPingListener> proxyPingListeners = new ReferenceList<>();
   private final ReferenceList<GlobalResolvableProblemListener> resolvableProblemListeners = new ReferenceList<>();
+  private final ReferenceList<GlobalCallProblemsListener> callProblemsListeners =
+    new ReferenceList<>();
 
   /*package*/ TdlibListenersGlobal (TdlibManager context) {
     this.context = context;
@@ -223,6 +225,24 @@ public class TdlibListenersGlobal {
     for (GlobalResolvableProblemListener listener : resolvableProblemListeners) {
       listener.onResolvableProblemAvailabilityMightHaveChanged();
     }
+  }
+
+  // Problems of calls
+
+  public void addCallProblemsListener (GlobalCallProblemsListener listener) {
+    callProblemsListeners.add(listener);
+  }
+
+  public void removeCallProblemsListener (GlobalCallProblemsListener listener) {
+    callProblemsListeners.remove(listener);
+  }
+
+  @UiThread
+  /*package*/ void notifyCallProblemsChanged () {
+    for (GlobalCallProblemsListener listener : callProblemsListeners) {
+      listener.onCallProblemsChanged();
+    }
+    notifyResolvableProblemAvailabilityMightHaveChanged();
   }
 
   // Account

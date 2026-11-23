@@ -73,7 +73,13 @@ public final class N {
 
   // gif.c
   public static final int DECODER_METADATA_ARRAY_SIZE = 5;
-  public static native long createDecoder (String path, long[] metadata, double startMediaTimestamp);
+  public static native long createDecoder (
+    String path,
+    long[] metadata,
+    double startMediaTimestamp,
+    // The longest side to play, 0 for animations
+    int maxSourceSize
+  );
   public static native long createLottieDecoder (String path, String jsonData, double[] metadata, int fitzpatrickType);
   public static native void getLottieSize (long ptr, int[] size);
   public static native void cancelLottieDecoder (long ptr);
@@ -132,6 +138,10 @@ public final class N {
       this.replacement = replacement;
     }
   }
+
+  // syntax.cpp
+  public native static int[] highlightCode (String code, String language);
+  public native static String getLanguageName (String language);
 
   public native static void onFatalError (String msg, int cause);
 

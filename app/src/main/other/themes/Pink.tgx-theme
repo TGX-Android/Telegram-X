@@ -18,3 +18,24 @@ headerBadgeFailed: #ffd307
 seekReady: #FBD8E4
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #E91E6333
 bubbleOut_fillingActive: #D954801A
+codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
+bubbleOut_codeBlockBackground: #820B3512
+bubbleOut_codeBlockLine: #B3144E
+codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
+bubbleOut_codeBlockRipple: #820B3524
+syntaxComment, syntaxBlockComment, syntaxProlog, syntaxDoctype, syntaxCdata: #67717A
+syntaxPunctuation: #7A8189
+syntaxOperator: #445B72
+syntaxKeyword, syntaxBoolean, syntaxAtrule: #1B55A6
+syntaxNumber: #982E22
+syntaxString, syntaxChar, syntaxAttrValue: #1E6A27
+syntaxFunction: #66409B
+syntaxClassName: #006A6B
+syntaxConstant, syntaxProperty, syntaxSymbol: #893071
+syntaxAnnotation: #705400
+syntaxTag, syntaxSelector: #00507C
+syntaxAttrName, syntaxEntity: #854600
+syntaxBuiltin: #005F4D
+syntaxUrl: #025D93
+syntaxInserted: #1E6A27
+syntaxDeleted: #982C2C

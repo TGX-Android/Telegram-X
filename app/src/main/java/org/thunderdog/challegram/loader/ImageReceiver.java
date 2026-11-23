@@ -1083,7 +1083,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   public void setPaintAlpha (float factor) {
     int bitmapAlpha = metadataPaint.getAlpha();
     savedAlpha = Color.rgb(repeatPaint != null ? repeatPaint.getAlpha() : bitmapAlpha, roundPaint != null ? roundPaint.getAlpha() : bitmapAlpha, bitmapAlpha);
-    final int alpha = (int) (255f * MathUtils.clamp(factor));
+    final int alpha = (int) (255f * MathUtils.clamp(factor) * this.alpha);
     if (roundPaint != null)
       roundPaint.setAlpha(alpha);
     if (repeatPaint != null)

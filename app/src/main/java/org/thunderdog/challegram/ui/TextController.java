@@ -378,8 +378,9 @@ public class TextController extends ViewController<TextController.Arguments> imp
         br.close();
         rawText = b.toString();
       } catch (Throwable t) {
+        Log.e("Cannot read file %s", t, file);
         lines.add(new LineCell(TextController.this, i++, "CHALLEGRAM TEXT READER: Error reading file:"));
-        lines.add(new LineCell(TextController.this, i++, Log.toString(Log.generateException())));
+        lines.add(new LineCell(TextController.this, i++, Log.toString(t)));
         if (br != null) {
           try {
             br.close();

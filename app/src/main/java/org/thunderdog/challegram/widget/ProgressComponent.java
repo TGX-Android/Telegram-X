@@ -19,14 +19,17 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Build;
 import android.os.SystemClock;
 import android.view.View;
+import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -34,14 +37,13 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.TimerParticles;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class ProgressComponent implements Runnable, FactorAnimator.Target, Destroyable, BaseActivity.SimpleStateListener {
+public class ProgressComponent implements Runnable, Destroyable, BaseActivity.SimpleStateListener {
   public static boolean USE_ROUNDED_CAP = true;
 
   private static final float MIN_DEGREES_BIG = USE_ROUNDED_CAP ? 8f : 32f;
@@ -247,47 +249,51 @@ public class ProgressComponent implements Runnable, FactorAnimator.Target, Destr
 
   // Progress utils
 
-  private static final int PRECISE_ANIMATOR = 0;
-  private float preciseFactor;
-  private FactorAnimator preciseAnimator;
+  private static final float PRECISE_DURATION_MS = 180f;
   private static final Interpolator DECELERATE_INTERPOLATOR = new DecelerateInterpolator(.72f);
+
+  private float preciseFactor, preciseFrom, preciseTarget, preciseDurationMs;
+  private long preciseStartTime;
 
   public void setProgress (float progress, boolean animated) {
     progress = Math.min(1f, Math.max(0f, progress));
-    if (animated && isActive() && (preciseFactor != progress || preciseAnimator != null)) {
-      if (preciseAnimator == null) {
-        preciseAnimator = new FactorAnimator(PRECISE_ANIMATOR, this, DECELERATE_INTERPOLATOR, 180l, preciseFactor); // 400
+    if (animated && isActive()) {
+      float durationMs = PRECISE_DURATION_MS * getAnimatorDurationScale();
+      if (durationMs > 0f) {
+        // By time, not by an animator, which frequent updates would keep at its start
+        long now = AnimationUtils.currentAnimationTimeMillis();
+        updatePreciseFactor(now);
+        preciseFrom = preciseFactor;
+        preciseTarget = progress;
+        preciseStartTime = now;
+        preciseDurationMs = durationMs;
+        invalidate();
+        return;
       }
-      preciseAnimator.animateTo(progress);
-    } else {
-      if (preciseAnimator != null) {
-        preciseAnimator.cancel();
-        preciseAnimator.forceFactor(progress);
-      }
-      this.preciseFactor = progress;
-      invalidate();
+    }
+    this.preciseFactor = this.preciseTarget = progress;
+    invalidate();
+  }
+
+  private void updatePreciseFactor (long now) {
+    if (preciseFactor != preciseTarget) {
+      float fraction = (now - preciseStartTime) / preciseDurationMs;
+      preciseFactor = interpolate(DECELERATE_INTERPOLATOR, preciseFrom, preciseTarget, fraction);
     }
   }
 
-  @Override
-  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    switch (id) {
-      case PRECISE_ANIMATOR: {
-        setPreciseFactor(factor);
-        break;
-      }
+  private float getAnimatorDurationScale () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ValueAnimator.areAnimatorsEnabled()) {
+      return 0f;
     }
+    return U.getAnimationScale(context);
   }
 
-  @Override
-  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) { }
-
-  private void setPreciseFactor (float factor) {
-    if (this.preciseFactor != factor) {
-      this.preciseFactor = factor;
-      // invalidate();
-      // No invalidate since it's scheduled?
+  static float interpolate (Interpolator interpolator, float from, float to, float fraction) {
+    if (fraction >= 1f) {
+      return to;
     }
+    return from + (to - from) * interpolator.getInterpolation(fraction);
   }
 
   public void setMonotonic (boolean isMonotonic) {
@@ -347,6 +353,11 @@ public class ProgressComponent implements Runnable, FactorAnimator.Target, Destr
       sweepAngle = 360f * getTimerValue();
       startAngle = 270f - sweepAngle;
     } else if (isPrecise) {
+      updatePreciseFactor(AnimationUtils.currentAnimationTimeMillis());
+      if (preciseFactor != preciseTarget) {
+        // Each frame while it moves, as the delayed redraws below may skip frames
+        invalidate();
+      }
       startAngle = (360f * ((float) (timeMs % repeatTime) / (float) repeatTime)) % 360f;
       sweepAngle = MIN_DEGREES_10DP + (360f - MIN_DEGREES_10DP) * preciseFactor;
     } else {

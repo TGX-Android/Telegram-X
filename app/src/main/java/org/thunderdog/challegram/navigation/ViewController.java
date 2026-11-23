@@ -3559,6 +3559,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return true;
   }
 
+  public View getNavigationLayerView () {
+    return getValue();
+  }
+
   public boolean preventRootInteractions () {
     return false;
   }
