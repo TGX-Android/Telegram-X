@@ -26,9 +26,9 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.VelocityTracker;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.Toast;
@@ -1742,7 +1742,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       (codePoint >= 0x0D00 && codePoint <= 0x0D7F /*Malayalam*/) ||
       (codePoint >= 0x0600 && codePoint <= 0x06FF /*Arabic*/) ||
       (codePoint >= 0x0590 && codePoint <= 0x05FF /*Hebrew*/) ||
-      (codePoint >= 0xFF00 && codePoint <= 0xFF00 /*Halfwidth and Fullwidth Forms*/);
+      (codePoint >= 0xFF00 && codePoint <= 0xFFEF /*Halfwidth and Fullwidth Forms*/);
   }
 
   public static boolean needsFill (int codePoint) {
@@ -1876,12 +1876,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
   public TextPaint getTextPaint (@Nullable TextEntity entity) {
     boolean forceBold = (textFlags & FLAG_ALL_BOLD) != 0;
+    boolean fakeBold = (textFlags & FLAG_FAKE_BOLD) != 0;
     float baselineShift = entity != null ? entity.getBaselineShift() : 0f;
     TextPaint paint;
     if (entity != null) {
-      paint = entity.getTextPaint(textStyleProvider, forceBold);
+      paint = entity.getTextPaint(textStyleProvider, forceBold, fakeBold);
     } else if (forceBold) {
-      paint = (textFlags & FLAG_FAKE_BOLD) != 0 ? textStyleProvider.getFakeBoldPaint() : textStyleProvider.getBoldPaint();
+      paint = fakeBold ? textStyleProvider.getFakeBoldPaint() : textStyleProvider.getBoldPaint();
     } else {
       paint = textStyleProvider.getTextPaint();
     }
