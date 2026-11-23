@@ -18,7 +18,8 @@ jobs:
         run: |
           SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKM" --licenses > /dev/null || true
-          "$SDKM" "platforms;android-37.1" "build-tools;37.0.0" "cmake;3.22.1" "ndk;23.2.8568313"
+          "$SDKM" "platforms;android-37.1" "build-tools;37.0.0" "cmake;3.22.1" "ndk;23.2.8568313" "ndk;30.0.16248370"
+          ls "$ANDROID_HOME/ndk"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -41,8 +42,8 @@ jobs:
           } > local.properties
       - name: Validate and build
         run: |
-          ./gradlew :app:validateGitSetup
-          ./gradlew assembleLatestDebug -Pabi=arm64
+          ./gradlew --no-parallel :app:validateGitSetup
+          ./gradlew --no-parallel assembleLatestDebug -Pabi=arm64
       - uses: actions/upload-artifact@v4
         with:
           name: m0-debug-apk
