@@ -97,7 +97,7 @@
 	path = app/jni/tgvoip/third_party/openh264
 	url = https://github.com/cisco/openh264
 	shallow = true
-	branch = openh264v2.4.1
+	branch = openh264v2.7.0
 [submodule "abseil"]
 	path = app/jni/tgvoip/third_party/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
