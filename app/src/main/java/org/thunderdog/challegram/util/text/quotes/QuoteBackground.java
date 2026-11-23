@@ -42,7 +42,6 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.StickyElements;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ThemeDelegate;
@@ -246,7 +245,7 @@ public class QuoteBackground implements StickyElements.Element {
 
   public int findCollapsedEnd () {
     // The first part after the lines that the collapsed quote shows, or partEnd when it's whole
-    final int shownLineCount = Config.EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT;
+    final int shownLineCount = parent.getCollapsedQuoteLineCount();
     if (getLineCount() < shownLineCount + 2) {
       return partEnd;
     }
@@ -256,7 +255,7 @@ public class QuoteBackground implements StickyElements.Element {
   public int findShownFirstLine (int foundLine) {
     // Found text on a line that the collapsed quote hides or fades is moved to the line above its
     // bottom fade, or to its last line
-    final int shownLineCount = Config.EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT;
+    final int shownLineCount = parent.getCollapsedQuoteLineCount();
     if (foundLine < shownLineCount - 1) {
       return 0;
     }
@@ -398,6 +397,7 @@ public class QuoteBackground implements StickyElements.Element {
     // Ripples, e.g. of the tap that switched the block, go on in the new layout, while a press
     // that is still caught ends with the old one
     scrollX = Math.min(oldBlock.scrollX, maxScrollX);
+    scrolledBefore = oldBlock.isScrollable() || oldBlock.scrolledBefore;
     scroller = oldBlock.scroller;
     ripple = oldBlock.ripple;
     copyRipple = oldBlock.copyRipple;
@@ -476,7 +476,10 @@ public class QuoteBackground implements StickyElements.Element {
   public void clipContent (Canvas c) {
     // Lines are drawn within the background, after the bar at the start of the block
     c.clipRect(barRect.right, bounds.top, bounds.right, bounds.bottom);
-    ViewSupport.clipPath(c, ripple.getPath());
+    // A clip by a path costs pipelines of the GPU; other lines don't reach the rounded corners
+    if (isScrollable() || scrolledBefore) {
+      ViewSupport.clipPath(c, ripple.getPath());
+    }
   }
 
   public int getScrollX () {
@@ -525,19 +528,20 @@ public class QuoteBackground implements StickyElements.Element {
       );
     }
     final float height = Screen.dp(COLLAPSED_FADE_HEIGHT);
-    fadePaint.setAlpha(Math.round(0xFF * (1f - parent.getSwitchFactor(this))));
+    // Not by the alpha of the paint, which costs a pipeline of the GPU
+    final float strength = 1f - parent.getSwitchFactor(this);
     if (hidesBelow) {
-      drawFade(c, getFadeBottom() - height, height);
+      drawFade(c, getFadeBottom() - height, height, strength);
     }
     if (hasTopFade()) {
-      drawFade(c, getFadeTop() + height, -height);
+      drawFade(c, getFadeTop() + height, -height, strength);
     }
     Views.restore(c, saveCount);
   }
 
-  private void drawFade (Canvas c, float start, float height) {
-    // Clear at start, all gone at start + height, upwards when height is negative
-    fadeMatrix.setScale(1f, height);
+  private void drawFade (Canvas c, float start, float height, float strength) {
+    // Clear at start, upwards when height is negative
+    fadeMatrix.setScale(1f, height / strength);
     fadeMatrix.postTranslate(0, start);
     fadePaint.getShader().setLocalMatrix(fadeMatrix);
     final float end = start + height;
@@ -580,6 +584,7 @@ public class QuoteBackground implements StickyElements.Element {
   // Where the icon of the switch goes on from, e.g. in the middle of a switch, or -1
   private float changeStartSwitchFactor = -1f;
   private int changeStartContentShift = -1;
+  private boolean scrolledBefore;
 
   public void getChangeStart (
     RectF out,
@@ -647,6 +652,7 @@ public class QuoteBackground implements StickyElements.Element {
     topOffset = rightOffset = bottomOffset = 0;
     changeStartSwitchFactor = -1f;
     changeStartContentShift = -1;
+    scrolledBefore = false;
     hasGeometry = false;
   }
 

@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.util.text;
 
 import org.thunderdog.challegram.component.chat.StickyElements;
+import org.thunderdog.challegram.config.Config;
 
 import me.vkryl.core.collection.IntList;
 
@@ -57,15 +58,45 @@ public final class BlockSwitches {
     }
   }
 
+  public static final int CODE_WRAPPING_AUTO = 0;
+  public static final int CODE_WRAPPING_ENABLED = 1;
+  public static final int CODE_WRAPPING_DISABLED = 2;
+
   private final Listener listener;
   // The state chosen, not an inversion of the default, so that a later default never turns it
   private final IntList blockIds = new IntList(0);
   private final IntList onStates = new IntList(0);
   // Changes with each switch, so that texts of a layout before it get a new layout
   private int version;
+  private int codeWrapping = CODE_WRAPPING_AUTO;
+  private int collapsedQuoteLineCount = Config.EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT;
 
   public BlockSwitches (Listener listener) {
     this.listener = listener;
+  }
+
+  public BlockSwitches setCodeWrapping (int codeWrapping) {
+    if (this.codeWrapping != codeWrapping) {
+      this.codeWrapping = codeWrapping;
+      version++;
+    }
+    return this;
+  }
+
+  int getCodeWrapping () {
+    return codeWrapping;
+  }
+
+  public BlockSwitches setCollapsedQuoteLineCount (int lineCount) {
+    if (this.collapsedQuoteLineCount != lineCount) {
+      this.collapsedQuoteLineCount = lineCount;
+      version++;
+    }
+    return this;
+  }
+
+  int getCollapsedQuoteLineCount () {
+    return collapsedQuoteLineCount;
   }
 
   boolean isChosen (int blockId) {

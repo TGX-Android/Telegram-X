@@ -24,6 +24,8 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.core.util.ObjectsCompat;
 
+import org.thunderdog.challegram.component.chat.MessageResize;
+import org.thunderdog.challegram.component.chat.StickyElements;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
@@ -41,6 +43,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.BlockSwitches;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -49,6 +52,7 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
+import org.thunderdog.challegram.v.MaxHeightScrollView;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.ListAnimator;
@@ -135,6 +139,141 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   private @Nullable Highlight highlight;
   private @Nullable TextEntity[] entities;
   private boolean allowAsync = true;
+  private @Nullable BlockSwitches blockSwitches;
+  private @Nullable MaxHeightScrollView blockSwitchesList;
+  private int codeBlockWrapping = BlockSwitches.CODE_WRAPPING_AUTO;
+  private int collapsedQuoteLineCount = Config.EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT;
+  private boolean isStickyMoving;
+
+  private final class SwitchListener extends MessageResize.BlockSwitchListener<View> {
+    @Override
+    public void onBlockSwitchStart (Text text, boolean isReverse) {
+      isStickyMoving = true;
+      super.onBlockSwitchStart(text, isReverse);
+    }
+
+    @Override
+    public void onBlockSwitchStopped (Text text) {
+      super.onBlockSwitchStopped(text);
+      if (blockSwitchesList != null) {
+        blockSwitchesList.invalidate();
+      }
+    }
+
+    @Override
+    protected @Nullable MessageResize<View> getResize () {
+      return blockSwitchesList != null ? blockSwitchesList.getResize() : null;
+    }
+
+    @Override
+    protected View getMessage () {
+      return CustomTextView.this;
+    }
+
+    @Override
+    protected int measureFinalHeight (Text text, boolean isReverse) {
+      return getMeasuredHeight() + text.getChangeRemainingHeight();
+    }
+
+    @Override
+    public void onTextSizeChanged (Text text) {
+      final TextEntry entry = CustomTextView.this.text.singletonItem();
+      if (entry == null || entry.content != text) {
+        return;
+      }
+      CustomTextView.this.text.measure(false);
+      if (getMeasuredHeight() != getCurrentHeight()) {
+        requestLayout();
+      }
+      invalidate();
+      final MessageResize<View> resize = getResize();
+      if (resize != null) {
+        resize.onFrame(CustomTextView.this, text.getChangeProgress());
+      }
+    }
+
+    @Override
+    public int getListHeight (Text text) {
+      return blockSwitchesList != null ? blockSwitchesList.getListHeight() : 0;
+    }
+
+    @Override
+    public float placeStickyElement (
+      Text text,
+      StickyElements.Element element,
+      float x,
+      float minY,
+      float maxY,
+      float padding,
+      boolean atTop
+    ) {
+      if (blockSwitchesList == null) {
+        return atTop ? minY : maxY;
+      }
+      if (text.isAnimatingChange()) {
+        isStickyMoving = true;
+      }
+      return blockSwitchesList.placeStickyElement(
+        CustomTextView.this,
+        element,
+        x,
+        minY,
+        maxY,
+        padding,
+        atTop
+      );
+    }
+  }
+
+  @Override
+  public void invalidate () {
+    super.invalidate();
+    if (blockSwitchesList != null &&
+      (isStickyMoving || blockSwitchesList.hasStuckStickyElements())) {
+      blockSwitchesList.invalidate();
+    }
+  }
+
+  public void setBlockSwitches (boolean isEnabled, @Nullable MaxHeightScrollView list) {
+    this.blockSwitchesList = list;
+    if (isEnabled != (blockSwitches != null)) {
+      blockSwitches = isEnabled ? newBlockSwitches() : null;
+      layoutTextAgain();
+    }
+  }
+
+  public void setCodeBlockWrapping (int wrapping) {
+    if (this.codeBlockWrapping != wrapping) {
+      this.codeBlockWrapping = wrapping;
+      if (blockSwitches != null) {
+        blockSwitches.setCodeWrapping(wrapping);
+        layoutTextAgain();
+      }
+    }
+  }
+
+  public void setCollapsedQuoteLineCount (int lineCount) {
+    if (this.collapsedQuoteLineCount != lineCount) {
+      this.collapsedQuoteLineCount = lineCount;
+      if (blockSwitches != null) {
+        blockSwitches.setCollapsedQuoteLineCount(lineCount);
+        layoutTextAgain();
+      }
+    }
+  }
+
+  private BlockSwitches newBlockSwitches () {
+    return new BlockSwitches(new SwitchListener())
+      .setCodeWrapping(codeBlockWrapping)
+      .setCollapsedQuoteLineCount(collapsedQuoteLineCount);
+  }
+
+  private void layoutTextAgain () {
+    cancelAsyncLayout();
+    if (lastMeasuredWidth > 0) {
+      layoutText(lastMeasuredWidth, false, false, false);
+    }
+  }
 
   private final ReplaceAnimator<TextEntry> text = new ReplaceAnimator<>(animator -> {
     if (getMeasuredHeight() != getCurrentHeight())
@@ -273,6 +412,12 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
       this.highlight = highlight;
       this.extraTextFlags = extraTextFlags;
       this.entities = entities;
+      if (blockSwitches != null) {
+        blockSwitches = newBlockSwitches();
+        if (blockSwitchesList != null) {
+          blockSwitchesList.getResize().forgetChanges();
+        }
+      }
       cancelAsyncLayout();
       if (lastMeasuredWidth > 0) {
         layoutText(lastMeasuredWidth, animated, false, allowAsync);
@@ -307,11 +452,24 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
 
   private long asyncContextId;
 
-  private static Text createText (final View view, final String text, final @Nullable Highlight highlight, final int textWidth, final TextStyleProvider provider, final int maxLineCount, final TextEntity[] entities, final int extraTextFlags, TextColorSet colorSet, Text.TextMediaListener textMediaListener) {
+  private static Text createText (
+    final View view,
+    final String text,
+    final @Nullable Highlight highlight,
+    final int textWidth,
+    final TextStyleProvider provider,
+    final int maxLineCount,
+    final TextEntity[] entities,
+    final int extraTextFlags,
+    TextColorSet colorSet,
+    Text.TextMediaListener textMediaListener,
+    @Nullable BlockSwitches blockSwitches
+  ) {
     return new Text.Builder(text, textWidth, provider, colorSet)
       .entities(entities, textMediaListener)
       .view(view)
       .highlight(highlight)
+      .blockSwitches(blockSwitches)
       .textFlags(
         Text.FLAG_BOUNDS_NOT_STRICT |
         Text.FLAG_CUSTOM_LONG_PRESS |
@@ -338,13 +496,15 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
       entities,
       extraTextFlags,
       TextColorSets.WHITE,
-      (parsedText, specificMedia) -> { }
+      (parsedText, specificMedia) -> { },
+      null
     );
     return measuredText.getHeight();
   }
 
   private void dispatchAsyncText (final String text, final @Nullable Highlight highlight, final int textWidth, final boolean animated, final TextStyleProvider provider, final int maxLineCount, final int extraTextFlags, final int linkFlags, final TextEntity[] entities) {
     final long contextId = asyncContextId;
+    final BlockSwitches blockSwitches = this.blockSwitches;
     Background.instance().post(() -> {
       final Text newText = createText(
         this,
@@ -353,7 +513,8 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
         Text.makeEntities(text, linkFlags, entities, tdlib, null),
         extraTextFlags,
         this,
-        this
+        this,
+        blockSwitches
       );
       UI.post(() -> {
         if (asyncContextId == contextId) {
@@ -427,7 +588,8 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
             newEntities,
             extraTextFlags,
             this,
-            this
+            this,
+            blockSwitches
           );
           this.text.replace(new TextEntry(this, refreshRateLimiter, newText, isAttached), animated);
         }
@@ -516,6 +678,10 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
 
   @Override
   protected void onDraw (Canvas c) {
+    isStickyMoving = false;
+    if (blockSwitchesList != null) {
+      blockSwitchesList.clearStickyElements(this);
+    }
     for (ListAnimator.Entry<TextEntry> entry : text) {
       entry.item.content.draw(c, getPaddingLeft(), getMeasuredWidth() - getPaddingRight(), 0, getPaddingTop(), colorSet, entry.getVisibility(), entry.item.receiver);
     }

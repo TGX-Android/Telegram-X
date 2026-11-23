@@ -61,6 +61,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.MessageQuickActionSwipeHelper;
+import org.thunderdog.challegram.component.chat.MessageResize;
 import org.thunderdog.challegram.component.chat.MessageResizeRules;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
@@ -4598,15 +4599,23 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   // Keeps the lines being read in place while a block switches, by default of a caption below media
-  protected class BlockSwitchListener implements BlockSwitches.Listener {
+  protected class BlockSwitchListener extends MessageResize.BlockSwitchListener<TGMessage> {
+    @Override
+    protected MessageResize<TGMessage> getResize () {
+      return manager.messageResize();
+    }
+
+    @Override
+    protected TGMessage getMessage () {
+      return TGMessage.this;
+    }
+
+    @Override
     protected boolean hasContentAbove () {
       return true;
     }
 
-    protected boolean hasContentBelow () {
-      return false;
-    }
-
+    @Override
     protected int measureFinalHeight (Text text, boolean isReverse) {
       // The text has its final height already, the message that of the last frame. The time of a
       // caption stays below it or after its last line, which a switch doesn't change
@@ -4618,37 +4627,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     @Override
     public void onBlockSwitchStart (Text text, boolean isReverse) {
       isStickyMoving = true;
-      final int finalHeight = measureFinalHeight(text, isReverse);
-      final int[] block = text.getSwitchBlock();
-      if (hasContentAbove()) {
-        block[2] = 0;
-      }
-      if (hasContentBelow()) {
-        block[3] = 0;
-      }
-      manager.messageResize().start(
-        TGMessage.this,
-        finalHeight,
-        isReverse,
-        block,
-        text::getSwitchLines
-      );
+      super.onBlockSwitchStart(text, isReverse);
     }
 
     @Override
     public void onTextSizeChanged (Text text) {
       onSwitchFrame(text);
       onAnimatedHeightFrame(text.getChangeProgress());
-    }
-
-    @Override
-    public void onBlockSwitchStopped (Text text) {
-      manager.messageResize().stop(TGMessage.this);
-    }
-
-    @Override
-    public boolean findVisiblePart (Text text, boolean atEnd, int[] range) {
-      return manager.messageResize().findVisiblePart(TGMessage.this, atEnd, range);
     }
 
     @Override
@@ -4673,7 +4658,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       final ViewGroup list = (ViewGroup) child.getParent();
       final int top = StickyElements.topOf(child);
-      final float y = StickyElements.place(
+      if (text.isAnimatingChange()) {
+        isStickyMoving = true;
+      }
+      if (stickyElements == null) {
+        stickyElements = new StickyElements();
+      }
+      return stickyElements.stick(
+        element,
+        x + stickyOffsetX,
         minY,
         maxY,
         padding,
@@ -4681,15 +4674,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         manager.getVisibleTop(list) - top,
         manager.getVisibleBottom(list) - top
       );
-      final int state = StickyElements.stateOf(y, minY, maxY);
-      if (text.isAnimatingChange()) {
-        isStickyMoving = true;
-      }
-      if (stickyElements == null) {
-        stickyElements = new StickyElements();
-      }
-      stickyElements.add(element, x + stickyOffsetX, minY, maxY, padding, atTop, state);
-      return state == StickyElements.STUCK ? Float.NaN : y;
     }
   }
 

@@ -21,7 +21,8 @@ import android.view.ViewTreeObserver;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.util.text.BlockSwitches;
+import org.thunderdog.challegram.util.text.Text;
 
 import java.util.ArrayList;
 
@@ -31,11 +32,11 @@ import me.vkryl.core.MathUtils;
  * Moves the list while a message changes its height by an animation, to the position by
  * MessageResizeRules
  */
-public final class MessageResize {
+public final class MessageResize<T> {
   private static final String LOG_TAG = "MessageResize";
 
-  private static final class Move {
-    private final TGMessage message;
+  private static final class Move<T> {
+    private final T message;
     // originTop is where a move back returns to
     private int startTop, finalTop, originTop;
     // Kept after the move for a change back
@@ -49,7 +50,7 @@ public final class MessageResize {
     // -1 before the first one
     private long placedDraw = -1;
 
-    private Move (TGMessage message) {
+    private Move (T message) {
       this.message = message;
     }
   }
@@ -60,20 +61,76 @@ public final class MessageResize {
     int[] find (int visibleTop, int visibleBottom);
   }
 
-  // The list that moves place messages in, of MessagesManager
-  interface Messages {
+  // The list that moves place messages in
+  public interface Messages<T> {
     // Integer.MIN_VALUE when the message isn't on the list
-    int getMessageTop (TGMessage message);
+    int getMessageTop (T message);
     // Whether the next layout places the message there
-    boolean setMessageTop (TGMessage message, int top);
-    boolean measureResize (TGMessage message, int finalHeight, MessageResizeRules rules);
-    boolean findVisiblePart (TGMessage message, int[] range);
+    boolean setMessageTop (T message, int top);
+    boolean measureResize (T message, int finalHeight, MessageResizeRules rules);
+    boolean findVisiblePart (T message, int[] range);
     ViewTreeObserver getViewTreeObserver ();
+
+    default String getLogName (T message) {
+      return Integer.toHexString(System.identityHashCode(message));
+    }
+
+    default String getLogEdges (T message) {
+      final int top = getMessageTop(message);
+      return top + " view " + top;
+    }
   }
 
-  private final Messages manager;
+  public abstract static class BlockSwitchListener<T> implements BlockSwitches.Listener {
+    protected abstract @Nullable MessageResize<T> getResize ();
+
+    protected abstract T getMessage ();
+
+    protected boolean hasContentAbove () {
+      return false;
+    }
+
+    protected boolean hasContentBelow () {
+      return false;
+    }
+
+    protected abstract int measureFinalHeight (Text text, boolean isReverse);
+
+    @Override
+    public void onBlockSwitchStart (Text text, boolean isReverse) {
+      final MessageResize<T> resize = getResize();
+      if (resize == null) {
+        return;
+      }
+      final int finalHeight = measureFinalHeight(text, isReverse);
+      final int[] block = text.getSwitchBlock();
+      if (hasContentAbove()) {
+        block[2] = 0;
+      }
+      if (hasContentBelow()) {
+        block[3] = 0;
+      }
+      resize.start(getMessage(), finalHeight, isReverse, block, text::getSwitchLines);
+    }
+
+    @Override
+    public void onBlockSwitchStopped (Text text) {
+      final MessageResize<T> resize = getResize();
+      if (resize != null) {
+        resize.stop(getMessage());
+      }
+    }
+
+    @Override
+    public boolean findVisiblePart (Text text, boolean atEnd, int[] range) {
+      final MessageResize<T> resize = getResize();
+      return resize != null && resize.findVisiblePart(getMessage(), atEnd, range);
+    }
+  }
+
+  private final Messages<T> manager;
   private final MessageResizeRules rules = new MessageResizeRules();
-  private final ArrayList<Move> moves = new ArrayList<>();
+  private final ArrayList<Move<T>> moves = new ArrayList<>();
   private boolean isListDragged;
   // A scroll of the list to a position in code, e.g. to its end for a new message, waits for its
   // layout, which places the messages, and moves go on from there
@@ -85,7 +142,7 @@ public final class MessageResize {
   private long listDraws;
   private final ViewTreeObserver.OnDrawListener drawListener = this::onListDrawn;
 
-  MessageResize (Messages manager) {
+  public MessageResize (Messages<T> manager) {
     this.manager = manager;
   }
 
@@ -102,7 +159,7 @@ public final class MessageResize {
       }
     };
 
-  void setList (View list) {
+  public void setList (View list) {
     // Draws are counted while the list is in a window, by the observer of that window
     list.removeOnAttachStateChangeListener(attachListener);
     list.addOnAttachStateChangeListener(attachListener);
@@ -126,7 +183,7 @@ public final class MessageResize {
   }
 
   public void start (
-    TGMessage message,
+    T message,
     int finalHeight,
     boolean isReverse,
     int[] block,
@@ -138,7 +195,7 @@ public final class MessageResize {
       return;
     }
     final int top = manager.getMessageTop(message);
-    Move move = findMove(message);
+    Move<T> move = findMove(message);
     if (move != null && move.isRestored) {
       move.originTop += top - move.finalTop;
       move.finalTop = top;
@@ -157,10 +214,10 @@ public final class MessageResize {
       if (manager.measureResize(message, finalHeight, rules)) {
         move.finalTop = rules.withinEnd(move.finalTop);
         if (Config.ENABLE_TEST_HOOKS) {
-          Log.i(LOG_TAG, "start " + message.getId() + " top " + top + " height " + rules.height +
-            " final height " + finalHeight + " final top " + move.finalTop + " list " +
-            rules.listTop + " " + rules.visibleBottom + " end " + rules.endBottom + " below " +
-            rules.belowHeight + " reverse");
+          Log.i(LOG_TAG, "start " + manager.getLogName(message) + " top " + top + " height " +
+            rules.height + " final height " + finalHeight + " final top " + move.finalTop +
+            " list " + rules.listTop + " " + rules.visibleBottom + " end " + rules.endBottom +
+            " below " + rules.belowHeight + " reverse");
         }
       }
       return;
@@ -190,7 +247,7 @@ public final class MessageResize {
       rules.previousFinalHeight = move.finalHeight;
     }
     if (move == null) {
-      move = new Move(message);
+      move = new Move<>(message);
       moves.add(move);
     }
     move.isFinished = false;
@@ -201,8 +258,9 @@ public final class MessageResize {
     move.startTop = move.originTop = top;
     move.finalTop = rules.finalTop();
     if (Config.ENABLE_TEST_HOOKS) {
-      Log.i(LOG_TAG, "start " + message.getId() + " top " + top + " height " + rules.height +
-        " final height " + finalHeight + " final top " + move.finalTop + " list " + rules.listTop +
+      Log.i(LOG_TAG, "start " + manager.getLogName(message) + " top " + top + " height " +
+        rules.height + " final height " + finalHeight + " final top " + move.finalTop + " list " +
+        rules.listTop +
         " " + rules.visibleBottom + " end " + rules.endBottom + " below " + rules.belowHeight +
         " block " + rules.blockTop + " " + rules.blockBottom + " " + rules.blockStartsBubble + " " +
         rules.blockEndsBubble + " spaces " + rules.spaceAbove + " " + rules.spaceBelow +
@@ -211,12 +269,12 @@ public final class MessageResize {
     }
   }
 
-  public boolean findVisiblePart (TGMessage message, boolean atEnd, int[] range) {
+  public boolean findVisiblePart (T message, boolean atEnd, int[] range) {
     if (!manager.findVisiblePart(message, range)) {
       return false;
     }
     if (atEnd) {
-      final Move move = findMove(message);
+      final Move<T> move = findMove(message);
       if (move == null || move.isFinished) {
         return false;
       }
@@ -227,17 +285,17 @@ public final class MessageResize {
     return true;
   }
 
-  public boolean isMoving (TGMessage message) {
-    final Move move = findMove(message);
+  public boolean isMoving (T message) {
+    final Move<T> move = findMove(message);
     return move != null && !move.isFinished;
   }
 
-  public void onFrame (TGMessage message, float factor) {
+  public void onFrame (T message, float factor) {
     // A message that doesn't move keeps its top, e.g. a text with spoilers, which changes at once
     if (isListDragged) {
       return;
     }
-    final Move move = findMove(message);
+    final Move<T> move = findMove(message);
     if (move == null || move.isFinished) {
       if (scrollObserver == null) {
         manager.setMessageTop(message, manager.getMessageTop(message));
@@ -252,7 +310,7 @@ public final class MessageResize {
     }
   }
 
-  private boolean place (Move move) {
+  private boolean place (Move<T> move) {
     if (manager.setMessageTop(move.message,
       MathUtils.fromTo(move.startTop, move.finalTop, move.factor))) {
       move.placedDraw = listDraws;
@@ -261,7 +319,7 @@ public final class MessageResize {
     return false;
   }
 
-  private boolean isPlacedInThisFrame (Move move) {
+  private boolean isPlacedInThisFrame (Move<T> move) {
     // Set by a frame of the move, which the next layout applies before the list is drawn
     return move.placedDraw == listDraws;
   }
@@ -278,7 +336,7 @@ public final class MessageResize {
     // move earlier in this frame, also its last one, set the position of the list, which the next
     // layout would apply over the scroll, so it's set again with the scroll
     for (int i = moves.size() - 1; i >= 0; i--) {
-      final Move move = moves.get(i);
+      final Move<T> move = moves.get(i);
       move.startTop -= dy;
       move.finalTop -= dy;
       move.originTop -= dy;
@@ -299,7 +357,7 @@ public final class MessageResize {
       return false;
     }
     for (int i = 0; i < moves.size(); i++) {
-      final Move move = moves.get(i);
+      final Move<T> move = moves.get(i);
       if (!move.isFinished || isPlacedInThisFrame(move)) {
         return true;
       }
@@ -319,7 +377,7 @@ public final class MessageResize {
     }
     scrollObserver = null;
     for (int i = moves.size() - 1; i >= 0; i--) {
-      final Move move = moves.get(i);
+      final Move<T> move = moves.get(i);
       if (move.isRestored) {
         continue;
       }
@@ -341,26 +399,20 @@ public final class MessageResize {
     }
   }
 
-  public void logFrame (TGMessage message) {
+  public void logFrame (T message) {
     // Builds of tests: checks read edges of the bubble of a moving message from the log
-    final Move move = findMove(message);
+    final Move<T> move = findMove(message);
     if (move == null || move.isFinalFrameLogged) {
       return;
     }
-    final int top = manager.getMessageTop(message);
-    final boolean useBubbles = message.useBubbles();
-    final int bubbleTop = top + (useBubbles ? message.getTopContentEdge() : 0);
-    final int bottomEdge = useBubbles ? message.getBottomContentEdge() : message.getHeight();
-    final int bubbleBottom = top + bottomEdge;
-    Log.i(LOG_TAG, "frame " + message.getId() + " " + bubbleTop + " " + bubbleBottom + " view " +
-      top + " " + message.getHeight() + " factor " + move.factor +
-      (move.isFinished ? " final" : ""));
+    Log.i(LOG_TAG, "frame " + manager.getLogName(message) + " " +
+      manager.getLogEdges(message) + " factor " + move.factor + (move.isFinished ? " final" : ""));
     move.isFinalFrameLogged = move.isFinished;
   }
 
-  public void stop (TGMessage message) {
+  public void stop (T message) {
     // Stopped before its last frame, e.g. its text was replaced
-    final Move move = findMove(message);
+    final Move<T> move = findMove(message);
     if (move != null && !move.isFinished) {
       moves.remove(move);
     }
@@ -370,20 +422,20 @@ public final class MessageResize {
     removeFinishedMoves(null);
   }
 
-  public @Nullable int[] getKeptChange (TGMessage message) {
+  public @Nullable int[] getKeptChange (T message) {
     // The change kept for a change back, as Settings.MessageState keeps it
-    final Move move = findMove(message);
+    final Move<T> move = findMove(message);
     if (move == null) {
       return null;
     }
     return new int[] {move.originTop - move.finalTop, move.height, move.finalHeight};
   }
 
-  public void restoreChange (TGMessage message, int[] change) {
+  public void restoreChange (T message, int[] change) {
     removeFinishedMoves(null);
-    Move move = findMove(message);
+    Move<T> move = findMove(message);
     if (move == null) {
-      move = new Move(message);
+      move = new Move<>(message);
       moves.add(move);
     }
     move.isFinished = move.isRestored = true;
@@ -393,7 +445,7 @@ public final class MessageResize {
     move.finalHeight = change[2];
   }
 
-  private void removeFinishedMoves (@Nullable Move kept) {
+  private void removeFinishedMoves (@Nullable Move<T> kept) {
     for (int i = moves.size() - 1; i >= 0; i--) {
       if (moves.get(i) != kept && moves.get(i).isFinished) {
         moves.remove(i);
@@ -401,7 +453,7 @@ public final class MessageResize {
     }
   }
 
-  private Move findMove (TGMessage message) {
+  private Move<T> findMove (T message) {
     for (int i = 0; i < moves.size(); i++) {
       if (moves.get(i).message == message) {
         return moves.get(i);

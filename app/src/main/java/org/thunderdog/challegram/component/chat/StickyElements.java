@@ -28,7 +28,7 @@ public final class StickyElements {
     void drawSticky (Canvas c, float x, float y, float alpha);
   }
 
-  public static final int AT_MIN = -1, STUCK = 0, AT_MAX = 1;
+  private static final int AT_MIN = -1, STUCK = 0, AT_MAX = 1;
 
   private static final class Entry {
     private Element element;
@@ -51,7 +51,7 @@ public final class StickyElements {
     return count == 0;
   }
 
-  public void add (
+  private void add (
     Element element,
     float x,
     float minY,
@@ -74,11 +74,27 @@ public final class StickyElements {
     entry.state = state;
   }
 
+  public float stick (
+    Element element,
+    float x,
+    float minY,
+    float maxY,
+    float padding,
+    boolean atTop,
+    int visibleTop,
+    int visibleBottom
+  ) {
+    final float y = place(minY, maxY, padding, atTop, visibleTop, visibleBottom);
+    final int state = stateOf(y, minY, maxY);
+    add(element, x, minY, maxY, padding, atTop, state);
+    return state == STUCK ? Float.NaN : y;
+  }
+
   public static int topOf (View child) {
     return Math.round(child.getTop() + child.getTranslationY());
   }
 
-  public static int stateOf (float y, float minY, float maxY) {
+  private static int stateOf (float y, float minY, float maxY) {
     return y <= minY ? AT_MIN : y >= maxY ? AT_MAX : STUCK;
   }
 
@@ -109,7 +125,7 @@ public final class StickyElements {
     return false;
   }
 
-  public static float place (
+  private static float place (
     float minY,
     float maxY,
     float padding,

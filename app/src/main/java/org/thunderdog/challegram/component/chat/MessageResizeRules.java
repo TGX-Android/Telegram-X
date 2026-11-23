@@ -24,6 +24,7 @@ public final class MessageResizeRules {
   public int top, height, finalHeight;
   // Height of the messages below it, -1 when it isn't known
   public int belowHeight;
+  public int aboveHeight = -1;
   // Of the view above and below the bubble
   public int spaceAbove, spaceBelow;
   // Edges of the block that changes from the top of the view, and whether it starts or ends the
@@ -49,7 +50,10 @@ public final class MessageResizeRules {
   }
 
   public int withinEnd (int finalTop) {
-    // Moved down as far as the end of the list would leave space below the last message
+    // No space above the first message, then none below the last: a short list is at its end
+    if (aboveHeight != -1) {
+      finalTop -= Math.max(0, finalTop - aboveHeight - listTop);
+    }
     if (belowHeight == -1) {
       return finalTop;
     }

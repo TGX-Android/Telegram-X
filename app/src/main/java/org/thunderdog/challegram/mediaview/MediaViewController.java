@@ -147,6 +147,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.text.BlockSwitches;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.v.MaxHeightScrollView;
@@ -5312,6 +5313,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         MaxHeightScrollView scrollView = new MaxHeightScrollView(context);
         scrollView.setMaxHeight(Text.getLineHeight(TGMessage.getTextStyleProvider(), true) * 10 + Screen.dp(14f));
         scrollView.addView(captionWrap);
+        captionView.setCodeBlockWrapping(BlockSwitches.CODE_WRAPPING_DISABLED);
+        captionView.setCollapsedQuoteLineCount(Config.VIEWER_EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT);
+        captionView.setBlockSwitches(true, scrollView);
         scrollView.setAlpha(0f);
         scrollView.setBackgroundColor(Theme.getColor(ColorId.transparentEditor));
         scrollView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));

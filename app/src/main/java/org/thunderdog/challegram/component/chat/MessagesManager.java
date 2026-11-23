@@ -106,7 +106,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessagesSearchManagerMiddleware searchMiddleware;
 
   private final MessagesLoader loader;
-  private final MessageResize messageResize = new MessageResize(new MessageResize.Messages() {
+  private final MessageResize<TGMessage> messageResize =
+    new MessageResize<>(new MessageResize.Messages<TGMessage>() {
     @Override
     public int getMessageTop (TGMessage message) {
       return MessagesManager.this.getMessageTop(message);
@@ -130,6 +131,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     @Override
     public ViewTreeObserver getViewTreeObserver () {
       return controller.getMessagesView().getViewTreeObserver();
+    }
+
+    @Override
+    public String getLogName (TGMessage message) {
+      return String.valueOf(message.getId());
+    }
+
+    @Override
+    public String getLogEdges (TGMessage message) {
+      final int top = getMessageTop(message);
+      final boolean useBubbles = message.useBubbles();
+      final int bubbleTop = top + (useBubbles ? message.getTopContentEdge() : 0);
+      final int bottomEdge =
+        useBubbles ? message.getBottomContentEdge() : message.getHeight();
+      return bubbleTop + " " + (top + bottomEdge) + " view " + top + " " + message.getHeight();
     }
   });
 
@@ -2013,7 +2029,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  public MessageResize messageResize () {
+  public MessageResize<TGMessage> messageResize () {
     return messageResize;
   }
 

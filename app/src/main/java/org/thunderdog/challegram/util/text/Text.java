@@ -2236,10 +2236,25 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       return true;
     }
     final int blockId = entity.getQuoteId();
-    if (blockSwitches != null && blockSwitches.isChosen(blockId)) {
+    if (blockSwitches == null) {
+      return isLongCodeBlock(entity);
+    }
+    if (blockSwitches.isChosen(blockId)) {
       return !blockSwitches.isChosenOn(blockId);
     }
-    return isLongCodeBlock(entity);
+    switch (blockSwitches.getCodeWrapping()) {
+      case BlockSwitches.CODE_WRAPPING_ENABLED:
+        return false;
+      case BlockSwitches.CODE_WRAPPING_DISABLED:
+        return true;
+      default:
+        return isLongCodeBlock(entity);
+    }
+  }
+
+  public int getCollapsedQuoteLineCount () {
+    return blockSwitches != null ? blockSwitches.getCollapsedQuoteLineCount() :
+      Config.EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT;
   }
 
   public boolean canSwitchCodeBlock (TextEntity entity) {
@@ -5277,7 +5292,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     final int firstLine = foundLine != -1 ? quote.findShownFirstLine(foundLine) : 0;
     if (firstLine > 0) {
       shownStart = quote.findLinePart(firstLine);
-      shownEnd = quote.findLinePart(firstLine + Config.EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT);
+      shownEnd = quote.findLinePart(firstLine + getCollapsedQuoteLineCount());
     }
     int shownStartChar = Integer.MAX_VALUE, hiddenStart = Integer.MAX_VALUE, hiddenWidth = 0;
     for (int i = start; i < end; i++) {

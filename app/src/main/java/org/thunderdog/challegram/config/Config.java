@@ -76,6 +76,7 @@ public class Config {
   // Lines of the layout that a collapsed expandable quote shows, the last of them under its fade; a
   // quote of fewer than two lines more is shown whole, so that a collapse hides at least two lines
   public static final int EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT = 4;
+  public static final int VIEWER_EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT = 3;
   public static final boolean INPUT_QUOTE_COLLAPSED_BY_DEFAULT = true;
   // Lines of quotes of the input field not grayed when collapsed; longer ones get the button
   public static final int INPUT_QUOTE_COLLAPSED_LINE_COUNT = 3;
