@@ -315,16 +315,23 @@ val buildTlottieTasks = Sdk.VARIANTS.values.filter {
       })
       sdkFlavor.set(sdkVariant.flavor)
       abi.set(abiFilter)
+      // Branch protection builds core and alloc, and a build script of their dependencies is a
+      // program of the host, which Rust for Windows links only with Visual Studio
+      val isProtected = sdkVariant.usesBranchProtection && abiFilter == "arm64-v8a" &&
+        !hostTag.get().startsWith("windows")
+      branchProtection.set(isProtected)
       // Optimizations guided by the profile of drawing on a device of the ABI, see
       // generateTlottieProfile
-      val profileFile = layout.projectDirectory.file("jni/tlottie/${abiFilter}.profdata")
+      val profileName = if (isProtected) "$abiFilter-protected" else abiFilter
+      val profileFile = layout.projectDirectory.file("jni/tlottie/${profileName}.profdata")
       if (profileFile.asFile.exists()) {
         profile.set(profileFile)
         profiles.set(layout.projectDirectory.file("jni/tlottie/profiles.properties"))
       }
-      // Output
+      // Output, shared by flavors with the same options
+      val buildFolder = if (isProtected) "protected" else "plain"
       buildDir.set(layout.buildDirectory.dir(
-        "generated/tgx/tlottie-build/${abiFilter}"
+        "generated/tgx/tlottie-build/${buildFolder}/${abiFilter}"
       ))
       outputDir.set(layout.buildDirectory.dir(
         "generated/tgx/tlottie/${sdkVariant.flavor}/${abiFilter}"
@@ -343,12 +350,24 @@ val buildTlottieTask = tasks.register("buildTlottie") {
 // Profiles of drawing of tlottie, made by hand on a device of the ABI after updates of tlottie or
 // Rust, e.g. ANDROID_SERIAL=<device> ./gradlew ":app:generateTlottieProfile[arm64-v8a]"
 // -Ptlottie.samples=<folder with emoji, sticker and effect>. x86 and x86_64 have no device to make
-// them on
+// them on. arm64-v8a-protected is that of flavors with branch protection, of an archive that the
+// host of releases built
 val tlottieSamples = providers.gradleProperty("tlottie.samples").map { File(it) }
-listOf("arm64-v8a", "armeabi-v7a").filter { it in globalAbiFilters }.forEach { abiFilter ->
-  tasks.register<GenerateTlottieProfileTask>("generateTlottieProfile[$abiFilter]") {
+val tlottieArchive = providers.gradleProperty("tlottie.archive").map { File(it) }
+val tlottieProfiler = providers.gradleProperty("tlottie.profiler").map { File(it) }
+val tlottieHost = providers.gradleProperty("tlottie.host")
+listOf("arm64-v8a", "arm64-v8a-protected", "armeabi-v7a").filter {
+  it.removeSuffix("-protected") in globalAbiFilters
+}.forEach { name ->
+  val abiFilter = name.removeSuffix("-protected")
+  tasks.register<GenerateTlottieProfileTask>("generateTlottieProfile[$name]") {
     group = "Setup"
-    description = "Makes the profile of drawing of tlottie for $abiFilter on a connected device"
+    description = "Makes the profile of drawing of tlottie for $name on a connected device"
+    profileName.set(name)
+    branchProtection.set(name != abiFilter)
+    archive.fileProvider(tlottieArchive)
+    archiveProfiler.fileProvider(tlottieProfiler)
+    archiveHost.set(tlottieHost)
     sdkDir.set(File(config.sdkDir))
     ndkVersion.set(config.build.primaryNdkVersion)
     hostTag.set(findHostTag())
@@ -358,9 +377,9 @@ listOf("arm64-v8a", "armeabi-v7a").filter { it in globalAbiFilters }.forEach { a
     inputDir.set(layout.projectDirectory.dir("jni/third_party/tlottie"))
     runner.set(layout.projectDirectory.file("jni/tlottie/profile.c"))
     samples.fileProvider(tlottieSamples)
-    profile.set(layout.projectDirectory.file("jni/tlottie/$abiFilter.profdata"))
+    profile.set(layout.projectDirectory.file("jni/tlottie/$name.profdata"))
     profiles.set(layout.projectDirectory.file("jni/tlottie/profiles.properties"))
-    buildDir.set(layout.buildDirectory.dir("generated/tgx/tlottie-profile/$abiFilter"))
+    buildDir.set(layout.buildDirectory.dir("generated/tgx/tlottie-profile/$name"))
   }
 }
 

@@ -38,7 +38,7 @@ This is the complete source code and the build instructions for the official alt
 * git with LFS: `# apt install git git-lfs`
 * Run `$ git lfs install` if you just installed `git-lfs`
 * JDK: `# apt install openjdk-25-jdk`
-* rustup: `# apt install rustup`, then Rust of `version.rust` of `version.properties` with targets of Android: `$ scripts/setup-rust.sh`, which prints `rust.dir` for `local.properties`. Run it again after a change of `version.rust`
+* rustup, and gcc to link build scripts of Rust: `# apt install rustup gcc`, then Rust of `version.rust` of `version.properties` with targets of Android: `$ scripts/setup-rust.sh`, which prints `rust.dir` for `local.properties`. Run it again after a change of `version.rust`
 * If multiple JDK versions are installed:<br/>`# update-java-alternatives --list`<br/>`# update-java-alternatives --set java-1.25.0-openjdk-amd64` (or other compatible version)
 
 #### Windows
@@ -108,7 +108,7 @@ Build libvpx, FFmpeg and tlottie for all flavors and ABIs, add `-PuseLegacyNdk=t
 ./gradlew :app:buildTlottie
 ```
 
-Builds of tlottie for `arm64-v8a` are optimized by the profile of its drawing, `app/jni/tlottie/arm64-v8a.profdata`. After updates of tlottie or Rust, builds warn that it doesn't match, and it's made again from animated stickers and emoji on a connected device of the ABI, see [`GenerateTlottieProfileTask`](buildSrc/src/main/kotlin/tgx/gradle/task/GenerateTlottieProfileTask.kt):
+Builds of tlottie for `arm64-v8a` are optimized by the profile of its drawing, `app/jni/tlottie/arm64-v8a.profdata`, and in flavors with branch protection by `arm64-v8a-protected.profdata`, made for the host that builds releases. After updates of tlottie or Rust, builds warn that it doesn't match, and it's made again from animated stickers and emoji on a connected device of the ABI, see [`GenerateTlottieProfileTask`](buildSrc/src/main/kotlin/tgx/gradle/task/GenerateTlottieProfileTask.kt):
 ```shell
 ANDROID_SERIAL=<device> ./gradlew ":app:generateTlottieProfile[arm64-v8a]" -Ptlottie.samples=<samples>
 ```

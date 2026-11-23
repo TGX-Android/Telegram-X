@@ -1,7 +1,7 @@
 #!/bin/bash
-# Installs Rust of version.rust of version.properties with its targets of Android by rustup, which
-# builds tlottie, and prints the value of rust.dir for local.properties. Run it again after a bump
-# of version.rust to install the new version.
+# Installs Rust of version.rust of version.properties with its targets of Android and its sources,
+# from which tlottie builds core and alloc for arm64, by rustup, and prints the value of rust.dir
+# for local.properties. Run it again after a bump of version.rust to install the new version.
 set -e
 # shellcheck source=set-env.sh
 IGNORE_SDK=1 source "$(dirname "$0")"/set-env.sh
@@ -18,7 +18,7 @@ fi
 RUST_VERSION=$(scripts/./read-property.sh version.properties version.rust)
 TARGETS=aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
-rustup toolchain install "$RUST_VERSION" --profile minimal --target "$TARGETS"
+rustup toolchain install "$RUST_VERSION" --profile minimal --component rust-src --target "$TARGETS"
 
 RUST_DIR=$(rustup show home)
 if [ "$PLATFORM" = windows ]; then
@@ -41,6 +41,10 @@ for TARGET in ${TARGETS//,/ }; do
     exit 1
   }
 done
+test -d "$TOOLCHAIN/lib/rustlib/src/rust/library" || {
+  echo -e "${STYLE_ERROR}rust-src not found in $TOOLCHAIN${STYLE_END}" >&2
+  exit 1
+}
 
 echo "Rust $RUST_VERSION is installed with targets $TARGETS"
 echo -e "${STYLE_INFO}rust.dir=$RUST_DIR${STYLE_END}"
