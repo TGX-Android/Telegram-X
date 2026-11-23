@@ -1907,6 +1907,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     int anchorIndex = manager.findLastVisibleItemPosition();
     View anchorView = anchorIndex != RecyclerView.NO_POSITION ?
       manager.findViewByPosition(anchorIndex) : null;
+    TGMessage anchor = anchorView instanceof MessageProvider ?
+      ((MessageProvider) anchorView).getMessage() : null;
     final int count = items.size();
     boolean changed = false;
     int topFlags = 0, topTime = 0, topIndex = 0;
@@ -1926,13 +1928,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       topIndex = index;
     }
     changed |= updateMerge(items.get(0), 0, topFlags, topTime, topIndex);
-    if (changed && anchorView != null) {
-      RecyclerView view = controller.getMessagesView();
-      int bottom = anchorView.getTop() + items.get(anchorIndex).getHeight();
-      manager.scrollToPositionWithOffset(
-        anchorIndex,
-        view.getHeight() - view.getPaddingBottom() - bottom
-      );
+    if (changed && anchor != null && anchor == adapter.getMessage(anchorIndex)) {
+      setMessageTop(anchor, anchorView.getTop());
     }
   }
 
