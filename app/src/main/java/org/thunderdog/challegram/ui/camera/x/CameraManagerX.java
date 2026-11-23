@@ -150,16 +150,19 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     cameraProvider.unbindAll();
 
     AspectRatioStrategy aspectRatioStrategy;
+    int videoAspectRatio;
     int aspectRatioMode = Settings.instance().getCameraAspectRatioMode();
     switch (aspectRatioMode) {
       case Settings.CAMERA_RATIO_FULL_SCREEN:
       case Settings.CAMERA_RATIO_16_9:
         aspectRatioStrategy = AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY;
+        videoAspectRatio = AspectRatio.RATIO_16_9;
         break;
       case Settings.CAMERA_RATIO_1_1:
       case Settings.CAMERA_RATIO_4_3:
       default:
         aspectRatioStrategy = AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY;
+        videoAspectRatio = AspectRatio.RATIO_4_3;
         break;
     }
 
@@ -197,14 +200,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
       Arrays.asList(Quality.FHD, Quality.HD, Quality.SD),
       FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
     );
-    Recorder recorder = new Recorder.Builder()
-      .setQualitySelector(qualitySelector)
-      .build();
-    videoCapture = new VideoCapture.Builder<>(recorder)
-      .setCaptureType(UseCaseConfigFactory.CaptureType.VIDEO_CAPTURE)
-      .setTargetRotation(getSurfaceRotation())
-      .setResolutionSelector(resolutionSelector)
-      .build();
+    videoCapture = newVideoCapture(qualitySelector, videoAspectRatio);
 
     ImageAnalysis imageAnalyzer;
 
@@ -230,7 +226,19 @@ public class CameraManagerX extends CameraManager<PreviewView> {
         // We probably don't want to take photos or videos while scanning QR codes. (Also, there are 3 use case limit in CameraX)
         this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageAnalyzer);
       } else {
-        this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageCapture, videoCapture);
+        try {
+          this.camera = cameraProvider.bindToLifecycle(
+            (LifecycleOwner) context, cameraSelector, preview, imageCapture, videoCapture
+          );
+        } catch (Exception e) {
+          // No size of the camera may have both a quality and the ratio of the mode: then videos
+          // take any ratio, so that the camera works at all
+          Log.w(Log.TAG_CAMERA, "Use case binding with the ratio of videos failed", e);
+          videoCapture = newVideoCapture(qualitySelector, AspectRatio.RATIO_DEFAULT);
+          this.camera = cameraProvider.bindToLifecycle(
+            (LifecycleOwner) context, cameraSelector, preview, imageCapture, videoCapture
+          );
+        }
       }
     } catch (Exception e) {
       Log.e(Log.TAG_CAMERA, "Use case binding failed", e);
@@ -242,6 +250,18 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     UI.post(delegate::onRenderedFirstFrame, 800);
 
     reportFlashMode();
+  }
+
+  private VideoCapture<Recorder> newVideoCapture (QualitySelector qualitySelector, int ratio) {
+    Recorder.Builder recorder = new Recorder.Builder()
+      .setQualitySelector(qualitySelector);
+    if (ratio != AspectRatio.RATIO_DEFAULT) {
+      recorder.setAspectRatio(ratio);
+    }
+    return new VideoCapture.Builder<>(recorder.build())
+      .setCaptureType(UseCaseConfigFactory.CaptureType.VIDEO_CAPTURE)
+      .setTargetRotation(getSurfaceRotation())
+      .build();
   }
 
   private static boolean cameraXConfigured;

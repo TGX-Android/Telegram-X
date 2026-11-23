@@ -63,10 +63,12 @@ public abstract class BaseForegroundService extends Service {
   private CharSequence activeText;
   private String activeChannelId;
   private int activeIconRes;
+  private int lastStartId;
 
   @Override
   public int onStartCommand (Intent intent, int flags, int startId) {
     synchronized (BaseForegroundService.class) {
+      lastStartId = startId;
       String callbackId = intent != null ? intent.getStringExtra(EXTRA_CALLBACK_ID) : null;
       String action = intent != null ? intent.getAction() : null;
       TDLib.Tag.notifications("%s: handling %s, startId=%d", getClass().getSimpleName(), action, startId);
@@ -121,6 +123,16 @@ public abstract class BaseForegroundService extends Service {
     }
   }
 
+  private int indexOfTask (long pushId, int accountId) {
+    for (int i = 0; i < tasks.size(); i++) {
+      TaskInfo task = tasks.get(i);
+      if (task.pushId == pushId && task.accountId == accountId) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   private boolean handleStart (@NonNull Intent intent) {
     CharSequence title = intent.getCharSequenceExtra(EXTRA_TITLE);
     if (StringUtils.isEmpty(title)) {
@@ -132,7 +144,12 @@ public abstract class BaseForegroundService extends Service {
     long pushId        = intent.getLongExtra(EXTRA_PUSH_ID, 0);
     int accountId      = intent.getIntExtra(EXTRA_ACCOUNT_ID, TdlibAccount.NO_ID);
     TaskInfo info = new TaskInfo(title, text, channelId, iconRes, pushId, accountId);
-    this.tasks.add(info);
+    if (indexOfTask(pushId, accountId) != -1) {
+      // One push sends one stop, also when it asked for its start again
+      TDLib.Tag.notifications(pushId, accountId, "Task of this push already runs");
+    } else {
+      this.tasks.add(info);
+    }
 
     TDLib.Tag.notifications(pushId, accountId, "%s.handleStart() Title: %s  ChannelId: %s  Text: %s", getClass().getSimpleName(), title, channelId, text);
 
@@ -160,7 +177,11 @@ public abstract class BaseForegroundService extends Service {
 
   private void finishService () {
     stopForeground(true);
-    stopSelf();
+    // Not stopSelf(): a start that came meanwhile still waits for its startForeground
+    if (!stopSelfResult(lastStartId)) {
+      TDLib.Tag.notifications("%s: Started again after startId=%d, not stopping",
+        getClass().getSimpleName(), lastStartId);
+    }
 
     activeTitle = null;
     activeText = null;
@@ -172,12 +193,13 @@ public abstract class BaseForegroundService extends Service {
     int accountId    = intent.getIntExtra(EXTRA_ACCOUNT_ID, TdlibAccount.NO_ID);
     TDLib.Tag.notifications(pushId, accountId, "%s.handleStop()", getClass().getSimpleName());
 
-    TaskInfo lastTask;
-    if (tasks.isEmpty()) {
+    int index = indexOfTask(pushId, accountId);
+    TaskInfo task;
+    if (index == -1) {
       TDLib.Tag.notifications(pushId, accountId, "Bug: %s.handleStop() without handleStart()", getClass().getSimpleName());
-      lastTask = null;
+      task = null;
     } else {
-      lastTask = tasks.remove(tasks.size() - 1);
+      task = tasks.remove(index);
     }
 
     CharSequence title, text;
@@ -189,11 +211,11 @@ public abstract class BaseForegroundService extends Service {
       text = activeText;
       channelId = activeChannelId;
       iconRes = activeIconRes;
-    } else if (lastTask != null) {
-      title = lastTask.title;
-      text = lastTask.text;
-      channelId = lastTask.channelId;
-      iconRes = lastTask.iconRes;
+    } else if (task != null) {
+      title = task.title;
+      text = task.text;
+      channelId = task.channelId;
+      iconRes = task.iconRes;
     } else {
       title = Lang.getString(R.string.RetrievingMessages);
       text = null;
@@ -270,8 +292,16 @@ public abstract class BaseForegroundService extends Service {
     intent.putExtra(EXTRA_ACCOUNT_ID, accountId);
     if (after != null) {
       String callbackId = keyOf(accountId, pushId);
-      addCallback(callbackId, after);
+      if (putCallback(callbackId, after) != null) {
+        TDLib.Tag.notifications(pushId, accountId, "Waiting for the pending start of this task");
+        return true;
+      }
       intent.putExtra(EXTRA_CALLBACK_ID, callbackId);
+      if (!startForegroundService(context, intent, pushId, accountId)) {
+        removeCallback(callbackId, after);
+        return false;
+      }
+      return true;
     }
     return startForegroundService(context, intent, pushId, accountId);
   }
@@ -308,10 +338,16 @@ public abstract class BaseForegroundService extends Service {
   }
 
   private static final Map<String, RunnableBool> callbacks = new LinkedHashMap<>();
-  private static void addCallback (String key, RunnableBool callback) {
+  private static RunnableBool putCallback (String key, RunnableBool callback) {
     synchronized (callbacks) {
-      if (callbacks.putIfAbsent(key, callback) != null) {
-        throw new IllegalStateException("Callback already present: " + key);
+      return callbacks.put(key, callback);
+    }
+  }
+
+  private static void removeCallback (String key, RunnableBool callback) {
+    synchronized (callbacks) {
+      if (callbacks.get(key) == callback) {
+        callbacks.remove(key);
       }
     }
   }

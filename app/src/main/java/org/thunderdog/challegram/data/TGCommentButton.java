@@ -34,7 +34,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
-import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
@@ -429,7 +429,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     } else {
       iconPaint = PorterDuffPaint.get(iconColorId, alpha);
     }
-    Drawables.draw(c, icon, iconX, iconY, iconPaint);
+    Icons.drawBitmap(c, R.drawable.baseline_forum_18, iconX, iconY, iconPaint);
 
     float textX = useBubbles ? left + Screen.dp(46f) : TGMessage.getContentLeft();
     float textY = rect.centerY();
@@ -490,7 +490,13 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     Drawable icon = drawableProvider.getSparseDrawable(R.drawable.baseline_forum_16, iconColorId);
     float iconX = left + Screen.dp(18f);
     float iconY = rect.centerY();
-    Drawables.drawCentered(c, icon, iconX, iconY, PorterDuffPaint.get(iconColorId, alpha));
+    Icons.drawBitmap(
+      c,
+      R.drawable.baseline_forum_16,
+      iconX - icon.getMinimumWidth() / 2f,
+      iconY - icon.getMinimumHeight() / 2f,
+      PorterDuffPaint.get(iconColorId, alpha)
+    );
 
     float textX = left + Screen.dp(34f);
     float textY = rect.centerY();

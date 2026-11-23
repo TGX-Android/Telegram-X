@@ -19,6 +19,7 @@
 #include <time.h>
 
 #include "utils.h"
+#include <libavutil/mem.h>
 
 #ifndef NO_WEBP
 #include "image.h"
@@ -43,6 +44,9 @@ jint JNI_OnLoad (JavaVM *vm, void *reserved) {
   if (jni_init(vm, env) == -1) {
     return -1;
   }
+
+  // Only broken files need larger blocks
+  av_max_alloc(128 * 1024 * 1024);
 
 #ifndef NO_WEBP
   if (imageOnJNILoad(vm, reserved, env) == -1) {

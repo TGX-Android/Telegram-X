@@ -140,6 +140,9 @@ public abstract class TextEntity {
   public abstract boolean isQuote ();
   public abstract  TdApi.TextEntity getQuote ();
   public abstract int getQuoteId ();
+  public boolean isCodeBlock () { return false; }
+  public boolean isExpandableQuote () { return false; }
+  public @Nullable String getCodeLanguage () { return null; }
 
   // TODO: TextEntityCustom & TextEntityMessage to make things simpler
   public abstract TextEntity setOnClickListener (ClickableSpan onClickListener);

@@ -1102,6 +1102,13 @@ dependencies {
     libs.androidx.exifinterface.latest
   )
   implementation(libs.androidx.biometric)
+  Sdk.VARIANTS.values
+    .filter {
+      "sinceMarshmallowPreQ" in findExtraFolders(it)
+    }
+    .forEach {
+      "${it.flavor}CompileOnly"(project(":stub:fingerprint"))
+    }
   flavorImplementation(
     libs.androidx.palette.legacy,
     libs.androidx.palette.legacy,
@@ -1114,21 +1121,25 @@ dependencies {
   flavorImplementation(
     libs.androidx.camera.camera2.legacy,
     libs.androidx.camera.camera2.legacy,
+    libs.androidx.camera.camera2.marshmallow,
     libs.androidx.camera.camera2.latest
   )
   flavorImplementation(
     libs.androidx.camera.video.legacy,
     libs.androidx.camera.video.legacy,
+    libs.androidx.camera.video.marshmallow,
     libs.androidx.camera.video.latest
   )
   flavorImplementation(
     libs.androidx.camera.lifecycle.legacy,
     libs.androidx.camera.lifecycle.legacy,
+    libs.androidx.camera.lifecycle.marshmallow,
     libs.androidx.camera.lifecycle.latest
   )
   flavorImplementation(
     libs.androidx.camera.view.legacy,
     libs.androidx.camera.view.legacy,
+    libs.androidx.camera.view.marshmallow,
     libs.androidx.camera.view.latest
   )
   // Google Play Services: https://developers.google.com/android/guides/releases

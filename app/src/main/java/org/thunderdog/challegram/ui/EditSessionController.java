@@ -25,6 +25,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
+import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
@@ -37,6 +38,7 @@ import org.thunderdog.challegram.util.text.TextWrapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
@@ -92,6 +94,11 @@ public class EditSessionController extends EditBaseController<EditSessionControl
   @Override
   public void onClick (View v) {
     final int viewId = v.getId();
+    boolean isSwitch =
+      viewId == R.id.btn_sessionAcceptSecretChats || viewId == R.id.btn_sessionAcceptCalls;
+    if (isSwitch && isDoneInProgress()) {
+      return;
+    }
     if (viewId == R.id.btn_sessionPlatform || viewId == R.id.btn_sessionCountry || viewId == R.id.btn_sessionIp || viewId == R.id.btn_sessionFirstLogin || viewId == R.id.btn_sessionLastLogin) {
       UI.copyText((CharSequence) v.getTag(), R.string.CopiedText);
     } else if (viewId == R.id.btn_sessionDevice) {
@@ -124,26 +131,77 @@ public class EditSessionController extends EditBaseController<EditSessionControl
 
   @Override
   protected boolean onDoneClick () {
+    if (isDoneInProgress()) {
+      return true;
+    }
     setDoneInProgress(true);
 
     List<TdApi.Function<TdApi.Ok>> functions = new ArrayList<>();
 
-    if (allowSecretChats != session.canAcceptSecretChats) {
-      functions.add(new TdApi.ToggleSessionCanAcceptSecretChats(session.id, allowSecretChats));
+    boolean sentSecretChats = allowSecretChats, sentCalls = allowCalls;
+    if (sentSecretChats != session.canAcceptSecretChats) {
+      functions.add(new TdApi.ToggleSessionCanAcceptSecretChats(session.id, sentSecretChats));
     }
 
-    if (allowCalls != session.canAcceptCalls) {
-      functions.add(new TdApi.ToggleSessionCanAcceptCalls(session.id, allowCalls));
+    if (sentCalls != session.canAcceptCalls) {
+      functions.add(new TdApi.ToggleSessionCanAcceptCalls(session.id, sentCalls));
     }
 
-    tdlib.sendAll(TD.toArray(functions), obj -> { }, () -> runOnUiThreadOptional(() -> {
-      session.canAcceptSecretChats = allowSecretChats;
-      session.canAcceptCalls = allowCalls;
-      getArgumentsStrict().sessionChangeListener.runWithData(session);
-      navigateBack();
-    }));
+    boolean callsChanged = sentCalls != session.canAcceptCalls;
+    RunnableData<TdApi.Session> listener = getArgumentsStrict().sessionChangeListener;
+    AtomicBoolean failed = new AtomicBoolean();
+    tdlib.sendAll(TD.toArray(functions), (ok, error) -> {
+      if (error != null) {
+        failed.set(true);
+        UI.showError(error);
+      }
+    }, () -> {
+      if (failed.get()) {
+        // Results don't tell which request failed: the session is read again before going back
+        tdlib.getSessions(false, sessions -> {
+          TdApi.Session updated = null;
+          if (sessions != null) {
+            for (TdApi.Session check : sessions.allSessions) {
+              if (check.id == session.id) {
+                updated = check;
+                break;
+              }
+            }
+          }
+          TdApi.Session known = updated;
+          UI.post(() -> {
+            if (known != null) {
+              listener.runWithData(known);
+            }
+            if (!isDestroyed()) {
+              navigateBackIfOnTop();
+            }
+          });
+        });
+        return;
+      }
+      if (callsChanged) {
+        tdlib.onSessionCanAcceptCallsChanged(session.id, sentCalls);
+      }
+      UI.post(() -> {
+        session.canAcceptSecretChats = sentSecretChats;
+        session.canAcceptCalls = sentCalls;
+        listener.runWithData(session);
+        if (!isDestroyed()) {
+          navigateBackIfOnTop();
+        }
+      });
+    });
 
     return true;
+  }
+
+  private void navigateBackIfOnTop () {
+    NavigationController navigation = navigationController();
+    if (navigation == null || navigation.getCurrentStackItem() != this || !navigateBack()) {
+      setDoneInProgress(false);
+      checkDoneButton();
+    }
   }
 
   @Override

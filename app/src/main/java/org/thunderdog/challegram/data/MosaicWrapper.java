@@ -1259,7 +1259,7 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
           saveCount = Views.save(c);
           float scale = .6f + .4f * alpha;
           c.scale(scale, scale, x + width / 2, y + height / 2);
-          preview.setPaintAlpha(alpha * preview.getAlpha());
+          preview.setPaintAlpha(alpha);
         } else {
           saveCount = -1;
         }

@@ -474,7 +474,7 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
         }
 
         if (factor < 1f) {
-          receiver.setPaintAlpha(receiver.getAlpha() * factor);
+          receiver.setPaintAlpha(factor);
         }
         receiver.draw(c);
         if (factor < 1f) {

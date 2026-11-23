@@ -49,6 +49,8 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
       "-fvisibility-inlines-hidden",
       "-fno-strict-aliasing",
       "-fomit-frame-pointer",
+      "-fstack-protector-strong",
+      "-D_FORTIFY_SOURCE=2",
       "-flto=full",
       "-fno-fast-math",
       "-ftree-vectorize",
@@ -90,7 +92,10 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
     when (abi) {
       "arm64-v8a" -> {
         ndkAbi = "aarch64-linux-android"
-        cFlags += "-march=armv8-a"
+        cFlags.addAll(listOf(
+          "-march=armv8-a",
+          "-mbranch-protection=standard"
+        ))
         extraParams.addAll(arrayOf(
           "--disable-x86asm",
           "--enable-neon"
@@ -279,6 +284,8 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
         "--disable-programs",
         "--enable-runtime-cpudetect",
         "--enable-pthreads",
+        // Limits of decoders, see tgx_ff_malloc in gif.cpp
+        "--malloc-prefix=tgx_ff_",
 
         "--enable-hwaccels",
         "--disable-vulkan",

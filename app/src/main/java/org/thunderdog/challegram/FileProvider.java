@@ -74,7 +74,7 @@ public class FileProvider extends ContentProvider {
   @GuardedBy("sCache")
   private static HashMap<String, PathStrategy> sCache = new HashMap<String, PathStrategy>();
 
-  private PathStrategy mStrategy;
+  private String mAuthority;
 
   /**
    * The default FileProvider implementation does not need to be initialized. If you want to
@@ -104,7 +104,12 @@ public class FileProvider extends ContentProvider {
       throw new SecurityException("Provider must grant uri permissions");
     }
 
-    mStrategy = getPathStrategy(context, info.authority);
+    mAuthority = info.authority;
+  }
+
+  private PathStrategy getStrategy () {
+    // Roots are resolved on first use: at the start, shared storage may block the main thread
+    return getPathStrategy(getContext(), mAuthority);
   }
 
   /**
@@ -184,7 +189,7 @@ public class FileProvider extends ContentProvider {
                       @Nullable String[] selectionArgs,
                       @Nullable String sortOrder) {
     // ContentProvider has already checked granted permissions
-    final File file = mStrategy.getFileForUri(uri);
+    final File file = getStrategy().getFileForUri(uri);
 
     if (projection == null) {
       projection = COLUMNS;
@@ -223,7 +228,7 @@ public class FileProvider extends ContentProvider {
   @Override
   public String getType(@NonNull Uri uri) {
     // ContentProvider has already checked granted permissions
-    final File file = mStrategy.getFileForUri(uri);
+    final File file = getStrategy().getFileForUri(uri);
 
     final int lastDot = file.getName().lastIndexOf('.');
     if (lastDot >= 0) {
@@ -271,7 +276,7 @@ public class FileProvider extends ContentProvider {
   public int delete(@NonNull Uri uri, @Nullable String selection,
                     @Nullable String[] selectionArgs) {
     // ContentProvider has already checked granted permissions
-    final File file = mStrategy.getFileForUri(uri);
+    final File file = getStrategy().getFileForUri(uri);
     return file.delete() ? 1 : 0;
   }
 
@@ -294,7 +299,7 @@ public class FileProvider extends ContentProvider {
   public ParcelFileDescriptor openFile(@NonNull Uri uri, @NonNull String mode)
     throws FileNotFoundException {
     // ContentProvider has already checked granted permissions
-    final File file = mStrategy.getFileForUri(uri);
+    final File file = getStrategy().getFileForUri(uri);
     final int fileMode = modeToMode(mode);
     return ParcelFileDescriptor.open(file, fileMode);
   }

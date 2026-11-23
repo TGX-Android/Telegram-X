@@ -54,6 +54,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -1537,7 +1538,15 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
             drawable = view.getSparseDrawable(currentBitmapRes, 0);
           }
 
-          Drawables.draw(c, drawable, cx - drawable.getMinimumWidth() / 2f, cy - drawable.getMinimumHeight() / 2f, bitmapPaint);
+          Icons.drawBitmapOrVector(
+            c,
+            currentBitmapRes,
+            drawable,
+            needRestore,
+            cx - drawable.getMinimumWidth() / 2f,
+            cy - drawable.getMinimumHeight() / 2f,
+            bitmapPaint
+          );
         }
 
         if (bitmapAlpha != 1f) {

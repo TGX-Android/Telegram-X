@@ -730,7 +730,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   @Override
   public Iterator<TdlibAccount> iterator () {
     List<TdlibAccount> accounts = new ArrayList<>(this.accounts);
-    Collections.sort(accounts, (a, b) -> {
+    ArrayUtils.insertionSort(accounts, (a, b) -> {
       boolean aCurrent = a == currentAccount;
       boolean bCurrent = b == currentAccount;
       if (aCurrent != bCurrent) {
@@ -813,7 +813,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (accountsSorted.size() != activeAccounts.size() || accountsMod != accountsModCount) {
       accountsSorted.clear();
       accountsSorted.addAll(activeAccounts);
-      Collections.sort(accountsSorted, lastUsageComparator);
+      ArrayUtils.insertionSort(accountsSorted, lastUsageComparator);
       accountsMod = accountsModCount;
     }
     TdlibAccount account = account(accountId);
@@ -1655,6 +1655,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         }
       }
       global().notifyTokenStateChanged(newState, error, fullError);
+      global().notifyResolvableProblemAvailabilityMightHaveChanged();
       if (newState == TokenState.ERROR && !StringUtils.isEmpty(error)) {
         String reportedError = Settings.instance().getReportedPushServiceError();
         if (reportedError == null || !reportedError.equals(error)) {

@@ -216,8 +216,14 @@ public class U {
     return 0;
   }
 
+  private static final long MAX_GZIP_CONTENT_SIZE = 16 * 1024 * 1024;
+
   public static String gzipFileToString (String path) {
     try (BufferedSource buffer = Okio.buffer(Okio.source(new GZIPInputStream(new FileInputStream(path))))) {
+      if (buffer.request(MAX_GZIP_CONTENT_SIZE + 1)) {
+        Log.w(Log.TAG_GIF_LOADER, "Unpacked gzip is too large, path: %s", path);
+        return null;
+      }
       return buffer.readString(StringUtils.UTF_8);
     } catch (Throwable t) {
       Log.w(Log.TAG_GIF_LOADER, "Cannot decode gzip, path: %s", t, path);
@@ -2313,7 +2319,15 @@ public class U {
     return measureText(in, p);
   }
 
-  public static float measureTextRun (@Nullable CharSequence in, int start, int end, @NonNull Paint p, boolean isRtl) {
+  public static float measureTextRun (
+    @Nullable CharSequence in,
+    int start,
+    int end,
+    int contextStart,
+    int contextEnd,
+    @NonNull Paint p,
+    boolean isRtl
+  ) {
     final int count = end - start;
 
     if (StringUtils.isEmpty(in) || count <= 0) {
@@ -2321,7 +2335,7 @@ public class U {
     }
 
     if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      return p.getRunAdvance(in, start, end, 0, in.length(), isRtl, end);
+      return p.getRunAdvance(in, start, end, contextStart, contextEnd, isRtl, end);
     }
 
     return measureText(in, start, end, p);
