@@ -8382,6 +8382,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
       .setNoticeClickListener(v -> showJoinRequestInfo(joinRequest));
   }
 
+  private TopBarView.Item newBotInviteItem (TdApi.ChatActionBarBotInvite botInvite) {
+    String inviterName = tdlib.cache().userName(botInvite.inviterUserId);
+    final CharSequence text;
+    if (botInvite.ownerUserId == botInvite.inviterUserId) {
+      text = Lang.getStringBold(R.string.BotInviteByOwnerNotice, inviterName);
+    } else if (botInvite.ownerUserId != 0) {
+      text = Lang.getStringBold(
+        R.string.BotInviteOwnerNotice,
+        inviterName, tdlib.cache().userName(botInvite.ownerUserId)
+      );
+    } else {
+      text = Lang.getStringBold(R.string.BotInviteNotice, inviterName);
+    }
+    return new TopBarView.Item(FormattedText.valueOf(text, tdlib, null))
+      .setNoticeClickListener(v ->
+        tdlib.ui().openPrivateProfile(this, botInvite.inviterUserId, null)
+      );
+  }
+
   private void showJoinRequestInfo (TdApi.ChatActionBarJoinRequest joinRequest) {
     AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
     b.setTitle(Lang.getString(
@@ -8422,10 +8441,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }).setIcon(R.drawable.baseline_unarchive_24);
   }
 
-  private TopBarView.Item newReportItem (long chatId, boolean isBlock) {
+  private TopBarView.Item newReportItem (long chatId, boolean isBlock, String reportedName) {
     return new TopBarView.Item(R.id.btn_reportChat, isBlock ? R.string.BlockContact : R.string.ReportSpam, v -> {
       showSettings(new SettingsWrapBuilder(R.id.btn_reportSpam)
-        .addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.ReportChatSpam, chat.title), false))
+        .addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.ReportChatSpam, reportedName), false))
         .setRawItems(getChatUserId() != 0 ? new ListItem[] {
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true),
@@ -8501,7 +8520,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         case TdApi.ChatActionBarReportSpam.CONSTRUCTOR: {
           TdApi.ChatActionBarReportSpam reportSpam = (TdApi.ChatActionBarReportSpam) actionBar;
           addEmojiStatusNotice(items);
-          items.add(newReportItem(chatId, false));
+          items.add(newReportItem(chatId, false, chat.title));
           if (reportSpam.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
           }
@@ -8511,7 +8530,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         case TdApi.ChatActionBarReportAddBlock.CONSTRUCTOR: {
           TdApi.ChatActionBarReportAddBlock reportAddBlock = (TdApi.ChatActionBarReportAddBlock) actionBar;
           addEmojiStatusNotice(items);
-          items.add(newReportItem(chatId, true));
+          items.add(newReportItem(chatId, true, chat.title));
           items.add(newAddContactItem(chatId));
           if (reportAddBlock.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
@@ -8574,7 +8593,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         case TdApi.ChatActionBarBotInvite.CONSTRUCTOR: {
           TdApi.ChatActionBarBotInvite botInvite = (TdApi.ChatActionBarBotInvite) actionBar;
-          items.add(newReportItem(chatId, false));
+          items.add(newBotInviteItem(botInvite));
+          // ReportChat reports the inviter, not the bot.
+          items.add(newReportItem(chatId, false, tdlib.cache().userName(botInvite.inviterUserId)));
           if (botInvite.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
           }

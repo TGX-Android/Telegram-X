@@ -6003,6 +6003,9 @@
   <string name="JoinRequestDate_yesterday">yesterday at %1$s</string>
   <string name="JoinRequestDate_weekday">on %1$s at %2$s</string>
   <string name="JoinRequestDate_date">on %1$s at %2$s</string>
+  <string name="BotInviteNotice">%1$s invited you to this bot.</string>
+  <string name="BotInviteByOwnerNotice">%1$s invited you to their bot.</string>
+  <string name="BotInviteOwnerNotice">%1$s invited you to this bot owned by %2$s.</string>
   <string name="ChatActionBarEmojiStatusNotice">%1$s is using %2$s as a custom emoji status next to their name. %3$s</string>
 
   <string name="DeactivatedBot">deactivated bot</string>
