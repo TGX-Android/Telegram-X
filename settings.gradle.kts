@@ -36,6 +36,8 @@ include(
   ":extension:bridge",
   ":extension:${extra["extension"]}",
 
+  ":stub:fingerprint",
+
   ":app"
 )
 if (settingsDir.resolve("tests/.git").exists()) {

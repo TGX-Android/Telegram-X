@@ -273,6 +273,12 @@ public class TdlibListeners {
     }
   }
 
+  void notifySessionCanAcceptCallsChanged (long sessionId, boolean canAcceptCalls) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onSessionCanAcceptCallsChanged(tdlib, sessionId, canAcceptCalls);
+    }
+  }
+
   void notifySessionListPossiblyChanged (boolean isWeakGuess) {
     for (SessionListener listener : sessionListeners) {
       listener.onSessionListChanged(tdlib, isWeakGuess);

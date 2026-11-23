@@ -20,3 +20,8 @@ messageSelection: #4DD0E110
 seekReady: #C9F0F5
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #00BCD433
 bubbleOut_fillingActive: #6FC8C226
+codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
+bubbleOut_codeBlockBackground: #086E7C16
+bubbleOut_codeBlockLine: #006B79
+codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E
+bubbleOut_codeBlockRipple: #086E7C2C

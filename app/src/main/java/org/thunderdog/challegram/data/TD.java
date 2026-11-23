@@ -106,11 +106,14 @@ import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
 import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -148,6 +151,8 @@ public class TD {
   public static final int COMBINE_MODE_MEDIA = 1;
   public static final int COMBINE_MODE_AUDIO = 2;
   public static final int COMBINE_MODE_FILES = 3;
+  // Of files not read yet: a video that goes as media or as a document, as only reading it tells
+  public static final int COMBINE_MODE_MEDIA_OR_FILES = 4;
 
   public static boolean isValidRight (@RightId int rightId) {
     switch (rightId) {
@@ -711,6 +716,9 @@ public class TD {
             GifFile.TYPE_WEBM :
             GifFile.TYPE_MPEG4
         );
+        if (thumbnail.format.getConstructor() == TdApi.ThumbnailFormatWebm.CONSTRUCTOR) {
+          gifFile.setMaxSourceSize(GifFile.MAX_VIDEO_STICKER_SIZE);
+        }
         gifFile.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
         return gifFile;
       }
@@ -1257,7 +1265,7 @@ public class TD {
   public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean allowAudio, boolean allowAnimation, boolean allowVideo, boolean allowDocs, boolean showCaptionAboveMedia, boolean hasSpoiler) {
     if (!StringUtils.isEmpty(info.mimeType)) {
       boolean isContent = filePath.startsWith("content://");
-      boolean isAudio = info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg");
+      boolean isAudio = isAudioMimeType(info.mimeType);
       boolean isVideo = info.mimeType.startsWith("video/");
       boolean isPhoto = info.mimeType.startsWith("image/");
 
@@ -1389,6 +1397,96 @@ public class TD {
       return new TdApi.InputMessageDocument(new TdApi.InputDocument(inputFile, null, false), caption);
     }
     return null;
+  }
+
+  public static boolean isAudioMimeType (String mimeType) {
+    return mimeType.startsWith("audio/") && !mimeType.equals("audio/ogg");
+  }
+
+  public static int getCombineMode (
+    String path,
+    @Nullable String fileName,
+    boolean allowAudio,
+    boolean allowVideos,
+    boolean allowAnimations
+  ) {
+    // The kind of message toInputMessageContent makes of a file, by its name, without reading it
+    String mimeType = getMimeType(path, fileName);
+    if (!StringUtils.isEmpty(mimeType)) {
+      if (allowAudio && isAudioMimeType(mimeType)) {
+        return COMBINE_MODE_AUDIO;
+      }
+      if (mimeType.startsWith("video/")) {
+        boolean isContent = path.startsWith("content://");
+        if (allowVideos && !isContent) {
+          return COMBINE_MODE_MEDIA;
+        }
+        // Providers of documents give no size or length of a video, which then goes as a
+        // document, and only a short one without sound goes as a GIF
+        boolean canBeAnimation =
+          allowAnimations && (!isContent || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q);
+        if (allowVideos || canBeAnimation) {
+          return COMBINE_MODE_MEDIA_OR_FILES;
+        }
+      }
+    }
+    return COMBINE_MODE_FILES;
+  }
+
+  public static boolean needsReading (List<String> paths, @Nullable List<String> fileNames) {
+    // Media need their metadata for their messages or thumbnails, while other files go as
+    // documents, whose data TDLib takes once their messages exist
+    for (int i = 0; i < paths.size(); i++) {
+      String mimeType = getMimeType(paths.get(i), fileNames != null ? fileNames.get(i) : null);
+      boolean isMedia = !StringUtils.isEmpty(mimeType) && (
+        mimeType.startsWith("audio/") ||
+        mimeType.startsWith("video/") ||
+        mimeType.startsWith("image/")
+      );
+      if (isMedia) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static String getMimeType (String path, @Nullable String fileName) {
+    return TGMimeType.mimeTypeForExtension(U.getExtension(fileName != null ? fileName : path));
+  }
+
+  public static int getMessageCount (int[] combineModes, boolean needGroupMedia) {
+    // The fewest messages toFunctions may make of the contents: a file of either kind goes with
+    // the media or the documents next to it
+    int[] modes = combineModes.clone();
+    for (int i = 0; i < modes.length; i++) {
+      if (modes[i] == COMBINE_MODE_MEDIA_OR_FILES) {
+        int next = i + 1;
+        while (next < modes.length && modes[next] == COMBINE_MODE_MEDIA_OR_FILES) {
+          next++;
+        }
+        int previousMode = i > 0 ? modes[i - 1] : COMBINE_MODE_NONE;
+        int nextMode = next < modes.length ? modes[next] : COMBINE_MODE_NONE;
+        modes[i] = previousMode == COMBINE_MODE_MEDIA || previousMode == COMBINE_MODE_FILES ?
+          previousMode :
+          nextMode == COMBINE_MODE_FILES ? COMBINE_MODE_FILES : COMBINE_MODE_MEDIA;
+      }
+    }
+    int count = 0;
+    int i = 0;
+    while (i < modes.length) {
+      int next = i + 1;
+      while (
+        needGroupMedia &&
+        next < modes.length &&
+        modes[next] == modes[i] &&
+        next - i < TdConstants.MAX_MESSAGE_GROUP_SIZE
+      ) {
+        next++;
+      }
+      count++;
+      i = next;
+    }
+    return count;
   }
 
   public static TdApi.InputFile createInputFile (String path) {
@@ -1569,7 +1667,8 @@ public class TD {
     }
     if (out != null) {
       try {
-        String fileName = Uri.parse(path).getLastPathSegment();
+        // Not by Uri, which ends a name of a local file at "#" or "?"
+        String fileName = U.getFileName(path);
         out.title = fileName;
         if (StringUtils.isEmpty(out.mimeType)) {
           String mimeType = TGMimeType.mimeTypeForExtension(U.getExtension(fileName));
@@ -1578,6 +1677,21 @@ public class TD {
       } catch (Throwable ignored) {}
     }
     return new TdApi.InputFileLocal(path);
+  }
+
+  public static TdApi.InputFile createDocumentFile (
+    String path,
+    @Nullable String fileName,
+    @NonNull FileInfo out
+  ) {
+    // By the name the system picker gave, so that its provider, e.g. a slow one of Drive, is asked
+    // only once TDLib generates the file
+    if (fileName == null || !path.startsWith("content://")) {
+      return createInputFile(path, null, out);
+    }
+    out.title = fileName;
+    out.mimeType = getMimeType(path, fileName);
+    return newGeneratedFile(fileName, path, 0, System.currentTimeMillis());
   }
 
   public static TdApi.InputFileGenerated createFileCopy (TdApi.File file) {
@@ -3785,7 +3899,7 @@ public class TD {
         // TODO rich message
         break;
       default:
-        Td.assertMessageContent_37851fea();
+        Td.assertMessageContent_e4738066();
         break;
     }
     return false;
@@ -3798,7 +3912,11 @@ public class TD {
 
   public static String getTextFromMessageSpoilerless (TdApi.MessageContent content) {
     TdApi.FormattedText formattedText = Td.textOrCaption(content);
-    return formattedText != null ? TD.toCharSequence(formattedText, TextEntityOption.NONE, false).toString() : null;
+    if (formattedText == null || formattedText.entities == null) {
+      return formattedText != null ? formattedText.text : null;
+    }
+    final HiddenSpoilers spoilers = HiddenSpoilers.valueOf(formattedText);
+    return spoilers != null ? spoilers.text : formattedText.text;
   }
 
   public static @Nullable TdApi.File getFile (TdApi.LinkPreview linkPreview) {
@@ -5182,20 +5300,25 @@ public class TD {
 
   private static void mergePreCode (Spannable text) {
     CustomTypefaceSpan[] spans = text.getSpans(0, text.length(), CustomTypefaceSpan.class);
-    for (CustomTypefaceSpan pre : spans) {
-      if (!hasEntityType(pre, TdApi.TextEntityTypePre.CONSTRUCTOR)) {
-        continue;
-      }
-      int start = text.getSpanStart(pre);
-      int end = text.getSpanEnd(pre);
-      for (CustomTypefaceSpan preCode : spans) {
-        if (hasEntityType(preCode, TdApi.TextEntityTypePreCode.CONSTRUCTOR) &&
-          text.getSpanStart(preCode) == start && text.getSpanEnd(preCode) == end) {
-          text.removeSpan(pre);
-          break;
-        }
+    final Set<Long> preCodeRanges = new HashSet<>();
+    for (CustomTypefaceSpan preCode : spans) {
+      if (hasEntityType(preCode, TdApi.TextEntityTypePreCode.CONSTRUCTOR)) {
+        preCodeRanges.add(rangeOf(text, preCode));
       }
     }
+    if (preCodeRanges.isEmpty()) {
+      return;
+    }
+    for (CustomTypefaceSpan pre : spans) {
+      if (hasEntityType(pre, TdApi.TextEntityTypePre.CONSTRUCTOR) &&
+        preCodeRanges.contains(rangeOf(text, pre))) {
+        text.removeSpan(pre);
+      }
+    }
+  }
+
+  private static long rangeOf (Spanned text, Object span) {
+    return BitwiseUtils.mergeLong(text.getSpanStart(span), text.getSpanEnd(span));
   }
 
   private static boolean hasEntityType (CustomTypefaceSpan span, @TdApi.TextEntityType.Constructors int constructor) {
@@ -5204,7 +5327,8 @@ public class TD {
   }
 
   public static CharSequence toCopyText (TdApi.FormattedText text) {
-    return toCharSequence(text);
+    // Not a SpannableString, which goes over all of its spans to find one
+    return toSpanned(text, TextEntityOption.ALLOW_INTERNAL, true);
   }
 
   public static CharSequence toCharSequence (TdApi.ChatFolderName name) {
@@ -5216,53 +5340,212 @@ public class TD {
   }
 
   public static CharSequence toCharSequence (TdApi.FormattedText text, @TextEntityOption int options, boolean allowSpoilerContent) {
+    final CharSequence result = toSpanned(text, options, allowSpoilerContent);
+    return result instanceof SpannableStringBuilder ? SpannableString.valueOf(result) : result;
+  }
+
+  private static CharSequence toSpanned (
+    TdApi.FormattedText text,
+    @TextEntityOption int options,
+    boolean allowSpoilerContent
+  ) {
     if (text == null)
       return null;
     if (text.entities == null || text.entities.length == 0)
       return text.text;
-    SpannableStringBuilder b = null;
-    boolean hasSpoilers = false;
-
-    int offset = 0;
-    for (TdApi.TextEntity entity : text.entities) {
-      final int entityOffset = entity.offset + offset;
-      boolean isSpoiler = Td.isSpoiler(entity.type);
-      if (isSpoiler) {
-        hasSpoilers = true;
+    // Spoilers hidden and code blocks merged first: each edit of a Spannable updates all spans
+    final HiddenSpoilers spoilers = allowSpoilerContent ? null : HiddenSpoilers.valueOf(text);
+    final Object[] spans = new Object[text.entities.length];
+    final long[] ranges = new long[text.entities.length];
+    Set<Long> preCodeRanges = null;
+    for (int i = 0; i < text.entities.length; i++) {
+      final TdApi.TextEntity entity = text.entities[i];
+      if (!allowSpoilerContent && Td.isSpoiler(entity.type)) {
+        continue;
       }
-      Object span = isSpoiler && !allowSpoilerContent ? null : toSpan(entity.type, options);
-      if (span != null) {
-        if (b == null)
-          b = new SpannableStringBuilder(text.text);
-        b.setSpan(span, entityOffset, entityOffset + entity.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      ranges[i] = spoilers != null ?
+        spoilers.rangeOf(entity) :
+        BitwiseUtils.mergeLong(entity.offset, entity.offset + entity.length);
+      spans[i] = ranges[i] != -1 ? toSpan(entity.type, options) : null;
+      if (spans[i] instanceof CustomTypefaceSpan span &&
+        hasEntityType(span, TdApi.TextEntityTypePreCode.CONSTRUCTOR)) {
+        if (preCodeRanges == null) {
+          preCodeRanges = new HashSet<>();
+        }
+        preCodeRanges.add(ranges[i]);
       }
     }
-    if (!allowSpoilerContent && hasSpoilers) {
-      StringBuilder builder = b != null ? null : new StringBuilder(text.text);
-      for (int i = text.entities.length - 1; i >= 0; i--) {
-        TdApi.TextEntity entity = text.entities[i];
-        final int entityOffset = entity.offset + offset;
-        if (Td.isSpoiler(entity.type)) {
-          String replacement = StringUtils.multiply(SPOILER_REPLACEMENT_CHAR, entity.length);
-          if (b != null) {
-            b.delete(entityOffset, entityOffset + entity.length);
-            b.insert(entityOffset, replacement);
-          } else {
-            builder.delete(entityOffset, entityOffset + entity.length);
-            builder.insert(entityOffset, replacement);
+    int count = 0;
+    for (int i = 0; i < text.entities.length; i++) {
+      // Pre and PreCode on one range, as in the clipboard, are one block of the field
+      final boolean isMerged = preCodeRanges != null &&
+        spans[i] instanceof CustomTypefaceSpan span &&
+        hasEntityType(span, TdApi.TextEntityTypePre.CONSTRUCTOR) &&
+        preCodeRanges.contains(ranges[i]);
+      if (spans[i] != null && !isMerged) {
+        spans[count] = spans[i];
+        ranges[count] = ranges[i];
+        count++;
+      }
+    }
+    final String in = spoilers != null ? spoilers.text : text.text;
+    if (count == 0) {
+      return in;
+    }
+    // All spans at once, as setSpan of the builder goes over all of its spans each time
+    final SpannableStringBuilder b = new SpannableStringBuilder(
+      new SpanList(in, Arrays.copyOf(spans, count), Arrays.copyOf(ranges, count))
+    );
+    QuoteSpan.normalizeQuotesWithoutMerge(b);
+    return b;
+  }
+
+  private static final class SpanList implements Spanned {
+    private final String text;
+    private final Object[] spans;
+    private final long[] ranges;
+    private final Map<Object, Integer> indexes;
+
+    SpanList (String text, Object[] spans, long[] ranges) {
+      this.text = text;
+      this.spans = spans;
+      this.ranges = ranges;
+      this.indexes = new IdentityHashMap<>(spans.length);
+      for (int i = 0; i < spans.length; i++) {
+        indexes.put(spans[i], i);
+      }
+    }
+
+    @Override
+    public int length () {
+      return text.length();
+    }
+
+    @Override
+    public char charAt (int index) {
+      return text.charAt(index);
+    }
+
+    @NonNull
+    @Override
+    public CharSequence subSequence (int start, int end) {
+      return text.subSequence(start, end);
+    }
+
+    @NonNull
+    @Override
+    public String toString () {
+      return text;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T[] getSpans (int start, int end, Class<T> type) {
+      final List<T> result = new ArrayList<>();
+      for (int i = 0; i < spans.length; i++) {
+        final int spanStart = BitwiseUtils.splitLongToFirstInt(ranges[i]);
+        final int spanEnd = BitwiseUtils.splitLongToSecondInt(ranges[i]);
+        if (spanStart <= end && spanEnd >= start && type.isInstance(spans[i])) {
+          result.add((T) spans[i]);
+        }
+      }
+      return result.toArray((T[]) Array.newInstance(type, result.size()));
+    }
+
+    @Override
+    public int getSpanStart (Object span) {
+      final Integer index = indexes.get(span);
+      return index != null ? BitwiseUtils.splitLongToFirstInt(ranges[index]) : -1;
+    }
+
+    @Override
+    public int getSpanEnd (Object span) {
+      final Integer index = indexes.get(span);
+      return index != null ? BitwiseUtils.splitLongToSecondInt(ranges[index]) : -1;
+    }
+
+    @Override
+    public int getSpanFlags (Object span) {
+      return indexes.containsKey(span) ? Spanned.SPAN_EXCLUSIVE_EXCLUSIVE : 0;
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    public int nextSpanTransition (int start, int limit, Class type) {
+      int next = limit;
+      for (int i = 0; i < spans.length; i++) {
+        if (type == null || type.isInstance(spans[i])) {
+          final int spanStart = BitwiseUtils.splitLongToFirstInt(ranges[i]);
+          final int spanEnd = BitwiseUtils.splitLongToSecondInt(ranges[i]);
+          if (spanStart > start && spanStart < next) {
+            next = spanStart;
+          }
+          if (spanEnd > start && spanEnd < next) {
+            next = spanEnd;
           }
         }
       }
-      if (builder != null) {
-        return builder.toString();
+      return next;
+    }
+  }
+
+  private static final class HiddenSpoilers {
+    private final String text;
+    // Sorted, as entities go by their starts
+    private final int[] starts, ends;
+
+    private HiddenSpoilers (String text, int[] starts, int[] ends) {
+      this.text = text;
+      this.starts = starts;
+      this.ends = ends;
+    }
+
+    @Nullable
+    static HiddenSpoilers valueOf (TdApi.FormattedText text) {
+      int count = 0;
+      for (TdApi.TextEntity entity : text.entities) {
+        if (Td.isSpoiler(entity.type)) {
+          count++;
+        }
       }
+      if (count == 0) {
+        return null;
+      }
+      final int[] starts = new int[count], ends = new int[count];
+      final char[] chars = text.text.toCharArray();
+      int i = 0;
+      for (TdApi.TextEntity entity : text.entities) {
+        if (Td.isSpoiler(entity.type)) {
+          starts[i] = entity.offset;
+          ends[i] = entity.offset + entity.length;
+          Arrays.fill(chars, starts[i], ends[i], SPOILER_REPLACEMENT_CHAR.charAt(0));
+          i++;
+        }
+      }
+      return new HiddenSpoilers(new String(chars), starts, ends);
     }
-    if (b != null) {
-      // Pre and PreCode on one range, as in the clipboard, are one block of the field
-      mergePreCode(b);
-      QuoteSpan.normalizeQuotesWithoutMerge(b);
+
+    long rangeOf (TdApi.TextEntity entity) {
+      // The span as edits that replace spoilers from the last one would leave it: -1 within one,
+      // else without the spoilers at its edges
+      int start = entity.offset, end = entity.offset + entity.length;
+      int i = Arrays.binarySearch(starts, start);
+      final int last = i >= 0 ? i : -i - 2;
+      if (last >= 0 && ends[last] >= end) {
+        return -1;
+      }
+      while ((i = Arrays.binarySearch(ends, end)) >= 0 && start < starts[i] && starts[i] < end) {
+        end = starts[i];
+      }
+      i = Arrays.binarySearch(starts, start);
+      if (i >= 0) {
+        if (ends[i] >= end) {
+          return -1;
+        }
+        start = ends[i];
+      }
+      return BitwiseUtils.mergeLong(start, end);
     }
-    return b != null ? SpannableString.valueOf(b) : text.text;
   }
 
   public static Object toDisplaySpan (TdApi.TextEntityType type) {
@@ -5859,12 +6142,23 @@ public class TD {
   }
 
   private static int splitEntities (List<TdApi.TextEntity> entities, int startIndex) {
-    for (int i = Math.max(startIndex, 1); i < entities.size(); i++) {
-      for (int j = i - 1; j >= 0; j--) {
-        TdApi.TextEntity prev = entities.get(j);
-        TdApi.TextEntity entity = entities.get(i);
-        if (entity.offset >= prev.offset + prev.length || entity.offset + entity.length <= prev.offset + prev.length)
+    // Entities go by offsets: one that ends before an entity starts ends before later ones too
+    final int firstIndex = Math.max(startIndex, 1);
+    if (firstIndex >= entities.size()) {
+      return -1;
+    }
+    final List<TdApi.TextEntity> previous = new ArrayList<>(entities.subList(0, firstIndex));
+    for (int i = firstIndex; i < entities.size(); i++) {
+      TdApi.TextEntity entity = entities.get(i);
+      for (int j = previous.size() - 1; j >= 0; j--) {
+        TdApi.TextEntity prev = previous.get(j);
+        if (entity.offset >= prev.offset + prev.length) {
+          previous.remove(j);
           continue;
+        }
+        if (entity.offset + entity.length <= prev.offset + prev.length) {
+          continue;
+        }
         int length = prev.offset + prev.length - entity.offset;
         entities.remove(i);
         entities.addAll(i, Arrays.asList(
@@ -5873,6 +6167,7 @@ public class TD {
         ));
         return i;
       }
+      previous.add(entity);
     }
     return -1;
   }
@@ -6037,7 +6332,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_37851fea();
+        Td.assertMessageContent_e4738066();
         break;
     }
     return false;

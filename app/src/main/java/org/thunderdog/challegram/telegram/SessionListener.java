@@ -28,4 +28,9 @@ public interface SessionListener {
   default void onInactiveSessionTtlChanged (Tdlib tdlib, int ttlDays) {
     onSessionListChanged(tdlib, false);
   }
+  default void onSessionCanAcceptCallsChanged (
+    Tdlib tdlib,
+    long sessionId,
+    boolean canAcceptCalls
+  ) { }
 }

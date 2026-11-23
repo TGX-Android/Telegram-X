@@ -46,7 +46,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -610,7 +610,13 @@ public class TGInlineKeyboard {
           textX += iconWidth / 4 * 3 - offset;
         }
 
-        Drawables.draw(c, drawable, iconX, cy + buttonHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(textColor));
+        Icons.drawBitmap(
+          c,
+          customIconRes,
+          iconX,
+          cy + buttonHeight / 2 - drawable.getMinimumHeight() / 2,
+          Paints.getPorterDuffPaint(textColor)
+        );
       }
       Paints.getBoldPaint14(needFakeBold, Theme.inlineTextColor(isOutBubble));
       wrapper.draw(c, textX, cy + Screen.dp(12f), textColor, true);
@@ -641,20 +647,60 @@ public class TGInlineKeyboard {
             }
             Drawable icon = getSparseDrawable(iconRes, ColorId.NONE);
             int padding = Screen.dp(paddingDp);
-            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - padding, dirtyRect.top + padding, useBubbleMode ?
-              (progressFactor == 0f ? Paints.getInlineBubbleIconPaint(textColor) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, textColor))) :
-              textColorFactor == 0f && progressFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor))));
+            final Paint paint;
+            if (useBubbleMode) {
+              paint = progressFactor == 0f ?
+                Paints.getInlineBubbleIconPaint(textColor) :
+                Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, textColor));
+            } else if (textColorFactor == 0f && progressFactor == 0f) {
+              paint = Paints.getInlineIconPorterDuffPaint(isOutBubble);
+            } else {
+              final int color =
+                ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor);
+              paint = Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, color));
+            }
+            Icons.drawBitmap(
+              c,
+              iconRes,
+              dirtyRect.right - icon.getMinimumWidth() - padding,
+              dirtyRect.top + padding,
+              paint
+            );
             drawProgress(c, useBubbleMode, textColorFactor);
             break;
           }
           case TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR: {
             Drawable icon = getSparseDrawable(R.drawable.deproko_baseline_link_arrow_20, ColorId.NONE);
-            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth(), dirtyRect.top, useBubbleMode ? Paints.getInlineBubbleIconPaint(textColor) : textColorFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor)));
+            Icons.drawBitmap(
+              c,
+              R.drawable.deproko_baseline_link_arrow_20,
+              dirtyRect.right - icon.getMinimumWidth(),
+              dirtyRect.top,
+              useBubbleMode ? Paints.getInlineBubbleIconPaint(textColor) :
+                textColorFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) :
+                Paints.getPorterDuffPaint(
+                  ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor)
+                )
+            );
             break;
           }
           case TdApi.InlineKeyboardButtonTypeLoginUrl.CONSTRUCTOR: {
             Drawable icon = getSparseDrawable(R.drawable.deproko_baseline_link_arrow_20, ColorId.NONE);
-            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth(), dirtyRect.top, useBubbleMode ? Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(1f - progressFactor, textColor)) : textColorFactor == 0f && progressFactor == 1f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor))));
+            final int activeColor =
+              ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor);
+            Icons.drawBitmap(
+              c,
+              R.drawable.deproko_baseline_link_arrow_20,
+              dirtyRect.right - icon.getMinimumWidth(),
+              dirtyRect.top,
+              useBubbleMode ?
+                Paints.getInlineBubbleIconPaint(
+                  ColorUtils.alphaColor(1f - progressFactor, textColor)
+                ) :
+                textColorFactor == 0f && progressFactor == 1f ?
+                  Paints.getInlineIconPorterDuffPaint(isOutBubble) :
+                  Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, activeColor))
+            );
             drawProgress(c, useBubbleMode, textColorFactor);
             break;
           }

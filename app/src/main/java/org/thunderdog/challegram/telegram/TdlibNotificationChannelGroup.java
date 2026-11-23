@@ -27,12 +27,14 @@ import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.io.IOException;
@@ -42,6 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.SparseLongArray;
 import tgx.td.ChatId;
@@ -83,6 +86,9 @@ public class TdlibNotificationChannelGroup {
   private static final String CALLS_SUFFIX = "_calls";
   private static final String CALLS_USER_SUFFIX = "_user_";
   private static final String LEGACY_CALL_PREFIX = "call_";
+  private static final String LEGACY_INCOMING_CALL = "voip_incoming";
+
+  private static final String CONVERSATION_COPY_SEPARATOR = " : ";
 
   private static String makePrefix (long accountUserId, int globalVersion) {
     return accountUserId + "_" + globalVersion;
@@ -637,6 +643,100 @@ public class TdlibNotificationChannelGroup {
     return versionIndex != -1 ? StringUtils.parseLong(data.substring(versionIndex + 1)) : 0;
   }
 
+  private static long parseCustomChannelChatId (String data) {
+    int versionIndex = data.indexOf('_', CUSTOM_SUFFIX.length());
+    return StringUtils.parseLong(
+      data.substring(CUSTOM_SUFFIX.length(), versionIndex != -1 ? versionIndex : data.length())
+    );
+  }
+
+  static boolean isCustomChannelId (@Nullable String channelId) {
+    return channelId != null && channelId.contains(CUSTOM_SUFFIX);
+  }
+
+  public static SettingsNotificationController.Args findSettings (
+    Tdlib tdlib,
+    @NonNull String channelId,
+    boolean byConversation
+  ) {
+    TdlibNotificationManager notifications = tdlib.notifications();
+    String prefix = makePrefix(tdlib.myUserId(true), notifications.getChannelsGlobalVersion());
+    int copyIndex = channelId.indexOf(CONVERSATION_COPY_SEPARATOR);
+    String ownChannelId = copyIndex != -1 ? channelId.substring(0, copyIndex) : channelId;
+    String conversationId = copyIndex != -1 ?
+      channelId.substring(copyIndex + CONVERSATION_COPY_SEPARATOR.length()) : null;
+    if (!ownChannelId.startsWith(prefix) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      android.app.NotificationChannel channel = findChannel(channelId);
+      if (channel != null && channel.getParentChannelId() != null) {
+        ownChannelId = channel.getParentChannelId();
+        conversationId = channel.getConversationId();
+      }
+    }
+    long conversationChatId = byConversation ?
+      TdlibNotificationUtils.findShortcutChatId(tdlib, conversationId) : 0;
+    if (conversationChatId != 0) {
+      return new SettingsNotificationController.Args(conversationChatId);
+    }
+    String data = ownChannelId.startsWith(prefix) ? ownChannelId.substring(prefix.length()) : "";
+    if (BuildConfig.CALLS_AVAILABLE && isCallChannelId(data)) {
+      return new SettingsNotificationController.Args(
+        SettingsNotificationController.Section.CALLS,
+        parseCallChannelUserChatId(data)
+      );
+    }
+    if (data.startsWith(CUSTOM_SUFFIX)) {
+      return new SettingsNotificationController.Args(parseCustomChannelChatId(data));
+    }
+    if (data.startsWith(PRIVATE_SUFFIX)) {
+      return new SettingsNotificationController.Args(notifications.scopePrivate());
+    }
+    if (data.startsWith(GROUP_SUFFIX)) {
+      return new SettingsNotificationController.Args(notifications.scopeGroup());
+    }
+    if (data.startsWith(CHANNEL_SUFFIX)) {
+      return new SettingsNotificationController.Args(notifications.scopeChannel());
+    }
+    return new SettingsNotificationController.Args(
+      SettingsNotificationController.Section.DEFAULT,
+      0
+    );
+  }
+
+  public static int findAccountId (TdlibManager context, @NonNull String groupId) {
+    boolean isDebug = groupId.startsWith(ACCOUNT_PREFIX_DEBUG);
+    String prefix = isDebug ? ACCOUNT_PREFIX_DEBUG : ACCOUNT_PREFIX;
+    long userId = groupId.startsWith(prefix) ?
+      StringUtils.parseLong(groupId.substring(prefix.length())) : 0;
+    if (userId != 0) {
+      int instanceMode = isDebug ? Tdlib.Mode.DEBUG : Tdlib.Mode.NORMAL;
+      for (TdlibAccount account : context) {
+        if (account.getKnownUserId() == userId && account.tdlibInstanceMode() == instanceMode &&
+          !account.isUnauthorized()) {
+          return account.id;
+        }
+      }
+    }
+    return TdlibAccount.NO_ID;
+  }
+
+  @Nullable
+  public static String findGroupId (@NonNull String channelId) {
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    if (m == null) {
+      return null;
+    }
+    android.app.NotificationChannel channel = m.getNotificationChannel(channelId);
+    return channel != null ? channel.getGroup() : null;
+  }
+
+  @Nullable
+  private static android.app.NotificationChannel findChannel (@NonNull String channelId) {
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    return m != null ? m.getNotificationChannel(channelId) : null;
+  }
+
   public static void updateGroup (@NonNull TdApi.User user, boolean isDebug) {
     NotificationManager m = (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
@@ -646,6 +746,66 @@ public class TdlibNotificationChannelGroup {
       group = new android.app.NotificationChannelGroup(groupId, groupName);
       m.createNotificationChannelGroup(group);
     }
+  }
+
+  private static boolean isCurrentChannelId (Tdlib tdlib, String prefix, @Nullable String id) {
+    boolean ok = false;
+    if (!StringUtils.isEmpty(id) && id.startsWith(prefix)) {
+      TdlibNotificationManager notifications = tdlib.notifications();
+      String data = id.substring(prefix.length());
+      if (isCallChannelId(data)) {
+        long userChatId = parseCallChannelUserChatId(data);
+        long currentVersion = notifications.getCallChannelVersion(userChatId);
+        ok = parseCallChannelVersion(data) == currentVersion;
+      } else if (data.startsWith(PRIVATE_SUFFIX)) {
+        int versionIndex = data.indexOf('_', PRIVATE_SUFFIX.length());
+        long version = versionIndex != -1 ?
+          StringUtils.parseLong(data.substring(versionIndex + 1)) : 0;
+        long currentVersion = notifications.getChannelVersion(notifications.scopePrivate(), 0);
+        ok = version == currentVersion;
+      } else if (data.startsWith(GROUP_SUFFIX)) {
+        int versionIndex = data.indexOf('_', GROUP_SUFFIX.length());
+        long version = versionIndex != -1 ?
+          StringUtils.parseInt(data.substring(versionIndex + 1)) : 0;
+        long currentVersion = notifications.getChannelVersion(notifications.scopeGroup(), 0);
+        ok = version == currentVersion;
+      } else if (data.startsWith(CHANNEL_SUFFIX)) {
+        int versionIndex = data.indexOf('_', CHANNEL_SUFFIX.length());
+        long version = versionIndex != -1 ?
+          StringUtils.parseInt(data.substring(versionIndex + 1)) : 0;
+        long currentVersion = notifications.getChannelVersion(notifications.scopeChannel(), 0);
+        ok = version == currentVersion;
+      } else if (data.startsWith(CUSTOM_SUFFIX)) {
+        long customChatId = parseCustomChannelChatId(data);
+        if (customChatId != 0) {
+          int versionIndex = data.indexOf('_', CUSTOM_SUFFIX.length());
+          long version = versionIndex != -1 ?
+            StringUtils.parseInt(data.substring(versionIndex + 1)) : 0;
+          long currentVersion = notifications.getChannelVersion(null, customChatId);
+          ok = version == currentVersion;
+        }
+      }
+    }
+    return ok;
+  }
+
+  private static String makeConversationCopyId (String parentChannelId, String conversationId) {
+    return parentChannelId + CONVERSATION_COPY_SEPARATOR + conversationId;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  private static boolean isConversationCopy (
+    String prefix,
+    android.app.NotificationChannel channel
+  ) {
+    String parentChannelId = channel.getParentChannelId();
+    String conversationId = channel.getConversationId();
+    if (parentChannelId == null || conversationId == null) {
+      return false;
+    }
+    String channelId = channel.getId();
+    return !channelId.startsWith(prefix + CUSTOM_SUFFIX) ||
+      channelId.equals(makeConversationCopyId(parentChannelId, conversationId));
   }
 
   @RequiresApi(Build.VERSION_CODES.O)
@@ -671,36 +831,10 @@ public class TdlibNotificationChannelGroup {
           if (userId != accountUserId)
             continue;
           String id = channel.getId();
-          boolean ok = false;
-          if (!StringUtils.isEmpty(id) && id.startsWith(prefix)) {
-            String data = id.substring(prefix.length());
-            if (isCallChannelId(data)) {
-              long userChatId = parseCallChannelUserChatId(data);
-              long currentVersion = tdlib.notifications().getCallChannelVersion(userChatId);
-              ok = parseCallChannelVersion(data) == currentVersion;
-            } else if (data.startsWith(PRIVATE_SUFFIX)) {
-              int versionIndex = data.indexOf('_', PRIVATE_SUFFIX.length());
-              long version = versionIndex != -1 ? StringUtils.parseLong(data.substring(versionIndex + 1)) : 0;
-              long currentVersion = tdlib.notifications().getChannelVersion(tdlib.notifications().scopePrivate(), 0);
-              ok = version == currentVersion;
-            } else if (data.startsWith(GROUP_SUFFIX)) {
-              int versionIndex = data.indexOf('_', GROUP_SUFFIX.length());
-              long version = versionIndex != -1 ? StringUtils.parseInt(data.substring(versionIndex + 1)) : 0;
-              long currentVersion = tdlib.notifications().getChannelVersion(tdlib.notifications().scopeGroup(), 0);
-              ok = version == currentVersion;
-            } else if (data.startsWith(CHANNEL_SUFFIX)) {
-              int versionIndex = data.indexOf('_', CHANNEL_SUFFIX.length());
-              long version = versionIndex != -1 ? StringUtils.parseInt(data.substring(versionIndex + 1)) : 0;
-              long currentVersion = tdlib.notifications().getChannelVersion(tdlib.notifications().scopeChannel(), 0);
-              ok = version == currentVersion;
-            } else if (data.startsWith(CUSTOM_SUFFIX)) {
-              int versionIndex = data.indexOf('_', CUSTOM_SUFFIX.length());
-              long version = versionIndex != -1 ? StringUtils.parseInt(data.substring(versionIndex + 1)) : 0;
-              long customChatId = StringUtils.parseLong(data.substring(CUSTOM_SUFFIX.length(), versionIndex != -1 ? versionIndex : data.length()));
-              long currentVersion = tdlib.notifications().getChannelVersion(null, customChatId);
-              ok = version == currentVersion;
-            }
-          }
+          boolean ok = isCurrentChannelId(tdlib, prefix, id) ||
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+              isConversationCopy(prefix, channel) &&
+              isCurrentChannelId(tdlib, prefix, channel.getParentChannelId()));
           if (!ok) {
             if (removedChannels == null)
               removedChannels = new ArrayList<>();
@@ -723,7 +857,9 @@ public class TdlibNotificationChannelGroup {
     }
     for (android.app.NotificationChannel channel : m.getNotificationChannels()) {
       String channelId = channel.getId();
-      if (channelId.startsWith(LEGACY_CALL_PREFIX) && StringUtils.isEmpty(channel.getGroup())) {
+      boolean isLegacy =
+        channelId.startsWith(LEGACY_CALL_PREFIX) || LEGACY_INCOMING_CALL.equals(channelId);
+      if (isLegacy && StringUtils.isEmpty(channel.getGroup())) {
         deleteChannel(m, channelId);
       }
     }
@@ -768,20 +904,287 @@ public class TdlibNotificationChannelGroup {
         if (chat != null) {
           android.app.NotificationChannel channel = (android.app.NotificationChannel) makeCustomChannel(tdlib, accountUserId, isDebug, globalVersion, chat.id, channelVersion);
           if (tdlib.notifications().hasCustomChatSettings(customChatId)) {
+            boolean isNewConversation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+              m.getNotificationChannel(channel.getId()) == null;
+            if (isNewConversation) {
+              setConversation(tdlib, m, accountUserId, globalVersion, channel, chat);
+            }
             try {
               m.createNotificationChannel(channel);
             } catch (Throwable t) {
               throw new ChannelCreationFailureException(t);
             }
+            if (isNewConversation) {
+              keepSystemSettings(tdlib, m, channel.getId(), chat.id, channelVersion);
+            }
+          } else {
+            tdlib.notifications().forgetMadeChannelSettings(customChatId);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+              TdlibNotificationUtils.removeCustomShortcut(tdlib, customChatId);
+            }
           }
         }
       } else {
         tdlib.notifications().createChannels();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+          recreateConversationChannels(tdlib, m, accountUserId, globalVersion, scope);
+        }
       }
       while (channelVersion > 0) {
         m.deleteNotificationChannel(makeChannelId(accountUserId, globalVersion, scope, customChatId, --channelVersion));
       }
     }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  private static void setConversation (
+    Tdlib tdlib,
+    NotificationManager m,
+    long accountUserId,
+    int globalVersion,
+    android.app.NotificationChannel channel,
+    TdApi.Chat chat
+  ) {
+    TdApi.NotificationSettingsScope scope = tdlib.notifications().scope(chat.id);
+    long scopeVersion = tdlib.notifications().getChannelVersion(scope, 0);
+    String parentChannelId = makeChannelId(accountUserId, globalVersion, scope, 0, scopeVersion);
+    if (m.getNotificationChannel(parentChannelId) != null) {
+      String conversationId = TdlibNotificationUtils.makeCustomShortcutId(tdlib, chat.id);
+      channel.setConversationId(parentChannelId, conversationId);
+      TdlibNotificationUtils.pushCustomShortcut(tdlib, chat);
+    }
+  }
+
+  private static boolean isScopeChannelId (
+    long accountUserId,
+    int globalVersion,
+    TdApi.NotificationSettingsScope scope,
+    @Nullable String channelId
+  ) {
+    String firstChannelId = makeChannelId(accountUserId, globalVersion, scope, 0, 0);
+    return channelId != null &&
+      (channelId.equals(firstChannelId) || channelId.startsWith(firstChannelId + "_"));
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  public static List<android.app.NotificationChannel> findConversationChannels (
+    String channelId,
+    @Nullable String conversationId
+  ) {
+    List<android.app.NotificationChannel> conversations = new ArrayList<>();
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    if (m != null) {
+      for (android.app.NotificationChannel channel : m.getNotificationChannels()) {
+        boolean isConversation = conversationId == null ?
+          channel.getConversationId() != null :
+          conversationId.equals(channel.getConversationId());
+        if (isConversation && (channelId.equals(channel.getId()) ||
+          channelId.equals(channel.getParentChannelId()))) {
+          conversations.add(channel);
+        }
+      }
+    }
+    return conversations;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  private static void recreateConversationChannels (
+    Tdlib tdlib,
+    NotificationManager m,
+    long accountUserId,
+    int globalVersion,
+    TdApi.NotificationSettingsScope scope
+  ) throws ChannelCreationFailureException {
+    TdlibNotificationManager notifications = tdlib.notifications();
+    long scopeVersion = notifications.getChannelVersion(scope, 0);
+    String parentChannelId = makeChannelId(accountUserId, globalVersion, scope, 0, scopeVersion);
+    android.app.NotificationChannel parent = m.getNotificationChannel(parentChannelId);
+    if (parent == null) {
+      return;
+    }
+    String prefix = makePrefix(accountUserId, globalVersion);
+    for (android.app.NotificationChannel conversation : m.getNotificationChannels()) {
+      String oldParentChannelId = conversation.getParentChannelId();
+      if (parentChannelId.equals(oldParentChannelId) ||
+        !isScopeChannelId(accountUserId, globalVersion, scope, oldParentChannelId)) {
+        continue;
+      }
+      String oldChannelId = conversation.getId();
+      String conversationId = conversation.getConversationId();
+      long customChatId = oldChannelId.startsWith(prefix + CUSTOM_SUFFIX) ?
+        parseCustomChannelChatId(oldChannelId.substring(prefix.length())) : 0;
+      if (customChatId != 0 && !isCurrentChannelId(tdlib, prefix, oldChannelId)) {
+        continue;
+      }
+      long customVersion = customChatId != 0 ?
+        notifications.nextCustomChannelVersion(customChatId) : 0;
+      String channelId = customChatId != 0 ?
+        makeChannelId(accountUserId, globalVersion, scope, customChatId, customVersion) :
+        makeConversationCopyId(parentChannelId, conversationId);
+      android.app.NotificationChannel channel = inheritConversationChannel(
+        channelId,
+        conversation,
+        m.getNotificationChannel(oldParentChannelId),
+        parent
+      );
+      channel.setConversationId(parentChannelId, conversationId);
+      createChannel(m, channel);
+      if (customChatId != 0) {
+        notifications.setCustomChannelVersion(customChatId, customVersion);
+        keepSystemSettings(tdlib, m, channelId, customChatId, customVersion);
+        tdlib.listeners().updateNotificationChannel(customChatId);
+      }
+      deleteChannel(m, oldChannelId);
+    }
+  }
+
+  private static boolean isSameSound (@Nullable Uri a, @Nullable Uri b) {
+    return a == null ? b == null : a.equals(b);
+  }
+
+  public static final int CHANGED_IMPORTANCE = 1;
+  public static final int CHANGED_SOUND = 1 << 1;
+  public static final int CHANGED_VIBRATION = 1 << 2;
+  public static final int CHANGED_LIGHTS = 1 << 3;
+  public static final int CHANGED_BADGE = 1 << 4;
+  private static final int CHANGED_ALL = CHANGED_IMPORTANCE | CHANGED_SOUND | CHANGED_VIBRATION |
+    CHANGED_LIGHTS | CHANGED_BADGE;
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private static int findChangedSettings (
+    android.app.NotificationChannel conversation,
+    @Nullable android.app.NotificationChannel parent
+  ) {
+    if (parent == null) {
+      return CHANGED_ALL;
+    }
+    int changed = 0;
+    if (conversation.getImportance() != parent.getImportance()) {
+      changed |= CHANGED_IMPORTANCE;
+    }
+    if (!isSameSound(conversation.getSound(), parent.getSound())) {
+      changed |= CHANGED_SOUND;
+    }
+    if (conversation.shouldVibrate() != parent.shouldVibrate() ||
+      !Arrays.equals(conversation.getVibrationPattern(), parent.getVibrationPattern())) {
+      changed |= CHANGED_VIBRATION;
+    }
+    if (conversation.shouldShowLights() != parent.shouldShowLights() ||
+      conversation.getLightColor() != parent.getLightColor()) {
+      changed |= CHANGED_LIGHTS;
+    }
+    if (conversation.canShowBadge() != parent.canShowBadge()) {
+      changed |= CHANGED_BADGE;
+    }
+    return changed;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  public static int findChangedSettings (android.app.NotificationChannel conversation) {
+    String parentChannelId = conversation.getParentChannelId();
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    android.app.NotificationChannel parent = m != null && parentChannelId != null ?
+      m.getNotificationChannel(parentChannelId) : null;
+    return parent != null ? findChangedSettings(conversation, parent) : 0;
+  }
+
+  public static final int SYSTEM_PRIORITY = 1;
+  public static final int SYSTEM_BUBBLES = 1 << 1;
+  public static final int SYSTEM_OVERRIDE_DND = 1 << 2;
+  public static final int SYSTEM_LOCK_SCREEN = 1 << 3;
+  public static final int SYSTEM_DEMOTED = 1 << 4;
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  public static int getSystemSettings (@Nullable android.app.NotificationChannel channel) {
+    // What the system or the user sets, and an app can't when it makes a channel again
+    int settings = 0;
+    if (channel == null) {
+      return settings;
+    }
+    int visibility = channel.getLockscreenVisibility();
+    boolean isLockScreenHidden = visibility == Notification.VISIBILITY_PRIVATE ||
+      visibility == Notification.VISIBILITY_SECRET;
+    settings = BitwiseUtils.setFlag(settings, SYSTEM_PRIORITY, channel.isImportantConversation());
+    settings = BitwiseUtils.setFlag(settings, SYSTEM_BUBBLES, channel.canBubble());
+    settings = BitwiseUtils.setFlag(settings, SYSTEM_OVERRIDE_DND, channel.canBypassDnd());
+    settings = BitwiseUtils.setFlag(settings, SYSTEM_LOCK_SCREEN, isLockScreenHidden);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      settings = BitwiseUtils.setFlag(settings, SYSTEM_DEMOTED, channel.isDemoted());
+    }
+    return settings;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  private static void keepSystemSettings (
+    Tdlib tdlib,
+    NotificationManager m,
+    String channelId,
+    long chatId,
+    long channelVersion
+  ) {
+    android.app.NotificationChannel channel = m.getNotificationChannel(channelId);
+    if (channel != null) {
+      tdlib.notifications().keepMadeChannelSettings(chatId, channelVersion,
+        getSystemSettings(channel));
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.R)
+  public static int findMadeSystemSettings (Tdlib tdlib, android.app.NotificationChannel channel) {
+    // As kept when the app made the channel; a conversation the system made has its parent's
+    String prefix =
+      makePrefix(tdlib.myUserId(true), tdlib.notifications().getChannelsGlobalVersion());
+    String channelId = channel.getId();
+    if (channelId.startsWith(prefix + CUSTOM_SUFFIX) && !isConversationCopy(prefix, channel) &&
+      isCurrentChannelId(tdlib, prefix, channelId)) {
+      long chatId = parseCustomChannelChatId(channelId.substring(prefix.length()));
+      int settings = tdlib.notifications().findMadeChannelSettings(chatId);
+      if (settings != -1) {
+        return settings;
+      }
+    }
+    String parentChannelId = channel.getParentChannelId();
+    NotificationManager m =
+      (NotificationManager) AppContext.get().getSystemService(Context.NOTIFICATION_SERVICE);
+    return m != null && parentChannelId != null ?
+      getSystemSettings(m.getNotificationChannel(parentChannelId)) : 0;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private static android.app.NotificationChannel inheritConversationChannel (
+    String channelId,
+    android.app.NotificationChannel conversation,
+    @Nullable android.app.NotificationChannel oldParent,
+    android.app.NotificationChannel parent
+  ) {
+    int changed = findChangedSettings(conversation, oldParent);
+    boolean followsImportance = (changed & CHANGED_IMPORTANCE) == 0;
+    boolean followsSound = (changed & CHANGED_SOUND) == 0;
+    boolean followsVibration = (changed & CHANGED_VIBRATION) == 0;
+    boolean followsLights = (changed & CHANGED_LIGHTS) == 0;
+    boolean followsBadge = (changed & CHANGED_BADGE) == 0;
+
+    android.app.NotificationChannel sound = followsSound ? parent : conversation;
+    android.app.NotificationChannel vibration = followsVibration ? parent : conversation;
+    android.app.NotificationChannel lights = followsLights ? parent : conversation;
+    android.app.NotificationChannel badge = followsBadge ? parent : conversation;
+
+    android.app.NotificationChannel channel = new android.app.NotificationChannel(
+      channelId,
+      conversation.getName(),
+      followsImportance ? parent.getImportance() : conversation.getImportance()
+    );
+    channel.setDescription(conversation.getDescription());
+    channel.setGroup(conversation.getGroup());
+    channel.setSound(sound.getSound(), sound.getAudioAttributes());
+    channel.setVibrationPattern(vibration.getVibrationPattern());
+    channel.enableVibration(vibration.shouldVibrate());
+    channel.enableLights(lights.shouldShowLights());
+    channel.setLightColor(lights.getLightColor());
+    channel.setShowBadge(badge.canShowBadge());
+    return channel;
   }
 
   public static String ensureCallChannel (

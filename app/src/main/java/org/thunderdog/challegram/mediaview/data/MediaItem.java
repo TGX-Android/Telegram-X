@@ -996,7 +996,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       case TdApi.MessageAnimation.CONSTRUCTOR ->
         new MediaItem(context, tdlib, chatId, sponsoredMessage.messageId, null, 0, (TdApi.MessageAnimation) sponsoredMessage.content);
       default -> {
-        Td.assertMessageContent_37851fea();
+        Td.assertMessageContent_e4738066();
         throw Td.unsupported(sponsoredMessage.content);
       }
     };

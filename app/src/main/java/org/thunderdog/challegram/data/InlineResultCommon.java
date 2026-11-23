@@ -382,6 +382,10 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     return tag;
   }
 
+  public String getTitle () {
+    return title;
+  }
+
   public InlineResultCommon (BaseActivity context, Tdlib tdlib, MediaBottomFilesController.FileEntry entry) {
     super(context, tdlib, TYPE_DOCUMENT, Long.toString(entry.getId()), null);
 

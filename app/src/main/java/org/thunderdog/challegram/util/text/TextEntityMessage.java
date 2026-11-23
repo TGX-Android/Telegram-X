@@ -31,6 +31,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -60,8 +61,10 @@ public class TextEntityMessage extends TextEntity {
   private static final int FLAG_CUSTOM_EMOJI = 1 << 9;
 
   private final TdApi.TextEntity clickableEntity, spoilerEntity, emojiEntity, quoteEntity;
+  private final TdApi.TextEntity codeEntity;
   private int flags;
   private ClickableSpan onClickListener;
+  private @ColorId int syntaxColorId;
 
   private static boolean hasEntityType (List<TdApi.TextEntity> entities, @TdApi.TextEntityType.Constructors int typeConstructor) {
     if (entities != null) {
@@ -121,6 +124,7 @@ public class TextEntityMessage extends TextEntity {
     TdApi.TextEntity quoteEntity = isQuote(entity.type) ? entity : null;
     TdApi.TextEntity spoilerEntity = Td.isSpoiler(entity.type) ? entity : null;
     TdApi.TextEntity emojiEntity = Td.isCustomEmoji(entity.type) ? entity : null;
+    this.codeEntity = Td.isPre(entity.type) || Td.isPreCode(entity.type) ? entity : null;
     int flags = addFlags(entity.type);
     if (parentEntities != null) {
       for (int i = parentEntities.size() - 1; i >= 0; i--) {
@@ -153,11 +157,24 @@ public class TextEntityMessage extends TextEntity {
     this.flags = flags;
   }
 
-  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity clickableEntity, TdApi.TextEntity spoilerEntity, TdApi.TextEntity emojiEntity, TdApi.TextEntity quoteEntity, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  private TextEntityMessage (
+    @Nullable Tdlib tdlib,
+    boolean needFakeBold,
+    int offset,
+    int end,
+    TdApi.TextEntity clickableEntity,
+    TdApi.TextEntity spoilerEntity,
+    TdApi.TextEntity emojiEntity,
+    TdApi.TextEntity quoteEntity,
+    TdApi.TextEntity codeEntity,
+    int flags,
+    @Nullable TdlibUi.UrlOpenParameters openParameters
+  ) {
     super(tdlib, offset, end, needFakeBold, openParameters);
     this.clickableEntity = clickableEntity;
     this.spoilerEntity = spoilerEntity;
     this.quoteEntity = quoteEntity;
+    this.codeEntity = codeEntity;
     this.emojiEntity = emojiEntity;
     this.flags = flags;
   }
@@ -187,7 +204,19 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public TextEntity createCopy () {
-    TextEntityMessage copy = new TextEntityMessage(tdlib, needFakeBold, start, end, clickableEntity, spoilerEntity, emojiEntity, quoteEntity, flags, openParameters);
+    TextEntityMessage copy = new TextEntityMessage(
+      tdlib,
+      needFakeBold,
+      start,
+      end,
+      clickableEntity,
+      spoilerEntity,
+      emojiEntity,
+      quoteEntity,
+      codeEntity,
+      flags,
+      openParameters
+    );
     if (customColorSet != null) {
       copy.setCustomColorSet(customColorSet);
     }
@@ -197,7 +226,27 @@ public class TextEntityMessage extends TextEntity {
     if (BitwiseUtils.hasFlag(flags, FLAG_BOLD) && !BitwiseUtils.hasFlag(copy.flags, FLAG_BOLD)) {
       copy.makeBold(needFakeBold);
     }
+    copy.syntaxColorId = syntaxColorId;
     return copy;
+  }
+
+  TextEntityMessage createSyntaxToken (
+    int start,
+    int end,
+    @ColorId int colorId,
+    boolean isBold,
+    boolean isItalic
+  ) {
+    TextEntityMessage token = (TextEntityMessage) createCopy();
+    token.setStartEnd(start, end);
+    token.syntaxColorId = colorId;
+    if (isBold) {
+      token.flags |= FLAG_BOLD;
+    }
+    if (isItalic) {
+      token.flags |= FLAG_ITALIC;
+    }
+    return token;
   }
 
   private TextColorSetOverride monospaceColorSet;
@@ -210,6 +259,13 @@ public class TextEntityMessage extends TextEntity {
     if (isMonospace()) {
       if (monospaceColorSet == null || monospaceColorSet.originalColorSet() != defaultColorSet) {
         monospaceColorSet = new TextColorSetOverride(defaultColorSet) {
+          @Override
+          public int defaultTextColor () {
+            return syntaxColorId != 0 ?
+              colorTheme().getColor(syntaxColorId) :
+              super.defaultTextColor();
+          }
+
           @Override
           public int clickableTextColor (boolean isPressed) {
             return isPressed ? super.clickableTextColor(true) : defaultTextColor();
@@ -336,7 +392,8 @@ public class TextEntityMessage extends TextEntity {
     TextEntityMessage b = (TextEntityMessage) bRaw;
     switch (compareMode) {
       case COMPARE_MODE_NORMAL:
-        return this.flags == b.flags && this.customColorSet == b.customColorSet;
+        return this.flags == b.flags && this.customColorSet == b.customColorSet &&
+          this.syntaxColorId == b.syntaxColorId;
       case COMPARE_MODE_CLICK_HIGHLIGHT:
         return Td.equalsTo(this.clickableEntity, b.clickableEntity) && this.onClickListener == b.onClickListener;
       case COMPARE_MODE_SPOILER: {
@@ -423,12 +480,31 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public int getQuoteId () {
-    return quoteEntity != null ? quoteEntity.offset : -1;
+    return quoteEntity != null ? quoteEntity.offset : codeEntity != null ? codeEntity.offset : -1;
+  }
+
+  @Override
+  public boolean isCodeBlock () {
+    return codeEntity != null && quoteEntity == null;
+  }
+
+  @Override
+  public @Nullable String getCodeLanguage () {
+    if (codeEntity != null && Td.isPreCode(codeEntity.type)) {
+      return ((TdApi.TextEntityTypePreCode) codeEntity.type).language;
+    }
+    return null;
   }
 
   @Override
   public boolean isQuote () {
     return quoteEntity != null;
+  }
+
+  @Override
+  public boolean isExpandableQuote () {
+    return quoteEntity != null &&
+      quoteEntity.type.getConstructor() == TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR;
   }
 
   @Override

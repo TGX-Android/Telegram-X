@@ -1409,6 +1409,8 @@ public class MessagesLoader implements Client.ResultHandler {
 
     boolean unreadFound = !needFindUnread;
     TGMessage unreadBadged = null;
+    final boolean isInitial = loadingMode == MODE_INITIAL || loadingMode == MODE_REPEAT_INITIAL;
+    final Settings.MessageState[] keptStates = isInitial ? manager.findKeptStates() : null;
 
     for (int j = maxIndex; j >= minIndex; j--) {
       if (needMeasureSpeed) {
@@ -1480,6 +1482,12 @@ public class MessagesLoader implements Client.ResultHandler {
       }
 
       cur.mergeWith(top, j == minIndex);
+      // States kept with the chat, e.g. an expanded quote, come before the first layout
+      final Settings.MessageState keptState =
+        isInitial ? manager.findKeptState(cur, keptStates) : null;
+      if (keptState != null && keptState.blocks != null) {
+        cur.restoreSwitchedBlocks(keptState.blocks);
+      }
       cur.prepareLayout();
 
       items.add(0, cur);

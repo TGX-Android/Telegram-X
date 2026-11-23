@@ -158,3 +158,8 @@
 	url = https://github.com/TGX-Android/tlottie
 	shallow = true
 	branch = production
+[submodule "boost-regex"]
+	path = app/jni/third_party/boost-regex
+	url = https://github.com/boostorg/regex
+	shallow = true
+	branch = master

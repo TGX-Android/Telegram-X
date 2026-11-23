@@ -50,6 +50,9 @@ public class Config {
   public static final boolean NEED_FLUSH_NOTIFICATION_DATA = false;
 
   public static final boolean SHOW_EMOJI_TONE_PICKER_ALWAYS = true;
+  // Flags, e.g. 🇺🇳, are strong left-to-right characters for the bidirectional algorithm, as in
+  // TextView; true makes them neutral like other emoji of Text
+  public static final boolean FORCE_NEUTRAL_FLAG_DIRECTION = false;
 
   public static final String ICONS_BUILTIN_ID = "material-baseline";
 
@@ -57,6 +60,30 @@ public class Config {
   public static final boolean FORCE_SOFTWARE_IMAGE_DECODER = true;
 
   public static final boolean WAIT_ANIMATIONS_BEFORE_START_VIDEO = true;
+
+  // Code blocks in messages wrap their lines, except long ones, instead of the setting of wrapping
+  public static final boolean AUTOMATIC_CODE_WRAPPING = true;
+  // A code block is long when wrapped it would take more than this percent of the height of the
+  // list of messages without the keyboard
+  public static final int CODE_BLOCK_MAX_WRAPPED_HEIGHT_PERCENT = 65;
+  // Wrapped line of code continues one space after the indent of its line, unless the indent takes
+  // most of the width
+  public static final boolean PRESERVE_INDENTS_IN_CODE_BLOCKS = true;
+  // Time of a bubble that ends with a code block is below the block, also where it would fit
+  public static final boolean CODE_BLOCK_TIME_BELOW = true;
+  // A switch keeps in place the line at the edge of the list when this share of it is seen,
+  // otherwise the next one
+  public static final float BLOCK_SWITCH_ANCHOR_MIN_VISIBLE = 0.45f;
+  // Lines of the layout that a collapsed expandable quote shows, the last of them under its fade; a
+  // quote of fewer than two lines more is shown whole, so that a collapse hides at least two lines
+  public static final int EXPANDABLE_QUOTE_COLLAPSED_LINE_COUNT = 4;
+  public static final boolean INPUT_QUOTE_COLLAPSED_BY_DEFAULT = true;
+  // Lines of quotes of the input field not grayed when collapsed; longer ones get the button
+  public static final int INPUT_QUOTE_COLLAPSED_LINE_COUNT = 3;
+  // A return to the message that a link to another message was followed from, e.g. by the button
+  // to the end of the chat, puts it where it was with its blocks as they were, e.g. an expanded
+  // quote; otherwise in the middle of the list, as the history shows it again
+  public static final boolean RETURN_TO_MESSAGE_STATE = true;
 
   // Allow stretch bounce in places where the glow looks ugly
   public static final boolean HAS_NICE_OVER_SCROLL_EFFECT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;

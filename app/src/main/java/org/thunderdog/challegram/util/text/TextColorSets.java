@@ -299,6 +299,31 @@ public final class TextColorSets {
       return ColorId.bubbleOut_blockQuoteLine;
     }
 
+    @Override
+    default int codeBlockBackgroundColorId () {
+      return ColorId.bubbleOut_codeBlockBackground;
+    }
+
+    @Override
+    default int codeBlockHeaderColorId () {
+      return ColorId.bubbleOut_codeBlockHeader;
+    }
+
+    @Override
+    default int codeBlockRippleColorId () {
+      return ColorId.bubbleOut_codeBlockRipple;
+    }
+
+    @Override
+    default int codeBlockLineColorId () {
+      return ColorId.bubbleOut_codeBlockLine;
+    }
+
+    @Override
+    default int codeBlockBarColorId () {
+      return ColorId.bubbleOut_codeBlockBar;
+    }
+
     BubbleOut
       NORMAL = () -> ColorId.bubbleOut_text,
       LIGHT = () -> ColorId.bubbleOut_time,
@@ -370,6 +395,21 @@ public final class TextColorSets {
     @Override
     default int quoteLineColorId () {
       return ColorId.bubbleIn_blockQuoteLine;
+    }
+
+    @Override
+    default int codeBlockBackgroundColorId () {
+      return ColorId.bubbleIn_codeBlockBackground;
+    }
+
+    @Override
+    default int codeBlockHeaderColorId () {
+      return ColorId.bubbleIn_codeBlockHeader;
+    }
+
+    @Override
+    default int codeBlockRippleColorId () {
+      return ColorId.bubbleIn_codeBlockRipple;
     }
 
     BubbleIn

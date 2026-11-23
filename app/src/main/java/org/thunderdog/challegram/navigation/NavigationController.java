@@ -25,6 +25,7 @@ import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnimationUtils;
 
 import androidx.activity.BackEventCompat;
 import androidx.annotation.IntDef;
@@ -33,6 +34,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.SimpleShapeDrawable;
@@ -40,6 +42,7 @@ import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -1234,8 +1237,37 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       } else {
         animator.setDuration(calculateDropDuration(lastTranslation, velocity, MAXIMUM_DROP_DURATION, MINIMUM_DROP_DURATION));
       }
-      animator.start();
+      startDrop(animator);
     }
+  }
+
+  private long lastMoveTime;
+
+  private void startDrop (ValueAnimator animator) {
+    // An animator's first frame repeats its start, so the drop counts from the last move
+    final long now = AnimationUtils.currentAnimationTimeMillis();
+    final float frame = 1000f / Math.max(Screen.refreshRate(), 30f);
+    final long startTime = now - lastMoveTime <= frame ? lastMoveTime : now;
+    final float scale = U.getAnimationScale(context);
+    animator.start();
+    if (scale <= 0f) {
+      return;
+    }
+    animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+      @Override
+      public void onAnimationUpdate (@NonNull ValueAnimator animation) {
+        animation.removeUpdateListener(this);
+        long playTime = AnimationUtils.currentAnimationTimeMillis() - startTime;
+        if (playTime <= 0 || animation.getAnimatedFraction() >= 1f) {
+          return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+          // From Android 5.1 play times don't include the scale of animators
+          playTime = (long) (playTime / scale);
+        }
+        animation.setCurrentPlayTime(playTime);
+      }
+    });
   }
 
   private int swipeNavigationLocked = 0;
@@ -1294,10 +1326,10 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       Views.setLayerType(floatingButton, type == View.LAYER_TYPE_HARDWARE && SimpleShapeDrawable.USE_SOFTWARE_SHADOW ? View.LAYER_TYPE_SOFTWARE : type);
     }
     if (left != null && left.allowLayerTypeChanges()) {
-      Views.setLayerType(left.getValue(), type);
+      Views.setLayerType(left.getNavigationLayerView(), type);
     }
     if (right != null && right.allowLayerTypeChanges()) {
-      Views.setLayerType(right.getValue(), type);
+      Views.setLayerType(right.getNavigationLayerView(), type);
     }
   }
 
@@ -1391,7 +1423,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       } else {
         animator.setDuration(calculateDropDuration(currentWidth - lastTranslation, velocity, MAXIMUM_DROP_DURATION, MINIMUM_DROP_DURATION));
       }
-      animator.start();
+      startDrop(animator);
     }
   }
 
@@ -1523,6 +1555,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   final void translatePreview (float px) {
     if (isAnimating) {
+      lastMoveTime = AnimationUtils.currentAnimationTimeMillis();
       if (needRtl() && translationMode == TRANSLATION_HORIZONTAL) {
         setFactor(-px / currentWidth);
       } else {
@@ -1545,6 +1578,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   @Override
   public void onSystemBackProgressed (@NonNull BackEventCompat backEvent) {
     if (isAnimating) {
+      lastMoveTime = AnimationUtils.currentAnimationTimeMillis();
       setFactor(backEvent.getProgress());
     }
   }

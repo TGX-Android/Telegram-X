@@ -34,6 +34,7 @@ import android.widget.TextView;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.Dimension;
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
@@ -125,14 +126,19 @@ public class DrawAlgorithms {
     float centerX = left + (right - left) / 2f;
     float centerY = top + (bottom - top) / 2f;
 
-    Drawable drawable = Drawables.get(R.drawable.deproko_baseline_whatshot_16);
+    Bitmap icon = Icons.getBitmap(R.drawable.deproko_baseline_whatshot_16);
 
     c.drawCircle(centerX, centerY,
-      Math.max(drawable.getMinimumWidth(), drawable.getMinimumHeight()) / 2f * 1.65f,
+      Math.max(icon.getWidth(), icon.getHeight()) / 2f * 1.65f,
       Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0x44000000))
     );
 
-    Drawables.drawCentered(c, drawable, centerX, centerY, PorterDuffPaint.get(ColorId.white, alpha));
+    c.drawBitmap(
+      icon,
+      centerX - icon.getWidth() / 2f,
+      centerY - icon.getHeight() / 2f,
+      PorterDuffPaint.get(ColorId.white, alpha)
+    );
   }
   public static void drawReceiver (Canvas c, Receiver preview, Receiver receiver, boolean clearPreview, boolean needPlaceholder, int left, int top, int right, int bottom) {
     drawReceiver(c, preview, receiver, clearPreview, needPlaceholder, left, top, right, bottom, 1f, 1f);
@@ -434,10 +440,52 @@ public class DrawAlgorithms {
   }
 
   public static void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<Text> counter, float textSize, float textAlpha, TextColorSet colorSet, float scale) {
-    drawCounter(c, cx, cy, gravity, counter, textSize, textAlpha, false, false, 0, colorSet, null, Gravity.LEFT, 0, 0, 0f, 0f, scale, null);
+    drawCounter(
+      c,
+      cx,
+      cy,
+      gravity,
+      counter,
+      textSize,
+      textAlpha,
+      false,
+      false,
+      0,
+      colorSet,
+      null,
+      0,
+      Gravity.LEFT,
+      0,
+      0,
+      0f,
+      0f,
+      scale,
+      null
+    );
   }
 
-  public static <T extends CounterTextPart> void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<T> counter, float textSize, float textAlpha, boolean needBackground, boolean outlineAffectsBackgroundSize, @Px int backgroundPadding, TextColorSet colorSet, @Nullable Drawable drawable, int drawableGravity, int drawableColorId, @Px int drawableMargin, float backgroundAlpha, float drawableAlpha, float scale, @Nullable RectF outputDrawRect) {
+  public static <T extends CounterTextPart> void drawCounter (
+    Canvas c,
+    float cx,
+    float cy,
+    int gravity,
+    CounterAnimator<T> counter,
+    float textSize,
+    float textAlpha,
+    boolean needBackground,
+    boolean outlineAffectsBackgroundSize,
+    @Px int backgroundPadding,
+    TextColorSet colorSet,
+    @Nullable Drawable drawable,
+    @DrawableRes int drawableRes,
+    int drawableGravity,
+    int drawableColorId,
+    @Px int drawableMargin,
+    float backgroundAlpha,
+    float drawableAlpha,
+    float scale,
+    @Nullable RectF outputDrawRect
+  ) {
     scale = .6f + .4f * scale;
     final boolean needScale = scale != 1f;
 
@@ -538,13 +586,21 @@ public class DrawAlgorithms {
       float iconY = cy - drawable.getMinimumHeight() / 2f;
       switch (drawableGravity) {
         case Gravity.RIGHT:
-          Drawables.draw(c, drawable, startX + counter.getWidth() + drawableMargin,  iconY, paint);
+          Icons.drawBitmapOrVector(
+            c,
+            drawableRes,
+            drawable,
+            needScale,
+            startX + counter.getWidth() + drawableMargin,
+            iconY,
+            paint
+          );
           break;
         case Gravity.CENTER_HORIZONTAL:
         case Gravity.CENTER:
         case Gravity.LEFT:
         default:
-          Drawables.draw(c, drawable, startX, iconY, paint);
+          Icons.drawBitmapOrVector(c, drawableRes, drawable, needScale, startX, iconY, paint);
           startX += drawable.getMinimumWidth() + drawableMargin;
           break;
       }

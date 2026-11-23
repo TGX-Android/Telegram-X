@@ -39,7 +39,6 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
-import androidx.biometric.BiometricPrompt;
 import androidx.core.os.CancellationSignal;
 
 import org.drinkless.tdlib.TdApi;
@@ -810,7 +809,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
 
   @Override
   @RequiresApi(Build.VERSION_CODES.M)
-  public void onAuthenticated (BiometricPrompt.AuthenticationResult result, boolean strong) {
+  public void onAuthenticated (boolean strong) {
     final int biometricsId = 0; // strong ? 1 : 0;
     isBiometricAuthenticationActive = false;
     if (controllerMode != MODE_SETUP) {
@@ -1285,7 +1284,10 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         (controllerMode == MODE_UNLOCK_SETUP && isOnlyBiometrics))) {
         navigateBack();
       } else {
-        isBiometricAuthenticationActive = false;
+        // After a finger that didn't match or a hint the session goes on until its owner ends it
+        if (isFatal) {
+          isBiometricAuthenticationActive = false;
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
           if (swirlView != null) {
             swirlView.setState(SwirlView.State.ON, true);

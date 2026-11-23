@@ -130,6 +130,22 @@ public class CallManager implements GlobalCallListener, UI.StateListener {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
       return;
     }
+    try {
+      postIncomingCallWithoutService(tdlib, call);
+    } catch (Throwable t) {
+      Log.e(Log.TAG_VOIP, "Unable to show the call without its service", t);
+      // The app on screen shows it
+      if (UI.getUiState() != UI.State.RESUMED) {
+        tdlib.settings().trackCallProblem(t, ChatId.fromUserId(call.userId));
+      }
+      return;
+    }
+    callIdWithoutService = call.id;
+    tdlib.settings().forgetCallProblems();
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private static void postIncomingCallWithoutService (Tdlib tdlib, TdApi.Call call) {
     Context context = AppContext.get();
     NotificationManager manager =
       (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -193,7 +209,6 @@ public class CallManager implements GlobalCallListener, UI.StateListener {
             .setIsVideo(call.isVideo));
         manager.notify(TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION,
           newIncomingCallNotification(builder));
-        callIdWithoutService = call.id;
         return;
       } catch (IllegalArgumentException e) {
         Log.e(Log.TAG_VOIP, "The style of calls refused", e);
@@ -209,7 +224,16 @@ public class CallManager implements GlobalCallListener, UI.StateListener {
         Lang.getString(isLocked ? R.string.CallUnlock : R.string.AnswerCall), answerAction);
     manager.notify(TdlibNotificationManager.ID_FOREGROUND_INCOMING_CALL_NOTIFICATION,
       newIncomingCallNotification(builder));
-    callIdWithoutService = call.id;
+  }
+
+  public void continueCallWithoutService (Tdlib tdlib, TdApi.Call call) {
+    if (currentCall == null || currentCallTdlib.id() != tdlib.id() || currentCall.id != call.id) {
+      return;
+    }
+    isWaitingForService = true;
+    if (!call.isOutgoing && call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
+      showIncomingCallWithoutService(tdlib, call);
+    }
   }
 
   @RequiresApi(Build.VERSION_CODES.O)
@@ -277,7 +301,12 @@ public class CallManager implements GlobalCallListener, UI.StateListener {
       Intent intent = new Intent(context, TGCallService.class);
       intent.putExtra(Intents.KEY_ACCOUNT_ID, tdlib.id());
       intent.putExtra(Intents.KEY_CALL_ID, callId);
-      UI.startService(intent, true, false, null);
+      try {
+        ContextCompat.startForegroundService(context, intent);
+      } catch (Throwable t) {
+        Log.e(Log.TAG_VOIP, "Unable to start the service of an answered call", t);
+        tdlib.settings().trackCallProblem(t, ChatId.fromUserId(call.userId));
+      }
       acceptCall(context, tdlib, callId);
     }
   }
@@ -545,6 +574,11 @@ debugCall id:long debug:string = Ok;
 
   public boolean checkRecordPermissions (final Context context, final Tdlib tdlib,
     final @Nullable TdApi.Call call) {
+    return checkRecordPermissions(context, tdlib, call, null);
+  }
+
+  private boolean checkRecordPermissions (final Context context, final Tdlib tdlib,
+    final @Nullable TdApi.Call call, final @Nullable Runnable onOutgoingCallGranted) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       if (AppContext.get().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = UI.getUiContext();
@@ -557,6 +591,8 @@ debugCall id:long debug:string = Ok;
                   updatedCall.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
                   acceptCall(context, tdlib, call.id);
                 }
+              } else if (onOutgoingCallGranted != null) {
+                onOutgoingCallGranted.run();
               }
             } else {
               showAlert(AlertType.MICROPHONE_PERMISSION_MISSING);
@@ -702,7 +738,13 @@ debugCall id:long debug:string = Ok;
       // UI.getCurrentStackItem(context);
       return;
     }
-    if (!checkRecordPermissions(context.context(), context.tdlib(), null)) {
+    final TdApi.UserFullInfo grantedUserFull = userFull;
+    Runnable onGranted = () -> {
+      if (!Passcode.instance().isLocked()) {
+        makeCall(context, userId, grantedUserFull, false);
+      }
+    };
+    if (!checkRecordPermissions(context.context(), context.tdlib(), null, onGranted)) {
       return;
     }
     context.context().closeAllMedia(false);

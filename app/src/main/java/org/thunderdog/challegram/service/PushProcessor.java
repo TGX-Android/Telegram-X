@@ -197,6 +197,11 @@ public class PushProcessor {
           TDLib.Tag.notifications(pushId, accountId, "Finishing without a foreground task, state: %s", stateToString(currentState));
           state.set(State.FINISHED);
           latch.countDown();
+          if (foregroundNotificationMayBeShown.get()) {
+            // A start that wasn't refused at once may run, e.g. one that answers after the wait
+            TDLib.Tag.notifications(pushId, accountId, "Foreground task requested, stopping it");
+            FetchNotificationService.stopForegroundTask(context, pushId, accountId);
+          }
 
           CancellableRunnable act = timeout.get();
           if (act != null) {

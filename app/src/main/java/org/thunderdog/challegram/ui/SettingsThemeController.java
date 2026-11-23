@@ -313,7 +313,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           v.getToggler().setRadioEnabled(Settings.instance().needPreviewChatOnHold(), isUpdate);
         } else if (itemId == R.id.btn_sendByEnter) {
           v.getToggler().setRadioEnabled(Settings.instance().needSendByEnter(), isUpdate);
-        } else if (itemId == R.id.btn_toggleNewSetting) {
+        } else if (itemId == R.id.btn_toggleNewSetting || itemId == R.id.btn_wrapCodeBlocks) {
           updateSettingView(v, item, isUpdate);
         } else if (itemId == R.id.btn_updateAutomatically) {
           int mode = Settings.instance().getAutoUpdateMode();
@@ -576,6 +576,15 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_instantViewMode, 0, R.string.AutoInstantView));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      if (!Config.AUTOMATIC_CODE_WRAPPING) {
+        items.add(new ListItem(
+          ListItem.TYPE_RADIO_SETTING,
+          R.id.btn_wrapCodeBlocks,
+          0,
+          R.string.WrapCodeBlocks
+        ).setLongId(Settings.SETTING_FLAG_WRAP_CODE_BLOCKS));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      }
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.OpenEmbed).setLongId(Settings.SETTING_FLAG_NO_EMBEDS).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.OpenEmbedDesc), false));
@@ -1215,7 +1224,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       Settings.instance().setNeedHideChatKeyboardOnScroll(adapter.toggleView(v));
     } else if (viewId == R.id.btn_sendByEnter) {
       Settings.instance().setNeedSendByEnter(adapter.toggleView(v));
-    } else if (viewId == R.id.btn_toggleNewSetting) {
+    } else if (viewId == R.id.btn_toggleNewSetting || viewId == R.id.btn_wrapCodeBlocks) {
       handleSettingClick(v, adapter);
     } else if (viewId == R.id.btn_subscribeToBeta) {
       tdlib.ui().subscribeToBeta(this);

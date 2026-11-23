@@ -635,8 +635,13 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             sessions.currentSession.canAcceptCalls = newSession.canAcceptCalls;
             adapter.updateValuedSettingById(R.id.btn_currentSession);
           } else {
-            sessions.allSessions[indexOfSession(newSession.id)] = newSession;
-            updateSessionById(newSession.id);
+            int index = indexOfSession(newSession.id);
+            if (index != -1) {
+              TdApi.Session listed = sessions.allSessions[index];
+              listed.canAcceptSecretChats = newSession.canAcceptSecretChats;
+              listed.canAcceptCalls = newSession.canAcceptCalls;
+              updateSessionById(newSession.id);
+            }
           }
         }));
         context.navigation().navigateTo(esc);

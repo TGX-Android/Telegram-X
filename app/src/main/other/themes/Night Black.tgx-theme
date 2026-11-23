@@ -70,5 +70,26 @@ avatarRed, avatarRed_big, nameRed: #CC5049
 avatarViolet, avatarViolet_big: #955CDB
 avatarYellow, avatarYellow_big, nameYellow: #F9C84A
 blockQuoteText, blockQuoteLine: #A0A0A0
+blockQuoteTextHidden: #6A6A6A
 bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine: #A0A0A0
-bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine: #A0A0A0
+bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine, bubbleOut_codeBlockLine, bubbleOut_codeBlockBar: #A0A0A0
+codeBlockBackground: #0000006F
+bubbleIn_codeBlockBackground, bubbleOut_codeBlockBackground: #0000005D
+codeBlockHeader, bubbleIn_codeBlockHeader, bubbleOut_codeBlockHeader: #000000CC
+syntaxComment, syntaxBlockComment, syntaxProlog, syntaxDoctype, syntaxCdata: #808080
+syntaxPunctuation, syntaxOperator: #A9B7C6
+syntaxKeyword, syntaxBoolean, syntaxAtrule: #CC7832
+syntaxNumber: #6897BB
+syntaxString, syntaxChar, syntaxAttrValue: #6A8759
+syntaxFunction: #FFC66D
+syntaxClassName: #1F855E
+syntaxConstant, syntaxProperty, syntaxSymbol: #9876AA
+syntaxAnnotation: #BBB529
+syntaxTag, syntaxSelector: #E8BF6A
+syntaxAttrName: #BABABA
+syntaxBuiltin: #8888C6
+syntaxEntity: #6D9CBE
+syntaxUrl: #287BDE
+syntaxInserted: #629755
+syntaxDeleted: #F06A6A
+codeBlockRipple, bubbleIn_codeBlockRipple, bubbleOut_codeBlockRipple: #FFFFFF14

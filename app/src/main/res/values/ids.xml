@@ -34,6 +34,7 @@
   <item type="id" name="menu_chatBulkActions" />
   <item type="id" name="menu_search" />
   <item type="id" name="menu_archive" />
+  <item type="id" name="menu_calls" />
   <item type="id" name="menu_clear" />
   <item type="id" name="menu_emoji" />
   <item type="id" name="menu_editLangPack" />
@@ -402,6 +403,7 @@
   <item type="id" name="btn_cameraTypeLegacy" />
   <item type="id" name="btn_cameraTypeSystem" />
   <item type="id" name="btn_markdown" />
+  <item type="id" name="btn_wrapCodeBlocks" />
   <item type="id" name="btn_sizeUnit" />
   <item type="id" name="btn_forceExoPlayerExtensions" />
   <item type="id" name="btn_audioCompression" />
@@ -499,6 +501,7 @@
   <item type="id" name="btn_chatSettings" />
   <item type="id" name="btn_devices" />
   <item type="id" name="btn_notificationSettings" />
+  <item type="id" name="btn_callSettings" />
   <item type="id" name="btn_privacySettings" />
   <item type="id" name="btn_languageSettings" />
   <item type="id" name="btn_stickerSettings" />
@@ -1088,7 +1091,6 @@
   <item type="id" name="btn_notifications_priorityOrImportance" />
   <item type="id" name="btn_notifications_led" />
   <item type="id" name="btn_notifications_channel" />
-  <item type="id" name="btn_notifications_calls" />
   <item type="id" name="btn_notifications_includeDismissed" />
 
   <item type="id" name="btn_notificationMode" />
@@ -1115,6 +1117,7 @@
   <item type="id" name="btn_calls_ringtone" />
   <item type="id" name="btn_calls_vibrate" />
   <item type="id" name="btn_calls_channel" />
+  <item type="id" name="btn_calls_acceptOnDevice" />
 
   <item type="id" name="btn_previewChat" />
   <item type="id" name="btn_inApp_chatSounds" />

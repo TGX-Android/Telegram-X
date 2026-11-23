@@ -313,7 +313,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
       AvatarReceiver receiver = complexReceiver.getAvatarReceiver(Td.getSenderId(senderId));
       if (alpha != 1f)
-        receiver.setPaintAlpha(receiver.getPaintAlpha() * alpha);
+        receiver.setPaintAlpha(alpha);
       receiver.setBounds((int) (cx - radius), (int) (cy - radius), (int) (cx + radius), (int) (cy + radius));
 
       boolean needRestore = alpha != 1f;

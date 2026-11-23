@@ -60,8 +60,18 @@ public class BiDiUtils {
     return isValid(flags) ? U.measureTextRun(in, p, isRtl(flags)) : U.measureText(in, p);
   }
 
-  public static float measureTextRun (@BiDiEntity int flags, @Nullable CharSequence in, int start, int end, @NonNull Paint p) {
-    return isValid(flags) ? U.measureTextRun(in, start, end, p, isRtl(flags)) : U.measureText(in, start, end, p);
+  public static float measureTextRun (
+    @BiDiEntity int flags,
+    @Nullable CharSequence in,
+    int start,
+    int end,
+    int contextStart,
+    int contextEnd,
+    @NonNull Paint p
+  ) {
+    return isValid(flags) ?
+      U.measureTextRun(in, start, end, contextStart, contextEnd, p, isRtl(flags)) :
+      U.measureText(in, start, end, p);
   }
 
   public static boolean requiresBidi (CharSequence text, int start, int end) {
