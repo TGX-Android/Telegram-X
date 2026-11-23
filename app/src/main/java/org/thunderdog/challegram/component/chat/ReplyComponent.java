@@ -167,6 +167,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private static final float CORNER_PADDING = 1f;
 
   private int getContentWidth (boolean isTitle) {
+    final Drawable cornerDrawable = this.cornerDrawable;
     int maxWidth = this.maxWidth - paddingLeft - lineWidth - paddingLeft;
     if (hasPreview()) {
       maxWidth -= lineWidth + (isMessageComponent() ? mHeight : height);
@@ -221,6 +222,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   private void buildContent () {
+    final ContentPreview content = this.content;
     int width = getContentWidth(false);
 
     //noinspection UnsafeOptInUsageError
@@ -272,6 +274,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   public void requestPreview (DoubleImageReceiver receiver, ComplexReceiver textMediaReceiver) {
+    final MediaPreview mediaPreview = this.mediaPreview;
     int imageHeight = isMessageComponent() ? mHeight : height;
     if (mediaPreview != null) {
       receiver.setRadius(mediaPreview.previewCircle ? imageHeight / 2f : 0);
@@ -431,6 +434,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       Drawables.draw(c, cornerDrawable, cornerPositionX - cornerDrawable.getMinimumWidth(), cornerPositionY, Paints.getPorterDuffPaint(lineColor));
     }
 
+    final MediaPreview mediaPreview = this.mediaPreview;
     if (hasPreview()) {
       int imageX = lineWidth + lineWidth;
       if (rtl) {
@@ -675,6 +679,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   public boolean replaceMessageContent (long messageId, TdApi.MessageContent content) {
+    final TdApi.Message currentMessage = this.currentMessage;
     if (currentMessage != null && currentMessage.id == messageId) {
       currentMessage.content = content;
       parseContent(currentMessage, true);
@@ -686,6 +691,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private TdApi.FormattedText translatedText;
 
   public boolean replaceMessageTranslation (long messageId, TdApi.FormattedText translation) {
+    final TdApi.Message currentMessage = this.currentMessage;
     if (currentMessage != null && currentMessage.id == messageId) {
       translatedText = translation;
       parseContent(currentMessage, true);
@@ -695,6 +701,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   public boolean deleteMessageContent (long messageId) {
+    final TdApi.Message currentMessage = this.currentMessage;
     if (currentMessage != null && currentMessage.id == messageId) {
       setContent(Lang.getString(R.string.Error), new ContentPreview(null, R.string.DeletedMessage), null, true);
       return true;
