@@ -17,6 +17,7 @@ import io.github.pytgcalls.RemoteSourceChangeCallback;
 import io.github.pytgcalls.exceptions.ConnectionException;
 import io.github.pytgcalls.exceptions.ConnectionNotFoundException;
 import io.github.pytgcalls.media.AudioDescription;
+import io.github.pytgcalls.media.Format;
 import io.github.pytgcalls.media.MediaDescription;
 import io.github.pytgcalls.media.MediaSource;
 import io.github.pytgcalls.media.StreamMode;
@@ -62,7 +63,7 @@ public class NTgCallsInterface implements CallInterface {
     micDescription = new AudioDescription(
       MediaSource.DEVICE,
       48000,
-      2,
+      1,
       NTgCalls.getMediaDevices().microphone.get(0).metadata,
       true
     );
@@ -101,7 +102,8 @@ public class NTgCallsInterface implements CallInterface {
           AUTO_DETECT,
           30,
           "",
-          true
+          true,
+          Format.I420
         ),
         null
       )
