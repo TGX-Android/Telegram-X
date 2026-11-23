@@ -516,7 +516,7 @@ public class U {
           )) {
             knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
           }
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && UI.getAppContext().checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && AppContext.get().checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
           }
           if (allowedMediaProjection) {

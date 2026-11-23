@@ -27,7 +27,7 @@ import io.github.pytgcalls.p2p.RTCServer;
 import io.github.pytgcalls.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.AppContext;
 import org.thunderdog.challegram.voip.ConnectionStateListener;
 import org.thunderdog.challegram.voip.NetworkStats;
 import org.thunderdog.challegram.voip.VoIPInstance;
@@ -68,10 +68,10 @@ public class NTgCallsInterface implements CallInterface {
       true
     );
     ntgcalls.createP2pCall(CALL_ID);
-    if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+    if (ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
       throw new SecurityException("No microphone permission");
     }
-    if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+    if (ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
       throw new SecurityException("No microphone permission");
     }
     ntgcalls.setStreamSources(
@@ -202,10 +202,10 @@ public class NTgCallsInterface implements CallInterface {
   @Override
   public void setCameraEnabled (boolean enabled, boolean front) {
     try {
-      if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+      if (ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         throw new SecurityException("No microphone permission");
       }
-      if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+      if (ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
         throw new SecurityException("No microphone permission");
       }
       if (enabled) {
@@ -248,10 +248,10 @@ public class NTgCallsInterface implements CallInterface {
   public void setScreenShareEnabled (boolean enabled) {
     var size = getScreenCaptureSize();
     try {
-      if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+      if (ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         throw new SecurityException("No microphone permission");
       }
-      if (ContextCompat.checkSelfPermission(UI.getAppContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+      if (ContextCompat.checkSelfPermission(AppContext.get(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
         throw new SecurityException("No microphone permission");
       }
       if (enabled) {
@@ -344,7 +344,7 @@ public class NTgCallsInterface implements CallInterface {
   }
 
   private static Point getScreenCaptureSize() {
-    WindowManager wm = (WindowManager) UI.getAppContext().getSystemService(Context.WINDOW_SERVICE);
+    WindowManager wm = (WindowManager) AppContext.get().getSystemService(Context.WINDOW_SERVICE);
     Display display = wm.getDefaultDisplay();
     Point size = new Point();
     display.getRealSize(size);

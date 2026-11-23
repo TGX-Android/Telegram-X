@@ -762,7 +762,6 @@ public class TGCallService extends Service implements
       }
       if (lastScreenSharing != settings.isScreenSharing()) {
         lastScreenSharing = settings.isScreenSharing();
-        cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
         U.stopForeground(this, true, TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION);
         ongoingCallNotification = null;
         showNotification();
