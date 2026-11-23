@@ -25,8 +25,14 @@ jobs:
           distribution: temurin
           java-version: "25"
       - name: Rust toolchain
+        env:
+          TERM: xterm
         run: |
-          scripts/setup-rust.sh | tee rust.log
+          set -eo pipefail
+          scripts/setup-rust.sh 2>&1 | tee rust.log
+          echo "--- rustup toolchains:"
+          rustup toolchain list || true
+          ls -la "$HOME/.rustup/toolchains" || true
       - name: local.properties
         env:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
@@ -34,6 +40,7 @@ jobs:
         run: |
           RUST_DIR=$(grep -oP '(?<=rust.dir=).*' rust.log | tail -1 || true)
           RUST_DIR=${RUST_DIR:-$HOME/.rustup}
+          echo "Using rust.dir=$RUST_DIR"
           {
             echo "sdk.dir=$ANDROID_HOME"
             echo "rust.dir=$RUST_DIR"
