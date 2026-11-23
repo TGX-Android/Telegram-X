@@ -353,10 +353,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     } else if (viewId == R.id.btn_deleteAllRevokedLinks) {
       showOptions(Lang.getString(R.string.AreYouSureDeleteAllInviteLinks), new int[] {R.id.btn_deleteAllRevokedLinks, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DeleteAllRevokedLinks), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_deleteAllRevokedLinks) {
-          TdApi.ChatInviteLink firstLink = inviteLinksRevoked.get(0);
-          TdApi.ChatInviteLink lastLink = inviteLinksRevoked.get(inviteLinksRevoked.size() - 1);
           inviteLinksRevoked.clear();
-          smOnRevokedLinksCleared(firstLink, lastLink);
+          smOnRevokedLinksCleared();
           notifyParentIfPossible();
           tdlib.send(new TdApi.DeleteAllRevokedChatInviteLinks(chatId, adminUserId), tdlib.typedOkHandler());
         }
@@ -465,11 +463,15 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
     List<TdApi.ChatInviteLink> inviteList = revoked ? inviteLinksRevoked : inviteLinks;
 
-    requestLinks(revoked, true, inviteList.get(inviteList.size() - 1).inviteLink, links -> {
-      final int index = adapter.indexOfViewByIdAndValue(R.id.btn_showAdvanced, revoked ? 1 : 0);
-      if (index == -1) return;
-
+    String offsetInviteLink = inviteList.isEmpty() ? "" :
+      inviteList.get(inviteList.size() - 1).inviteLink;
+    requestLinks(revoked, true, offsetInviteLink, links -> {
       runOnUiThreadOptional(() -> {
+        final int index = adapter.indexOfViewByIdAndValue(R.id.btn_showAdvanced, revoked ? 1 : 0);
+        if (index == -1) {
+          return;
+        }
+
         inviteList.addAll(Arrays.asList(links.inviteLinks));
         List<ListItem> newItems = new ArrayList<>();
         for (int i = 0; i < links.inviteLinks.length; i++) {
@@ -541,19 +543,19 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   // This is called after the actual list is changed
 
   // Remove everything from "Revoked Links", including the header
-  public void smOnRevokedLinksCleared (TdApi.ChatInviteLink firstRevoked, TdApi.ChatInviteLink lastRevoked) {
-    int firstLink = adapter.indexOfViewByData(firstRevoked);
-    int lastLink = adapter.indexOfViewByData(lastRevoked);
+  public void smOnRevokedLinksCleared () {
+    int headerPos = adapter.indexOfViewById(R.id.btn_deleteAllRevokedLinks) - 2;
+    int shadowPos = adapter.indexOfView(
+      item -> item.getViewType() == ListItem.TYPE_SHADOW_BOTTOM, headerPos, false
+    );
 
-    int startPos = firstLink - 4; // also remove header
-    int itemCount = (lastLink - firstLink) + 6; // include the bottom shadow
-
-    adapter.removeRange(startPos, itemCount);
+    adapter.removeRange(headerPos, shadowPos - headerPos + 1);
+    totalRevokedLinkCount = 0;
   }
 
   // Remove from "Additional Links" and add to "Revoked Links". If there was no revoked links, add header.
   public void smOnLinkRevoked (TdApi.ChatInviteLink wasActiveInviteLink, TdApi.ChatInviteLink revokedInviteLink) {
-    boolean shouldAddHeader = inviteLinksRevoked.size() == 1;
+    boolean shouldAddHeader = adapter.indexOfViewById(R.id.btn_deleteAllRevokedLinks) == -1;
 
     ListItem linkItem = new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, simplifyInviteLink(revokedInviteLink), false).setData(revokedInviteLink);
     ListItem linkItemSeparator = new ListItem(ListItem.TYPE_SEPARATOR_FULL);
@@ -562,24 +564,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       adapter.removeRange(adapter.indexOfViewByData(wasActiveInviteLink) - 1, 2);
 
     if (shouldAddHeader) {
-      int lastActiveLinkIdx;
-
-      if (inviteLinkCounts != null && inviteLinkCounts.length > 1) {
-        lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinkCounts[inviteLinkCounts.length - 1]) + 1;
-      } else if (inviteLinks.size() > 1) {
-        lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinks.get(inviteLinks.size() - 1)) + 2;
-      } else {
-        // find the "Create Link" instead
-        if (adapter.indexOfViewById(R.id.btn_createInviteLink) == -1) {
-          // Viewing other admin, so "Create button" is not available - using a hint as index then
-          lastActiveLinkIdx = adapter.indexOfViewByType(ListItem.TYPE_DESCRIPTION) + 3;
-        } else {
-          lastActiveLinkIdx = adapter.indexOfViewById(R.id.btn_createInviteLink) + 2;
-        }
-      }
-
-      lastActiveLinkIdx += 1; // include the shadow
-
       ListItem[] arr = new ListItem[]{
         new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.RevokedInviteLinks),
         new ListItem(ListItem.TYPE_SHADOW_TOP),
@@ -589,14 +573,15 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
       };
 
-      adapter.addItems(Math.min(lastActiveLinkIdx, adapter.getItemCount()), arr);
+      adapter.addItems(adapter.indexOfViewByType(ListItem.TYPE_LIST_INFO_VIEW), arr);
     } else {
-      int firstRevokedLinkIdx = adapter.indexOfViewByData(inviteLinksRevoked.get(1)) - 1; // 0 is our new link
+      int firstRevokedLinkIdx = adapter.indexOfViewById(R.id.btn_deleteAllRevokedLinks) + 1;
       adapter.addItem(firstRevokedLinkIdx, linkItem);
       adapter.addItem(firstRevokedLinkIdx, linkItemSeparator);
     }
 
-    if (adminUserId != tdlib.myUserId() && inviteLinks.size() == 1) {
+    boolean canLoadMore = adapter.indexOfViewByIdAndValue(R.id.btn_showAdvanced, 0) != -1;
+    if (adminUserId != tdlib.myUserId() && inviteLinks.size() == 1 && !canLoadMore) {
       if (revokedInviteLink.isPrimary) return;
       // No additional links left, we can also remove header
       adapter.removeRange(adapter.indexOfViewById(R.id.btn_inviteLink) + 3, 3);
@@ -615,7 +600,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   // Remove from "Revoked Links". If there is no revoked links left, remove header.
   public void smOnRevokedLinkDeleted (TdApi.ChatInviteLink revokedLink) {
     int revokedLinkIdx = adapter.indexOfViewByData(revokedLink);
-    boolean shouldRemoveHeader = inviteLinksRevoked.isEmpty();
+    boolean canLoadMore = adapter.indexOfViewByIdAndValue(R.id.btn_showAdvanced, 1) != -1;
+    boolean shouldRemoveHeader = inviteLinksRevoked.isEmpty() && !canLoadMore;
 
     if (shouldRemoveHeader) {
       adapter.removeRange(revokedLinkIdx - 4, 6);
