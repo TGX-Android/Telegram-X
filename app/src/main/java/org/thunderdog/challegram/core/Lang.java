@@ -248,7 +248,12 @@ public class Lang {
   private  static String getCloudString (String key) {
     TdApi.LanguagePackInfo languagePackInfo = Settings.instance().getLanguagePackInfo();
     TdApi.LanguagePackStringValueOrdinary string = getStringValue(key, languagePackInfo);
-    return string != null ? string.value : null;
+    return string != null ? brandCloud(string.value) : null;
+  }
+
+  // Telegram's cloud language pack still says "Telegram X": show this app's own name instead.
+  private static String brandCloud (String value) {
+    return value != null && value.contains("Telegram X") ? value.replace("Telegram X", "TradeLens Connect") : value;
   }
 
   public static CharSequence getTutorial (ViewController<?> context, @NonNull TdApi.ChatSource source) {
@@ -324,7 +329,7 @@ public class Lang {
       final String key = getResourceEntryName(resId);
       TdApi.LanguagePackStringValueOrdinary string = getStringValue(key, languagePackInfo);
       if (string != null)
-        return string.value;
+        return brandCloud(string.value);
     }
     try {
       return getAndroidString(resId);
@@ -438,7 +443,7 @@ public class Lang {
       TdApi.LanguagePackStringValueOrdinary string = getStringValue(key, languagePackInfo);
       if (string != null) {
         try {
-          return formatString(applyFlags(string.value, flags), hasSpanned, creator, formatArgs);
+          return formatString(applyFlags(brandCloud(string.value), flags), hasSpanned, creator, formatArgs);
         } catch (Throwable t) {
           warnResource(true, pluralCode(), resId);
         }
