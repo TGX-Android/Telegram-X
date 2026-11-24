@@ -1,5 +1,6 @@
 package tgx.gradle.task
 
+import org.eclipse.jgit.lib.Constants
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
@@ -16,7 +17,7 @@ import tgx.gradle.createEmptyDir
 import tgx.gradle.loadProperties
 import tgx.gradle.requireDir
 import tgx.gradle.requireFile
-import java.io.ByteArrayOutputStream
+import tgx.gradle.source.GitInformationSource
 import java.io.File
 
 private const val TAG = "tlottie"
@@ -82,14 +83,9 @@ abstract class BuildTlottieTask : BuildNativeLibraryTask() {
     // A profile made for other code leaves changed functions without its optimizations, and in a
     // release it means that it wasn't made again after an update, so the build warns
     val task = ":app:generateTlottieProfile[$abi]"
-    val commit = ByteArrayOutputStream().also { out ->
-      exec.exec {
-        workingDir = input
-        standardOutput = out
-        isIgnoreExitValue = true
-        commandLine("git", "rev-parse", "HEAD")
-      }
-    }.toString().trim()
+    val commit = GitInformationSource.openRepository(input).use {
+      it.resolve(Constants.HEAD)?.name
+    }
     val made = profiles.orNull?.asFile?.takeIf { it.isFile }?.let { loadProperties(it) }
     val madeCommit = made?.getProperty("$abi.tlottie")
     val madeVersion = made?.getProperty("$abi.rust")
