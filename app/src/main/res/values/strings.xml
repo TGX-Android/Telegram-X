@@ -8,12 +8,12 @@
   <string name="Page4Title">Powerful</string>
   <string name="Page5Title">Secure</string>
   <string name="Page6Title">Cloud-Based</string>
-  <string name="Page1Message">The world\'s **fastest** messaging app.\nIt is **free** and **secure**.</string>
-  <string name="Page2Message">**Telegram** delivers messages\nfaster than any other application.</string>
-  <string name="Page3Message">**Telegram** provides free unlimited\ncloud storage for chats and media.</string>
-  <string name="Page4Message">**Telegram** has no limits on\nthe size of your media and chats.</string>
-  <string name="Page5Message">**Telegram** keeps your messages\nsafe from hacker attacks.</string>
-  <string name="Page6Message">**Telegram** lets you access your\nmessages from multiple devices.</string>
+  <string name="Page1Message">An **unofficial** Telegram client\nfor the **TradeLens** community.</string>
+  <string name="Page2Message">Messages travel over\nTelegram\'s global network.</string>
+  <string name="Page3Message">Free to use, with your chats and media\nkept in Telegram\'s cloud.</string>
+  <string name="Page4Message">Large chats, channels and files,\nas supported by Telegram.</string>
+  <string name="Page5Message">Messages are encrypted with\nTelegram\'s MTProto protocol.</string>
+  <string name="Page6Message">Use your Telegram account\non several devices.</string>
   <string name="StartMessaging">Start Messaging</string>
 
   <string name="network_Connecting">Connecting…</string>
