@@ -157,6 +157,7 @@ open class ModulePlugin : Plugin<Project> {
                   "-DANDROID_PLATFORM=android-${selectedMinSdk}",
                   "-DANDROID_MIN_SDK_VERSION=${selectedMinSdk}",
                   "-DANDROID_STL=c++_shared",
+                  "-DTGX_BRANCH_PROTECTION=${if (variant.usesBranchProtection) "ON" else "OFF"}",
                   "-DTGX_FLAVOR=${variant.flavor}"
                 )
                 sourceSets.getByName(variant.flavor) {
