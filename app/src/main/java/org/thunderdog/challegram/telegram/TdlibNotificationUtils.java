@@ -330,8 +330,40 @@ public class TdlibNotificationUtils {
     return tdlib.context().notificationIcons().put(tdlib.id(), chatId, key, createdBitmap);
   }
 
-  static PendingIntent newIntent (int accountId, long forLocalChatId, long specificMessageId) {
-    return PendingIntent.getActivity(UI.getContext(), 0, forLocalChatId != 0 ? Intents.valueOfLocalChatId(accountId, forLocalChatId, specificMessageId) : Intents.valueOfMain(accountId), PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(true));
+  @Nullable
+  static PendingIntent newActivityIntent (int requestCode, Intent intent, int flags) {
+    // MIUI and HyperOS throw when the app has too many of them
+    try {
+      return PendingIntent.getActivity(AppContext.get(), requestCode, intent, flags);
+    } catch (Throwable t) {
+      Log.e("Unable to create activity intent", t);
+      return null;
+    }
+  }
+
+  @Nullable
+  static PendingIntent newBroadcastIntent (int requestCode, Intent intent) {
+    int flags = Intents.mutabilityFlags(true);
+    try {
+      return PendingIntent.getBroadcast(AppContext.get(), requestCode, intent, flags);
+    } catch (Throwable t) {
+      Log.e("Unable to create broadcast intent", t);
+      return null;
+    }
+  }
+
+  @Nullable
+  static PendingIntent newIntent (
+    int notificationId,
+    int accountId,
+    long forLocalChatId,
+    long specificMessageId
+  ) {
+    return newActivityIntent(
+      notificationId,
+      newCoreIntent(accountId, forLocalChatId, specificMessageId),
+      Intents.mutabilityFlags(true)
+    );
   }
 
   static Intent newCoreIntent (int accountId, long forLocalChatId, long specificMessageId) {

@@ -360,12 +360,15 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     // Hack to avoid duplicate notification for summary notification on Android Auto
     boolean hideOnAndroidAuto = !isSummary;
 
+    PendingIntent replyPendingIntent = null;
     if (needReply) {
       // reply
       Intent replyIntent = new Intent(AppContext.get(), TGWearReplyReceiver.class);
       Intents.secureIntent(replyIntent, true);
       TdlibNotificationExtras.put(replyIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
-      PendingIntent replyPendingIntent = PendingIntent.getBroadcast(AppContext.get(), notificationId, replyIntent, Intents.mutabilityFlags(true));
+      replyPendingIntent = TdlibNotificationUtils.newBroadcastIntent(notificationId, replyIntent);
+    }
+    if (replyPendingIntent != null) {
       RemoteInput remoteInput = new RemoteInput.Builder(TGBaseReplyReceiver.EXTRA_VOICE_REPLY).setLabel(Lang.getString(R.string.Reply)).build();
       String replyToString = Lang.getString(R.string.Reply);
       replyAction = new NotificationCompat.Action.Builder(R.drawable.baseline_reply_24_white, replyToString, replyPendingIntent)
@@ -438,17 +441,19 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     NotificationCompat.Action callBackAction = null;
     long callBackUserId = hasShownCall(helper, group) ? tdlib.chatUserId(chat) : 0;
+    PendingIntent callBackPendingIntent = null;
     if (callBackUserId != 0) {
-      PendingIntent pendingIntent = PendingIntent.getActivity(
-        AppContext.get(),
+      callBackPendingIntent = TdlibNotificationUtils.newActivityIntent(
         Intents.REQUEST_CODE_CALL_BACK,
         Intents.valueOfCallBack(tdlib.id(), callBackUserId),
         PendingIntent.FLAG_UPDATE_CURRENT | Intents.mutabilityFlags(false)
       );
+    }
+    if (callBackPendingIntent != null) {
       callBackAction = new NotificationCompat.Action.Builder(
         R.drawable.baseline_phone_24_white,
         Lang.getString(R.string.CallBack),
-        pendingIntent
+        callBackPendingIntent
       )
         .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_CALL)
         .build();
@@ -457,7 +462,8 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     Intent hideIntent = new Intent(AppContext.get(), TGRemoveReceiver.class);
     Intents.secureIntent(hideIntent, true);
     TdlibNotificationExtras.put(hideIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
-    PendingIntent hidePendingIntent = PendingIntent.getBroadcast(AppContext.get(), notificationId, hideIntent, Intents.mutabilityFlags(true));
+    PendingIntent hidePendingIntent =
+      TdlibNotificationUtils.newBroadcastIntent(notificationId, hideIntent);
 
     NotificationCompat.Style style = null;
 
@@ -612,7 +618,12 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final String textContent = textBuilder.toString();
     final CharSequence tickerText = getTickerText(tdlib, helper, allowPreview, chat, lastNotification, true, group.singleSenderId() != 0, hasCustomText);
 
-    final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), group.findTargetMessageId());
+    final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(
+      notificationId,
+      tdlib.id(),
+      tdlib.settings().getLocalChatId(chatId),
+      group.findTargetMessageId()
+    );
 
     boolean needGroupLogic = true; // !isSummary || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && settings == null);
 
@@ -1171,7 +1182,13 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       }
       b.setSortKey(makeSortKey(lastNotification, true));
     }
-    b.setContentIntent(TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(singleChatId), singleTargetMessageId));
+    final int notificationId = helper.getBaseNotificationId(category);
+    b.setContentIntent(TdlibNotificationUtils.newIntent(
+      notificationId,
+      tdlib.id(),
+      tdlib.settings().getLocalChatId(singleChatId),
+      singleTargetMessageId
+    ));
 
     styleNotification(tdlib, b, singleChatId, displayingChatsCount == 1 ? chat : null, allowPreview);
 
@@ -1182,8 +1199,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       Intents.secureIntent(hideIntent, true);
       hideIntent.putExtra("account_id", tdlib.id());
       hideIntent.putExtra("category", category);
-      PendingIntent hidePendingIntent = PendingIntent.getBroadcast(AppContext.get(), helper.getBaseNotificationId(category), hideIntent, Intents.mutabilityFlags(true));
-      b.setDeleteIntent(hidePendingIntent);
+      b.setDeleteIntent(TdlibNotificationUtils.newBroadcastIntent(notificationId, hideIntent));
 
       if (displayingChatsCount == 1) {
         Bitmap bitmap = TdlibNotificationUtils.buildLargeIcon(tdlib, chat, !isRebuild);
