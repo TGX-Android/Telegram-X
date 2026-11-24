@@ -71,7 +71,8 @@ public class TGStorageStatsFast {
     this.logFiles = Log.getLogFiles();
 
     // Application
-    this.pmcSize = prevStats != null ? prevStats.pmcSize : Settings.instance().pmc().length();
+    this.pmcSize = prevStats != null ? prevStats.pmcSize :
+      FileUtils.getSize(Settings.instance().getDirectory());
     this.paintsSize = FileUtils.getSize(PaintState.getPaintsDir());
     this.snapshotsSize = FileUtils.getSize(SessionSnapshot.getSnapshotsDir());
     this.accountsConfigSize = TdlibManager.getAccountConfigFileSize();
