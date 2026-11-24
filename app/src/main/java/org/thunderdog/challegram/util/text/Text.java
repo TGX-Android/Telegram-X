@@ -4575,8 +4575,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
           if (pressedQuote.isCopyButtonPressed()) {
             // A tooltip at the icon in place of a toast, also where the system shows its own panel
             // of the clipboard
-            UI.copyText(getCode(pressedQuote.entity), 0);
             final QuoteBackground copiedBlock = pressedQuote;
+            final TextEntity copiedEntity = copiedBlock.entity;
+            final String code = getCode(copiedEntity);
+            UI.copyText(TD.toCopyText(code, copiedEntity.getCodeBlockType()), 0);
             UI.getContext(view.getContext()).tooltipManager()
               .builder(view, viewProvider)
               .locate((targetView, outRect) -> copiedBlock.getCopyButtonBounds(outRect))

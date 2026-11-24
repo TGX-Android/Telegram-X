@@ -489,6 +489,11 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
+  public @Nullable TdApi.TextEntityType getCodeBlockType () {
+    return codeEntity != null ? codeEntity.type : null;
+  }
+
+  @Override
   public @Nullable String getCodeLanguage () {
     if (codeEntity != null && Td.isPreCode(codeEntity.type)) {
       return ((TdApi.TextEntityTypePreCode) codeEntity.type).language;
@@ -810,7 +815,12 @@ public class TextEntityMessage extends TextEntity {
             break;
           }
         }
-        UI.copyText(copyText, message);
+        UI.copyText(
+          Td.isMonospaceTextOrBlock(clickableEntity.type) ?
+            TD.toCopyText(copyText.toString(), clickableEntity.type) :
+            copyText,
+          message
+        );
       } else if (id == R.id.btn_shareLink) {
         if (shareState[0] == 0) {
           shareState[0] = 1;

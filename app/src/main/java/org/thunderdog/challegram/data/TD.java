@@ -5331,6 +5331,11 @@ public class TD {
     return toSpanned(text, TextEntityOption.ALLOW_INTERNAL, true);
   }
 
+  public static CharSequence toCopyText (String text, TdApi.TextEntityType type) {
+    final TdApi.TextEntity entity = new TdApi.TextEntity(0, text.length(), type);
+    return toCopyText(new TdApi.FormattedText(text, new TdApi.TextEntity[] {entity}));
+  }
+
   public static CharSequence toCharSequence (TdApi.ChatFolderName name) {
     return toCharSequence(name.text, TextEntityOption.ALLOW_INTERNAL | BitwiseUtils.optional(TextEntityOption.DISABLE_ANIMATIONS, !name.animateCustomEmoji), true);
   }
