@@ -49,7 +49,7 @@ jobs:
       - name: Validate and build
         run: |
           ./gradlew --no-parallel :app:validateGitSetup
-          ./gradlew --no-parallel assembleLatestDebug -Pabi=arm64
+          ./gradlew --no-parallel assembleQrsDebug -Pabi=arm64
       - uses: actions/upload-artifact@v4
         with:
           name: m0-debug-apk
