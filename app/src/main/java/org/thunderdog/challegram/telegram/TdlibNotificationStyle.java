@@ -1186,7 +1186,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     b.setContentIntent(TdlibNotificationUtils.newIntent(
       notificationId,
       tdlib.id(),
-      tdlib.settings().getLocalChatId(singleChatId),
+      singleChatId != 0 ? tdlib.settings().getLocalChatId(singleChatId) : 0,
       singleTargetMessageId
     ));
 
