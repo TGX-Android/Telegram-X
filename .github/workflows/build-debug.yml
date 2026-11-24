@@ -47,6 +47,7 @@ jobs:
             echo "app.name=TradeLens Connect (Unofficial)"
             echo "app.download_url=https://github.com/Driverline/tradelens-connect-android"
             echo "app.sources_url=https://github.com/Driverline/tradelens-connect-android"
+            echo "app.experimental=true"
             echo "telegram.api_id=$API_ID"
             echo "telegram.api_hash=$API_HASH"
           } > local.properties
