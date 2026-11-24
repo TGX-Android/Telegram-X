@@ -1707,7 +1707,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         new ExternalEmojiFilter(),
         new CodePointCountFilter(maxCodePointCount),
         new EmojiFilter(this),
-        new CharacterStyleFilter(true),
+        newStyleFilter(),
         new FinalNewLineFilter(this)
       });
     } else {
@@ -1715,10 +1715,21 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         new PreserveCustomEmojiFilter(),
         new ExternalEmojiFilter(),
         new EmojiFilter(this),
-        new CharacterStyleFilter(true),
+        newStyleFilter(),
         new FinalNewLineFilter(this)
       });
     }
+  }
+
+  private InputFilter newStyleFilter () {
+    return new CharacterStyleFilter(true) {
+      @Override
+      protected boolean shouldRemoveSpan (Spanned spanned, Object span) {
+        // A message or a draft keeps its own links, the guard is for pastes
+        return super.shouldRemoveSpan(spanned, span) &&
+          !(isSettingText && TD.canConvertToEntityType(span));
+      }
+    };
   }
 
   public final void setNoPersonalizedLearning (boolean noPersonalizedLearning) {
