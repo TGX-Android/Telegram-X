@@ -6685,9 +6685,7 @@ public class Settings {
     pmc.putLong(KEY_TDLIB_CRASH_PREFIX, crashId + 1);
     // save crash
     crash.saveTo(pmc, keyPrefix);
-    // apply & flush
     pmc.apply();
-    pmc.flush();
   }
 
   public boolean setCrashFlag (Crash info, int flag, boolean enabled) {
