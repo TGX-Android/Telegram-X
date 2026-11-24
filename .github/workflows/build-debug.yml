@@ -38,8 +38,7 @@ jobs:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
         run: |
-          RUST_DIR=$(grep -oP '(?<=rust.dir=).*' rust.log | tail -1 || true)
-          RUST_DIR=${RUST_DIR:-$HOME/.rustup}
+          RUST_DIR=$(rustup show home)
           echo "Using rust.dir=$RUST_DIR"
           {
             echo "sdk.dir=$ANDROID_HOME"
