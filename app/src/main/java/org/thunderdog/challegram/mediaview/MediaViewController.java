@@ -89,6 +89,7 @@ import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.ImageStrictCache;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.Watcher;
 import org.thunderdog.challegram.loader.WatcherReference;
@@ -8677,10 +8678,23 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return forceEditModeOld_arguments != null;
   }
 
+  private int forceEditRequestId, closedForceEditRequestId;
+
+  private boolean canOpenForceEditMode (MediaItem requestedItem, int requestId) {
+    return !inForceEditMode() && !isDestroyed() && !popupView.isWindowHidden() &&
+      requestId > closedForceEditRequestId && stack.getCurrent() == requestedItem;
+  }
+
   private void openForceEditMode () {
-    ImageFile imageFile = stack.getCurrent().getTargetImage();
+    final MediaItem requestedItem = stack.getCurrent();
+    final int requestId = ++forceEditRequestId;
+    ImageFile imageFile = requestedItem.getTargetImage();
     U.toGalleryFile(new File(imageFile.getFilePath()), false, imageGalleryFile -> {
       if (imageGalleryFile == null) {
+        return;
+      }
+      if (!canOpenForceEditMode(requestedItem, requestId)) {
+        ImageStrictCache.instance().forget(imageGalleryFile);
         return;
       }
 
@@ -8832,6 +8846,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void closeForceEditMode () {
+    closedForceEditRequestId = forceEditRequestId;
+    if (sectionChangeAnimator != null && sectionChangeAnimator.isAnimating()) {
+      sectionChangeAnimator.forceFactor(1f);
+    }
     for (View v : forceEditMode_views) {
       contentView.removeView(v);
     }
