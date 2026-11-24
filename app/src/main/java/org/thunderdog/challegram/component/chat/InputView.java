@@ -1335,10 +1335,39 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     this.isSettingText = true;
     this.settingByUserAction = byUserAction;
     setText(text);
+    if (text instanceof Spanned spanned) {
+      restoreSpans(spanned);
+      if (byUserAction && spanChangeListener != null) {
+        spanChangeListener.onSpansChanged(this);
+      }
+    }
     if (moveCursor) {
       setSelection(text != null ? text.length() : 0);
     }
     this.isSettingText = false;
+  }
+
+  private void restoreSpans (Spanned text) {
+    // EmojiFilter cuts spans that go past an emoji, e.g. a quote, at its end
+    final Editable editable = getText();
+    if (editable == null || !TextUtils.equals(editable, text)) {
+      return;
+    }
+    boolean restoredQuote = false;
+    for (Object span : text.getSpans(0, text.length(), Object.class)) {
+      final int start = editable.getSpanStart(span);
+      final int end = editable.getSpanEnd(span);
+      final int textStart = text.getSpanStart(span);
+      final int textEnd = text.getSpanEnd(span);
+      if (start != -1 && (start != textStart || end != textEnd)) {
+        editable.setSpan(span, textStart, textEnd, text.getSpanFlags(span));
+        restoredQuote |= QuoteSpan.isQuoteSpan(span);
+      }
+    }
+    if (restoredQuote) {
+      invalidateQuotes(true);
+      resetFontMetricsCache();
+    }
   }
 
   public String getInput () {
