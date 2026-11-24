@@ -1,0 +1,15 @@
+FFmpeg/FFmpeg@19035c35fcd332ed4025159fb1ae423f982fa19f
+avcodec/mpeg4videodec: Copy studio_profile in frame-thread context update
+
+Ported to release/6.1: the context of the decoder is s->m there
+
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -3734,6 +3734,7 @@
+     s->cplx_estimation_trash_p   = s1->cplx_estimation_trash_p;
+     s->cplx_estimation_trash_b   = s1->cplx_estimation_trash_b;
+     s->rgb                       = s1->rgb;
++    s->m.studio_profile          = s1->m.studio_profile;
+ 
+     memcpy(s->sprite_shift, s1->sprite_shift, sizeof(s1->sprite_shift));
+     memcpy(s->sprite_traj,  s1->sprite_traj,  sizeof(s1->sprite_traj));

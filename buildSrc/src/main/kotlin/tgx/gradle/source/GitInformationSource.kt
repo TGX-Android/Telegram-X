@@ -17,10 +17,7 @@ abstract class GitInformationSource : ValueSource<GitInformation, GitInformation
 
   override fun obtain(): GitInformation {
     val dir = requireDir(parameters.module.get().asFile)
-    return FileRepositoryBuilder().apply {
-      findGitDir(dir)
-      isMustExist = true
-    }.build().use { repository ->
+    return openRepository(dir).use { repository ->
       val head = repository.resolve(Constants.HEAD) ?: error("HEAD is missing: ${dir.absolutePath}")
       val commit = repository.parseCommit(head)
 
@@ -35,6 +32,11 @@ abstract class GitInformationSource : ValueSource<GitInformation, GitInformation
   }
 
   companion object {
+    internal fun openRepository(dir: File): Repository = FileRepositoryBuilder()
+      .findGitDir(dir)
+      .setMustExist(true)
+      .build()
+
     internal fun findRemoteUrl(repository: Repository, dir: File): String {
       // origin, remote of the current branch, or just the first remote
       val config = repository.config

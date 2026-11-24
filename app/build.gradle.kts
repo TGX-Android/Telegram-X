@@ -212,6 +212,31 @@ val patchOpusTask = tasks.register<PatchOpusTask>(
   dependsOn(validateGitSetupTask)
 }
 
+val patchFfmpegTask = tasks.register<PatchFfmpegTask>(
+  "patchFfmpeg"
+) {
+  group = "Setup"
+  description = "Creates a patched copy of FFmpeg"
+  inputDir.set(layout.projectDirectory.dir(
+    "jni/third_party/ffmpeg"
+  ))
+  inputSources.from(inputDir.asFileTree.matching {
+    exclude(".git")
+  })
+  patches.from(layout.projectDirectory.dir("jni/patches/ffmpeg").asFileTree.matching {
+    include("*.patch")
+  })
+  revision.set(providers.of(GitInformationSource::class) {
+    parameters.module = layout.projectDirectory.dir("jni/third_party/ffmpeg")
+  }.map {
+    it.commitHashLong
+  })
+  outputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/ffmpeg-source"
+  ))
+  dependsOn(validateGitSetupTask)
+}
+
 val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
   (it.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
 }.flatMap { sdkVariant ->
@@ -355,12 +380,11 @@ val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
       ndkVersion.set(android.ndkVersion)
       hostTag.set(findHostTag())
       // Input
-      inputDir.set(layout.projectDirectory.dir(
-        "jni/third_party/ffmpeg"
-      ))
+      inputDir.set(patchFfmpegTask.flatMap {
+        it.outputDir
+      })
       inputSources.from(inputDir.asFileTree.matching {
         exclude(
-          ".git",
           "doc",
           "tests",
           "*.md"
