@@ -5793,6 +5793,15 @@ public class TD {
     return toDateUri(dateTime.unixTime);
   }
 
+  private static final class DateTimeSpan extends URLSpan {
+    private final TdApi.TextEntityTypeDateTime dateTime;
+
+    DateTimeSpan (TdApi.TextEntityTypeDateTime dateTime) {
+      super(toUri(dateTime).toString());
+      this.dateTime = dateTime;
+    }
+  }
+
   public static Object toSpan (TdApi.TextEntityType type, @TextEntityOption int options) {
     boolean allowInternal = BitwiseUtils.hasFlag(options, TextEntityOption.ALLOW_INTERNAL);
     boolean forceDisableAnimations = BitwiseUtils.hasFlag(options, TextEntityOption.DISABLE_ANIMATIONS);
@@ -5810,7 +5819,7 @@ public class TD {
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR ->
         new URLSpan(((TdApi.TextEntityTypeTextUrl) type).url);
       case TdApi.TextEntityTypeDateTime.CONSTRUCTOR ->
-        new URLSpan(toUri((TdApi.TextEntityTypeDateTime) type).toString());
+        new DateTimeSpan((TdApi.TextEntityTypeDateTime) type);
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR ->
         new StrikethroughSpan();
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR ->
@@ -5924,6 +5933,12 @@ public class TD {
     }
     if (span instanceof CustomTypefaceSpan)
       return new TdApi.TextEntityType[] {((CustomTypefaceSpan) span).getTextEntityType()};
+    if (span instanceof DateTimeSpan dateTimeSpan) {
+      final TdApi.TextEntityTypeDateTime dateTime = dateTimeSpan.dateTime;
+      return new TdApi.TextEntityType[] {
+        new TdApi.TextEntityTypeDateTime(dateTime.unixTime, dateTime.formattingType)
+      };
+    }
     if (span instanceof URLSpan) {
       String url = ((URLSpan) span).getURL();
       TdApi.TextEntityTypeDateTime dateTime = toDateTime(url);
@@ -6029,6 +6044,9 @@ public class TD {
     if (span instanceof CustomTypefaceSpan) {
       CustomTypefaceSpan customTypefaceSpan = (CustomTypefaceSpan) span;
       return new CustomTypefaceSpan(customTypefaceSpan);
+    }
+    if (span instanceof DateTimeSpan dateTimeSpan) {
+      return new DateTimeSpan(dateTimeSpan.dateTime);
     }
     if (span instanceof URLSpan) {
       URLSpan urlSpan = (URLSpan) span;
