@@ -255,6 +255,10 @@ data class SdkVariant(
   // ART uses baseline profiles starting with Android 7.0
   val usesBaselineProfile: Boolean =
     supportsSdk(24)
+
+  // Devices that run pointer authentication and BTI come with Android 12 or newer
+  val usesBranchProtection: Boolean =
+    supportsSdk(31)
 }
 
 object Sdk {

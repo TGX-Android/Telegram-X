@@ -81,7 +81,7 @@ add_compile_options(
   "$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-ffile-prefix-map=${CMAKE_BINARY_DIR}=.cxx>"
 )
 
-if (${ANDROID_ABI} STREQUAL "arm64-v8a")
+if (${ANDROID_ABI} STREQUAL "arm64-v8a" AND TGX_BRANCH_PROTECTION)
   add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX,ASM>:-mbranch-protection=standard>")
 endif()
 

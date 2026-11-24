@@ -34,9 +34,10 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
     val sysroot = requireDir(prebuilt.resolve(
       "sysroot"
     ))
-    val androidApiLevel = (Sdk.VARIANTS.values.firstOrNull() {
+    val sdkVariant = Sdk.VARIANTS.values.firstOrNull() {
       it.flavor == flavor
-    } ?: fatal("Unknown flavor: $flavor")).minSdk
+    } ?: fatal("Unknown flavor: $flavor")
+    val androidApiLevel = sdkVariant.minSdk
 
     val extraParams = mutableListOf<String>()
     val cFlags = mutableListOf(
@@ -92,10 +93,10 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
     when (abi) {
       "arm64-v8a" -> {
         ndkAbi = "aarch64-linux-android"
-        cFlags.addAll(listOf(
-          "-march=armv8-a",
-          "-mbranch-protection=standard"
-        ))
+        cFlags += "-march=armv8-a"
+        if (sdkVariant.usesBranchProtection) {
+          cFlags += "-mbranch-protection=standard"
+        }
         extraParams.addAll(arrayOf(
           "--disable-x86asm",
           "--enable-neon"
