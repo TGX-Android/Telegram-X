@@ -344,7 +344,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
             int proxyId = Settings.instance().addOrUpdateProxy(addedProxy.proxy, null, addedProxy.isEnabled);
             if (addedProxy.isEnabled) {
               tdlib.setEffectiveProxyId(proxyId);
-              tdlib.setProxy(proxyId, addedProxy.proxy);
+              tdlib.setProxy(client, proxyId, addedProxy.proxy);
               foundEnabledProxy = true;
             }
           }
@@ -354,11 +354,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         } else {
           int proxyId = Settings.instance().getEffectiveProxyId();
           Settings.Proxy proxy = Settings.instance().getProxyConfig(proxyId);
-          if (proxy != null) {
-            tdlib.setProxy(proxyId, proxy.proxy);
-          } else {
-            tdlib.disableProxy();
-          }
+          tdlib.setProxy(client, proxyId, proxy != null ? proxy.proxy : null);
         }
       });
       client.send(new TdApi.GetApplicationConfig(), tdlib.configHandler);
@@ -1261,6 +1257,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
             CountDownLatch prevLatch = client.closeLatch;
             if (stressTest == 0 && (instancePaused || shouldPause())) {
+              cancelConnectionResolver();
               client = null;
             } else {
               if (stressTest > 0)
@@ -1791,6 +1788,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     } else if (onFailure != null) {
       onFailure.run();
     }
+  }
+
+  void sendOptional (TdApi.Function<?> function, Client.ResultHandler handler) {
+    performOptional(client -> client.send(function, handler), null);
   }
 
   public void runOnUiThread (@NonNull Runnable runnable) {
@@ -6336,19 +6337,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public void disableProxy () {
-    setProxy(Settings.PROXY_ID_NONE, null);
+  public void setProxy (int proxyId, @Nullable TdApi.Proxy proxy) {
+    setProxy(client(), proxyId, proxy);
   }
 
-  public void setProxy (int proxyId, @Nullable TdApi.Proxy proxy) {
+  private void setProxy (Client client, int proxyId, @Nullable TdApi.Proxy proxy) {
     if (proxy != null) {
-      send(new TdApi.AddProxy(proxy, true, ""), (addedProxy, error) -> {
+      send(client, new TdApi.AddProxy(proxy, true, ""), (addedProxy, error) -> {
         if (addedProxy != null) {
           setEffectiveProxyId(proxyId);
         }
       });
     } else {
-      send(new TdApi.DisableProxy(), (ok, error) -> {
+      send(client, new TdApi.DisableProxy(), (ok, error) -> {
         if (ok != null) {
           setEffectiveProxyId(Settings.PROXY_ID_NONE);
         }
@@ -6410,7 +6411,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       new TdApi.AddProxy(proxy.proxy, false, "") :
       new TdApi.PingProxy(null);
     AtomicLong uptimeMillis = new AtomicLong(SystemClock.uptimeMillis());
-    client().send(function, new Client.ResultHandler() {
+    Client.ResultHandler handler = new Client.ResultHandler() {
       @Override
       public void onResult (TdApi.Object result) {
         if (pingId != proxy.pingCount) {
@@ -6421,12 +6422,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         long pingMs;
         switch (result.getConstructor()) {
           case TdApi.Ok.CONSTRUCTOR: {
-            client().send(function, this);
+            sendOptional(function, this);
             return;
           }
           case TdApi.AddedProxy.CONSTRUCTOR: {
             TdApi.AddedProxy addedProxy = (TdApi.AddedProxy) result;
-            client().send(new TdApi.PingProxy(addedProxy.proxy), this);
+            sendOptional(new TdApi.PingProxy(addedProxy.proxy), this);
             return;
           }
           case TdApi.Seconds.CONSTRUCTOR: {
@@ -6441,7 +6442,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           }
           case TdApi.Error.CONSTRUCTOR: {
             if (++proxy.pingErrorCount < 3 && elapsed <= 1000) {
-              client().send(new TdApi.SetAlarm(0.35 * proxy.pingErrorCount), this);
+              sendOptional(new TdApi.SetAlarm(0.35 * proxy.pingErrorCount), this);
               return;
             }
             pingMs = Settings.PROXY_TIME_EMPTY;
@@ -6457,7 +6458,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           after.runWithLong(pingMs);
         }
       }
-    });
+    };
+    if (inTdlibThread()) {
+      sendOptional(function, handler);
+    } else {
+      client().send(function, handler);
+    }
     // return pingId;
   }
 
@@ -7845,7 +7851,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void refreshChatState (long chatId) {
-    client().send(new TdApi.GetChat(chatId), result -> {
+    sendOptional(new TdApi.GetChat(chatId), result -> {
       switch (result.getConstructor()) {
         case TdApi.Chat.CONSTRUCTOR: {
           updateChatState((TdApi.Chat) result);
@@ -9111,7 +9117,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   private void scheduleConnectionResolver () {
     cancelConnectionResolver();
-    connectionResolver = new CancellableRunnable() {
+    CancellableRunnable connectionResolver = this.connectionResolver = new CancellableRunnable() {
       @Override
       public void act () {
         resolveConnectionIssues(false);
@@ -9123,7 +9129,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     } else {
       timeoutSeconds = CONNECTION_TIMEOUT_PROXY;
     }
-    runOnTdlibThread(connectionResolver, timeoutSeconds, false);
+    sendOptional(new TdApi.SetAlarm(timeoutSeconds), ignored -> connectionResolver.run());
   }
 
   @TdlibThread
@@ -10688,8 +10694,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       return;
     myProfilePhoto = newProfilePhoto;
     if (newProfilePhoto != null) {
-      client().send(new TdApi.DownloadFile(newProfilePhoto.small.id, TdlibFilesManager.PRIORITY_SELF_AVATAR_SMALL, 0, 0, true), profilePhotoHandler(false));
-      client().send(new TdApi.DownloadFile(newProfilePhoto.big.id, TdlibFilesManager.PRIORITY_SELF_AVATAR_BIG, 0, 0, true), profilePhotoHandler(true));
+      sendOptional(new TdApi.DownloadFile(
+        newProfilePhoto.small.id, TdlibFilesManager.PRIORITY_SELF_AVATAR_SMALL, 0, 0, true
+      ), profilePhotoHandler(false));
+      sendOptional(new TdApi.DownloadFile(
+        newProfilePhoto.big.id, TdlibFilesManager.PRIORITY_SELF_AVATAR_BIG, 0, 0, true
+      ), profilePhotoHandler(true));
     }
   }
 
@@ -10727,13 +10737,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     if (newEmojiStatusId == myEmojiStatusId)
       return;
     myEmojiStatusId = newEmojiStatusId;
-    if (newEmojiStatusId != 0) {
+    if (newEmojiStatusId != 0 && !isPaused()) {
       emoji().findOrRequest(newEmojiStatusId, (entry, inPlace) -> {
         if (!entry.isNotFound() && newEmojiStatusId == myEmojiStatusId) {
           account().storeUserEmojiStatusMetadata(newEmojiStatusId, entry.value);
-          client().send(new TdApi.DownloadFile(entry.value.sticker.id, TdlibFilesManager.PRIORITY_SELF_EMOJI_STATUS, 0, 0, true), emojiStatusHandler(entry, false));
+          sendOptional(new TdApi.DownloadFile(
+            entry.value.sticker.id, TdlibFilesManager.PRIORITY_SELF_EMOJI_STATUS, 0, 0, true
+          ), emojiStatusHandler(entry, false));
           if (entry.value.thumbnail != null) {
-            client().send(new TdApi.DownloadFile(entry.value.thumbnail.file.id, TdlibFilesManager.PRIORITY_SELF_EMOJI_STATUS_THUMBNAIL, 0, 0, true), emojiStatusHandler(entry, true));
+            sendOptional(new TdApi.DownloadFile(
+              entry.value.thumbnail.file.id,
+              TdlibFilesManager.PRIORITY_SELF_EMOJI_STATUS_THUMBNAIL, 0, 0, true
+            ), emojiStatusHandler(entry, true));
           }
         }
       });
