@@ -978,7 +978,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         break;
       }
       case POSITION_PEOPLE: {
-        composeWrap.replaceMainButton(R.id.btn_float_addContact, R.drawable.baseline_person_add_24);
+        composeWrap.hide();
         break;
       }
     }
@@ -1500,7 +1500,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   protected int getPagerItemCount () {
-    return hasFolders() ? pagerChatLists.size() : 2;
+    return hasFolders() ? pagerChatLists.size() : 3;
   }
 
   protected long getPagerItemId (int position) {
@@ -1779,7 +1779,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     } else if (position == POSITION_CALLS) {
       c = new CallListController(this.context, tdlib);
     } else if (position == POSITION_PEOPLE) {
-      c = new PeopleController(this.context, tdlib);
+      c = new TLCommController(this.context, tdlib);
     } else {
       throw new IllegalArgumentException("position == " + position);
     }
@@ -1804,7 +1804,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     return new CharSequence[] {
       getMenuSectionName(MAIN_PAGER_ITEM_ID, /* pagerItemPosition */ 0, /* hasFolders */ false, ChatFolderStyle.LABEL_ONLY, /* upperCase */ true),
-      Lang.uppercase(Lang.getString(R.string.Calls))/*, UI.getString(R.string.Contacts).toUpperCase()*/
+      Lang.uppercase(Lang.getString(R.string.Calls)),
+      Lang.uppercase(Lang.getString(R.string.TLComm))
     };
   }
 
@@ -1863,7 +1864,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       String callsItem = Lang.uppercase(Lang.getString(R.string.Calls));
       defaultSectionItems = Arrays.asList(
         getDefaultMainItem(),
-        new ViewPagerTopView.Item(callsItem)
+        new ViewPagerTopView.Item(callsItem),
+        new ViewPagerTopView.Item(Lang.uppercase(Lang.getString(R.string.TLComm)))
       );
     }
     return defaultSectionItems;
