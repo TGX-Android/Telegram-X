@@ -16,6 +16,7 @@ import android.content.Context;
 import android.view.View;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
@@ -56,11 +57,16 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
-    adapter = new SettingsAdapter(this);
+    adapter = new SettingsAdapter(this) {
+      @Override
+      protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
+        view.setData(item.getStringValue());
+      }
+    };
     ArrayList<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    statusItem = new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_tlStatus, R.drawable.baseline_tradelens_24, "Checking…")
-      .setStringValue("Your TradeLens account");
+    statusItem = new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_tlStatus, R.drawable.baseline_tradelens_24, "Your TradeLens account")
+      .setStringValue("Checking…");
     items.add(statusItem);
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     for (int i = 0; i < ENTRIES.length; i++) {
@@ -68,8 +74,8 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
       String[] entry = ENTRIES[i];
-      items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_tlCommLink, R.drawable.baseline_tradelens_24, entry[1])
-        .setStringValue(entry[0])
+      items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_tlCommLink, R.drawable.baseline_tradelens_24, entry[0])
+        .setStringValue(entry[1])
         .setData(entry[2]));
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -79,7 +85,7 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
   }
 
   private void setStatusText (String text) {
-    statusItem.setString(text);
+    statusItem.setStringValue(text);
     int index = adapter.indexOfViewById(R.id.btn_tlStatus);
     if (index != -1) {
       adapter.notifyItemChanged(index);
