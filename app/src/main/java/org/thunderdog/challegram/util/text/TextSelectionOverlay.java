@@ -14,6 +14,10 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -43,6 +47,8 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+
+import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -395,6 +401,7 @@ class TextSelectionOverlay implements FactorAnimator.Target {
           .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         menu.add(Menu.NONE, android.R.id.selectAll, 2, android.R.string.selectAll)
           .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        addProcessTextItems(menu);
         return canSelect();
       }
 
@@ -412,6 +419,10 @@ class TextSelectionOverlay implements FactorAnimator.Target {
 
       @Override
       public boolean onActionItemClicked (ActionMode mode, MenuItem item) {
+        Intent processTextIntent = item.getIntent();
+        if (processTextIntent != null) {
+          return onProcessTextClick(processTextIntent);
+        }
         return onMenuClick(item.getItemId());
       }
 
@@ -475,6 +486,38 @@ class TextSelectionOverlay implements FactorAnimator.Target {
     if (actionMode == null) {
       text.dismissSelection();
     }
+  }
+
+  private void addProcessTextItems (Menu menu) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+      return;
+    }
+    PackageManager packageManager = anchor.getContext().getPackageManager();
+    Intent query = new Intent(Intent.ACTION_PROCESS_TEXT).setType("text/plain");
+    List<ResolveInfo> activities = packageManager.queryIntentActivities(query, 0);
+    for (int i = 0; i < activities.size(); i++) {
+      ActivityInfo activity = activities.get(i).activityInfo;
+      if (activity.exported) {
+        Intent intent = new Intent(Intent.ACTION_PROCESS_TEXT)
+          .setType("text/plain")
+          .setClassName(activity.packageName, activity.name)
+          .putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true);
+        menu.add(Menu.NONE, Menu.NONE, 3 + i, activity.loadLabel(packageManager))
+          .setIntent(intent)
+          .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+      }
+    }
+  }
+
+  private boolean onProcessTextClick (Intent intent) {
+    if (!canSelect()) {
+      text.dismissSelection();
+      return true;
+    }
+    String selectedText = selection.getSelectedText();
+    text.dismissSelection(true);
+    UI.startActivity(intent.putExtra(Intent.EXTRA_PROCESS_TEXT, selectedText));
+    return true;
   }
 
   private boolean onMenuClick (int id) {
