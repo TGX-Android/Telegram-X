@@ -578,7 +578,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
   private void showExperimentalAlert () {
     // Builds of tests are experimental too, and the alert would stop UI tests at launch
-    if (BuildConfig.EXPERIMENTAL && !BuildConfig.DEBUG && !Config.ENABLE_TEST_HOOKS) {
+    // TradeLens Connect: signed builds use the experimental flag to stay clear of Telegram X update checks, so the alert is not shown.
+    if (false && BuildConfig.EXPERIMENTAL && !BuildConfig.DEBUG && !Config.ENABLE_TEST_HOOKS) {
       ViewController<?> c = navigation.getCurrentStackItem();
       if (c != null) {
         c.openAlert(R.string.ExperimentalBuildTitle,
