@@ -2465,10 +2465,25 @@ public class U {
     return rotation;
   }
 
+  @Nullable
+  public static String formatHardening (int hardening) {
+    if (hardening == N.HARDENING_NOT_BUILT) {
+      return null;
+    }
+    boolean hasPac = BitwiseUtils.hasFlag(hardening, N.HARDENING_PAC);
+    boolean hasBti = BitwiseUtils.hasFlag(hardening, N.HARDENING_BTI);
+    if (hasPac && hasBti) {
+      return "PAC, BTI";
+    }
+    return hasPac ? "PAC" : hasBti ? "BTI" : "none";
+  }
+
   public static String getUsefulMetadata (@Nullable Tdlib tdlib) {
     AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
     String locale = Lang.getConfigurationLocale().toString();
     String appLocale = Lang.locale().toString();
+    // Also the report of a crash that happened before libraries were loaded
+    String hardening = N.isLoaded() ? formatHardening(N.getHardwareHardening()) : null;
     String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
       (!"none".equals(BuildConfig.TGX_EXTENSION) ? "Extension: " + BuildConfig.TGX_EXTENSION + "\n" : "") +
@@ -2480,6 +2495,7 @@ public class U {
       "WebRTC: TGX-Android/webrtc@" + BuildConfig.WEBRTC_COMMIT + "\n" +
       "Android: " + SdkVersion.getPrettyName() + " (" + Build.VERSION.SDK_INT + ")" + "\n" +
       "Device: " + Build.MANUFACTURER + " " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
+      (hardening != null ? "Hardware-assisted hardening: " + hardening + "\n" : "") +
       "Screen: " + Screen.widestSide() + "x" + Screen.smallestSide() + " (density: " + Screen.density() + ", fps: " + Screen.refreshRate() + ")" + "\n" +
       "Build: `" + Build.FINGERPRINT + "`\n" +
       "Package: " + AppContext.get().getPackageName() + "\n" +

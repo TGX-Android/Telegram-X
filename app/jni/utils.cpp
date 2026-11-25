@@ -18,6 +18,14 @@
 #include <bridge.h>
 #include <vector>
 
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && defined(__ARM_FEATURE_BTI_DEFAULT)
+#include <asm/hwcap.h>
+#include <cinttypes>
+#include <cstdio>
+#include <cstring>
+#include <sys/auxv.h>
+#endif
+
 int jni_init (JavaVM *vm, JNIEnv *env) {
   return jni::validate_environment(env) ? 0 : -1;
 }
@@ -66,4 +74,53 @@ JNI_FUNC(jstring, readlink, jstring jPath) {
   }
 
   return nullptr;
+}
+
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && defined(__ARM_FEATURE_BTI_DEFAULT)
+static constexpr jint HARDENING_PAC = 1;
+static constexpr jint HARDENING_BTI = 1 << 1;
+
+static bool is_code_guarded_by_bti () {
+  FILE *smaps = fopen("/proc/self/smaps", "re");
+  if (smaps == nullptr) {
+    return false;
+  }
+  auto code = reinterpret_cast<uintptr_t>(&is_code_guarded_by_bti);
+  bool is_own_code = false;
+  bool is_guarded = false;
+  char line[512];
+  while (fgets(line, sizeof(line), smaps) != nullptr) {
+    uintptr_t start, end;
+    if (sscanf(line, "%" SCNxPTR "-%" SCNxPTR " ", &start, &end) == 2) {
+      is_own_code = code >= start && code < end;
+    } else if (is_own_code && strncmp(line, "VmFlags:", 8) == 0) {
+      is_guarded = strstr(line, " bt") != nullptr;
+      break;
+    }
+  }
+  fclose(smaps);
+  return is_guarded;
+}
+
+static jint get_hardware_hardening () {
+  jint hardening = 0;
+  if ((getauxval(AT_HWCAP) & HWCAP_PACA) != 0) {
+    hardening |= HARDENING_PAC;
+  }
+  if ((getauxval(AT_HWCAP2) & HWCAP2_BTI) != 0 && is_code_guarded_by_bti()) {
+    hardening |= HARDENING_BTI;
+  }
+  return hardening;
+}
+#else
+static constexpr jint HARDENING_NOT_BUILT = -1;
+
+static jint get_hardware_hardening () {
+  return HARDENING_NOT_BUILT;
+}
+#endif
+
+JNI_FUNC(jint, getHardwareHardening) {
+  static const jint hardening = get_hardware_hardening();
+  return hardening;
 }

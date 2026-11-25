@@ -118,8 +118,12 @@ public final class N {
   public static native byte[] getWaveform (String path);
   public static native byte[] getWaveform2 (short[] array, int length);
 
-  // jni_utils.cpp
+  // utils.cpp
   public native static String readlink (String path);
+  public static final int HARDENING_NOT_BUILT = -1;
+  public static final int HARDENING_PAC = 1;
+  public static final int HARDENING_BTI = 1 << 1;
+  public native static int getHardwareHardening ();
 
   // emoji.cpp
   public native static int getEmojiSuggestionMaxLength ();
@@ -157,6 +161,10 @@ public final class N {
       loaded = true;
     }
     return true;
+  }
+
+  public static boolean isLoaded () {
+    return loaded;
   }
 
   public static void setupLibraries () {
