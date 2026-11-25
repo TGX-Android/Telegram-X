@@ -21,9 +21,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import org.thunderdog.challegram.push.FirebaseDeviceTokenRetriever
 import org.thunderdog.challegram.service.PushHandler
+import org.thunderdog.challegram.telegram.TdlibManager
 import org.thunderdog.challegram.unsorted.AppContext
 import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance
 import org.thunderdog.challegram.unsorted.Settings
+import org.thunderdog.challegram.util.text.CodeHighlighter
 import tgx.bridge.*
 import tgx.extension.TelegramXExtension
 import tgx.flavor.TgxApplication
@@ -67,6 +69,12 @@ class BaseApplication : TgxApplication(), Configuration.Provider {
         FirebaseMessaging.getInstance().isAutoInitEnabled = false
       }
     }
+  }
+
+  override fun onTrimMemory(level: Int) {
+    super.onTrimMemory(level)
+    TdlibManager.trimMemory(level)
+    CodeHighlighter.trimMemory(level)
   }
 
   override val workManagerConfiguration: Configuration

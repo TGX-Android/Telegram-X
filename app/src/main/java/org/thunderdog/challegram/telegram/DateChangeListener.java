@@ -23,4 +23,6 @@ public interface DateChangeListener {
   default void onTimeZoneChanged () { }
   @UiThread
   default void onTimeChanged () { }
+  @UiThread
+  default void onTimeFormatChanged () { }
 }

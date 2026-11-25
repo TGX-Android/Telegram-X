@@ -12,9 +12,17 @@ java {
   }
 }
 
+val hasTests = file("../tests/.git").exists()
+val tests = file("../tests/buildSrc")
+
 kotlin {
-  sourceSets.named("main") {
-    kotlin.srcDir("../tests/buildSrc/kotlin")
+  if (hasTests) {
+    sourceSets.named("main") {
+      kotlin.srcDir(tests.resolve("kotlin"))
+    }
+    sourceSets.named("test") {
+      kotlin.srcDir(tests.resolve("checks"))
+    }
   }
   compilerOptions {
     allWarningsAsErrors = true
@@ -35,6 +43,20 @@ gradlePlugin {
       id = "tgx-module"
       implementationClass = "tgx.gradle.plugin.ModulePlugin"
     }
+    if (hasTests) {
+      register("tgx-tests-root") {
+        id = "tgx-tests-root"
+        implementationClass = "tgx.test.RootTestsPlugin"
+      }
+      register("tgx-tests-app") {
+        id = "tgx-tests-app"
+        implementationClass = "tgx.test.AppTestsPlugin"
+      }
+      register("tgx-tests-module") {
+        id = "tgx-tests-module"
+        implementationClass = "tgx.test.ModuleTestsPlugin"
+      }
+    }
   }
 }
 
@@ -50,6 +72,9 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.jgit)
   implementation(libs.jgit.lfs)
+  if (hasTests) {
+    testImplementation(libs.bundles.unit.test)
+  }
 }
 
 apply(from = "${rootDir.parentFile}/properties.gradle.kts")

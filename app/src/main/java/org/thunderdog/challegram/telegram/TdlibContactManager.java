@@ -124,7 +124,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   TdlibContactManager (Tdlib tdlib) {
     this.tdlib = tdlib;
     this.checkLimiter = new RateLimiter(() -> {
-      tdlib.searchContacts(null, 5, newHandler());
+      tdlib.sendOptional(new TdApi.SearchContacts(null, 5), newHandler());
     }, 200L, null);
     this.handler = new ContactHandler(this);
     tdlib.listeners().addCleanupListener(this);
@@ -427,7 +427,9 @@ public class TdlibContactManager implements CleanupStartupDelegate {
               userIds[i] = user.id;
               if (user.profilePhoto != null && needDownload) {
                 if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-                  tdlib.client().send(new TdApi.DownloadFile(user.profilePhoto.small.id, TdlibFilesManager.PRIORITY_IMAGE, 0, 0, false), tdlib.silentHandler());
+                  tdlib.sendOptional(new TdApi.DownloadFile(
+                    user.profilePhoto.small.id, TdlibFilesManager.PRIORITY_IMAGE, 0, 0, false
+                  ), tdlib.silentHandler());
                 }
               }
             }
@@ -692,14 +694,20 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       Runnable act = () -> UI.execute(() -> {
         if (task.isPending()) {
           startForeground(success -> {
+            if (success) {
+              foregroundShowing = true;
+            }
             if (task.isPending()) {
               if (success) {
-                foregroundShowing = true;
                 Background.instance().post(task);
               } else {
                 Log.w(Log.TAG_CONTACT, "Unable to start dataSync service to import contacts");
                 setState(STATE_NOT_STARTED);
               }
+            } else if (success) {
+              // The sync was cancelled while its service started: nothing else would stop it,
+              // and Android 15 crashes the app when it runs out of the time of dataSync
+              stopForeground();
             }
           });
         }

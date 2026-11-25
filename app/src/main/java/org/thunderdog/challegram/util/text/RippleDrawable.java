@@ -26,12 +26,11 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.theme.ColorId;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 
 import java.util.ArrayList;
@@ -54,7 +53,7 @@ public class RippleDrawable extends Drawable {
     final int left = bounds.left;
     final int top = bounds.top;
 
-    final int rippleColor = ColorUtils.alphaColor(mainAlpha, Theme.getColor(mainColorId));
+    final int rippleColor = ColorUtils.alphaColor(mainAlpha, mainColor);
 
     final int partsCount = parts.size();
     int offset = 0;
@@ -96,11 +95,7 @@ public class RippleDrawable extends Drawable {
   public boolean onTouchEvent (View view, MotionEvent e, int x, int y) {
     switch (e.getAction()) {
       case MotionEvent.ACTION_DOWN: {
-        caughtPart = new RipplePart(this);
-        caughtPart.anchorX = x;
-        caughtPart.anchorY = y;
-        caughtPart.animateSelectionFactor(1f);
-        parts.add(caughtPart);
+        press(x, y);
         return true;
       }
       case MotionEvent.ACTION_MOVE: {
@@ -131,6 +126,14 @@ public class RippleDrawable extends Drawable {
     }
 
     return true;
+  }
+
+  public void press (int x, int y) {
+    caughtPart = new RipplePart(this);
+    caughtPart.anchorX = x;
+    caughtPart.anchorY = y;
+    caughtPart.animateSelectionFactor(1f);
+    parts.add(caughtPart);
   }
 
   public void performClick (View ignoredView) {
@@ -164,11 +167,11 @@ public class RippleDrawable extends Drawable {
 
   /* * */
 
-  private int mainColorId;
+  private int mainColor;
   private float mainAlpha;
 
-  public void setMainColorId (@ColorId int mainColorId, float mainAlpha) {
-    this.mainColorId = mainColorId;
+  public void setMainColor (@ColorInt int mainColor, float mainAlpha) {
+    this.mainColor = mainColor;
     this.mainAlpha = mainAlpha;
   }
 
@@ -200,6 +203,15 @@ public class RippleDrawable extends Drawable {
     this.bounds.set(bounds);
     this.boundsF.set(bounds);
     pathInvalidated = true;
+  }
+
+  public void drawBackground (Canvas c, int color) {
+    c.drawPath(getPath(), Paints.fillingPaint(color));
+  }
+
+  public Path getPath () {
+    beforeDraw();
+    return path;
   }
 
   private void beforeDraw () {

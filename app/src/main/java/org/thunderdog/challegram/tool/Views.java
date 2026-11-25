@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.tool;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.app.Dialog;
 import android.content.Context;
@@ -61,6 +62,7 @@ import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.WebViewHolder;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.AttachDelegate;
+import org.thunderdog.challegram.widget.DateTimeView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.lang.reflect.Field;
@@ -70,6 +72,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableData;
 
 public class Views {
   public static void setClickable (View view) {
@@ -671,51 +674,56 @@ public class Views {
 
       final int fromZ = Screen.dp(1.5f);
       final int toZ = Screen.dp(3f);
-      final int diffZ = toZ - fromZ;
 
-      ValueAnimator obj;
-
-      obj = AnimatorUtils.simpleValueAnimator();
-      obj.setDuration(180l);
-      obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-      obj.addUpdateListener(animation -> {
-        float z = fromZ + (float) diffZ * AnimatorUtils.getFraction(animation);
-        if (z < view.getTranslationZ()) {
-          view.setTranslationZ(z);
-          if (view.getTag() instanceof View) {
-            ((View) view.getTag()).setTranslationZ(z);
-          }
-        } else {
-          if (view.getTag() instanceof View) {
-            ((View) view.getTag()).setTranslationZ(z);
-          }
-          view.setTranslationZ(z);
-        }
-      });
-      animator.addState(new int[] {android.R.attr.state_pressed}, obj);
-
-      obj = AnimatorUtils.simpleValueAnimator();
-      obj.setDuration(180l);
-      obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-      obj.addUpdateListener(animation -> {
-        float z = toZ - (float) diffZ * AnimatorUtils.getFraction(animation);
-        if (z < view.getTranslationZ()) {
-          view.setTranslationZ(z);
-          if (view.getTag() instanceof View) {
-            ((View) view.getTag()).setTranslationZ(z);
-          }
-        } else {
-          if (view.getTag() instanceof View) {
-            ((View) view.getTag()).setTranslationZ(z);
-          }
-          view.setTranslationZ(z);
-        }
-      });
-
-      animator.addState(new int[] {}, obj);
+      animator.addState(
+        new int[] {android.R.attr.state_pressed},
+        newTranslationZAnimator(view, fromZ, toZ)
+      );
+      animator.addState(new int[] {}, newTranslationZAnimator(view, toZ, fromZ));
 
       view.setStateListAnimator(animator);
     }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+  private static ValueAnimator newTranslationZAnimator (
+    final View view,
+    final int fromZ,
+    final int toZ
+  ) {
+    final ValueAnimator obj = AnimatorUtils.simpleValueAnimator();
+    obj.setDuration(180l);
+    obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
+    // NaN until the first frame of a run, which below Android 7 comes before its start listeners
+    final float[] startZ = {Float.NaN};
+    obj.addListener(new AnimatorListenerAdapter() {
+      @Override
+      public void onAnimationEnd (Animator animation) {
+        startZ[0] = Float.NaN;
+      }
+    });
+    obj.addUpdateListener(animation -> {
+      if (Float.isNaN(startZ[0])) {
+        // From the Z the view has, e.g. halfway after a short press. A view at neither Z, e.g. a
+        // new one in the first state it gets when its screen opens, takes toZ at once: animating
+        // it would redraw its parents on every frame of that opening
+        final float z = view.getTranslationZ();
+        startZ[0] = z >= Math.min(fromZ, toZ) && z <= Math.max(fromZ, toZ) ? z : toZ;
+      }
+      float z = startZ[0] + (toZ - startZ[0]) * AnimatorUtils.getFraction(animation);
+      if (z < view.getTranslationZ()) {
+        view.setTranslationZ(z);
+        if (view.getTag() instanceof View) {
+          ((View) view.getTag()).setTranslationZ(z);
+        }
+      } else {
+        if (view.getTag() instanceof View) {
+          ((View) view.getTag()).setTranslationZ(z);
+        }
+        view.setTranslationZ(z);
+      }
+    });
+    return obj;
   }
 
   public static void initCircleButton (final View view, final float size, final float padding) {
@@ -1113,6 +1121,47 @@ public class Views {
       return gravity < 0 ? Gravity.NO_GRAVITY : gravity;
     }
     return Gravity.NO_GRAVITY;
+  }
+
+  public static void updateRows (
+    RecyclerView recyclerView,
+    int start,
+    int end,
+    RunnableData<View> updateVisibleRow
+  ) {
+    // A change of what the rows from start to end show, without the change animations that
+    // notifyItemRangeChanged runs over rows on the screen: those are updated in their views, the
+    // others are bound again when they come back
+    RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
+    LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+    if (adapter == null || manager == null || start >= end) {
+      return;
+    }
+    final int first = manager.findFirstVisibleItemPosition();
+    final int last = manager.findLastVisibleItemPosition();
+    if (first == RecyclerView.NO_POSITION || last < start || first >= end) {
+      adapter.notifyItemRangeChanged(start, end - start);
+      return;
+    }
+    for (int i = Math.max(first, start); i <= Math.min(last, end - 1); i++) {
+      View view = manager.findViewByPosition(i);
+      if (view != null) {
+        updateVisibleRow.runWithData(view);
+        view.invalidate();
+      }
+    }
+    if (first > start) {
+      adapter.notifyItemRangeChanged(start, first - start);
+    }
+    if (last + 1 < end) {
+      adapter.notifyItemRangeChanged(last + 1, end - last - 1);
+    }
+  }
+
+  public static void updateRowTimes (View row) {
+    if (row instanceof DateTimeView) {
+      ((DateTimeView) row).onDateOrTimeChanged();
+    }
   }
 
   public static boolean isFocusedViewVisible (RecyclerView recyclerView, View view) {

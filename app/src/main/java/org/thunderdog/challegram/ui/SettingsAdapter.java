@@ -53,6 +53,7 @@ import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.InlineResult;
+import org.thunderdog.challegram.data.InlineResultCommon;
 import org.thunderdog.challegram.data.PageBlock;
 import org.thunderdog.challegram.data.PageBlockFile;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
@@ -60,10 +61,12 @@ import org.thunderdog.challegram.mediaview.paint.ColorPaletteView;
 import org.thunderdog.challegram.mediaview.paint.widget.ColorToneView;
 import org.thunderdog.challegram.navigation.DrawerItemView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
@@ -216,14 +219,45 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     this.noEmptyProgress = true;
   }
 
+  private final DateChangeListener dateChangeListener = new DateChangeListener() {
+    @Override
+    public void onTimeFormatChanged () {
+      updateAllValuedSettings();
+      updateAllSessions();
+      for (ListItem item : items) {
+        final Object data = item.getData();
+        if (data instanceof DoubleTextWrapper) {
+          ((DoubleTextWrapper) data).updateTimes();
+        } else if (data instanceof InlineResultCommon) {
+          ((InlineResultCommon) data).updateTimes();
+        }
+      }
+      updateTimes();
+      for (RecyclerView parentView : parentViews) {
+        Views.updateRows(parentView, 0, getItemCount(), Views::updateRowTimes);
+      }
+    }
+  };
+
+  protected void updateTimes () {
+    // Override: times of models that the owner keeps outside of the rows, e.g. times of requests
+    // that rows of users show as their statuses, or of another list that the rows show later
+  }
+
   @Override
   public void onAttachedToRecyclerView (RecyclerView recyclerView) {
+    if (parentViews.isEmpty()) {
+      TdlibManager.instance().dateManager().addListener(dateChangeListener);
+    }
     parentViews.add(recyclerView);
   }
 
   @Override
   public void onDetachedFromRecyclerView (RecyclerView recyclerView) {
     parentViews.remove(recyclerView);
+    if (parentViews.isEmpty()) {
+      TdlibManager.instance().dateManager().removeListener(dateChangeListener);
+    }
   }
 
   public void setInnerOnScrollListener (@Nullable RecyclerView.OnScrollListener innerOnScrollListener) {

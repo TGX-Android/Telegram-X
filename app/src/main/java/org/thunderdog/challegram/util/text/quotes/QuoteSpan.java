@@ -17,24 +17,34 @@ package org.thunderdog.challegram.util.text.quotes;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.text.Editable;
 import android.text.Layout;
+import android.text.NoCopySpan;
 import android.text.Spannable;
 import android.text.Spanned;
 import android.text.TextPaint;
+import android.text.style.CharacterStyle;
 import android.text.style.LeadingMarginSpan;
 import android.text.style.LineHeightSpan;
 import android.text.style.MetricAffectingSpan;
+import android.text.style.UpdateAppearance;
+import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeDelegate;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.RippleDrawable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,7 +53,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animatorx.BoolAnimator;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
 public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.RecoverableSpan {
@@ -51,12 +64,34 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
   private static final int FLAG_LAST = 1 << 1;
   private static final int FLAG_DISALLOW_MARGIN_TOP = 1 << 2;
   private static final int FLAG_DISALLOW_MARGIN_BOTTOM = 1 << 3;
+  private static final int FLAG_HAS_BUTTON = 1 << 4;
+  private static final int FLAG_BUTTON_BELOW_TEXT = 1 << 5;
+
+  private static final float BUTTON_SIZE = 24f;
+  private static final float BUTTON_BELOW_TEXT_HEIGHT =
+    BUTTON_SIZE - QuoteBackground.QUOTE_VERTICAL_PADDING;
+  private static final float BUTTON_RIPPLE_RADIUS = 14f;
+  private static final float BUTTON_TOUCH_PADDING = 8f;
+  // From the end of the longest line, as the chevron of the quote once sent
+  private static final float BUTTON_TEXT_OFFSET = QuoteBackground.QUOTE_RIGHT_PADDING -
+    QuoteBackground.QUOTE_ICON_RIGHT + QuoteBackground.QUOTE_ICON_SIZE / 2f;
+  // Applied by priority: the quote's color, its collapsed part, then links, which keep theirs
+  private static final int STYLE_SPAN_FLAGS =
+    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE | (2 << Spanned.SPAN_PRIORITY_SHIFT);
+  private static final int COLLAPSED_PART_SPAN_FLAGS =
+    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE | (1 << Spanned.SPAN_PRIORITY_SHIFT);
+  // The alpha of the field's hint: a little darker than white, readable on a white photo
+  private static final float HIDDEN_TEXT_ALPHA_OVER_MEDIA = 0xBA / 255f;
 
   public final QuoteStyleSpan styleSpan;
+  private final CollapsedPartSpan collapsedPartSpan = new CollapsedPartSpan();
 
   public int start, end, flags;
   public boolean rtl;
-  private final boolean isExpandable;
+  private boolean isExpandable;
+  private @Nullable BoolAnimator isExpanded;
+  private @Nullable ThemeDelegate colorTheme;
+  private boolean isOverMedia;
 
   public QuoteSpan (boolean isExpandable) {
     this.styleSpan = new QuoteStyleSpan(this);
@@ -65,6 +100,78 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
 
   public boolean isExpandable () {
     return isExpandable;
+  }
+
+  public void setColorTheme (@Nullable ThemeDelegate theme, boolean isOverMedia) {
+    this.colorTheme = theme;
+    this.isOverMedia = isOverMedia;
+  }
+
+  private int getColor (@ColorId int colorId) {
+    return colorTheme != null ? colorTheme.getColor(colorId) : Theme.getColor(colorId);
+  }
+
+  private int getTextColor () {
+    return getColor(isOverMedia ? ColorId.white : ColorId.blockQuoteText);
+  }
+
+  private int getLineColor () {
+    // The bar and the chevron
+    return getColor(isOverMedia ? ColorId.white : ColorId.blockQuoteLine);
+  }
+
+  private int getHiddenTextColor () {
+    return isOverMedia ?
+      ColorUtils.alphaColor(HIDDEN_TEXT_ALPHA_OVER_MEDIA, getColor(ColorId.white)) :
+      getColor(ColorId.blockQuoteTextHidden);
+  }
+
+  public void toggleExpandable (View view) {
+    final boolean wasExpanded = !isExpandable;
+    isExpandable = !isExpandable;
+    if (isExpanded == null) {
+      isExpanded = new BoolAnimator(
+        180L,
+        AnimatorUtils.DECELERATE_INTERPOLATOR,
+        wasExpanded,
+        (state, value, stateChanged, prevState) -> view.invalidate()
+      );
+    }
+    isExpanded.setAnimatedValue(!isExpandable);
+  }
+
+  private float getExpandFactor () {
+    if (isExpanded != null) {
+      return isExpanded.getFloatValue();
+    }
+    return isExpandable ? 0f : 1f;
+  }
+
+  private class CollapsedPartSpan extends CharacterStyle implements UpdateAppearance, NoCopySpan {
+    @Override
+    public void updateDrawState (TextPaint tp) {
+      tp.setColor(getHiddenTextColor());
+    }
+  }
+
+  private void updateCollapsedPart (Spannable spannable, Layout layout, Block block) {
+    final int collapsedStart = BitwiseUtils.hasFlag(flags, FLAG_HAS_BUTTON) ?
+      layout.getLineStart(block.lineStart + Config.INPUT_QUOTE_COLLAPSED_LINE_COUNT) :
+      end;
+    if (!isExpandable || collapsedStart >= end) {
+      spannable.removeSpan(collapsedPartSpan);
+      return;
+    }
+    if (spannable.getSpanStart(collapsedPartSpan) != collapsedStart ||
+      spannable.getSpanEnd(collapsedPartSpan) != end) {
+      spannable.setSpan(collapsedPartSpan, collapsedStart, end, COLLAPSED_PART_SPAN_FLAGS);
+    }
+  }
+
+  private static void removeQuote (Spannable spannable, QuoteSpan span) {
+    spannable.removeSpan(span);
+    spannable.removeSpan(span.styleSpan);
+    spannable.removeSpan(span.collapsedPartSpan);
   }
 
   @Override
@@ -91,7 +198,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       if (tp == null) {
         return;
       }
-      tp.setColor(Theme.getColor(ColorId.blockQuoteText));
+      tp.setColor(span.getTextColor());
 
       final float size = tp.getTextSize();
       tp.setTextSize(size - 1);
@@ -125,6 +232,10 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       if (end >= span.end) {
         fm.descent += Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!BitwiseUtils.hasFlag(span.flags, FLAG_DISALLOW_MARGIN_BOTTOM) ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
         fm.bottom += Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!BitwiseUtils.hasFlag(span.flags, FLAG_DISALLOW_MARGIN_BOTTOM) ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
+        if (BitwiseUtils.hasFlag(span.flags, FLAG_BUTTON_BELOW_TEXT)) {
+          fm.descent += Screen.dp(BUTTON_BELOW_TEXT_HEIGHT);
+          fm.bottom += Screen.dp(BUTTON_BELOW_TEXT_HEIGHT);
+        }
       }
     }
   }
@@ -176,19 +287,17 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
         continue;
       }
       if (spannable.getSpanStart(spans[i].styleSpan) == -1) {
-        spannable.setSpan(spans[i].styleSpan, block.span.start, block.span.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannable.setSpan(spans[i].styleSpan, block.span.start, block.span.end, STYLE_SPAN_FLAGS);
       }
 
       if (lastSpanEnd != -1 && block.span.start <= lastSpanEnd) {
-        spannable.removeSpan(spans[i]);
-        spannable.removeSpan(spans[i].styleSpan);
+        removeQuote(spannable, spans[i]);
         continue;
       }
 
       if (!(block.span.start == 0 || text.charAt(block.span.start - 1) == '\n')) {
       // if (!(block.span.start == 0 || text.charAt(block.span.start - 1) == '\n' || text.charAt(block.span.start) == '\n')) {
-        spannable.removeSpan(spans[i]);
-        spannable.removeSpan(spans[i].styleSpan);
+        removeQuote(spannable, spans[i]);
         continue;
       }
       if (!(block.span.end == text.length() || text.charAt(block.span.end) == '\n')) {
@@ -198,9 +307,10 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
         spannable.removeSpan(spans[i]);
         spannable.removeSpan(spans[i].styleSpan);
         spannable.setSpan(spans[i], block.span.start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        spannable.setSpan(spans[i].styleSpan, block.span.start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannable.setSpan(spans[i].styleSpan, block.span.start, newEnd, STYLE_SPAN_FLAGS);
         block = new Block(text, layout, spannable, spans[i], lastLineEnd);
       }
+      block.span.updateCollapsedPart(spannable, layout, block);
 
       if (blocks == null) {
         blocks = new ArrayList<>();
@@ -242,6 +352,8 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       flags = BitwiseUtils.setFlag(flags, FLAG_LAST, lineEnd + 1 >= layout.getLineCount());
       flags = BitwiseUtils.setFlag(flags, FLAG_DISALLOW_MARGIN_TOP, lastLineEnd != -1 && lastLineEnd + 1 == lineStart || BitwiseUtils.hasFlag(flags, FLAG_FIRST));
       flags = BitwiseUtils.setFlag(flags, FLAG_DISALLOW_MARGIN_BOTTOM, BitwiseUtils.hasFlag(flags, FLAG_LAST));
+      final boolean hasButton = lineEnd - lineStart + 1 > Config.INPUT_QUOTE_COLLAPSED_LINE_COUNT;
+      flags = BitwiseUtils.setFlag(flags, FLAG_HAS_BUTTON, hasButton);
 
       span.flags = flags;
 
@@ -256,6 +368,59 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
           span.rtl = true;
       }
       this.width = (int) Math.ceil(width);
+
+      this.hasButton = hasButton;
+      final float buttonHalf = Screen.dp(BUTTON_SIZE) / 2f;
+      // With the spaces at its end, where the cursor goes
+      final float lastRight = Math.max(
+        layout.getLineRight(lineEnd),
+        layout.getPrimaryHorizontal(span.end)
+      );
+      this.buttonCenterX = Math.min(
+        Math.max(width, lastRight) + Screen.dp(BUTTON_TEXT_OFFSET),
+        layout.getWidth() - buttonHalf
+      );
+      this.buttonCenterY = bottom - buttonHalf;
+      final boolean isButtonBelowText = hasButton && lastRight > buttonCenterX - buttonHalf;
+      span.flags = BitwiseUtils.setFlag(span.flags, FLAG_BUTTON_BELOW_TEXT, isButtonBelowText);
+      // Not where a tap puts the cursor at the end of the last line
+      this.buttonLeft = isButtonBelowText ?
+        buttonCenterX - buttonHalf :
+        Math.max(buttonCenterX - buttonHalf, lastRight + Screen.dp(BUTTON_TOUCH_PADDING));
+      this.lastLineTop = layout.getLineTop(lineEnd);
+    }
+
+    private final boolean hasButton;
+    private final float buttonCenterX, buttonCenterY, buttonLeft;
+    private final int lastLineTop;
+
+    public boolean isButtonHit (float x, float y) {
+      // Wider to the right and below, where no text of the quote is
+      final float half = Screen.dp(BUTTON_SIZE) / 2f;
+      final float padding = Screen.dp(BUTTON_TOUCH_PADDING);
+      return hasButton &&
+        x >= buttonLeft && x <= buttonCenterX + half + padding &&
+        y >= Math.max(buttonCenterY - half, lastLineTop) && y <= buttonCenterY + half + padding;
+    }
+
+    public boolean hasButton () {
+      return hasButton;
+    }
+
+    public void getButtonBounds (Rect rect) {
+      final int half = Screen.dp(BUTTON_SIZE) / 2;
+      final int centerX = Math.round(buttonCenterX);
+      final int centerY = Math.round(buttonCenterY);
+      rect.set(centerX - half, centerY - half, centerX + half, centerY + half);
+    }
+
+    public void setButtonRipple (RippleDrawable ripple) {
+      final int radius = Screen.dp(BUTTON_RIPPLE_RADIUS);
+      final int centerX = Math.round(buttonCenterX);
+      final int centerY = Math.round(buttonCenterY);
+      ripple.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+      ripple.setRadius(radius, radius, radius, radius);
+      ripple.setMainColor(span.getLineColor(), 0.25f);
     }
 
     public void draw (Canvas canvas, float offsetX, float offsetY, int maxWidth) {
@@ -268,7 +433,19 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       canvas.translate(offsetX, offsetY);
 
       tmpRect.set(-Screen.dp(3), top, 0, bottom);
-      canvas.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), Paints.fillingPaint(Theme.getColor(ColorId.blockQuoteLine)));
+      final int lineColor = span.getLineColor();
+      final Paint paint = Paints.fillingPaint(lineColor);
+      canvas.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), paint);
+      if (hasButton) {
+        DrawAlgorithms.drawCollapse(
+          canvas,
+          buttonCenterX,
+          buttonCenterY,
+          lineColor,
+          span.getExpandFactor(),
+          0f
+        );
+      }
 
       Views.restore(canvas, s);
     }
@@ -375,7 +552,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
     quoteSpan.start = start;
     quoteSpan.end = end;
     editable.setSpan(quoteSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-    editable.setSpan(styleSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    editable.setSpan(styleSpan, start, end, STYLE_SPAN_FLAGS);
 
     // editable.insert(end, "\uFEFF");
     // editable.delete(end, end + 1);
@@ -390,11 +567,13 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       if (styleSpan != null) {
         editable.removeSpan(styleSpan);
       }
+      editable.removeSpan(((QuoteSpan) span).collapsedPartSpan);
     }
     if (span instanceof QuoteSpan.QuoteStyleSpan) {
       QuoteSpan quoteSpan = ((QuoteStyleSpan) span).span;
       if (quoteSpan != null) {
         editable.removeSpan(quoteSpan);
+        editable.removeSpan(quoteSpan.collapsedPartSpan);
       }
     }
   }

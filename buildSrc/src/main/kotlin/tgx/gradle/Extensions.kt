@@ -115,6 +115,12 @@ fun findExtraFolders(variant: SdkVariant): Set<String> =
     if (variant.minSdk >= 23) {
       this += "sinceMarshmallow"
     }
+    if (variant.minSdk in 23 until 29) {
+      this += "sinceMarshmallowPreQ"
+    }
+    if (variant.minSdk >= 29) {
+      this += "sinceQ"
+    }
     if (variant.minSdk >= 26 || variant.supportsSdk(26)) {
       this += "sinceOreo"
     }
@@ -132,7 +138,7 @@ fun <T> selectApiFlavor(
     "legacy" -> legacy
     "lollipop" -> lollipop
     "marshmallow" -> marshmallow
-    "tens",
+    "nop",
     "qrs",
     "latest" -> latest
     else -> error(variant.flavor)

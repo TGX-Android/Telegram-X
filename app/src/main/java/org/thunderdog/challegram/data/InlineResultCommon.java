@@ -382,6 +382,10 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     return tag;
   }
 
+  public String getTitle () {
+    return title;
+  }
+
   public InlineResultCommon (BaseActivity context, Tdlib tdlib, MediaBottomFilesController.FileEntry entry) {
     super(context, tdlib, TYPE_DOCUMENT, Long.toString(entry.getId()), null);
 
@@ -692,6 +696,14 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     super.setMessage(message);
     updateDescription();
     return this;
+  }
+
+  public void updateTimes () {
+    // Descriptions of files of messages have the time of the message, and a description that the
+    // owner fixed stays
+    if (getMessage() != null && !ignoreDescriptionUpdates) {
+      updateDescription();
+    }
   }
 
   private void updateDescription () {

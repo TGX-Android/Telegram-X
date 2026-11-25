@@ -20,7 +20,6 @@ import android.os.SystemClock;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.os.CancellationSignal;
@@ -35,14 +34,19 @@ import java.lang.annotation.RetentionPolicy;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
+import tgx.flavor.FrameworkFingerprint;
 
-@RequiresApi(Build.VERSION_CODES.M)
 public class BiometricAuthentication {
   public static final boolean ONLY_FINGERPRINT = Build.VERSION.SDK_INT < Build.VERSION_CODES.R;
 
   public interface Callback {
-    void onAuthenticated (BiometricPrompt.AuthenticationResult result, boolean strong);
+    void onAuthenticated (boolean strong);
     void onAuthenticationError (CharSequence message, boolean isFatal);
+  }
+
+  public interface Authenticator {
+    void authenticate ();
+    void cancel ();
   }
 
   private static @Nullable BiometricManager getManager () {
@@ -69,7 +73,7 @@ public class BiometricAuthentication {
   }
 
   private static boolean isAvailable (int availability, boolean onlyEnrolled) {
-    switch (availability) {
+    switch (FrameworkFingerprint.canAuthenticate(availability)) {
       case BiometricManager.BIOMETRIC_SUCCESS:
         return true;
       case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
@@ -109,16 +113,18 @@ public class BiometricAuthentication {
   private static class BiometricsCallback extends BiometricPrompt.AuthenticationCallback {
     private final Callback callback;
     private final boolean strong;
+    private final Runnable onComplete;
 
-    public BiometricsCallback (Callback callback, boolean strong) {
+    public BiometricsCallback (Callback callback, boolean strong, Runnable onComplete) {
       this.callback = callback;
       this.strong = strong;
+      this.onComplete = onComplete;
     }
 
     @Override
     public final void onAuthenticationError (int errorCode, @NonNull CharSequence errString) {
       callback.onAuthenticationError(StringUtils.isEmpty(errString) ? "Error " + errorCode : errString, true);
-      onComplete();
+      onComplete.run();
     }
 
     @Override
@@ -130,54 +136,96 @@ public class BiometricAuthentication {
           callback.onAuthenticationError("Use biometrics instead of lock screen credentials.", true);
           break;
         case BiometricPrompt.AUTHENTICATION_RESULT_TYPE_BIOMETRIC:
-          callback.onAuthenticated(result, strong);
+          callback.onAuthenticated(strong);
           break;
         default:
           throw new UnsupportedOperationException(Integer.toString(authenticationType));
       }
-      onComplete();
+      onComplete.run();
     }
 
     @Override
     public final void onAuthenticationFailed () {
       callback.onAuthenticationError("Try again.", false);
     }
+  }
 
-    protected void onComplete () { }
+  private static Authenticator newPromptAuthenticator (
+    BaseActivity context,
+    CharSequence title,
+    CharSequence negativeButtonText,
+    boolean strong,
+    Callback callback,
+    Runnable onComplete
+  ) {
+    BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+      .setConfirmationRequired(false)
+      .setAllowedAuthenticators(strong ?
+        BiometricManager.Authenticators.BIOMETRIC_STRONG :
+        BiometricManager.Authenticators.BIOMETRIC_WEAK
+      )
+      .setTitle(title)
+      .setNegativeButtonText(negativeButtonText)
+      .build();
+    BiometricPrompt prompt = new BiometricPrompt(
+      context,
+      new BiometricsCallback(callback, strong, onComplete)
+    );
+    return new Authenticator() {
+      @Override
+      public void authenticate () {
+        prompt.authenticate(info);
+      }
+
+      @Override
+      public void cancel () {
+        prompt.cancelAuthentication();
+      }
+    };
   }
 
   private static CancellationSignal pendingSignal;
   private static long lastTimestamp;
 
-  public static void authenticate (BaseActivity context, CharSequence title, CharSequence negativeButtonText, boolean strong, Callback callback) {
+  public static CancellationSignal authenticate (
+    BaseActivity context,
+    CharSequence title,
+    CharSequence negativeButtonText,
+    boolean strong,
+    Callback callback
+  ) {
+    // A delayed start of the previous prompt, e.g. of another activity, would run after it's gone
+    if (pendingSignal != null) {
+      pendingSignal.cancel();
+    }
     CancellationSignal signal = new CancellationSignal();
-    BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-      .setConfirmationRequired(false)
-      .setAllowedAuthenticators(
-        strong ? BiometricManager.Authenticators.BIOMETRIC_STRONG : BiometricManager.Authenticators.BIOMETRIC_WEAK
-      )
-      .setTitle(title)
-      .setNegativeButtonText(negativeButtonText)
-      .build();
-    BiometricPrompt prompt = new BiometricPrompt(context, new BiometricsCallback(callback, strong) {
-      @Override
-      protected void onComplete () {
-        lastTimestamp = SystemClock.uptimeMillis();
-        if (pendingSignal == signal) {
-          pendingSignal = null;
-        }
+    Runnable onComplete = () -> {
+      lastTimestamp = SystemClock.uptimeMillis();
+      if (pendingSignal == signal) {
+        pendingSignal = null;
       }
-    });
+    };
+    Authenticator fingerprintAuthenticator =
+      FrameworkFingerprint.authenticator(strong, callback, onComplete);
+    Authenticator authenticator = fingerprintAuthenticator != null ?
+      fingerprintAuthenticator :
+      newPromptAuthenticator(context, title, negativeButtonText, strong, callback, onComplete);
     pendingSignal = signal;
     CancellableRunnable act = new CancellableRunnable() {
       @Override
       public void act () {
+        if (context.isFinishing() || context.getSupportFragmentManager().isDestroyed()) {
+          if (pendingSignal == signal) {
+            pendingSignal = null;
+          }
+          return;
+        }
         lastTimestamp = SystemClock.uptimeMillis();
-        prompt.authenticate(info);
+        authenticator.authenticate();
       }
     };
     signal.setOnCancelListener(() -> {
-      prompt.cancelAuthentication();
+      authenticator.cancel();
       act.cancel();
       if (pendingSignal == signal) {
         pendingSignal = null;
@@ -190,12 +238,6 @@ public class BiometricAuthentication {
     } else {
       act.run();
     }
-  }
-
-  public static void cancelAuthentication () {
-    if (pendingSignal != null) {
-      pendingSignal.cancel();
-      pendingSignal = null;
-    }
+    return signal;
   }
 }

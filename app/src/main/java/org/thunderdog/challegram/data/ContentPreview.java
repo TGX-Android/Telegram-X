@@ -1,5 +1,6 @@
 package org.thunderdog.challegram.data;
 
+import android.os.Build;
 import android.util.SparseIntArray;
 
 import androidx.annotation.DrawableRes;
@@ -49,6 +50,9 @@ public class ContentPreview {
   public static final Emoji EMOJI_AUDIO = new Emoji("\uD83C\uDFB5", R.drawable.baseline_music_note_16);
   public static final Emoji EMOJI_CONTACT = new Emoji("\uD83D\uDC64", R.drawable.baseline_person_16);
   public static final Emoji EMOJI_POLL = new Emoji("\uD83D\uDCCA", R.drawable.baseline_poll_16);
+  public static final Emoji EMOJI_WIDGET =
+    new Emoji(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? "\uD83E\uDDE9" : "\uD83D\uDD0C",
+      R.drawable.baseline_extension_16);
   public static final Emoji EMOJI_POLL_OPTION = new Emoji("\uD83D\uDCCA", R.drawable.baseline_ballot_16);
   public static final Emoji EMOJI_QUIZ = new Emoji("\u2753", R.drawable.baseline_help_16);
   public static final Emoji EMOJI_PAID_PHOTO = new Emoji("\u2B50", R.drawable.baseline_premium_star_16); // ⭐
@@ -724,6 +728,7 @@ public class ContentPreview {
       }
 
       // Handled by getSimpleContentPreview
+      case TdApi.MessageWidget.CONSTRUCTOR:
       case TdApi.MessageLocation.CONSTRUCTOR:
       case TdApi.MessageLiveLocation.CONSTRUCTOR:
       case TdApi.MessageVenue.CONSTRUCTOR:
@@ -748,6 +753,8 @@ public class ContentPreview {
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
       case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftOnChainPurchaseOffer.CONSTRUCTOR:
+      case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
       case TdApi.MessageGroupCall.CONSTRUCTOR:
@@ -781,19 +788,21 @@ public class ContentPreview {
       case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
       case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
       case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+      case TdApi.MessageBotInvite.CONSTRUCTOR:
       case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
       case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
       case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
       case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
       case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
       case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
+      case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_e4738066();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -805,7 +814,7 @@ public class ContentPreview {
           ContentPreview newPreview = getAlbumPreview(tdlib, message, localAlbum, allowContent);
           if (localAlbum.messages.size() == 1) {
             if (newPreview.hasRefresher()) {
-              newPreview.refreshContent(callback);
+              newPreview.refresher.runRefresher(oldContent, callback);
             } else {
               callback.onContentPreviewNotChanged(message.chatId, message.id, oldContent);
             }
@@ -895,15 +904,18 @@ public class ContentPreview {
   }
 
   private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument) {
-    return getNotificationPinned(res, type, tdlib, chatId, sender, argument, senderName, false, 0, 0);
+    return getNotificationPinned(res, type, tdlib, chatId, sender, senderName, argument,
+      false, 0, 0);
   }
 
   private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable) {
-    return getNotificationPinned(res, type, tdlib, chatId, sender, argument, senderName, argumentTranslatable, 0, 0);
+    return getNotificationPinned(res, type, tdlib, chatId, sender, senderName, argument,
+      argumentTranslatable, 0, 0);
   }
 
   private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, long arg1, long arg2) {
-    return getNotificationPinned(res, type, tdlib, chatId, sender, argument, senderName, false, arg1, arg2);
+    return getNotificationPinned(res, type, tdlib, chatId, sender, senderName, argument,
+      false, arg1, arg2);
   }
 
   private static ContentPreview getNotificationPinned (int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable, long arg1, long arg2) {
@@ -1094,7 +1106,9 @@ public class ContentPreview {
       case TdApi.PushMessageContentGameScore.CONSTRUCTOR: {
         TdApi.PushMessageContentGameScore score = (TdApi.PushMessageContentGameScore) push.content;
         if (score.isPinned) {
-          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageGameScore.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null); // TODO
+          return getNotificationPinned(R.string.ActionPinnedGameNoName,
+            TdApi.MessageGameScore.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName,
+            null);
         } else {
           String gameTitle = score.title;
           if (!StringUtils.isEmpty(gameTitle))
@@ -1296,6 +1310,9 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_VIDEO, R.string.ChatContentVideo, formattedArgument, argumentTranslatable);
       case TdApi.MessageDocument.CONSTRUCTOR:
         return new ContentPreview(EMOJI_FILE, R.string.ChatContentFile, formattedArgument, argumentTranslatable);
+      case TdApi.MessageWidget.CONSTRUCTOR:
+        return new ContentPreview(EMOJI_WIDGET, R.string.ChatContentWidget, formattedArgument,
+          argumentTranslatable);
       case TdApi.MessageAudio.CONSTRUCTOR:
         return new ContentPreview(EMOJI_AUDIO, 0, formattedArgument, argumentTranslatable); // FIXME: does it need a placeholder or argument is always non-null?
       case TdApi.MessageContact.CONSTRUCTOR:
@@ -1613,6 +1630,7 @@ public class ContentPreview {
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGiftPurchaseOffer.CONSTRUCTOR:
       case TdApi.MessageUpgradedGiftPurchaseOfferRejected.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGiftOnChainPurchaseOffer.CONSTRUCTOR:
       case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageStakeDice.CONSTRUCTOR:
       case TdApi.MessageChecklist.CONSTRUCTOR:
@@ -1633,6 +1651,7 @@ public class ContentPreview {
       case TdApi.MessageChatOwnerChanged.CONSTRUCTOR:
       case TdApi.MessageChatOwnerLeft.CONSTRUCTOR:
       case TdApi.MessageManagedBotCreated.CONSTRUCTOR:
+      case TdApi.MessageBotInvite.CONSTRUCTOR:
       case TdApi.MessagePollOptionAdded.CONSTRUCTOR:
       case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
       case TdApi.MessageRichMessage.CONSTRUCTOR:
@@ -1640,6 +1659,7 @@ public class ContentPreview {
       case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
       case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
       case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
+      case TdApi.MessageUnpaidMessagesAllowedByLink.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1650,7 +1670,7 @@ public class ContentPreview {
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_e4738066();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

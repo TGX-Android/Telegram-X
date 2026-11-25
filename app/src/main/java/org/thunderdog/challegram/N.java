@@ -73,7 +73,13 @@ public final class N {
 
   // gif.c
   public static final int DECODER_METADATA_ARRAY_SIZE = 5;
-  public static native long createDecoder (String path, long[] metadata, double startMediaTimestamp);
+  public static native long createDecoder (
+    String path,
+    long[] metadata,
+    double startMediaTimestamp,
+    // The longest side to play, 0 for animations
+    int maxSourceSize
+  );
   public static native long createLottieDecoder (String path, String jsonData, double[] metadata, int fitzpatrickType);
   public static native void getLottieSize (long ptr, int[] size);
   public static native void cancelLottieDecoder (long ptr);
@@ -112,8 +118,12 @@ public final class N {
   public static native byte[] getWaveform (String path);
   public static native byte[] getWaveform2 (short[] array, int length);
 
-  // jni_utils.cpp
+  // utils.cpp
   public native static String readlink (String path);
+  public static final int HARDENING_NOT_BUILT = -1;
+  public static final int HARDENING_PAC = 1;
+  public static final int HARDENING_BTI = 1 << 1;
+  public native static int getHardwareHardening ();
 
   // emoji.cpp
   public native static int getEmojiSuggestionMaxLength ();
@@ -133,6 +143,10 @@ public final class N {
     }
   }
 
+  // syntax.cpp
+  public native static int[] highlightCode (String code, String language);
+  public native static String getLanguageName (String language);
+
   public native static void onFatalError (String msg, int cause);
 
   // Unavailable in legacy flavor
@@ -147,6 +161,10 @@ public final class N {
       loaded = true;
     }
     return true;
+  }
+
+  public static boolean isLoaded () {
+    return loaded;
   }
 
   public static void setupLibraries () {

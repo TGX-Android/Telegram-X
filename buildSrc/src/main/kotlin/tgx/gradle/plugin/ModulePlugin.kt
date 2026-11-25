@@ -14,7 +14,6 @@ import org.gradle.kotlin.dsl.*
 import tgx.gradle.*
 import tgx.gradle.source.AppBuildVersionSource
 import tgx.gradle.source.KeystoreSource
-import tgx.test.configureMinSdkCheck
 import java.io.File
 
 @Suppress("UnstableApiUsage")
@@ -88,8 +87,9 @@ open class ModulePlugin : Plugin<Project> {
     }
 
     val androidExt = project.extensions.getByName("android")
-    if (androidExt !is TestExtension && !project.path.startsWith(":tests:")) {
-      project.configureMinSdkCheck()
+    if (androidExt !is TestExtension && !project.path.startsWith(":tests:") &&
+      project.rootDir.resolve("tests/.git").exists()) {
+      project.pluginManager.apply("tgx-tests-module")
     }
     val keystore = config?.keystorePropertiesPath?.let { keystorePropertiesPath ->
       project.providers.of(KeystoreSource::class) {
@@ -129,6 +129,8 @@ open class ModulePlugin : Plugin<Project> {
               Config.MIN_SDK_VERSION,
               ndkVersion.ndkVersionToMinSdk()
             )
+            // Legacy multidex, which minSdk 16 of legacy needs until AGP 11 drops it
+            @Suppress("DEPRECATION")
             multiDexEnabled = true
             if (!enableSplitAbi) {
               ndk.abiFilters += globalAbiFilters
@@ -155,6 +157,7 @@ open class ModulePlugin : Plugin<Project> {
                   "-DANDROID_PLATFORM=android-${selectedMinSdk}",
                   "-DANDROID_MIN_SDK_VERSION=${selectedMinSdk}",
                   "-DANDROID_STL=c++_shared",
+                  "-DTGX_BRANCH_PROTECTION=${if (variant.usesBranchProtection) "ON" else "OFF"}",
                   "-DTGX_FLAVOR=${variant.flavor}"
                 )
                 sourceSets.getByName(variant.flavor) {
@@ -199,6 +202,7 @@ open class ModulePlugin : Plugin<Project> {
               ndkVersion.ndkVersionToMinSdk()
             )
             targetSdk = build.targetSdkVersion
+            @Suppress("DEPRECATION")
             multiDexEnabled = true
             if (!enableSplitAbi) {
               ndk.abiFilters += globalAbiFilters
@@ -239,6 +243,7 @@ open class ModulePlugin : Plugin<Project> {
               isJniDebuggable = true
               isMinifyEnabled = false
 
+              @Suppress("DEPRECATION")
               multiDexKeepProguard = requireFile(project.layout.projectDirectory.file("multidex-rules.pro").asFile)
 
               ndk.debugSymbolLevel = "full"
@@ -267,6 +272,7 @@ open class ModulePlugin : Plugin<Project> {
               isMinifyEnabled = !doNotObfuscate
               isShrinkResources = !doNotObfuscate
 
+              @Suppress("DEPRECATION")
               multiDexKeepProguard = requireFile(project.layout.projectDirectory.file("multidex-rules.pro").asFile)
 
               ndk.debugSymbolLevel = "full"
@@ -299,6 +305,7 @@ open class ModulePlugin : Plugin<Project> {
               Config.MIN_SDK_VERSION,
               ndkVersion.ndkVersionToMinSdk()
             )
+            @Suppress("DEPRECATION")
             multiDexEnabled = true
           }
 

@@ -46,7 +46,7 @@ public class GifBridge {
   private static final int THREAD_POOL_SIZE = 2;
   private final GifBridgeThread thread;
   private final HashMap<String, GifRecord> records = new HashMap<>();
-  private final HashMap<Integer, ArrayList<GifRecord>> fileIdToRecordList = new HashMap<>();
+  private final HashMap<String, ArrayList<GifRecord>> fileKeyToRecordList = new HashMap<>();
   private final ArrayList<GifRecord> playingRoundVideos = new ArrayList<>();
   // TODO: rework to executors
   private int lastUsedThread, lastUsedEmojiThread;
@@ -128,10 +128,10 @@ public class GifBridge {
       record = new GifRecord(file, actor, reference);
       synchronized (records) {
         records.put(key, record);
-        ArrayList<GifRecord> recordList = fileIdToRecordList.get(file.getFileId());
+        ArrayList<GifRecord> recordList = fileKeyToRecordList.get(file.getFileKey());
         if (recordList == null) {
           recordList = new ArrayList<>();
-          fileIdToRecordList.put(file.getFileId(), recordList);
+          fileKeyToRecordList.put(file.getFileKey(), recordList);
         }
         recordList.add(record);
         if (file.isRoundVideo()) {
@@ -181,10 +181,10 @@ public class GifBridge {
             itemsToRemove = new ArrayList<>();
           }
           itemsToRemove.add(entry.getKey());
-          int fileId = record.getFile().getFileId();
-          ArrayList<GifRecord> recordList = fileIdToRecordList.get(fileId);
+          String fileKey = record.getFile().getFileKey();
+          ArrayList<GifRecord> recordList = fileKeyToRecordList.get(fileKey);
           if (recordList != null && recordList.remove(record) && recordList.isEmpty()) {
-            fileIdToRecordList.remove(fileId);
+            fileKeyToRecordList.remove(fileKey);
           }
           if (record.getFile().isRoundVideo()) {
             playingRoundVideos.remove(record);
@@ -206,19 +206,23 @@ public class GifBridge {
   }
 
   // TG or HTTP reader thread
-  public boolean onProgress (Tdlib tdlib, int fileId, float progress) {
+  public boolean onProgress (Tdlib tdlib, TdApi.File file, float progress) {
+    int fileId = file.id;
     boolean found = false;
 
     synchronized (records) {
-      ArrayList<GifRecord> records = this.fileIdToRecordList.get(fileId);
+      ArrayList<GifRecord> records = this.fileKeyToRecordList.get(GifFile.toFileKey(tdlib, file));
       if (records != null) {
         for (GifRecord record : records) {
+          if (GifFile.accountId(record.getFile().tdlib()) != GifFile.accountId(tdlib)) {
+            continue;
+          }
           for (GifWatcherReference reference : record.getWatchers()) {
             reference.gifProgress(record.getFile(), progress);
           }
           record.getActor().cacheProgress(progress);
+          found = true;
         }
-        found = true;
       }
     }
 
@@ -231,21 +235,25 @@ public class GifBridge {
 
   // TG or HTTP reader thread
   public boolean onLoad (Tdlib tdlib, TdApi.File file) {
+    boolean found = false;
     synchronized (records) {
-      ArrayList<GifRecord> records = this.fileIdToRecordList.get(file.id);
+      ArrayList<GifRecord> records = this.fileKeyToRecordList.get(GifFile.toFileKey(tdlib, file));
       if (records != null) {
         for (GifRecord record : records) {
+          if (GifFile.accountId(record.getFile().tdlib()) != GifFile.accountId(tdlib)) {
+            continue;
+          }
           if (Log.isEnabled(Log.TAG_GIF_LOADER)) {
             Log.i(Log.TAG_GIF_LOADER, "#%d: onLoad", file.id);
           }
           TdApi.File localFile = record.getFile().getFile();
           Td.copyTo(file, localFile);
           thread.onLoad(record.getActor(), file);
+          found = true;
         }
-        return true;
       }
     }
-    return false;
+    return found;
   }
 
   // GifBridge thread

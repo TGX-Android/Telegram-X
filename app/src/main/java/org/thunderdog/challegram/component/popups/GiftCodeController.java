@@ -35,6 +35,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -67,6 +68,21 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
   private final String code;
 
   private int measuredRecyclerHeight;
+
+  private SettingsAdapter adapter;
+  private ListItem dateItem, activationItem;
+
+  private final DateChangeListener dateChangeListener = new DateChangeListener() {
+    @Override
+    public void onTimeFormatChanged () {
+      dateItem.setStringValue(creationDate());
+      adapter.updateValuedSetting(dateItem);
+      if (activationItem != null) {
+        activationItem.setString(activationDate());
+        adapter.updateItem(adapter.indexOfView(activationItem));
+      }
+    }
+  };
 
   protected GiftCodeController (MediaLayout context, String code, @Nullable TdApi.MessagePremiumGiftCode giftCodeContent, @NonNull TdApi.PremiumGiftCodeInfo giftCodeInfo) {
     super(context, Lang.getString(R.string.GiftLink));
@@ -114,16 +130,16 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showGiveawayMessage, R.drawable.baseline_info_24, R.string.GiftReason)
       .setStringValue(Lang.getString(giftCodeInfo.isFromGiveaway ? R.string.GiftReasonGiveaway : R.string.GiftReasonGift)));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_SETTING,0, R.drawable.baseline_date_range_24, R.string.GiftDate)
-      .setStringValue(Lang.getString(R.string.format_GiveawayDateTime,
-        Lang.dateYearFull(giftCodeInfo.creationDate, TimeUnit.SECONDS),
-        Lang.time(giftCodeInfo.creationDate, TimeUnit.SECONDS)))
-    );
+    dateItem = new ListItem(ListItem.TYPE_SETTING, 0, R.drawable.baseline_date_range_24,
+      R.string.GiftDate)
+      .setStringValue(creationDate());
+    items.add(dateItem);
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     if (isActivated) {
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getString(R.string.GiftLinkWasActivated, Lang.dateFullShort(giftCodeInfo.useDate, TimeUnit.SECONDS), Lang.time(giftCodeInfo.useDate, TimeUnit.SECONDS))));
+      activationItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, activationDate());
+      items.add(activationItem);
     } else {
       items.add(new ListItem(ListItem.TYPE_TEXT_VIEW));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -136,7 +152,7 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
     params.bottomMargin = HeaderView.getTopOffset();
     recyclerView.setLayoutParams(params);
 
-    SettingsAdapter adapter = new SettingsAdapter(this) {
+    adapter = new SettingsAdapter(this) {
       @Override
       public void updateView (SettingHolder holder, int position, int viewType) {
         super.updateView(holder, position, viewType);
@@ -209,8 +225,27 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
     });
 
     setAdapter(adapter);
+    tdlib.context().dateManager().addListener(dateChangeListener);
 
     return contentView;
+  }
+
+  private String creationDate () {
+    return Lang.getString(R.string.format_GiveawayDateTime,
+      Lang.dateYearFull(giftCodeInfo.creationDate, TimeUnit.SECONDS),
+      Lang.time(giftCodeInfo.creationDate, TimeUnit.SECONDS));
+  }
+
+  private String activationDate () {
+    return Lang.getString(R.string.GiftLinkWasActivated,
+      Lang.dateFullShort(giftCodeInfo.useDate, TimeUnit.SECONDS),
+      Lang.time(giftCodeInfo.useDate, TimeUnit.SECONDS));
+  }
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    tdlib.context().dateManager().removeListener(dateChangeListener);
   }
 
 

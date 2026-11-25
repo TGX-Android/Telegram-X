@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.CancellationSignal;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.Comparator;
@@ -181,7 +182,8 @@ public class TdlibRouteSelector implements Comparator<Settings.Proxy> {
             sortAndSelectRoute(false);
           }
         };
-        tdlib.runOnTdlibThread(onTimeout, Math.min(5.0, Math.max(1.5, (double) time / 1000.0)), false);
+        double timeoutSeconds = Math.min(5.0, Math.max(1.5, (double) time / 1000.0));
+        tdlib.sendOptional(new TdApi.SetAlarm(timeoutSeconds), ignored -> onTimeout.run());
       }
     }
   }

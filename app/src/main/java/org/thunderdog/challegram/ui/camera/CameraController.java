@@ -39,6 +39,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.ChecksSdkIntAtLeast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -257,10 +258,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
     contentShadow.setSimpleBottomTransparentShadow(true);
     rootLayout.addView(contentShadow);
 
-    if (needLegacy()) {
-      manager = new CameraManagerLegacy(context, this);
-    } else {
+    if (needCameraX()) {
       manager = new CameraManagerX(context, this);
+    } else {
+      manager = new CameraManagerLegacy(context, this);
     }
 
     contentView.addView(manager.getView());
@@ -292,6 +293,11 @@ public class CameraController extends ViewController<Void> implements CameraDele
     return type == Settings.CAMERA_TYPE_SYSTEM ? Settings.CAMERA_TYPE_DEFAULT == Settings.CAMERA_TYPE_LEGACY : type == Settings.CAMERA_TYPE_LEGACY;
   }
 
+  @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.LOLLIPOP)
+  private boolean needCameraX () {
+    return !needLegacy();
+  }
+
   private void setForceLegacy (boolean forceLegacy) {
     if (this.forceLegacy != forceLegacy) {
       this.forceLegacy = forceLegacy;
@@ -309,10 +315,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
         manager.destroy();
         manager = null;
       }
-      if (needLegacy()) {
-        manager = new CameraManagerLegacy(context, this);
-      } else {
+      if (needCameraX()) {
         manager = new CameraManagerX(context, this);
+      } else {
+        manager = new CameraManagerLegacy(context, this);
       }
       contentView.addView(manager.getView(), contentView.getChildCount() - 1);
     }
@@ -1468,9 +1474,20 @@ public class CameraController extends ViewController<Void> implements CameraDele
     return m != null && m.isSecretChat();
   }
 
-  private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
+  private boolean onSendMedia (
+    View view,
+    ImageGalleryFile file,
+    TdApi.MessageSendOptions options,
+    boolean disableMarkdown,
+    boolean asFiles,
+    boolean showCaptionAboveMedia,
+    boolean hasSpoiler
+  ) {
     MessagesController m = findOutputController();
     if (m != null) {
+      if (m.showSendAsFileRestriction(view, file, asFiles)) {
+        return false;
+      }
       context.forceCloseCamera();
       return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
     }
@@ -1545,7 +1562,15 @@ public class CameraController extends ViewController<Void> implements CameraDele
         @Override
         public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
           ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
-          return onSendMedia(galleryFile, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
+          return onSendMedia(
+            view,
+            galleryFile,
+            options,
+            disableMarkdown,
+            asFiles,
+            showCaptionAboveMedia,
+            hasSpoiler
+          );
         }
       }, stack, m != null && m.areScheduledOnly()).setAvatarPickerMode(avatarPickerMode);
       if (m != null) {

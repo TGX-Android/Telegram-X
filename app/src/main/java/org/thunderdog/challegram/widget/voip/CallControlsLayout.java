@@ -27,11 +27,11 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.preview.FlingDetector;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.widget.CircleButton;
 
 import me.vkryl.android.AnimatorUtils;
@@ -45,11 +45,31 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
   private static final float CALL_BUTTON_MARGIN = 24f;
   private static final float CALL_BUTTON_BOTTOM_MARGIN = 70.5f;
 
+  public static int getCallButtonSize () {
+    return Screen.dp(CALL_BUTTON_SIZE) + Screen.dp(CALL_BUTTON_PADDING) * 2;
+  }
+
+  public static int getCallButtonBottomMargin () {
+    return Screen.dp(CALL_BUTTON_BOTTOM_MARGIN);
+  }
+
+  public static CircleButton newDeclineButton (Context context) {
+    CircleButton declineButton = new CircleButton(context);
+    declineButton.setId(R.id.btn_declineCall);
+    declineButton.init(R.drawable.baseline_phone_36, CALL_BUTTON_SIZE, CALL_BUTTON_PADDING,
+      ColorId.circleButtonNegative, ColorId.circleButtonNegativeIcon);
+    declineButton.setIconRotation(135f, false);
+    declineButton.setContentDescription(Lang.getString(R.string.DeclineCall));
+    return declineButton;
+  }
+
   public interface CallControlCallback {
     void onCallAccept (TdApi.Call call);
     void onCallDecline (TdApi.Call call, boolean isHangUp);
     void onCallRestart (TdApi.Call call);
     void onCallClose (TdApi.Call call);
+    default void onCallAcceptLocked (View acceptButton) { }
+    default void onCallAcceptMoved () { }
   }
 
   /*
@@ -80,13 +100,11 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
   private FlingDetector flingDetector;
 
   private boolean inSlideMode;
+  private boolean isAcceptLocked;
   private @Nullable CallControlCallback callback;
-  private final CallController parent;
 
-  public CallControlsLayout (@NonNull Context context, CallController parent) {
+  public CallControlsLayout (@NonNull Context context) {
     super(context);
-
-    this.parent = parent;
 
     int buttonPadding = Screen.dp(CALL_BUTTON_PADDING);
     int buttonSize = Screen.dp(CALL_BUTTON_SIZE);
@@ -132,10 +150,7 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
     params.rightMargin = buttonMargin;
     params.bottomMargin = buttonBottomMargin;
 
-    declineButton = new CircleButton(context);
-    declineButton.setId(R.id.btn_declineCall);
-    declineButton.init(R.drawable.baseline_phone_36, CALL_BUTTON_SIZE, CALL_BUTTON_PADDING, ColorId.circleButtonNegative, ColorId.circleButtonNegativeIcon);
-    declineButton.setIconRotation(135f, false);
+    declineButton = newDeclineButton(context);
     declineButton.setLayoutParams(params);
     declineButton.setOnClickListener(this);
     addView(declineButton);
@@ -143,6 +158,20 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
 
   public void setCallback (@Nullable CallControlCallback callback) {
     this.callback = callback;
+  }
+
+  public void setAcceptLocked (boolean isLocked) {
+    this.isAcceptLocked = isLocked;
+    acceptButton.setAlphaFactor(isLocked ? .5f : 1f);
+    acceptButton.setContentDescription(isLocked ? Lang.getString(R.string.AnswerCall) : null);
+  }
+
+  public boolean isButtonAt (float x, float y) {
+    return isInside(acceptButton, x, y) || isInside(declineButton, x, y);
+  }
+
+  private static boolean isInside (View view, float x, float y) {
+    return x >= view.getLeft() && x < view.getRight() && y >= view.getTop() && y < view.getBottom();
   }
 
   private Tdlib tdlib;
@@ -196,6 +225,7 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
             declineVisible = false;
             closeVisible = true;
             break;
+          case TdApi.CallDiscardReasonMissed.CONSTRUCTOR:
           case TdApi.CallDiscardReasonHungUp.CONSTRUCTOR:
             acceptFactor = 1f;
             acceptVisible = true;
@@ -269,6 +299,8 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
         case TdApi.CallStatePending.CONSTRUCTOR:
           if (call.isOutgoing) {
             callback.onCallDecline(call, false);
+          } else if (isAcceptLocked) {
+            callback.onCallAcceptLocked(acceptButton);
           } else {
             callback.onCallAccept(call);
           }
@@ -337,7 +369,12 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
       acceptButton.setIsDragging(mode == SLIDE_MODE_ACCEPT);
 
       boolean needReturnButtons = true;
-      if (oldSlideMode != SLIDE_MODE_NONE) {
+      if (oldSlideMode == SLIDE_MODE_ACCEPT && isAcceptLocked) {
+        setPosition(0f, oldSlideMode - 1, animated);
+        if (allowApply && callback != null) {
+          callback.onCallAcceptLocked(acceptButton);
+        }
+      } else if (oldSlideMode != SLIDE_MODE_NONE) {
         if (allowApply && forceSlideMode != SLIDE_MODE_NONE) {
           setPosition(1f, forceSlideMode - 1, animated);
           setTransform(1f, forceSlideMode - 1, animated);
@@ -385,6 +422,9 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
     closeButton.setTranslationX((float) getTargetAcceptX() * .5f);
     acceptButton.setTranslationX((float) getTargetAcceptX() * (positions[SLIDE_MODE_ACCEPT - 1] + .5f * closeFactor));
     declineButton.setTranslationX((float) getTargetDeclineX() * positions[SLIDE_MODE_DECLINE - 1]);
+    if (callback != null) {
+      callback.onCallAcceptMoved();
+    }
   }
 
   private float[] positions = new float[2];
@@ -508,7 +548,8 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
         }
 
         if (x >= acceptButton.getLeft() && x <= acceptButton.getRight() && y >= acceptButton.getTop() && y <= acceptButton.getBottom()) {
-          if (!tdlib.context().calls().checkRecordPermissions(getContext(), tdlib, call, call.userId, parent)) {
+          if (!isAcceptLocked && !tdlib.context().calls()
+            .checkRecordPermissions(getContext(), tdlib, call)) {
             return true;
           }
           setSlideMode(SLIDE_MODE_ACCEPT, true);
@@ -530,7 +571,11 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
           case SLIDE_MODE_ACCEPT: {
             final float targetX = getTargetAcceptX();
             final float cx = Math.min(Math.max(0, currentX), targetX);
-            setPosition(cx / targetX, SLIDE_MODE_ACCEPT - 1, false);
+            float position = cx / targetX;
+            if (isAcceptLocked) {
+              position = .25f * AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(position);
+            }
+            setPosition(position, SLIDE_MODE_ACCEPT - 1, false);
             break;
           }
           case SLIDE_MODE_DECLINE: {

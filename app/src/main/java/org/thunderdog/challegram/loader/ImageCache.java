@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.AppContext;
 
 import java.lang.ref.WeakReference;
@@ -51,31 +52,59 @@ public class ImageCache {
   private final HashMap<String, AtomicInteger> counters;
   private final HashMap<String, Integer> rotations;
   private final HashMap<String, WeakReference<Bitmap>> references;
-  private class BitmapLruCache extends LruCache<String, Bitmap> {
+  private static class CachedBitmap {
+    public final Bitmap bitmap;
+    public final int size;
+
+    public CachedBitmap (Bitmap bitmap) {
+      this.bitmap = bitmap;
+      // Bitmap may be recycled while it's cached, but its size in LruCache mustn't change
+      this.size = getSize(bitmap);
+    }
+
+    private static int getSize (Bitmap bitmap) {
+      if (bitmap.isRecycled()) {
+        return 1;
+      } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        return bitmap.getAllocationByteCount();
+      } else {
+        return bitmap.getByteCount();
+      }
+    }
+  }
+
+  private class BitmapLruCache extends LruCache<String, CachedBitmap> {
     public BitmapLruCache (int maxSize) {
       super(maxSize);
     }
 
     @Override
-    protected int sizeOf (String key, Bitmap value) {
-      if (value == null || value.isRecycled())
-        return 1;
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB_MR1) {
-        return value.getRowBytes() * value.getHeight();
-      } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-        return value.getByteCount();
-      } else {
-        return value.getAllocationByteCount();
-      }
+    protected int sizeOf (String key, CachedBitmap value) {
+      return value.size;
     }
 
     @Override
-    protected void entryRemoved (boolean evicted, String key, Bitmap oldValue, Bitmap newValue) {
+    protected void entryRemoved (
+      boolean evicted,
+      String key,
+      CachedBitmap oldValue,
+      CachedBitmap newValue
+    ) {
+      recycleUnreferenced(key, oldValue.bitmap);
+    }
+  }
+
+  private void recycleUnreferenced (String key, Bitmap bitmap) {
+    if (!UI.inUiThread()) {
+      UI.post(() -> recycleUnreferenced(key, bitmap));
+      return;
+    }
+    synchronized (counters) {
       if (!counters.containsKey(key)) {
         if (Log.isEnabled(Log.TAG_IMAGE_LOADER)) {
-          Log.v(Log.TAG_IMAGE_LOADER, "#%s: recycling bitmap in entryRemoved", key);
+          Log.v(Log.TAG_IMAGE_LOADER, "#%s: recycling bitmap", key);
         }
-        U.recycle(oldValue);
+        U.recycle(bitmap);
       }
     }
   }
@@ -145,10 +174,7 @@ public class ImageCache {
           if (result == 0) {
             counters.remove(key);
             if (!hasInMemcache(key)) {
-              if (Log.isEnabled(Log.TAG_IMAGE_LOADER)) {
-                Log.v(Log.TAG_IMAGE_LOADER, "#%s: recycling bitmap in removeReference", key);
-              }
-              U.recycle(bitmap);
+              recycleUnreferenced(key, bitmap);
             }
             if (ALLOW_REFERENCES) {
               references.remove(key);
@@ -169,7 +195,7 @@ public class ImageCache {
 
   public void putBitmap (ImageFile file, Bitmap bitmap) {
     final String key = file.toString();
-    memcache.put(key, bitmap);
+    memcache.put(key, new CachedBitmap(bitmap));
     if (file.getRotation() != 0) {
       rotations.put(key, file.getRotation());
     }
@@ -182,7 +208,8 @@ public class ImageCache {
 
   public Bitmap getBitmap (ImageFile file) {
     final String key = file.toString();
-    final Bitmap cached = memcache.get(key);
+    final CachedBitmap cachedBitmap = memcache.get(key);
+    final Bitmap cached = cachedBitmap != null ? cachedBitmap.bitmap : null;
     if (cached != null) {
       Integer rotation = rotations.get(key);
       if (rotation != null) {

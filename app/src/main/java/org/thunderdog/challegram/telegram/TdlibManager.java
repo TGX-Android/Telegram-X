@@ -311,6 +311,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private final ManagerHandler handler = new ManagerHandler(this);
   private final LiveLocationManager liveLocationManager = new LiveLocationManager(this);
   private final TdlibNotificationManager.NotificationQueue notificationQueue = new TdlibNotificationManager.NotificationQueue("NotificationQueue", this);
+  private final NotificationIcons notificationIcons =
+    Config.REUSE_NOTIFICATION_ICONS ? new NotificationIcons(4 * 1024 * 1024) : null;
   private final CallManager calls = new CallManager(this);
   private final Settings.ProxyChangeListener proxyChangeListener = new Settings.ProxyChangeListener() {
     @Override
@@ -505,6 +507,17 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   TdlibNotificationManager.NotificationQueue notificationQueue () {
     return notificationQueue;
+  }
+
+  public NotificationIcons notificationIcons () {
+    return notificationIcons;
+  }
+
+  public static void trimMemory (int level) {
+    final TdlibManager manager = instance;
+    if (manager != null && manager.notificationIcons != null) {
+      manager.notificationIcons.trimMemory(level);
+    }
   }
 
   private void load (int specificAccountId, boolean forceService) {
@@ -717,7 +730,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   @Override
   public Iterator<TdlibAccount> iterator () {
     List<TdlibAccount> accounts = new ArrayList<>(this.accounts);
-    Collections.sort(accounts, (a, b) -> {
+    ArrayUtils.insertionSort(accounts, (a, b) -> {
       boolean aCurrent = a == currentAccount;
       boolean bCurrent = b == currentAccount;
       if (aCurrent != bCurrent) {
@@ -800,7 +813,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (accountsSorted.size() != activeAccounts.size() || accountsMod != accountsModCount) {
       accountsSorted.clear();
       accountsSorted.addAll(activeAccounts);
-      Collections.sort(accountsSorted, lastUsageComparator);
+      ArrayUtils.insertionSort(accountsSorted, lastUsageComparator);
       accountsMod = accountsModCount;
     }
     TdlibAccount account = account(accountId);
@@ -1642,6 +1655,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         }
       }
       global().notifyTokenStateChanged(newState, error, fullError);
+      global().notifyResolvableProblemAvailabilityMightHaveChanged();
       if (newState == TokenState.ERROR && !StringUtils.isEmpty(error)) {
         String reportedError = Settings.instance().getReportedPushServiceError();
         if (reportedError == null || !reportedError.equals(error)) {
@@ -1710,7 +1724,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       }
       return;
     }
-    if (BuildConfig.EXPERIMENTAL) {
+    if (!BuildConfig.FIREBASE_MESSAGING_ENABLED) {
       setTokenState(TokenState.ERROR, EXPERIMENTAL_BUILD_ERROR, null);
       if (after != null) {
         after.runWithBool(false);
@@ -2282,6 +2296,15 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return tdlibDirectories;
   }
 
+  private static final String EXTERNAL_ACCOUNT_DIRECTORY_PREFIX = "x_account";
+
+  public static boolean isExternalTdlibFile (String relativePath) {
+    String[] names = relativePath.split("/");
+    int start = names[0].startsWith(EXTERNAL_ACCOUNT_DIRECTORY_PREFIX) &&
+      StringUtils.isNumeric(names[0].substring(EXTERNAL_ACCOUNT_DIRECTORY_PREFIX.length())) ? 1 : 0;
+    return names.length > start + 1 && getAllTdlibDirectories(false).contains(names[start]);
+  }
+
   public static long deleteLogFile (boolean old) {
     return deleteLogFiles(old ? DELETE_LOG_MODE_OLD : DELETE_LOG_MODE_CURRENT);
   }
@@ -2383,7 +2406,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
     if (file != null) {
       if (accountId != 0) {
-        file = new File(file, "x_account" + accountId);
+        file = new File(file, EXTERNAL_ACCOUNT_DIRECTORY_PREFIX + accountId);
         if (!file.exists()) {
           if (createIfNotFound) {
             if (!FileUtils.mkdirs(file))

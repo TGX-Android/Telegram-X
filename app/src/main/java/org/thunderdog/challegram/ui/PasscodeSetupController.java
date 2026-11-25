@@ -77,7 +77,7 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
   private @Nullable SettingView autoLockView;
   private SettingView visibilityView;
   private @Nullable SeparatorView visibilitySeparator;
-  private @Nullable SettingView screenshotView, notificationsView;
+  private @Nullable SettingView screenshotView, notificationsView, callsView;
   private SettingView biometricsView;
   private SeparatorView biometricsSeparator;
   private ShadowView topShadowView, bottomShadowView;
@@ -267,6 +267,29 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
 
       textView = newDescription(this);
       textView.setText(Lang.getString(R.string.passcode_auto_hint));
+      autoLockWrap.addView(textView);
+
+      shadow = new ShadowView(context);
+      addThemeInvalidateListener(shadow);
+      shadow.setSimpleTopShadow(true, this);
+      autoLockWrap.addView(shadow);
+
+      callsView = new SettingView(context, tdlib);
+      callsView.setId(R.id.btn_passcodeCalls);
+      callsView.setType(SettingView.TYPE_RADIO);
+      callsView.setName(R.string.PasscodeRequireForCalls);
+      callsView.getToggler().setRadioEnabled(Passcode.instance().requireForIncomingCalls(), false);
+      callsView.setOnClickListener(this);
+      callsView.addThemeListeners(this);
+      autoLockWrap.addView(callsView);
+
+      shadow = new ShadowView(context);
+      addThemeInvalidateListener(shadow);
+      shadow.setSimpleBottomTransparentShadow(true);
+      autoLockWrap.addView(shadow);
+
+      textView = newDescription(this);
+      textView.setText(Lang.getString(R.string.PasscodeRequireForCallsInfo));
       autoLockWrap.addView(textView);
 
       shadow = new ShadowView(context);
@@ -536,6 +559,10 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
       if (screenshotView != null) {
         Passcode.instance().setAllowScreenshots(screenshotView.toggleRadio());
         UI.checkDisallowScreenshots();
+      }
+    } else if (viewId == R.id.btn_passcodeCalls) {
+      if (callsView != null) {
+        Passcode.instance().setRequireForIncomingCalls(callsView.toggleRadio());
       }
     } else if (viewId == R.id.btn_passcode_auto) {
       showAutoLockOptions();

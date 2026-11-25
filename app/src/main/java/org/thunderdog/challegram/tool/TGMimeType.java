@@ -104,6 +104,7 @@ public class TGMimeType {
       case "yaml": case "js": case "sh":
       case "es": case "json": case "xml":
       case "php": case "py": case "lua":
+      case "md": case "markdown":
         return true;
     }
     return false;
@@ -128,6 +129,7 @@ public class TGMimeType {
       case "text/vnd.wap.wml": case "text/vnd.wap.wmlscript": case "text/yaml":
       case "application/javascript": case "application/x-sh": case "application/ecmascript":
       case "application/json": case "application/xml":
+      case "text/markdown": case "text/x-markdown":
 
       case "text/php": case "text/x-php": case "application/php":case "application/x-php":case "application/x-httpd-php":case "application/x-httpd-php-source":
         return true;

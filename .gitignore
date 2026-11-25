@@ -17,6 +17,6 @@ obj
 /captures
 /local.properties
 
-/tests/*/checks
+/tests
 
 libc++_shared.so

@@ -127,4 +127,59 @@ elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
   target_compile_definitions(openh264 PUBLIC
     HAVE_NEON_AARCH64=1
   )
+elseif(${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
+  set(OPENH264_ASM_SOURCES
+    codec/common/x86/cpuid.asm
+    codec/common/x86/dct.asm
+    codec/common/x86/deblock.asm
+    codec/common/x86/expand_picture.asm
+    codec/common/x86/intra_pred_com.asm
+    codec/common/x86/mb_copy.asm
+    codec/common/x86/mc_chroma.asm
+    codec/common/x86/mc_luma.asm
+    codec/common/x86/satd_sad.asm
+    codec/common/x86/vaa.asm
+    codec/encoder/core/x86/coeff.asm
+    codec/encoder/core/x86/dct.asm
+    codec/encoder/core/x86/intra_pred.asm
+    codec/encoder/core/x86/matrix_transpose.asm
+    codec/encoder/core/x86/memzero.asm
+    codec/encoder/core/x86/quant.asm
+    codec/encoder/core/x86/sample_sc.asm
+    codec/encoder/core/x86/score.asm
+    codec/processing/src/x86/denoisefilter.asm
+    codec/processing/src/x86/downsample_bilinear.asm
+    codec/processing/src/x86/vaa.asm
+  )
+  if (${ANDROID_ABI} STREQUAL "x86_64")
+    set(OPENH264_ASM_FLAGS -f elf64 -DUNIX64)
+  else()
+    set(OPENH264_ASM_FLAGS -f elf -DX86_32 -DX86_32_PICASM)
+    target_compile_definitions(openh264 PRIVATE
+      X86_32_ASM
+      X86_32_PICASM
+    )
+  endif()
+  target_compile_definitions(openh264 PRIVATE
+    X86_ASM
+    HAVE_AVX2
+  )
+  # Compiled by a command of its own: yasm rejects compile options of the project, and it writes
+  # the path of the source as it is given into the object, so the path is relative to OPENH264_DIR
+  foreach(source ${OPENH264_ASM_SOURCES})
+    set(object "${CMAKE_CURRENT_BINARY_DIR}/openh264/${source}.o")
+    get_filename_component(object_dir "${object}" DIRECTORY)
+    file(MAKE_DIRECTORY "${object_dir}")
+    add_custom_command(
+      OUTPUT "${object}"
+      COMMAND "${CMAKE_ASM_NASM_COMPILER}" ${OPENH264_ASM_FLAGS} -DHAVE_AVX2
+        -Icodec/common/x86/ -o "${object}" "${source}"
+      WORKING_DIRECTORY "${OPENH264_DIR}"
+      DEPENDS
+        "${OPENH264_DIR}/${source}"
+        "${OPENH264_DIR}/codec/common/x86/asm_inc.asm"
+      VERBATIM
+    )
+    target_sources(openh264 PRIVATE "${object}")
+  endforeach()
 endif()

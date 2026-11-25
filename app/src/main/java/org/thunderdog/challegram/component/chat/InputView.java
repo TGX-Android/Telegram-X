@@ -16,9 +16,11 @@ package org.thunderdog.challegram.component.chat;
 
 import android.content.ClipDescription;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -43,6 +45,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
@@ -89,12 +92,14 @@ import org.thunderdog.challegram.helper.editable.EditableHelper;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.LocaleChanger;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
@@ -109,8 +114,10 @@ import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ExternalEmojiFilter;
 import org.thunderdog.challegram.util.FinalNewLineFilter;
 import org.thunderdog.challegram.util.TextSelection;
+import org.thunderdog.challegram.util.text.RippleDrawable;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.TextEntityMessage;
 import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
 import org.thunderdog.challegram.widget.InputWrapperWrapper;
 import org.thunderdog.challegram.widget.NoClipEditText;
@@ -120,12 +127,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.text.CodePointCountFilter;
+import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -149,7 +159,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   // TODO: get rid of chat-related logic inside of InputView
   private @Nullable MessagesController controller;
-  private boolean ignoreDraft;
 
   private String suffix = "", prefix = "", displaySuffix = "";
   private int prefixWidth, suffixWidth;
@@ -230,6 +239,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         @Override
         public boolean onCreateActionMode (ActionMode actionMode, Menu menu) {
           currentActionMode = actionMode;
+          actionModeId++;
           return true;
         }
 
@@ -257,6 +267,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       @Override
       public boolean onCreateActionMode (ActionMode mode, Menu menu) {
         currentActionMode = mode;
+        actionModeId++;
+        isSelectionModePending = false;
+        removeCallbacks(selectionModeTimeout);
         if (!Config.USE_CUSTOM_INPUT_STYLING) {
           return true;
         }
@@ -405,7 +418,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       clearSpans(selection.start, selection.end);
       return true;
     } else if (id == R.id.btn_quote) {
-      type = new TdApi.TextEntityTypeBlockQuote();
+      type = Config.INPUT_QUOTE_COLLAPSED_BY_DEFAULT ?
+        new TdApi.TextEntityTypeExpandableBlockQuote() :
+        new TdApi.TextEntityTypeBlockQuote();
     } else if (id == R.id.btn_bold) {
       type = new TdApi.TextEntityTypeBold();
     } else if (id == R.id.btn_italic) {
@@ -487,7 +502,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           TdApi.TextEntityType[] textEntityTypes = TD.toEntityType(existingSpan);
           if (textEntityTypes != null) {
             for (TdApi.TextEntityType textEntityType : textEntityTypes) {
-              if (textEntityType.getConstructor() == typeForRemove.getConstructor()) {
+              // Removing monospace removes blocks of code too
+              if (textEntityType.getConstructor() == typeForRemove.getConstructor() ||
+                (Td.isMonospaceTextOrBlock(textEntityType) &&
+                  Td.isMonospaceTextOrBlock(typeForRemove)) ||
+                (TextEntityMessage.isQuote(textEntityType) &&
+                  TextEntityMessage.isQuote(typeForRemove))) {
                 needContinue = false;
                 break;
               }
@@ -530,6 +550,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (updated) {
       if (updateQuotes) {
         invalidateQuotes(true);
+      } else if (!quoteBlocks.isEmpty()) {
+        // Other styles may wrap the lines of quotes otherwise
+        rebuildQuoteBlocks();
       }
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
@@ -546,7 +569,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (end - start <= 0 || !TD.canConvertToSpan(newType)) {
       return false;
     }
-    final boolean isQuoteSpan = newType.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR;
+    final boolean isQuoteSpan = TextEntityMessage.isQuote(newType);
     Object newSpan = TD.toSpan(newType);
     Editable editable = getText();
     Object[] existingSpansArray = editable.getSpans(start, end, Object.class);
@@ -573,7 +596,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         boolean haveExactMatch = matchingStyleSpans;
         if (!haveExactMatch) {
           for (TdApi.TextEntityType existingType : existingTypes) {
-            if (Td.equalsTo(existingType, newType)) {
+            final boolean isBothQuotes = isQuoteSpan && TextEntityMessage.isQuote(existingType);
+            if (Td.equalsTo(existingType, newType) || isBothQuotes) {
               haveExactMatch = true;
               break;
             }
@@ -709,11 +733,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
     final int oldLength = getLength();
+    isQuoteTutorialArmed = true;
     boolean spansChanged = setSpanImpl(start, end, newType);
     boolean lengthChanged = oldLength != getLength();
 
     boolean selectionUpdated = false;
-    if (lengthChanged && newType.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR) {
+    if (lengthChanged && TextEntityMessage.isQuote(newType)) {
       final Editable text = getText();
       if (text != null) {
         final Object[] spans = text.getSpans(start, end, QuoteSpan.class);
@@ -731,6 +756,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
 
     if (spansChanged) {
+      // A new quote updates them itself
+      if (!TextEntityMessage.isQuote(newType) && !quoteBlocks.isEmpty()) {
+        rebuildQuoteBlocks();
+      }
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
         spanChangeListener.onSpansChanged(this);
@@ -867,11 +896,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (byUserAction && blockedText == null) {
       setTextChangedSinceChatOpened(true);
     }
+    if (byUserAction) {
+      isQuoteTutorialArmed = true;
+    }
 
     TextSelection selection = getTextSelection();
     if (controller != null) {
       inlineContext.onTextChanged(s, str, selection != null && selection.isEmpty() ? selection.start : -1);
-      controller.onInputTextChange(s, !ignoreDraft && byUserAction);
+      controller.onInputTextChange(s, byUserAction);
     } else if (inputListener != null) {
       if (inputListener.canSearchInline(InputView.this)) {
         inlineContext.onTextChanged(s, str, selection != null && selection.isEmpty() ? selection.start : -1);
@@ -1193,6 +1225,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.DraftMessageContent forceDraft, @Nullable String customInputField, boolean isSilent) {
     textChangedSinceChatOpened = false;
+    isQuoteTutorialArmed = false;
     updateMessageHint(chat, messageThread, customInputField, isSilent);
     setDraft(forceDraft != null ? forceDraft : !tdlib.canSendBasicMessage(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
@@ -1289,7 +1322,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     String current = getInput().trim();
     controller.setInputVisible(true, current.length() > 0);
     if (!draft.equals(current)) {
-      ignoreDraft = true;
       setInput(draft, draft.length() > 0, false);
       controller.updateSendButton(draft.toString(), false);
     }
@@ -1303,10 +1335,39 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     this.isSettingText = true;
     this.settingByUserAction = byUserAction;
     setText(text);
+    if (text instanceof Spanned spanned) {
+      restoreSpans(spanned);
+      if (byUserAction && spanChangeListener != null) {
+        spanChangeListener.onSpansChanged(this);
+      }
+    }
     if (moveCursor) {
       setSelection(text != null ? text.length() : 0);
     }
     this.isSettingText = false;
+  }
+
+  private void restoreSpans (Spanned text) {
+    // EmojiFilter cuts spans that go past an emoji, e.g. a quote, at its end
+    final Editable editable = getText();
+    if (editable == null || !TextUtils.equals(editable, text)) {
+      return;
+    }
+    boolean restoredQuote = false;
+    for (Object span : text.getSpans(0, text.length(), Object.class)) {
+      final int start = editable.getSpanStart(span);
+      final int end = editable.getSpanEnd(span);
+      final int textStart = text.getSpanStart(span);
+      final int textEnd = text.getSpanEnd(span);
+      if (start != -1 && (start != textStart || end != textEnd)) {
+        editable.setSpan(span, textStart, textEnd, text.getSpanFlags(span));
+        restoredQuote |= QuoteSpan.isQuoteSpan(span);
+      }
+    }
+    if (restoredQuote) {
+      invalidateQuotes(true);
+      resetFontMetricsCache();
+    }
   }
 
   public String getInput () {
@@ -1397,12 +1458,19 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       } else {
         s = -1;
       }
+      if (quoteButtonRipple != null) {
+        final int saveCount = Views.save(c);
+        c.translate(getPaddingLeft(), getPaddingTop());
+        quoteButtonRipple.draw(c);
+        Views.restore(c, saveCount);
+      }
       for (int i = 0; i < quoteBlocks.size(); ++i) {
         quoteBlocks.get(i).draw(c, getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingLeft() - getPaddingRight());
       }
       if (needSave) {
         Views.restore(c, s);
       }
+      checkQuoteTutorial();
     }
 
     super.onDraw(c);
@@ -1548,6 +1616,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         } else {
           return false;
         }
+        Uri uri = Uri.parse(inputContentInfo.getContentUri().toString());
+        if (U.isInternalUri(uri)) {
+          return false;
+        }
 
         // read and display inputContentInfo asynchronously
         boolean needPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1 && (flags &
@@ -1559,7 +1631,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             return false; // return false if failed
           }
         }
-        Uri uri = inputContentInfo.getContentUri();
         long timestamp = System.currentTimeMillis();
         MessagesController.ReplyInfo replyInfo = controller.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
@@ -1665,7 +1736,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         new ExternalEmojiFilter(),
         new CodePointCountFilter(maxCodePointCount),
         new EmojiFilter(this),
-        new CharacterStyleFilter(true),
+        newStyleFilter(),
         new FinalNewLineFilter(this)
       });
     } else {
@@ -1673,10 +1744,21 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         new PreserveCustomEmojiFilter(),
         new ExternalEmojiFilter(),
         new EmojiFilter(this),
-        new CharacterStyleFilter(true),
+        newStyleFilter(),
         new FinalNewLineFilter(this)
       });
     }
+  }
+
+  private InputFilter newStyleFilter () {
+    return new CharacterStyleFilter(true) {
+      @Override
+      protected boolean shouldRemoveSpan (Spanned spanned, Object span) {
+        // A message or a draft keeps its own links, the guard is for pastes
+        return super.shouldRemoveSpan(spanned, span) &&
+          !(isSettingText && TD.canConvertToEntityType(span));
+      }
+    };
   }
 
   public final void setNoPersonalizedLearning (boolean noPersonalizedLearning) {
@@ -1694,6 +1776,34 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   // Android-related workarounds
+
+  @Override
+  public boolean dispatchTouchEvent (MotionEvent event) {
+    // A selection by touch gets its handles and toolbar after the lift, see isCoveredBySelection
+    switch (event.getActionMasked()) {
+      case MotionEvent.ACTION_DOWN:
+        isFieldTouchDown = true;
+        removeCallbacks(selectionModeTimeout);
+        break;
+      case MotionEvent.ACTION_UP:
+      case MotionEvent.ACTION_CANCEL:
+        isFieldTouchDown = false;
+        isSelectionModePending = hasSelection() && currentActionMode == null;
+        if (isSelectionModePending) {
+          // At most the timeout of text classification: a scroll may start no action mode
+          postDelayed(selectionModeTimeout, 1000);
+        }
+        if (isQuoteTutorialArmed) {
+          invalidate();
+        }
+        break;
+    }
+    // Before the listeners of touches of the field, e.g. the one that closes the formatting panel
+    if (onQuoteButtonTouchEvent(event)) {
+      return true;
+    }
+    return super.dispatchTouchEvent(event);
+  }
 
   @Override
   public boolean onTouchEvent (MotionEvent event) {
@@ -1728,6 +1838,28 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     super.onAttachedToWindow();
     invalidateQuotes(false);
     doBugfix();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    if (quoteHint != null) {
+      quoteHint.hideNow();
+    }
+  }
+
+  @Override
+  protected void onFocusChanged (boolean focused, int direction, @Nullable Rect previousRect) {
+    super.onFocusChanged(focused, direction, previousRect);
+    if (!focused) {
+      isQuoteTutorialArmed = false;
+    }
+  }
+
+  @Override
+  protected void onScrollChanged (int horiz, int vert, int oldHoriz, int oldVert) {
+    super.onScrollChanged(horiz, vert, oldHoriz, oldVert);
+    updateQuoteHint();
   }
 
   @Override
@@ -1795,25 +1927,404 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private ArrayList<QuoteSpan.Block> quoteBlocks = new ArrayList<>();
   private int lastText2Length;
+  private int lastQuotesLayoutWidth;
   private int quoteUpdatesTries;
   private boolean[] quoteUpdateLayout;
+  private @Nullable ThemeDelegate forcedTheme;
+
+  public void setForcedTheme (@Nullable ThemeDelegate theme) {
+    this.forcedTheme = theme;
+    invalidateQuotes(true);
+    invalidate();
+  }
+
+  private boolean isOverMedia;
+
+  public void setOverMedia (boolean isOverMedia) {
+    // Its quotes are white, readable on any photo
+    if (this.isOverMedia == isOverMedia) {
+      return;
+    }
+    this.isOverMedia = isOverMedia;
+    invalidateQuotes(true);
+    if (!quoteBlocks.isEmpty()) {
+      // Text already drawn takes the new color of its spans only with a new layout
+      resetFontMetricsCache();
+    }
+    invalidate();
+  }
 
   public void invalidateQuotes(boolean force) {
     int newTextLength = (getLayout() == null || getLayout().getText() == null) ? 0 : getLayout().getText().length();
-    if (force || lastText2Length != newTextLength) {
+    int newLayoutWidth = getLayout() != null ? getLayout().getWidth() : 0;
+    if (force || lastText2Length != newTextLength || lastQuotesLayoutWidth != newLayoutWidth) {
       quoteUpdatesTries = 2;
       lastText2Length = newTextLength;
+      lastQuotesLayoutWidth = newLayoutWidth;
     }
     if (quoteUpdatesTries > 0) {
-      if (quoteUpdateLayout == null) {
-        quoteUpdateLayout = new boolean[1];
-      }
-      quoteUpdateLayout[0] = false;
-      quoteBlocks = QuoteSpan.updateQuoteBlocks(getLayout(), quoteBlocks, quoteUpdateLayout);
-      if (quoteUpdateLayout[0]) {
-        resetFontMetricsCache();
-      }
+      updateQuoteBlocks();
       quoteUpdatesTries--;
+    }
+  }
+
+  private boolean updateQuoteBlocks () {
+    if (quoteUpdateLayout == null) {
+      quoteUpdateLayout = new boolean[1];
+    }
+    quoteUpdateLayout[0] = false;
+    quoteBlocks = QuoteSpan.updateQuoteBlocks(getLayout(), quoteBlocks, quoteUpdateLayout);
+    // Null while the constructor of TextView sets the text
+    final int blockCount = quoteBlocks != null ? quoteBlocks.size() : 0;
+    for (int i = 0; i < blockCount; i++) {
+      quoteBlocks.get(i).span.setColorTheme(forcedTheme, isOverMedia);
+    }
+    updateQuoteHint();
+    if (quoteUpdateLayout[0]) {
+      resetFontMetricsCache();
+      return true;
+    }
+    return false;
+  }
+
+  private void rebuildQuoteBlocks () {
+    // Once now, and once more on the layout that new heights of lines of quotes request
+    if (updateQuoteBlocks()) {
+      quoteUpdatesTries = Math.max(quoteUpdatesTries, 1);
+    }
+  }
+
+  private @Nullable RippleDrawable quoteButtonRipple;
+  private boolean isQuoteButtonTouch;
+  private @Nullable QuoteSpan pressedQuote;
+  private @Nullable MotionEvent quoteButtonDown;
+
+  private @Nullable QuoteSpan.Block findQuoteButton (float x, float y) {
+    for (int i = 0; i < quoteBlocks.size(); i++) {
+      final QuoteSpan.Block block = quoteBlocks.get(i);
+      if (block.isButtonHit(x, y)) {
+        return block;
+      }
+    }
+    return null;
+  }
+
+  private boolean onQuoteButtonTouchEvent (MotionEvent e) {
+    final int action = e.getActionMasked();
+    if (action == MotionEvent.ACTION_DOWN) {
+      resetQuoteButtonTouch();
+    } else if (!isQuoteButtonTouch) {
+      return false;
+    }
+    final float x = e.getX() - getPaddingLeft() + getScrollX();
+    final float y = e.getY() - getPaddingTop() + getScrollY();
+    final QuoteSpan.Block block = findQuoteButton(x, y);
+    switch (action) {
+      case MotionEvent.ACTION_DOWN: {
+        if (block == null || !isEnabled()) {
+          return false;
+        }
+        isQuoteButtonTouch = true;
+        pressedQuote = block.span;
+        quoteButtonDown = MotionEvent.obtain(e);
+        if (quoteButtonRipple == null) {
+          quoteButtonRipple = new RippleDrawable();
+          quoteButtonRipple.setViewProvider(new SingleViewProvider(this) {
+            @Override
+            public void invalidate (Rect dirty) {
+              // The ripple is in coordinates of the text, not of the view
+              invalidate();
+            }
+          });
+        }
+        block.setButtonRipple(quoteButtonRipple);
+        final Rect bounds = quoteButtonRipple.bounds;
+        quoteButtonRipple.press((int) x - bounds.left, (int) y - bounds.top);
+        break;
+      }
+      case MotionEvent.ACTION_POINTER_DOWN: {
+        // Another finger ends the press: no switch and no scroll until all are lifted
+        if (quoteButtonRipple != null) {
+          quoteButtonRipple.performCancelTouch();
+        }
+        pressedQuote = null;
+        break;
+      }
+      case MotionEvent.ACTION_MOVE: {
+        if (pressedQuote == null) {
+          break;
+        }
+        final float distance = Math.max(
+          Math.abs(e.getX() - quoteButtonDown.getX()),
+          Math.abs(e.getY() - quoteButtonDown.getY())
+        );
+        if (distance > ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
+          // A drag scrolls the field as it would from any other place
+          final MotionEvent down = quoteButtonDown;
+          quoteButtonDown = null;
+          resetQuoteButtonTouch();
+          super.dispatchTouchEvent(down);
+          down.recycle();
+          return false;
+        }
+        break;
+      }
+      case MotionEvent.ACTION_UP: {
+        if (block != null && block.span == pressedQuote) {
+          ViewUtils.onClick(this);
+          quoteButtonRipple.performClick(this);
+          toggleQuote(block.span);
+          // Found by the user before the tutorial
+          if (Settings.instance().needTutorial(Settings.TUTORIAL_INPUT_QUOTE_BUTTON)) {
+            Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_INPUT_QUOTE_BUTTON);
+          }
+          showQuoteHint(block.span, false);
+        }
+        resetQuoteButtonTouch();
+        break;
+      }
+      case MotionEvent.ACTION_CANCEL: {
+        resetQuoteButtonTouch();
+        break;
+      }
+    }
+    return true;
+  }
+
+  private void resetQuoteButtonTouch () {
+    if (quoteButtonRipple != null) {
+      quoteButtonRipple.performCancelTouch();
+    }
+    if (quoteButtonDown != null) {
+      quoteButtonDown.recycle();
+      quoteButtonDown = null;
+    }
+    pressedQuote = null;
+    isQuoteButtonTouch = false;
+  }
+
+  private @Nullable TooltipOverlayView.TooltipInfo quoteHint;
+  private @Nullable QuoteSpan quoteHintSpan;
+
+  private void updateQuoteHint () {
+    // Follows its chevron, and goes with it or when it's out of sight; not before a new layout
+    if (quoteHint == null || !quoteHint.isVisible() || getLayout() == null) {
+      return;
+    }
+    final int blockCount = quoteBlocks != null ? quoteBlocks.size() : 0;
+    for (int i = 0; i < blockCount; i++) {
+      final QuoteSpan.Block block = quoteBlocks.get(i);
+      if (block.span == quoteHintSpan && block.hasButton()) {
+        getQuoteButtonRect(block, quoteButtonRect);
+        if (getQuoteVisibleRect(quoteVisibleRect) &&
+          Rect.intersects(quoteVisibleRect, quoteButtonRect)) {
+          quoteHint.reposition();
+          return;
+        }
+        break;
+      }
+    }
+    quoteHint.hide(true);
+  }
+
+  private final Rect quoteVisibleRect = new Rect(), quoteButtonRect = new Rect();
+
+  private boolean getQuoteVisibleRect (Rect visible) {
+    // In coordinates of the scrolled text, without the paddings
+    if (!getLocalVisibleRect(visible)) {
+      return false;
+    }
+    visible.top = Math.max(visible.top, getScrollY() + getPaddingTop());
+    visible.bottom = Math.min(visible.bottom, getScrollY() + getHeight() - getPaddingBottom());
+    return true;
+  }
+
+  private void getQuoteButtonRect (QuoteSpan.Block block, Rect rect) {
+    block.getButtonBounds(rect);
+    rect.offset(getPaddingLeft(), getPaddingTop());
+  }
+
+  private boolean isQuoteTutorialPosted;
+  // Set by the user's edits until the field loses focus: a draft alone shows no tutorial
+  private boolean isQuoteTutorialArmed;
+
+  private void checkQuoteTutorial () {
+    // Once, for the first chevron seen while the user edits
+    if (isQuoteTutorialPosted || !isQuoteTutorialArmed ||
+      !Settings.instance().needTutorial(Settings.TUTORIAL_INPUT_QUOTE_BUTTON) ||
+      findSeenQuoteButton() == null) {
+      return;
+    }
+    // Not while the field draws
+    isQuoteTutorialPosted = true;
+    post(() -> {
+      isQuoteTutorialPosted = false;
+      final QuoteSpan quote = findSeenQuoteButton();
+      if (quote != null && isQuoteTutorialArmed &&
+        Settings.instance().needTutorial(Settings.TUTORIAL_INPUT_QUOTE_BUTTON)) {
+        Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_INPUT_QUOTE_BUTTON);
+        showQuoteHint(quote, true);
+      }
+    });
+  }
+
+  private @Nullable QuoteSpan findSeenQuoteButton () {
+    if (!isEnabled() || !isShown() || !isFocused() || !hasWindowFocus() ||
+      !getQuoteVisibleRect(quoteVisibleRect)) {
+      return null;
+    }
+    for (int i = 0; i < quoteBlocks.size(); i++) {
+      final QuoteSpan.Block block = quoteBlocks.get(i);
+      if (block.hasButton()) {
+        getQuoteButtonRect(block, quoteButtonRect);
+        if (quoteVisibleRect.contains(quoteButtonRect) &&
+          !(hasSelection() && isCoveredBySelection(quoteButtonRect))) {
+          return block.span;
+        }
+      }
+    }
+    return null;
+  }
+
+  private boolean isSelectionHandleSizeKnown;
+  private int selectionHandleWidth, selectionHandleHeight;
+  private final int[] quoteTutorialLocation = new int[2];
+  private final Rect selectionCoverRect = new Rect(), visibleFrame = new Rect();
+  // What the visible frame was read for
+  private int visibleFrameModeId = -1, visibleFrameViewTop, visibleFrameRootWidth;
+  private int visibleFrameRootHeight;
+  private int actionModeId;
+  private boolean isFieldTouchDown, isSelectionModePending;
+  private final Runnable selectionModeTimeout = () -> {
+    isSelectionModePending = false;
+    if (isQuoteTutorialArmed) {
+      invalidate();
+    }
+  };
+
+  private boolean isCoveredBySelection (Rect button) {
+    // Handles and the toolbar exist only with the action mode, which making a quote ends; a
+    // selection by touch gets it only after the lift
+    final Layout layout = getLayout();
+    if (layout == null) {
+      return true;
+    }
+    if (currentActionMode == null) {
+      return isFieldTouchDown || isSelectionModePending;
+    }
+    if (!isSelectionHandleSizeKnown) {
+      final TypedArray handles = getContext().obtainStyledAttributes(new int[] {
+        android.R.attr.textSelectHandleRight
+      });
+      final Drawable handle = handles.getDrawable(0);
+      handles.recycle();
+      final boolean hasSize = handle != null && handle.getIntrinsicWidth() > 0 &&
+        handle.getIntrinsicHeight() > 0;
+      selectionHandleWidth = hasSize ? handle.getIntrinsicWidth() : Screen.dp(24f);
+      selectionHandleHeight = hasSize ? handle.getIntrinsicHeight() : Screen.dp(24f);
+      isSelectionHandleSizeKnown = true;
+    }
+    // Below the lines of both ends, where Editor puts them, on either side of the point
+    final Rect rect = selectionCoverRect;
+    for (int i = 0; i < 2; i++) {
+      final boolean isStart = i == 0;
+      final int offset = isStart ? getSelectionStart() : getSelectionEnd();
+      final int line = layout.getLineForOffset(offset);
+      final boolean isRtlChar = layout.isRtlCharAt(isStart ? offset : Math.max(offset - 1, 0));
+      final boolean isRtlParagraph = layout.getParagraphDirection(line) == Layout.DIR_RIGHT_TO_LEFT;
+      final float horizontal = isRtlChar == isRtlParagraph ?
+        layout.getPrimaryHorizontal(offset) :
+        layout.getSecondaryHorizontal(offset);
+      final int x = getPaddingLeft() + Math.round(horizontal);
+      final int y = getPaddingTop() + layout.getLineBottom(line);
+      rect.set(x - selectionHandleWidth, y, x + selectionHandleWidth, y + selectionHandleHeight);
+      if (Rect.intersects(rect, button)) {
+        return true;
+      }
+    }
+    // The floating toolbar, unless the formatting panel hides its items
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && actionModeVisibility &&
+      currentActionMode.getType() == ActionMode.TYPE_FLOATING) {
+      getLocationOnScreen(quoteTutorialLocation);
+      final int viewTop = quoteTutorialLocation[1];
+      final int textTop = viewTop + getPaddingTop() - getScrollY();
+      final int start = Math.min(getSelectionStart(), getSelectionEnd());
+      final int end = Math.max(getSelectionStart(), getSelectionEnd());
+      final int contentBottom = textTop + selectionHandleHeight +
+        layout.getLineBottom(layout.getLineForOffset(end));
+      int contentTop = textTop + layout.getLineTop(layout.getLineForOffset(start));
+      if (contentBottom < viewTop || contentTop > viewTop + getHeight()) {
+        // Hidden while the selection is out of the field
+        return false;
+      }
+      // Clamped to the field, as FloatingActionMode does
+      contentTop = Math.max(contentTop, viewTop);
+      // A binder call before Android 12: again only for a new mode, field place or window size
+      final View root = getRootView();
+      if (visibleFrameModeId != actionModeId || visibleFrameViewTop != viewTop ||
+        visibleFrameRootWidth != root.getWidth() || visibleFrameRootHeight != root.getHeight()) {
+        getWindowVisibleDisplayFrame(visibleFrame);
+        visibleFrameModeId = actionModeId;
+        visibleFrameViewTop = viewTop;
+        visibleFrameRootWidth = root.getWidth();
+        visibleFrameRootHeight = root.getHeight();
+      }
+      // With an overflow, as on phones: above the selection if 184dp fit, or 64dp with 120dp below
+      // its top; anywhere else it counts as covering
+      final int toolbarHeight = Screen.dp(64f);
+      final int above = contentTop - visibleFrame.top;
+      final boolean isAbove = above >= Screen.dp(184f) ||
+        (above >= toolbarHeight && visibleFrame.bottom - contentTop >= Screen.dp(120f));
+      if (!isAbove) {
+        return true;
+      }
+      final int buttonTop = textTop + button.top - getPaddingTop();
+      final int buttonBottom = textTop + button.bottom - getPaddingTop();
+      return buttonBottom > contentTop - toolbarHeight && buttonTop < contentTop;
+    }
+    return false;
+  }
+
+  private void showQuoteHint (QuoteSpan quote, boolean isTutorial) {
+    quoteHintSpan = quote;
+    final String text = Lang.getString(quote.isExpandable() ?
+      (isTutorial ? R.string.InputQuoteCollapsedTutorial : R.string.InputQuoteCollapsedHint) :
+      (isTutorial ? R.string.InputQuoteExpandedTutorial : R.string.InputQuoteExpandedHint)
+    );
+    if (quoteHint != null) {
+      quoteHint.hide(true);
+    }
+    // Hidden with its screen, unless the screen has no focus, as popups, for which it would wait
+    final ViewController<?> screen = boundController.getParentOrSelf();
+    final TooltipOverlayView tooltips = UI.getContext(getContext()).tooltipManager();
+    final TooltipOverlayView.TooltipInfo hint = tooltips
+      .builder(this)
+      .color(tooltips.overrideColorProvider(forcedTheme))
+      .locate((targetView, rect) -> {
+        for (int i = 0; i < quoteBlocks.size(); i++) {
+          final QuoteSpan.Block block = quoteBlocks.get(i);
+          if (block.span == quoteHintSpan) {
+            block.getButtonBounds(rect);
+            rect.offset(getPaddingLeft() - getScrollX(), getPaddingTop() - getScrollY());
+            break;
+          }
+        }
+      })
+      .icon(R.drawable.baseline_info_24)
+      .controller(screen.isFocused() ? screen : null)
+      .show(tdlib, text);
+    // The tutorial is longer to read
+    quoteHint = isTutorial ? hint.hideDelayed(4, TimeUnit.SECONDS) : hint.hideDelayed();
+  }
+
+  private void toggleQuote (QuoteSpan quote) {
+    quote.toggleExpandable(this);
+    // At the tap: the layout is current, unlike right after a change of the text
+    rebuildQuoteBlocks();
+    invalidate();
+    setTextChangedSinceChatOpened(true);
+    if (spanChangeListener != null) {
+      spanChangeListener.onSpansChanged(this);
     }
   }
 

@@ -15,13 +15,20 @@
 #include <log.h>
 #include <libyuv.h>
 #include <android/bitmap.h>
+#include <atomic>
 #include <cstdint>
 #include <limits>
 #include <string>
 #include <utility>
-#include <rlottie.h>
+#include <vector>
+#include <tlottie.h>
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavutil/cpu.h>
 #include <libavutil/eval.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
@@ -30,15 +37,295 @@ extern "C" {
 }
 
 #include <lz4.h>
+#include <malloc.h>
 #include <unistd.h>
 #include <pthread.h>
 
 #include "bridge.h"
 
 #define MAX_GIF_SIZE 920
+// The limit of Telegram for Android
+#define MAX_ANIMATION_SIDE 3840
+// So that differences of timestamps don't overflow
+#define MAX_TIMESTAMP_MS ((double) std::numeric_limits<int32_t>::max())
+#define MAX_FRAME_RATE 1000.0
+#define MAX_PROBED_PACKETS 64
+// Each thread keeps frames of its own
+#define MAX_DECODER_THREADS 6
+// Valid files give a frame within a few packets of video, packets that an edit list drops count
+// only in the second limit
+#define MAX_VIDEO_PACKETS_WITHOUT_FRAME 64
+#define MAX_PACKETS_WITHOUT_FRAME 1024
+#define ANIMATION_CODECS "h264,mpeg4,gif,libvpx-vp9"
+// Telegram makes them only as WebM of VP9
+#define VIDEO_STICKER_CODECS "libvpx-vp9"
+#define VIDEO_STICKER_FORMATS "matroska"
+// As many as files of cameras and editors have
+#define MAX_ANIMATION_STREAMS 16
+// Indexes of ~500K samples of MP4
+#define MAX_DECODER_MEMORY ((int64_t) 32 * 1024 * 1024)
+// Smaller blocks are never refused: FFmpeg doesn't check them all
+#define MIN_REFUSED_BLOCK (64 * 1024)
 #define BITMAP_TARGET_FORMAT AV_PIX_FMT_RGBA
-#define LOTTIE_CACHE_MAGIC 0xf0ebaef1
-#define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef2
+// Changed with each update that affects cache contents
+// Updates: tlottie, frame-0-fix
+#define LOTTIE_CACHE_MAGIC 0xf0ebaef5
+#define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef6
+
+// Blocks of the decoder's thread: all outside codec calls, and those of av_realloc in them
+struct DecoderMemory {
+  std::atomic<int64_t> used{0};
+  // The decoder and its blocks not freed yet
+  std::atomic<int> references{1};
+
+  bool take (int64_t bytes, int64_t blockSize) {
+    int64_t current = used.load();
+    do {
+      if (blockSize >= MIN_REFUSED_BLOCK && bytes > MAX_DECODER_MEMORY - current) {
+        return false;
+      }
+    } while (!used.compare_exchange_weak(current, current + bytes));
+    return true;
+  }
+
+  void release () {
+    if (references.fetch_sub(1) == 1) {
+      delete this;
+    }
+  }
+};
+
+struct BlockHeaderSecrets {
+  uintptr_t memory;
+  uint64_t check;
+};
+
+static const BlockHeaderSecrets &blockHeaderSecrets () {
+  static const BlockHeaderSecrets secrets = [] {
+    BlockHeaderSecrets made {};
+    arc4random_buf(&made, sizeof(made));
+    return made;
+  }();
+  return secrets;
+}
+
+static uint64_t mixBits (uint64_t x) {
+  x = (x ^ (x >> 33)) * 0xff51afd7ed558ccdULL;
+  x = (x ^ (x >> 33)) * 0xc4ceb9fe1a85ec53ULL;
+  return x ^ (x >> 33);
+}
+
+static thread_local int decodedMaxSide = 0;
+static thread_local DecoderMemory *decodedMemory = nullptr;
+// Checked as headers are: variables of threads are on the heap before Android 10
+static thread_local uint32_t decodedMemoryCheck = 0;
+// Codec calls, also those of probing inside FFmpeg, as they are wrapped at link time
+static thread_local int codecCalls = 0;
+
+static uint32_t decoderMemoryCheck (DecoderMemory *memory) {
+  return (uint32_t) mixBits(~blockHeaderSecrets().check ^ reinterpret_cast<uintptr_t>(memory));
+}
+
+static DecoderMemory *checkedDecodedMemory () {
+  DecoderMemory *memory = decodedMemory;
+  if (memory != nullptr && decodedMemoryCheck != decoderMemoryCheck(memory)) {
+    abort();
+  }
+  return memory;
+}
+
+class DecodedBy {
+ public:
+  DecodedBy (int maxSide, DecoderMemory *memory) :
+    previousMaxSide(decodedMaxSide), previousMemory(checkedDecodedMemory()) {
+    decodedMaxSide = maxSide;
+    decodedMemory = memory;
+    decodedMemoryCheck = decoderMemoryCheck(memory);
+  }
+  ~DecodedBy () {
+    decodedMaxSide = previousMaxSide;
+    decodedMemory = previousMemory;
+    decodedMemoryCheck = decoderMemoryCheck(previousMemory);
+  }
+  DecodedBy (const DecodedBy &) = delete;
+  DecodedBy &operator= (const DecodedBy &) = delete;
+ private:
+  const int previousMaxSide;
+  DecoderMemory *const previousMemory;
+};
+
+// The alignment of av_malloc, which the header takes
+#if defined(__i386__) || defined(__x86_64__)
+#define FFMPEG_ALIGNMENT 64
+#else
+#define FFMPEG_ALIGNMENT 16
+#endif
+
+struct BlockHeader {
+  DecoderMemory *memory;
+  int64_t size;
+};
+
+// The decoder hidden by a secret, and a keyed check of the header and its place, as scudo's
+struct StoredBlockHeader {
+  uintptr_t memory;
+  uint32_t size;
+  uint32_t check;
+};
+static_assert(sizeof(StoredBlockHeader) <= FFMPEG_ALIGNMENT, "the header within the alignment");
+
+static uint32_t blockHeaderCheck (const void *base, uintptr_t memory, uint32_t size) {
+  uint64_t x = mixBits(blockHeaderSecrets().check ^ (uint64_t) memory);
+  x = mixBits(x ^ (uint64_t) reinterpret_cast<uintptr_t>(base));
+  x = mixBits(x ^ size);
+  return (uint32_t) (x ^ (x >> 32));
+}
+
+static BlockHeader readBlockHeader (void *block) {
+  uint8_t *place = static_cast<uint8_t *>(block) - sizeof(StoredBlockHeader);
+  StoredBlockHeader stored {};
+  memcpy(&stored, place, sizeof(stored));
+  if (stored.check != blockHeaderCheck(place, stored.memory, stored.size)) {
+    abort();
+  }
+  return BlockHeader {
+    reinterpret_cast<DecoderMemory *>(stored.memory ^ blockHeaderSecrets().memory),
+    (int64_t) stored.size
+  };
+}
+
+static void *writeBlockHeader (void *base, DecoderMemory *memory, int64_t size) {
+  StoredBlockHeader stored {};
+  stored.memory = reinterpret_cast<uintptr_t>(memory) ^ blockHeaderSecrets().memory;
+  stored.size = (uint32_t) size;
+  uint8_t *block = static_cast<uint8_t *>(base) + FFMPEG_ALIGNMENT;
+  // Right before the block, where any write before it lands first
+  uint8_t *place = block - sizeof(StoredBlockHeader);
+  stored.check = blockHeaderCheck(place, stored.memory, stored.size);
+  memcpy(place, &stored, sizeof(stored));
+  return block;
+}
+
+extern "C" void *tgx_ff_malloc (size_t size) {
+  // All blocks of FFmpeg, built with --malloc-prefix=tgx_ff_
+  if (size > std::numeric_limits<uint32_t>::max() - FFMPEG_ALIGNMENT) {
+    return nullptr;
+  }
+  const size_t blockSize = size + FFMPEG_ALIGNMENT;
+  DecoderMemory *memory = codecCalls == 0 ? checkedDecodedMemory() : nullptr;
+  if (memory != nullptr && !memory->take((int64_t) blockSize, (int64_t) blockSize)) {
+    return nullptr;
+  }
+#if __ANDROID_API__ >= 17
+  void *base = nullptr;
+  if (posix_memalign(&base, FFMPEG_ALIGNMENT, blockSize) != 0) {
+    base = nullptr;
+  }
+#else
+  void *base = memalign(FFMPEG_ALIGNMENT, blockSize);
+#endif
+  if (base == nullptr) {
+    if (memory != nullptr) {
+      memory->used -= (int64_t) blockSize;
+    }
+    return nullptr;
+  }
+  if (memory != nullptr) {
+    memory->references++;
+  }
+  return writeBlockHeader(base, memory, (int64_t) blockSize);
+}
+
+extern "C" void *tgx_ff_realloc (void *block, size_t size) {
+  if (size > std::numeric_limits<uint32_t>::max() - FFMPEG_ALIGNMENT) {
+    return nullptr;
+  }
+  const BlockHeader header = block != nullptr ? readBlockHeader(block) : BlockHeader {};
+  DecoderMemory *memory = header.memory != nullptr ? header.memory : checkedDecodedMemory();
+  const int64_t blockSize = (int64_t) (size + FFMPEG_ALIGNMENT);
+  const int64_t more = blockSize - (header.memory != nullptr ? header.size : 0);
+  if (memory != nullptr && more > 0 && !memory->take(more, blockSize)) {
+    return nullptr;
+  }
+  uint8_t *previous = block != nullptr ? static_cast<uint8_t *>(block) - FFMPEG_ALIGNMENT : nullptr;
+  void *base = realloc(previous, (size_t) blockSize);
+  if (base == nullptr) {
+    if (memory != nullptr && more > 0) {
+      memory->used -= more;
+    }
+    return nullptr;
+  }
+  if (memory != nullptr) {
+    if (more < 0) {
+      memory->used += more;
+    }
+    if (header.memory == nullptr) {
+      memory->references++;
+    }
+  }
+  return writeBlockHeader(base, memory, blockSize);
+}
+
+extern "C" void tgx_ff_free (void *block) {
+  if (block == nullptr) {
+    return;
+  }
+  const BlockHeader header = readBlockHeader(block);
+  free(static_cast<uint8_t *>(block) - FFMPEG_ALIGNMENT);
+  if (header.memory != nullptr) {
+    header.memory->used -= header.size;
+    header.memory->release();
+  }
+}
+
+extern "C" int __real_vp9_alloc_context_buffers (void *common, int width, int height);
+
+extern "C" int __wrap_vp9_alloc_context_buffers (void *common, int width, int height) {
+  // libvpx allocates for each frame, hidden ones too, before FFmpeg checks max_pixels
+  if (decodedMaxSide > 0 && std::max(width, height) > decodedMaxSide) {
+    return 1;
+  }
+  return __real_vp9_alloc_context_buffers(common, width, height);
+}
+
+extern "C" int __real_avcodec_open2 (AVCodecContext *context, const AVCodec *codec,
+                                     AVDictionary **options);
+extern "C" int __real_avcodec_send_packet (AVCodecContext *context, const AVPacket *packet);
+extern "C" int __real_avcodec_receive_frame (AVCodecContext *context, AVFrame *frame);
+extern "C" void __real_avcodec_flush_buffers (AVCodecContext *context);
+
+class InCodecCall {
+ public:
+  InCodecCall () {
+    codecCalls++;
+  }
+  ~InCodecCall () {
+    codecCalls--;
+  }
+  InCodecCall (const InCodecCall &) = delete;
+  InCodecCall &operator= (const InCodecCall &) = delete;
+};
+
+extern "C" int __wrap_avcodec_open2 (AVCodecContext *context, const AVCodec *codec,
+                                     AVDictionary **options) {
+  InCodecCall call;
+  return __real_avcodec_open2(context, codec, options);
+}
+
+extern "C" int __wrap_avcodec_send_packet (AVCodecContext *context, const AVPacket *packet) {
+  InCodecCall call;
+  return __real_avcodec_send_packet(context, packet);
+}
+
+extern "C" int __wrap_avcodec_receive_frame (AVCodecContext *context, AVFrame *frame) {
+  InCodecCall call;
+  return __real_avcodec_receive_frame(context, frame);
+}
+
+extern "C" void __wrap_avcodec_flush_buffers (AVCodecContext *context) {
+  InCodecCall call;
+  __real_avcodec_flush_buffers(context);
+}
 
 static const std::string av_make_error_str (int errnum) {
   char errbuf[AV_ERROR_MAX_STRING_SIZE];
@@ -51,7 +338,10 @@ static const std::string av_make_error_str (int errnum) {
 
 struct LottieInfo {
   const std::string path;
-  std::unique_ptr<rlottie::Animation> animation;
+  TLottieInstance *animation = nullptr;
+  // Pixels of a frame for a bitmap of another aspect ratio or stride than the animation
+  uint32_t *frameBuffer = nullptr;
+  size_t frameBufferSize = 0;
   FILE *cacheFile = nullptr;
   uint8_t *cacheBuffer = nullptr;
   size_t cacheBufferSize = 0;
@@ -83,8 +373,58 @@ struct LottieInfo {
     if (cacheBuffer != nullptr) {
       free(cacheBuffer);
     }
+    free(frameBuffer);
+    tlottie_drop(animation);
   }
 };
+
+static bool renderLottieFrame (TLottieInstance *animation, uint32_t frameNo, void *pixels,
+                               const AndroidBitmapInfo &bitmapInfo, uint32_t **buffer,
+                               size_t *bufferSize) {
+  // Draws a frame of the animation into the pixels of a bitmap: scaled to fit it with the aspect
+  // ratio of the animation, centered on transparent pixels, as rlottie drew. tlottie draws into
+  // pixels of the size it's given without a stride, so other bitmaps take the frame from buffer
+  const uint32_t width = bitmapInfo.width;
+  const uint32_t height = bitmapInfo.height;
+  const uint32_t animationWidth = tlottie_width(animation);
+  const uint32_t animationHeight = tlottie_height(animation);
+  uint32_t fitWidth = width, fitHeight = height;
+  if (animationWidth != 0 && animationHeight != 0 &&
+      (uint64_t) width * animationHeight != (uint64_t) height * animationWidth) {
+    const float scale = std::min((float) width / (float) animationWidth,
+                                 (float) height / (float) animationHeight);
+    fitWidth = std::max(1u, (uint32_t) lroundf((float) animationWidth * scale));
+    fitHeight = std::max(1u, (uint32_t) lroundf((float) animationHeight * scale));
+  }
+  if (fitWidth == width && fitHeight == height && bitmapInfo.stride == width * 4) {
+    return tlottie_render(animation, (float) frameNo, width, height, (uint32_t *) pixels,
+                          (size_t) width * height, 1) == TLOTTIE_OK;
+  }
+  const size_t size = (size_t) fitWidth * fitHeight;
+  if (*bufferSize < size) {
+    auto *newBuffer = (uint32_t *) realloc(*buffer, size * sizeof(uint32_t));
+    if (newBuffer == nullptr) {
+      return false;
+    }
+    *buffer = newBuffer;
+    *bufferSize = size;
+  }
+  if (tlottie_render(animation, (float) frameNo, fitWidth, fitHeight, *buffer, size, 1) !=
+      TLOTTIE_OK) {
+    return false;
+  }
+  const uint32_t left = (width - fitWidth) / 2;
+  const uint32_t top = (height - fitHeight) / 2;
+  for (uint32_t y = 0; y < height; y++) {
+    auto *row = (uint32_t *) ((uint8_t *) pixels + (size_t) y * bitmapInfo.stride);
+    memset(row, 0, (size_t) width * sizeof(uint32_t));
+    if (y >= top && y < top + fitHeight) {
+      memcpy(row + left, *buffer + (size_t) (y - top) * fitWidth,
+             (size_t) fitWidth * sizeof(uint32_t));
+    }
+  }
+  return true;
+}
 
 struct VideoInfo {
 
@@ -112,22 +452,29 @@ struct VideoInfo {
       sws_freeContext(scale_ctx);
       scale_ctx = nullptr;
     }
+    sws_freeContext(frame_scale_ctx);
     if (packet != nullptr) {
       av_packet_free(&packet);
       packet = nullptr;
     }
     video_stream_idx = -1;
     video_stream = nullptr;
+    memory->release();
   }
 
+  DecoderMemory *const memory = new DecoderMemory();
   AVFormatContext *fmt_ctx = nullptr;
   int video_stream_idx = -1;
   AVStream *video_stream = nullptr;
   AVCodecContext *video_dec_ctx = nullptr;
   SwsContext *scale_ctx = nullptr;
-  int32_t dst_linesize[1];
+  SwsContext *frame_scale_ctx = nullptr;
+  int frameScaleWidth = -1, frameScaleHeight = -1;
+  AVPixelFormat frameScaleFormat = AV_PIX_FMT_NONE;
   AVFrame *frame = nullptr;
   int srcWidth = -1, srcHeight = -1;
+  int maxSide = MAX_ANIMATION_SIDE;
+  AVPixelFormat srcFormat = AV_PIX_FMT_NONE;
   int dstWidth = -1, dstHeight = -1;
   int frameRate = -1;
   bool has_decoded_frames = false;
@@ -135,13 +482,54 @@ struct VideoInfo {
   bool had_invalid_frames = false;
   bool eof_reached = false;
   bool draining = false;
+  bool has_pending_frame = false;
+  bool pending_frame_looped = false;
   size_t loop_count = 0;
   size_t drained_count = 0;
 
   AVPacket *packet = nullptr;
 };
 
-int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx, enum AVMediaType type) {
+extern "C" int __real_av_image_check_size (unsigned int width, unsigned int height,
+                                           int logOffset, void *logContext);
+
+extern "C" int __wrap_av_image_check_size (unsigned int width, unsigned int height,
+                                           int logOffset, void *logContext) {
+  // Decoders check headers by it before they allocate, but it takes no max_pixels
+  if (logContext != nullptr &&
+      *static_cast<const AVClass *const *>(logContext) == avcodec_get_class()) {
+    return av_image_check_size2(width, height,
+                                static_cast<const AVCodecContext *>(logContext)->max_pixels,
+                                AV_PIX_FMT_NONE, logOffset, logContext);
+  }
+  return __real_av_image_check_size(width, height, logOffset, logContext);
+}
+
+extern "C" int __real_av_image_check_size2 (unsigned int width, unsigned int height,
+                                            int64_t maxPixels, AVPixelFormat format,
+                                            int logOffset, void *logContext);
+
+extern "C" int __wrap_av_image_check_size2 (unsigned int width, unsigned int height,
+                                            int64_t maxPixels, AVPixelFormat format,
+                                            int logOffset, void *logContext) {
+  // Frames are allocated at the coded size, also in probing, and a pixel of H.264 takes up to 6
+  // bytes, so bytes are bounded, at 2 a pixel as of 4:2:2 of 8 bits
+  if (logContext != nullptr &&
+      *static_cast<const AVClass *const *>(logContext) == avcodec_get_class()) {
+    const auto *context = static_cast<const AVCodecContext *>(logContext);
+    if ((context->codec_id == AV_CODEC_ID_H264 || context->codec_id == AV_CODEC_ID_MPEG4) &&
+        av_image_get_buffer_size(context->pix_fmt, std::max((int) width, context->coded_width),
+                                 std::max((int) height, context->coded_height), 1) >
+        maxPixels * 2) {
+      return AVERROR(EINVAL);
+    }
+  }
+  return __real_av_image_check_size2(width, height, maxPixels, format, logOffset, logContext);
+}
+
+int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx,
+                        enum AVMediaType type, int maxSide, int64_t maxPixels,
+                        const char *codecs) {
   int ret;
   AVStream *st;
   AVDictionary *opts = nullptr;
@@ -153,6 +541,13 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
   } else {
     *stream_idx = ret;
     st = fmt_ctx->streams[*stream_idx];
+
+    const int width = st->codecpar->width;
+    const int height = st->codecpar->height;
+    if (width <= 0 || height <= 0 || std::max(width, height) > maxSide) {
+      loge(TAG_GIF_LOADER, "can't play %dx%d", width, height);
+      return -1;
+    }
 
     const AVCodec *dec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!dec) {
@@ -172,7 +567,8 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
     }
 
     auto context = *dec_ctx;
-    context->thread_count = 0;
+    context->max_pixels = maxPixels;
+    context->thread_count = std::max(1, std::min(av_cpu_count(), MAX_DECODER_THREADS));
     if (dec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
       context->thread_type = FF_THREAD_FRAME;
     } else if (dec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
@@ -182,7 +578,11 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
     }
 
     av_dict_set(&opts, "refcounted_frames", "1", 0);
-    if ((ret = avcodec_open2(*dec_ctx, dec, &opts)) < 0) {
+    av_dict_set(&opts, "codec_whitelist", codecs, 0);
+    av_dict_set(&opts, "export_side_data", "film_grain", 0);
+    ret = avcodec_open2(*dec_ctx, dec, &opts);
+    av_dict_free(&opts);
+    if (ret < 0) {
       loge(TAG_GIF_LOADER, "failed to open %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
       return -1;
     }
@@ -191,25 +591,64 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
   return 0;
 }
 
-JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaTimestamp) {
+static SwsContext *getScaleContext (int srcWidth, int srcHeight, AVPixelFormat srcFormat,
+                                    int dstWidth, int dstHeight) {
+  const int flags =
+    srcWidth == dstWidth && srcHeight == dstHeight ? SWS_FAST_BILINEAR : SWS_BILINEAR;
+  return sws_getContext(srcWidth, srcHeight, srcFormat, dstWidth, dstHeight,
+                        BITMAP_TARGET_FORMAT, flags, nullptr, nullptr, nullptr);
+}
+
+JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaTimestamp,
+         jint maxSourceSize) {
+  const int maxSide = maxSourceSize > 0 ? std::min((int) maxSourceSize, MAX_ANIMATION_SIDE) :
+    MAX_ANIMATION_SIDE;
+  // Decoders align frames to blocks of up to 64 pixels
+  const int64_t maxPixels = (int64_t) FFALIGN(maxSide, 64) * FFALIGN(maxSide, 64);
+  const char *codecs = maxSourceSize > 0 ? VIDEO_STICKER_CODECS : ANIMATION_CODECS;
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
+  info->maxSide = maxSide;
+  DecodedBy decoded(maxSide, info->memory);
 
   int ret;
-  if ((ret = avformat_open_input(&info->fmt_ctx, info->path.c_str(), nullptr, nullptr)) < 0) {
+  AVDictionary *options = nullptr;
+  av_dict_set(&options, "codec_whitelist", codecs, 0);
+  av_dict_set_int(&options, "max_streams", MAX_ANIMATION_STREAMS, 0);
+  av_dict_set_int(&options, "max_probe_packets", MAX_PROBED_PACKETS, 0);
+  // A few bytes of an index give millions of packets
+  av_dict_set(&options, "fflags", "+nobuffer", 0);
+  if (maxSourceSize > 0) {
+    av_dict_set(&options, "format_whitelist", VIDEO_STICKER_FORMATS, 0);
+  }
+  ret = avformat_open_input(&info->fmt_ctx, info->path.c_str(), nullptr, &options);
+  av_dict_free(&options);
+  if (ret < 0) {
     loge(TAG_GIF_LOADER, "can't open source file %s, %s", info->path.c_str(), av_err2str(ret));
     delete info;
     return 0;
   }
 
-  if ((ret = avformat_find_stream_info(info->fmt_ctx, nullptr)) < 0) {
+  // Probing decodes first frames
+  std::vector<AVDictionary *> streamOptions(info->fmt_ctx->nb_streams, nullptr);
+  for (AVDictionary *&streamOption : streamOptions) {
+    av_dict_set_int(&streamOption, "max_pixels", maxPixels, 0);
+    // Otherwise H.264 makes a second frame of each picture with the grain
+    av_dict_set(&streamOption, "export_side_data", "film_grain", 0);
+  }
+  ret = avformat_find_stream_info(info->fmt_ctx, streamOptions.data());
+  for (AVDictionary *&streamOption : streamOptions) {
+    av_dict_free(&streamOption);
+  }
+  if (ret < 0) {
     loge(TAG_GIF_LOADER, "can't find stream information %s, %s", info->path.c_str(),
          av_err2str(ret));
     delete info;
     return 0;
   }
 
-  if (open_codec_context(&info->video_stream_idx, &info->video_dec_ctx, info->fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
+  if (open_codec_context(&info->video_stream_idx, &info->video_dec_ctx, info->fmt_ctx,
+                         AVMEDIA_TYPE_VIDEO, maxSide, maxPixels, codecs) >= 0) {
     info->video_stream = info->fmt_ctx->streams[info->video_stream_idx];
   }
 
@@ -229,63 +668,60 @@ JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaT
   info->packet = av_packet_alloc();
   if (info->packet == nullptr) {
     loge(TAG_GIF_LOADER, "can't allocate packet %s", info->path.c_str());
+    delete info;
     return 0;
   }
 
   const int srcWidth = info->srcWidth = info->video_dec_ctx->width;
   const int srcHeight = info->srcHeight = info->video_dec_ctx->height;
+  const AVPixelFormat srcFormat = info->srcFormat = info->video_dec_ctx->pix_fmt;
+  if (srcWidth <= 0 || srcHeight <= 0 || std::max(srcWidth, srcHeight) > maxSide ||
+      srcFormat == AV_PIX_FMT_NONE) {
+    loge(TAG_GIF_LOADER, "can't play %dx%d, format: %d, %s", srcWidth, srcHeight, srcFormat,
+         info->path.c_str());
+    delete info;
+    return 0;
+  }
 
   int dstWidth = srcWidth;
   int dstHeight = srcHeight;
+  if (std::max(srcWidth, srcHeight) > MAX_GIF_SIZE) {
+    const float scale = std::min((float) MAX_GIF_SIZE / (float) srcWidth,
+                                 (float) MAX_GIF_SIZE / (float) srcHeight);
+    dstWidth = (int) ((float) srcWidth * scale);
+    dstHeight = (int) ((float) srcHeight * scale);
+    dstWidth = std::max(1, dstWidth - dstWidth % 2);
+    dstHeight = std::max(1, dstHeight - dstHeight % 2);
+  }
 
-  if (dstWidth > 0 && dstHeight > 0) {
-    int newWidth, newHeight;
-    if (std::max(dstWidth, dstHeight) > MAX_GIF_SIZE) {
-      float scaleW = (float) MAX_GIF_SIZE / (float) dstWidth;
-      float scaleH = (float) MAX_GIF_SIZE / (float) dstHeight;
-      float scale = scaleW < scaleH ? scaleW : scaleH;
-      newWidth = (int) ((float) dstWidth * scale);
-      newHeight = (int) ((float) dstHeight * scale);
-
-      newWidth -= newWidth % 2;
-      newHeight -= newHeight % 2;
-    } else {
-      newWidth = dstWidth;
-      newHeight = dstHeight;
-    }
-
-    if (newWidth > 0 && newHeight > 0) {
-      AVPixelFormat fmt = info->video_dec_ctx->pix_fmt;
-      if (fmt != AV_PIX_FMT_NONE && fmt != AV_PIX_FMT_YUVA420P && (fmt != BITMAP_TARGET_FORMAT || newWidth != srcWidth || newHeight != srcHeight)) {
-        info->scale_ctx = sws_getContext(srcWidth, srcHeight, fmt, newWidth, newHeight,
-                                         BITMAP_TARGET_FORMAT, newWidth == srcWidth && newHeight == srcHeight ? SWS_FAST_BILINEAR : SWS_BILINEAR, nullptr, nullptr,
-                                         nullptr);
-        if (info->scale_ctx != nullptr) {
-          dstWidth = newWidth;
-          dstHeight = newHeight;
-          logi(TAG_GIF_LOADER, "Created scale context %dx%d -> %dx%d, format: %d -> %d", srcWidth, srcHeight, dstWidth, dstHeight, fmt, BITMAP_TARGET_FORMAT);
-        }
-      }
+  // Frames with alpha are scaled by scaleChangedFrame
+  if (srcFormat != AV_PIX_FMT_YUVA420P &&
+      (srcFormat != BITMAP_TARGET_FORMAT || dstWidth != srcWidth || dstHeight != srcHeight)) {
+    info->scale_ctx = getScaleContext(srcWidth, srcHeight, srcFormat, dstWidth, dstHeight);
+    if (info->scale_ctx == nullptr) {
+      loge(TAG_GIF_LOADER, "can't scale %dx%d to %dx%d, format: %d, %s", srcWidth, srcHeight,
+           dstWidth, dstHeight, srcFormat, info->path.c_str());
+      delete info;
+      return 0;
     }
   }
 
-  long frameRate = (long) (1000.0 * av_q2d(info->video_stream->avg_frame_rate));
-  long duration = (long) (1000.0 * av_q2d(info->video_stream->time_base) * (double) info->video_stream->duration);
+  const double framesPerSecond = av_q2d(info->video_stream->avg_frame_rate);
+  const long frameRate = std::isfinite(framesPerSecond) && framesPerSecond > 0 ?
+    (long) (1000.0 * std::min(framesPerSecond, MAX_FRAME_RATE)) : 0;
 
   info->dstWidth = dstWidth;
   info->dstHeight = dstHeight;
   info->frameRate = frameRate;
 
-  if (startMediaTimestamp != 0) {
-    int ret = 0;
-    int64_t ts = (int64_t) (startMediaTimestamp * (double) AV_TIME_BASE);
-    ret = avformat_seek_file(
-      info->fmt_ctx, -1,
-      std::numeric_limits<int64_t>::min(), ts,
-      std::numeric_limits<int64_t>::max(), 0);
-    if (ret < 0) {
-      loge(TAG_GIF_LOADER, "can't seek to startMediaTimestamp %s, %s", info->path.c_str(), av_err2str(ret));
-    }
+  const int64_t ts = (int64_t) (startMediaTimestamp * (double) AV_TIME_BASE);
+  ret = avformat_seek_file(
+    info->fmt_ctx, -1,
+    std::numeric_limits<int64_t>::min(), ts,
+    std::numeric_limits<int64_t>::max(), 0);
+  if (ret < 0) {
+    loge(TAG_GIF_LOADER, "can't seek to startMediaTimestamp %s, %s", info->path.c_str(),
+         av_err2str(ret));
   }
 
   jlong *dataArr = env->GetLongArrayElements(data, 0);
@@ -328,12 +764,21 @@ JNI_FUNC(jboolean, destroyLottieDecoder, jlong ptr) {
   return JNI_FALSE;
 }
 
+static void drop_pending_frame (VideoInfo *info) {
+  if (info->has_pending_frame) {
+    info->has_pending_frame = false;
+    av_frame_unref(info->frame);
+  }
+}
+
 JNI_FUNC(jboolean, seekVideoToStart, jlong ptr) {
   if (ptr == 0) {
     return JNI_FALSE;
   }
 
   VideoInfo *info = jni::jlong_to_ptr<VideoInfo *>(ptr);
+  drop_pending_frame(info);
+  DecodedBy decoded(info->maxSide, info->memory);
 
   int ret = 0;
   ret = avformat_seek_file(
@@ -361,92 +806,151 @@ JNI_FUNC(jboolean, isVideoBroken, jlong ptr) {
   }
 }
 
-void to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jlongArray data) {
-  auto fmt = (AVPixelFormat) info->frame->format;
+static bool scaleFrame (SwsContext *context, const AVFrame *frame, void *pixels,
+                        const AndroidBitmapInfo &bitmapInfo) {
+  uint8_t *const dst[] = {(uint8_t *) pixels};
+  const int dstStride[] = {(int) bitmapInfo.stride};
+  // Errors are negative: the NEON converters of swscale for arm32 give 0 for a whole frame
+  return sws_scale(context, frame->data, frame->linesize, 0, frame->height, dst, dstStride) >= 0;
+}
 
-  AndroidBitmapInfo bitmapInfo;
-  AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
+static bool scaleChangedFrame (VideoInfo *info, const AVFrame *frame, void *pixels,
+                               const AndroidBitmapInfo &bitmapInfo) {
+  const auto format = (AVPixelFormat) frame->format;
+  // sws_getCachedContext would make it again for each frame of yuvj formats, which swscale keeps
+  // as their yuv ones
+  if (frame->width != info->frameScaleWidth || frame->height != info->frameScaleHeight ||
+      format != info->frameScaleFormat) {
+    sws_freeContext(info->frame_scale_ctx);
+    info->frame_scale_ctx = getScaleContext(frame->width, frame->height, format, info->dstWidth,
+                                            info->dstHeight);
+    info->frameScaleWidth = frame->width;
+    info->frameScaleHeight = frame->height;
+    info->frameScaleFormat = format;
+  }
+  if (info->frame_scale_ctx == nullptr ||
+      !scaleFrame(info->frame_scale_ctx, frame, pixels, bitmapInfo)) {
+    return false;
+  }
+  const AVPixFmtDescriptor *descriptor = av_pix_fmt_desc_get(format);
+  if (descriptor != nullptr && (descriptor->flags & AV_PIX_FMT_FLAG_ALPHA) != 0) {
+    // Bitmaps keep alpha premultiplied, as I420AlphaToARGBMatrix gives it, and swscale doesn't
+    libyuv::ARGBAttenuate((uint8_t *) pixels, (int) bitmapInfo.stride, (uint8_t *) pixels,
+                          (int) bitmapInfo.stride, info->dstWidth, info->dstHeight);
+  }
+  return true;
+}
 
-  if (bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
-    jlong *dataArr = env->GetLongArrayElements(data, 0);
-    if (dataArr != nullptr) {
-      jlong timestamp = (jlong) (1000.0 * ((double) info->frame->pts * av_q2d(info->video_stream->time_base)));
-      if (timestamp > dataArr[3]) {
-          dataArr[4] = timestamp - dataArr[3];
+static bool copyFrame (const AVFrame *frame, void *pixels, const AndroidBitmapInfo &bitmapInfo) {
+  const int width = (int) bitmapInfo.width;
+  const int height = (int) bitmapInfo.height;
+  const int stride = (int) bitmapInfo.stride;
+  if (frame->width != width || frame->height != height) {
+    return false;
+  }
+  auto *dst = (uint8_t *) pixels;
+  switch ((AVPixelFormat) frame->format) {
+    case BITMAP_TARGET_FORMAT:
+      av_image_copy_plane(dst, stride, frame->data[0], frame->linesize[0], width * 4, height);
+      return true;
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUVJ420P:
+      if (frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
+        return libyuv::H420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
+                                  frame->linesize[2], frame->data[1], frame->linesize[1],
+                                  dst, stride, width, height) == 0;
       }
-      dataArr[3] = timestamp;
-      env->ReleaseLongArrayElements(data, dataArr, 0);
-    }
+      return libyuv::I420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
+                                frame->linesize[2], frame->data[1], frame->linesize[1],
+                                dst, stride, width, height) == 0;
+    case AV_PIX_FMT_YUVA420P:
+      return libyuv::I420AlphaToARGBMatrix(frame->data[0], frame->linesize[0], frame->data[2],
+                                           frame->linesize[2], frame->data[1], frame->linesize[1],
+                                           frame->data[3], frame->linesize[3], dst, stride,
+                                           &libyuv::kYvuI601Constants, width, height, 50) == 0;
+    case AV_PIX_FMT_BGRA:
+      return libyuv::ABGRToARGB(frame->data[0], frame->linesize[0], dst, stride, width,
+                                height) == 0;
+    default:
+      return false;
+  }
+}
 
+static void update_timestamps (JNIEnv *env, VideoInfo *info, jlongArray data) {
+  jlong *dataArr = env->GetLongArrayElements(data, 0);
+  if (dataArr != nullptr) {
+    const double ms =
+      1000.0 * (double) info->frame->pts * av_q2d(info->video_stream->time_base);
+    const jlong timestamp = std::isfinite(ms) ?
+      (jlong) std::clamp(ms, -MAX_TIMESTAMP_MS, MAX_TIMESTAMP_MS) : dataArr[3];
+    if (timestamp > dataArr[3]) {
+        dataArr[4] = timestamp - dataArr[3];
+    }
+    dataArr[3] = timestamp;
+    env->ReleaseLongArrayElements(data, dataArr, 0);
+  }
+}
+
+static bool to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap) {
+  AndroidBitmapInfo bitmapInfo;
+  bool drawn = false;
+
+  if (AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) == ANDROID_BITMAP_RESULT_SUCCESS &&
+      bitmapInfo.format == ANDROID_BITMAP_FORMAT_RGBA_8888 &&
+      bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
     AVFrame *frame = info->frame;
-    int frameWidth = frame->width;
-    int frameHeight = frame->height;
 
     void *pixels;
     if (AndroidBitmap_lockPixels(env, bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
-      if (info->scale_ctx != nullptr) {
-        uint8_t *dst_data[1];
-        dst_data[0] = (uint8_t *) pixels;
-        info->dst_linesize[0] = bitmapInfo.stride;
+      if (info->scale_ctx != nullptr && frame->width == info->srcWidth &&
+          frame->height == info->srcHeight && frame->format == info->srcFormat) {
         // TODO: find out why sws_scale doesn't support transparency (AV_PIX_FMT_YUVA420P) properly
         // note: for now, updated libyuv + kYvuI601Constants in I420AlphaToARGBMatrix fixes AV_PIX_FMT_YUVA420P issue - but still needs to be researched
-        /*int res =*/ sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height, dst_data, info->dst_linesize);
+        drawn = scaleFrame(info->scale_ctx, frame, pixels, bitmapInfo);
+      } else if (info->scale_ctx == nullptr && copyFrame(frame, pixels, bitmapInfo)) {
+        drawn = true;
       } else {
-        switch (fmt) {
-          case BITMAP_TARGET_FORMAT: {
-            int size = av_image_get_buffer_size(fmt, frameWidth, frameHeight, 1);
-            memcpy((uint8_t *) pixels, frame->data[0], size);
-            break;
-          }
-          case AV_PIX_FMT_YUV420P:
-          case AV_PIX_FMT_YUVJ420P:
-            if (frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
-              libyuv::H420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
-                                 frame->linesize[2], frame->data[1], frame->linesize[1],
-                                 (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
-            } else {
-              libyuv::I420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
-                                 frame->linesize[2], frame->data[1], frame->linesize[1],
-                                 (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
-            }
-            break;
-          case AV_PIX_FMT_YUVA420P:
-            libyuv::I420AlphaToARGBMatrix(frame->data[0], frame->linesize[0], frame->data[2],
-                                          frame->linesize[2], frame->data[1], frame->linesize[1],
-                                          frame->data[3], frame->linesize[3],
-                                          (uint8_t *) pixels, frameWidth * 4,
-                                          &libyuv::kYvuI601Constants, frameWidth, frameHeight,
-                                          50);
-            break;
-          case AV_PIX_FMT_BGRA:
-            libyuv::ABGRToARGB(frame->data[0], frame->linesize[0], (uint8_t *) pixels,
-                               frameWidth * 4, frameWidth, frameHeight);
-            break;
-          default:
-            // TODO more libyuv cases?
-            logw(TAG_GIF_LOADER, "unsupported pixel format: %d", fmt);
-            break;
-        }
+        drawn = scaleChangedFrame(info, frame, pixels, bitmapInfo);
       }
       AndroidBitmap_unlockPixels(env, bitmap);
     }
   }
+  return drawn;
 }
 
+static jint draw_frame (JNIEnv *env, VideoInfo *info, jobject bitmap, bool hasLooped) {
+  const bool drawn = to_android_bitmap(env, info, bitmap);
+  if (!drawn) {
+    loge(TAG_GIF_LOADER, "can't draw frame %dx%d, format: %d, %s", info->frame->width,
+         info->frame->height, info->frame->format, info->path.c_str());
+    info->is_broken = true;
+  }
+  av_frame_unref(info->frame);
+  return drawn ? (hasLooped ? 2 : 1) : 0;
+}
+
+// Without a bitmap, the frame is only decoded, and the next call draws it or skips it
 JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
-  if (ptr == 0 || bitmap == nullptr) {
+  if (ptr == 0) {
     return 0;
   }
   VideoInfo *info = jni::jlong_to_ptr<VideoInfo *>(ptr);
   if (info->is_broken) {
     return 0;
   }
+  if (info->has_pending_frame && bitmap != nullptr) {
+    info->has_pending_frame = false;
+    return draw_frame(env, info, bitmap, info->pending_frame_looped);
+  }
+  drop_pending_frame(info);
+  DecodedBy decoded(info->maxSide, info->memory);
 
   bool gotFrame = false;
   bool hasLooped = false;
   bool fatalError = false;
   size_t errorCount = 0;
   size_t maxErrorCount = round(std::min(120.0, (double) info->frameRate / 1000.0) * 2.5);
+  size_t packetCount = 0, videoPacketCount = 0;
 
   do {
     int ret;
@@ -469,6 +973,11 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
     }
 
     if (info->eof_reached) {
+      if (hasLooped) {
+        loge(TAG_GIF_LOADER, "no frames in a whole loop of %s", info->path.c_str());
+        fatalError = true;
+        break;
+      }
       ret = avformat_seek_file(
         info->fmt_ctx, -1,
         std::numeric_limits<int64_t>::min(), 0,
@@ -506,6 +1015,19 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
       loge(TAG_GIF_LOADER, "av_read_frame fatal error for %s: %s", info->path.c_str(), av_err2str(ret));
       fatalError = true;
       break;
+    }
+    const bool isVideo = info->packet->stream_index == info->video_stream_idx;
+    const bool isDropped = (info->packet->flags & AV_PKT_FLAG_DISCARD) != 0;
+    if (++packetCount > MAX_PACKETS_WITHOUT_FRAME ||
+        (isVideo && !isDropped && ++videoPacketCount > MAX_VIDEO_PACKETS_WITHOUT_FRAME)) {
+      loge(TAG_GIF_LOADER, "no frame in %zu packets of %s", packetCount, info->path.c_str());
+      av_packet_unref(info->packet);
+      fatalError = true;
+      break;
+    }
+    if (!isVideo) {
+      av_packet_unref(info->packet);
+      continue;
     }
     ret = avcodec_send_packet(info->video_dec_ctx, info->packet);
     if (ret != 0) {
@@ -557,11 +1079,23 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
     info->is_broken = true;
   }
 
-  if (gotFrame) {
-    to_android_bitmap(env, info, bitmap, data);
-    info->has_decoded_frames = true;
+  if (gotFrame && std::max(info->frame->width, info->frame->height) > info->maxSide) {
+    loge(TAG_GIF_LOADER, "frame of %dx%d above %d, %s", info->frame->width, info->frame->height,
+         info->maxSide, info->path.c_str());
     av_frame_unref(info->frame);
-    return hasLooped ? 2 : 1;
+    gotFrame = false;
+    info->is_broken = true;
+  }
+
+  if (gotFrame) {
+    update_timestamps(env, info, data);
+    info->has_decoded_frames = true;
+    if (bitmap == nullptr) {
+      info->has_pending_frame = true;
+      info->pending_frame_looped = hasLooped;
+      return hasLooped ? 2 : 1;
+    }
+    return draw_frame(env, info, bitmap, hasLooped);
   }
 
   return 0;
@@ -577,20 +1111,28 @@ JNI_FUNC(void, cancelLottieDecoder, jlong ptr) {
 JNI_FUNC(jboolean, decodeLottieFirstFrame, jstring jPath, jstring jsonData, jobject bitmap) {
   std::string json = jni::from_jstring(env, jsonData);
   std::string path = jni::from_jstring(env, jPath);
-  std::unique_ptr<rlottie::Animation> animation = rlottie::Animation::loadFromData(json, path, nullptr);
-  if (animation == nullptr || animation->totalFrame() == 0) {
+  TLottieInstance *animation = tlottie_new_with_options(
+    (const uint8_t *) json.data(), json.size(), TLOTTIE_FITZ_NONE, nullptr, 0, nullptr, 0,
+    TLOTTIE_CHANNEL_RGBA
+  );
+  if (animation == nullptr || tlottie_frame_count(animation) == 0) {
+    tlottie_drop(animation);
     return JNI_FALSE;
   }
   AndroidBitmapInfo bitmapInfo;
   AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
   void *pixels;
   if (AndroidBitmap_lockPixels(env, bitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
+    tlottie_drop(animation);
     return JNI_FALSE;
   }
-  rlottie::Surface surface((uint32_t *) pixels, bitmapInfo.width, bitmapInfo.height, bitmapInfo.stride);
-  animation->renderSync(0, surface, true);
+  uint32_t *buffer = nullptr;
+  size_t bufferSize = 0;
+  const bool rendered = renderLottieFrame(animation, 0, pixels, bitmapInfo, &buffer, &bufferSize);
+  free(buffer);
+  tlottie_drop(animation);
   AndroidBitmap_unlockPixels(env, bitmap);
-  return JNI_TRUE;
+  return rendered ? JNI_TRUE : JNI_FALSE;
 }
 
 JNI_FUNC(jlong, createLottieDecoder, jstring jPath, jstring jsonData, jdoubleArray data, jint fitzpatrickType) {
@@ -616,38 +1158,42 @@ JNI_FUNC(jlong, createLottieDecoder, jstring jPath, jstring jsonData, jdoubleArr
     }
   }*/
 
-  rlottie::FitzModifier modifier = rlottie::FitzModifier::None;
+  uint32_t modifier = TLOTTIE_FITZ_NONE;
   switch (fitzpatrickType) {
     case 1:
     case 2:
     case 12:
-      modifier = rlottie::FitzModifier::Type12;
+      modifier = TLOTTIE_FITZ_TYPE_12;
       break;
     case 3:
-      modifier = rlottie::FitzModifier::Type3;
+      modifier = TLOTTIE_FITZ_TYPE_3;
       break;
     case 4:
-      modifier = rlottie::FitzModifier::Type4;
+      modifier = TLOTTIE_FITZ_TYPE_4;
       break;
     case 5:
-      modifier = rlottie::FitzModifier::Type5;
+      modifier = TLOTTIE_FITZ_TYPE_5;
       break;
     case 6:
-      modifier = rlottie::FitzModifier::Type6;
+      modifier = TLOTTIE_FITZ_TYPE_6;
       break;
   }
 
   LottieInfo *info = new LottieInfo(path);
-  info->animation = rlottie::Animation::loadFromData(json, path, nullptr, modifier);
+  info->animation = tlottie_new_with_options(
+    (const uint8_t *) json.data(), json.size(), modifier, nullptr, 0, nullptr, 0,
+    TLOTTIE_CHANNEL_RGBA
+  );
 
   if (info->animation == nullptr) {
     delete info;
     return 0;
   }
 
-  size_t totalFrame = info->animation->totalFrame();
-  double frameRate = info->animation->frameRate();
-  double duration = info->animation->duration();
+  size_t totalFrame = tlottie_frame_count(info->animation);
+  double frameRate = tlottie_frame_rate(info->animation);
+  // From the first frame to the last one, as rlottie gave it
+  double duration = frameRate > 0 && totalFrame > 0 ? (double) (totalFrame - 1) / frameRate : 0;
 
   if (totalFrame == 0) {
     delete info;
@@ -671,14 +1217,18 @@ JNI_FUNC(void, getLottieSize, jlong ptr, jintArray data) {
   LottieInfo *info = jni::jlong_to_ptr<LottieInfo *>(ptr);
   jint *dataArr = env->GetIntArrayElements(data, 0);
 
-  size_t width, height;
-  info->animation->size(width, height);
+  size_t width = tlottie_width(info->animation);
+  size_t height = tlottie_height(info->animation);
   dataArr[0] = (jint) width;
   dataArr[1] = (jint) height;
   env->ReleaseIntArrayElements(data, dataArr, 0);
 }
 
 #define MAX_COMPRESSED_BUFFER_SIZE (1024 * 1024 * 15 /*15 MiB*/)
+// Holds stickers uncompressed: 180 frames of 384x384
+#define MAX_LOTTIE_CACHE_SIZE (1024 * 1024 * 128)
+// 10 seconds at 60 frames a second; stickers and effects last 3
+#define MAX_LOTTIE_CACHE_FRAMES 600
 
 JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFrame, jobject bitmap, jboolean allowCreate, jboolean limitFps) {
   if (jCachePath == nullptr) {
@@ -697,11 +1247,17 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
 
   size_t uncompressedSize = bitmapInfo.height * bitmapInfo.stride;
 
-  double frameRate = info->animation->frameRate();
+  double frameRate = tlottie_frame_rate(info->animation);
   bool skipOdd = frameRate == 60.0 && limitFps == JNI_TRUE;
-  uint32_t frameCount = (uint32_t) info->animation->totalFrame();
+  uint32_t frameCount = tlottie_frame_count(info->animation);
   uint32_t maxCompressedFrameSize = 0;
   uint32_t firstFrameSize = 0;
+
+  if (frameCount > MAX_LOTTIE_CACHE_FRAMES ||
+      (uint64_t) frameCount * (uint64_t) LZ4_compressBound((int) uncompressedSize) >
+      MAX_LOTTIE_CACHE_SIZE) {
+    return 2;
+  }
 
   const uint32_t magic = skipOdd ? LOTTIE_CACHE_MAGIC_REDUCED : LOTTIE_CACHE_MAGIC;
   info->headerSize = sizeof(magic) + sizeof(frameCount) + sizeof(maxCompressedFrameSize); // index table?
@@ -788,8 +1344,8 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
         }
       }
       if (compressedSize == 0 && !skipFrame) {
-        rlottie::Surface surface((uint32_t *) pixels, bitmapInfo.width, bitmapInfo.height, bitmapInfo.stride);
-        info->animation->renderSync((size_t) frameNo, surface, true);
+        renderLottieFrame(info->animation, frameNo, pixels, bitmapInfo, &info->frameBuffer,
+                          &info->frameBufferSize);
         //libyuv::ABGRToARGB((uint8_t *) pixels, bitmapInfo.stride, (uint8_t *) pixels, bitmapInfo.stride, bitmapInfo.width, bitmapInfo.height);
         compressedSize = (uint32_t) LZ4_compress_default((const char *) pixels, (char *) compressBuffer, (int) uncompressedSize, (int) compressBound);
       }
@@ -847,6 +1403,9 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
     fseek(info->cacheFile, info->headerSize + sizeof(uint32_t) + firstFrameSize, SEEK_SET);
     info->nextFrameNo = 1;
   } else {
+    if (cacheFile != nullptr) {
+      fclose(cacheFile);
+    }
     return 1;
   }
   return 0;
@@ -872,7 +1431,7 @@ JNI_FUNC(jboolean, getLottieFrame, jlong ptr, jobject bitmap, jlong jFrameNo) {
   bool success = false;
 
   if (info->cacheFile != nullptr) {
-    if (info->nextFrameNo >= info->animation->totalFrame() || frameNo < info->nextFrameNo) {
+    if (info->nextFrameNo >= tlottie_frame_count(info->animation) || frameNo < info->nextFrameNo) {
       fseek(info->cacheFile, info->headerSize, SEEK_SET);
       info->nextFrameNo = 0;
     }
@@ -931,10 +1490,11 @@ JNI_FUNC(jboolean, getLottieFrame, jlong ptr, jobject bitmap, jlong jFrameNo) {
   }
 
   if (!success) {
-    rlottie::Surface surface((uint32_t *) pixels, bitmapInfo.width, bitmapInfo.height, bitmapInfo.stride);
-    info->animation->renderSync((size_t) frameNo, surface, true);
+    renderLottieFrame(info->animation, (uint32_t) frameNo, pixels, bitmapInfo, &info->frameBuffer,
+                      &info->frameBufferSize);
     if (info->cacheFile != nullptr) {
-      logi(TAG_GIF_LOADER, "read frame directly: %d, nextFrameNo:%d, totalFrame:%d", frameNo, info->nextFrameNo, info->animation->totalFrame());
+      logi(TAG_GIF_LOADER, "read frame directly: %d, nextFrameNo:%d, totalFrame:%d", frameNo,
+           info->nextFrameNo, tlottie_frame_count(info->animation));
     }
     // libyuv::ABGRToARGB((uint8_t *) pixels, bitmapInfo.stride, (uint8_t *) pixels, bitmapInfo.stride, bitmapInfo.width, bitmapInfo.height);
   }

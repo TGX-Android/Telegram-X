@@ -2,6 +2,7 @@
 
 package org.thunderdog.challegram.telegram
 
+import android.os.Build
 import org.thunderdog.challegram.Log
 import org.thunderdog.challegram.unsorted.AppContext
 import org.thunderdog.challegram.unsorted.Settings
@@ -100,7 +101,11 @@ fun createSnapshotWithAllAccounts(): File {
 
 @Suppress("Deprecation")
 private fun getPublicDirectory(): File =
-  AppContext.get().externalMediaDirs.first()
+  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+    AppContext.get().getExternalFilesDir(null)!!
+  } else {
+    AppContext.get().externalMediaDirs.first()
+  }
 
 fun restoreSnapshot(): Boolean {
   val publicDir = getPublicDirectory()

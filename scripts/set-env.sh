@@ -11,7 +11,11 @@ test -f version.properties || { echo -e "${STYLE_ERROR}You must call this script
 PLATFORM="$(uname -s)"
 case "${PLATFORM}" in
   Darwin*)
-    PLATFORM=mac
+    if [ "$(uname -m)" = arm64 ]; then
+      PLATFORM=mac_arm64
+    else
+      PLATFORM=mac_x86_64
+    fi
     BUILD_PLATFORM=darwin-x86_64
     CPU_COUNT=$(sysctl -n hw.logicalcpu_max)
     DEFAULT_ANDROID_SDK_ROOT=~/Library/Android/sdk

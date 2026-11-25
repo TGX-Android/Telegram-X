@@ -30,6 +30,7 @@ done
 
 cat <<EOF > local.properties
 sdk.dir=$ANDROID_SDK_ROOT
+rust.dir=$(rustup show home)
 org.gradle.workers.max=$CPU_COUNT
 keystore.file=$KEYSTORE_FILE
 app.id=$APP_ID

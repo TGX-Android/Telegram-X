@@ -399,7 +399,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
             hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, rulesType == PrivacySettings.Mode.EVERYBODY ? R.string.WhoCanFindByPhoneInfoEveryone : R.string.WhoCanFindByPhoneInfoContacts);
             TdApi.User user = tdlib.myUser();
             if (user != null) {
-              internalLinkType = new TdApi.InternalLinkTypeUserPhoneNumber(user.phoneNumber, "", true);
+              internalLinkType =
+                new TdApi.InternalLinkTypeUserPhoneNumber(user.phoneNumber, "", true, "");
             }
             break;
           }

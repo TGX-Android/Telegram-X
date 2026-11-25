@@ -252,7 +252,7 @@ public class AvatarPickerManager extends MediaLayoutManager {
 
       final Uri image = data.getData();
       if (image != null) {
-        String imagePath = U.tryResolveFilePath(image);
+        String imagePath = U.resolveSharedFilePath(image);
         if (imagePath != null) {
           if (imagePath.endsWith(".webp")) {
             UI.showToast("Webp is not supported for profile photos", Toast.LENGTH_LONG);

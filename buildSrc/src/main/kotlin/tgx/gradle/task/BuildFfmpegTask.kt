@@ -34,9 +34,10 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
     val sysroot = requireDir(prebuilt.resolve(
       "sysroot"
     ))
-    val androidApiLevel = (Sdk.VARIANTS.values.firstOrNull() {
+    val sdkVariant = Sdk.VARIANTS.values.firstOrNull() {
       it.flavor == flavor
-    } ?: fatal("Unknown flavor: $flavor")).minSdk
+    } ?: fatal("Unknown flavor: $flavor")
+    val androidApiLevel = sdkVariant.minSdk
 
     val extraParams = mutableListOf<String>()
     val cFlags = mutableListOf(
@@ -49,6 +50,8 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
       "-fvisibility-inlines-hidden",
       "-fno-strict-aliasing",
       "-fomit-frame-pointer",
+      "-fstack-protector-strong",
+      "-D_FORTIFY_SOURCE=2",
       "-flto=full",
       "-fno-fast-math",
       "-ftree-vectorize",
@@ -91,6 +94,9 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
       "arm64-v8a" -> {
         ndkAbi = "aarch64-linux-android"
         cFlags += "-march=armv8-a"
+        if (sdkVariant.usesBranchProtection) {
+          cFlags += "-mbranch-protection=standard"
+        }
         extraParams.addAll(arrayOf(
           "--disable-x86asm",
           "--enable-neon"
@@ -279,6 +285,8 @@ abstract class BuildFfmpegTask : BuildNativeLibraryTask() {
         "--disable-programs",
         "--enable-runtime-cpudetect",
         "--enable-pthreads",
+        // Limits of decoders, see tgx_ff_malloc in gif.cpp
+        "--malloc-prefix=tgx_ff_",
 
         "--enable-hwaccels",
         "--disable-vulkan",

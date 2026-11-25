@@ -36,11 +36,16 @@ include(
   ":extension:bridge",
   ":extension:${extra["extension"]}",
 
-  ":app",
+  ":stub:fingerprint",
 
-  ":tests:baseline-profile",
-  ":tests:core",
-  ":tests:ui",
-  ":tests:benchmark",
-  ":tests:microbenchmark"
+  ":app"
 )
+if (settingsDir.resolve("tests/.git").exists()) {
+  include(
+    ":tests:baseline-profile",
+    ":tests:core",
+    ":tests:ui",
+    ":tests:benchmark",
+    ":tests:microbenchmark"
+  )
+}

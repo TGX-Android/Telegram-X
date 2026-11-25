@@ -71,6 +71,7 @@ import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
+import tgx.player.VideoDecoders;
 import tgx.td.ChatId;
 import tgx.td.Td;
 import tgx.td.data.HlsVideo;
@@ -496,6 +497,9 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   private void setVideo (TdApi.Video video, TdApi.AlternativeVideo[] alternativeVideos, @Nullable TdApi.Photo cover, boolean allowIcon, boolean isDocument) {
     this.sourceVideo = video;
     this.sourceAlternativeVideos = alternativeVideos;
+    if (alternativeVideos != null && alternativeVideos.length > 0) {
+      VideoDecoders.prefetchVideoDecoders();
+    }
 
     if (cover != null) {
       setMiniThumbnail(cover.minithumbnail);
@@ -992,7 +996,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       case TdApi.MessageAnimation.CONSTRUCTOR ->
         new MediaItem(context, tdlib, chatId, sponsoredMessage.messageId, null, 0, (TdApi.MessageAnimation) sponsoredMessage.content);
       default -> {
-        Td.assertMessageContent_f7758f8b();
+        Td.assertMessageContent_e4738066();
         throw Td.unsupported(sponsoredMessage.content);
       }
     };

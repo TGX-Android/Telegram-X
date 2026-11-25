@@ -1,7 +1,6 @@
 @file:Suppress("UnstableApiUsage", "AvoidApplyPluginMethod")
 
 import androidx.baselineprofile.gradle.consumer.BaselineProfileConsumerExtension
-import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.impl.VariantOutputImpl
 import com.android.build.gradle.tasks.ExternalNativeBuildTask
@@ -9,7 +8,6 @@ import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import tgx.gradle.*
 import tgx.gradle.source.GitInformationSource
 import tgx.gradle.task.*
-import tgx.test.configureTests
 import java.util.*
 
 plugins {
@@ -21,6 +19,20 @@ plugins {
 }
 
 val config = tgxConfig.config.get()
+val customGoogleServices = config.googleServicesFile?.let { rootDir.resolve(it) }
+val usedGoogleServices = customGoogleServices ?: file("google-services.json")
+if (customGoogleServices != null && !customGoogleServices.exists()) {
+  fatal("google_services.file: ${customGoogleServices.path} doesn't exist")
+}
+val hasFirebaseMessaging = (customGoogleServices != null || !config.isExperimentalBuild) &&
+  hasGoogleServicesClient(usedGoogleServices, config.applicationId)
+if (!hasFirebaseMessaging && customGoogleServices != null) {
+  val problem = "${customGoogleServices.path} has no client of ${config.applicationId}"
+  if (config.applicationId == "org.thunderdog.challegram") {
+    fatal("$problem: notifications in the app won't work")
+  }
+  logger.warn("$problem: pushes of Firebase are off")
+}
 val useLegacyPackaging = tgxConfig.useLegacyPackaging.get()
 val useLegacyNdk = tgxConfig.useLegacyNdk.get()
 val globalAbiFilters = tgxConfig.abiFilters.get()
@@ -134,9 +146,7 @@ val validateApiTokens = tasks.register<ValidateApiTokensTask>("validateApiTokens
   applicationId.set(
     config.applicationId
   )
-  googleServicesJson.set(layout.projectDirectory.file(
-    "google-services.json"
-  ))
+  googleServicesJson.fileValue(usedGoogleServices)
 }
 val fetchLocalizedStrings = tasks.register<FetchLocalizedStringsTask>("fetchLocalizedStrings") {
   group = "Setup"
@@ -202,6 +212,31 @@ val patchOpusTask = tasks.register<PatchOpusTask>(
   dependsOn(validateGitSetupTask)
 }
 
+val patchFfmpegTask = tasks.register<PatchFfmpegTask>(
+  "patchFfmpeg"
+) {
+  group = "Setup"
+  description = "Creates a patched copy of FFmpeg"
+  inputDir.set(layout.projectDirectory.dir(
+    "jni/third_party/ffmpeg"
+  ))
+  inputSources.from(inputDir.asFileTree.matching {
+    exclude(".git")
+  })
+  patches.from(layout.projectDirectory.dir("jni/patches/ffmpeg").asFileTree.matching {
+    include("*.patch")
+  })
+  revision.set(providers.of(GitInformationSource::class) {
+    parameters.module = layout.projectDirectory.dir("jni/third_party/ffmpeg")
+  }.map {
+    it.commitHashLong
+  })
+  outputDir.set(layout.buildDirectory.dir(
+    "generated/tgx/ffmpeg-source"
+  ))
+  dependsOn(validateGitSetupTask)
+}
+
 val buildLibvpxTasks = Sdk.VARIANTS.values.filter {
   (it.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
 }.flatMap { sdkVariant ->
@@ -249,6 +284,105 @@ val buildLibvpxTask = tasks.register("buildLibvpx") {
   dependsOn(buildLibvpxTasks.values)
 }
 
+val buildTlottieTasks = Sdk.VARIANTS.values.filter {
+  (it.usesLegacyNdk == useLegacyNdk ||
+    config.build.primaryNdkVersion == config.build.legacyNdkVersion)
+}.flatMap { sdkVariant ->
+  globalAbiFilters.map { abiFilter ->
+    Pair(Pair(sdkVariant.flavor, abiFilter), tasks.register<BuildTlottieTask>(
+      "buildTlottie[${sdkVariant.flavor},${abiFilter}]"
+    ) {
+      group = "Setup"
+      description = "Builds tlottie for ${sdkVariant.flavor} flavor, abi: $abiFilter"
+      // System
+      sdkDir.set(File(config.sdkDir))
+      msys2Dir.set(msys2Directory(config.msys2Dir))
+      ndkVersion.set(android.ndkVersion)
+      hostTag.set(findHostTag())
+      rustDir.set(File(config.rustDir))
+      rustVersion.set(config.build.rustVersion)
+      // Input
+      inputDir.set(layout.projectDirectory.dir(
+        "jni/third_party/tlottie"
+      ))
+      inputSources.from(inputDir.asFileTree.matching {
+        exclude(
+          ".git",
+          "examples",
+          "tools",
+          "*.md"
+        )
+      })
+      sdkFlavor.set(sdkVariant.flavor)
+      abi.set(abiFilter)
+      // Branch protection builds core and alloc, and a build script of their dependencies is a
+      // program of the host, which Rust for Windows links only with Visual Studio
+      val isProtected = sdkVariant.usesBranchProtection && abiFilter == "arm64-v8a" &&
+        !hostTag.get().startsWith("windows")
+      branchProtection.set(isProtected)
+      // Optimizations guided by the profile of drawing on a device of the ABI, see
+      // generateTlottieProfile
+      val profileName = if (isProtected) "$abiFilter-protected" else abiFilter
+      val profileFile = layout.projectDirectory.file("jni/tlottie/${profileName}.profdata")
+      if (profileFile.asFile.exists()) {
+        profile.set(profileFile)
+        profiles.set(layout.projectDirectory.file("jni/tlottie/profiles.properties"))
+      }
+      // Output, shared by flavors with the same options
+      val buildFolder = if (isProtected) "protected" else "plain"
+      buildDir.set(layout.buildDirectory.dir(
+        "generated/tgx/tlottie-build/${buildFolder}/${abiFilter}"
+      ))
+      outputDir.set(layout.buildDirectory.dir(
+        "generated/tgx/tlottie/${sdkVariant.flavor}/${abiFilter}"
+      ))
+      dependsOn(validateGitSetupTask)
+    })
+  }
+}.toMap()
+
+val buildTlottieTask = tasks.register("buildTlottie") {
+  group = "Setup"
+  description = "Builds tlottie for all flavors and abis (${buildTlottieTasks.size} total)"
+  dependsOn(buildTlottieTasks.values)
+}
+
+// Profiles of drawing of tlottie, made by hand on a device of the ABI after updates of tlottie or
+// Rust, e.g. ANDROID_SERIAL=<device> ./gradlew ":app:generateTlottieProfile[arm64-v8a]"
+// -Ptlottie.samples=<folder with emoji, sticker and effect>. x86 and x86_64 have no device to make
+// them on. arm64-v8a-protected is that of flavors with branch protection, of an archive that the
+// host of releases built
+val tlottieSamples = providers.gradleProperty("tlottie.samples").map { File(it) }
+val tlottieArchive = providers.gradleProperty("tlottie.archive").map { File(it) }
+val tlottieProfiler = providers.gradleProperty("tlottie.profiler").map { File(it) }
+val tlottieHost = providers.gradleProperty("tlottie.host")
+listOf("arm64-v8a", "arm64-v8a-protected", "armeabi-v7a").filter {
+  it.removeSuffix("-protected") in globalAbiFilters
+}.forEach { name ->
+  val abiFilter = name.removeSuffix("-protected")
+  tasks.register<GenerateTlottieProfileTask>("generateTlottieProfile[$name]") {
+    group = "Setup"
+    description = "Makes the profile of drawing of tlottie for $name on a connected device"
+    profileName.set(name)
+    branchProtection.set(name != abiFilter)
+    archive.fileProvider(tlottieArchive)
+    archiveProfiler.fileProvider(tlottieProfiler)
+    archiveHost.set(tlottieHost)
+    sdkDir.set(File(config.sdkDir))
+    ndkVersion.set(config.build.primaryNdkVersion)
+    hostTag.set(findHostTag())
+    rustDir.set(File(config.rustDir))
+    rustVersion.set(config.build.rustVersion)
+    abi.set(abiFilter)
+    inputDir.set(layout.projectDirectory.dir("jni/third_party/tlottie"))
+    runner.set(layout.projectDirectory.file("jni/tlottie/profile.c"))
+    samples.fileProvider(tlottieSamples)
+    profile.set(layout.projectDirectory.file("jni/tlottie/$name.profdata"))
+    profiles.set(layout.projectDirectory.file("jni/tlottie/profiles.properties"))
+    buildDir.set(layout.buildDirectory.dir("generated/tgx/tlottie-profile/$name"))
+  }
+}
+
 val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
   (it.usesLegacyNdk == useLegacyNdk || config.build.primaryNdkVersion == config.build.legacyNdkVersion)
 }.flatMap { sdkVariant ->
@@ -265,12 +399,11 @@ val buildFfmpegTasks = Sdk.VARIANTS.values.filter {
       ndkVersion.set(android.ndkVersion)
       hostTag.set(findHostTag())
       // Input
-      inputDir.set(layout.projectDirectory.dir(
-        "jni/third_party/ffmpeg"
-      ))
+      inputDir.set(patchFfmpegTask.flatMap {
+        it.outputDir
+      })
       inputSources.from(inputDir.asFileTree.matching {
         exclude(
-          ".git",
           "doc",
           "tests",
           "*.md"
@@ -348,6 +481,13 @@ android {
     resValue("string", "AppName", config.applicationName)
     resValue("string", "account_type", "${config.applicationId}.sync.account")
     resValue("string", "content_authority", "${config.applicationId}.sync.provider")
+
+    if (hasFirebaseMessaging && customGoogleServices != null) {
+      googleServicesValues(customGoogleServices, config.applicationId).forEach { (name, value) ->
+        resValue("string", name, value)
+      }
+    }
+    buildConfigBool("FIREBASE_MESSAGING_ENABLED", hasFirebaseMessaging)
 
     buildConfigString("PROJECT_NAME", config.applicationName)
     buildConfigString("SAFETYNET_API_KEY", config.safetyNetToken)
@@ -574,6 +714,7 @@ android {
             "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
             "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}",
             "-DTGX_FLAVOR=${variant.flavor}",
+            "-DTGX_BRANCH_PROTECTION=${if (variant.usesBranchProtection) "ON" else "OFF"}",
             "-DTGX_ROOT_DIR=${project.isolated.rootProject.projectDirectory.asFile.absoluteFile.invariantSeparatorsPath}",
             "-DFFMPEG_LIBS=${Config.FFMPEG_LIBS.joinToString(";")}"
           )
@@ -590,6 +731,9 @@ android {
             ),
             "FFMPEG_DIR" to layout.buildDirectory.dir(
               "generated/tgx/ffmpeg/${variant.flavor}"
+            ),
+            "TLOTTIE_DIR" to layout.buildDirectory.dir(
+              "generated/tgx/tlottie/${variant.flavor}"
             )
           ).map {
             "-D${it.key}=${it.value.get().asFile.absoluteFile.invariantSeparatorsPath}"
@@ -710,6 +854,7 @@ android {
         val buildFfmpegTask = buildFfmpegTasks[key] ?: error("ffmpeg task not found for $key")
         nativeBuildTasks += buildLibvpxTask
         nativeBuildTasks += buildFfmpegTask
+        nativeBuildTasks += buildTlottieTasks[key] ?: error("tlottie task not found for $key")
       }
 
       val buildNativeTask = tasks.register<ValidateNativeBuildTask>(
@@ -896,27 +1041,14 @@ android {
           "src/google/$folderName/AndroidManifest.xml"
         )
       }
-
-      if (variant.isMinifyEnabled) {
-        val variantName = variant.name.uppercaseFirstChar()
-        val copyTask = project.tasks.register<Copy>(
-          "copy${variantName}MappingFile"
-        ) {
-          description = "Creates a copy of mapping.txt with a build name"
-          from(variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE))
-          into(project.layout.buildDirectory.dir("outputs/mapping/${variant.name}"))
-          val mappingFileName = "${config.outputFileNamePrefix}-$baseVersionName.$baseVersionCode$flavorVersionNameSuffix$buildTypeSuffix"
-          rename("mapping.txt", "$mappingFileName.txt")
-        }
-        project.afterEvaluate {
-          project.tasks.findByName("assemble$variantName")?.finalizedBy(copyTask)
-        }
-      }
     }
   }
 }
 
-configureTests()
+val hasTests = rootDir.resolve("tests/.git").exists()
+if (hasTests) {
+  apply(plugin = "tgx-tests-app")
+}
 
 extensions.configure<BaselineProfileConsumerExtension> {
   mergeIntoMain = false
@@ -924,10 +1056,12 @@ extensions.configure<BaselineProfileConsumerExtension> {
   saveInSrc = true
   warnings.disabledVariants = false
   warnings.variantHasNoBaselineProfileDependency = false
-  Sdk.VARIANTS.values.filter {
-    it.usesBaselineProfile
-  }.forEach { variant ->
-    variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
+  if (hasTests) {
+    Sdk.VARIANTS.values.filter {
+      it.usesBaselineProfile
+    }.forEach { variant ->
+      variants.create("${variant.flavor}Release").from(project(":tests:baseline-profile"))
+    }
   }
 }
 
@@ -1010,6 +1144,13 @@ dependencies {
     libs.androidx.exifinterface.latest
   )
   implementation(libs.androidx.biometric)
+  Sdk.VARIANTS.values
+    .filter {
+      "sinceMarshmallowPreQ" in findExtraFolders(it)
+    }
+    .forEach {
+      "${it.flavor}CompileOnly"(project(":stub:fingerprint"))
+    }
   flavorImplementation(
     libs.androidx.palette.legacy,
     libs.androidx.palette.legacy,
@@ -1022,21 +1163,25 @@ dependencies {
   flavorImplementation(
     libs.androidx.camera.camera2.legacy,
     libs.androidx.camera.camera2.legacy,
+    libs.androidx.camera.camera2.marshmallow,
     libs.androidx.camera.camera2.latest
   )
   flavorImplementation(
     libs.androidx.camera.video.legacy,
     libs.androidx.camera.video.legacy,
+    libs.androidx.camera.video.marshmallow,
     libs.androidx.camera.video.latest
   )
   flavorImplementation(
     libs.androidx.camera.lifecycle.legacy,
     libs.androidx.camera.lifecycle.legacy,
+    libs.androidx.camera.lifecycle.marshmallow,
     libs.androidx.camera.lifecycle.latest
   )
   flavorImplementation(
     libs.androidx.camera.view.legacy,
     libs.androidx.camera.view.legacy,
+    libs.androidx.camera.view.marshmallow,
     libs.androidx.camera.view.latest
   )
   // Google Play Services: https://developers.google.com/android/guides/releases
@@ -1170,13 +1315,16 @@ dependencies {
   compileOnly(libs.annotations.jsr305)
   compileOnly(libs.annotations.kotlin)
 
-  // Tests: tests/README.md
-  testImplementation(libs.bundles.unit.test)
-  androidTestImplementation(project(":tests:core"))
+  if (hasTests) {
+    testImplementation(libs.bundles.unit.test)
+    androidTestImplementation(project(":tests:core"))
+  }
 }
 
 if (!config.isExperimentalBuild) {
-  apply(plugin = libs.plugins.google.services.get().pluginId)
+  if (customGoogleServices == null) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
+  }
   if (config.isHuaweiBuild) {
     apply(plugin = libs.huawei.agconnect.get().group)
   }

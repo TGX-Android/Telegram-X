@@ -34,6 +34,7 @@
   <item type="id" name="menu_chatBulkActions" />
   <item type="id" name="menu_search" />
   <item type="id" name="menu_archive" />
+  <item type="id" name="menu_calls" />
   <item type="id" name="menu_clear" />
   <item type="id" name="menu_emoji" />
   <item type="id" name="menu_editLangPack" />
@@ -269,6 +270,7 @@
   <item type="id" name="msg_list" />
   <item type="id" name="msg_bottomShadow" />
   <item type="id" name="msg_bottomReply" />
+  <item type="id" name="msg_topBar" />
 
   <item type="id" name="emoji" />
   <item type="id" name="emoji_recent" />
@@ -401,6 +403,7 @@
   <item type="id" name="btn_cameraTypeLegacy" />
   <item type="id" name="btn_cameraTypeSystem" />
   <item type="id" name="btn_markdown" />
+  <item type="id" name="btn_wrapCodeBlocks" />
   <item type="id" name="btn_sizeUnit" />
   <item type="id" name="btn_forceExoPlayerExtensions" />
   <item type="id" name="btn_audioCompression" />
@@ -498,6 +501,7 @@
   <item type="id" name="btn_chatSettings" />
   <item type="id" name="btn_devices" />
   <item type="id" name="btn_notificationSettings" />
+  <item type="id" name="btn_callSettings" />
   <item type="id" name="btn_privacySettings" />
   <item type="id" name="btn_languageSettings" />
   <item type="id" name="btn_stickerSettings" />
@@ -606,6 +610,7 @@
   <item type="id" name="btn_pattern" />
   <item type="id" name="btn_biometrics" />
   <item type="id" name="btn_screenCapture" />
+  <item type="id" name="btn_passcodeCalls" />
   <item type="id" name="btn_notificationContent" />
   <item type="id" name="btn_passcode_change" />
   <item type="id" name="btn_passcode_auto" />
@@ -624,6 +629,9 @@
   <item type="id" name="btn_proxyHttp" />
   <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
+  <item type="id" name="btn_fullScreenAlerts" />
+  <item type="id" name="btn_resetCallSettings" />
+  <item type="id" name="btn_resetOtherAccounts" />
   <item type="id" name="btn_autoplayGIFs" />
   <item type="id" name="btn_quickTranslate" />
   <item type="id" name="btn_translate" />
@@ -825,6 +833,7 @@
   <item type="id" name="btn_installStickerSet" />
   <item type="id" name="btn_shareLink" />
   <item type="id" name="btn_disabled" />
+  <item type="id" name="btn_enabled" />
   <item type="id" name="membersList" />
   <item type="id" name="btn_default" />
 
@@ -1095,6 +1104,7 @@
   <item type="id" name="btn_customChat_sound" />
   <item type="id" name="btn_customChat_calls_ringtone" />
   <item type="id" name="btn_customChat_calls_vibrate" />
+  <item type="id" name="btn_customChat_calls_channel" />
   <item type="id" name="btn_customChat_pinnedMessages" />
   <item type="id" name="btn_customChat_mentions" />
   <item type="id" name="btn_customChat_led" />
@@ -1106,6 +1116,8 @@
 
   <item type="id" name="btn_calls_ringtone" />
   <item type="id" name="btn_calls_vibrate" />
+  <item type="id" name="btn_calls_channel" />
+  <item type="id" name="btn_calls_acceptOnDevice" />
 
   <item type="id" name="btn_previewChat" />
   <item type="id" name="btn_inApp_chatSounds" />

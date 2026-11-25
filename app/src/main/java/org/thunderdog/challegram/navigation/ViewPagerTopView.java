@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
@@ -24,7 +25,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Shader;
-import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.text.Layout;
 import android.text.Spanned;
@@ -58,7 +58,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -145,14 +145,6 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       this.counter = counter;
       this.provider = provider;
       this.hidden = hidden;
-    }
-
-    private Drawable icon;
-
-    public Drawable getIcon () {
-      if (icon == null && iconRes != 0)
-        icon = Drawables.get(iconRes);
-      return icon;
     }
 
     @Override
@@ -1120,8 +1112,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
             if (item.ellipsizedStringLayout != null) {
               int stringX;
               if (item.iconRes != 0) {
-                Drawable drawable = item.getIcon();
-                Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+                drawIcon(c, item.iconRes, cx + horizontalPadding, viewHeight, color);
                 stringX = cx + horizontalPadding + Screen.dp(ICON_SIZE) + itemSpacing;
               } else {
                 stringX = cx + horizontalPadding;
@@ -1137,8 +1128,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
               item.imageReceiver.drawScaled(c, item.imageReceiverScale);
               item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, textAlpha, backgroundAlpha, imageAlpha, item.provider, ColorId.NONE);
             } else if (item.iconRes != 0) {
-              Drawable drawable = item.getIcon();
-              Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+              drawIcon(c, item.iconRes, cx + horizontalPadding, viewHeight, color);
               item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ColorId.NONE);
               if (item.isAnimating() && item.oldItem != null && item.oldItem.ellipsizedStringLayout != null) {
                 int stringX = cx + horizontalPadding + Screen.dp(ICON_SIZE) + itemSpacing;
@@ -1153,8 +1143,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           } else if (item.ellipsizedStringLayout != null) {
             int stringX;
             if (item.iconRes != 0) {
-              Drawable drawable = item.getIcon();
-              Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+              drawIcon(c, item.iconRes, cx + horizontalPadding, viewHeight, color);
               stringX = cx + horizontalPadding + Screen.dp(ICON_SIZE) + itemSpacing;
             } else {
               stringX = cx + itemWidth / 2 - contentWidth / 2;
@@ -1162,8 +1151,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
             int stringY = viewHeight / 2 - item.ellipsizedStringLayout.getHeight() / 2;
             drawLabel(c, item, stringX, stringY, color, itemSelectionFactor);
           } else if (item.iconRes != 0) {
-            Drawable drawable = item.getIcon();
-            Drawables.draw(c, drawable, cx + itemWidth / 2 - drawable.getMinimumWidth() / 2, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+            int iconWidth = Icons.getBitmap(item.iconRes).getWidth();
+            drawIcon(c, item.iconRes, cx + itemWidth / 2 - iconWidth / 2, viewHeight, color);
             if (item.isAnimating() && item.oldItem != null && item.oldItem.ellipsizedStringLayout != null) {
               int stringX = cx + horizontalPadding + Screen.dp(ICON_SIZE) + itemSpacing;
               int stringY = viewHeight / 2 - item.oldItem.ellipsizedStringLayout.getHeight() / 2;
@@ -1231,6 +1220,18 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   {
     labelFadingEdgePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
     labelFadingEdgePaint.setShader(new LinearGradient(0, 0, 1, 0, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP));
+  }
+
+  @SuppressWarnings("deprecation")
+  private static void drawIcon (
+    Canvas c,
+    @DrawableRes int iconRes,
+    int x,
+    int viewHeight,
+    int color
+  ) {
+    Bitmap icon = Icons.getBitmap(iconRes);
+    c.drawBitmap(icon, x, viewHeight / 2 - icon.getHeight() / 2, Paints.getPorterDuffPaint(color));
   }
 
   private void drawLabel (Canvas c, Item item, float x, float y, int color, float itemSelectionFactor) {

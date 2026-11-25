@@ -1,0 +1,16 @@
+FFmpeg/FFmpeg@5647739dddb2679ebfe488d6745f0fa1f405bc5d
+avformat/mov: keep frag_index.current on its fragment in update_frag_index()
+
+diff --git a/libavformat/mov.c b/libavformat/mov.c
+index e3e0100e11..77402ad2ec 100644
+--- a/libavformat/mov.c
++++ b/libavformat/mov.c
+@@ -1917,6 +1917,8 @@ static int update_frag_index(MOVContext *c, int64_t offset)
+     if (index < c->frag_index.nb_items)
+         memmove(c->frag_index.item + index + 1, c->frag_index.item + index,
+                 (c->frag_index.nb_items - index) * sizeof(*c->frag_index.item));
++    if (index <= c->frag_index.current)
++        c->frag_index.current++;
+ 
+     item = &c->frag_index.item[index];
+     item->headers_read = 0;

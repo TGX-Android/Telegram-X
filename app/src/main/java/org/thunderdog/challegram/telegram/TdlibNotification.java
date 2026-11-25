@@ -152,6 +152,11 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     return notification.isSilent;
   }
 
+  public boolean isCall () {
+    TdApi.Message message = findMessage();
+    return message != null && message.content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR;
+  }
+
   public TdApi.Message findMessage () {
     return notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR ? ((TdApi.NotificationTypeNewMessage) notification.type).message : null;
   }

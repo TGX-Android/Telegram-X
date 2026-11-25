@@ -26,23 +26,31 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
 import tgx.td.ChatId;
 
-public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMembersController.Args> implements View.OnClickListener, Client.ResultHandler, TdlibCache.UserDataChangeListener {
+public class ChatLinkMembersController
+  extends RecyclerViewController<ChatLinkMembersController.Args>
+  implements View.OnClickListener, Client.ResultHandler, TdlibCache.UserDataChangeListener,
+  DateChangeListener {
   private ArrayList<TGUser> senders;
-  private ArrayList<TdApi.ChatInviteLinkMember> sendersTdlib = new ArrayList<>();
+  private final ArrayList<TdApi.ChatInviteLinkMember> sendersTdlib = new ArrayList<>();
+  private TdApi.ChatInviteLinkMember lastSender;
 
   private DoubleHeaderView headerCell;
   private SettingsAdapter adapter;
@@ -162,13 +170,16 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
         ArrayList<TGUser> list = new ArrayList<>(senders.members.length);
 
         for (TdApi.ChatInviteLinkMember sender : senders.members) {
-          sendersTdlib.add(sender);
           list.add(parseSender(tdlib, sender, list));
         }
 
         tdlib.ui().post(() -> {
           if (!isDestroyed()) {
             this.senders = list;
+            Collections.addAll(sendersTdlib, senders.members);
+            if (senders.members.length > 0) {
+              this.lastSender = senders.members[senders.members.length - 1];
+            }
             this.loadOffset = senders.members.length;
             this.canLoadMore = loadOffset <= senders.totalCount;
             buildCells();
@@ -179,6 +190,18 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
     });
 
     tdlib.listeners().subscribeForGlobalUpdates(this);
+    tdlib.context().dateManager().addListener(this);
+  }
+
+  @Override
+  public void onTimeFormatChanged () {
+    if (senders == null) {
+      return;
+    }
+    for (int i = 0; i < senders.size(); i++) {
+      senders.get(i).setCustomStatus(memberSince(sendersTdlib.get(i)));
+    }
+    Views.updateRows(getRecyclerView(), 0, adapter.getItemCount(), Views::updateRowTimes);
   }
 
   private void openRightsScreen (long userId) {
@@ -202,6 +225,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
   public void destroy () {
     super.destroy();
     tdlib.listeners().unsubscribeFromGlobalUpdates(this);
+    tdlib.context().dateManager().removeListener(this);
   }
 
   @Override
@@ -213,7 +237,6 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
     final TdApi.ChatInviteLinkMembers senders = (TdApi.ChatInviteLinkMembers) object;
     final ArrayList<TGUser> parsedChats = new ArrayList<>(senders.members.length);
     for (TdApi.ChatInviteLinkMember sender : senders.members) {
-      sendersTdlib.add(sender);
       parsedChats.add(parseSender(tdlib, sender, this.senders));
     }
 
@@ -223,13 +246,18 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
           isLoadingMore = false;
           loadOffset += senders.members.length;
           canLoadMore = loadOffset <= senders.totalCount;
+          lastSender = senders.members[senders.members.length - 1];
 
+          ArrayList<TdApi.ChatInviteLinkMember> members =
+            new ArrayList<>(Arrays.asList(senders.members));
           for (int i = parsedChats.size() - 1; i >= 0; i--) {
             if (indexOfSender(parsedChats.get(i).getChatId()) != -1) {
               parsedChats.remove(i);
+              members.remove(i);
             }
           }
 
+          sendersTdlib.addAll(members);
           addSenders(parsedChats);
         }
       });
@@ -295,17 +323,25 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
   private static TGUser parseSender (Tdlib tdlib, TdApi.ChatInviteLinkMember sender, ArrayList<TGUser> senders) {
     TGUser parsedUser = new TGUser(tdlib, tdlib.cache().user(sender.userId));
     parsedUser.setNoBotState();
-    parsedUser.setCustomStatus(Lang.getString(R.string.MemberSince, Lang.getDate(sender.joinedChatDate, TimeUnit.SECONDS), Lang.time(sender.joinedChatDate, TimeUnit.SECONDS)));
+    parsedUser.setCustomStatus(memberSince(sender));
     parsedUser.setBoundList(senders);
     return parsedUser;
   }
 
+  private static String memberSince (TdApi.ChatInviteLinkMember sender) {
+    return Lang.getString(R.string.MemberSince,
+      Lang.getDate(sender.joinedChatDate, TimeUnit.SECONDS),
+      Lang.time(sender.joinedChatDate, TimeUnit.SECONDS)
+    );
+  }
+
   private void loadMore () {
-    if (isLoadingMore || !canLoadMore || sendersTdlib.isEmpty()) {
+    if (isLoadingMore || !canLoadMore || lastSender == null) {
       return;
     }
 
     isLoadingMore = true;
-    tdlib.client().send(new TdApi.GetChatInviteLinkMembers(getArgumentsStrict().chatId, getArgumentsStrict().inviteLink, false, sendersTdlib.get(sendersTdlib.size() - 1), 50), this);
+    tdlib.client().send(new TdApi.GetChatInviteLinkMembers(getArgumentsStrict().chatId,
+      getArgumentsStrict().inviteLink, false, lastSender, 50), this);
   }
 }

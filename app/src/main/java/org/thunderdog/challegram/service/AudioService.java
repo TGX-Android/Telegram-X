@@ -34,7 +34,6 @@ import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.media3.common.C;
 import androidx.media3.extractor.metadata.id3.ApicFrame;
 
@@ -547,7 +546,6 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
     emptyCover = tryCreatePlaceholder();
   }
 
-  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void setSessionMetadata () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
       TdApi.Audio audio = ((TdApi.MessageAudio) currentTrack.content).audio;
@@ -582,7 +580,6 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
     }
   }
 
-  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
   private void setSessionPlayState () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
       android.media.session.MediaSession session = (android.media.session.MediaSession) mediaSession;

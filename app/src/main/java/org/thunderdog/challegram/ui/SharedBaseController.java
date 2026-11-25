@@ -32,7 +32,9 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.InlineResult;
+import org.thunderdog.challegram.data.InlineResultCommon;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
@@ -190,6 +192,22 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     recyclerView.setItemAnimator(null); // new CustomItemAnimator(Anim.DECELERATE_INTERPOLATOR, 180l));
     tdlib.ui().attachViewportToRecyclerView(messageViewport, recyclerView);
     adapter = new SettingsAdapter(this, needsDefaultOnClick() ? this : null, this) {
+      @Override
+      protected void updateTimes () {
+        // Rows show one of the two lists, and the other one comes back when the search starts or
+        // ends
+        final ArrayList<T> hidden = isSearching() ? data : searchData;
+        if (hidden != null) {
+          for (T model : hidden) {
+            if (model instanceof DoubleTextWrapper) {
+              ((DoubleTextWrapper) model).updateTimes();
+            } else if (model instanceof InlineResultCommon) {
+              ((InlineResultCommon) model).updateTimes();
+            }
+          }
+        }
+      }
+
       @Override
       protected void setInfo (ListItem item, int position, ListInfoView infoView) {
         if (isLoading || canLoadMore()) {

@@ -4,3 +4,6 @@ name: "White Black"
 time: 1601809494
 @
 parentTheme: 1
+#
+codeBlockBackground, bubbleIn_codeBlockBackground: #0000000F
+codeBlockRipple, bubbleIn_codeBlockRipple: #0000001E

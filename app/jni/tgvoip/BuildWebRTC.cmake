@@ -2737,7 +2737,8 @@ elseif(${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "x86")
     "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse.c"
     "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
     "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_sse2.cc"
-
+  )
+  set(WEBRTC_AVX2_SOURCES
     "${WEBRTC_DIR}/common_audio/resampler/sinc_resampler_avx2.cc"
     "${WEBRTC_DIR}/common_audio/fir_filter_avx2.cc"
 
@@ -2748,14 +2749,13 @@ elseif(${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "x86")
     "${WEBRTC_DIR}/modules/audio_processing/aec3/matched_filter_avx2.cc"
     "${WEBRTC_DIR}/modules/audio_processing/aec3/fft_data_avx2.cc"
   )
+  target_sources(webrtc PRIVATE ${WEBRTC_AVX2_SOURCES})
+  set_source_files_properties(${WEBRTC_AVX2_SOURCES} PROPERTIES
+    COMPILE_OPTIONS "-mavx2;-mfma"
+  )
   target_compile_definitions(webrtc PRIVATE
     HAVE_SSE2
   )
-  foreach(feature avx avx2 fma)
-    if(NOT CMAKE_CXX_FLAGS MATCHES "-m${feature}")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m${feature}")
-    endif()
-  endforeach()
 else()
   message(FATAL_ERROR "Unknown abi: ${ANDROID_ABI}")
 endif()

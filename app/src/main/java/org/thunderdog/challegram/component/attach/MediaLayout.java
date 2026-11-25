@@ -1177,7 +1177,7 @@ public class MediaLayout extends FrameLayoutFix implements
     if ((files == null || files.isEmpty()) && (musicFiles == null || musicFiles.isEmpty()))
       return;
     if (files != null && !files.isEmpty()) {
-      if (target != null && target.showRestriction(view, RightId.SEND_DOCS)) {
+      if (target != null && target.showFilesRestriction(view, files, null)) {
         return;
       }
     }
@@ -1193,11 +1193,18 @@ public class MediaLayout extends FrameLayoutFix implements
     } else {
       needGroupMedia = !Settings.instance().rememberAlbumSetting() || Settings.instance().needGroupMedia();
     }
+    List<String> filePaths = files != null ? files : Collections.emptyList();
+    int musicCount = musicFiles != null ? musicFiles.size() : 0;
+    boolean isRestricted = target != null && target.showSingleMessageRestriction(
+      view, filePaths, null, musicCount, needGroupMedia, options
+    );
+    if (isRestricted) {
+      return;
+    }
     if (target != null) {
-      if (files != null) {
-        target.sendFiles(view, files, needGroupMedia, true, options);
-      }
-      if (musicFiles != null) {
+      if (files != null && !files.isEmpty()) {
+        target.sendFiles(view, files, musicFiles, needGroupMedia, true, options);
+      } else if (musicFiles != null) {
         target.sendMusic(view, musicFiles, needGroupMedia, true, options);
       }
     }
@@ -1205,18 +1212,13 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void sendFile (View v, String file) {
-    if (target != null && target.showRestriction(v, RightId.SEND_DOCS)) {
+    List<String> files = Collections.singletonList(file);
+    if (target != null && target.showFilesRestriction(v, files, null)) {
       return;
     }
-    pickDateOrProceed((sendOptions, disableMarkdown) -> {
-      if (target != null) {
-        if (target.showRestriction(v, RightId.SEND_DOCS)) {
-          return;
-        }
-        target.sendFiles(v, Collections.singletonList(file), needGroupMedia, true, sendOptions);
-      }
-      hide(false);
-    });
+    pickDateOrProceed((sendOptions, disableMarkdown) ->
+      sendFilesMixed(v, files, null, sendOptions, false)
+    );
   }
 
   public void sendMusic (View view, MediaBottomFilesController.MusicEntry musicFile) {
@@ -1269,6 +1271,9 @@ public class MediaLayout extends FrameLayoutFix implements
         if (target.showRestriction(view, text)) {
           return false;
         }
+        if (images.size() > 1 && target.showSingleMessageRestriction(view, options)) {
+          return false;
+        }
       }
       boolean first = true;
       for (ImageFile rawFile : images) {
@@ -1308,7 +1313,15 @@ public class MediaLayout extends FrameLayoutFix implements
             break;
           }
         }
-        if (target.showPhotoVideoRestriction(view, havePhotos, haveVideos)) {
+        if (target.showPhotoVideoRestriction(view, havePhotos && !asFiles, haveVideos) ||
+          (havePhotos && asFiles && target.showRestriction(view, RightId.SEND_DOCS))) {
+          return false;
+        }
+        // Photos sent as files are documents, apart from the videos
+        boolean isSeveralMessages =
+          (images.size() > 1 && (!needGroupMedia || (asFiles && havePhotos && haveVideos))) ||
+          images.size() > TdConstants.MAX_MESSAGE_GROUP_SIZE;
+        if (isSeveralMessages && target.showSingleMessageRestriction(view, options)) {
           return false;
         }
       }

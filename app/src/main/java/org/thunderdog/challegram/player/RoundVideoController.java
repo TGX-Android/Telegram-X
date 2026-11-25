@@ -1185,7 +1185,9 @@ public class RoundVideoController extends BasePlaybackController implements
             if (outSp.canAnimateScrollPosition) {
               smoothScrollBy((MessagesController) c, outSp.dy, outSp.duration);
             } else {
-              ((MessagesController) c).getManager().getLayoutManager().scrollToPositionWithOffset(outSp.index, outSp.offset);
+              final MessagesManager manager = ((MessagesController) c).getManager();
+              manager.messageResize().onListScrolled();
+              manager.getLayoutManager().scrollToPositionWithOffset(outSp.index, outSp.offset);
             }
 
             awaitingCurrentView = c.isFocused();

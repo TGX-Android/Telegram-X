@@ -30,6 +30,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
@@ -93,6 +94,7 @@ import java.io.RandomAccessFile;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.Reference;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -328,6 +330,8 @@ public class Settings {
   private static final String KEY_SCROLL_CHAT_OFFSET = "_offset";
   private static final String KEY_SCROLL_CHAT_READ_FULLY = "_read";
   private static final String KEY_SCROLL_CHAT_TOP_END = "_top";
+  private static final String KEY_SCROLL_CHAT_STATES = "_states";
+  private static final String KEY_SCROLL_CHAT_RETURN_TO_STATES = "_stack_states";
   private static final @Deprecated String KEY_PUSH_USER_IDS = "push_user_ids";
   private static final @Deprecated String KEY_PUSH_USER_ID = "push_user_id";
   private static final String KEY_PUSH_DEVICE_TOKEN_TYPE = "push_device_token_type";
@@ -335,6 +339,7 @@ public class Settings {
   private static final String KEY_PUSH_STATS_TOTAL_COUNT = "push_stats_total";
   private static final String KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT = "push_stats_app";
   private static final String KEY_PUSH_STATS_CURRENT_TOKEN_COUNT = "push_stats_token";
+  private static final String KEY_CALL_BACK_TOKEN = "call_back_token";
   private static final String KEY_PUSH_LAST_RECEIVED_TIME = "push_last_received_time";
   private static final String KEY_PUSH_LAST_SENT_TIME = "push_last_sent_time";
   private static final String KEY_PUSH_LAST_TTL = "push_last_ttl";
@@ -429,6 +434,7 @@ public class Settings {
   public static final long SETTING_FLAG_DYNAMIC_ORDER_EMOJI_PACKS = 1 << 18;
   public static final long SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE = 1 << 19;
   public static final long SETTING_FLAG_FORCE_DISABLE_HLS_VIDEO = 1 << 20;
+  public static final long SETTING_FLAG_WRAP_CODE_BLOCKS = 1 << 21;
 
   public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
   public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
@@ -521,6 +527,7 @@ public class Settings {
   public static final long TUTORIAL_MULTIPLE_LINK_PREVIEWS = 1 << 20;
   public static final long TUTORIAL_PLAYBACK_SPEED_HOLD = 1 << 21;
   public static final long TUTORIAL_PLAYBACK_SPEED_SWIPE = 1 << 22;
+  public static final long TUTORIAL_INPUT_QUOTE_BUTTON = 1 << 23;
 
   @Nullable
   private Long _tutorialFlags;
@@ -968,6 +975,18 @@ public class Settings {
 
   public long getLong (String key, long defValue) {
     return pmc.getLong(key, defValue);
+  }
+
+  public synchronized long getCallBackToken () {
+    long token = getLong(KEY_CALL_BACK_TOKEN, 0);
+    if (token == 0) {
+      SecureRandom random = new SecureRandom();
+      do {
+        token = random.nextLong();
+      } while (token == 0);
+      putLong(KEY_CALL_BACK_TOKEN, token);
+    }
+    return token;
   }
 
   public long[] getLongArray (String key) {
@@ -4260,6 +4279,8 @@ public class Settings {
     public final long[] returnToMessageIds;
     public final boolean readFully;
     public final long topEndMessageId;
+    // Of messages on the screen, and of the messages to return to with their positions
+    public final @Nullable MessageState[] states, returnToStates;
 
     public static class Builder {
       private long messageChatId, messageId, topEndMessageId;
@@ -4268,22 +4289,189 @@ public class Settings {
       private int offsetPixels;
       private long[] returnToMessageIds;
       private boolean readFully;
+      private @Nullable MessageState[] states, returnToStates;
 
       public Builder (long chatId) {
         this.messageChatId = chatId;
       }
 
       public SavedMessageId build () {
-        return new SavedMessageId(new MessageId(messageChatId, messageId, otherMessageIds), offsetPixels, returnToMessageIds, readFully, topEndMessageId);
+        return new SavedMessageId(
+          new MessageId(messageChatId, messageId, otherMessageIds),
+          offsetPixels,
+          returnToMessageIds,
+          readFully,
+          topEndMessageId,
+          states,
+          returnToStates
+        );
       }
     }
 
-    public SavedMessageId (MessageId id, int offsetPixels, long[] returnToMessageId, boolean readFully, long topEndMessageId) {
+    public SavedMessageId (
+      MessageId id,
+      int offsetPixels,
+      long[] returnToMessageId,
+      boolean readFully,
+      long topEndMessageId,
+      @Nullable MessageState[] states,
+      @Nullable MessageState[] returnToStates
+    ) {
       this.id = id;
       this.offsetPixels = offsetPixels;
       this.returnToMessageIds = returnToMessageId;
       this.readFully = readFully;
       this.topEndMessageId = topEndMessageId;
+      this.states = states;
+      this.returnToStates = returnToStates;
+    }
+  }
+
+  /**
+   * States of a message that a user left, kept with the position of its chat, so that the chat
+   * opens as it was left: blocks that the user switched, e.g. expanded quotes, and
+   * the last animated change of its height, which a change back returns from until the list is
+   * dragged. offsetPixels is its position in the list, for a message to return to
+   */
+  public static class MessageState {
+    public static final int BLOCK_ON = 1;
+
+    // Of the stored form, which is read only by its own version
+    private static final int VERSION = 1;
+    private static final int FLAG_RESIZE = 1;
+
+    public final long messageId;
+    // A later edit date means that blocks could change, so the states aren't restored
+    public final int editDate;
+    public final int offsetPixels;
+    // Pairs of an id of a block and its flags, or null
+    public final @Nullable int[] blocks;
+    // Top where the change started minus top after it, heights before and after it, or null
+    public final @Nullable int[] resize;
+
+    public MessageState (
+      long messageId,
+      int editDate,
+      int offsetPixels,
+      @Nullable int[] blocks,
+      @Nullable int[] resize
+    ) {
+      this.messageId = messageId;
+      this.editDate = editDate;
+      this.offsetPixels = offsetPixels;
+      this.blocks = blocks;
+      this.resize = resize;
+    }
+
+    public MessageState withMessageId (long messageId) {
+      return new MessageState(messageId, editDate, offsetPixels, blocks, resize);
+    }
+
+    public static @Nullable MessageState find (@Nullable MessageState[] states, long messageId) {
+      if (states != null) {
+        for (MessageState state : states) {
+          if (state.messageId == messageId) {
+            return state;
+          }
+        }
+      }
+      return null;
+    }
+
+    private static byte[] toByteArray (MessageState[] states) {
+      // Of the size of the result, as each write grows a smaller array by a copy
+      final Blob blob = new Blob(sizeOf(states));
+      blob.writeVarint(VERSION);
+      blob.writeVarint(states.length);
+      for (MessageState state : states) {
+        blob.writeVarLong(state.messageId);
+        blob.writeVarint(state.editDate);
+        blob.writeVarLong(state.offsetPixels);
+        blob.writeVarint(state.resize != null ? FLAG_RESIZE : 0);
+        if (state.resize != null) {
+          blob.writeVarLong(state.resize[0]);
+          blob.writeVarint(state.resize[1]);
+          blob.writeVarint(state.resize[2]);
+        }
+        final int blockCount = state.blocks != null ? state.blocks.length / 2 : 0;
+        blob.writeVarint(blockCount);
+        for (int i = 0; i < blockCount * 2; i++) {
+          blob.writeVarint(state.blocks[i]);
+        }
+      }
+      return blob.toByteArray();
+    }
+
+    private static int sizeOf (MessageState[] states) {
+      // As toByteArray writes them: varints by Blob.sizeOf(int), varlongs by Blob.sizeOf(long)
+      int size = Blob.sizeOf(VERSION) + Blob.sizeOf(states.length);
+      for (MessageState state : states) {
+        size += Blob.sizeOf(state.messageId) + Blob.sizeOf(state.editDate) +
+          Blob.sizeOf((long) state.offsetPixels) +
+          Blob.sizeOf(state.resize != null ? FLAG_RESIZE : 0);
+        if (state.resize != null) {
+          size += Blob.sizeOf((long) state.resize[0]) + Blob.sizeOf(state.resize[1]) +
+            Blob.sizeOf(state.resize[2]);
+        }
+        final int blockCount = state.blocks != null ? state.blocks.length / 2 : 0;
+        size += Blob.sizeOf(blockCount);
+        for (int i = 0; i < blockCount * 2; i++) {
+          size += Blob.sizeOf(state.blocks[i]);
+        }
+      }
+      return size;
+    }
+
+    private static @Nullable MessageState[] fromByteArray (@Nullable byte[] data) {
+      if (data == null) {
+        return null;
+      }
+      try {
+        final Blob blob = new Blob(data);
+        if (blob.readVarint() != VERSION) {
+          return null;
+        }
+        // Each value takes a byte at least, so a broken count is found before it's allocated
+        final int count = blob.readVarint();
+        if (count < 0 || count > blob.remaining()) {
+          return null;
+        }
+        final MessageState[] states = new MessageState[count];
+        for (int i = 0; i < states.length; i++) {
+          final long messageId = blob.readVarLong();
+          final int editDate = blob.readVarint();
+          final int offsetPixels = (int) blob.readVarLong();
+          final int flags = blob.readVarint();
+          int[] resize = null;
+          if (BitwiseUtils.hasFlag(flags, FLAG_RESIZE)) {
+            resize = new int[] {(int) blob.readVarLong(), blob.readVarint(), blob.readVarint()};
+          }
+          final int blockCount = blob.readVarint();
+          if (blockCount < 0 || blockCount > blob.remaining() / 2) {
+            return null;
+          }
+          final int[] blocks = blockCount > 0 ? new int[blockCount * 2] : null;
+          for (int j = 0; j < blockCount * 2; j++) {
+            blocks[j] = blob.readVarint();
+          }
+          states[i] = new MessageState(messageId, editDate, offsetPixels, blocks, resize);
+        }
+        return states;
+      } catch (RuntimeException e) {
+        return null;
+      }
+    }
+
+    private static @Nullable byte[] replaceMessageId (byte[] data, long oldId, long newId) {
+      final MessageState[] states = fromByteArray(data);
+      boolean found = false;
+      for (int i = 0; states != null && i < states.length; i++) {
+        if (states[i].messageId == oldId) {
+          states[i] = states[i].withMessageId(newId);
+          found = true;
+        }
+      }
+      return found ? toByteArray(states) : null;
     }
   }
 
@@ -4299,6 +4487,9 @@ public class Settings {
     String keyOffset = makeScrollChatKey(KEY_SCROLL_CHAT_OFFSET, accountId, chatId, topicId);
     String keyReadFully = makeScrollChatKey(KEY_SCROLL_CHAT_READ_FULLY, accountId, chatId, topicId);
     String keyTopEnd = makeScrollChatKey(KEY_SCROLL_CHAT_TOP_END, accountId, chatId, topicId);
+    String keyStates = makeScrollChatKey(KEY_SCROLL_CHAT_STATES, accountId, chatId, topicId);
+    String keyReturnToStates =
+      makeScrollChatKey(KEY_SCROLL_CHAT_RETURN_TO_STATES, accountId, chatId, topicId);
     SharedPreferences.Editor editor = edit();
     if (savedMessageId == null) {
       editor
@@ -4308,8 +4499,12 @@ public class Settings {
         .remove(keyOffset)
         .remove(keyAliases)
         .remove(keyReadFully)
-        .remove(keyTopEnd);
+        .remove(keyTopEnd)
+        .remove(keyStates)
+        .remove(keyReturnToStates);
     } else {
+      putMessageStates(editor, keyStates, savedMessageId.states);
+      putMessageStates(editor, keyReturnToStates, savedMessageId.returnToStates);
       editor.putLong(keyId, savedMessageId.id.getMessageId());
       if (savedMessageId.id.getChatId() != chatId) {
         editor.putLong(keyChatId, savedMessageId.id.getChatId());
@@ -4346,6 +4541,18 @@ public class Settings {
       }
     }
     editor.apply();
+  }
+
+  private static void putMessageStates (
+    SharedPreferences.Editor editor,
+    String key,
+    @Nullable MessageState[] states
+  ) {
+    if (states != null && states.length > 0) {
+      ((LevelDB) editor).putByteArray(key, MessageState.toByteArray(states));
+    } else {
+      editor.remove(key);
+    }
   }
 
   @Nullable
@@ -4393,6 +4600,12 @@ public class Settings {
         case KEY_SCROLL_CHAT_TOP_END:
           b.topEndMessageId = entry.asLong();
           break;
+        case KEY_SCROLL_CHAT_STATES:
+          b.states = MessageState.fromByteArray(entry.asByteArray());
+          break;
+        case KEY_SCROLL_CHAT_RETURN_TO_STATES:
+          b.returnToStates = MessageState.fromByteArray(entry.asByteArray());
+          break;
       }
     }
     if (b != null && b.messageChatId != chatId) {
@@ -4427,6 +4640,18 @@ public class Settings {
               editor = edit();
             }
             ((LevelDB) editor).putLongArray(entry.key(), messageIds);
+          }
+          break;
+        }
+        case KEY_SCROLL_CHAT_STATES:
+        case KEY_SCROLL_CHAT_RETURN_TO_STATES: {
+          final byte[] states =
+            MessageState.replaceMessageId(entry.asByteArray(), oldMessageId, newMessageId);
+          if (states != null) {
+            if (editor == null) {
+              editor = edit();
+            }
+            ((LevelDB) editor).putByteArray(entry.key(), states);
           }
           break;
         }
@@ -4706,7 +4931,7 @@ public class Settings {
       case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
         return null;
       default: {
-        Td.assertProxyType_bc1a1076();
+        Td.assertProxyType_40673e07();
         throw Td.unsupported(type);
       }
     }
@@ -4721,7 +4946,7 @@ public class Settings {
       case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
         return null;
       default: {
-        Td.assertProxyType_bc1a1076();
+        Td.assertProxyType_40673e07();
         throw Td.unsupported(type);
       }
     }
@@ -4736,7 +4961,7 @@ public class Settings {
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return 3;
       default:
-        Td.assertProxyType_bc1a1076();
+        Td.assertProxyType_40673e07();
         throw Td.unsupported(type);
     }
   }
@@ -4750,7 +4975,7 @@ public class Settings {
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return Proxy.TYPE_HTTP;
       default:
-        Td.assertProxyType_bc1a1076();
+        Td.assertProxyType_40673e07();
         throw Td.unsupported(type);
     }
   }
@@ -5109,7 +5334,7 @@ public class Settings {
           stringRes = R.string.ProxyHttp;
           break;
         default:
-          Td.assertProxyType_bc1a1076();
+          Td.assertProxyType_40673e07();
           throw Td.unsupported(proxy.type);
       }
       return Lang.getString(stringRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new CustomTypefaceSpan(null, ColorId.textLight), name);
@@ -5190,6 +5415,8 @@ public class Settings {
 
   private @NonNull List<Proxy> loadAvailableProxies () {
     List<Proxy> proxies = new ArrayList<>();
+    // Configs come before names and statistics by the order of keys
+    SparseArrayCompat<Proxy> proxiesById = new SparseArrayCompat<>();
     Blob blob = null;
     int[] order = pmc.getIntArray(KEY_PROXY_ORDER);
     for (final LevelDB.Entry entry : pmc.find(KEY_PROXY_ITEM_PREFIX)) {
@@ -5216,33 +5443,36 @@ public class Settings {
         if (proxy != null) {
           proxy.order = order != null ? ArrayUtils.indexOf(order, proxyId) : Proxy.ORDER_UNSET;
           proxies.add(proxy);
+          proxiesById.put(proxyId, proxy);
         } else {
           Log.w("Removing proxy configuration, because it cannot be read, proxyId:%d", proxyId);
           removeProxy(proxyId);
         }
-      } else if (!proxies.isEmpty()) {
-        Proxy lastProxy = proxies.get(proxies.size() - 1);
-        if (lastProxy.id == proxyId) {
+      } else {
+        Proxy proxy = proxiesById.get(proxyId);
+        if (proxy != null) {
           try {
-            switch (key) {
+            switch (subKey) {
               case KEY_PROXY_PREFIX_DESCRIPTION: {
-                lastProxy.description = entry.asString();
+                proxy.description = entry.asString();
                 break;
               }
               case KEY_PROXY_PREFIX_CONNECTED_COUNT: {
-                lastProxy.successfulConnectionsCount = entry.asInt();
+                proxy.successfulConnectionsCount = entry.asInt();
                 break;
               }
               case KEY_PROXY_PREFIX_LAST_CONNECTION: {
                 long[] lastConnectionInfo = entry.asLongArray();
-                lastProxy.lastConnectionTime = lastConnectionInfo.length > 0 ? lastConnectionInfo[0] : 0;
-                lastProxy.lastConnectionDuration = lastConnectionInfo.length > 1 ? lastConnectionInfo[1] : 0;
+                proxy.lastConnectionTime =
+                  lastConnectionInfo.length > 0 ? lastConnectionInfo[0] : 0;
+                proxy.lastConnectionDuration =
+                  lastConnectionInfo.length > 1 ? lastConnectionInfo[1] : 0;
                 break;
               }
               case KEY_PROXY_PREFIX_LAST_PING: {
                 long[] lastPingInfo = entry.asLongArray();
-                lastProxy.lastPingTime = lastPingInfo.length > 0 ? lastPingInfo[0] : 0;
-                lastProxy.lastPingResult = lastPingInfo.length > 1 ? lastPingInfo[1] : 0;
+                proxy.lastPingTime = lastPingInfo.length > 0 ? lastPingInfo[0] : 0;
+                proxy.lastPingResult = lastPingInfo.length > 1 ? lastPingInfo[1] : 0;
                 break;
               }
             }
@@ -6455,9 +6685,7 @@ public class Settings {
     pmc.putLong(KEY_TDLIB_CRASH_PREFIX, crashId + 1);
     // save crash
     crash.saveTo(pmc, keyPrefix);
-    // apply & flush
     pmc.apply();
-    pmc.flush();
   }
 
   public boolean setCrashFlag (Crash info, int flag, boolean enabled) {
