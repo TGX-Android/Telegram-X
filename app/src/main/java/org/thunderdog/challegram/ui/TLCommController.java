@@ -18,6 +18,8 @@ import android.view.View;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tradelens.ConnectClient;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
 import java.util.ArrayList;
@@ -35,6 +37,9 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
     {"TradeLens Resources", "Official TradeLens channel", "https://t.me/TradeLensResources"},
   };
 
+  private SettingsAdapter adapter;
+  private ListItem statusItem;
+
   public TLCommController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -51,9 +56,13 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
-    SettingsAdapter adapter = new SettingsAdapter(this);
+    adapter = new SettingsAdapter(this);
     ArrayList<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    statusItem = new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_tlStatus, R.drawable.baseline_tradelens_24, "Checking…")
+      .setStringValue("Your TradeLens account");
+    items.add(statusItem);
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     for (int i = 0; i < ENTRIES.length; i++) {
       if (i > 0) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -66,10 +75,41 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     adapter.setItems(items.toArray(new ListItem[0]), false);
     recyclerView.setAdapter(adapter);
+    loadStatus();
+  }
+
+  private void setStatusText (String text) {
+    statusItem.setString(text);
+    int index = adapter.indexOfViewById(R.id.btn_tlStatus);
+    if (index != -1) {
+      adapter.notifyItemChanged(index);
+    }
+  }
+
+  private void loadStatus () {
+    ConnectClient.fetchStatus(tdlib, status -> UI.post(() -> {
+      if (isDestroyed() || statusItem == null) {
+        return;
+      }
+      String text;
+      if (status.error != null) {
+        text = "Couldn't reach TradeLens. Tap to retry.";
+      } else if (!status.linked) {
+        text = "Not linked. Open the TradeLens screen to connect.";
+      } else {
+        text = "Linked" + (status.email.isEmpty() ? "" : " as " + status.email) + (status.tier.isEmpty() ? "" : " · " + status.tier);
+      }
+      setStatusText(text);
+    }));
   }
 
   @Override
   public void onClick (View v) {
+    if (v.getId() == R.id.btn_tlStatus) {
+      setStatusText("Checking…");
+      loadStatus();
+      return;
+    }
     if (v.getId() == R.id.btn_tlCommLink) {
       Object data = ((ListItem) v.getTag()).getData();
       if (data instanceof String) {

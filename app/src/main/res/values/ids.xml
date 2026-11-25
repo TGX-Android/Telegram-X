@@ -1269,6 +1269,7 @@
   <item type="id" name="btn_savedMessages" />
   <item type="id" name="btn_tradelens" />
   <item type="id" name="btn_tlCommLink" />
+  <item type="id" name="btn_tlStatus" />
   <item type="id" name="btn_tlcomm" />
   <item type="id" name="controller_tlComm" />
   <item type="id" name="btn_contacts" />
