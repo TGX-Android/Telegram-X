@@ -520,6 +520,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         item = buildArchiveSectionItem(pagerItemPosition, chatFolderStyle);
       } else {
         TdApi.ChatList chatList = pagerChatLists.get(pagerItemPosition);
+        if (isTlComm(chatList)) {
+          return buildTlCommSectionItem(chatFolderStyle);
+        }
         if (TD.isChatListFolder(chatList)) {
           TdApi.ChatListFolder chatListFolder = (TdApi.ChatListFolder) chatList;
           TdApi.ChatFolderInfo chatFolderInfo = tdlib.chatFolderInfo(chatListFolder.chatFolderId);
@@ -568,7 +571,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     cancelPendingFilter();
 
     int position = getPagerItemPosition(pagerItemId);
-    if (position == NO_POSITION)
+    if (position == NO_POSITION || isTlCommPosition(position))
       return;
     int filter;
     if (requestedFilter == FILTER_NONE) {
@@ -963,6 +966,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       composeWrap.show();
     }
     if (hasFolders()) {
+      if (isTlCommPosition(position)) {
+        composeWrap.hide();
+        return;
+      }
       if (composeWrap.getMainButtonId() != R.id.btn_float_compose) {
         composeWrap.replaceMainButton(R.id.btn_float_compose, R.drawable.baseline_create_24);
       }
@@ -1773,6 +1780,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (pagerItemId == MAIN_PAGER_ITEM_ID) {
       TdApi.ChatList chatList = this.menuNeedArchive ? ChatPosition.CHAT_LIST_ARCHIVE : ChatPosition.CHAT_LIST_MAIN;
       c = newChatsController(chatList, getSelectedFilter(MAIN_PAGER_ITEM_ID));
+    } else if (isTlCommPosition(position)) {
+      c = new TLCommController(this.context, tdlib);
     } else if (hasFolders()) {
       TdApi.ChatList chatList = pagerChatLists.get(position);
       c = newChatsController(chatList, getSelectedFilter(pagerItemId));
@@ -1790,6 +1799,26 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private @Nullable TdApi.ChatFolderInfo[] chatFolderInfos;
   private List<ViewPagerTopView.Item> pagerSections = Collections.emptyList();
   private List<TdApi.ChatList> pagerChatLists = Collections.emptyList();
+
+  /** Reserved folder id for the TL Comm tab, which is not a real Telegram folder. */
+  private static final int TL_COMM_FOLDER_ID = Integer.MIN_VALUE + 7;
+  private static final TdApi.ChatList TL_COMM_LIST = new TdApi.ChatListFolder(TL_COMM_FOLDER_ID);
+
+  private static boolean isTlComm (@Nullable TdApi.ChatList chatList) {
+    return chatList != null && chatList.getConstructor() == TdApi.ChatListFolder.CONSTRUCTOR && ((TdApi.ChatListFolder) chatList).chatFolderId == TL_COMM_FOLDER_ID;
+  }
+
+  private boolean isTlCommPosition (int position) {
+    return hasFolders() && position >= 0 && position < pagerChatLists.size() && isTlComm(pagerChatLists.get(position));
+  }
+
+  private ViewPagerTopView.Item buildTlCommSectionItem (@ChatFolderStyle int chatFolderStyle) {
+    CharSequence name = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? null : Lang.getString(R.string.TLComm);
+    int icon = hasIcon(chatFolderStyle) ? R.drawable.baseline_tradelens_24 : ResourcesCompat.ID_NULL;
+    ViewPagerTopView.Item item = new ViewPagerTopView.Item(name, icon, null);
+    item.setMinWidth(Screen.dp(56f - ViewPagerTopView.COMPACT_ITEM_PADDING * 2));
+    return item;
+  }
   private final LongSparseIntArray pagerChatListFilters = new LongSparseIntArray();
   private @Filter int globalFilter = FILTER_NONE;
 
@@ -2946,6 +2975,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       chatLists = Collections.emptyList();
     }
     if (chatLists.size() > 1 || (!chatLists.isEmpty() && !TD.isChatListMain(chatLists.get(0)))) {
+      chatLists = new ArrayList<>(chatLists);
+      sections = new ArrayList<>(sections);
+      chatLists.add(TL_COMM_LIST);
+      sections.add(buildTlCommSectionItem(tdlib.settings().chatFolderStyle()));
       this.pagerSections = sections;
       this.pagerChatLists = chatLists;
       this.chatFolderInfos = chatFolders;
@@ -3304,6 +3337,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       sections.add(buildSectionItem(itemId, itemPosition));
       ViewController<?> cachedController = getCachedControllerForPosition(itemPosition);
       TdApi.ChatList chatList = pagerChatLists.get(itemPosition);
+      if (isTlComm(chatList)) {
+        continue;
+      }
       if (sameChatsController(cachedController, chatList, filterToApply)) {
         continue;
       }
