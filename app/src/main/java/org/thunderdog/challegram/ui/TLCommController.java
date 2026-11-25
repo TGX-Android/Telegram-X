@@ -40,6 +40,7 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
 
   private SettingsAdapter adapter;
   private ListItem statusItem;
+  private boolean linked;
 
   public TLCommController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -97,13 +98,14 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
       if (isDestroyed() || statusItem == null) {
         return;
       }
+      linked = status.error == null && status.linked;
       String text;
       if (status.error != null) {
         text = "Couldn't reach TradeLens. Tap to retry.";
       } else if (!status.linked) {
         text = "Not linked. Open the TradeLens screen to connect.";
       } else {
-        text = "Linked" + (status.email.isEmpty() ? "" : " as " + status.email) + (status.tier.isEmpty() ? "" : " · " + status.tier);
+        text = "Linked" + (status.email.isEmpty() ? "" : " as " + status.email) + (status.tier.isEmpty() ? "" : " · " + status.tier) + ". Tap for your dashboard.";
       }
       setStatusText(text);
     }));
@@ -112,6 +114,10 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
   @Override
   public void onClick (View v) {
     if (v.getId() == R.id.btn_tlStatus) {
+      if (linked) {
+        navigateTo(new TradeLensDashboardController(context, tdlib));
+        return;
+      }
       setStatusText("Checking…");
       loadStatus();
       return;

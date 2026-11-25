@@ -1270,6 +1270,12 @@
   <item type="id" name="btn_tradelens" />
   <item type="id" name="btn_tlCommLink" />
   <item type="id" name="btn_tlStatus" />
+  <item type="id" name="controller_tlDashboard" />
+  <item type="id" name="controller_tlSignals" />
+  <item type="id" name="btn_tlSignals" />
+  <item type="id" name="btn_tlOpenFull" />
+  <item type="id" name="btn_tlRefresh" />
+  <item type="id" name="btn_tlRow" />
   <item type="id" name="btn_tlcomm" />
   <item type="id" name="controller_tlComm" />
   <item type="id" name="btn_contacts" />
