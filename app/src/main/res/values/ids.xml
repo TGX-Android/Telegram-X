@@ -1267,6 +1267,7 @@
   <item type="id" name="btn_publicChannel" />
   <item type="id" name="btn_privateChannel" />
   <item type="id" name="btn_savedMessages" />
+  <item type="id" name="btn_tradelens" />
   <item type="id" name="btn_contacts" />
   <item type="id" name="btn_invite" />
   <item type="id" name="btn_inviteBack" />

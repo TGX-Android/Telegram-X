@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <!-- DO NOT SYNC WITH TRANSLATIONS PLATFORM -->
+  <string name="TradeLens">TradeLens</string>
+  <string name="TradeLensUnavailable">Could not open TradeLens. Check your connection and try again.</string>
   <string name="UseExplicitDice">Use explicit dice</string>
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
