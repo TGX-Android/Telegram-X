@@ -59,36 +59,109 @@ public final class ConnectClient {
     void onStatus (Status status);
   }
 
+  /** error is one of: "unavailable", "network", "not_linked", "http NNN". Runs on a background thread. */
+  public interface Result {
+    void onResult (@Nullable JSONObject json, @Nullable String error);
+  }
+
   private ConnectClient () { }
 
-  /** Opens a session with the TradeLens server and reports whether this Telegram account is linked. Callback runs on a background thread. */
+  // The short-lived Connect token is kept in memory only, for the Telegram account that asked for it.
+  private static final Object lock = new Object();
+  private static String token;
+  private static long tokenUser;
+  private static long tokenExpiresAt;
+  private static JSONObject cachedMe;
+
+  /** Reports whether this Telegram account is linked to a TradeLens account. */
   public static void fetchStatus (Tdlib tdlib, Callback callback) {
+    ensureSession(tdlib, true, (t, me, error) -> {
+      if (error == null) {
+        callback.onStatus(new Status(true, me != null ? me.optString("tier", "") : "", me != null ? me.optString("email", "") : "", null));
+      } else if ("not_linked".equals(error)) {
+        callback.onStatus(new Status(false, "", "", null));
+      } else {
+        callback.onStatus(new Status(false, "", "", error));
+      }
+    });
+  }
+
+  /** GET /api/connect/v1/{path} with the Connect token (opening a session first when needed). */
+  public static void get (Tdlib tdlib, String path, Result result) {
+    getInternal(tdlib, path, result, true);
+  }
+
+  private static void getInternal (Tdlib tdlib, String path, Result result, boolean retry) {
+    ensureSession(tdlib, false, (t, me, error) -> {
+      if (error != null) {
+        result.onResult(null, error);
+        return;
+      }
+      new Thread(() -> {
+        HttpURLConnection connection = null;
+        try {
+          connection = (HttpURLConnection) new URL(API + "/" + path).openConnection();
+          connection.setRequestMethod("GET");
+          connection.setConnectTimeout(15000);
+          connection.setReadTimeout(20000);
+          connection.setRequestProperty("Authorization", "Bearer " + t);
+          int code = connection.getResponseCode();
+          if (code == 401 && retry) {
+            synchronized (lock) {
+              token = null;
+            }
+            getInternal(tdlib, path, result, false);
+            return;
+          }
+          if (code != 200) {
+            result.onResult(null, "http " + code);
+            return;
+          }
+          result.onResult(new JSONObject(readAll(connection.getInputStream())), null);
+        } catch (Throwable e) {
+          result.onResult(null, "network");
+        } finally {
+          if (connection != null) {
+            connection.disconnect();
+          }
+        }
+      }, "tradelens-connect").start();
+    });
+  }
+
+  private interface SessionCallback {
+    void onSession (@Nullable String token, @Nullable JSONObject me, @Nullable String error);
+  }
+
+  private static void ensureSession (Tdlib tdlib, boolean forceRefresh, SessionCallback callback) {
+    final long userId = tdlib.myUserId();
+    synchronized (lock) {
+      if (!forceRefresh && token != null && tokenUser == userId && System.currentTimeMillis() < tokenExpiresAt - 30000) {
+        callback.onSession(token, cachedMe, null);
+        return;
+      }
+    }
     tdlib.send(new TdApi.SearchPublicChat(BOT_USERNAME), (chat, error) -> {
       if (chat == null || chat.type.getConstructor() != TdApi.ChatTypePrivate.CONSTRUCTOR) {
-        callback.onStatus(failure());
+        callback.onSession(null, null, "unavailable");
         return;
       }
       long botUserId = ((TdApi.ChatTypePrivate) chat.type).userId;
       TdApi.WebAppOpenParameters parameters = new TdApi.WebAppOpenParameters(null, "TradeLensConnect", new TdApi.WebAppOpenModeFullSize());
       tdlib.send(new TdApi.OpenWebApp(chat.id, botUserId, MINIAPP_URL, null, null, parameters), (info, openError) -> {
         if (info == null || info.url == null || info.url.url == null) {
-          callback.onStatus(failure());
+          callback.onSession(null, null, "unavailable");
           return;
         }
-        final long launchId = info.launchId;
         final String initData = extractInitData(info.url.url);
-        tdlib.send(new TdApi.CloseWebApp(launchId), tdlib.typedOkHandler());
+        tdlib.send(new TdApi.CloseWebApp(info.launchId), tdlib.typedOkHandler());
         if (initData == null) {
-          callback.onStatus(failure());
+          callback.onSession(null, null, "unavailable");
           return;
         }
-        new Thread(() -> callback.onStatus(openSession(initData)), "tradelens-connect").start();
+        new Thread(() -> openSession(userId, initData, callback), "tradelens-connect").start();
       });
     });
-  }
-
-  private static Status failure () {
-    return new Status(false, "", "", "unavailable");
   }
 
   private static @Nullable String extractInitData (String url) {
@@ -106,7 +179,7 @@ public final class ConnectClient {
     return null;
   }
 
-  private static Status openSession (String initData) {
+  private static void openSession (long userId, String initData, SessionCallback callback) {
     HttpURLConnection connection = null;
     try {
       connection = (HttpURLConnection) new URL(API + "/session").openConnection();
@@ -121,18 +194,30 @@ public final class ConnectClient {
       }
       int code = connection.getResponseCode();
       if (code != 200) {
-        return new Status(false, "", "", "http " + code);
+        callback.onSession(null, null, "http " + code);
+        return;
       }
       JSONObject json = new JSONObject(readAll(connection.getInputStream()));
       if (!json.optBoolean("linked", false)) {
-        return new Status(false, "", "", null);
+        synchronized (lock) {
+          token = null;
+          cachedMe = null;
+        }
+        callback.onSession(null, null, "not_linked");
+        return;
       }
       JSONObject me = json.optJSONObject("me");
-      String tier = me != null ? me.optString("tier", "") : "";
-      String email = me != null ? me.optString("email", "") : "";
-      return new Status(true, tier, email, null);
+      String newToken = json.optString("token", "");
+      long ttl = json.optLong("expires_in", 900);
+      synchronized (lock) {
+        token = newToken;
+        tokenUser = userId;
+        tokenExpiresAt = System.currentTimeMillis() + ttl * 1000L;
+        cachedMe = me;
+      }
+      callback.onSession(newToken, me, null);
     } catch (Throwable t) {
-      return new Status(false, "", "", "network");
+      callback.onSession(null, null, "network");
     } finally {
       if (connection != null) {
         connection.disconnect();
