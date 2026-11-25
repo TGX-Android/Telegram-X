@@ -105,8 +105,9 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
       } else if (!status.linked) {
         text = "Not linked. Open the TradeLens screen to connect.";
       } else {
-        text = "Linked" + (status.email.isEmpty() ? "" : " as " + status.email) + (status.tier.isEmpty() ? "" : " · " + status.tier) + ". Tap for your dashboard.";
+        text = "Linked" + (status.email.isEmpty() ? "" : " as " + status.email) + (status.tier.isEmpty() ? "" : " · " + status.tier);
       }
+      statusItem.setString(linked ? "Tap to open your dashboard" : "Your TradeLens account");
       setStatusText(text);
     }));
   }
@@ -115,7 +116,8 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
   public void onClick (View v) {
     if (v.getId() == R.id.btn_tlStatus) {
       if (linked) {
-        navigateTo(new TradeLensDashboardController(context, tdlib));
+        // This tab lives inside the main pager, which has no navigation controller of its own.
+        context().navigation().navigateTo(new TradeLensDashboardController(context, tdlib));
         return;
       }
       setStatusText("Checking…");
