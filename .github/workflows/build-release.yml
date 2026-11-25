@@ -66,14 +66,17 @@ jobs:
             echo "app.download_url=https://github.com/Driverline/tradelens-connect-android"
             echo "app.sources_url=https://github.com/Driverline/tradelens-connect-android"
             echo "app.experimental=true"
-            echo "keystore.file=$RUNNER_TEMP/tradelens.jks"
-            echo "keystore.password=$KEYSTORE_PASSWORD"
-            echo "key.alias=$KEY_ALIAS"
-            echo "key.password=$KEY_PASSWORD"
+            echo "keystore.file=$RUNNER_TEMP/keystore.properties"
             echo "google_services.file=$RUNNER_TEMP/google-services.json"
             echo "telegram.api_id=$API_ID"
             echo "telegram.api_hash=$API_HASH"
           } > local.properties
+          {
+            echo "keystore.file=$RUNNER_TEMP/tradelens.jks"
+            echo "keystore.password=$KEYSTORE_PASSWORD"
+            echo "key.alias=$KEY_ALIAS"
+            echo "key.password=$KEY_PASSWORD"
+          } > "$RUNNER_TEMP/keystore.properties"
       - name: Validate and build
         env:
           FLAVOR: ${{ inputs.flavor }}
@@ -83,7 +86,7 @@ jobs:
       - name: Remove secrets from the runner
         if: always()
         run: |
-          rm -f local.properties "$RUNNER_TEMP/tradelens.jks" "$RUNNER_TEMP/google-services.json"
+          rm -f local.properties "$RUNNER_TEMP/tradelens.jks" "$RUNNER_TEMP/keystore.properties" "$RUNNER_TEMP/google-services.json"
       - uses: actions/upload-artifact@v4
         with:
           name: tradelens-connect-release-apk
