@@ -1390,7 +1390,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
     MessagesController m = (MessagesController) c;
-    if (m.selectMessageText(this, touchX, touchY)) {
+    if (m.isMessageSelected(msg.getChatId(), msg.getId(), msg) &&
+      m.selectMessageText(this, touchX, touchY)) {
       return true;
     }
     if (msg.canBeSelected()) {

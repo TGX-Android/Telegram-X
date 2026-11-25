@@ -57,6 +57,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.EmojiBidUtil;
 import org.thunderdog.challegram.tool.EmojiBidUtilLegacy;
@@ -126,8 +127,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
   public static final int FLAG_TRIM_END = 1 << 19;
   public static final int FLAG_NO_SPACING = 1 << 20;
   public static final int FLAG_ALWAYS_BREAK = 1 << 21;
-  public static final int FLAG_SELECTABLE = 1 << 28;
   public static final int FLAG_WRAP_CODE_BLOCKS = 1 << 22;
+  public static final int FLAG_SELECTABLE = 1 << 28;
 
   private static final int FLAG_DESTROYED = 1 << 23;
   private static final int FLAG_IN_LONG_PRESS = 1 << 24;
@@ -4786,8 +4787,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
 
   public interface SelectionDelegate {
     boolean canSelect ();
+    default boolean canQuote () { return false; }
     default float getOffsetX () { return 0f; }
     default float getOffsetY () { return 0f; }
+    default void onQuoteRequested (String quote, int position) { }
   }
 
   private @Nullable Selection selection;
@@ -4873,10 +4876,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
       words.setText(originalText);
       int from = words.preceding(offset + 1);
       int to = words.following(offset);
-      this.start = snapSelectionOffset(from != BreakIterator.DONE ? from : 0, false);
-      this.end = snapSelectionOffset(to != BreakIterator.DONE ? to : originalText.length(), true);
+      start = snapSelectionOffset(from != BreakIterator.DONE ? from : 0, false);
+      end = snapSelectionOffset(to != BreakIterator.DONE ? to : originalText.length(), true);
       updateGeometry();
-      this.overlay = new TextSelectionOverlay(view, Text.this, this, delegate);
+      overlay = new TextSelectionOverlay(view, Text.this, this, delegate);
     }
 
     void updateGeometry () {
@@ -4950,12 +4953,28 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
             break;
           }
           offset = snapSelectionOffset(offset, draggingHandle == HANDLE_END);
-          if (draggingHandle == HANDLE_START && offset < end && offset != start) {
-            start = offset;
-            updateGeometry();
-          } else if (draggingHandle == HANDLE_END && offset > start && offset != end) {
-            end = offset;
-            updateGeometry();
+          if (draggingHandle == HANDLE_START) {
+            if (offset > end) {
+              start = end;
+              end = offset;
+              draggingHandle = HANDLE_END;
+              updateGeometry();
+              dragOffsetX = x - endHandle.left;
+            } else if (offset < end && offset != start) {
+              start = offset;
+              updateGeometry();
+            }
+          } else if (draggingHandle == HANDLE_END) {
+            if (offset < start) {
+              end = start;
+              start = offset;
+              draggingHandle = HANDLE_START;
+              updateGeometry();
+              dragOffsetX = x - startHandle.left;
+            } else if (offset > start && offset != end) {
+              end = offset;
+              updateGeometry();
+            }
           }
           break;
         }
@@ -5113,6 +5132,43 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
         endHandle.set(toX, top, toX + 1f, bottom);
       }
     }
+  }
+
+  public boolean getRangeRects (int start, int end, List<RectF> outRects) {
+    if (parts == null || isDestroyed() || originalText.isEmpty()) {
+      return false;
+    }
+    start = Math.max(0, Math.min(start, originalText.length()));
+    end = Math.max(0, Math.min(end, originalText.length()));
+    if (start >= end) {
+      return false;
+    }
+    boolean found = false;
+    for (int i = 0; i < parts.size(); i++) {
+      TextPart part = parts.get(i);
+      if (part.getLine() != originalText) {
+        continue;
+      }
+      int from = Math.max(start, part.getStart());
+      int to = Math.min(end, part.getEnd());
+      if (from >= to) {
+        continue;
+      }
+      float left = getSelectionPartX(part);
+      float top = part.getY() + getPartVerticalOffset(part) + getTextPaint(part.getEntity()).baselineShift;
+      float bottom = top + getPartHeight(part);
+      float fromX = getSelectionAdvance(part, from);
+      float toX = getSelectionAdvance(part, to);
+      if (BiDiUtils.isRtl(part.getBidiEntity())) {
+        fromX = part.getWidth() - fromX;
+        toX = part.getWidth() - toX;
+      }
+      fromX += left;
+      toX += left;
+      outRects.add(new RectF(Math.min(fromX, toX), top, Math.max(fromX, toX), bottom));
+      found = true;
+    }
+    return found;
   }
 
   // Sharing

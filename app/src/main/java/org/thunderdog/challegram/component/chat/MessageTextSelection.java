@@ -16,8 +16,13 @@ package org.thunderdog.challegram.component.chat;
 
 import android.view.View;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.text.Text;
+
+import tgx.td.data.MessageWithProperties;
 
 public class MessageTextSelection implements Text.SelectionDelegate {
   private final View anchor;
@@ -36,6 +41,40 @@ public class MessageTextSelection implements Text.SelectionDelegate {
 
   public boolean dismiss (boolean animated) {
     return text.dismissSelection(animated);
+  }
+
+  @Override
+  public boolean canQuote () {
+    MessagesController controller = message.messagesController();
+    if (controller == null || message.isDestroyed() ||
+      !controller.canWriteMessagesOrWaitingForReply()) {
+      return false;
+    }
+    Tdlib tdlib = controller.tdlib();
+    long chatId = controller.getChatId();
+    boolean isAllowedToPost = !controller.isChannel() || tdlib.isAdminOrOwner(chatId);
+    return isAllowedToPost && tdlib.canSendBasicMessage(chatId);
+  }
+
+  @Override
+  public void onQuoteRequested (String quote, int position) {
+    MessagesController controller = message.messagesController();
+    if (controller == null || !canQuote()) {
+      return;
+    }
+    TdApi.InputTextQuote inputQuote = new TdApi.InputTextQuote(
+      new TdApi.FormattedText(quote, null),
+      new TdApi.RichText[0],
+      position
+    );
+    controller.showReply(
+      new MessageWithProperties(message.getMessage(), message.lastMessageProperties()),
+      inputQuote,
+      0,
+      "",
+      true,
+      true
+    );
   }
 
   @Override

@@ -154,18 +154,18 @@ class TextSelectionOverlay implements FactorAnimator.Target {
     this.text = text;
     this.selection = selection;
     this.delegate = delegate;
-    this.root = (ViewGroup) anchor.getRootView();
+    root = (ViewGroup) anchor.getRootView();
     ViewParent parent = anchor.getParent();
     while (parent != null && !(parent instanceof RecyclerView)) {
       parent = parent.getParent();
     }
-    this.recyclerView = (RecyclerView) parent;
+    recyclerView = (RecyclerView) parent;
     if (recyclerView != null) {
-      this.viewport = recyclerView;
+      viewport = recyclerView;
     } else if (anchor.getParent() instanceof View) {
-      this.viewport = (View) anchor.getParent();
+      viewport = (View) anchor.getParent();
     } else {
-      this.viewport = anchor;
+      viewport = anchor;
     }
     // Same themed handles as in EditText
     TypedArray handles = anchor.getContext().obtainStyledAttributes(null, new int[] {
@@ -177,7 +177,7 @@ class TextSelectionOverlay implements FactorAnimator.Target {
     } finally {
       handles.recycle();
     }
-    this.overlay = new View(anchor.getContext()) {
+    overlay = new View(anchor.getContext()) {
       @Override
       public void onWindowFocusChanged (boolean hasWindowFocus) {
         super.onWindowFocusChanged(hasWindowFocus);
@@ -271,8 +271,8 @@ class TextSelectionOverlay implements FactorAnimator.Target {
     overlay.setAlpha(0f);
     overlay.setWillNotDraw(false);
     overlay.setFocusableInTouchMode(true);
-    this.observer = root.getViewTreeObserver();
-    this.visibilityAnimator = new BoolAnimator(ANIMATOR_VISIBILITY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, SHOW_DURATION);
+    observer = root.getViewTreeObserver();
+    visibilityAnimator = new BoolAnimator(ANIMATOR_VISIBILITY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, SHOW_DURATION);
   }
 
   void show () {
@@ -391,8 +391,10 @@ class TextSelectionOverlay implements FactorAnimator.Target {
       @Override
       public boolean onCreateActionMode (ActionMode mode, Menu menu) {
         menu.add(Menu.NONE, android.R.id.copy, 0, android.R.string.copy).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        menu.add(Menu.NONE, android.R.id.selectAll, 1, android.R.string.selectAll).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-        menu.add(Menu.NONE, android.R.id.shareText, 2, Lang.getString(R.string.Share)).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menu.add(Menu.NONE, R.id.btn_quote, 1, Lang.getString(R.string.TextFormatQuote))
+          .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menu.add(Menu.NONE, android.R.id.selectAll, 2, android.R.string.selectAll)
+          .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         return canSelect();
       }
 
@@ -400,6 +402,11 @@ class TextSelectionOverlay implements FactorAnimator.Target {
       public boolean onPrepareActionMode (ActionMode mode, Menu menu) {
         boolean canSelectAll = !selection.isAllSelected();
         menu.findItem(android.R.id.selectAll).setVisible(canSelectAll).setEnabled(canSelectAll);
+        MenuItem quoteItem = menu.findItem(R.id.btn_quote);
+        if (quoteItem != null) {
+          boolean isQuoteAvailable = delegate != null && delegate.canQuote();
+          quoteItem.setVisible(isQuoteAvailable).setEnabled(isQuoteAvailable);
+        }
         return true;
       }
 
@@ -484,27 +491,30 @@ class TextSelectionOverlay implements FactorAnimator.Target {
       }
       updateHandles();
       actionMode.invalidate();
-    } else if (id == android.R.id.copy || id == android.R.id.shareText) {
-      String value = selection.getSelectedText();
+    } else if (id == R.id.btn_quote) {
+      String selectedText = selection.getSelectedText();
+      int quotePosition = selection.start;
       text.dismissSelection(true);
-      if (id == android.R.id.copy) {
-        UI.copyText(value, R.string.CopiedText);
-      } else {
-        Intents.shareText(value);
+      if (delegate != null) {
+        delegate.onQuoteRequested(selectedText, quotePosition);
       }
+    } else if (id == android.R.id.copy) {
+      String selectedText = selection.getSelectedText();
+      text.dismissSelection(true);
+      UI.copyText(selectedText, R.string.CopiedText);
     } else {
       return false;
     }
     return true;
   }
 
-  private void updateHandleBounds (RectF handle, RectF bounds, Drawable drawable, boolean left) {
+  private void updateHandleBounds (RectF handle, RectF bounds, Drawable drawable, boolean isLeft) {
     if (drawable == null || handle.isEmpty()) {
       bounds.setEmpty();
       return;
     }
     int width = drawable.getIntrinsicWidth();
-    int hotspotX = left ? width * 3 / 4 : width / 4;
+    int hotspotX = isLeft ? width * 3 / 4 : width / 4;
     float left = handle.left - hotspotX;
     bounds.set(left, handle.bottom, left + width, handle.bottom + drawable.getIntrinsicHeight());
   }
