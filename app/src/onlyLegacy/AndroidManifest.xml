@@ -45,5 +45,6 @@
     androidx.camera.lifecycle,
     androidx.camera.video,
     androidx.camera.camera2,
-    androidx.camera.view" />
+    androidx.camera.view,
+    io.github.pytgcalls" />
 </manifest>

@@ -96,6 +96,8 @@ data class ApplicationConfig(
   val googleServicesFile: String?,
   val forceOptimize: Boolean,
   val doNotObfuscate: Boolean,
+  val useNTgCalls: Boolean,
+
   val build: BuildVersions,
 
   val nativeLibraryVersion: String,

@@ -580,10 +580,10 @@ debugCall id:long debug:string = Ok;
   private boolean checkRecordPermissions (final Context context, final Tdlib tdlib,
     final @Nullable TdApi.Call call, final @Nullable Runnable onOutgoingCallGranted) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (AppContext.get().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+      if (AppContext.get().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED || AppContext.get().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = UI.getUiContext();
         if (activity != null) {
-          activity.requestMicPermissionForCall((code, permissions, grantResults, grantCount) -> {
+          activity.requestPermissionForCall((code, permissions, grantResults, grantCount) -> {
             if (grantCount == permissions.length) {
               if (call != null) {
                 TdApi.Call updatedCall = tdlib.cache().getCall(call.id);

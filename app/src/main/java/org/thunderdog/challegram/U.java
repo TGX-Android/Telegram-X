@@ -494,6 +494,10 @@ public class U {
   }
 
   public static void startForeground (Service service, int notificationId, Notification notification, boolean callAnswered) {
+    startForeground(service, notificationId, notification, callAnswered, false);
+  }
+
+  public static void startForeground (Service service, int notificationId, Notification notification, boolean callAnswered, boolean allowedMediaProjection) {
     if (notification == null)
       throw new IllegalArgumentException();
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -512,6 +516,12 @@ public class U {
             notificationId == TdlibNotificationManager.ID_FOREGROUND_ONGOING_CALL_NOTIFICATION
           )) {
             knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+          }
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && AppContext.get().checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
+          }
+          if (allowedMediaProjection) {
+            knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
           }
           knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
           int microphone = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
