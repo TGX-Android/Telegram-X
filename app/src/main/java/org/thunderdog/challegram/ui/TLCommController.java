@@ -21,6 +21,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tradelens.ConnectClient;
+import org.thunderdog.challegram.tradelens.TLConsent;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
 import java.util.ArrayList;
@@ -94,6 +95,11 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
   }
 
   private void loadStatus () {
+    if (!TLConsent.accepted()) {
+      statusItem.setString("Your TradeLens account");
+      setStatusText("Tap to connect your TradeLens account");
+      return;
+    }
     ConnectClient.fetchStatus(tdlib, status -> UI.post(() -> {
       if (isDestroyed() || statusItem == null) {
         return;
@@ -115,6 +121,13 @@ public class TLCommController extends RecyclerViewController<Void> implements Vi
   @Override
   public void onClick (View v) {
     if (v.getId() == R.id.btn_tlStatus) {
+      if (!TLConsent.accepted()) {
+        TLConsent.ask(this, () -> {
+          setStatusText("Checking…");
+          loadStatus();
+        });
+        return;
+      }
       if (linked) {
         // This tab lives inside the main pager, which has no navigation controller of its own.
         context().navigation().navigateTo(new TradeLensDashboardController(context, tdlib));
