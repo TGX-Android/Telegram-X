@@ -1276,6 +1276,9 @@
   <item type="id" name="btn_tlOpenFull" />
   <item type="id" name="btn_tlRefresh" />
   <item type="id" name="btn_tlRow" />
+  <item type="id" name="controller_tlAbout" />
+  <item type="id" name="btn_tlAbout" />
+  <item type="id" name="btn_tlAboutLink" />
   <item type="id" name="btn_tlcomm" />
   <item type="id" name="controller_tlComm" />
   <item type="id" name="btn_contacts" />
