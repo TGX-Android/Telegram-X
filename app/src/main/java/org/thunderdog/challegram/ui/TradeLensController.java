@@ -22,6 +22,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tradelens.TLConsent;
 
 /**
  * The TradeLens screen: hosts the TradeLens Connect mini app inside the client.
@@ -48,7 +49,11 @@ public class TradeLensController extends WebkitController<Void> {
     webView.getSettings().setAllowFileAccess(false);
     webView.getSettings().setAllowContentAccess(false);
     webView.addJavascriptInterface(new Bridge(), "TelegramWebviewProxy");
-    openMiniApp();
+    if (TLConsent.accepted()) {
+      openMiniApp();
+    } else {
+      TLConsent.ask(this, this::openMiniApp);
+    }
   }
 
   private void openMiniApp () {
