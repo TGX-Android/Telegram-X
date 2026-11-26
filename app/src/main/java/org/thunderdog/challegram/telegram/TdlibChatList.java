@@ -324,17 +324,7 @@ public final class TdlibChatList implements Comparator<TdlibChatList.Entry> {
       return;
     }
     setState(State.LOADING);
-    tdlib.client().send(new TdApi.LoadChats(chatList, limit), result -> {
-      boolean endReached = result.getConstructor() == TdApi.Error.CONSTRUCTOR;
-      setState(endReached ? State.END_REACHED : State.END_NOT_REACHED);
-      if (!onLoadMore.isEmpty()) {
-        List<Runnable> callbacks = new ArrayList<>(onLoadMore);
-        onLoadMore.clear();
-        for (Runnable runnable : callbacks) {
-          runnable.run();
-        }
-      }
-    });
+    tdlib.send(new TdApi.LoadChats(chatList, limit), loadHandler());
   }
 
   @AnyThread
@@ -438,6 +428,44 @@ public final class TdlibChatList implements Comparator<TdlibChatList.Entry> {
       Entry entry = list.get(index);
       removeChatFromList(index, new Tdlib.ChatChange(new TdApi.ChatPosition(entry.effectivePosition.list, 0, false, entry.effectivePosition.source), Tdlib.ChatChange.ORDER));
     }
+    if (state == State.LOADING) {
+      cancelLoadHandler();
+    }
+    setState(State.END_NOT_REACHED);
+  }
+
+  // Load handler
+
+  private Tdlib.CancellableResultHandler<TdApi.Ok> _loadHandler;
+
+  private void cancelLoadHandler () {
+    Tdlib.CancellableResultHandler<TdApi.Ok> handler = _loadHandler;
+    _loadHandler = null;
+    if (handler != null) {
+      handler.cancel();
+    }
+  }
+
+  private Tdlib.CancellableResultHandler<TdApi.Ok> loadHandler () {
+    Tdlib.CancellableResultHandler<TdApi.Ok> handler = _loadHandler;
+    if (handler == null || !handler.isPending()) {
+      handler  = new Tdlib.CancellableResultHandler<>() {
+        @Override
+        public void act (TdApi.Ok result, @Nullable TdApi.Error error) {
+          boolean endReached = error != null && error.code == 404;
+          setState(endReached ? State.END_REACHED : State.END_NOT_REACHED);
+          if (!onLoadMore.isEmpty()) {
+            List<Runnable> callbacks = new ArrayList<>(onLoadMore);
+            onLoadMore.clear();
+            for (Runnable runnable : callbacks) {
+              runnable.run();
+            }
+          }
+        }
+      };
+      _loadHandler = handler;
+    }
+    return handler;
   }
 
   // Internal
