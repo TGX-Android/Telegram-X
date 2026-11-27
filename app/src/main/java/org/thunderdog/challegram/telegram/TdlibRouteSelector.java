@@ -52,6 +52,11 @@ public class TdlibRouteSelector implements Comparator<Settings.Proxy> {
     this.routes = Settings.instance().getAvailableProxies();
     this.routes.add(0, Settings.Proxy.noProxy(true));
     this.cancellationSignal = new CancellationSignal();
+    for (Settings.Proxy route : routes) {
+      if (!route.isAutomaticUseAllowed()) {
+        markAsFailed(route.id);
+      }
+    }
     routes.sort(this);
   }
 
