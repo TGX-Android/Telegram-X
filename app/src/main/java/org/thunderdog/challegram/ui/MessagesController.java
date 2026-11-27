@@ -228,6 +228,7 @@ import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
+import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.v.HeaderEditText;
@@ -852,13 +853,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
     liveLocationView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, liveLocationHeight));
     addThemeInvalidateListener(liveLocationView);
 
-    int actionBarHeight = Screen.dp(36f);
-    actionView = new TopBarView(context);
+    actionView = new TopBarView(context, tdlib);
     actionView.setDismissListener(barView ->
       dismissActionBar()
     );
-    actionView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, actionBarHeight));
     actionView.addThemeListeners(this);
+    actionItem = new CollapseListView.Item() {
+      @Override
+      public int getVisualHeight () {
+        return actionView.getVisualHeight();
+      }
+
+      @Override
+      public View getValue () {
+        return actionView;
+      }
+    };
+    actionView.addOnLayoutChangeListener((view, left, top, right, bottom,
+                                          oldLeft, oldTop, oldRight, oldBottom) -> {
+      if (bottom - top != oldBottom - oldTop) {
+        topBar.notifyItemHeightChanged(actionItem);
+      }
+    });
 
     int requestsViewHeight = Screen.dp(48f);
     requestsView = new JoinRequestsView(context, tdlib);
@@ -942,7 +958,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       pinnedMessagesItem,
       requestsItem = new CollapseListView.ViewItem(requestsView, requestsViewHeight),
       liveLocationItem = new CollapseListView.ViewItem(liveLocationView, liveLocationHeight),
-      actionItem = new CollapseListView.ViewItem(actionView, actionBarHeight),
+      actionItem,
       toastAlertItem
     }, this);
 
@@ -4395,6 +4411,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     forceHideToast();
 
     pinnedMessagesBar.performDestroy();
+
+    if (actionView != null) {
+      actionView.performDestroy();
+    }
 
     if (requestsView != null) {
       requestsView.performDestroy();
@@ -8300,7 +8320,105 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private TopBarView.Item newAddContactItem (long chatId) {
     return new TopBarView.Item(R.id.btn_addContact, R.string.AddContact, v -> {
       tdlib.ui().addContact(this, tdlib.chatUser(chatId));
-    });
+    }).setIcon(R.drawable.baseline_person_add_24);
+  }
+
+  private long actionBarEmojiStatusId;
+
+  private void addEmojiStatusNotice (List<TopBarView.Item> items) {
+    TdApi.User user = tdlib.cache().user(tdlib.chatUserId(getChatId()));
+    long customEmojiId = user != null ? Td.customEmojiId(user.emojiStatus) : 0;
+    if (customEmojiId == 0) {
+      return;
+    }
+    String name = tdlib.cache().userFirstName(user.id);
+    actionBarEmojiStatusId = customEmojiId;
+    FormattedText emoji = FormattedText.customEmoji(
+      tdlib, Config.CHAT_ACTION_BAR_EMOJI_STATUS_FALLBACK, customEmojiId
+    );
+    FormattedText learnMore = new FormattedText(
+      Lang.getString(R.string.ChatActionBarLearnMore)
+    ).allClickable(this, new ClickableSpan() {
+      @Override
+      public void onClick (@NonNull View widget) {
+        tdlib.ui().openUrl(
+          MessagesController.this,
+          Lang.getStringSecure(R.string.url_emojiStatuses),
+          null
+        );
+      }
+    }, true, null);
+    CharSequence text = Lang.getString(
+      R.string.ChatActionBarEmojiStatusNotice,
+      (target, argStart, argEnd, argIndex, needFakeBold) ->
+        argIndex == 1 ? emoji : argIndex == 2 ? learnMore : Lang.newBoldSpan(needFakeBold),
+      name, emoji, learnMore
+    );
+    items.add(
+      new TopBarView.Item(FormattedText.valueOf(text, tdlib, null)).setCenterNotice()
+    );
+  }
+
+  private TopBarView.Item newJoinRequestItem (
+    TdApi.ChatActionBarJoinRequest joinRequest,
+    long chatId
+  ) {
+    FormattedText learnMore = new FormattedText(
+      Lang.getString(R.string.ChatActionBarLearnMore)
+    ).allClickable(this, new ClickableSpan() {
+      @Override
+      public void onClick (@NonNull View widget) {
+        showJoinRequestInfo(joinRequest);
+      }
+    }, true, null);
+    CharSequence text = Lang.getString(
+      joinRequest.isChannel ?
+        R.string.JoinRequestChannelAdminNotice : R.string.JoinRequestGroupAdminNotice,
+      (target, argStart, argEnd, argIndex, needFakeBold) ->
+        argIndex == 2 ? learnMore : Lang.newBoldSpan(needFakeBold),
+      tdlib.cache().userFirstName(tdlib.chatUserId(chatId)), joinRequest.title, learnMore
+    );
+    return new TopBarView.Item(FormattedText.valueOf(text, tdlib, null))
+      .setNoticeClickListener(v -> showJoinRequestInfo(joinRequest));
+  }
+
+  private TopBarView.Item newBotInviteItem (TdApi.ChatActionBarBotInvite botInvite) {
+    String inviterName = tdlib.cache().userName(botInvite.inviterUserId);
+    final CharSequence text;
+    if (botInvite.ownerUserId == botInvite.inviterUserId) {
+      text = Lang.getStringBold(R.string.BotInviteByOwnerNotice, inviterName);
+    } else if (botInvite.ownerUserId != 0) {
+      text = Lang.getStringBold(
+        R.string.BotInviteOwnerNotice,
+        inviterName, tdlib.cache().userName(botInvite.ownerUserId)
+      );
+    } else {
+      text = Lang.getStringBold(R.string.BotInviteNotice, inviterName);
+    }
+    return new TopBarView.Item(FormattedText.valueOf(text, tdlib, null))
+      .setNoticeClickListener(v ->
+        tdlib.ui().openPrivateProfile(this, botInvite.inviterUserId, null)
+      );
+  }
+
+  private void showJoinRequestInfo (TdApi.ChatActionBarJoinRequest joinRequest) {
+    AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
+    b.setTitle(Lang.getString(
+      joinRequest.isChannel ?
+        R.string.JoinRequestChannelAdminTitle : R.string.JoinRequestGroupAdminTitle
+    ));
+    if (joinRequest.requestDate > 0) {
+      String date = Lang.getRelativeDate(
+        joinRequest.requestDate, TimeUnit.SECONDS,
+        tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
+        false, 0, R.string.JoinRequestDate, false
+      );
+      b.setMessage(Lang.getStringBold(R.string.JoinRequestAdminInfo, joinRequest.title, date));
+    } else {
+      b.setMessage(Lang.getStringBold(R.string.JoinRequestAdminInfoNoDate, joinRequest.title));
+    }
+    b.setPositiveButton(Lang.getString(R.string.IUnderstand), (dialog, which) -> dialog.dismiss());
+    showAlert(b);
   }
 
   private TopBarView.Item newUnarchiveItem (long chatId) {
@@ -8320,13 +8438,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         );
         tdlib.send(new TdApi.SetChatNotificationSettings(chatId, newSettings), tdlib.typedOkHandler());
       }
-    });
+    }).setIcon(R.drawable.baseline_unarchive_24);
   }
 
-  private TopBarView.Item newReportItem (long chatId, boolean isBlock) {
+  private TopBarView.Item newReportItem (long chatId, boolean isBlock, String reportedName) {
     return new TopBarView.Item(R.id.btn_reportChat, isBlock ? R.string.BlockContact : R.string.ReportSpam, v -> {
       showSettings(new SettingsWrapBuilder(R.id.btn_reportSpam)
-        .addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.ReportChatSpam, chat.title), false))
+        .addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.ReportChatSpam, reportedName), false))
         .setRawItems(getChatUserId() != 0 ? new ListItem[] {
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true),
@@ -8361,7 +8479,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         })
         .setSaveStr(R.string.Done)
         .setSaveColorId(ColorId.textNegative));
-    }).setIsNegative();
+    })
+      .setIcon(isBlock ? R.drawable.baseline_block_24 : R.drawable.baseline_report_24)
+      .setIsNegative();
   }
 
   private void checkJoinRequests (TdApi.ChatJoinRequestsInfo info) {
@@ -8381,6 +8501,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void checkActionBar () {
+    actionBarEmojiStatusId = 0;
     if (!needActionBar())
       return;
 
@@ -8398,7 +8519,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         case TdApi.ChatActionBarReportSpam.CONSTRUCTOR: {
           TdApi.ChatActionBarReportSpam reportSpam = (TdApi.ChatActionBarReportSpam) actionBar;
-          items.add(newReportItem(chatId, false));
+          addEmojiStatusNotice(items);
+          items.add(newReportItem(chatId, false, chat.title));
           if (reportSpam.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
           }
@@ -8407,7 +8529,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         case TdApi.ChatActionBarReportAddBlock.CONSTRUCTOR: {
           TdApi.ChatActionBarReportAddBlock reportAddBlock = (TdApi.ChatActionBarReportAddBlock) actionBar;
-          items.add(newReportItem(chatId, true));
+          addEmojiStatusNotice(items);
+          items.add(newReportItem(chatId, true, chat.title));
           items.add(newAddContactItem(chatId));
           if (reportAddBlock.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
@@ -8445,7 +8568,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }));
             c.setChatTitle(R.string.AddMember, chat.title);
             navigateTo(c);
-          }));
+          }).setIcon(R.drawable.baseline_group_add_24));
           break;
         }
 
@@ -8460,17 +8583,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 return true;
               });
             }
-          }));
+          }).setIcon(R.drawable.baseline_contact_phone_24));
           break;
         }
         case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
           TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
-          // TODO
+          items.add(newJoinRequestItem(joinRequest, chatId));
           break;
         }
         case TdApi.ChatActionBarBotInvite.CONSTRUCTOR: {
           TdApi.ChatActionBarBotInvite botInvite = (TdApi.ChatActionBarBotInvite) actionBar;
-          items.add(newReportItem(chatId, false));
+          items.add(newBotInviteItem(botInvite));
+          // ReportChat reports the inviter, not the bot.
+          items.add(newReportItem(chatId, false, tdlib.cache().userName(botInvite.inviterUserId)));
           if (botInvite.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
           }
@@ -8491,7 +8616,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           } else {
             tdlib.ui().showDeleteChatConfirm(this, getChatId());
           }
-        }).setNoDismiss().setIsNegative());
+        }).setIcon(R.drawable.baseline_delete_24).setNoDismiss().setIsNegative());
       }
     }
     if (!items.isEmpty()) {
@@ -11436,6 +11561,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       runOnUiThreadOptional(() -> {
         headerCell.setEmojiStatus(user);
         checkCanSendMessagesToUser(false);
+        long emojiStatusId = Td.customEmojiId(user.emojiStatus);
+        if (actionBarEmojiStatusId != emojiStatusId) {
+          checkActionBar();
+        }
       });
     }
   }
