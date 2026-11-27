@@ -58,7 +58,7 @@ public class TradeLensAutoController extends TLListController {
           continue;
         }
         if (i > 0) {
-          section(items, "Next account");
+          section(items, "Another account");
         }
         String reason = a.optString("paused_reason", "");
         boolean on = a.optBoolean("enabled", false);
@@ -68,7 +68,10 @@ public class TradeLensAutoController extends TLListController {
           separator(items);
           boolean ok = el.optBoolean("ok", false);
           String why = el.optString("why", "");
-          items.add(plain("Eligibility", ok ? "Eligible" : ("Not eligible" + (why.isEmpty() || "null".equals(why) ? "" : " · " + why))));
+          items.add(plain("Eligibility", ok ? "Eligible" : "Not eligible"));
+          if (!ok && !why.isEmpty() && !"null".equals(why)) {
+            items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, why, false));
+          }
           separator(items);
           items.add(plain("Account equity", TLFormat.money(el, "equity") + " " + el.optString("currency", "")));
           JSONArray keys = el.optJSONArray("keys");

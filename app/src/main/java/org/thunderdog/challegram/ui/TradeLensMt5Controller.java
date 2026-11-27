@@ -103,15 +103,25 @@ public class TradeLensMt5Controller extends TLListController {
     JSONObject manage = json.optJSONObject("manage");
     section(items, "Your limits and equity protection");
     if (rules != null) {
-      items.add(plain("Risk per trade", TLFormat.num(rules, "max_risk_pct") + "% · daily loss limit " + TLFormat.num(rules, "daily_loss_pct")
-        + "% · max positions " + TLFormat.num(rules, "max_positions")));
+      items.add(plain("Maximum risk per trade", TLFormat.num(rules, "max_risk_pct") + "%"));
+      separator(items);
+      items.add(plain("Daily loss limit", TLFormat.num(rules, "daily_loss_pct") + "%"));
+      separator(items);
+      items.add(plain("Maximum open positions", TLFormat.num(rules, "max_positions")));
     }
     if (manage != null) {
+      if (rules != null) {
+        separator(items);
+      }
+      items.add(plain("Equity protection mode", manage.optString("prot_mode", "off")));
       separator(items);
-      items.add(plain("Equity protection", manage.optString("prot_mode", "off") + " · risk " + TLFormat.num(manage, "prot_risk_pct")
-        + "% · cap " + TLFormat.num(manage, "prot_cap_pct") + "%"));
+      items.add(plain("Equity protection levels", "risk " + TLFormat.num(manage, "prot_risk_pct") + "% · cap " + TLFormat.num(manage, "prot_cap_pct") + "%"));
       separator(items);
-      items.add(plain("Auto-manage", "Breakeven " + onOff(manage, "be_on") + " · Trailing stop " + onOff(manage, "tsl_on") + " · Trailing profit " + onOff(manage, "ttp_on")));
+      items.add(plain("Breakeven", onOff(manage, "be_on")));
+      separator(items);
+      items.add(plain("Trailing stop loss", onOff(manage, "tsl_on")));
+      separator(items);
+      items.add(plain("Trailing take profit", onOff(manage, "ttp_on")));
     }
     if (accounts.length() > 1) {
       section(items, "Your MT5 accounts");
