@@ -134,8 +134,8 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_login) {
-      header.addButton(menu, R.id.btn_proxy, R.drawable.baseline_security_24, ColorId.headerIcon, this, Screen.dp(48f));
-      header.addButton(menu, R.id.btn_languageSettings, R.drawable.baseline_language_24, ColorId.headerIcon, this, Screen.dp(48f));
+      header.addButton(menu, R.id.btn_proxy, R.drawable.baseline_security_24, R.string.ProxySettings, ColorId.headerIcon, this, Screen.dp(48f));
+      header.addButton(menu, R.id.btn_languageSettings, R.drawable.baseline_language_24, R.string.Language, ColorId.headerIcon, this, Screen.dp(48f));
     }
   }
 
