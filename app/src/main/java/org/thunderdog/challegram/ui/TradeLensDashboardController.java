@@ -136,6 +136,10 @@ public class TradeLensDashboardController extends RecyclerViewController<Void> i
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(row(R.id.btn_tlSignals, "Signals", "See the latest setups"));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(row(R.id.btn_tlMt5, "MT5 account", "Balance, equity, open positions and protection"));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(row(R.id.btn_tlAuto, "AutoTrading", "Status, eligibility and recent activity"));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(row(R.id.btn_tlOpenFull, "Full TradeLens", "Open analysis, wallet, MT5 and more"));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(row(R.id.btn_tlRefresh, "Refresh", "Reload from TradeLens"));
@@ -148,6 +152,10 @@ public class TradeLensDashboardController extends RecyclerViewController<Void> i
     int id = v.getId();
     if (id == R.id.btn_tlSignals) {
       navigateTo(new TradeLensSignalsController(context, tdlib));
+    } else if (id == R.id.btn_tlMt5) {
+      navigateTo(new TradeLensMt5Controller(context, tdlib));
+    } else if (id == R.id.btn_tlAuto) {
+      navigateTo(new TradeLensAutoController(context, tdlib));
     } else if (id == R.id.btn_tlOpenFull) {
       navigateTo(new TradeLensController(context, tdlib));
     } else if (id == R.id.btn_tlRefresh) {

@@ -1276,6 +1276,11 @@
   <item type="id" name="btn_tlOpenFull" />
   <item type="id" name="btn_tlRefresh" />
   <item type="id" name="btn_tlRow" />
+  <item type="id" name="controller_tlMt5" />
+  <item type="id" name="controller_tlAuto" />
+  <item type="id" name="btn_tlMt5" />
+  <item type="id" name="btn_tlAuto" />
+  <item type="id" name="btn_tlAccount" />
   <item type="id" name="controller_tlAbout" />
   <item type="id" name="btn_tlAbout" />
   <item type="id" name="btn_tlAboutLink" />
