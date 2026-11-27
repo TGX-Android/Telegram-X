@@ -521,6 +521,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   // Methods which have implementation in NavigationController
 
   public boolean navigateTo (ViewController<?> c) {
+    if (navigationController != null && navigationController.isSecondaryPane()) {
+      // Dual-pane list: everything opened from the list goes to the detail pane.
+      return context().navigation().navigateTo(c);
+    }
     return !isStackLocked() && navigationController != null && navigationController.navigateTo(c);
   }
 

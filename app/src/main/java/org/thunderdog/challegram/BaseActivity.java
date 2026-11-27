@@ -89,6 +89,7 @@ import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackPressMode;
 import org.thunderdog.challegram.navigation.DrawerController;
+import org.thunderdog.challegram.navigation.DualPaneLayout;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.InterceptLayout;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
@@ -575,6 +576,7 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
 
     Lang.addLanguageListener(this);
 
+    dualPaneLayout = new DualPaneLayout(this, contentView, navigation);
     navigation.getStack().addChangeListener(navigationStackChangeListener);
     backPressedCallback.setEnabled(isBackPressActionAvailable(handleOnBackPress(false, false)));
     getOnBackPressedDispatcher().addCallback(backPressedCallback);
@@ -1270,6 +1272,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
       navigation.getStack().removeChangeListener(navigationStackChangeListener);
       navigation.destroy();
     }
+    if (dualPaneLayout != null) {
+      dualPaneLayout.destroy();
+    }
     Lang.removeLanguageListener(this);
     if (statusBar != null) {
       statusBar.performDestroy();
@@ -1396,6 +1401,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
     super.onConfigurationChanged(newConfig);
     boolean needRecreate = Screen.checkDensity();
     navigation.configurationChanged(newConfig);
+    if (dualPaneLayout != null && !needRecreate) {
+      dualPaneLayout.onConfigurationChanged(newConfig);
+    }
     if (isPasscodeShowing && passcodeController != null) {
       passcodeController.onConfigurationChanged(newConfig);
     }
@@ -1414,9 +1422,19 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
     }
   }
 
+  private DualPaneLayout dualPaneLayout;
+
+  public @Nullable DualPaneLayout getDualPaneLayout () {
+    return dualPaneLayout;
+  }
+
   private final NavigationStack.ChangeListener navigationStackChangeListener = stack -> {
+    if (dualPaneLayout != null) {
+      dualPaneLayout.onMainStackChanged();
+    }
     notifyBackPressAvailabilityChanged();
   };
+
 
   private final OnBackPressedCallback backPressedCallback = new OnBackPressedCallback(false) {
     @Override
@@ -1550,6 +1568,14 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
       }
       return BackPressMode.CLOSE_NAVIGATION_DRAWER;
     } else {
+      NavigationController listNavigation = dualPaneLayout != null ? dualPaneLayout.getListNavigation() : null;
+      if (listNavigation != null) {
+        // Detail pane did not consume back (it is at its root): let the list pane close its search/selection.
+        @BackPressMode int listBackPress = listNavigation.performOnBackPressed(fromTop, commit);
+        if (listBackPress != BackPressMode.SYSTEM_ACTION_REQUIRED) {
+          return listBackPress;
+        }
+      }
       ViewController<?> c = navigation.getCurrentStackItem();
       if (c != null && (c.inSelectMode() || c.inSearchMode() || c.inCustomMode())) {
         navigationBackPress = navigation.performOnBackPressed(fromTop, commit);
@@ -1571,6 +1597,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   @Override
   public void onKeyboardStateChanged (boolean visible) {
     navigation.onKeyboardStateChanged(visible);
+    if (dualPaneLayout != null) {
+      dualPaneLayout.onKeyboardStateChanged(visible);
+    }
     this.isKeyboardVisible = visible;
     if (statusBar != null) {
       statusBar.updateVisible();
@@ -1774,6 +1803,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
           // Navigation is still blurred, no need to call onBlur
         } else {
           navigation.onBlur();
+          if (dualPaneLayout != null && dualPaneLayout.getListNavigation() != null) {
+            dualPaneLayout.getListNavigation().onBlur();
+          }
         }
       } else {
         navigationFocusTask = new CancellableRunnable() {
@@ -1782,6 +1814,9 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
             if (navigationFocusTask == this) {
               navigationFocusTask = null;
               navigation.onFocus();
+              if (dualPaneLayout != null && dualPaneLayout.getListNavigation() != null) {
+                dualPaneLayout.getListNavigation().onFocus();
+              }
             }
           }
         };

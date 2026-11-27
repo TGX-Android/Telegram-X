@@ -1315,8 +1315,8 @@ dependencies {
   compileOnly(libs.annotations.jsr305)
   compileOnly(libs.annotations.kotlin)
 
+  testImplementation(libs.bundles.unit.test)
   if (hasTests) {
-    testImplementation(libs.bundles.unit.test)
     androidTestImplementation(project(":tests:core"))
   }
 }

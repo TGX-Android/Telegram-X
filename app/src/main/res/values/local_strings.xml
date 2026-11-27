@@ -2,6 +2,13 @@
 <resources>
   <!-- DO NOT SYNC WITH TRANSLATIONS PLATFORM -->
   <string name="UseExplicitDice">Use explicit dice</string>
+
+  <!-- Experimental dual-pane layout (docs/fold8) -->
+  <string name="DualPaneMode">Dual-pane layout</string>
+  <string name="DualPaneModeAuto">Auto</string>
+  <string name="DualPaneModeForce">Force when space allows</string>
+  <string name="DualPaneModeOff">Off</string>
+  <string name="DualPaneEmpty">Select a chat to start messaging</string>
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />

@@ -236,7 +236,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       if (controller.preventRootInteractions()) {
         rootView.addView(controller.getValue(), 0);
       } else {
-        rootView.addView(controller.getValue(), rootView.getChildCount() - 2);
+        rootView.addView(controller.getValue(), rootView.indexOfChild(headerView));
       }
     } else {
       contentWrapper.addView(controller.getValue());
@@ -653,7 +653,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   private void applyPopupMode (ViewController<?> current) {
     if (!current.preventRootInteractions()) {
       rootView.removeView(current.getValue());
-      rootView.addView(current.getValue(), rootView.getChildCount() - 2);
+      rootView.addView(current.getValue(), rootView.indexOfChild(headerView));
     }
     headerView.getFilling().setCollapsed(true);
   }
@@ -1492,6 +1492,13 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
           shadowView.setAlpha(.65f + .45f * factor);
         }
 
+        if (!isSecondaryPane) {
+          DualPaneLayout dualPane = UI.getContext(context).getDualPaneLayout();
+          if (dualPane != null) {
+            dualPane.onMainTranslation(currentLeft, translationFactor);
+          }
+        }
+
 
         break;
       }
@@ -1715,7 +1722,44 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   public void dispatchSystemInsets (View child, ViewGroup.MarginLayoutParams layoutParams, Rect legacyInsets, Rect systemInsets, Rect systemInsetWithoutIme) {
-    Views.setMargins(layoutParams, legacyInsets.left, legacyInsets.top, legacyInsets.right, 0);
+    legacyInsetLeft = legacyInsets.left;
+    legacyInsetRight = legacyInsets.right;
+    Views.setMargins(layoutParams, legacyInsets.left + paneMarginLeft, legacyInsets.top, legacyInsets.right + paneMarginRight, 0);
     setBottomInset(systemInsets.bottom, systemInsetWithoutIme.bottom);
+  }
+
+  // Dual-pane support (see DualPaneLayout)
+
+  private boolean isSecondaryPane;
+  private int paneMarginLeft, paneMarginRight;
+  private int legacyInsetLeft, legacyInsetRight;
+
+  /** Secondary navigators (dual-pane list) forward {@link ViewController#navigateTo} to the Activity's navigator. */
+  public void setSecondaryPane (boolean isSecondaryPane) {
+    this.isSecondaryPane = isSecondaryPane;
+  }
+
+  public boolean isSecondaryPane () {
+    return isSecondaryPane;
+  }
+
+  /** Controller revealed underneath during a running transition, if any. */
+  public @Nullable ViewController<?> getTransitionLeft () {
+    return currentLeft;
+  }
+
+  /** Extra horizontal space reserved next to this navigator, on top of system insets. */
+  public void setPaneMargins (int left, int right) {
+    if (this.paneMarginLeft == left && this.paneMarginRight == right) {
+      return;
+    }
+    this.paneMarginLeft = left;
+    this.paneMarginRight = right;
+    View view = getValue();
+    if (view.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+      ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+      Views.setMargins(params, legacyInsetLeft + left, params.topMargin, legacyInsetRight + right, params.bottomMargin);
+      Views.updateLayoutParams(view);
+    }
   }
 }
