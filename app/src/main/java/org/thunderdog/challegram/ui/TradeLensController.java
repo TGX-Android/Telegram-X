@@ -38,6 +38,28 @@ public class TradeLensController extends WebkitController<Void> {
 
   private long launchId;
   private boolean opened;
+  private String launchUrl = MINIAPP_URL;
+
+  /** True only for the TradeLens Mini App's own address (https, the TradeLens site, under /tg/). */
+  public static boolean isMiniAppUrl (String url) {
+    if (url == null) {
+      return false;
+    }
+    try {
+      Uri uri = Uri.parse(url);
+      return "https".equals(uri.getScheme()) && SITE_HOST.equals(uri.getHost()) && uri.getUserInfo() == null
+        && uri.getPath() != null && uri.getPath().startsWith("/tg/");
+    } catch (Throwable t) {
+      return false;
+    }
+  }
+
+  /** Opens the Mini App at this address (for example with ?s=<signal id>, from an alert's button). Ignored unless it is the Mini App's own address. */
+  public void setLaunchUrl (String url) {
+    if (isMiniAppUrl(url)) {
+      launchUrl = url;
+    }
+  }
 
   public TradeLensController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -68,7 +90,7 @@ public class TradeLensController extends WebkitController<Void> {
       }
       long botUserId = ((TdApi.ChatTypePrivate) chat.type).userId;
       TdApi.WebAppOpenParameters parameters = new TdApi.WebAppOpenParameters(null, "TradeLensConnect", new TdApi.WebAppOpenModeFullSize());
-      tdlib.send(new TdApi.OpenWebApp(chat.id, botUserId, MINIAPP_URL, null, null, parameters), (info, openError) -> {
+      tdlib.send(new TdApi.OpenWebApp(chat.id, botUserId, launchUrl, null, null, parameters), (info, openError) -> {
         if (info == null || info.url == null || info.url.url == null) {
           failed();
           return;
