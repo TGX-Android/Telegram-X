@@ -13,19 +13,22 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.view.View;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tradelens.TLControls;
 import org.thunderdog.challegram.tradelens.TLFormat;
 
 import java.util.ArrayList;
 
 /**
  * AutoTrading status: availability, eligibility, current status and recent activity, read from TradeLens.
- * This screen cannot switch AutoTrading on or off, change a setting or start a trade; those stay on the TradeLens website,
- * where the existing confirmations and safeguards apply.
+ * The only action here is the safe one: switch AutoTrading OFF, confirmed by the member and decided by the TradeLens server
+ * (see TLControls). Switching it on, changing settings and starting trades stay on the TradeLens website, where the existing
+ * confirmations and safeguards apply.
  */
 public class TradeLensAutoController extends TLListController {
   public TradeLensAutoController (Context context, Tdlib tdlib) {
@@ -63,6 +66,11 @@ public class TradeLensAutoController extends TLListController {
         String reason = a.optString("paused_reason", "");
         boolean on = a.optBoolean("enabled", false);
         items.add(plain(a.optString("label", "MT5 account"), (on ? "AutoTrading is ON" : "AutoTrading is OFF") + (reason.isEmpty() || "null".equals(reason) ? "" : " · paused: " + reason)));
+        if (on && json.optBoolean("controls", false)) {
+          separator(items);
+          items.add(row(R.id.btn_tlAutoOff, "Switch AutoTrading OFF", "Stops new trades. Trades already open stay open. You confirm first.")
+            .setData(a.optInt("id", 0)));
+        }
         JSONObject el = a.optJSONObject("eligibility");
         if (el != null) {
           separator(items);
@@ -115,6 +123,16 @@ public class TradeLensAutoController extends TLListController {
       String note = j.optString("note", "");
       items.add(plain(TLFormat.dateTime(j, "at") + (note.isEmpty() ? "" : " · " + note),
         j.optString("status", "") + " · " + (j.optInt("dir", 1) > 0 ? "BUY " : "SELL ") + j.optString("symbol", "") + " " + TLFormat.num(j, "lots") + " lots" + profit));
+    }
+  }
+
+  @Override
+  protected void onRowClick (View v) {
+    if (v.getId() == R.id.btn_tlAutoOff) {
+      Object data = ((ListItem) v.getTag()).getData();
+      if (data instanceof Integer && (Integer) data > 0) {
+        TLControls.run(this, tdlib, "auto_off", (Integer) data, null, this::load);
+      }
     }
   }
 }

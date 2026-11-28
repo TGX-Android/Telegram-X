@@ -129,6 +129,51 @@ public final class ConnectClient {
     });
   }
 
+  /**
+   * POST /api/connect/v1/{path} with a JSON body. With freshSession the app signs in through Telegram again first, because
+   * the server only accepts control actions from a Connect token less than 5 minutes old. For an HTTP error the result has the
+   * server's JSON message (when there is one) and error "http NNN".
+   */
+  public static void post (Tdlib tdlib, String path, JSONObject body, boolean freshSession, Result result) {
+    ensureSession(tdlib, freshSession, (t, me, error) -> {
+      if (error != null) {
+        result.onResult(null, error);
+        return;
+      }
+      new Thread(() -> {
+        HttpURLConnection connection = null;
+        try {
+          connection = (HttpURLConnection) new URL(API + "/" + path).openConnection();
+          connection.setRequestMethod("POST");
+          connection.setConnectTimeout(15000);
+          connection.setReadTimeout(20000);
+          connection.setDoOutput(true);
+          connection.setRequestProperty("Authorization", "Bearer " + t);
+          connection.setRequestProperty("Content-Type", "application/json");
+          try (OutputStream out = connection.getOutputStream()) {
+            out.write(body.toString().getBytes(StandardCharsets.UTF_8));
+          }
+          int code = connection.getResponseCode();
+          if (code == 200) {
+            result.onResult(new JSONObject(readAll(connection.getInputStream())), null);
+            return;
+          }
+          JSONObject details = null;
+          try {
+            details = new JSONObject(readAll(connection.getErrorStream()));
+          } catch (Throwable ignored) { }
+          result.onResult(details, "http " + code);
+        } catch (Throwable e) {
+          result.onResult(null, "network");
+        } finally {
+          if (connection != null) {
+            connection.disconnect();
+          }
+        }
+      }, "tradelens-connect").start();
+    });
+  }
+
   private interface SessionCallback {
     void onSession (@Nullable String token, @Nullable JSONObject me, @Nullable String error);
   }

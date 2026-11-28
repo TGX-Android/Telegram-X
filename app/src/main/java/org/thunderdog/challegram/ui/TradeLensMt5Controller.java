@@ -19,13 +19,16 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tradelens.TLControls;
 import org.thunderdog.challegram.tradelens.TLFormat;
 
 import java.util.ArrayList;
 
 /**
- * MT5 account monitor and equity protection status. Read from TradeLens (the same data as the website's MT5 page);
- * this screen cannot change rules, close a position or send any command to MT5.
+ * MT5 account monitor and equity protection status. Read from TradeLens (the same data as the website's MT5 page).
+ * The only action here is the safe one: make equity protection stricter, confirmed by the member and decided by the
+ * TradeLens server (see TLControls). Weaker settings, rules, closing positions and any command to MT5 are not possible here.
  */
 public class TradeLensMt5Controller extends TLListController {
   public TradeLensMt5Controller (Context context, Tdlib tdlib) {
@@ -42,6 +45,11 @@ public class TradeLensMt5Controller extends TLListController {
     return "MT5 account";
   }
 
+  private static final String[] MODES = {"off", "breakeven", "stop", "close"};
+  private static final double[] RISKS = {3, 2, 1};
+  private JSONObject lastManage;
+  private int lastAccount;
+
   private static String onOff (JSONObject o, String key) {
     return o != null && o.optBoolean(key, false) ? "On" : "Off";
   }
@@ -55,6 +63,8 @@ public class TradeLensMt5Controller extends TLListController {
         : "MT5 isn't included in your current plan."));
       return;
     }
+    lastManage = json.optJSONObject("manage");
+    lastAccount = json.optBoolean("controls", false) ? json.optInt("account_id", 0) : 0;
     boolean connected = json.optBoolean("connected", false);
     long seen = json.optLong("last_seen_ago", -1);
     items.add(plain(json.optString("label", "MT5 account"),
@@ -123,6 +133,11 @@ public class TradeLensMt5Controller extends TLListController {
       separator(items);
       items.add(plain("Trailing take profit", onOff(manage, "ttp_on")));
     }
+    if (lastAccount > 0 && manage != null) {
+      section(items, "Make protection stricter");
+      items.add(row(R.id.btn_tlProt, "Make equity protection stricter", "Choose a stricter setting. Weaker settings are changed on the TradeLens website.")
+        .setData(lastAccount));
+    }
     if (accounts.length() > 1) {
       section(items, "Your MT5 accounts");
       for (int i = 0; i < accounts.length(); i++) {
@@ -141,12 +156,61 @@ public class TradeLensMt5Controller extends TLListController {
 
   @Override
   protected void onRowClick (View v) {
-    if (v.getId() == R.id.btn_tlAccount) {
+    if (v.getId() == R.id.btn_tlProt) {
+      chooseStricter();
+    } else if (v.getId() == R.id.btn_tlAccount) {
       Object data = ((ListItem) v.getTag()).getData();
       if (data instanceof Integer && (Integer) data > 0) {
         path = "mt5?account=" + data;
         load();
       }
     }
+  }
+
+  private void chooseStricter () {
+    if (lastManage == null || lastAccount <= 0) {
+      return;
+    }
+    int cur = 0;
+    for (int i = 0; i < MODES.length; i++) {
+      if (MODES[i].equals(lastManage.optString("prot_mode", "off"))) {
+        cur = i;
+      }
+    }
+    double risk = lastManage.optDouble("prot_risk_pct", 0);
+    ArrayList<String> titles = new ArrayList<>();
+    ArrayList<JSONObject> params = new ArrayList<>();
+    try {
+      for (int i = cur + 1; i < MODES.length; i++) {
+        titles.add("Mode: " + MODES[i]);
+        params.add(new JSONObject().put("prot_mode", MODES[i]));
+      }
+      for (double r : RISKS) {
+        if (r < risk) {
+          titles.add("Protective stop risk: " + TLFormat.num(new JSONObject().put("v", r), "v") + "%");
+          params.add(new JSONObject().put("prot_risk_pct", r));
+        }
+      }
+    } catch (Throwable ignored) { }
+    if (titles.isEmpty()) {
+      UI.showToast("Your protection is already at the strictest setting the app offers.", android.widget.Toast.LENGTH_LONG);
+      return;
+    }
+    int[] ids = new int[titles.size() + 1];
+    String[] names = new String[titles.size() + 1];
+    for (int i = 0; i < titles.size(); i++) {
+      ids[i] = 9001 + i;
+      names[i] = titles.get(i);
+    }
+    ids[titles.size()] = R.id.btn_cancel;
+    names[titles.size()] = "Cancel";
+    final int account = lastAccount;
+    showOptions("Choose a stricter setting. You will confirm it on the next screen.", ids, names, (itemView, id) -> {
+      int index = id - 9001;
+      if (index >= 0 && index < params.size()) {
+        TLControls.run(this, tdlib, "protection", account, params.get(index), this::load);
+      }
+      return true;
+    });
   }
 }
