@@ -66,6 +66,9 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.TLAboutController;
+import org.thunderdog.challegram.ui.TLCommController;
+import org.thunderdog.challegram.ui.TradeLensController;
 import org.thunderdog.challegram.ui.CallListController;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.FeatureToggles;
@@ -291,6 +294,11 @@ public class DrawerController extends ViewController<Void> implements
       headerView.getExpanderView().setExpanded(true, false);
     }
 
+    items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_tradelens, R.drawable.baseline_tradelens_24, R.string.TradeLens));
+    if (Settings.instance().chatFoldersEnabled()) {
+      items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_tlcomm, R.drawable.baseline_tradelens_24, R.string.TLComm));
+    }
+    items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_tlAbout, R.drawable.baseline_tradelens_24, "About TradeLens Connect"));
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_contacts, R.drawable.baseline_perm_contact_calendar_24, R.string.Contacts));
     if (Settings.instance().chatFoldersEnabled()) {
       items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_calls, R.drawable.baseline_call_24, R.string.Calls));
@@ -859,6 +867,12 @@ public class DrawerController extends ViewController<Void> implements
         needAnimationDelay = true;
         account.context().changePreferredAccountId(account.id, TdlibManager.SWITCH_REASON_USER_CLICK);
       }
+    } else if (viewId == R.id.btn_tlcomm) {
+      openController(new TLCommController(context, context.currentTdlib()));
+    } else if (viewId == R.id.btn_tlAbout) {
+      openController(new TLAboutController(context, context.currentTdlib()));
+    } else if (viewId == R.id.btn_tradelens) {
+      openController(new TradeLensController(context, context.currentTdlib()));
     } else if (viewId == R.id.btn_contacts) {
       openContacts();
       // openEmptyChat();

@@ -1267,6 +1267,27 @@
   <item type="id" name="btn_publicChannel" />
   <item type="id" name="btn_privateChannel" />
   <item type="id" name="btn_savedMessages" />
+  <item type="id" name="btn_tradelens" />
+  <item type="id" name="btn_tlCommLink" />
+  <item type="id" name="btn_tlStatus" />
+  <item type="id" name="controller_tlDashboard" />
+  <item type="id" name="controller_tlSignals" />
+  <item type="id" name="btn_tlSignals" />
+  <item type="id" name="btn_tlOpenFull" />
+  <item type="id" name="btn_tlRefresh" />
+  <item type="id" name="btn_tlRow" />
+  <item type="id" name="controller_tlMt5" />
+  <item type="id" name="controller_tlAuto" />
+  <item type="id" name="btn_tlMt5" />
+  <item type="id" name="btn_tlAuto" />
+  <item type="id" name="btn_tlAccount" />
+  <item type="id" name="btn_tlAutoOff" />
+  <item type="id" name="btn_tlProt" />
+  <item type="id" name="controller_tlAbout" />
+  <item type="id" name="btn_tlAbout" />
+  <item type="id" name="btn_tlAboutLink" />
+  <item type="id" name="btn_tlcomm" />
+  <item type="id" name="controller_tlComm" />
   <item type="id" name="btn_contacts" />
   <item type="id" name="btn_invite" />
   <item type="id" name="btn_inviteBack" />

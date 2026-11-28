@@ -1369,7 +1369,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     };
   }
 
-  private static boolean belongsToIntro (@StringRes int res) {
+  public static boolean belongsToIntro (@StringRes int res) {
     return res == R.string.Page1Title ||
       res == R.string.Page1Message ||
       res == R.string.Page2Title ||
@@ -1906,7 +1906,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     int size = Screen.dp(220f);
     bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
     Canvas c = new Canvas(bitmap);
-    c.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2, bitmap.getWidth() / 2, Paints.fillingPaint(0xff35a6de));
+    c.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2, bitmap.getWidth() / 2, Paints.fillingPaint(0xff0a1f44));
     U.recycle(c);
     synchronized (icons) {
       iconsSpecial.put(0, bitmap);

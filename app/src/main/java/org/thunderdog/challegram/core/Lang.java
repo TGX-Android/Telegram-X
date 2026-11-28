@@ -33,6 +33,7 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.ui.IntroController;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -248,7 +249,12 @@ public class Lang {
   private  static String getCloudString (String key) {
     TdApi.LanguagePackInfo languagePackInfo = Settings.instance().getLanguagePackInfo();
     TdApi.LanguagePackStringValueOrdinary string = getStringValue(key, languagePackInfo);
-    return string != null ? string.value : null;
+    return string != null ? brandCloud(string.value) : null;
+  }
+
+  // Telegram's cloud language pack still says "Telegram X": show this app's own name instead.
+  private static String brandCloud (String value) {
+    return value != null && value.contains("Telegram X") ? value.replace("Telegram X", "TradeLens Connect") : value;
   }
 
   public static CharSequence getTutorial (ViewController<?> context, @NonNull TdApi.ChatSource source) {
@@ -318,13 +324,13 @@ public class Lang {
   private static String getStringImpl (@Nullable TdApi.LanguagePackInfo languagePackInfo, @StringRes int resId, boolean allowCloud) {
     if (resId == 0)
       throw new Resources.NotFoundException("resId == 0");
-    if (allowCloud) {
+    if (allowCloud && !IntroController.belongsToIntro(resId)) {
       if (languagePackInfo == null)
         languagePackInfo = Settings.instance().getLanguagePackInfo();
       final String key = getResourceEntryName(resId);
       TdApi.LanguagePackStringValueOrdinary string = getStringValue(key, languagePackInfo);
       if (string != null)
-        return string.value;
+        return brandCloud(string.value);
     }
     try {
       return getAndroidString(resId);
@@ -431,14 +437,14 @@ public class Lang {
     if (formatArgs == null || formatArgs.length == 0)
       return getStringImpl(null, resId, allowCloud);
     final boolean hasSpanned = hasSpanned(formatArgs);
-    if (allowCloud) {
+    if (allowCloud && !IntroController.belongsToIntro(resId)) {
       if (languagePackInfo == null)
         languagePackInfo = Settings.instance().getLanguagePackInfo();
       final String key = getResourceEntryName(resId);
       TdApi.LanguagePackStringValueOrdinary string = getStringValue(key, languagePackInfo);
       if (string != null) {
         try {
-          return formatString(applyFlags(string.value, flags), hasSpanned, creator, formatArgs);
+          return formatString(applyFlags(brandCloud(string.value), flags), hasSpanned, creator, formatArgs);
         } catch (Throwable t) {
           warnResource(true, pluralCode(), resId);
         }

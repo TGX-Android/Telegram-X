@@ -52,6 +52,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.TradeLensController;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.EmojiString;
@@ -1150,9 +1151,21 @@ public class TGInlineKeyboard {
       switch (type.getConstructor()) {
         case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR:
         case TdApi.InlineKeyboardButtonTypeCopyText.CONSTRUCTOR:
-        case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR:
           // TODO
           break;
+
+        case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR: {
+          // Only the TradeLens Mini App is supported (the TradeLens bot's "Open TradeLens" buttons). Other Mini Apps are not run by this client.
+          final String webAppUrl = ((TdApi.InlineKeyboardButtonTypeWebApp) type).url;
+          if (TradeLensController.isMiniAppUrl(webAppUrl)) {
+            TradeLensController tradeLens = new TradeLensController(parent.context(), parent.tdlib());
+            tradeLens.setLaunchUrl(webAppUrl);
+            parent.context().navigation().navigateTo(tradeLens);
+          } else {
+            UI.showToast("This kind of button is not supported in this app yet.", android.widget.Toast.LENGTH_SHORT);
+          }
+          break;
+        }
 
         case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
           final TdApi.InlineKeyboardButtonTypeCallbackWithPassword callbackWithPassword = (TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type;
