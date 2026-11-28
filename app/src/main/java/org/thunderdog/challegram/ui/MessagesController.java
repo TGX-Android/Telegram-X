@@ -10515,7 +10515,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                     if (showSendAsFileRestriction(view, galleryFile, asFiles)) {
                       return false;
                     }
-                    sendPhotosAndVideosCompressed(new ImageGalleryFile[] {galleryFile}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
+                    sendPhotosAndVideosCompressed(new ImageGalleryFile[] {galleryFile}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler, isSendHdEnabled());
                     return true;
                   }
                 },
@@ -10756,7 +10756,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       readFiles(() -> {
         BitmapFactory.Options opts = ImageReader.getImageSize(path);
         int orientation = U.getExifOrientation(path);
-        int inSampleSize = ImageReader.calculateInSampleSize(opts, 1280, 1280);
+        int resolutionLimit = PhotoGenerationInfo.preferredResolutionLimit();
+        int sizeLimit = resolutionLimit != 0 ? resolutionLimit : PhotoGenerationInfo.SIZE_LIMIT;
+        int inSampleSize = ImageReader.calculateInSampleSize(opts, sizeLimit, sizeLimit);
         int sampledWidth = opts.outWidth / inSampleSize;
         int sampledHeight = opts.outHeight / inSampleSize;
         int width, height;
@@ -10767,7 +10769,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           width = sampledWidth;
           height = sampledHeight;
         }
-        TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(path, U.getRotationForExifOrientation(orientation));
+        TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(path, U.getRotationForExifOrientation(orientation), PhotoGenerationInfo.lastModified(path), false, resolutionLimit);
         TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(new TdApi.InputPhoto(inputFile, null, null, null, width, height), null, false, selfDestructType, false), isSecret);
         UI.post(() -> tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, photo));
       });
@@ -10775,6 +10777,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions modifiedSendOptions, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
+    return sendPhotosAndVideosCompressed(
+      files, needGroupMedia, modifiedSendOptions, disableMarkdown, asFiles,
+      showCaptionAboveMedia, hasSpoiler, false
+    );
+  }
+
+  public boolean sendPhotosAndVideosCompressed (
+    final ImageGalleryFile[] files,
+    final boolean needGroupMedia,
+    final TdApi.MessageSendOptions modifiedSendOptions,
+    boolean disableMarkdown,
+    boolean asFiles,
+    boolean showCaptionAboveMedia,
+    boolean hasSpoiler,
+    boolean isHd
+  ) {
     if (files == null || files.length == 0) {
       return false;
     }
@@ -10840,8 +10858,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(new TdApi.InputVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo)), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
           }
         } else {
+          final int sizeLimit = PhotoGenerationInfo.sizeLimit(file, isHd);
           int[] size = new int[2];
-          file.getOutputSize(size);
+          file.getOutputSize(size, sizeLimit);
 
           final int width = size[0];
           final int height = size[1];
@@ -10850,7 +10869,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (asFiles && PhotoGenerationInfo.isEmpty(file)) {
             inputFile = TD.createInputFile(file.getFilePath());
           } else {
-            inputFile = PhotoGenerationInfo.newFile(file);
+            inputFile = PhotoGenerationInfo.newFile(file, sizeLimit);
           }
 
           TdApi.FormattedText caption = file.getCaption(true, !disableMarkdown);

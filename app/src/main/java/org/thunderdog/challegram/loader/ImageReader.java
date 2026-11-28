@@ -51,6 +51,7 @@ import java.nio.channels.FileChannel;
 import me.vkryl.core.StringUtils;
 
 public class ImageReader {
+  public static final int LARGE_IMAGE_LIMIT = 1024;
   private static final int MAX_WEBP_SIZE = 4096;
 
   private static ImageReader instance;
@@ -246,6 +247,11 @@ public class ImageReader {
       int limitSize = file.getSize(); // != 0 ? file.getSize() : ;
       if (limitSize != 0) {
         opts.inSampleSize = calculateInSampleSize(opts, limitSize, limitSize);
+      }
+      if (limitSize >= LARGE_IMAGE_LIMIT) {
+        opts.inSampleSize = calculateLargeImageSampleSize(
+          Math.max(opts.outWidth, opts.outHeight), limitSize
+        );
       }
     }
 
@@ -627,6 +633,15 @@ public class ImageReader {
     }
 
     listener.onImageLoaded(bitmap != null, bitmap);
+  }
+
+  private static int calculateLargeImageSampleSize (int maxSide, int limitSize) {
+    final int maxDecodedSide = limitSize + limitSize / 2;
+    int sampleSize = 1;
+    while (maxSide / sampleSize > maxDecodedSide) {
+      sampleSize *= 2;
+    }
+    return sampleSize;
   }
 
   public static int calculateInSampleSize (int width, int height, int reqWidth, int reqHeight) {

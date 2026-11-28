@@ -1481,7 +1481,8 @@ public class CameraController extends ViewController<Void> implements CameraDele
     boolean disableMarkdown,
     boolean asFiles,
     boolean showCaptionAboveMedia,
-    boolean hasSpoiler
+    boolean hasSpoiler,
+    boolean isHd
   ) {
     MessagesController m = findOutputController();
     if (m != null) {
@@ -1489,7 +1490,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
         return false;
       }
       context.forceCloseCamera();
-      return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
+      return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler, isHd);
     }
     return false;
   }
@@ -1569,7 +1570,8 @@ public class CameraController extends ViewController<Void> implements CameraDele
             disableMarkdown,
             asFiles,
             showCaptionAboveMedia,
-            hasSpoiler
+            hasSpoiler,
+            isSendHdEnabled()
           );
         }
       }, stack, m != null && m.areScheduledOnly()).setAvatarPickerMode(avatarPickerMode);
