@@ -1,0 +1,94 @@
+name: Build release APK
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: "Flavor: Qrs (Android 10-12) or Latest (Android 13+)"
+        required: true
+        default: "Qrs"
+        type: choice
+        options:
+          - Qrs
+          - Latest
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/android/sdk/ndk /opt/hostedtoolcache/CodeQL
+          df -h /
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Fetch submodules (shallow)
+        run: git submodule update --init --recursive --depth=1
+      - name: Android SDK pieces
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-37.1" "build-tools;37.0.0" "cmake;3.22.1" "ndk;23.2.8568313" "ndk;30.0.16248370"
+          ls "$ANDROID_HOME/ndk"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Rust toolchain
+        env:
+          TERM: xterm
+        run: |
+          set -eo pipefail
+          scripts/setup-rust.sh 2>&1 | tee rust.log
+      - name: Signing key and Firebase config
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          GOOGLE_SERVICES_B64: ${{ secrets.GOOGLE_SERVICES_B64 }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/tradelens.jks"
+          echo "$GOOGLE_SERVICES_B64" | base64 -d > "$RUNNER_TEMP/google-services.json"
+          test -s "$RUNNER_TEMP/tradelens.jks"
+          test -s "$RUNNER_TEMP/google-services.json"
+      - name: local.properties
+        env:
+          API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          RUST_DIR=$(rustup show home)
+          {
+            echo "sdk.dir=$ANDROID_HOME"
+            echo "rust.dir=$RUST_DIR"
+            echo "app.id=live.tradelens360ai.connect"
+            echo "app.name=TradeLens Connect (Unofficial)"
+            echo "app.download_url=https://github.com/Driverline/tradelens-connect-android"
+            echo "app.sources_url=https://github.com/Driverline/tradelens-connect-android"
+            echo "app.experimental=true"
+            echo "keystore.file=$RUNNER_TEMP/keystore.properties"
+            echo "google_services.file=$RUNNER_TEMP/google-services.json"
+            echo "telegram.api_id=$API_ID"
+            echo "telegram.api_hash=$API_HASH"
+          } > local.properties
+          {
+            echo "keystore.file=$RUNNER_TEMP/tradelens.jks"
+            echo "keystore.password=$KEYSTORE_PASSWORD"
+            echo "key.alias=$KEY_ALIAS"
+            echo "key.password=$KEY_PASSWORD"
+          } > "$RUNNER_TEMP/keystore.properties"
+      - name: Validate and build
+        env:
+          FLAVOR: ${{ inputs.flavor }}
+        run: |
+          ./gradlew --no-parallel :app:validateGitSetup
+          ./gradlew --no-parallel assemble${FLAVOR}Release -Pabi=arm64
+      - name: Remove secrets from the runner
+        if: always()
+        run: |
+          rm -f local.properties "$RUNNER_TEMP/tradelens.jks" "$RUNNER_TEMP/keystore.properties" "$RUNNER_TEMP/google-services.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tradelens-connect-release-apk
+          path: app/build/outputs/apk/**/*.apk
+          retention-days: 7

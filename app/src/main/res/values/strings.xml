@@ -2,18 +2,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
   <string name="language_continueInLanguage">Continue in English</string>
 
-  <string name="Page1Title">Telegram X</string>
+  <string name="Page1Title">TradeLens Connect</string>
   <string name="Page2Title">Fast</string>
   <string name="Page3Title">Free</string>
   <string name="Page4Title">Powerful</string>
   <string name="Page5Title">Secure</string>
   <string name="Page6Title">Cloud-Based</string>
-  <string name="Page1Message">The world\'s **fastest** messaging app.\nIt is **free** and **secure**.</string>
-  <string name="Page2Message">**Telegram** delivers messages\nfaster than any other application.</string>
-  <string name="Page3Message">**Telegram** provides free unlimited\ncloud storage for chats and media.</string>
-  <string name="Page4Message">**Telegram** has no limits on\nthe size of your media and chats.</string>
-  <string name="Page5Message">**Telegram** keeps your messages\nsafe from hacker attacks.</string>
-  <string name="Page6Message">**Telegram** lets you access your\nmessages from multiple devices.</string>
+  <string name="Page1Message">An **unofficial** Telegram client\nfor the **TradeLens** community.</string>
+  <string name="Page2Message">Messages travel over\nTelegram\'s global network.</string>
+  <string name="Page3Message">Free to use, with your chats and media\nkept in Telegram\'s cloud.</string>
+  <string name="Page4Message">Large chats, channels and files,\nas supported by Telegram.</string>
+  <string name="Page5Message">Messages are encrypted with\nTelegram\'s MTProto protocol.</string>
+  <string name="Page6Message">Use your Telegram account\non several devices.</string>
   <string name="StartMessaging">Start Messaging</string>
 
   <string name="network_Connecting">Connecting…</string>
@@ -30,7 +30,7 @@
   <string name="network_LookupFailed">No routes found, connecting directly…</string>
   <string name="network_LookupFailedProxy">No routes found, using the previous proxy…</string>
 
-  <string name="AppNameAndVersion">Telegram X %1$s</string>
+  <string name="AppNameAndVersion">TradeLens Connect %1$s</string>
   <string name="language_code">en</string>
   <string name="language_emoji">&#127482;&#127480;</string>
   <string name="language_name">English</string>
@@ -38,7 +38,7 @@
   <string name="language_dateFormatLocale">en-UK</string>
   <string name="language_rtl">0</string>
   <string name="language_disable_lowercase">0</string>
-  <string name="language_continueInLanguagePopupText">**Telegram X** is now available in **English**.\n\nWould you like to switch app language?\n\nYou can revert changes anytime later in Settings&#160;&gt;&#160;Language.</string>
+  <string name="language_continueInLanguagePopupText">**TradeLens Connect** is now available in **English**.\n\nWould you like to switch app language?\n\nYou can revert changes anytime later in Settings&#160;&gt;&#160;Language.</string>
   <string name="language_appliedLanguage">App language has been set to English.</string>
   <string name="MoreLanguages">More Languages</string>
   <string name="timestamp_now">just now</string>
@@ -112,7 +112,7 @@
   <string name="login_PhoneNumber">Phone number</string>
   <string name="login_PremiumRequiredTitle">Telegram Premium required</string>
   <string name="login_PremiumRequiredBtn">Visit telegram.org</string>
-  <string name="login_PremiumRequired">**Telegram Premium** is required to proceed.\n\nUnfortunately, it\'s currently not possible to make in-app purchases through **Telegram X**.\n\nPlease use one of other official apps and enter the same phone number to set up the subscription.</string>
+  <string name="login_PremiumRequired">**Telegram Premium** is required to proceed.\n\nUnfortunately, it\'s currently not possible to make in-app purchases through **TradeLens Connect**.\n\nPlease use one of other official apps and enter the same phone number to set up the subscription.</string>
   <string name="login_error">Error: %1$s. __Contact us__, if you need help.</string>
   <string name="login_Code">Code</string>
   <string name="login_LastDigits_one">Last %1$s digit</string>
@@ -560,7 +560,7 @@
   <string name="fingerprint_fail">Unknown finger</string>
   <string name="biometrics_hint3">Please add biometrics in System Settings &gt; Security &gt; Biometrics.</string>
   <string name="biometrics_fail">Unknown biometrics</string>
-  <string name="cam_hint">Please allow Telegram X to use camera in System Settings &gt; Apps &gt; Telegram X &gt; Permissions</string>
+  <string name="cam_hint">Please allow TradeLens Connect to use camera in System Settings &gt; Apps &gt; TradeLens Connect &gt; Permissions</string>
   <string name="Settings">Settings</string>
   <string name="LogOut">Log out</string>
   <string name="DeleteAccount">Delete account</string>
@@ -2725,8 +2725,8 @@
   <string name="NotificationChannelOngoingCalls">Ongoing Calls</string>
   <string name="NotificationChannelIncomingCallScreen">Incoming Call Screen</string>
   <string name="NotificationChannelMore">More settings</string>
-  <string name="ConversationSettingsResetWarning">To apply this, Telegram X has to recreate the notification categories of these conversations. Android doesn\'t let apps carry over these settings, so they will reset:\n\n%1$s\n\nAll other settings are kept.</string>
-  <string name="ConversationSettingsNewChannelWarning">To apply this, Telegram X has to give this chat a notification category of its own. What was set for this conversation in system settings won\'t apply to it, including:\n\n%1$s\n\nIts sound, vibration and importance will be the ones set in Telegram X.</string>
+  <string name="ConversationSettingsResetWarning">To apply this, TradeLens Connect has to recreate the notification categories of these conversations. Android doesn\'t let apps carry over these settings, so they will reset:\n\n%1$s\n\nAll other settings are kept.</string>
+  <string name="ConversationSettingsNewChannelWarning">To apply this, TradeLens Connect has to give this chat a notification category of its own. What was set for this conversation in system settings won\'t apply to it, including:\n\n%1$s\n\nIts sound, vibration and importance will be the ones set in TradeLens Connect.</string>
   <string name="ConversationPriority">priority conversation</string>
   <string name="ConversationBubbles">bubbles</string>
   <string name="ConversationOverrideDnd">override Do Not Disturb</string>
@@ -3253,21 +3253,21 @@
 
   <string name="json_ChatDemo">0</string>
 
-  <string name="ChangeLogText">**Telegram X** was updated to version %1$s\n\nBrief overview of new features:\n%2$s</string>
+  <string name="ChangeLogText">**TradeLens Connect** was updated to version %1$s\n\nBrief overview of new features:\n%2$s</string>
 
   <string name="LoginErrorOffline">You\'re currently offline. Please connect to the Internet in order to start messaging.</string>
   <string name="LoginErrorAirplane">You currently have airplane mode enabled. Please turn it off or connect to Wi-Fi in order to start messaging.</string>
-  <string name="LoginErrorLongConnecting">Telegram X is unable to quickly establish connection with the server.\n\nPlease check your network connection or wait until this pop-up disappears automatically.\n\nProxy servers may be helpful in accessing Telegram if there is no connection in your region.</string>
+  <string name="LoginErrorLongConnecting">TradeLens Connect is unable to quickly establish connection with the server.\n\nPlease check your network connection or wait until this pop-up disappears automatically.\n\nProxy servers may be helpful in accessing Telegram if there is no connection in your region.</string>
 
   <string name="HelpEmailError">Please send an email to %1$s and tell us about your problem</string>
 
   <string name="email_SmsHelp">sms@telegram.org</string>
   <string name="email_LoginHelp">recover@telegram.org</string>
 
-  <string name="email_LoginTooLong_subject">Telegram X connection issue</string>
-  <string name="email_LoginTooLong_text">My Internet service provider is: (please enter the name)\n\nI\'ve just installed the application and tried to start messaging, but Telegram X is unable to connect to the server. Please help.\n\nApp version: %1$s\nLanguage: %2$s\nAwait time: %3$s\nSystem Language: %4$s\nSystem Version: %5$s</string>
+  <string name="email_LoginTooLong_subject">TradeLens Connect connection issue</string>
+  <string name="email_LoginTooLong_text">My Internet service provider is: (please enter the name)\n\nI\'ve just installed the application and tried to start messaging, but TradeLens Connect is unable to connect to the server. Please help.\n\nApp version: %1$s\nLanguage: %2$s\nAwait time: %3$s\nSystem Language: %4$s\nSystem Version: %5$s</string>
 
-  <string name="email_LoginDeadEnd_subject">Telegram X SMS not sent: %1$s</string>
+  <string name="email_LoginDeadEnd_subject">TradeLens Connect SMS not sent: %1$s</string>
   <string name="email_LoginDeadEnd_text">My Internet service provider is: (please enter the name)\n\nI\'m trying to use my mobile phone number: %1$s\nBut Telegram could not send me SMS with the confirmation code. Please help.\n\nBelow are all details that might help understanding the issue.\nError: %3$s\n%2$s</string>
 
   <string name="email_InvalidNumber_subject">Invalid phone number: %1$s</string>
@@ -3276,7 +3276,7 @@
   <string name="email_BannedNumber_subject">Banned phone number: %1$s</string>
   <string name="email_BannedNumber_text">I\'m trying to use my mobile phone number: %1$s\nBut Telegram says it\'s banned. Please help.</string>
 
-  <string name="email_LoginError_subject">Telegram X error: %1$s</string>
+  <string name="email_LoginError_subject">TradeLens Connect error: %1$s</string>
   <string name="email_LoginError_text">I\'m trying to use my mobile phone number: %1$s\nBut Telegram shows an error. Please help.\nError: %2$s</string>
 
   <string name="email_metadata">App version: %1$s\nLanguage: %2$s\nSystem Language: %3$s\nSystem Version: %4$s</string>
@@ -3718,21 +3718,21 @@
   <string name="NotificationsGuideBlockedApp">Notifications from Telegram are blocked in system settings.\n\nTo enable them:\n• Tap **System Notification Settings**.\n• Turn notifications on.</string>
   <string name="NotificationsGuideBlockedCategory">Notifications for the current account are blocked in system settings.\n\nTo enable them:\n• Tap **System Notification Settings**\n• Find the "%1$s" notification category\n• Turn the toggle on to unblock notifications.</string>
   <string name="NotificationsGuideBlockedAll">Notifications from Telegram are blocked in your device settings.\n\nTo enable notifications:\n• Tap **System Notification Settings**.\n• Turn on **Show Notifications**.</string>
-  <string name="NotificationsGuidePermission">Notifications from Telegram are blocked in your system settings.\n\nTo enable them:\n• Go to system settings – Apps – Telegram X.\n• Tap Notifications and turn them on.</string>
-  <string name="NotificationsGuideBackgroundRestricted">Notifications about new messages may not show until you open the app: background activity of **Telegram X** is restricted in the battery settings of your phone.\n\nTo enable them:\n• Tap **App Info**.\n• Tap **Battery** or **App battery usage**.\n• Lift the background restriction for **Telegram X**.</string>
+  <string name="NotificationsGuidePermission">Notifications from Telegram are blocked in your system settings.\n\nTo enable them:\n• Go to system settings – Apps – TradeLens Connect.\n• Tap Notifications and turn them on.</string>
+  <string name="NotificationsGuideBackgroundRestricted">Notifications about new messages may not show until you open the app: background activity of **TradeLens Connect** is restricted in the battery settings of your phone.\n\nTo enable them:\n• Tap **App Info**.\n• Tap **Battery** or **App battery usage**.\n• Lift the background restriction for **TradeLens Connect**.</string>
   <string name="NotificationsGuideSyncGlobalOff">Notifications may not arrive while the app is closed: data sync is turned off in system settings.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.\n\nTap **Turn on data sync** to enable them.</string>
-  <string name="NotificationsGuideSyncAppOff">Notifications may not arrive while the app is closed: data sync is turned off for Telegram X.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.\n\nTap **Turn on data sync** to enable them.</string>
+  <string name="NotificationsGuideSyncAppOff">Notifications may not arrive while the app is closed: data sync is turned off for TradeLens Connect.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.\n\nTap **Turn on data sync** to enable them.</string>
   <string name="NotificationsGuideFirebaseUnavailable">Notifications may arrive with big delays or not arrive at all: Google Play Services are unavailable.\n\nTo enable them:\n• Tap **Get Google Play Services**.\n• Install or update them.</string>
   <string name="NotificationsGuideUnselected">Notifications from this account don\'t show: only the accounts selected below show them.\n\nTap **Turn on for this account** to enable them.</string>
   <string name="NotificationsGuideBlockedPrivate">Notifications from private chats don\'t show: they are blocked in system settings.\n\nTo enable them:\n• Tap **Unblock in System Settings**.\n• Turn their notifications on.</string>
   <string name="NotificationsGuideBlockedGroup">Notifications from groups don\'t show: they are blocked in system settings.\n\nTo enable them:\n• Tap **Unblock in System Settings**.\n• Turn their notifications on.</string>
   <string name="NotificationsGuideBlockedChannel">Notifications from channels don\'t show: they are blocked in system settings.\n\nTo enable them:\n• Tap **Unblock in System Settings**.\n• Turn their notifications on.</string>
   <string name="NotificationsGuideBlockedMixed">Notifications from some chats don\'t show: their categories are blocked in system settings.\n\nTo enable them:\n• Tap **Unblock in System Settings**.\n• Turn each blocked category on.</string>
-  <string name="NotificationsGuideFirebaseError">**Firebase Services** have failed to function properly due to error: %1$s\n\nNotifications may arrive with big delays or not arrive at all without them.\n\nPlease make sure:\n• Google Play Services are installed and up-to-date: https://support.google.com/googleplay/answer/9037938?hl=en\n• Telegram X is up-to-date\n• Firebase services are enabled\n• They are not blocked by your Internet service or DNS provider\n• If you have firewall or ad blocking software, Firebase domains are whitelisted\n• You can see 404 message in a browser on this page: https://firebaseinstallations.googleapis.com/\n• System date and time is correct\n• Problem doesn\'t go away after restarting your device\n• All system updates are installed\n• You are using the **official** version of Telegram X: @tgx_log\n\nIf the steps above do not help, try again with VPN that you trust, as it might be caused by Internet censorship applied by authorities in your region.</string>
-  <string name="NotificationsGuideError">**Telegram X** was unable to display some notifications for this account due to an unknown system error.\n\nPlease make sure:\n• All system updates are installed\n• Telegram X is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests, or look up for troubleshooting tips for your device.</string>
-  <string name="NotificationsGuideErrorChat">**Telegram X** was unable to display some notifications from %1$s due to an unknown system error.\n\nPlease make sure:\n• All system updates are installed\n• Telegram X is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests, or look up for troubleshooting tips for your device.</string>
-  <string name="NotificationsGuideCategoryLimit">**Telegram X** was unable to display some notifications for this account due to notification categories system limit.\n\nPlease make sure:\n• All system updates are installed\n• Telegram X is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to ask @tgandroidtests for troubleshooting tips for your device, or re-install Telegram X, which should help resolving this error, but requires logging in to your account again.</string>
-  <string name="NotificationsGuideCategoryLimitErrorChat">**Telegram X** was unable to display some notifications from %1$s due to notification categories system limit.\n\nPlease make sure:\n• All system updates are installed\n• Telegram X is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to ask @tgandroidtests for troubleshooting tips for your device, or re-install Telegram X, which should help resolving this error, but requires logging in to your account again.</string>
+  <string name="NotificationsGuideFirebaseError">**Firebase Services** have failed to function properly due to error: %1$s\n\nNotifications may arrive with big delays or not arrive at all without them.\n\nPlease make sure:\n• Google Play Services are installed and up-to-date: https://support.google.com/googleplay/answer/9037938?hl=en\n• TradeLens Connect is up-to-date\n• Firebase services are enabled\n• They are not blocked by your Internet service or DNS provider\n• If you have firewall or ad blocking software, Firebase domains are whitelisted\n• You can see 404 message in a browser on this page: https://firebaseinstallations.googleapis.com/\n• System date and time is correct\n• Problem doesn\'t go away after restarting your device\n• All system updates are installed\n• You are using the **official** version of TradeLens Connect: @tgx_log\n\nIf the steps above do not help, try again with VPN that you trust, as it might be caused by Internet censorship applied by authorities in your region.</string>
+  <string name="NotificationsGuideError">**TradeLens Connect** was unable to display some notifications for this account due to an unknown system error.\n\nPlease make sure:\n• All system updates are installed\n• TradeLens Connect is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests, or look up for troubleshooting tips for your device.</string>
+  <string name="NotificationsGuideErrorChat">**TradeLens Connect** was unable to display some notifications from %1$s due to an unknown system error.\n\nPlease make sure:\n• All system updates are installed\n• TradeLens Connect is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests, or look up for troubleshooting tips for your device.</string>
+  <string name="NotificationsGuideCategoryLimit">**TradeLens Connect** was unable to display some notifications for this account due to notification categories system limit.\n\nPlease make sure:\n• All system updates are installed\n• TradeLens Connect is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to ask @tgandroidtests for troubleshooting tips for your device, or re-install TradeLens Connect, which should help resolving this error, but requires logging in to your account again.</string>
+  <string name="NotificationsGuideCategoryLimitErrorChat">**TradeLens Connect** was unable to display some notifications from %1$s due to notification categories system limit.\n\nPlease make sure:\n• All system updates are installed\n• TradeLens Connect is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to ask @tgandroidtests for troubleshooting tips for your device, or re-install TradeLens Connect, which should help resolving this error, but requires logging in to your account again.</string>
   <string name="TurnSyncOnApp">Turn on data sync</string>
   <string name="TurnSyncOnSystem">Turn on data sync</string>
   <string name="InstallGooglePlayServices">Get Google Play Services</string>
@@ -3842,19 +3842,19 @@
   <string name="LaunchAppUserSubtitle">offline</string>
 
   <string name="LaunchSubtitleDiskFull">Disk storage is full</string>
-  <string name="LaunchAppGuideDiskFull">Telegram X has previously failed to launch because the device storage was full.\n\nMake sure there\'s enough storage space available and press **Launch App** to try again.\n\nCurrently available: %1$s</string>
+  <string name="LaunchAppGuideDiskFull">TradeLens Connect has previously failed to launch because the device storage was full.\n\nMake sure there\'s enough storage space available and press **Launch App** to try again.\n\nCurrently available: %1$s</string>
 
   <string name="LaunchSubtitleDatabaseBroken">Corrupted database</string>
-  <string name="LaunchAppGuideDatabaseBroken">Telegram X has previously failed to launch because TDLib data has been corrupted. This could have happened because of device storage failure.\n\nPress **Launch App** to continue. If application keeps failing, follow these steps:\n\n• Check you have enough disk space available: **%1$s**.\n• Ensure there are no other storage issues, such as SD-card being ejected or unrecognized.\n• Restart your device.\n\nIf this does not help, you may want to look for similar issues on [TDLib\'s GitHub page](https://github.com/tdlib/td/issues) for possible resolutions, or create a new one, including error message and device details.</string>
+  <string name="LaunchAppGuideDatabaseBroken">TradeLens Connect has previously failed to launch because TDLib data has been corrupted. This could have happened because of device storage failure.\n\nPress **Launch App** to continue. If application keeps failing, follow these steps:\n\n• Check you have enough disk space available: **%1$s**.\n• Ensure there are no other storage issues, such as SD-card being ejected or unrecognized.\n• Restart your device.\n\nIf this does not help, you may want to look for similar issues on [TDLib\'s GitHub page](https://github.com/tdlib/td/issues) for possible resolutions, or create a new one, including error message and device details.</string>
 
   <string name="LaunchSubtitleExternalError">External error</string>
-  <string name="LaunchAppGuideExternalError">Telegram X has previously failed to launch because of device error.\n\nPress **Launch App** to try again. If application keeps failing, follow these steps:\n\n• Check you have enough disk space available: **%1$s**.\n• Ensure there are no other storage issues, such as SD-card being ejected or unrecognized.\n• Restart your device.\n\nIf this does not help, you may want to look for similar issues on [TDLib\'s GitHub page](https://github.com/tdlib/td/issues) for possible resolutions, or create a new one, including error message and device details.</string>
+  <string name="LaunchAppGuideExternalError">TradeLens Connect has previously failed to launch because of device error.\n\nPress **Launch App** to try again. If application keeps failing, follow these steps:\n\n• Check you have enough disk space available: **%1$s**.\n• Ensure there are no other storage issues, such as SD-card being ejected or unrecognized.\n• Restart your device.\n\nIf this does not help, you may want to look for similar issues on [TDLib\'s GitHub page](https://github.com/tdlib/td/issues) for possible resolutions, or create a new one, including error message and device details.</string>
 
   <string name="LaunchSubtitleTdlibIssue">TDLib fatal error. Version: %1$s</string>
-  <string name="LaunchAppGuideTdlibIssue">Telegram X has previously failed to launch because of TDLib fatal error.\n\nPress **Launch App** to try again. If application continues to fail, follow these steps:\n\n• [Verify](%2$s) you have the latest Telegram X version installed.\n• Restart your device.\n\n**If the steps above do not help**\n\n1. Share error details with TDLib developers using one of the following ways:\n— Privately via [@tdlib_bot](https://t.me/tdlib_bot) by using another device or [Telegram Web](https://web.telegram.org/).\n— Publicly via [GitHub page](https://github.com/tdlib/td/issues). **Do not** share **tdlib_log.txt** publicly.\n2. Kindly wait for the response.\n3. Change log settings below as requested by TDLib developers.\n4. Press **Launch App** to make app force stop again.\n5. Share **tdlib_log.txt** with TDLib developers and wait for the problem to be resolved.\n6. Once updated, you\'ll be able to launch app normally.\n\n**Alternative options**\n\n• Search for similar issues on [GitHub](https://github.com/tdlib/td/issues) to see if there are common solutions.\n• Reinstall the app. Secret chats will be lost. If you use same phone number you were logged in, all other chats and data will be restored from the Telegram cloud.</string>
+  <string name="LaunchAppGuideTdlibIssue">TradeLens Connect has previously failed to launch because of TDLib fatal error.\n\nPress **Launch App** to try again. If application continues to fail, follow these steps:\n\n• [Verify](%2$s) you have the latest TradeLens Connect version installed.\n• Restart your device.\n\n**If the steps above do not help**\n\n1. Share error details with TDLib developers using one of the following ways:\n— Privately via [@tdlib_bot](https://t.me/tdlib_bot) by using another device or [Telegram Web](https://web.telegram.org/).\n— Publicly via [GitHub page](https://github.com/tdlib/td/issues). **Do not** share **tdlib_log.txt** publicly.\n2. Kindly wait for the response.\n3. Change log settings below as requested by TDLib developers.\n4. Press **Launch App** to make app force stop again.\n5. Share **tdlib_log.txt** with TDLib developers and wait for the problem to be resolved.\n6. Once updated, you\'ll be able to launch app normally.\n\n**Alternative options**\n\n• Search for similar issues on [GitHub](https://github.com/tdlib/td/issues) to see if there are common solutions.\n• Reinstall the app. Secret chats will be lost. If you use same phone number you were logged in, all other chats and data will be restored from the Telegram cloud.</string>
 
   <string name="LaunchSubtitleFatalError">Unexpected error</string>
-  <string name="LaunchAppGuideFatalError">Telegram X has closed unexpectedly the last time you were using it.\n\nPress **Launch App** to try again.</string>
+  <string name="LaunchAppGuideFatalError">TradeLens Connect has closed unexpectedly the last time you were using it.\n\nPress **Launch App** to try again.</string>
 
   <string name="SelfDestructPhoto">Self-Destruct Photo</string>
   <string name="SelfDestructVideo">Self-Destruct Video</string>
@@ -3920,7 +3920,7 @@
   <string name="SettingsAndThemes">Settings and Themes</string>
 
   <string name="Paints">Drawings</string>
-  <string name="PaintsInfo">Telegram X remembers vector drawings you made via the in-app image editor for possible future use.\n\nWould you like to make Telegram X unsee them?</string>
+  <string name="PaintsInfo">TradeLens Connect remembers vector drawings you made via the in-app image editor for possible future use.\n\nWould you like to make TradeLens Connect unsee them?</string>
 
   <string name="JunkFiles">Unused Files</string>
   <string name="JunkFilesInfo">Service files that were created while using some features or older app versions.</string>
@@ -3930,7 +3930,7 @@
   <string name="ShowOtherChats">Show Other Chats</string>
 
   <string name="UseSystemFonts">Use System Fonts</string>
-  <string name="UseSystemFontsHint">**Warning!**\n\nTelegram X does not guarantee proper rendering of system fonts.</string>
+  <string name="UseSystemFontsHint">**Warning!**\n\nTradeLens Connect does not guarantee proper rendering of system fonts.</string>
 
   <string name="RestartEffect">Restart the app for this to take effect.</string>
 
@@ -4030,7 +4030,7 @@
   <string name="ChatBannedUntil">Admins have banned you in this group until %1$s</string>
 
   <string name="UpgradeChatPrompt">To perform this action, this chat will be converted to supergroup.\n\n**Note**: new members will not see messages sent before the conversion.</string>
-  <string name="AppUpdateReady">Telegram X is ready to be updated.</string>
+  <string name="AppUpdateReady">TradeLens Connect is ready to be updated.</string>
   <string name="AppUpdateRestart">Restart</string>
   <string name="AppUpdateInstall">Update</string>
 
@@ -4906,10 +4906,10 @@
   <string name="DownloadUpdateSize">Download update (%1$s)</string>
   <string name="DownloadUpdate">Download update</string>
   <string name="UpdateSourceChanges">View source code changes</string>
-  <string name="AppUpdateAvailablePrompt">A new **Telegram X** update is available. Would you like to download? (%1$s)</string>
-  <string name="AppUpdateAvailableVersionPrompt">A new **Telegram X** `%2$s` update is available. Would you like to download? (%1$s)</string>
+  <string name="AppUpdateAvailablePrompt">A new **TradeLens Connect** update is available. Would you like to download? (%1$s)</string>
+  <string name="AppUpdateAvailableVersionPrompt">A new **TradeLens Connect** `%2$s` update is available. Would you like to download? (%1$s)</string>
 
-  <string name="AppSignature">**Telegram X** `%1$s`</string>
+  <string name="AppSignature">**TradeLens Connect** `%1$s`</string>
 
   <string name="ScanQR">Scan QR</string>
   <string name="ScanQRLogInInfo">Use camera to sign in on the desktop app.</string>
@@ -5045,7 +5045,7 @@
   <string name="ChatBackgroundTypeMulticolor">multicolor gradient</string>
   <string name="ChatBackgroundBlur">Blurred</string>
 
-  <string name="NoCloudThemeSupport">This theme is not designed for **Telegram X**.\n\nHowever, you may check for user-made themes in @tgx_perfection.</string>
+  <string name="NoCloudThemeSupport">This theme is not designed for **TradeLens Connect**.\n\nHowever, you may check for user-made themes in @tgx_perfection.</string>
 
   <string name="TransferOwnershipSecurityAlert">Security Check</string>
   <string name="TransferOwnershipSecurityPasswordNeeded">Sorry, but you can only transfer ownership if you have set up **Two-Step Verification** on your Telegram account.</string>
@@ -5172,7 +5172,7 @@
   <string name="CallProblemCategory">May not ring, missed ones don\'t show</string>
   <string name="CallProblemFailed">Failed to display</string>
   <string name="CallProblemFailedFrom">Failed to display from %1$s</string>
-  <string name="CallProblemFailedGuide">An incoming call didn\'t show: **Telegram X** was unable to display it due to an unknown system error.\n\nPlease make sure that system updates are installed and Telegram X is up-to-date. If it happens again, tap **Share Error Report** to send the details to @tgandroidtests.</string>
+  <string name="CallProblemFailedGuide">An incoming call didn\'t show: **TradeLens Connect** was unable to display it due to an unknown system error.\n\nPlease make sure that system updates are installed and TradeLens Connect is up-to-date. If it happens again, tap **Share Error Report** to send the details to @tgandroidtests.</string>
   <string name="CallProblemPush">May not come while app is closed</string>
   <string name="CallProblemOffForDevice">Off for this device</string>
   <string name="CallProblemFullScreenAction">Allow calls on the lock screen</string>
@@ -5180,18 +5180,18 @@
   <string name="CallsOffForDevice">Incoming calls don\'t come to this device, as they\'re turned off for it in Settings — Devices.</string>
   <string name="CallsOffForDeviceAction">Allow incoming calls for this device</string>
   <string name="CallsAllowedForDevice">Incoming calls now come to this device</string>
-  <string name="CallProblemPermissionGuide">Incoming calls from Telegram don\'t show outside the app: you can see and answer them only when you are using the app, and outside it they may not even ring.\n\nTo enable them:\n• Go to system settings – Apps – Telegram X.\n• Tap Notifications and turn them on.</string>
+  <string name="CallProblemPermissionGuide">Incoming calls from Telegram don\'t show outside the app: you can see and answer them only when you are using the app, and outside it they may not even ring.\n\nTo enable them:\n• Go to system settings – Apps – TradeLens Connect.\n• Tap Notifications and turn them on.</string>
   <string name="CallProblemBlockedAllGuide">Incoming calls from Telegram don\'t show outside the app: you can see and answer them only when you are using the app, and outside it they may not even ring.\n\nTo enable them:\n• Tap **System Notification Settings**.\n• Turn on **Show Notifications**.</string>
   <string name="CallProblemBlockedAppGuide">Incoming calls from Telegram don\'t show outside the app: you can see and answer them only when you are using the app, and outside it they may not even ring.\n\nTo enable them:\n• Tap **System Notification Settings**.\n• Turn notifications on.</string>
   <string name="CallProblemSyncGlobalOffGuide">Incoming calls may not come while the app is closed: data sync is turned off in system settings.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.\n\nTap **Turn on data sync** to enable them.</string>
-  <string name="CallProblemSyncAppOffGuide">Incoming calls may not come while the app is closed: data sync is turned off for Telegram X.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.\n\nTap **Turn on data sync** to enable them.</string>
+  <string name="CallProblemSyncAppOffGuide">Incoming calls may not come while the app is closed: data sync is turned off for TradeLens Connect.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.\n\nTap **Turn on data sync** to enable them.</string>
   <string name="CallProblemFirebaseUnavailableGuide">Incoming calls may not arrive at all: Google Play Services are unavailable.\n\nTo enable them:\n• Tap **Get Google Play Services**.\n• Install or update them.</string>
-  <string name="CallProblemFirebaseErrorGuide">Incoming calls may not come while the app is closed: **Firebase Services** have failed to function properly due to error: %1$s\n\nTo enable them:\n• Tap **Tap to resolve issue**.\n• Tap **Try again**.\n\nIf it doesn\'t help, make sure that Google Play Services and Telegram X are up-to-date and that nothing on your network blocks Firebase.</string>
-  <string name="CallProblemFullScreenGuide">**Telegram X** isn\'t allowed to show incoming calls full screen while the phone is locked or its screen is off: they come only as a notification.</string>
+  <string name="CallProblemFirebaseErrorGuide">Incoming calls may not come while the app is closed: **Firebase Services** have failed to function properly due to error: %1$s\n\nTo enable them:\n• Tap **Tap to resolve issue**.\n• Tap **Try again**.\n\nIf it doesn\'t help, make sure that Google Play Services and TradeLens Connect are up-to-date and that nothing on your network blocks Firebase.</string>
+  <string name="CallProblemFullScreenGuide">**TradeLens Connect** isn\'t allowed to show incoming calls full screen while the phone is locked or its screen is off: they come only as a notification.</string>
   <string name="CallProblemFullScreenSteps">To enable them:\n• Tap **Allow calls on the lock screen**.\n• Turn on **Allow full-screen notifications from this app**.</string>
   <string name="CallProblemFullScreenStepsSamsung">To enable them:\n• Tap **Allow calls on the lock screen**.\n• Turn on **Allow permission**.</string>
   <string name="CallProblemBlockedCategoryGuide">Incoming calls of this account may not ring while the app is in the background, and missed calls don\'t show: notifications for this account are blocked in system settings.\n\nTo enable them:\n• Tap **System Notification Settings**.\n• Turn on the category of this account.</string>
-  <string name="CallProblemBackgroundGuide">Incoming calls from Telegram may only ring without showing while the app is in the background or closed: background activity of **Telegram X** is restricted in the battery settings of your phone.\n\nTo enable them:\n• Tap **App Info**.\n• Tap **Battery** or **App battery usage**.\n• Lift the background restriction for **Telegram X**.</string>
+  <string name="CallProblemBackgroundGuide">Incoming calls from Telegram may only ring without showing while the app is in the background or closed: background activity of **TradeLens Connect** is restricted in the battery settings of your phone.\n\nTo enable them:\n• Tap **App Info**.\n• Tap **Battery** or **App battery usage**.\n• Lift the background restriction for **TradeLens Connect**.</string>
   <string name="CallProblemChannel">Silenced in system settings</string>
   <string name="CallProblemChannelAction">Incoming Calls Settings</string>
   <string name="CallProblemAppChannel">Don\'t pop up on screen</string>
@@ -5297,12 +5297,12 @@
   <string name="SessionTerminatesCustomAlertTitle">Number of Days</string>
   <string name="SessionTerminatesCustomAlertHint">Accepted from 1 to 366</string>
 
-  <string name="LocationAlertBot">To make a location-based search via %1$s, allow Telegram X access to your location.</string>
-  <string name="LocationAlertBotDisclaimer">Note that Telegram X does not have any control over how the location data is processed by %1$s.</string>
-  <string name="LocationAlertLiveLocation">To send a Live Location, allow Telegram X access to your location in the background. This feature will send a message with your location that will be updated in real time for the duration you choose even if you\'re not using the app. You can stop Live Location at any time.</string>
-  <string name="LocationAlertSunriseSunset">To calculate sunrise and sunset times, allow Telegram X access to your location.</string>
-  <string name="LocationAlertLocation">To send a nearby place or your location, allow Telegram X access to your location.</string>
-  <string name="LocationAlertLocationDisclaimer">Telegram X does not use location data for any hidden purposes, and accesses it only by your explicit request.</string>
+  <string name="LocationAlertBot">To make a location-based search via %1$s, allow TradeLens Connect access to your location.</string>
+  <string name="LocationAlertBotDisclaimer">Note that TradeLens Connect does not have any control over how the location data is processed by %1$s.</string>
+  <string name="LocationAlertLiveLocation">To send a Live Location, allow TradeLens Connect access to your location in the background. This feature will send a message with your location that will be updated in real time for the duration you choose even if you\'re not using the app. You can stop Live Location at any time.</string>
+  <string name="LocationAlertSunriseSunset">To calculate sunrise and sunset times, allow TradeLens Connect access to your location.</string>
+  <string name="LocationAlertLocation">To send a nearby place or your location, allow TradeLens Connect access to your location.</string>
+  <string name="LocationAlertLocationDisclaimer">TradeLens Connect does not use location data for any hidden purposes, and accesses it only by your explicit request.</string>
 
   <string name="RequestToJoinGroupInfo">This group accepts new members only after they are being accepted by admins.</string>
   <string name="RequestToJoinChannelInfo">This channel accepts new subscribers only after they are approved by its admins.</string>
@@ -5331,7 +5331,7 @@
   <string name="xPRs_other">%1$s PRs</string>
   <string name="PR">PR #%1$d</string>
 
-  <string name="OpenSourceGuide">**Telegram X** is open source. You can view the exact source code used to make the version you have installed.</string>
+  <string name="OpenSourceGuide">**TradeLens Connect** is open source. You can view the exact source code used to make the version you have installed.</string>
 
   <string name="ResetPasswordWait">You recently requested a password reset that was canceled. Please wait %1$s before making a new request.</string>
   <string name="RestorePasswordNoEmailText2">Since you didn’t provide a recovery email when setting up your password, your remaining options are either to remember your password or wait 7 days until your password is reset.</string>
@@ -5344,7 +5344,7 @@
   <string name="CancelPasswordResetYes">YES</string>
 
   <string name="ExperimentalBuildTitle">Caution: experimental build</string>
-  <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
+  <string name="ExperimentalBuildInfo">This version of **TradeLens Connect** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper TradeLens Connect APK file, see https://t.me/tgx_log</string>
 
   <string name="PremiumRequiredSticker">Sending this sticker requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredVoiceVideo">This setting requires a **Telegram Premium** subscription.</string>
@@ -5701,7 +5701,7 @@
   <string name="SwipeToSwapLinkPreview">Swipe to choose specific link preview</string>
 
   <string name="MessageRestrictedByTelegram">This is a service message from Telegram</string>
-  <string name="MessageUnsupportedHint">This message is unsupported in the installed version of Telegram X.</string>
+  <string name="MessageUnsupportedHint">This message is unsupported in the installed version of TradeLens Connect.</string>
 
   <string name="ConfirmPasswordAlertHint">Please enter your 2-Step verification password to confirm the action.</string>
   <string name="DeleteAccountReason">Reason</string>
@@ -5840,8 +5840,8 @@
   <string name="GiveawayInfoClose">Close</string>
   <string name="GiveawayViewMyPrize">View my prize</string>
 
-  <string name="EmulatorWarning">You are running **Telegram X** on an **emulated device**.\n\n**Note**: if you don\'t have an **existing** Telegram account, you may need a **real device** to create it.\n\nIn case you see this warning on a real device (such as phone, tablet, etc), press **report issue**.</string>
-  <string name="EmulatorWarningStrict">You are running **Telegram X** on an **emulated device**.\n\n**Note**: if you don\'t have an **existing** Telegram account, you may need a **real device** to create it.\n\nIf you have your phone connected to a PC, disconnect it and restart Telegram X.</string>
+  <string name="EmulatorWarning">You are running **TradeLens Connect** on an **emulated device**.\n\n**Note**: if you don\'t have an **existing** Telegram account, you may need a **real device** to create it.\n\nIn case you see this warning on a real device (such as phone, tablet, etc), press **report issue**.</string>
+  <string name="EmulatorWarningStrict">You are running **TradeLens Connect** on an **emulated device**.\n\n**Note**: if you don\'t have an **existing** Telegram account, you may need a **real device** to create it.\n\nIf you have your phone connected to a PC, disconnect it and restart TradeLens Connect.</string>
   <string name="EmulatorWarningTitle">Emulator detected</string>
   <string name="EmulatorWarningBtnReport">Report issue</string>
   <string name="EmulatorWarningBtnOk">Got it</string>
