@@ -135,7 +135,7 @@ public class TradeLensMt5Controller extends TLListController {
     }
     if (lastAccount > 0 && manage != null) {
       section(items, "Make protection stricter");
-      items.add(row(R.id.btn_tlProt, "Make equity protection stricter", "Choose a stricter setting. Weaker settings are changed on the TradeLens website.")
+      items.add(row(R.id.btn_tlProt, "Stricter only · weaker settings are changed on the website", "Make equity protection stricter")
         .setData(lastAccount));
     }
     if (accounts.length() > 1) {
