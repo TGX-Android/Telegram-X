@@ -1824,7 +1824,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (selectionFactor != 0f) {
       drawSelection(view, c);
     }
-    if (highlightFactor != 0f) {
+    if (highlightFactor != 0f && !quoteHighlight.isActive()) {
       drawHighlight(view, c);
     }
   }
@@ -2027,6 +2027,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (useBubbles && !needViewGroup()) {
       drawBackground(view, c);
     }
+    if (useBubbles && quoteHighlight.isActive()) {
+      quoteHighlight.draw(view, c, false);
+    }
 
     final boolean savedTranslation = translation != 0f;
     if (savedTranslation) {
@@ -2037,6 +2040,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     // selection and highlight background
     if (!useBubbles && !needViewGroup()) {
       drawBackground(view, c);
+    }
+    if (!useBubbles && quoteHighlight.isActive()) {
+      quoteHighlight.draw(view, c, false);
     }
 
     final int contentOffset = getSelectableContentOffset(selectableFactor);
@@ -2525,6 +2531,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     startSetReactionAnimationIfReady();
     highlightUnreadReactionsIfNeeded();
+    if (useBubbles && quoteHighlight.isActive()) {
+      quoteHighlight.draw(view, c, true);
+    }
     if (isHiddenFactor > 0f) {
       drawHiddenMessage(view, c, isHiddenFactor);
     }
@@ -3017,12 +3026,18 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
                 if (replyToMessage.chatId == 0 || replyToMessage.messageId == 0) {
                   buildContentHint(view, getReplyLocationProvider(), false).show(tdlib, Lang.getString(R.string.MessageReplyPrivate));
                 } else {
-                  tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
+                  tdlib.ui().openMessage(
+                    controller(),
+                    replyToMessage.chatId,
+                    new MessageId(replyToMessage),
+                    openParameters(),
+                    getReplyQuote(replyToMessage)
+                  );
                 }
               } else if (isScheduled()) {
                 tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
               } else {
-                highlightOtherMessage(new MessageId(replyToMessage));
+                highlightOtherMessage(new MessageId(replyToMessage), getReplyQuote(replyToMessage));
               }
             }
           }
@@ -3037,8 +3052,28 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   });
 
+  private static @Nullable TdApi.InputTextQuote getReplyQuote (
+    TdApi.MessageReplyToMessage replyTo
+  ) {
+    if (Td.isEmpty(replyTo.quote)) {
+      return null;
+    }
+    return new TdApi.InputTextQuote(
+      replyTo.quote.text,
+      new TdApi.RichText[0],
+      replyTo.quote.position
+    );
+  }
+
   protected final void highlightOtherMessage (MessageId messageId) {
-    manager.controller().highlightMessage(messageId, toMessageId());
+    highlightOtherMessage(messageId, null);
+  }
+
+  protected final void highlightOtherMessage (
+    MessageId messageId,
+    @Nullable TdApi.InputTextQuote quote
+  ) {
+    manager.controller().highlightMessage(messageId, toMessageId(), quote);
   }
 
   protected final void highlightOtherMessage (long otherMessageId) {
@@ -6125,7 +6160,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean allowInteraction () {
-    return !isFakeMessage() && !isEventLog() && !isThreadHeader();
+    return !isFakeMessage() && !isEventLog();
   }
 
   public boolean canReplyTo () {
@@ -6690,7 +6725,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return U.alphaColor(factor, useBubbles ? color : U.compositeColor(Theme.getColor(ColorId.chatPlainBackground), color));*/
   }
 
-  private int findBottomEdge () {
+  int findBottomEdge () {
     return height - getExtraPadding();
   }
 
@@ -7130,6 +7165,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public void highlight (boolean revoke) {
+    quoteHighlight.cancel(true);
     cancelHighlightRevoke();
     setHighlight(1f);
     if (revoke) {
@@ -7137,11 +7173,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  private void setHighlight (float highlight) {
+  void setHighlight (float highlight) {
     if (this.highlightFactor != highlight) {
       this.highlightFactor = highlight;
       invalidateParentOrSelf(false);
     }
+  }
+
+  private final QuoteHighlight quoteHighlight = new QuoteHighlight(this);
+
+  public void highlightQuote (@Nullable TdApi.InputTextQuote quote) {
+    if (quote == null || Td.isEmpty(quote.text)) {
+      return;
+    }
+    if (!quoteHighlight.start(quote.text.text, quote.position)) {
+      UI.showToast(R.string.MessageQuoteNotFound, Toast.LENGTH_SHORT);
+    }
+  }
+
+  public @Nullable Rect refreshQuoteHighlightBounds () {
+    return quoteHighlight.refreshBounds();
   }
 
   private @Nullable String highlightedText = null;
@@ -7187,7 +7238,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private FactorAnimator revokeAnimator;
   private static final int ANIMATOR_REVOKE = -1;
 
-  private void cancelHighlightRevoke () {
+  void cancelHighlightRevoke () {
     if (revokeAnimator != null) {
       revokeAnimator.cancel();
       revokeAnimator = null;
@@ -10062,6 +10113,24 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return TD.canCopyText(message);
     }
     return TD.canCopyText(getNewestMessage());
+  }
+
+  public @Nullable Text getTextSelectionLayout () {
+    return null;
+  }
+
+  public float getTextSelectionOffsetX () {
+    int offset = getSelectableContentOffset(manager().getSelectableFactor());
+    return getTranslation() + (Lang.rtl() ? -offset : offset);
+  }
+
+  public @Nullable Text findTextSelection (float x, float y) {
+    Text text = getTextSelectionLayout();
+    return text != null && text.isTextAt(x - getTextSelectionOffsetX(), y) ? text : null;
+  }
+
+  public boolean canSelectText (Text text) {
+    return text != null && text == getTextSelectionLayout() && canBeSaved() && canCopyText();
   }
 
   public boolean isTranslatable () {

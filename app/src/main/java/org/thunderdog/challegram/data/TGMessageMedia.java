@@ -327,6 +327,11 @@ public class TGMessageMedia extends TGMessage {
     return captionMessageId;
   }
 
+  @Override
+  public @Nullable Text getTextSelectionLayout () {
+    return wrapper != null ? wrapper.getCurrent() : null;
+  }
+
   private boolean setCaption (TdApi.FormattedText caption, long messageId) {
     return setCaption(caption, messageId, false);
   }
@@ -355,7 +360,7 @@ public class TGMessageMedia extends TGMessage {
             }
           })
           .setHighlightText(getHighlightedText(Highlight.Pool.KEY_MEDIA_CAPTION, fText.text))
-          .addTextFlags(Text.FLAG_BIG_EMOJI)
+          .addTextFlags(Text.FLAG_BIG_EMOJI | Text.FLAG_SELECTABLE)
           .setClickCallback(clickCallback());
         this.wrapper.setBlockSwitches(blockSwitches);
         this.wrapper.setViewProvider(currentViews);

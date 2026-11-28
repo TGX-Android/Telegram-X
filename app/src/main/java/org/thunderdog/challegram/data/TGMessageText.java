@@ -183,6 +183,11 @@ public class TGMessageText extends TGMessage {
     return location;
   }
 
+  @Override
+  public @Nullable Text getTextSelectionLayout () {
+    return effectiveWrapper != null ? effectiveWrapper.getCurrent() : null;
+  }
+
   public TdApi.FormattedText getText () {
     return text;
   }
@@ -350,7 +355,7 @@ public class TGMessageText extends TGMessage {
           .setHighlightText(getHighlightedText(Highlight.Pool.KEY_TEXT, text.text))
           .setClickCallback(clickCallback());
       }
-      wrapper.addTextFlags(Text.FLAG_BIG_EMOJI);
+      wrapper.addTextFlags(Text.FLAG_BIG_EMOJI | Text.FLAG_SELECTABLE);
       wrapper.setTextFlagEnabled(Text.FLAG_WRAP_CODE_BLOCKS, needWrapCodeBlocks());
       wrapper.setBlockSwitches(blockSwitches);
       if (useBubbles()) {

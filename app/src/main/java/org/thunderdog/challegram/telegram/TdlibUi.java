@@ -1774,6 +1774,7 @@ public class TdlibUi extends Handler {
     public boolean highlightSet;
     public int highlightMode;
     public MessageId highlightMessageId;
+    public @Nullable TdApi.InputTextQuote highlightQuote;
 
     public String searchQuery;
     public MessageId foundMessage;
@@ -1952,9 +1953,17 @@ public class TdlibUi extends Handler {
     }
 
     public ChatOpenParameters highlightMessage (MessageId highlightMessageId) {
+      return highlightMessage(highlightMessageId, null);
+    }
+
+    public ChatOpenParameters highlightMessage (
+      MessageId highlightMessageId,
+      @Nullable TdApi.InputTextQuote quote
+    ) {
       this.highlightSet = true;
       this.highlightMode = MessagesManager.HIGHLIGHT_MODE_NORMAL;
       this.highlightMessageId = highlightMessageId;
+      this.highlightQuote = quote;
       return this;
     }
 
@@ -2303,6 +2312,9 @@ public class TdlibUi extends Handler {
       arguments = new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter, params.foundMessage, params.searchQuery);
     } else if (highlightMessageId != null) {
       arguments = new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter);
+      if (params != null) {
+        arguments.highlightQuote = params.highlightQuote;
+      }
     } else {
       arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, messageTopicId, filter);
     }
@@ -2517,8 +2529,35 @@ public class TdlibUi extends Handler {
   public void openMessage (final TdlibDelegate context, final long chatId, final MessageId messageId, final @Nullable UrlOpenParameters openParameters) {
     openMessage(context, chatId, messageId, /* messageThread */ null, openParameters);}
 
+  public void openMessage (
+    final TdlibDelegate context,
+    final long chatId,
+    final MessageId messageId,
+    final @Nullable UrlOpenParameters openParameters,
+    final @Nullable TdApi.InputTextQuote quote
+  ) {
+    openMessage(context, chatId, messageId, null, openParameters, quote);
+  }
+
   public void openMessage (final TdlibDelegate context, final long chatId, final MessageId messageId, final @Nullable ThreadInfo messageThread, final @Nullable UrlOpenParameters openParameters) {
-    openChat(context, chatId, new ChatOpenParameters().keepStack().highlightMessage(messageId).ensureHighlightAvailable().messageThread(messageThread).urlOpenParameters(openParameters));
+    openMessage(context, chatId, messageId, messageThread, openParameters, null);
+  }
+
+  public void openMessage (
+    final TdlibDelegate context,
+    final long chatId,
+    final MessageId messageId,
+    final @Nullable ThreadInfo messageThread,
+    final @Nullable UrlOpenParameters openParameters,
+    final @Nullable TdApi.InputTextQuote quote
+  ) {
+    openChat(context, chatId, new ChatOpenParameters()
+      .keepStack()
+      .highlightMessage(messageId, quote)
+      .ensureHighlightAvailable()
+      .messageThread(messageThread)
+      .urlOpenParameters(openParameters)
+    );
   }
 
   public void openMessage (final TdlibDelegate context, final TdApi.MessageLinkInfo messageLink, final @Nullable UrlOpenParameters openParameters) {

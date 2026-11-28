@@ -62,6 +62,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class PinnedMessagesBar extends ViewGroup implements Destroyable, MessageListManager.ChangeListener, View.OnClickListener {
   private CustomRecyclerView recyclerView;
@@ -698,7 +699,9 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       if (isLinkPreview()) {
         return StringUtils.equalsTo(this.linkPreviewUrl, b.linkPreviewUrl) && (this.linkPreviewContext == b.linkPreviewContext);
       } else if (isMessage()) {
-        return this.message.chatId == b.message.chatId && this.message.id == b.message.id;
+        return message.chatId == b.message.chatId &&
+          message.id == b.message.id &&
+          Td.equalsTo(quote, b.quote);
       } else {
         throw new UnsupportedOperationException();
       }
