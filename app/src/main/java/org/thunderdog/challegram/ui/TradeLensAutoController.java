@@ -68,7 +68,7 @@ public class TradeLensAutoController extends TLListController {
         items.add(plain(a.optString("label", "MT5 account"), (on ? "AutoTrading is ON" : "AutoTrading is OFF") + (reason.isEmpty() || "null".equals(reason) ? "" : " · paused: " + reason)));
         if (on && json.optBoolean("controls", false)) {
           separator(items);
-          items.add(row(R.id.btn_tlAutoOff, "Switch AutoTrading OFF", "Stops new trades. Trades already open stay open. You confirm first.")
+          items.add(row(R.id.btn_tlAutoOff, "Stops new trades · open trades stay open · you confirm first", "Switch AutoTrading OFF")
             .setData(a.optInt("id", 0)));
         }
         JSONObject el = a.optJSONObject("eligibility");
